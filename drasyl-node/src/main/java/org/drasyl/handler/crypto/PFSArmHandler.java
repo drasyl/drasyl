@@ -40,7 +40,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.LongSupplier;
-import java.util.function.LongUnaryOperator;
 
 /**
  * Arms (encrypt) outbound and disarms (decrypt) inbound messages. Messages that could not be
@@ -50,7 +49,6 @@ import java.util.function.LongUnaryOperator;
 public class PFSArmHandler extends AbstractArmHandler {
     private static final Logger LOG = LoggerFactory.getLogger(PFSArmHandler.class);
     private final Duration retryInterval;
-    private final LongUnaryOperator retryProvider;
     private final LongSupplier expireProvider;
     private State state;
 
@@ -60,12 +58,10 @@ public class PFSArmHandler extends AbstractArmHandler {
                             final Session session,
                             final LongSupplier expireProvider,
                             final Duration retryInterval,
-                            final LongUnaryOperator retryProvider,
                             final State state) {
         super(crypto, identity, peerIdentity, session);
         this.expireProvider = expireProvider;
         this.retryInterval = retryInterval;
-        this.retryProvider = retryProvider;
         this.state = state;
     }
 
@@ -77,15 +73,13 @@ public class PFSArmHandler extends AbstractArmHandler {
                          final IdentityPublicKey peerIdentity) throws CryptoException {
         super(crypto, expireAfter, maxAgreements, identity, peerIdentity);
         this.retryInterval = retryInterval;
-        this.retryProvider = time -> {
-            if (time < System.currentTimeMillis() - retryInterval.toMillis()) {
-                return System.currentTimeMillis();
-            }
-
-            return time;
-        };
         this.expireProvider = () -> System.currentTimeMillis() + expireAfter.toMillis();
         this.state = State.LONG_TIME;
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        LOG.error("PFSArmHandler added to channel `{}` from parent `{}`", ctx.channel()::id, ctx.channel().parent()::id);
     }
 
     @Override
@@ -140,6 +134,7 @@ public class PFSArmHandler extends AbstractArmHandler {
         }).orElse(null);
 
         if (agreement != null && agreement.isRenewable() && session.getLastRenewAttemptAt() < System.currentTimeMillis() - retryInterval.toMillis()) {
+            session.setLastRenewAttemptAt(System.currentTimeMillis());
             doKeyExchange(ctx);
         }
     }
@@ -184,6 +179,7 @@ public class PFSArmHandler extends AbstractArmHandler {
 
                 session.getInitializedAgreements().put(agreementId, agreement);
                 session.getCurrentActiveAgreement().computeOnCondition(c -> true, f -> agreement);
+                session.setLastRenewAttemptAt(System.currentTimeMillis());
 
                 if (state == State.LONG_TIME) {
                     ctx.fireUserEventTriggered(PerfectForwardSecrecyEncryptionEvent.of(Peer.of(this.peerIdentity)));
@@ -194,12 +190,12 @@ public class PFSArmHandler extends AbstractArmHandler {
             }
             catch (final CryptoException e) {
                 LOG.debug("Can't compute new agreement: ", e);
-                return null;
+                return a;
             }
         }).orElse(computeInactiveAgreementIfNeeded());
 
         // We received an ACK for an unknown agreement
-        if (Objects.equals(agreementId, pendingAgreement.getAgreementId())) {
+        if (!Objects.equals(agreementId, pendingAgreement.getAgreementId())) {
             doKeyExchange(ctx);
         }
     }
@@ -239,9 +235,9 @@ public class PFSArmHandler extends AbstractArmHandler {
             catch (final CryptoException e) {
                 LOG.debug("Can't arm key exchange message: ", e);
             }
-        }
 
-        session.setLastKeyExchangeAt(retryProvider.applyAsLong(session.getLastKeyExchangeAt()));
+            session.setLastKeyExchangeAt(System.currentTimeMillis());
+        }
     }
 
     /**

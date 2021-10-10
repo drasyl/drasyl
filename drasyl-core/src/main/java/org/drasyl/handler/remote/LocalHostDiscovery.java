@@ -145,7 +145,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             final SocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
-                LOG.trace("Send message `{}` via local route {}.", () -> applicationMsg, () -> localAddress);
+                LOG.trace("[{}] Send message `{}` via local route {}.", ctx.channel()::id, () -> applicationMsg, () -> localAddress);
                 ctx.write(new AddressedMessage<>(applicationMsg, localAddress), promise);
             }
             else {

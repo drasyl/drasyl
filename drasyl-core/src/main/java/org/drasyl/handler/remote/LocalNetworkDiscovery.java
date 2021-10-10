@@ -183,7 +183,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
             final Peer peer = peers.get(recipient);
             if (peer != null) {
-                LOG.trace("Send message `{}` via local network route `{}`.", () -> remoteMsg, peer::getAddress);
+                LOG.trace("[{}] Send message `{}` via local network route `{}`.", ctx.channel()::id, () -> remoteMsg, peer::getAddress);
                 ctx.write(((AddressedMessage<?, ?>) msg).route(peer.getAddress()), promise);
             }
             else {

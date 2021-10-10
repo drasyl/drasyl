@@ -80,6 +80,7 @@ public class ArmHeader extends DefaultByteBufHolder {
         return "ArmHeader{" +
                 "agreementId=" + agreementId +
                 ", nonce=" + nonce +
+                ", content=" + content() +
                 '}';
     }
 }

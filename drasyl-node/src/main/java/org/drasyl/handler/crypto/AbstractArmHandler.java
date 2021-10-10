@@ -28,8 +28,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.LongTimeEncryptionEvent;
-import org.drasyl.event.Peer;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.Identity;
@@ -73,13 +71,6 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        ctx.fireUserEventTriggered(LongTimeEncryptionEvent.of(Peer.of(peerIdentity)));
-
-        super.channelActive(ctx);
-    }
-
-    @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final ByteBuf msg,
                           final List<Object> out) throws Exception {
@@ -94,6 +85,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
         }
 
         out.add(arm(agreement, ArmMessage.fromApplication(msg)));
+        LOG.trace("[{}] Armed msg: {}", ctx.channel()::id, () -> msg);
     }
 
     @Override
@@ -107,7 +99,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
             onNonAgreement(ctx);
 
             LOG.debug("Agreement id `{}` could not be found. Dropped message: {}", msg::getAgreementId, () -> msg);
-            throw new CryptoException("Decryption-Error: agreement id could not be found. Message was dropped.");
+            return;
         }
 
         plaintext = unarm(agreement, msg.getNonce(), msg.content());
@@ -116,6 +108,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
 
         if (plaintext instanceof ByteBuf) {
             out.add(plaintext);
+            LOG.trace("[{}] Disarmed msg: {}", ctx.channel()::id, () -> msg);
         }
         else {
             inboundArmMessage(ctx, plaintext);

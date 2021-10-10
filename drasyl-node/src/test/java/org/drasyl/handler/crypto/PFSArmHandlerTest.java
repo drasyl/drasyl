@@ -102,7 +102,7 @@ class PFSArmHandlerTest {
             when(actualAgreement.getValue()).thenReturn(Optional.of(agreement));
             when(crypto.encrypt(any(), any(), any(), any())).thenReturn(enc);
 
-            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, t -> System.currentTimeMillis(), PFSArmHandler.State.PFS);
+            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, PFSArmHandler.State.PFS);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteBuf msg = Unpooled.buffer();
@@ -147,7 +147,7 @@ class PFSArmHandlerTest {
             when(agreement.getSessionPair()).thenReturn(sessionPair);
             when(crypto.decrypt(any(), any(), any(), any())).thenReturn(ByteBufUtil.getBytes(byteBuf));
 
-            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, t -> System.currentTimeMillis(), PFSArmHandler.State.LONG_TIME);
+            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, PFSArmHandler.State.LONG_TIME);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ArmHeader msg = ArmHeader.of(agreementId, nonce, byteBuf);
@@ -185,7 +185,7 @@ class PFSArmHandlerTest {
             when(agreement.getSessionPair()).thenReturn(sessionPair);
             when(crypto.decrypt(any(), any(), any(), any())).thenReturn(ByteBufUtil.getBytes(byteBuf));
 
-            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, t -> System.currentTimeMillis(), PFSArmHandler.State.LONG_TIME);
+            final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, PFSArmHandler.State.LONG_TIME);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ArmHeader msg = ArmHeader.of(agreementId, nonce, byteBuf);
