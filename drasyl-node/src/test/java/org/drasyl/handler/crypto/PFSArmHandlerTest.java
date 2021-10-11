@@ -29,7 +29,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.LongTimeEncryptionEvent;
 import org.drasyl.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.util.ConcurrentReference;
@@ -141,11 +140,14 @@ class PFSArmHandlerTest {
             when(currentAgreement.computeOnCondition(any(), any())).thenReturn(Optional.empty());
             when(session.getCurrentInactiveAgreement()).thenReturn(currentInactiveAgreement);
             when(currentInactiveAgreement.computeOnCondition(any(), any())).thenReturn(Optional.of(pendingAgreement));
+            when(currentInactiveAgreement.computeIfAbsent(any())).thenReturn(pendingAgreement);
+            when(pendingAgreement.getKeyPair().getPublicKey()).thenReturn(IdentityTestUtil.ID_1.getKeyAgreementPublicKey());
 
             when(session.getLongTimeAgreement()).thenReturn(agreement);
             when(agreement.getAgreementId()).thenReturn(agreementId);
             when(agreement.getSessionPair()).thenReturn(sessionPair);
             when(crypto.decrypt(any(), any(), any(), any())).thenReturn(ByteBufUtil.getBytes(byteBuf));
+            when(crypto.encrypt(any(), any(), any(), any())).thenReturn(new byte[0]);
 
             final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, PFSArmHandler.State.LONG_TIME);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -178,12 +180,15 @@ class PFSArmHandlerTest {
             when(currentAgreement.computeOnCondition(any(), any())).thenReturn(Optional.empty());
             when(session.getCurrentInactiveAgreement()).thenReturn(currentInactiveAgreement);
             when(currentInactiveAgreement.computeOnCondition(any(), any())).thenReturn(Optional.of(pendingAgreement));
+            when(currentInactiveAgreement.computeIfAbsent(any())).thenReturn(pendingAgreement);
+            when(pendingAgreement.getKeyPair().getPublicKey()).thenReturn(IdentityTestUtil.ID_1.getKeyAgreementPublicKey());
 
             when(session.getLongTimeAgreement()).thenReturn(agreement);
 
             when(session.getInitializedAgreements().get(any(AgreementId.class))).thenReturn(agreement);
             when(agreement.getSessionPair()).thenReturn(sessionPair);
             when(crypto.decrypt(any(), any(), any(), any())).thenReturn(ByteBufUtil.getBytes(byteBuf));
+            when(crypto.encrypt(any(), any(), any(), any())).thenReturn(new byte[0]);
 
             final PFSArmHandler handler = new PFSArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session, System::currentTimeMillis, sessionRetryInterval, PFSArmHandler.State.LONG_TIME);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -242,7 +247,6 @@ class PFSArmHandlerTest {
                 final AcknowledgementMessage ack = AcknowledgementMessage.of(AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), keyExchangeMessage.getSessionKey()));
                 channel.writeInbound(handler.arm(agreementSenderLongTime, ack.toByteBuf()));
 
-                assertThat(channel.readEvent(), instanceOf(LongTimeEncryptionEvent.class));
                 assertThat(channel.readEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }
             finally {
