@@ -73,17 +73,14 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void initChannel(final DrasylChannel ch) throws Exception {
         node.channels.add(ch);
 
-        idleStage(ch);
+        firstStage(ch);
         chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);
-        nodeEventStage(ch);
+        lastStage(ch);
     }
 
-    /**
-     * This stage closes inactive channels (to free up memory).
-     */
-    protected void idleStage(final DrasylChannel ch) {
+    protected void firstStage(final DrasylChannel ch) {
         final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
             ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
@@ -148,7 +145,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     /**
      * This stage emits {@link org.drasyl.event.Event}s to {@link #node}.
      */
-    protected void nodeEventStage(final DrasylChannel ch) {
+    protected void lastStage(final DrasylChannel ch) {
         ch.pipeline().addLast(new NodeEventHandler(node));
     }
 
