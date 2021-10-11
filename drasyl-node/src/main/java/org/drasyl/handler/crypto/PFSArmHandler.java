@@ -78,11 +78,6 @@ public class PFSArmHandler extends AbstractArmHandler {
     }
 
     @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        LOG.error("PFSArmHandler added to channel `{}` from parent `{}`", ctx.channel()::id, ctx.channel().parent()::id);
-    }
-
-    @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final ByteBuf msg,
                           final List<Object> out) throws Exception {
