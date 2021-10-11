@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.cli.CliException;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.logging.Logger;
@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
 
 /**
  * Generate and output new Identity in JSON format.

@@ -23,14 +23,14 @@ package org.drasyl.cli.command.perf;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
-import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.event.Event;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -46,8 +46,8 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.behaviour.Behaviors.same;
 import static org.drasyl.cli.command.perf.message.TestResults.MICROSECONDS;
+import static org.drasyl.node.behaviour.Behaviors.same;
 
 /**
  * Represents the receiving node in a performance test.

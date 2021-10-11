@@ -22,8 +22,11 @@
 package org.drasyl;
 
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
+import org.drasyl.node.event.Event;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;

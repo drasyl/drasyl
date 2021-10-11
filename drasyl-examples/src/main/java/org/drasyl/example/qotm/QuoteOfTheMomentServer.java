@@ -21,12 +21,12 @@
  */
 package org.drasyl.example.qotm;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.MessageEvent;
 import org.drasyl.util.RandomUtil;
 
 import java.nio.file.Path;

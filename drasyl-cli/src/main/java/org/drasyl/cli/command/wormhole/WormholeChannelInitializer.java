@@ -21,14 +21,14 @@
  */
 package org.drasyl.cli.command.wormhole;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylNodeChannelInitializer;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.channel.DrasylNodeChannelInitializer;
 
 class WormholeChannelInitializer extends DrasylNodeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT_MILLIS = 250;

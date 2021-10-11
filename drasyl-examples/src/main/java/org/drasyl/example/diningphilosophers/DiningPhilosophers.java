@@ -21,8 +21,8 @@
  */
 package org.drasyl.example.diningphilosophers;
 
-import org.drasyl.DrasylException;
 import org.drasyl.example.diningphilosophers.Philosopher.Think;
+import org.drasyl.node.DrasylException;
 
 import java.util.ArrayList;
 import java.util.List;

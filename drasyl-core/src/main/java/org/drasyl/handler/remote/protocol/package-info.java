@@ -20,6 +20,6 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * The protocol used for communication with remote nodes.
+ * The protocol used for communication with remote peers.
  */
 package org.drasyl.handler.remote.protocol;

@@ -25,17 +25,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
-import org.drasyl.event.PeerDirectEvent;
-import org.drasyl.event.PeerEvent;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.peer.Endpoint;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.PeerEndpoint;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.MessageEvent;
+import org.drasyl.node.event.NodeOfflineEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.node.event.PeerDirectEvent;
+import org.drasyl.node.event.PeerEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -151,7 +153,7 @@ class DrasylNodeIT {
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
@@ -172,7 +174,7 @@ class DrasylNodeIT {
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteMessageMtu(MESSAGE_MTU)
@@ -512,7 +514,7 @@ class DrasylNodeIT {
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
-                        .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
+                        .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)

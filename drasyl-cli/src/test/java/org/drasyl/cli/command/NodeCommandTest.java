@@ -22,8 +22,8 @@
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylNode;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

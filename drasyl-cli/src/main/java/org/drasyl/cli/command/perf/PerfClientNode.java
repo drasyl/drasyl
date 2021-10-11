@@ -27,27 +27,27 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.BehavioralDrasylNode;
-import org.drasyl.behaviour.Behaviors;
 import org.drasyl.cli.command.perf.message.Ping;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
-import org.drasyl.event.Event;
-import org.drasyl.event.InboundExceptionEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
-import org.drasyl.event.PeerDirectEvent;
-import org.drasyl.event.PeerEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.BehavioralDrasylNode;
+import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.InboundExceptionEvent;
+import org.drasyl.node.event.NodeNormalTerminationEvent;
+import org.drasyl.node.event.NodeOnlineEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.node.event.PeerDirectEvent;
+import org.drasyl.node.event.PeerEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -62,8 +62,8 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.behaviour.Behaviors.ignore;
-import static org.drasyl.behaviour.Behaviors.same;
+import static org.drasyl.node.behaviour.Behaviors.ignore;
+import static org.drasyl.node.behaviour.Behaviors.same;
 
 /**
  * Connects to a {@link PerfServerNode} and performs a connection test.

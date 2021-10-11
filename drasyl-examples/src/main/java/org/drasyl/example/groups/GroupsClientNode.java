@@ -21,19 +21,19 @@
  */
 package org.drasyl.example.groups;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
-import org.drasyl.handler.plugin.groups.client.GroupUri;
-import org.drasyl.handler.plugin.groups.client.GroupsClientConfig;
-import org.drasyl.handler.plugin.groups.client.GroupsClientPlugin;
-import org.drasyl.handler.plugin.groups.client.event.GroupEvent;
-import org.drasyl.handler.plugin.groups.client.event.GroupJoinedEvent;
-import org.drasyl.handler.plugin.groups.client.event.GroupMemberJoinedEvent;
-import org.drasyl.handler.plugin.groups.client.event.GroupMemberLeftEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.plugin.groups.client.GroupUri;
+import org.drasyl.node.plugin.groups.client.GroupsClientConfig;
+import org.drasyl.node.plugin.groups.client.GroupsClientPlugin;
+import org.drasyl.node.plugin.groups.client.event.GroupEvent;
+import org.drasyl.node.plugin.groups.client.event.GroupJoinedEvent;
+import org.drasyl.node.plugin.groups.client.event.GroupMemberJoinedEvent;
+import org.drasyl.node.plugin.groups.client.event.GroupMemberLeftEvent;
 
 import java.nio.file.Path;
 import java.util.HashSet;

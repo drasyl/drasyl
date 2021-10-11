@@ -21,20 +21,20 @@
  */
 package test.util;
 
-import org.drasyl.DrasylConfig;
+import org.drasyl.node.DrasylConfig;
 
 import static java.util.stream.Collectors.toSet;
-import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
-import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
-import static org.drasyl.DrasylConfig.IDENTITY_SECRET_KEY;
-import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
-import static org.drasyl.DrasylConfig.NETWORK_ID;
-import static org.drasyl.DrasylConfig.REMOTE_BIND_HOST;
-import static org.drasyl.DrasylConfig.REMOTE_BIND_PORT;
-import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
-import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
-import static org.drasyl.DrasylConfig.REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED;
-import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
+import static org.drasyl.node.DrasylConfig.IDENTITY_PROOF_OF_WORK;
+import static org.drasyl.node.DrasylConfig.IDENTITY_PUBLIC_KEY;
+import static org.drasyl.node.DrasylConfig.IDENTITY_SECRET_KEY;
+import static org.drasyl.node.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.node.DrasylConfig.NETWORK_ID;
+import static org.drasyl.node.DrasylConfig.REMOTE_BIND_HOST;
+import static org.drasyl.node.DrasylConfig.REMOTE_BIND_PORT;
+import static org.drasyl.node.DrasylConfig.REMOTE_EXPOSE_ENABLED;
+import static org.drasyl.node.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
+import static org.drasyl.node.DrasylConfig.REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED;
+import static org.drasyl.node.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
 
 public final class DrasylConfigRenderer {
     private DrasylConfigRenderer() {

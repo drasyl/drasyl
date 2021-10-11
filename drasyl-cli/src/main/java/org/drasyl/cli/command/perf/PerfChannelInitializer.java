@@ -21,12 +21,12 @@
  */
 package org.drasyl.cli.command.perf;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylNodeChannelInitializer;
 import org.drasyl.cli.command.perf.message.PerfMessage;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.channel.DrasylNodeChannelInitializer;
 
 class PerfChannelInitializer extends DrasylNodeChannelInitializer {
     public PerfChannelInitializer(final DrasylNode node,

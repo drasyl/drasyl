@@ -21,14 +21,14 @@
  */
 package org.drasyl.example.diningphilosophers;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.BehavioralDrasylNode;
-import org.drasyl.behaviour.Behaviors;
-import org.drasyl.event.Event;
 import org.drasyl.example.diningphilosophers.Fork.Take;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.BehavioralDrasylNode;
+import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.event.Event;
 
 import java.nio.file.Path;
 import java.time.Duration;

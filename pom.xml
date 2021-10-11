@@ -630,5 +630,55 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>api</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <sourceFileExcludes>
+                                <exclude>**/example/**/*.java</exclude>
+                                <exclude>**/org/drasyl/cli/**/*.java</exclude>
+                                <exclude>**/org/drasyl/test/**/*.java</exclude>
+                            </sourceFileExcludes>
+                            <doctitle>drasyl API Reference (${project.version})</doctitle>
+                            <windowtitle>drasyl API Reference (${project.version})</windowtitle>
+                            <groups>
+                                <group>
+                                    <title>Central interface for all I/O operations</title>
+                                    <packages>org.drasyl.channel*</packages>
+                                </group>
+                                <group>
+                                    <title>Reusable I/O event interceptors</title>
+                                    <packages>org.drasyl.handler*</packages>
+                                </group>
+                                <group>
+                                    <title>Utils</title>
+                                    <packages>org.drasyl.util*</packages>
+                                </group>
+                                <group>
+                                    <title>Plugins</title>
+                                    <packages>org.drasyl.plugin*</packages>
+                                </group>
+                                <group>
+                                    <title>Node</title>
+                                    <packages>org.drasyl.node*</packages>
+                                </group>
+                            </groups>
+                            <locale>en_US</locale>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

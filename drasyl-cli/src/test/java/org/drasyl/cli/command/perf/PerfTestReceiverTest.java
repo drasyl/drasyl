@@ -22,16 +22,16 @@
 package org.drasyl.cli.command.perf;
 
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.DrasylNode;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.DeferredBehavior;
 import org.drasyl.cli.command.perf.PerfTestReceiver.CheckTestStatus;
 import org.drasyl.cli.command.perf.PerfTestReceiver.ResultsReplied;
 import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.DeferredBehavior;
+import org.drasyl.node.event.MessageEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

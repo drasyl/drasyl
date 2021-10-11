@@ -24,18 +24,18 @@ package org.drasyl.cli.command.wormhole;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.group.ChannelGroup;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.BehavioralDrasylNode;
-import org.drasyl.behaviour.Behaviors;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.BehavioralDrasylNode;
+import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.NodeNormalTerminationEvent;
+import org.drasyl.node.event.NodeOfflineEvent;
+import org.drasyl.node.event.NodeOnlineEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -45,8 +45,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.behaviour.Behaviors.ignore;
-import static org.drasyl.behaviour.Behaviors.same;
+import static org.drasyl.node.behaviour.Behaviors.ignore;
+import static org.drasyl.node.behaviour.Behaviors.same;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })

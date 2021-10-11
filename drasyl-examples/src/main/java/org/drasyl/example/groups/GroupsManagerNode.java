@@ -21,15 +21,15 @@
  */
 package org.drasyl.example.groups;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.handler.plugin.groups.manager.GroupsManagerConfig;
-import org.drasyl.handler.plugin.groups.manager.GroupsManagerPlugin;
-import org.drasyl.handler.plugin.groups.manager.data.Group;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.NodeOnlineEvent;
+import org.drasyl.node.plugin.groups.manager.GroupsManagerConfig;
+import org.drasyl.node.plugin.groups.manager.GroupsManagerPlugin;
+import org.drasyl.node.plugin.groups.manager.data.Group;
 
 import java.nio.file.Path;
 import java.util.Map;

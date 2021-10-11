@@ -21,10 +21,10 @@
  */
 package org.drasyl.cli.command;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.EmbeddedNode;
-import org.drasyl.peer.Endpoint;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.PeerEndpoint;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -116,7 +116,7 @@ class PerfCommandIT {
                 .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
                 .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
                 .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
@@ -151,7 +151,7 @@ class PerfCommandIT {
                 .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
                 .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
                 .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)

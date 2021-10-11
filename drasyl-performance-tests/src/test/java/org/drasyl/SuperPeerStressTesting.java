@@ -25,11 +25,14 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
-import org.drasyl.peer.Endpoint;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.PeerEndpoint;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.identity.IdentityManager;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -51,7 +54,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
 
     public static void main(final String[] args) throws DrasylException, IOException {
         final DrasylConfig baseConfig = DrasylConfig.newBuilder()
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org")))
+                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org")))
                 .remoteEnabled(false)
                 .build();
 

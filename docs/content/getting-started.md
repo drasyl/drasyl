@@ -50,10 +50,15 @@ Next, you can create your own drasyl node by implementing [`DrasylNode`](https:/
 
 This class contains the following methods that are now relevant for you:
 
-* [`send(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)): allows your application to send arbitrary messages to other drasyl nodes.
-* [`onEvent(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.event.Event)): allows your application to react to certain events (e.g. process received messages, connection to the network established/lost). This method must be implemented.
-* [`start()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()): starts the node, which will then automatically connect to the drasyl network.
-* [`shutdown()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()): disconnects from the drasyl network and shuts down the node.
+* [`send(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)):
+  allows your application to send arbitrary messages to other drasyl nodes.
+* [`onEvent(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.node.event.Event)):
+  allows your application to react to certain events (e.g. process received messages, connection to
+  the network established/lost). This method must be implemented.
+* [`start()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()):
+  starts the node, which will then automatically connect to the drasyl network.
+* [`shutdown()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()):
+  disconnects from the drasyl network and shuts down the node.
  
 Here you can see a minimal working example of a node that forwards all received events to `System.out`:
 ```java

@@ -22,15 +22,15 @@
 package org.drasyl.test;
 
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.annotation.NonNull;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.NodeNormalTerminationEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.util.RandomUtil;
 
 import java.io.IOException;

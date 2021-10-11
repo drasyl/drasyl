@@ -27,7 +27,11 @@ DrasylConfig config = DrasylConfig.newBuilder()
     .build();
 ```
 
-The resulting [`DrasylConfig`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html) object can now be passed to the [`DrasylNode` constructor](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.DrasylConfig)).
+The
+resulting [`DrasylConfig`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html)
+object can now be passed to
+the [`DrasylNode` constructor](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig))
+.
 
 ### Use `application.conf` file
 

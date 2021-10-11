@@ -23,9 +23,10 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
 import org.drasyl.identity.Identity;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

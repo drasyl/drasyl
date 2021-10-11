@@ -21,23 +21,23 @@
  */
 package org.drasyl.example.chat;
 
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
-import org.drasyl.behaviour.Behavior;
-import org.drasyl.behaviour.BehavioralDrasylNode;
-import org.drasyl.behaviour.Behaviors;
-import org.drasyl.event.Event;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
-import org.drasyl.event.NodeUnrecoverableErrorEvent;
-import org.drasyl.event.NodeUpEvent;
-import org.drasyl.event.PeerDirectEvent;
-import org.drasyl.event.PeerEvent;
-import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
+import org.drasyl.node.DrasylNode;
+import org.drasyl.node.behaviour.Behavior;
+import org.drasyl.node.behaviour.BehavioralDrasylNode;
+import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.NodeDownEvent;
+import org.drasyl.node.event.NodeNormalTerminationEvent;
+import org.drasyl.node.event.NodeOfflineEvent;
+import org.drasyl.node.event.NodeOnlineEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.node.event.PeerDirectEvent;
+import org.drasyl.node.event.PeerEvent;
+import org.drasyl.node.event.PeerRelayEvent;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -144,7 +144,7 @@ public class ChatCli {
             }
 
             /**
-             * Reaction to a {@link org.drasyl.event.MessageEvent}.
+             * Reaction to a {@link org.drasyl.node.event.MessageEvent}.
              */
             private Behavior messageEvent(final IdentityPublicKey sender, final String payload) {
                 addBeforePrompt("From " + sender + ": " + payload);

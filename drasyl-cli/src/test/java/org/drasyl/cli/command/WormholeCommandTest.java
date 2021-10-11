@@ -23,10 +23,10 @@ package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
+import org.drasyl.node.DrasylConfig;
+import org.drasyl.node.DrasylException;
 import org.drasyl.util.ThrowingBiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;

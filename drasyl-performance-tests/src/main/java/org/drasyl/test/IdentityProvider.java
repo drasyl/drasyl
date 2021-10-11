@@ -22,7 +22,7 @@
 package org.drasyl.test;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.node.JSONUtil.JACKSON_READER;
 
 @SuppressWarnings("unused")
 class IdentityProvider {
