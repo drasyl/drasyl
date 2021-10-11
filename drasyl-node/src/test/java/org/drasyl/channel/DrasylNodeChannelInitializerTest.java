@@ -59,8 +59,8 @@ class DrasylNodeChannelInitializerTest {
             when(config.isRemoteMessageArmApplicationEnabled()).thenReturn(true);
             when(config.getRemoteMessageArmApplicationAgreementMaxCount()).thenReturn(100);
             when(ctx.channel()).thenReturn(channel);
-            when(channel.localAddress0()).thenReturn(ID_1);
-            when(channel.remoteAddress0()).thenReturn(ID_2.getIdentityPublicKey());
+            when(channel.localAddress()).thenReturn(ID_1);
+            when(channel.remoteAddress()).thenReturn(ID_2.getIdentityPublicKey());
 
             final ChannelInitializer<DrasylChannel> handler = new DrasylNodeChannelInitializer(config, node);
             handler.channelRegistered(ctx);
