@@ -236,7 +236,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
 
             // perform next write
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> currentWrite);
-            ctx.writeAndFlush(currentWrite.duplicate()).addListener(future -> {
+            ctx.writeAndFlush(currentWrite.retainedDuplicate()).addListener(future -> {
                 if (!future.isSuccess()) {
                     //noinspection unchecked
                     LOG.warn("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
