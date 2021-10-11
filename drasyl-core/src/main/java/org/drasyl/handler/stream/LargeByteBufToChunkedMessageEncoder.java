@@ -27,6 +27,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.stream.ChunkedStream;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -39,6 +41,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * This handler should be used together with {@link io.netty.handler.stream.ChunkedWriteHandler}.
  */
 public class LargeByteBufToChunkedMessageEncoder extends MessageToMessageEncoder<ByteBuf> {
+    private static final Logger LOG = LoggerFactory.getLogger(LargeByteBufToChunkedMessageEncoder.class);
     private final int maxChunkLength;
     private final int maxContentLength;
 
@@ -62,6 +65,7 @@ public class LargeByteBufToChunkedMessageEncoder extends MessageToMessageEncoder
             throw new EncoderException("ByteBuf has a size of " + contentLength + " bytes and is too large. The max. allowed size is " + maxContentLength + " bytes. ByteBuf dropped.");
         }
         else {
+            LOG.trace("ByteBuf has a size of {} bytes and is therefore split into chunks of max. {} bytes.", contentLength, maxChunkLength);
             out.add(new ChunkedMessageInput(new ChunkedStream(new ByteBufInputStream(msg.retain(), true), maxChunkLength)));
         }
     }
