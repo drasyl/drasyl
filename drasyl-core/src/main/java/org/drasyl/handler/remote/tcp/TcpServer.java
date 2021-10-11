@@ -258,6 +258,12 @@ public class TcpServer extends ChannelDuplexHandler {
                 nettyCtx.close();
             }
         }
+
+        @Override
+        public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
+            LOG.debug("Close TCP connection to `{}` due to an exception: ", ctx.channel()::remoteAddress, () -> cause);
+            ctx.close();
+        }
     }
 
     /**
