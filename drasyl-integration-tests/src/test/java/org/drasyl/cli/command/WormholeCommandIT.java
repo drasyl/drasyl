@@ -83,6 +83,7 @@ class WormholeCommandIT {
                 .remoteSuperPeerEnabled(false)
                 .intraVmDiscoveryEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
                 .remoteTcpFallbackEnabled(false)
                 .build();
@@ -121,6 +122,7 @@ class WormholeCommandIT {
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
                 .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)
@@ -158,6 +160,7 @@ class WormholeCommandIT {
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
                 .remoteTcpFallbackEnabled(false)
                 .intraVmDiscoveryEnabled(false)

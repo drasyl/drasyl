@@ -68,6 +68,8 @@ class PluginsIT {
                 .remoteSuperPeerEnabled(false)
                 .remoteBindPort(0)
                 .remoteTcpFallbackEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
+                .remoteLocalHostDiscoveryEnabled(false)
                 .build();
 
         node = new EmbeddedNode(config);

@@ -24,15 +24,16 @@ package test.util;
 import org.drasyl.DrasylConfig;
 
 import static java.util.stream.Collectors.toSet;
-import static org.drasyl.DrasylConfig.IDENTITY_SECRET_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
+import static org.drasyl.DrasylConfig.IDENTITY_SECRET_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.NETWORK_ID;
 import static org.drasyl.DrasylConfig.REMOTE_BIND_HOST;
 import static org.drasyl.DrasylConfig.REMOTE_BIND_PORT;
 import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_LOCAL_HOST_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINTS;
 
 public final class DrasylConfigRenderer {
@@ -56,6 +57,7 @@ public final class DrasylConfigRenderer {
         builder.append(REMOTE_BIND_PORT + " = ").append(config.getRemoteBindPort()).append("\n");
         builder.append(REMOTE_SUPER_PEER_ENDPOINTS + " = [\"").append(String.join("\", \"", config.getRemoteSuperPeerEndpoints().stream().map(Object::toString).collect(toSet()))).append("\"]\n");
         builder.append(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED + " = ").append(config.isRemoteLocalHostDiscoveryEnabled()).append("\n");
+        builder.append(REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED + " = ").append(config.isRemoteLocalNetworkDiscoveryEnabled()).append("\n");
         builder.append(REMOTE_EXPOSE_ENABLED + " = ").append(config.isRemoteExposeEnabled()).append("\n");
         builder.append(INTRA_VM_DISCOVERY_ENABLED + " = ").append(config.isIntraVmDiscoveryEnabled()).append("\n");
         return builder.toString();
