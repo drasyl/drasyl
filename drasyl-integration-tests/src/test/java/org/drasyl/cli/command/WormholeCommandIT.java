@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import test.util.IdentityTestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,6 +54,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static test.util.DrasylConfigRenderer.renderConfig;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
+import static test.util.IdentityTestUtil.ID_3;
 
 class WormholeCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeCommandIT.class);
@@ -72,9 +74,9 @@ class WormholeCommandIT {
         // create super peer
         final DrasylConfig superPeerConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                .identityProofOfWork(ID_1.getProofOfWork())
+                .identityPublicKey(ID_1.getIdentityPublicKey())
+                .identitySecretKey(ID_1.getIdentitySecretKey())
                 .remoteExposeEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
@@ -112,10 +114,10 @@ class WormholeCommandIT {
         // create sending node
         final DrasylConfig senderConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .identityProofOfWork(ID_2.getProofOfWork())
+                .identityPublicKey(ID_2.getIdentityPublicKey())
+                .identitySecretKey(ID_2.getIdentitySecretKey())
+                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
@@ -149,10 +151,10 @@ class WormholeCommandIT {
         // create receiving node
         final DrasylConfig receiverConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .identityProofOfWork(ID_3.getProofOfWork())
+                .identityPublicKey(ID_3.getIdentityPublicKey())
+                .identitySecretKey(ID_3.getIdentitySecretKey())
+                .remoteSuperPeerEndpoints(Set.of(Endpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)

@@ -152,6 +152,7 @@ public class WormholeCommand extends AbstractCommand {
 
             // wait for node to finish
             node.doneFuture().get();
+            node.shutdown().join();
         }
         catch (final DrasylException e) {
             throw new CliException("Unable to create/run node", e);
@@ -160,6 +161,8 @@ public class WormholeCommand extends AbstractCommand {
             throw new CliException("Unable to parse options", e);
         }
         catch (final InterruptedException e) {
+            LOG.info("Shutdown wormhole node.");
+            node.shutdown().join();
             Thread.currentThread().interrupt();
         }
         catch (final ExecutionException e) {
