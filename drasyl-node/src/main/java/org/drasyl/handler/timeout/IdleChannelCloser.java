@@ -33,12 +33,12 @@ import org.drasyl.util.logging.LoggerFactory;
 public class IdleChannelCloser extends IdleStateHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IdleChannelCloser.class);
 
-    public IdleChannelCloser(int inactivityTimeout) {
+    public IdleChannelCloser(final int inactivityTimeout) {
         super(0, 0, inactivityTimeout);
     }
 
     @Override
-    protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
+    protected void channelIdle(final ChannelHandlerContext ctx, final IdleStateEvent evt) {
         LOG.debug("Close channel to {} due to inactivity.", ctx.channel()::remoteAddress);
         ctx.close();
     }
