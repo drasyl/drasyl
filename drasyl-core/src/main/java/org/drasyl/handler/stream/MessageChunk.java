@@ -50,7 +50,7 @@ public class MessageChunk extends DefaultByteBufHolder {
     @Override
     public String toString() {
         return "MessageChunk{" +
-                "msgId" + msgId +
+                "msgId=" + msgId +
                 ", chunkNo=" + chunkNo +
                 ", content=" + content() +
                 '}';

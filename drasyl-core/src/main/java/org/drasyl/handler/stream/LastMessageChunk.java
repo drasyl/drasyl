@@ -42,7 +42,7 @@ public class LastMessageChunk extends MessageChunk {
     @Override
     public String toString() {
         return "LastMessageChunk{" +
-                "msgId" + msgId() +
+                "msgId=" + msgId() +
                 ", chunkNo=" + chunkNo() +
                 ", content=" + content() +
                 '}';
