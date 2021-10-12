@@ -38,8 +38,9 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -116,10 +117,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     void clearRoutes(final ChannelHandlerContext ctx) {
-        new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
-            peers.remove(publicKey);
-        }));
+        peers.forEach(((publicKey, peer) -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path))));
         peers.clear();
     }
 
@@ -129,13 +127,18 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void removeStalePeers(final ChannelHandlerContext ctx) {
-        new HashMap<>(peers).forEach(((publicKey, peer) -> {
+        for (final Iterator<Entry<IdentityPublicKey, Peer>> it = peers.entrySet().iterator();
+             it.hasNext(); ) {
+            final Entry<IdentityPublicKey, Peer> entry = it.next();
+            final IdentityPublicKey publicKey = entry.getKey();
+            final Peer peer = entry.getValue();
+
             if (peer.isStale()) {
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
-                peers.remove(publicKey);
+                it.remove();
             }
-        }));
+        }
     }
 
     @Override
