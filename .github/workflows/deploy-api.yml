@@ -1,0 +1,62 @@
+name: Build and Deploy Java API
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: 11
+          distribution: 'adopt'
+      - name: Cache Maven packages
+        uses: actions/cache@v2.1.6
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build with Maven
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true -Papi -DskipTests package javadoc:aggregate
+      - name: Publish artifact
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: Java API
+          path: target/site/apidocs/*
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout https://github.com/drasyl-overlay/api.drasyl.org
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+          repository: drasyl-overlay/api.drasyl.org
+      - name: Get branch name
+        id: vars
+        run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}
+      - name: Delete old Java API
+        run: rm -rf ${{ steps.vars.outputs.short_ref }}
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Java API
+          path: ${{ steps.vars.outputs.short_ref }}
+      - uses: stefanzweifel/git-auto-commit-action@v4.12.0
+        with:
+          commit_message: Update Java API for branch ${{ steps.vars.outputs.short_ref }}
+          commit_user_name: drasyl-bot
+          commit_user_email: ${{ secrets.DRASYL_BOT_EMAIL }}
+          commit_author: drasyl-bot <${{ secrets.DRASYL_BOT_EMAIL }}>
