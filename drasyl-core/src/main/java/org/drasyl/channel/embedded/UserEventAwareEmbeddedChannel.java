@@ -29,6 +29,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.ArrayUtil;
 
+import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
@@ -36,8 +37,22 @@ import java.util.Queue;
  * A {@link EmbeddedChannel} that record all received user events.
  */
 public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
-    public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
+    private static final SocketAddress LOCAL_ADDRESS = new EmbeddedSocketAddress();
+    private final SocketAddress localAddress;
+
+    public UserEventAwareEmbeddedChannel(final SocketAddress localAddress,
+                                         final ChannelHandler... handlers) {
         super(ArrayUtil.concat(handlers, new ChannelHandler[]{ new UserEventAcceptor() }));
+        this.localAddress = localAddress;
+    }
+
+    public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
+        this(LOCAL_ADDRESS, handlers);
+    }
+
+    @Override
+    protected SocketAddress localAddress0() {
+        return isActive() ? localAddress : null;
     }
 
     /**

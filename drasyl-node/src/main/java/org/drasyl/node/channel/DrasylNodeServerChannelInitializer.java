@@ -164,7 +164,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private void gatekeeperStage(final DrasylServerChannel ch) {
         // filter out inbound messages with invalid proof of work or other network id
         ch.pipeline().addLast(new OtherNetworkFilter(config.getNetworkId()));
-        ch.pipeline().addLast(new InvalidProofOfWorkFilter(identity.getAddress()));
+        ch.pipeline().addLast(new InvalidProofOfWorkFilter());
 
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmProtocolEnabled()) {
@@ -178,7 +178,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         // fully read unarmed messages (local network discovery)
         ch.pipeline().addLast(new UnarmedMessageDecoder());
 
-        ch.pipeline().addLast(new RateLimiter(identity.getAddress()));
+        ch.pipeline().addLast(new RateLimiter());
 
         // outbound message guard
         ch.pipeline().addLast(new HopCountGuard(config.getRemoteMessageHopLimit()));
@@ -228,8 +228,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.isRemoteLocalHostDiscoveryWatchEnabled(),
                         config.getRemoteBindHost(),
                         config.getRemoteLocalHostDiscoveryLeaseTime(),
-                        config.getRemoteLocalHostDiscoveryPath(),
-                        identity.getAddress()
+                        config.getRemoteLocalHostDiscoveryPath()
                 ));
             }
 
@@ -241,7 +240,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
-            ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId(), identity.getAddress()));
+            ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId()));
         }
     }
 

@@ -29,7 +29,6 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
@@ -56,26 +55,23 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
     private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache;
-    private final DrasylAddress myAddress;
 
     RateLimiter(final Supplier<Long> timeProvider,
-                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache,
-                final DrasylAddress myAddress) {
+                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache) {
         super(false);
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
-        this.myAddress = requireNonNull(myAddress);
     }
 
-    public RateLimiter(final DrasylAddress myAddress) {
+    public RateLimiter() {
         this(
                 System::currentTimeMillis,
                 CacheBuilder.newBuilder()
                         .maximumSize(CACHE_SIZE)
                         .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(DISCOVERY_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
                         .<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long>build()
-                        .asMap(),
-                myAddress);
+                        .asMap()
+        );
     }
 
     @Override
@@ -88,7 +84,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
                                 final AddressedMessage<FullReadMessage<?>, ?> msg) {
         final FullReadMessage<?> fullReadMsg = msg.message();
 
-        if (!myAddress.equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
+        if (!ctx.channel().localAddress().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
             ctx.fireChannelRead(msg);
         }
         else {

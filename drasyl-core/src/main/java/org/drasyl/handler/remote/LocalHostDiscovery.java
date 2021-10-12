@@ -29,7 +29,6 @@ import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -81,7 +80,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     private final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
     private final Map<IdentityPublicKey, SocketAddress> routes;
-    private final DrasylAddress myAddress;
     private final boolean watchEnabled;
     private final InetAddress bindHost;
     private final Duration leaseTime;
@@ -95,12 +93,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                               final boolean watchEnabled,
                               final InetAddress bindHost,
                               final Duration leaseTime,
-                              final Path path, final DrasylAddress myAddress) {
+                              final Path path) {
         this(
                 file -> LocalHostPeerInformation.of(file).addresses(),
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
                 new HashMap<>(),
-                myAddress,
                 watchEnabled,
                 bindHost,
                 leaseTime,
@@ -114,7 +111,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
                        final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
                        final Map<IdentityPublicKey, SocketAddress> routes,
-                       final DrasylAddress myAddress,
                        final boolean watchEnabled,
                        final InetAddress bindHost,
                        final Duration leaseTime,
@@ -125,7 +121,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this.fileReader = requireNonNull(fileReader);
         this.fileWriter = requireNonNull(fileWriter);
         this.routes = requireNonNull(routes);
-        this.myAddress = requireNonNull(myAddress);
         this.watchEnabled = watchEnabled;
         this.bindHost = bindHost;
         this.leaseTime = leaseTime;
@@ -175,7 +170,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(myAddress.toString() + FILE_SUFFIX), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX), port);
         }
         LOG.debug("Local Host Discovery started.");
     }
@@ -199,7 +194,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
         }
 
-        final Path filePath = discoveryPath().resolve(myAddress.toString() + FILE_SUFFIX);
+        final Path filePath = discoveryPath().resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX);
         try {
             Files.deleteIfExists(filePath);
         }
@@ -285,7 +280,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath();
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        final String ownPublicKeyString = myAddress.toString();
+        final String ownPublicKeyString = ctx.channel().localAddress().toString();
         final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {

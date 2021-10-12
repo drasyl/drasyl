@@ -24,6 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
@@ -57,8 +58,8 @@ class InvalidProofOfWorkFilterTest {
     @Test
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), correspondingId, System.currentTimeMillis());
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -72,8 +73,8 @@ class InvalidProofOfWorkFilterTest {
     @Test
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), correspondingId, System.currentTimeMillis());
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_2.getAddress());
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
@@ -90,7 +91,7 @@ class InvalidProofOfWorkFilterTest {
     @Test
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
         final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, correspondingId, System.currentTimeMillis());
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter(IdentityTestUtil.ID_3.getAddress());
+        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));

@@ -33,10 +33,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -48,20 +44,9 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
-    private final ReadWriteLock lock;
-    private final DrasylAddress myAddress;
     private final int myNetworkId;
 
-    public IntraVmDiscovery(final int myNetworkId,
-                            final DrasylAddress myAddress) {
-        this(new ReentrantReadWriteLock(true), myAddress, myNetworkId);
-    }
-
-    IntraVmDiscovery(final ReadWriteLock lock,
-                     final DrasylAddress myAddress,
-                     final int myNetworkId) {
-        this.lock = requireNonNull(lock);
-        this.myAddress = requireNonNull(myAddress);
+    public IntraVmDiscovery(final int myNetworkId) {
         this.myNetworkId = myNetworkId;
     }
 
@@ -80,7 +65,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             }
             else {
                 LOG.debug("Send message `{}` via Intra VM Discovery.", ((AddressedMessage<?, ?>) msg)::message);
-                discoveree.fireChannelRead(((AddressedMessage<?, ?>) msg).route(myAddress));
+                discoveree.fireChannelRead(((AddressedMessage<?, ?>) msg).route(ctx.channel().localAddress()));
                 promise.setSuccess();
             }
         }
@@ -89,66 +74,54 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         }
     }
 
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        startDiscovery(ctx);
+
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        stopDiscovery(ctx);
+
+        ctx.fireChannelInactive();
+    }
+
     private void startDiscovery(final ChannelHandlerContext myCtx) {
-        try {
-            lock.writeLock().lock();
-            LOG.debug("Start Intra VM Discovery...");
+        LOG.debug("Start Intra VM Discovery...");
 
-            // store peer information
-            discoveries.forEach((key, otherCtx) -> {
-                final Integer networkId = key.first();
-                final DrasylAddress publicKey = key.second();
-                if (myNetworkId == networkId) {
-                    otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(myAddress, null, path));
-                    myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path));
-                }
-            });
-            discoveries.put(
-                    Pair.of(myNetworkId, myAddress),
-                    myCtx
-            );
+        // store peer information
+        discoveries.forEach((key, otherCtx) -> {
+            final Integer networkId = key.first();
+            final DrasylAddress publicKey = key.second();
+            if (myNetworkId == networkId) {
+                otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path));
+                myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path));
+            }
+        });
+        discoveries.put(
+                Pair.of(myNetworkId, (DrasylAddress) myCtx.channel().localAddress()),
+                myCtx
+        );
 
-            LOG.debug("Intra VM Discovery started.");
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        LOG.debug("Intra VM Discovery started.");
     }
 
     private void stopDiscovery(final ChannelHandlerContext myCtx) {
-        try {
-            lock.writeLock().lock();
-            LOG.debug("Stop Intra VM Discovery...");
+        LOG.debug("Stop Intra VM Discovery...");
 
-            // remove peer information
-            discoveries.remove(Pair.of(myNetworkId, myAddress));
-            discoveries.forEach((key, otherCtx) -> {
-                final Integer otherNetworkId = key.first();
-                final DrasylAddress publicKey = key.second();
-                if (myNetworkId == otherNetworkId) {
-                    otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(myAddress, path));
-                    myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
-                }
-            });
+        // remove peer information
+        discoveries.remove(Pair.of(myNetworkId, myCtx.channel().localAddress()));
+        discoveries.forEach((key, otherCtx) -> {
+            final Integer otherNetworkId = key.first();
+            final DrasylAddress publicKey = key.second();
+            if (myNetworkId == otherNetworkId) {
+                otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of((DrasylAddress) myCtx.channel().localAddress(), path));
+                myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
+            }
+        });
 
-            LOG.debug("Intra VM Discovery stopped.");
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        startDiscovery(ctx);
-
-        super.channelActive(ctx);
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        stopDiscovery(ctx);
-
-        super.channelInactive(ctx);
+        LOG.debug("Intra VM Discovery stopped.");
     }
 }

@@ -21,25 +21,22 @@
  */
 package org.drasyl.handler.remote;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
-import org.drasyl.identity.DrasylAddress;
 
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
 @SuppressWarnings("java:S110")
+@Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<AddressedMessage<RemoteMessage, ?>> {
-    private final DrasylAddress myAddress;
-
-    public InvalidProofOfWorkFilter(final DrasylAddress myAddress) {
+    public InvalidProofOfWorkFilter() {
         super(false);
-        this.myAddress = requireNonNull(myAddress);
     }
 
     @Override
@@ -51,7 +48,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final AddressedMessage<RemoteMessage, ?> msg) throws InvalidProofOfWorkException {
         final RemoteMessage remoteMsg = msg.message();
-        final boolean validProofOfWork = !myAddress.equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
+        final boolean validProofOfWork = !ctx.channel().localAddress().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
         if (validProofOfWork) {
             ctx.fireChannelRead(msg);
         }

@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -37,7 +38,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -51,17 +51,15 @@ class IntraVmDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new HashMap<>();
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private ReadWriteLock lock;
-    private final int myAddress = 0;
+    private final int myNetworkId = 0;
 
     @Nested
     class StartDiscovery {
         @Test
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
-            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.pipeline().fireChannelActive();
 
@@ -79,8 +77,8 @@ class IntraVmDiscoveryTest {
         void shouldStopDiscoveryOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
-            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.pipeline().fireChannelInactive();
 
@@ -101,8 +99,8 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, recipient), ctx);
 
-            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(message, recipient));
 
@@ -117,8 +115,8 @@ class IntraVmDiscoveryTest {
         void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
-            final IntraVmDiscovery handler = new IntraVmDiscovery(lock, identity.getAddress(), myAddress);
-            final EmbeddedChannel pichanneleline = new EmbeddedChannel(handler);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final EmbeddedChannel pichanneleline = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 pichanneleline.writeAndFlush(new AddressedMessage<>(message, recipient));
 
