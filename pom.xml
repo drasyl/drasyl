@@ -607,5 +607,33 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>api</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>aggregate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <sourceFileExcludes>
+                                <exclude>**/example/**/*.java</exclude>
+                                <exclude>**/org/drasyl/cli/**/*.java</exclude>
+                                <exclude>**/org/drasyl/test/**/*.java</exclude>
+                            </sourceFileExcludes>
+                            <doctitle>drasyl API Reference (${project.version})</doctitle>
+                            <windowtitle>drasyl API Reference (${project.version})</windowtitle>
+                            <locale>en_US</locale>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>
