@@ -33,6 +33,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoop;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -56,12 +57,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private ChannelGroup channels;
-    private volatile Identity localAddress; // NOSONAR
+    private volatile DrasylAddress localAddress; // NOSONAR
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
                         final ChannelGroup channels,
-                        final Identity localAddress) {
+                        final DrasylAddress localAddress) {
         this.state = requireNonNull(state);
         this.channels = channels;
         this.localAddress = localAddress;
@@ -78,17 +79,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    protected Identity localAddress0() {
+    protected DrasylAddress localAddress0() {
         return localAddress;
     }
 
     @Override
     protected void doBind(final SocketAddress localAddress) {
-        if (!(localAddress instanceof Identity)) {
-            throw new IllegalArgumentException("Unsupported address type! Expected `" + Identity.class.getSimpleName() + "`, but got `" + localAddress.getClass().getSimpleName() + "`.");
+        if (!(localAddress instanceof DrasylAddress)) {
+            throw new IllegalArgumentException("Unsupported address type! Expected `" + DrasylAddress.class.getSimpleName() + "`, but got `" + localAddress.getClass().getSimpleName() + "`.");
         }
 
-        this.localAddress = (Identity) localAddress;
+        this.localAddress = (DrasylAddress) localAddress;
         state = State.ACTIVE;
     }
 

@@ -27,7 +27,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
-import org.drasyl.identity.Identity;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -115,7 +114,7 @@ public class UpnpIgdPortMapping implements PortMapping {
                       final Runnable onFailure) {
         this.onFailure = onFailure;
         this.port = port;
-        description = "drasyl" + ((Identity) ctx.channel().localAddress()).getAddress().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
+        description = "drasyl" + ctx.channel().localAddress().toString().substring(0, PUBLIC_KEY_DESCRIPTION_LENGTH);
         mapPort(ctx);
     }
 

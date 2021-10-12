@@ -97,7 +97,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         node.channels = new DefaultChannelGroup(ch.eventLoop());
-        ch.pipeline().addLast(new NodeLifecycleHeadHandler());
+        ch.pipeline().addLast(new NodeLifecycleHeadHandler(identity));
 
         if (config.isRemoteEnabled()) {
             ipStage(ch);
@@ -295,7 +295,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             ctx.fireChannelInactive();
 
             if (!errorOccurred) {
-                userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+                userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(node.identity())));
                 LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
             }
         }
@@ -325,7 +325,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                                     final Throwable e) {
             if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
                 LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
-                userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of((Identity) ctx.channel().localAddress()), e));
+                userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(node.identity()), e));
                 ctx.close();
             }
             else if (e instanceof EncoderException) {
@@ -344,18 +344,23 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private static class NodeLifecycleHeadHandler extends ChannelInboundHandlerAdapter {
         private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHeadHandler.class);
+        private final Identity identity;
+
+        public NodeLifecycleHeadHandler(final Identity identity) {
+            this.identity = requireNonNull(identity);
+        }
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
-            ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+            ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(identity)));
             ctx.fireChannelActive();
         }
 
         @Override
         public void channelInactive(final ChannelHandlerContext ctx) {
             LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
-            ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of((Identity) ctx.channel().localAddress())));
+            ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of(identity)));
             ctx.fireChannelInactive();
         }
     }

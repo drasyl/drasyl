@@ -35,7 +35,6 @@ import org.drasyl.handler.stream.MessageChunkDecoder;
 import org.drasyl.handler.stream.MessageChunkEncoder;
 import org.drasyl.handler.stream.MessageChunksBuffer;
 import org.drasyl.handler.stream.ReassembledMessageDecoder;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -119,7 +118,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                         config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementRetryInterval(),
                         config.getRemoteMessageArmApplicationAgreementMaxCount(),
-                        (Identity) ch.localAddress(),
+                        node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()
                 ));
             }
@@ -128,7 +127,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                         Crypto.INSTANCE,
                         config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementMaxCount(),
-                        (Identity) ch.localAddress(),
+                        node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()
                 ));
             }

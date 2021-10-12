@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.group.ChannelGroup;
 import org.drasyl.channel.DrasylServerChannel.State;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.DrasylAddress;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +45,7 @@ class DrasylServerChannelTest {
     class DoBind {
         @Test
         void shouldSetLocalAddressAndActivateChannel(@Mock final ChannelGroup channels,
-                                                     @Mock final Identity localAddress) {
+                                                     @Mock final DrasylAddress localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, channels, null);
 
             channel.doBind(localAddress);
@@ -67,7 +67,7 @@ class DrasylServerChannelTest {
     class DoClose {
         @Test
         void shouldRemoveLocalAddressAndCloseChannelAndCloseAllChildChannels(@Mock final ChannelGroup channels,
-                                                                             @Mock final Identity localAddress) {
+                                                                             @Mock final DrasylAddress localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, channels, localAddress);
 
             channel.doClose();

@@ -165,7 +165,7 @@ public abstract class DrasylNode {
 
         bootstrap = new ServerBootstrap()
                 .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                .localAddress(identity)
+                .localAddress(identity.getAddress())
                 .channel(DrasylServerChannel.class)
                 .handler(new DrasylNodeServerChannelInitializer(config, identity, this))
                 .childHandler(new DrasylNodeChannelInitializer(config, this));

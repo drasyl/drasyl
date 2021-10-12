@@ -53,6 +53,7 @@ class DrasylNodeChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
             node.channels = mock(DefaultChannelGroup.class);
+            when(node.identity()).thenReturn(ID_1);
             when(config.getRemoteMessageMtu()).thenReturn(1_000);
             when(config.getRemoteMessageMaxContentLength()).thenReturn(2_000);
             when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(ofSeconds(10));
