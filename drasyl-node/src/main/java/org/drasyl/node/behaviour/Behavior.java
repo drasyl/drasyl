@@ -21,7 +21,7 @@
  */
 package org.drasyl.node.behaviour;
 
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
@@ -201,8 +201,8 @@ public class Behavior {
          */
         @SuppressWarnings("unchecked")
         public <M> BehaviorBuilder onMessage(final Class<M> messageType,
-                                             final BiPredicate<IdentityPublicKey, M> test,
-                                             final BiFunction<IdentityPublicKey, M, Behavior> handler) {
+                                             final BiPredicate<DrasylAddress, M> test,
+                                             final BiFunction<DrasylAddress, M, Behavior> handler) {
             return onEvent(
                     MessageEvent.class,
                     event -> messageType.isAssignableFrom(event.getPayload().getClass()) && test.test(event.getSender(), (M) event.getPayload()),
@@ -219,7 +219,7 @@ public class Behavior {
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
         public <M> BehaviorBuilder onMessage(final Class<M> messageType,
-                                             final BiFunction<IdentityPublicKey, M, Behavior> handler) {
+                                             final BiFunction<DrasylAddress, M, Behavior> handler) {
             return onMessage(messageType, (sender, message) -> true, handler);
         }
 
@@ -232,7 +232,7 @@ public class Behavior {
          * @param handler action to apply when the event matches
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
-        public <M> BehaviorBuilder onMessageEquals(final IdentityPublicKey sender,
+        public <M> BehaviorBuilder onMessageEquals(final DrasylAddress sender,
                                                    final M payload,
                                                    final Supplier<Behavior> handler) {
             return onMessage(
@@ -250,7 +250,7 @@ public class Behavior {
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
         @SuppressWarnings("unchecked")
-        public <M> BehaviorBuilder onAnyMessage(final BiFunction<IdentityPublicKey, M, Behavior> handler) {
+        public <M> BehaviorBuilder onAnyMessage(final BiFunction<DrasylAddress, M, Behavior> handler) {
             return onEvent(
                     MessageEvent.class,
                     event -> handler.apply(event.getSender(), (M) event.getPayload())
@@ -269,7 +269,7 @@ public class Behavior {
          * @return a new {@link BehaviorBuilder} with the specified handling appended
          */
         public <M> BehaviorBuilder messageAdapter(final Class<M> messageType,
-                                                  final BiFunction<IdentityPublicKey, M, Object> adapter) {
+                                                  final BiFunction<DrasylAddress, M, Object> adapter) {
             return onMessage(messageType, (mySender, myMessage) -> new DeferredBehavior(node -> {
                 node.onEvent(MessageEvent.of(mySender, adapter.apply(mySender, myMessage)));
                 return same();

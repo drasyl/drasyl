@@ -25,6 +25,7 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
@@ -45,9 +46,11 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     /**
      * Returns the {@link IdentityPublicKey} of the message recipient. If the message has no
      * recipient (e.g. because it is a multicast message) {@code null} is returned.
+     *
+     * @return
      */
     @Nullable
-    public abstract IdentityPublicKey getRecipient();
+    public abstract DrasylAddress getRecipient();
 
     /**
      * Returns the time this message has been sent.
@@ -97,8 +100,8 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
                                       final boolean isArmed,
                                       final int networkId,
                                       final Nonce nonce,
-                                      final IdentityPublicKey recipient,
-                                      final IdentityPublicKey sender,
+                                      final DrasylAddress recipient,
+                                      final DrasylAddress sender,
                                       final ProofOfWork proofOfWork,
                                       final long time,
                                       final long joinTime) {
@@ -127,7 +130,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      *                              {@code null}
      */
     public static DiscoveryMessage of(final int networkId,
-                                      final IdentityPublicKey recipient,
+                                      final DrasylAddress recipient,
                                       final IdentityPublicKey sender,
                                       final ProofOfWork proofOfWork,
                                       final long childrenTime) {
@@ -179,8 +182,8 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     static DiscoveryMessage of(final HopCount hopCount,
                                final int networkId,
                                final Nonce nonce,
-                               final IdentityPublicKey recipient,
-                               final IdentityPublicKey sender,
+                               final DrasylAddress recipient,
+                               final DrasylAddress sender,
                                final ProofOfWork proofOfWork,
                                final ByteBuf body) throws InvalidMessageFormatException {
         if (body.readableBytes() < LENGTH) {

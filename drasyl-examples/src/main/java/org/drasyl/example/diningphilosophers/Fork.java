@@ -21,6 +21,7 @@
  */
 package org.drasyl.example.diningphilosophers;
 
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -57,7 +58,7 @@ public class Fork extends BehavioralDrasylNode {
                 .build();
     }
 
-    private Behavior takenBy(final IdentityPublicKey philosopher) {
+    private Behavior takenBy(final DrasylAddress philosopher) {
         return newBehaviorBuilder()
                 .onMessage(Take.class, (sender, message) -> {
                     send(sender, new Busy(identity().getIdentityPublicKey()));

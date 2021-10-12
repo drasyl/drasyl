@@ -29,7 +29,7 @@ import io.netty.buffer.Unpooled;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
 
@@ -46,7 +46,7 @@ import java.io.IOException;
 @SuppressWarnings("java:S118")
 public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     @Nullable
-    public abstract IdentityPublicKey getRecipient();
+    public abstract DrasylAddress getRecipient();
 
     @Override
     public void close() {
@@ -269,8 +269,8 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                                             final boolean isArmed,
                                             final int networkId,
                                             final Nonce nonce,
-                                            final IdentityPublicKey recipient,
-                                            final IdentityPublicKey sender,
+                                            final DrasylAddress recipient,
+                                            final DrasylAddress sender,
                                             final ProofOfWork proofOfWork,
                                             final ByteBuf bytes) {
         return new AutoValue_UnarmedProtocolMessage(

@@ -31,6 +31,7 @@ import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Assertions;
@@ -71,7 +72,7 @@ class LocalNetworkDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Map<IdentityPublicKey, LocalNetworkDiscovery.Peer> peers;
+    private Map<DrasylAddress, LocalNetworkDiscovery.Peer> peers;
     @Mock
     private Future<?> pingDisposable;
     private final Duration pingInterval = ofSeconds(1);
@@ -135,7 +136,7 @@ class LocalNetworkDiscoveryTest {
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(peer.isStale()).thenReturn(true);
 
-            final HashMap<IdentityPublicKey, LocalNetworkDiscovery.Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<DrasylAddress, LocalNetworkDiscovery.Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             handler.doHeartbeat(ctx);
 
@@ -164,7 +165,7 @@ class LocalNetworkDiscoveryTest {
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock final LocalNetworkDiscovery.Peer peer,
                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final HashMap<IdentityPublicKey, LocalNetworkDiscovery.Peer> peers = new HashMap<>(Map.of(publicKey, peer));
+            final HashMap<DrasylAddress, LocalNetworkDiscovery.Peer> peers = new HashMap<>(Map.of(publicKey, peer));
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             handler.clearRoutes(ctx);
 

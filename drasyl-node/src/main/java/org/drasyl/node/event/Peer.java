@@ -34,16 +34,27 @@ import org.drasyl.identity.DrasylAddress;
 @SuppressWarnings("java:S118")
 public abstract class Peer {
     /**
+     * Returns the peer's address.
+     *
+     * @return the peer's address.
+     */
+    public abstract DrasylAddress getAddress();
+
+    /**
      * Returns the peer's public key.
      *
      * @return the peer's public key.
+     * @deprecated Use {@link #getAddress()} instead.
      */
-    public abstract DrasylAddress getIdentityPublicKey();
+    @Deprecated(since = "0.6.0", forRemoval = true)
+    public DrasylAddress getIdentityPublicKey() {
+        return getAddress();
+    }
 
     /**
-     * @throws NullPointerException if {@code publicKey} is {@code null}
+     * @throws NullPointerException if {@code address} is {@code null}
      */
-    public static Peer of(final DrasylAddress publicKey) {
-        return new AutoValue_Peer(publicKey);
+    public static Peer of(final DrasylAddress address) {
+        return new AutoValue_Peer(address);
     }
 }

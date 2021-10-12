@@ -96,7 +96,7 @@ class InvalidProofOfWorkFilterTest {
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
 
-            verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
+            verify(proofOfWork, never()).isValid((IdentityPublicKey) message.getSender(), POW_DIFFICULTY);
         }
         finally {
             channel.releaseInbound();

@@ -27,6 +27,7 @@ import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.Chil
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
@@ -67,11 +68,11 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         final InetSocketAddress childrenBInetAddress = new InetSocketAddress(22528);
         when(childrenPeerA.inetAddress()).thenReturn(childrenAInetAddress);
         when(childrenPeerB.inetAddress()).thenReturn(childrenBInetAddress);
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKeyA, childrenPeerA, publicKeyB, childrenPeerB));
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKeyA, childrenPeerA, publicKeyB, childrenPeerB));
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
-        final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache = new HashMap<>();
+        final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache = new HashMap<>();
 
         final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, null, uniteAttemptsCache);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);

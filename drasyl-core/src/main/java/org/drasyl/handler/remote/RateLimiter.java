@@ -29,7 +29,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -54,10 +54,10 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
     private static final long DISCOVERY_RATE_LIMIT = 100; // 1 discovery msg per 100ms
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
-    private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache;
+    private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache;
 
     RateLimiter(final Supplier<Long> timeProvider,
-                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache) {
+                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache) {
         super(false);
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
@@ -69,7 +69,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
                 CacheBuilder.newBuilder()
                         .maximumSize(CACHE_SIZE)
                         .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(DISCOVERY_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
-                        .<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long>build()
+                        .<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long>build()
                         .asMap()
         );
     }
@@ -109,10 +109,10 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
         }
     }
 
-    private boolean rateLimitMessage(final IdentityPublicKey sender,
+    private boolean rateLimitMessage(final DrasylAddress sender,
                                      final Class<? extends FullReadMessage<?>> type,
                                      final long rateLimit) {
-        final Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey> key = Pair.of(type, sender);
+        final Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress> key = Pair.of(type, sender);
         final Long lastReceived = cache.get(key);
         final long now = timeProvider.get();
         if (lastReceived == null || (now - lastReceived) >= rateLimit) {

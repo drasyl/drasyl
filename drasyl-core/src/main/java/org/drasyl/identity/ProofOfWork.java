@@ -51,24 +51,24 @@ public abstract class ProofOfWork {
     /**
      * Checks if the current proof of work is valid for given public key and difficulty.
      *
-     * @param publicKey  the public key
+     * @param address    the public key
      * @param difficulty the difficulty
      * @return if valid {@code true}, otherwise {@code false}
      * @throws IllegalArgumentException if the difficulty is not in between [0,64]
      */
-    public boolean isValid(final Key publicKey, final byte difficulty) {
-        requireNonNull(publicKey);
+    public boolean isValid(final DrasylAddress address, final byte difficulty) {
+        requireNonNull(address);
         if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
 
-        final String hash = generateHash(publicKey, getNonce());
+        final String hash = generateHash(address, getNonce());
 
         return hash.startsWith("0".repeat(difficulty));
     }
 
-    private static String generateHash(final Key publicKey, final int nonce) {
-        return Hashing.sha256Hex(publicKey.toString() + nonce);
+    private static String generateHash(final DrasylAddress address, final int nonce) {
+        return Hashing.sha256Hex(address.toString() + nonce);
     }
 
     public static byte getDifficulty(final ProofOfWork proofOfWork,
@@ -100,12 +100,12 @@ public abstract class ProofOfWork {
         return of(Integer.MIN_VALUE);
     }
 
-    public static ProofOfWork generateProofOfWork(final Key publicKey,
+    public static ProofOfWork generateProofOfWork(final DrasylAddress address,
                                                   final byte difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
         ProofOfWork pow = ProofOfWork.of();
 
-        while (!pow.isValid(publicKey, difficulty)) {
+        while (!pow.isValid(address, difficulty)) {
             pow = pow.incNonce();
         }
 

@@ -23,7 +23,7 @@ package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 import java.net.InetSocketAddress;
 
@@ -37,9 +37,9 @@ public abstract class AddPathAndChildrenEvent implements PathEvent {
     @Nullable
     public abstract InetSocketAddress getInetAddress();
 
-    public static AddPathAndChildrenEvent of(final IdentityPublicKey publicKey,
+    public static AddPathAndChildrenEvent of(final DrasylAddress address,
                                              final InetSocketAddress inetAddress,
                                              final Object path) {
-        return new AutoValue_AddPathAndChildrenEvent(publicKey, path, inetAddress);
+        return new AutoValue_AddPathAndChildrenEvent(address, path, inetAddress);
     }
 }

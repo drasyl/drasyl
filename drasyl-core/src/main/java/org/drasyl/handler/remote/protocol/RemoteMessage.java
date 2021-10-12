@@ -22,7 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 
 /**
@@ -57,11 +57,11 @@ public interface RemoteMessage {
 
     int getNetworkId();
 
-    IdentityPublicKey getSender();
+    DrasylAddress getSender();
 
     ProofOfWork getProofOfWork();
 
-    IdentityPublicKey getRecipient();
+    DrasylAddress getRecipient();
 
     HopCount getHopCount();
 

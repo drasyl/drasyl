@@ -27,7 +27,7 @@ import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRejection;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.behaviour.Behavior;
 import org.drasyl.node.behaviour.Behaviors;
 import org.drasyl.node.event.Event;
@@ -60,20 +60,20 @@ public class PerfTestReceiver {
     private static final Logger LOG = LoggerFactory.getLogger(PerfTestReceiver.class);
     private final SessionRequest session;
     private final EventLoopGroup eventLoopGroup;
-    private final IdentityPublicKey sender;
+    private final DrasylAddress sender;
     private final PrintStream printStream;
-    private final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
+    private final BiFunction<DrasylAddress, Object, CompletionStage<Void>> sendMethod;
     private final Supplier<Behavior> successBehavior;
     private final Function<Exception, Behavior> failureBehavior;
     private final LongSupplier currentTimeSupplier;
     private TestResults intervalResults;
 
     @SuppressWarnings("java:S107")
-    PerfTestReceiver(final IdentityPublicKey sender,
+    PerfTestReceiver(final DrasylAddress sender,
                      final SessionRequest session,
                      final EventLoopGroup eventLoopGroup,
                      final PrintStream printStream,
-                     final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
+                     final BiFunction<DrasylAddress, Object, CompletionStage<Void>> sendMethod,
                      final Supplier<Behavior> successBehavior,
                      final Function<Exception, Behavior> failureBehavior,
                      final LongSupplier currentTimeSupplier) {
@@ -87,11 +87,11 @@ public class PerfTestReceiver {
         this.currentTimeSupplier = requireNonNull(currentTimeSupplier);
     }
 
-    public PerfTestReceiver(final IdentityPublicKey sender,
+    public PerfTestReceiver(final DrasylAddress sender,
                             final SessionRequest session,
                             final EventLoopGroup eventLoopGroup,
                             final PrintStream printStream,
-                            final BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod,
+                            final BiFunction<DrasylAddress, Object, CompletionStage<Void>> sendMethod,
                             final Supplier<Behavior> successBehavior,
                             final Function<Exception, Behavior> failureBehavior) {
         this(sender, session, eventLoopGroup, printStream, sendMethod, successBehavior, failureBehavior, System::nanoTime);
@@ -189,7 +189,7 @@ public class PerfTestReceiver {
         }
     }
 
-    private Behavior replyResults(final IdentityPublicKey sender,
+    private Behavior replyResults(final DrasylAddress sender,
                                   final TestResults totalResults) {
         return Behaviors.withScheduler(eventScheduler -> {
             // reply our results

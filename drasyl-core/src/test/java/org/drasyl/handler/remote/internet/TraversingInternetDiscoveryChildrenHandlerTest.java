@@ -31,6 +31,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +74,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(uniteMsg.getSender()).thenReturn(superPeerPublicKey);
         when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
-        final Map<IdentityPublicKey, TraversingPeer> traversingPeers = new HashMap<>();
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final AddressedMessage<UniteMessage, InetSocketAddress> msg = new AddressedMessage<>(uniteMsg, superPeerInetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);
@@ -84,7 +85,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final AddressedMessage<DiscoveryMessage, InetSocketAddress> discoveryMsg = channel.readOutbound();
         assertThat(discoveryMsg.message(), instanceOf(DiscoveryMessage.class));
         assertSame(uniteMsg.getSocketAddress(), discoveryMsg.address());
-        assertTrue(traversingPeers.containsKey(uniteMsg.getPublicKey()));
+        assertTrue(traversingPeers.containsKey(uniteMsg.getAddress()));
     }
 
     @Test
@@ -96,7 +97,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(discoveryMsg.getSender()).thenReturn(traversingPeerPublicKey);
         when(discoveryMsg.getTime()).thenReturn(40L);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
-        final Map<IdentityPublicKey, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);
@@ -116,7 +117,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
-        final Map<IdentityPublicKey, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final AddressedMessage<AcknowledgementMessage, InetSocketAddress> msg = new AddressedMessage<>(acknowledgementMsg, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);
@@ -136,7 +137,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(myPublicKey);
         when(applicationMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
-        final Map<IdentityPublicKey, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);
@@ -156,7 +157,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
         when(traversingPeer.inetAddress()).thenReturn(traversingPeerInetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
-        final Map<IdentityPublicKey, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final AddressedMessage<ApplicationMessage, IdentityPublicKey> msg = new AddressedMessage<>(applicationMsg, publicKey);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);

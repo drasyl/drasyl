@@ -23,7 +23,7 @@ package org.drasyl.node.event;
 
 import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 import java.util.Objects;
 
@@ -40,7 +40,7 @@ public abstract class MessageEvent implements Event {
      *
      * @return the message's sender
      */
-    public abstract IdentityPublicKey getSender();
+    public abstract DrasylAddress getSender();
 
     /**
      * Returns the message's payload.
@@ -70,7 +70,7 @@ public abstract class MessageEvent implements Event {
      * @param payload content of the message
      * @throws NullPointerException if {@code sender} is {@code null}
      */
-    public static MessageEvent of(final IdentityPublicKey sender, final Object payload) {
+    public static MessageEvent of(final DrasylAddress sender, final Object payload) {
         return new AutoValue_MessageEvent(sender, payload);
     }
 }

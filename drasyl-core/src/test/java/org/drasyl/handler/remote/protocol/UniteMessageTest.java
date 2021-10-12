@@ -68,7 +68,7 @@ public class UniteMessageTest {
             final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, new InetSocketAddress(22527));
 
             assertEquals(1, unite.getNetworkId());
-            assertEquals(publicKey, unite.getPublicKey());
+            assertEquals(publicKey, unite.getAddress());
         }
     }
 }

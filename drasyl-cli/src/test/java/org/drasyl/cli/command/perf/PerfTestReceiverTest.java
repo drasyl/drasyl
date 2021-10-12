@@ -27,6 +27,7 @@ import org.drasyl.cli.command.perf.PerfTestReceiver.ResultsReplied;
 import org.drasyl.cli.command.perf.message.Probe;
 import org.drasyl.cli.command.perf.message.SessionRequest;
 import org.drasyl.cli.command.perf.message.TestResults;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.behaviour.Behavior;
@@ -68,7 +69,7 @@ class PerfTestReceiverTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
     @Mock
-    BiFunction<IdentityPublicKey, Object, CompletionStage<Void>> sendMethod;
+    BiFunction<DrasylAddress, Object, CompletionStage<Void>> sendMethod;
     @Mock
     Supplier<Behavior> successBehavior;
     @Mock

@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
@@ -88,8 +89,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                             final boolean isArmed,
                                             final int networkId,
                                             final Nonce nonce,
-                                            final IdentityPublicKey recipient,
-                                            final IdentityPublicKey sender,
+                                            final DrasylAddress recipient,
+                                            final DrasylAddress sender,
                                             final ProofOfWork proofOfWork,
                                             final Nonce correspondingId,
                                             final long time) {
@@ -118,7 +119,7 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
      *                              {@code correspondingId} is {@code null}
      */
     public static AcknowledgementMessage of(final int networkId,
-                                            final IdentityPublicKey recipient,
+                                            final DrasylAddress recipient,
                                             final IdentityPublicKey sender,
                                             final ProofOfWork proofOfWork,
                                             final Nonce correspondingId,
@@ -153,8 +154,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     static AcknowledgementMessage of(final HopCount hopCount,
                                      final int networkId,
                                      final Nonce nonce,
-                                     final IdentityPublicKey recipient,
-                                     final IdentityPublicKey sender,
+                                     final DrasylAddress recipient,
+                                     final DrasylAddress sender,
                                      final ProofOfWork proofOfWork,
                                      final ByteBuf body) throws InvalidMessageFormatException {
         if (body.readableBytes() < LENGTH) {

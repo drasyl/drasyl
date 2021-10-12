@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
@@ -57,9 +58,9 @@ public abstract class PublicHeader {
     public abstract Nonce getNonce();
 
     @Nullable
-    public abstract IdentityPublicKey getRecipient();
+    public abstract DrasylAddress getRecipient();
 
-    public abstract IdentityPublicKey getSender();
+    public abstract DrasylAddress getSender();
 
     public abstract ProofOfWork getProofOfWork();
 
@@ -67,8 +68,8 @@ public abstract class PublicHeader {
                                   final boolean isArmed,
                                   final int networkId,
                                   final Nonce nonce,
-                                  final IdentityPublicKey recipient,
-                                  final IdentityPublicKey sender,
+                                  final DrasylAddress recipient,
+                                  final DrasylAddress sender,
                                   final ProofOfWork proofOfWork) {
         return new AutoValue_PublicHeader(hopCount, isArmed, networkId, nonce, recipient, sender, proofOfWork);
     }

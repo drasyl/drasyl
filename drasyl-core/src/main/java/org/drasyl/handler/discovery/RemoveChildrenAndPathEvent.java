@@ -22,7 +22,7 @@
 package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 /**
  * Signals that {@link RemoveChildrenAndPathEvent#getAddress()} is no longer registered at us as a
@@ -31,8 +31,8 @@ import org.drasyl.identity.IdentityPublicKey;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class RemoveChildrenAndPathEvent implements PathEvent {
-    public static RemoveChildrenAndPathEvent of(final IdentityPublicKey publicKey,
+    public static RemoveChildrenAndPathEvent of(final DrasylAddress address,
                                                 final Object path) {
-        return new AutoValue_RemoveChildrenAndPathEvent(publicKey, path);
+        return new AutoValue_RemoveChildrenAndPathEvent(address, path);
     }
 }

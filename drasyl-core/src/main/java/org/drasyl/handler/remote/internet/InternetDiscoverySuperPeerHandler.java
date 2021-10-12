@@ -33,6 +33,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
@@ -64,7 +65,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private final LongSupplier currentTime;
     private final long pingIntervalMillis;
     private final long pingTimeoutMillis;
-    protected final Map<IdentityPublicKey, ChildrenPeer> childrenPeers;
+    protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
@@ -74,7 +75,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                       final LongSupplier currentTime,
                                       final long pingIntervalMillis,
                                       final long pingTimeoutMillis,
-                                      final Map<IdentityPublicKey, ChildrenPeer> childrenPeers,
+                                      final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                       final Future<?> stalePeerCheckDisposable) {
         this.myNetworkId = requireNonNull(myNetworkId);
         this.myPublicKey = requireNonNull(myPublicKey);
@@ -146,10 +147,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         if (isRoutableOutboundMessage(msg)) {
             // for one of my children -> route
             final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg = (AddressedMessage<ApplicationMessage, InetSocketAddress>) msg;
-            final IdentityPublicKey publicKey = addressedMsg.message().getRecipient();
-            final InetSocketAddress inetAddress = childrenPeers.get(publicKey).inetAddress();
+            final DrasylAddress address = addressedMsg.message().getRecipient();
+            final InetSocketAddress inetAddress = childrenPeers.get(address).inetAddress();
 
-            LOG.trace("Got ApplicationMessage for children peer `{}`. Route it to address `{}`.", publicKey, inetAddress);
+            LOG.trace("Got ApplicationMessage for children peer `{}`. Route it to address `{}`.", address, inetAddress);
             ctx.write(addressedMsg.route(inetAddress), promise);
         }
         else {
@@ -184,14 +185,14 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
         else {
             // for one of my children? -> try to relay
-            final IdentityPublicKey publicKey = addressedMsg.message().getRecipient();
-            final ChildrenPeer childrenPeer = childrenPeers.get(publicKey);
+            final DrasylAddress address = addressedMsg.message().getRecipient();
+            final ChildrenPeer childrenPeer = childrenPeers.get(address);
             if (childrenPeer != null) {
                 final InetSocketAddress inetAddress = childrenPeer.inetAddress();
                 relayMessage(ctx, addressedMsg, inetAddress);
             }
             else {
-                LOG.trace("Got RemoteMessage for unknown peer `{}`. Drop it.", publicKey);
+                LOG.trace("Got RemoteMessage for unknown peer `{}`. Drop it.", address);
                 addressedMsg.release();
             }
         }
@@ -230,16 +231,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     }
 
     void doStalePeerCheck(final ChannelHandlerContext ctx) {
-        for (final Iterator<Entry<IdentityPublicKey, ChildrenPeer>> it = childrenPeers.entrySet().iterator();
+        for (final Iterator<Entry<DrasylAddress, ChildrenPeer>> it = childrenPeers.entrySet().iterator();
              it.hasNext(); ) {
-            final Entry<IdentityPublicKey, ChildrenPeer> entry = it.next();
-            final IdentityPublicKey publicKey = entry.getKey();
+            final Entry<DrasylAddress, ChildrenPeer> entry = it.next();
+            final DrasylAddress address = entry.getKey();
             final ChildrenPeer childrenPeer = entry.getValue();
 
             if (childrenPeer.isStale()) {
-                LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", publicKey);
+                LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, PATH));
+                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH));
             }
         }
     }

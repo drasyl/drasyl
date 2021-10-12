@@ -22,7 +22,7 @@
 package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 /**
  * Signals that we are no longer registered at as a children at {@link
@@ -32,8 +32,8 @@ import org.drasyl.identity.IdentityPublicKey;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class RemoveSuperPeerAndPathEvent implements PathEvent {
-    public static RemoveSuperPeerAndPathEvent of(final IdentityPublicKey publicKey,
+    public static RemoveSuperPeerAndPathEvent of(final DrasylAddress addresss,
                                                  final Object path) {
-        return new AutoValue_RemoveSuperPeerAndPathEvent(publicKey, path);
+        return new AutoValue_RemoveSuperPeerAndPathEvent(addresss, path);
     }
 }

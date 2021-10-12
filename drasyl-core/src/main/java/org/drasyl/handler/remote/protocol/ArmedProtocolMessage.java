@@ -30,7 +30,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 
 import java.io.IOException;
@@ -216,8 +216,8 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     public static ArmedProtocolMessage of(final Nonce nonce,
                                           final HopCount hopCount,
                                           final int networkId,
-                                          final IdentityPublicKey recipient,
-                                          final IdentityPublicKey sender,
+                                          final DrasylAddress recipient,
+                                          final DrasylAddress sender,
                                           final ProofOfWork proofOfWork,
                                           final ByteBuf bytes) {
         return new AutoValue_ArmedProtocolMessage(

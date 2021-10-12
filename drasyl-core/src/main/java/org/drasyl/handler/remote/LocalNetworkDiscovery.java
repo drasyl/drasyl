@@ -30,6 +30,7 @@ import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
@@ -67,7 +68,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
 public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     private static final Object path = LocalNetworkDiscovery.class;
-    private final Map<IdentityPublicKey, Peer> peers;
+    private final Map<DrasylAddress, Peer> peers;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
     private final Duration pingInterval;
@@ -75,7 +76,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private final int networkId;
     private Future<?> scheduledPingFuture;
 
-    public LocalNetworkDiscovery(final Map<IdentityPublicKey, Peer> peers,
+    public LocalNetworkDiscovery(final Map<DrasylAddress, Peer> peers,
                                  final IdentityPublicKey myPublicKey,
                                  final ProofOfWork myProofOfWork,
                                  final Duration pingInterval,
@@ -127,10 +128,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void removeStalePeers(final ChannelHandlerContext ctx) {
-        for (final Iterator<Entry<IdentityPublicKey, Peer>> it = peers.entrySet().iterator();
+        for (final Iterator<Entry<DrasylAddress, Peer>> it = peers.entrySet().iterator();
              it.hasNext(); ) {
-            final Entry<IdentityPublicKey, Peer> entry = it.next();
-            final IdentityPublicKey publicKey = entry.getKey();
+            final Entry<DrasylAddress, Peer> entry = it.next();
+            final DrasylAddress publicKey = entry.getKey();
             final Peer peer = entry.getValue();
 
             if (peer.isStale()) {
@@ -163,7 +164,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                             final InetSocketAddress sender,
                             final RemoteMessage msg,
                             final CompletableFuture<Void> future) {
-        final IdentityPublicKey msgSender = msg.getSender();
+        final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeout));

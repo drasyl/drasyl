@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.protocol;
 import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 
 /**
@@ -38,7 +39,7 @@ public interface FullReadMessage<T extends FullReadMessage<?>> extends RemoteMes
      *
      * @return the {@link IdentityPublicKey} of the message recipient
      */
-    IdentityPublicKey getRecipient();
+    DrasylAddress getRecipient();
 
     /**
      * Returns this message with incremented hop count.

@@ -95,7 +95,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
     protected void encode(final ChannelHandlerContext ctx,
                           final AddressedMessage<FullReadMessage<?>, ?> msg,
                           final List<Object> out) throws Exception {
-        final SessionPair session = getOrComputeSession(msg.message().getRecipient());
+        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getRecipient());
         final ArmedProtocolMessage armedMessage = msg.message().arm(ctx.alloc().ioBuffer(), crypto, session);
         out.add(msg.replace(armedMessage));
         LOG.debug("Armed protocol msg: {}", armedMessage);
@@ -105,7 +105,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedMessage<ArmedProtocolMessage, ?> msg,
                           final List<Object> out) throws Exception {
-        final SessionPair session = getOrComputeSession(msg.message().getSender());
+        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getSender());
         final FullReadMessage<?> disarmedMessage = msg.message().disarm(crypto, session);
         out.add(msg.replace(disarmedMessage));
         LOG.debug("Disarmed protocol msg: {}", disarmedMessage);

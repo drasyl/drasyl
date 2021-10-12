@@ -30,6 +30,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
@@ -67,7 +68,7 @@ class InternetDiscoverySuperPeerHandlerTest {
     @Test
     void shouldCheckForStaleChidlrenOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                     @Mock final ChildrenPeer childrenPeer) {
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, null);
@@ -92,7 +93,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
                                                       @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(11L);
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>();
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(discoveryMsg.getTime()).thenReturn(10L);
         when(discoveryMsg.getSender()).thenReturn(publicKey);
         when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
@@ -115,7 +116,7 @@ class InternetDiscoverySuperPeerHandlerTest {
     void shouldPassThroughInboundApplicationMessageAddressedToMe(@Mock final IdentityPublicKey publicKey,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                  @Mock final InetSocketAddress inetAddress) {
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>();
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(applicationMsg.getRecipient()).thenReturn(myPublicKey);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
@@ -134,7 +135,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                   @Mock final InetSocketAddress inetAddress,
                                                                   @Mock final InetSocketAddress childrenInetAddress) {
         when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
@@ -151,7 +152,7 @@ class InternetDiscoverySuperPeerHandlerTest {
     @Test
     void shouldDropRoutableMessageAddressedToUknownPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                         @Mock final InetSocketAddress inetAddress) {
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = Map.of();
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = Map.of();
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, null);
@@ -169,7 +170,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                    @Mock final InetSocketAddress childrenInetAddress) {
         when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
-        final Map<IdentityPublicKey, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final AddressedMessage<ApplicationMessage, IdentityPublicKey> msg = new AddressedMessage<>(applicationMsg, publicKey);
 

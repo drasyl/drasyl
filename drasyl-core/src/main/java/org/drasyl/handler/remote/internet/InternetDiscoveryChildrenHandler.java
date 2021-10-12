@@ -33,6 +33,7 @@ import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
@@ -211,7 +212,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      * Make sure to call {@link Channel#flush()} by your own!
      */
     protected void writeDiscoveryMessage(final ChannelHandlerContext ctx,
-                                         final IdentityPublicKey publicKey,
+                                         final DrasylAddress publicKey,
                                          final InetSocketAddress inetAddress,
                                          final boolean isChildrenJoin) {
         final long childrenTime = isChildrenJoin ? currentTime.getAsLong() : 0;
@@ -242,7 +243,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private void handleAcknowledgementMessage(final ChannelHandlerContext ctx,
                                               final AcknowledgementMessage msg,
                                               final InetSocketAddress inetAddress) {
-        final IdentityPublicKey publicKey = msg.getSender();
+        final DrasylAddress publicKey = msg.getSender();
         LOG.trace("Got Acknowledgement ({}ms latency) from super peer `{}`.", () -> System.currentTimeMillis() - msg.getTime(), () -> publicKey);
 
         final long latency = currentTime.getAsLong() - msg.getTime();

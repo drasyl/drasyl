@@ -30,8 +30,8 @@ import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.handler.remote.protocol.UniteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +72,7 @@ class RateLimiterTest {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
         final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Nonce.randomNonce(), System.currentTimeMillis());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
@@ -96,7 +96,7 @@ class RateLimiterTest {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
         final DiscoveryMessage msg = DiscoveryMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), 0);
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
@@ -120,7 +120,7 @@ class RateLimiterTest {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
-        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
@@ -142,7 +142,7 @@ class RateLimiterTest {
                                                     @Mock final SocketAddress msgSender,
                                                     @Mock final Supplier<Long> timeProvider) {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
-        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
         final UniteMessage msg = UniteMessage.of(0, recipient.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
@@ -164,7 +164,7 @@ class RateLimiterTest {
                                                @Mock final SocketAddress msgSender,
                                                @Mock final Supplier<Long> timeProvider) {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
-        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, IdentityPublicKey>, Long> cache = new ConcurrentHashMap<>();
+        final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
         final ApplicationMessage msg = ApplicationMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Unpooled.buffer());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 

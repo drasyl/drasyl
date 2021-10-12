@@ -21,7 +21,7 @@
  */
 package org.drasyl.example.chat;
 
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
@@ -146,7 +146,7 @@ public class ChatCli {
             /**
              * Reaction to a {@link org.drasyl.node.event.MessageEvent}.
              */
-            private Behavior messageEvent(final IdentityPublicKey sender, final String payload) {
+            private Behavior messageEvent(final DrasylAddress sender, final String payload) {
                 addBeforePrompt("From " + sender + ": " + payload);
                 return Behaviors.same();
             }

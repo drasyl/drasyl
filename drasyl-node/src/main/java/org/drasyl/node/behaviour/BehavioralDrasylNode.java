@@ -107,7 +107,7 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
         }
 
         final Behavior finalResult = result;
-        logger.debug("[{}] old behavior={}; event={}; new behavior={}", identity()::getIdentityPublicKey, () -> behavior, () -> event, () -> finalResult);
+        logger.debug("[{}] old behavior={}; event={}; new behavior={}", identity()::getAddress, () -> behavior, () -> event, () -> finalResult);
 
         if (result == Behaviors.shutdown()) {
             shutdown();

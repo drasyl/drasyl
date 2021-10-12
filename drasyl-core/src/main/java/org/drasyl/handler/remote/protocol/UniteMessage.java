@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
@@ -50,14 +51,14 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
      *
      * @return the public key of the peer.
      */
-    public abstract IdentityPublicKey getPublicKey();
+    public abstract DrasylAddress getAddress();
 
     /**
      * Returns the ip address of the peer.
      *
      * @return the ip address of the peer.
      */
-    public abstract InetAddress getAddress();
+    public abstract InetAddress getInetAddress();
 
     /**
      * Returns the port of the peer.
@@ -67,12 +68,12 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     public abstract UnsignedShort getPort();
 
     public InetSocketAddress getSocketAddress() {
-        return new InetSocketAddress(getAddress(), getPort().getValue());
+        return new InetSocketAddress(getInetAddress(), getPort().getValue());
     }
 
     @Override
     public UniteMessage incrementHopCount() {
-        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getPublicKey(), getAddress(), getPort());
+        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getAddress(), getInetAddress(), getPort());
     }
 
     @Override
@@ -82,9 +83,9 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
-        out.writeBytes(getPublicKey().toByteArray())
+        out.writeBytes(getAddress().toByteArray())
                 .writeBytes(getPort().toBytes())
-                .writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(getAddress()));
+                .writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(getInetAddress()));
     }
 
     /**
@@ -97,12 +98,12 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
      * @param recipient   the public key of the recipient
      * @param sender      the public key of the sender
      * @param proofOfWork the proof of work of {@code sender}
-     * @param publicKey   the public key of the peer
-     * @param address     the ip address of the peer
+     * @param address     the public key of the peer
+     * @param inetAddress the ip address of the peer
      * @param port        the port of the peer
      * @throws NullPointerException     if {@code nonce},  {@code sender}, {@code proofOfWork},
-     *                                  {@code recipient}, {@code hopCount}, {@code publicKey}, or
-     *                                  {@code address} is {@code null}
+     *                                  {@code recipient}, {@code hopCount}, {@code address}, or
+     *                                  {@code inetAddress} is {@code null}
      * @throws IllegalArgumentException if {@code port} is invalid
      */
     @SuppressWarnings("java:S107")
@@ -110,11 +111,11 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                                   final boolean isArmed,
                                   final int networkId,
                                   final Nonce nonce,
-                                  final IdentityPublicKey recipient,
-                                  final IdentityPublicKey sender,
+                                  final DrasylAddress recipient,
+                                  final DrasylAddress sender,
                                   final ProofOfWork proofOfWork,
-                                  final IdentityPublicKey publicKey,
-                                  final InetAddress address,
+                                  final DrasylAddress address,
+                                  final InetAddress inetAddress,
                                   final UnsignedShort port) {
         if (port.getValue() == 0) {
             throw new IllegalArgumentException("invalid port");
@@ -128,8 +129,8 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                 hopCount,
                 isArmed,
                 recipient,
-                publicKey,
                 address,
+                inetAddress,
                 port
         );
     }
@@ -141,26 +142,27 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
      * @param recipient   the public key of the recipient
      * @param sender      the public key of the sender
      * @param proofOfWork the proof of work of {@code sender}
-     * @param publicKey   the public key of the peer
-     * @param address     the ip address and port of the peer
+     * @param address     the public key of the peer
+     * @param inetAddress the ip inetAddress and port of the peer
      * @throws NullPointerException     if {@code sender}, {@code proofOfWork}, {@code recipient},
-     *                                  {@code publicKey}, or {@code address.getAddress()} is {@code
-     *                                  null}
-     * @throws IllegalArgumentException if {@code address.getPort()} is invalid
+     *                                  {@code address}, or {@code inetAddress.getAddress()} is
+     *                                  {@code null}
+     * @throws IllegalArgumentException if {@code inetAddress.getPort()} is invalid
      */
     public static UniteMessage of(final int networkId,
-                                  final IdentityPublicKey recipient,
+                                  final DrasylAddress recipient,
                                   final IdentityPublicKey sender,
                                   final ProofOfWork proofOfWork,
-                                  final IdentityPublicKey publicKey,
-                                  final InetSocketAddress address) {
+                                  final DrasylAddress address,
+                                  final InetSocketAddress inetAddress) {
         return of(
                 HopCount.of(), false, networkId, Nonce.randomNonce(),
-                recipient, sender,
+                recipient,
+                sender,
                 proofOfWork,
-                publicKey,
-                address.getAddress(),
-                UnsignedShort.of(address.getPort())
+                address,
+                inetAddress.getAddress(),
+                UnsignedShort.of(inetAddress.getPort())
         );
     }
 
@@ -182,8 +184,8 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     static UniteMessage of(final HopCount hopCount,
                            final int networkId,
                            final Nonce nonce,
-                           final IdentityPublicKey recipient,
-                           final IdentityPublicKey sender,
+                           final DrasylAddress recipient,
+                           final DrasylAddress sender,
                            final ProofOfWork proofOfWork,
                            final ByteBuf body) throws InvalidMessageFormatException {
         if (body.readableBytes() < LENGTH) {

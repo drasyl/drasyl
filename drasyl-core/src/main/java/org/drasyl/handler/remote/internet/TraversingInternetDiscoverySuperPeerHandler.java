@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
@@ -49,7 +50,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscoverySuperPeerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoverySuperPeerHandler.class);
-    private final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache;
+    private final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")
     TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
@@ -58,9 +59,9 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                 final LongSupplier currentTime,
                                                 final long pingIntervalMillis,
                                                 final long pingTimeoutMillis,
-                                                final Map<IdentityPublicKey, ChildrenPeer> childrenPeers,
+                                                final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
-                                                final Map<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean> uniteAttemptsCache) {
+                                                final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache) {
         super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, childrenPeers, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
@@ -76,7 +77,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             uniteAttemptsCache = CacheBuilder.newBuilder()
                     .maximumSize(1_000)
                     .expireAfterWrite(uniteMinIntervalMillis, MILLISECONDS)
-                    .<Pair<IdentityPublicKey, IdentityPublicKey>, Boolean>build()
+                    .<Pair<DrasylAddress, DrasylAddress>, Boolean>build()
                     .asMap();
         }
         else {
@@ -90,20 +91,20 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                 final InetSocketAddress inetAddress) {
         super.relayMessage(ctx, msg, inetAddress);
 
-        final IdentityPublicKey senderKey = msg.message().getSender();
-        final IdentityPublicKey recipientKey = msg.message().getRecipient();
+        final DrasylAddress senderKey = msg.message().getSender();
+        final DrasylAddress recipientKey = msg.message().getRecipient();
         if (shouldInitiateRendezvous(senderKey, recipientKey)) {
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
     }
 
-    private boolean shouldInitiateRendezvous(final IdentityPublicKey sender,
-                                             final IdentityPublicKey recipient) {
+    private boolean shouldInitiateRendezvous(final DrasylAddress sender,
+                                             final DrasylAddress recipient) {
         if (uniteAttemptsCache == null) {
             return true;
         }
 
-        final Pair<IdentityPublicKey, IdentityPublicKey> key;
+        final Pair<DrasylAddress, DrasylAddress> key;
         if (sender.hashCode() > recipient.hashCode()) {
             key = Pair.of(sender, recipient);
         }
@@ -114,8 +115,8 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
     }
 
     private void initiateRendezvous(final ChannelHandlerContext ctx,
-                                    final IdentityPublicKey senderKey,
-                                    final IdentityPublicKey recipientKey) {
+                                    final DrasylAddress senderKey,
+                                    final DrasylAddress recipientKey) {
         final ChildrenPeer sender = childrenPeers.get(senderKey);
         final ChildrenPeer recipient = childrenPeers.get(recipientKey);
 

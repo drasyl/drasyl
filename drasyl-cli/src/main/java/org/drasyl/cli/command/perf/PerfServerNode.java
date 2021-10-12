@@ -30,8 +30,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.cli.command.perf.message.SessionConfirmation;
 import org.drasyl.cli.command.perf.message.SessionRequest;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.behaviour.Behavior;
@@ -179,7 +179,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
      * Node performs session and wait for completion.
      */
     @SuppressWarnings("java:S1142")
-    private Behavior startTest(final IdentityPublicKey client,
+    private Behavior startTest(final DrasylAddress client,
                                final SessionRequest session) {
         try {
             final Channel channel = resolve(client).toCompletableFuture().get();
@@ -208,7 +208,7 @@ public class PerfServerNode extends BehavioralDrasylNode {
     /**
      * Node performs test after waiting for {@code duration}.
      */
-    private Behavior startTestDelayed(final IdentityPublicKey client,
+    private Behavior startTestDelayed(final DrasylAddress client,
                                       final SessionRequest session) {
         return Behaviors.withScheduler(scheduler -> {
             scheduler.scheduleEvent(new TestDelayed(), TEST_DELAY);
