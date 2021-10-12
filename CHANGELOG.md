@@ -30,7 +30,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- The class `DrasylNode` has been moved to the Maven module `org.drasyl:drasyl-node`.
+- The classes `DrasylNode`, `DrasylConfig`, `DrasylException`, all `Event`s has been moved to the
+  Maven module `org.drasyl:drasyl-node` and java packages `org.drasyl.node.*`.
 - Dependencies have been updated.
 - The monitoring feature was outdated/mostly unusable and has therefore been removed.
 - Replaced protobuf with own message serialization allowing us to reduce the overlay overhead.
