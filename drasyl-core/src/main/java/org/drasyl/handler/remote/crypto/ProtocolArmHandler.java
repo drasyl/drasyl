@@ -60,6 +60,11 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         this.crypto = crypto;
     }
 
+    public ProtocolArmHandler(final Identity myIdentity,
+                              final int maxSessionsCount) {
+        this(myIdentity, Crypto.INSTANCE, maxSessionsCount, Duration.ZERO);
+    }
+
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
         this.sessions.clear();

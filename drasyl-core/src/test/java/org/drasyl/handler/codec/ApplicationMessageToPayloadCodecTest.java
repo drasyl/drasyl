@@ -41,7 +41,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
-class ApplicationMessageCodecTest {
+class ApplicationMessageToPayloadCodecTest {
     private final int networkId = 0;
     @Mock
     private IdentityPublicKey myPublicKey;
@@ -52,7 +52,7 @@ class ApplicationMessageCodecTest {
     class Encode {
         @Test
         void shouldConvertByteBufWithIdentityPublicKeyToApplicationMessage(@Mock final IdentityPublicKey address) {
-            final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
+            final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.copiedBuffer("Hello World", UTF_8);
@@ -64,7 +64,7 @@ class ApplicationMessageCodecTest {
 
         @Test
         void shouldPassTroughNonMatchingMessages(@Mock final IdentityPublicKey address) {
-            final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
+            final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             channel.writeAndFlush(new AddressedMessage<>("Hello World", address));
@@ -77,7 +77,7 @@ class ApplicationMessageCodecTest {
     class Decode {
         @Test
         void shouldConvertApplicationMessageToByteStringWithIdentityPublicKey(@Mock final IdentityPublicKey sender) {
-            final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
+            final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.buffer();
@@ -89,7 +89,7 @@ class ApplicationMessageCodecTest {
 
         @Test
         void shouldPassTroughNonMatchingMessages(@Mock final IdentityPublicKey address) {
-            final ChannelHandler handler = new ApplicationMessageCodec(networkId, myPublicKey, myProofOfWork);
+            final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             channel.pipeline().fireChannelRead(new AddressedMessage<>("Hello World", address));

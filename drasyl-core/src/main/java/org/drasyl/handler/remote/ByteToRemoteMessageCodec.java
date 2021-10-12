@@ -37,12 +37,12 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.List;
 
 /**
- * This codec converts {@link RemoteMessage}s to {@link ByteBuf}s an vice versa.
+ * This codec converts {@link ByteBuf}s to {@link RemoteMessage}s an vice versa.
  */
 @SuppressWarnings("java:S110")
 @Sharable
-public class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
-    private static final Logger LOG = LoggerFactory.getLogger(RemoteMessageToByteBufCodec.class);
+public class ByteToRemoteMessageCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(ByteToRemoteMessageCodec.class);
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {

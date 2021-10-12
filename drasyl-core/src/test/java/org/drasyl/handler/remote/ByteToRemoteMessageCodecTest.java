@@ -51,7 +51,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
-class RemoteMessageToByteBufCodecTest {
+class ByteToRemoteMessageCodecTest {
     private final Nonce correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     private IdentityPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
@@ -69,7 +69,7 @@ class RemoteMessageToByteBufCodecTest {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, correspondingId, System.currentTimeMillis());
-            final ChannelInboundHandler handler = new RemoteMessageToByteBufCodec();
+            final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -95,7 +95,7 @@ class RemoteMessageToByteBufCodecTest {
             final ByteBuf byteBuf = Unpooled.buffer();
             message.writeTo(byteBuf);
 
-            final ChannelInboundHandler handler = new RemoteMessageToByteBufCodec();
+            final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(message, recipient));

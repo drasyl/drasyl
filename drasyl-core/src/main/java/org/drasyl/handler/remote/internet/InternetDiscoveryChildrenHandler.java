@@ -356,7 +356,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         }
 
         public boolean isStale() {
-            return Math.max(firstDiscoveryTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
+            return firstDiscoveryTime != 0 && Math.max(firstDiscoveryTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
         }
     }
 }

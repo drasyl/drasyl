@@ -22,7 +22,7 @@
 package org.drasyl.node.plugin.groups.manager;
 
 import com.typesafe.config.Config;
-import org.drasyl.handler.codec.ApplicationMessageCodec;
+import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
 import org.drasyl.node.plugin.groups.client.GroupsClientMessageDecoder;
@@ -81,7 +81,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 }
             }
 
-            env.getPipeline().addAfter(env.getPipeline().context(ApplicationMessageCodec.class).name(), GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
+            env.getPipeline().addAfter(env.getPipeline().context(ApplicationMessageToPayloadCodec.class).name(), GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
             env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_MANAGER_ENCODER", new GroupsServerMessageEncoder());
             env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_CLIENT_DECODER", new GroupsClientMessageDecoder());
             LOG.debug("Groups Manager Plugin was started with options: {}", config);

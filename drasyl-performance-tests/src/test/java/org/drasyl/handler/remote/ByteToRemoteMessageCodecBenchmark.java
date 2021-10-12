@@ -56,13 +56,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @State(Scope.Benchmark)
-public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
+public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;
     private SocketAddress sender;
     private SocketAddress recipient;
     private ByteBuf byteBuf;
     private ApplicationMessage message;
-    private RemoteMessageToByteBufCodec instance;
+    private ByteToRemoteMessageCodec instance;
 
     @Setup
     public void setup() {
@@ -73,7 +73,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
         byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
         message.writeTo(byteBuf);
-        instance = new RemoteMessageToByteBufCodec();
+        instance = new ByteToRemoteMessageCodec();
     }
 
     @Benchmark

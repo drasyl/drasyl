@@ -34,16 +34,16 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This codec converts {@link ApplicationMessage}s to {@link ByteBuf}s and vice versa.
+ * This codec converts {@link ApplicationMessage}s to the embedded payload and vice versa.
  */
-public class ApplicationMessageCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
+public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
     private final int networkId;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
 
-    public ApplicationMessageCodec(final int networkId,
-                                   final IdentityPublicKey myPublicKey,
-                                   final ProofOfWork myProofOfWork) {
+    public ApplicationMessageToPayloadCodec(final int networkId,
+                                            final IdentityPublicKey myPublicKey,
+                                            final ProofOfWork myProofOfWork) {
         this.networkId = networkId;
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);

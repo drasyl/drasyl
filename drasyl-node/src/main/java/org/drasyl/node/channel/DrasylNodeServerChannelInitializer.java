@@ -29,15 +29,15 @@ import io.netty.handler.codec.EncoderException;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.Hashing;
-import org.drasyl.handler.codec.ApplicationMessageCodec;
+import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
+import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.HopCountGuard;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.RateLimiter;
-import org.drasyl.handler.remote.RemoteMessageToByteBufCodec;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpServer;
@@ -82,7 +82,7 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer();
-    private static final RemoteMessageToByteBufCodec REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = new RemoteMessageToByteBufCodec();
+    private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
     private final DrasylConfig config;
     private final DrasylNode node;
     private final Identity identity;
@@ -156,7 +156,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     @SuppressWarnings("java:S2325")
     private void serializationStage(final DrasylServerChannel ch) {
-        ch.pipeline().addLast(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC);
+        ch.pipeline().addLast(BYTE_TO_REMOTE_MESSAGE_CODEC);
     }
 
     /**
@@ -248,7 +248,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
     private void protocolStage(final DrasylServerChannel ch) {
         // convert ByteBuf <-> ApplicationMessage
-        ch.pipeline().addLast(new ApplicationMessageCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
+        ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
     private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
