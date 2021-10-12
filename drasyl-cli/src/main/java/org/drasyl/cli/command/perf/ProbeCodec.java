@@ -34,8 +34,7 @@ import java.util.List;
  * Encodes {@link Probe} messages to {@link ByteBuf}s and vice versa.
  */
 @Sharable
-public final class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
-    public static final ProbeCodec INSTANCE = new ProbeCodec();
+public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
     /**
      * Is used to identity probe messages. probe messages are used for actual performance
      * measurements.
@@ -50,10 +49,6 @@ public final class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
             38,
             16
     });
-
-    private ProbeCodec() {
-        // singleton
-    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,

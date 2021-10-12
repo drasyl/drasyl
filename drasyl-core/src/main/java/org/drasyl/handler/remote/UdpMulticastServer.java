@@ -60,7 +60,6 @@ import static java.util.Objects.requireNonNull;
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
-    public static final UdpMulticastServer INSTANCE = new UdpMulticastServer();
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddress MULTICAST_ADDRESS;
@@ -107,7 +106,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         this.channel = channel;
     }
 
-    private UdpMulticastServer() {
+    public UdpMulticastServer() {
         this(
                 new HashSet<>(),
                 Bootstrap::new,

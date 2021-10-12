@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class MessageChunkDecoderTest {
     @Test
     void shouldDecodeToContentChunk() {
-        final ChannelHandler handler = MessageChunkDecoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkDecoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ByteBuf msg = Unpooled.buffer()
@@ -54,7 +54,7 @@ class MessageChunkDecoderTest {
 
     @Test
     void shouldDecodeToLastChunk() {
-        final ChannelHandler handler = MessageChunkDecoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkDecoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ByteBuf msg = Unpooled.buffer()
@@ -73,7 +73,7 @@ class MessageChunkDecoderTest {
 
     @Test
     void shouldPassThroughTooSmallByteBufs() {
-        final ChannelHandler handler = MessageChunkDecoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkDecoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 });
@@ -87,7 +87,7 @@ class MessageChunkDecoderTest {
 
     @Test
     void shouldPassThroughOnWrongMagicNumber() {
-        final ChannelHandler handler = MessageChunkDecoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkDecoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{ 1, 2, 3 });

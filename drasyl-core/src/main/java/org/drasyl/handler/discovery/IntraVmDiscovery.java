@@ -34,6 +34,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  * <p>
@@ -101,7 +103,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             }
         });
         discoveries.put(
-                Pair.of(myNetworkId, (DrasylAddress) myCtx.channel().localAddress()),
+                Pair.of(myNetworkId, requireNonNull((DrasylAddress) myCtx.channel().localAddress())),
                 myCtx
         );
 

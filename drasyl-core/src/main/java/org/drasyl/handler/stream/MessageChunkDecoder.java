@@ -34,13 +34,7 @@ import java.util.List;
  * @see ChunkedMessageInput
  */
 @Sharable
-public final class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
-    public static final MessageChunkDecoder INSTANCE = new MessageChunkDecoder();
-
-    private MessageChunkDecoder() {
-        // singleton
-    }
-
+public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,

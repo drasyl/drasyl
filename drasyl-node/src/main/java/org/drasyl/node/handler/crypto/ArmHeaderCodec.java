@@ -23,7 +23,7 @@ package org.drasyl.node.handler.crypto;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
@@ -31,10 +31,8 @@ import org.drasyl.handler.remote.protocol.Nonce;
 
 import java.util.List;
 
-@ChannelHandler.Sharable
+@Sharable
 public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
-    public static final ArmHeaderCodec INSTANCE = new ArmHeaderCodec();
-
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final ArmHeader msg,

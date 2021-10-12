@@ -41,13 +41,8 @@ import java.util.List;
  */
 @SuppressWarnings("java:S110")
 @Sharable
-public final class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
+public class RemoteMessageToByteBufCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
     private static final Logger LOG = LoggerFactory.getLogger(RemoteMessageToByteBufCodec.class);
-    public static final RemoteMessageToByteBufCodec INSTANCE = new RemoteMessageToByteBufCodec();
-
-    private RemoteMessageToByteBufCodec() {
-        // singleton
-    }
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {

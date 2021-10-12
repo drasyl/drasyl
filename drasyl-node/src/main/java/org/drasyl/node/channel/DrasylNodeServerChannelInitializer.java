@@ -81,6 +81,8 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
  */
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
+    private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer();
+    private static final RemoteMessageToByteBufCodec REMOTE_MESSAGE_TO_BYTE_BUF_CODEC = new RemoteMessageToByteBufCodec();
     private final DrasylConfig config;
     private final DrasylNode node;
     private final Identity identity;
@@ -144,7 +146,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         // multicast server (lan discovery)
         if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-            ch.pipeline().addLast(UdpMulticastServer.INSTANCE);
+            ch.pipeline().addLast(UDP_MULTICAST_SERVER);
         }
     }
 
@@ -154,7 +156,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     @SuppressWarnings("java:S2325")
     private void serializationStage(final DrasylServerChannel ch) {
-        ch.pipeline().addLast(RemoteMessageToByteBufCodec.INSTANCE);
+        ch.pipeline().addLast(REMOTE_MESSAGE_TO_BYTE_BUF_CODEC);
     }
 
     /**
@@ -216,7 +218,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.getNetworkId(),
                         config.getRemotePingInterval(),
                         config.getRemotePingTimeout(),
-                        identity.getAddress(),
+                        identity.getIdentityPublicKey(),
                         identity.getProofOfWork()
                 ));
             }

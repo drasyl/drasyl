@@ -32,8 +32,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
  * @see ChunkedMessageInput
  */
 @Sharable
-public final class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
-    public static final MessageChunkEncoder INSTANCE = new MessageChunkEncoder();
+public class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
     public static final int MAGIC_NUMBER_CONTENT = -143_591_473;
     public static final int MAGIC_NUMBER_LAST = -143_591_472;
     // magic number: 4 bytes
@@ -41,10 +40,6 @@ public final class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk
     // chunk number (content) / total chunks (last content): 1 byte
     // content: n bytes
     public static final int MIN_MESSAGE_LENGTH = 6;
-
-    private MessageChunkEncoder() {
-        // singleton
-    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,

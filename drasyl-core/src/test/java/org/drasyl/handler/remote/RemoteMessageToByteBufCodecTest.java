@@ -69,7 +69,7 @@ class RemoteMessageToByteBufCodecTest {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
             final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, correspondingId, System.currentTimeMillis());
-            final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
+            final ChannelInboundHandler handler = new RemoteMessageToByteBufCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -95,7 +95,7 @@ class RemoteMessageToByteBufCodecTest {
             final ByteBuf byteBuf = Unpooled.buffer();
             message.writeTo(byteBuf);
 
-            final ChannelInboundHandler handler = RemoteMessageToByteBufCodec.INSTANCE;
+            final ChannelInboundHandler handler = new RemoteMessageToByteBufCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(message, recipient));

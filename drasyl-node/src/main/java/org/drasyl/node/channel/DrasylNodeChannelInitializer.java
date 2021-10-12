@@ -60,6 +60,9 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     // PublicHeader: 98 bytes + 4 bytes MagicNumber
     // PrivateHeader: 3 byte + 16 bytes MAC
     public static final int PROTOCOL_OVERHEAD = 127;
+    private static final MessageChunkEncoder MESSAGE_CHUNK_ENCODER = new MessageChunkEncoder();
+    private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder();
+    private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
     private final DrasylConfig config;
     private final DrasylNode node;
 
@@ -94,10 +97,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     protected void chunkingStage(final DrasylChannel ch) {
         // split ByteBufs that are too big for a single udp datagram
         ch.pipeline().addLast(
-                MessageChunkEncoder.INSTANCE,
+                MESSAGE_CHUNK_ENCODER,
                 new ChunkedWriteHandler(),
                 new LargeByteBufToChunkedMessageEncoder(this.config.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, this.config.getRemoteMessageMaxContentLength()),
-                MessageChunkDecoder.INSTANCE,
+                MESSAGE_CHUNK_DECODER,
                 new MessageChunksBuffer(this.config.getRemoteMessageMaxContentLength(), (int) this.config.getRemoteMessageComposedMessageTransferTimeout().toMillis()),
                 new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
                 ReassembledMessageDecoder.INSTANCE
@@ -110,7 +113,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     private void armStage(final DrasylChannel ch) throws CryptoException {
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmApplicationEnabled()) {
-            ch.pipeline().addLast(ArmHeaderCodec.INSTANCE);
+            ch.pipeline().addLast(ARM_HEADER_CODEC);
             // PFS is enabled
             if (config.getRemoteMessageArmApplicationAgreementMaxCount() > 0) {
                 ch.pipeline().addLast(new PFSArmHandler(

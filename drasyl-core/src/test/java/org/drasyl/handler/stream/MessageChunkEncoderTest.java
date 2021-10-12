@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class MessageChunkEncoderTest {
     @Test
     void shouldEncodeContentChunk() {
-        final ChannelHandler handler = MessageChunkEncoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkEncoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk msg = new MessageChunk((byte) 42, (byte) 13, Unpooled.wrappedBuffer(new byte[]{
@@ -52,7 +52,7 @@ class MessageChunkEncoderTest {
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_CONTENT) // magic number
                 .writeByte(42) // id
                 .writeByte(13) // chunk no
-                .writeBytes(new byte[]{1, 2, 3}); // payload
+                .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         final ByteBuf actual = channel.readOutbound();
         assertEquals(expected, actual);
 
@@ -62,7 +62,7 @@ class MessageChunkEncoderTest {
 
     @Test
     void shouldEncodeLastChunk() {
-        final ChannelHandler handler = MessageChunkEncoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkEncoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final LastMessageChunk msg = new LastMessageChunk((byte) 23, (byte) 2, Unpooled.wrappedBuffer(new byte[]{
@@ -76,7 +76,7 @@ class MessageChunkEncoderTest {
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_LAST) // magic number
                 .writeByte(23) // id
                 .writeByte(2) // total chunks
-                .writeBytes(new byte[]{1, 2, 3}); // payload
+                .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         final ByteBuf actual = channel.readOutbound();
         assertEquals(expected, actual);
 
@@ -86,7 +86,7 @@ class MessageChunkEncoderTest {
 
     @Test
     void shouldRejectAllOtherChunks(@Mock final MessageChunk msg) {
-        final ChannelHandler handler = MessageChunkEncoder.INSTANCE;
+        final ChannelHandler handler = new MessageChunkEncoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));

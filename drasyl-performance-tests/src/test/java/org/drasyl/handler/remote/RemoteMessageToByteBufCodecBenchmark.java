@@ -62,6 +62,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     private SocketAddress recipient;
     private ByteBuf byteBuf;
     private ApplicationMessage message;
+    private RemoteMessageToByteBufCodec instance;
 
     @Setup
     public void setup() {
@@ -72,6 +73,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
         message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
         byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
         message.writeTo(byteBuf);
+        instance = new RemoteMessageToByteBufCodec();
     }
 
     @Benchmark
@@ -79,7 +81,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteMessageToByteBufCodec.INSTANCE.decode(ctx, new AddressedMessage<>(byteBuf.slice(), sender), out);
+            instance.decode(ctx, new AddressedMessage<>(byteBuf.slice(), sender), out);
             blackhole.consume(out);
         }
         catch (final Exception e) {
@@ -92,7 +94,7 @@ public class RemoteMessageToByteBufCodecBenchmark extends AbstractBenchmark {
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            RemoteMessageToByteBufCodec.INSTANCE.encode(ctx, new AddressedMessage<>(message, recipient), out);
+            instance.encode(ctx, new AddressedMessage<>(message, recipient), out);
             byteBuf.release();
             blackhole.consume(out);
         }
