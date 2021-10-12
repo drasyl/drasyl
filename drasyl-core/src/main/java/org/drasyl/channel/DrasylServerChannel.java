@@ -85,7 +85,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     @Override
     protected void doBind(final SocketAddress localAddress) {
         if (!(localAddress instanceof Identity)) {
-            throw new IllegalArgumentException("Unsupported address type!");
+            throw new IllegalArgumentException("Unsupported address type! Expected `" + Identity.class.getSimpleName() + "`, but got `" + localAddress.getClass().getSimpleName() + "`.");
         }
 
         this.localAddress = (Identity) localAddress;
