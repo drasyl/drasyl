@@ -56,33 +56,41 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Bootstrap bootstrap;
-    private final InetAddress bindHost;
-    private final int bindPort;
+    private final InetSocketAddress bindAddress;
     private PendingWriteQueue pendingWrites;
     private Channel channel;
 
     UdpServer(final Bootstrap bootstrap,
-              final InetAddress bindHost,
-              final int bindPort,
+              final InetSocketAddress bindAddress,
               final PendingWriteQueue pendingWrites,
               final Channel channel) {
         this.bootstrap = requireNonNull(bootstrap);
-        this.bindHost = bindHost;
-        this.bindPort = bindPort;
+        this.bindAddress = requireNonNull(bindAddress);
         this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
-    public UdpServer(final InetAddress bindHost,
-                     final int bindPort) {
+    public UdpServer(final InetSocketAddress bindAddress) {
         this(
-                new Bootstrap()
-                        .option(ChannelOption.SO_BROADCAST, false),
-                bindHost,
-                bindPort,
+                new Bootstrap().option(ChannelOption.SO_BROADCAST, false),
+                bindAddress,
                 null,
                 null
         );
+    }
+
+    public UdpServer(final InetAddress bindHost,
+                     final int bindPort) {
+        this(new InetSocketAddress(bindHost, bindPort));
+    }
+
+    public UdpServer(final String bindHost,
+                     final int bindPort) {
+        this(new InetSocketAddress(bindHost, bindPort));
+    }
+
+    public UdpServer(final int inetPort) {
+        this(new InetSocketAddress(inetPort));
     }
 
     @Override
@@ -98,7 +106,7 @@ public class UdpServer extends ChannelDuplexHandler {
                 .group((EventLoopGroup) ctx.executor().parent())
                 .channel(NioDatagramChannel.class)
                 .handler(new UdpServerHandler(ctx))
-                .bind(bindHost, this.bindPort)
+                .bind(bindAddress)
                 .addListener(new UdpServerHandlerFutureListener(ctx));
     }
 
@@ -195,7 +203,7 @@ public class UdpServer extends ChannelDuplexHandler {
         }
 
         @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) throws Exception {
             if (future.isSuccess()) {
                 // server successfully started
                 UdpServer.this.channel = future.channel();
@@ -207,7 +215,7 @@ public class UdpServer extends ChannelDuplexHandler {
             }
             else {
                 // server start failed
-                ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp://" + bindHost + ":" + bindPort, future.cause()));
+                ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
             }
         }
     }

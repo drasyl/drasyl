@@ -51,6 +51,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,13 +63,12 @@ class UdpServerTest {
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel channel;
-    private InetAddress bindHost;
-    private final int bindPort = 22527;
+    private InetSocketAddress bindAddress;
     private PendingWriteQueue pendingWrites;
 
     @BeforeEach
     void setUp() throws UnknownHostException {
-        bindHost = InetAddress.getLocalHost();
+        bindAddress = new InetSocketAddress(22527);
     }
 
     @Nested
@@ -77,16 +77,16 @@ class UdpServerTest {
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(bootstrap.group(any()).channel(any()).handler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channel(any()).handler(any()).bind(bindAddress).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
             });
 
-            final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, null);
+            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                verify(bootstrap.group(any()).channel(any()).handler(any())).bind(any(InetAddress.class), anyInt());
+                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(bindAddress);
             }
             finally {
                 channel.close();
@@ -100,7 +100,7 @@ class UdpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, channel);
+            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -121,7 +121,7 @@ class UdpServerTest {
 
             final SocketAddress recipient = new InetSocketAddress(1234);
 
-            final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, channel);
+            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
@@ -146,7 +146,7 @@ class UdpServerTest {
             when(bootstrap.group(any()).channel(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, bindHost, bindPort, pendingWrites, null);
+            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, null);
 
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
