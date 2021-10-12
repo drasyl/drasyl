@@ -326,7 +326,7 @@ public abstract class DrasylNode {
                 }
 
                 // no channel present, create new one
-                final DrasylChannel channel = new DrasylChannel(channelFuture.channel(), (IdentityPublicKey) address);
+                final DrasylChannel channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), (IdentityPublicKey) address);
                 channels.add(channel);
                 channelFuture.channel().pipeline().fireChannelRead(channel);
 

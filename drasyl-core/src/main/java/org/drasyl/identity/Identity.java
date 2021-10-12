@@ -27,7 +27,6 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
@@ -37,7 +36,7 @@ import java.net.SocketAddress;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class Identity extends SocketAddress {
+public abstract class Identity {
     public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 6);
 
     public abstract ProofOfWork getProofOfWork();

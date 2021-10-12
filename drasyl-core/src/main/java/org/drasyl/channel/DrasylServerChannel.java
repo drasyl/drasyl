@@ -173,7 +173,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 }
 
                 if (channel == null) {
-                    channel = new DrasylChannel(ctx.channel(), peer);
+                    channel = new DrasylChannel(serverChannel, peer);
                     ctx.fireChannelRead(channel);
                 }
 
