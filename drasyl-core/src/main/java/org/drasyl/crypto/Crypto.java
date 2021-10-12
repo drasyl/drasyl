@@ -69,7 +69,7 @@ public class Crypto {
 
                 LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
             }
-            catch (ResourceLoaderException e) {
+            catch (final ResourceLoaderException e) { // NOSONAR
                 // try default loading
                 cryptoInstance = new Crypto(
                         new DrasylLazySodiumJava(new DrasylSodiumJava()));
@@ -214,7 +214,8 @@ public class Crypto {
      *
      * @param keyPair the ed25519 long time key pair
      * @return ed25519 key pair as curve25519
-     * @throws CryptoException if any error occurs during conversion
+     * @throws CryptoException      if any error occurs during conversion
+     * @throws NullPointerException if {@code keyPar} or a key within the pair is {@code null}
      */
     public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> convertLongTimeKeyPairToKeyAgreementKeyPair(
             final KeyPair<IdentityPublicKey, IdentitySecretKey> keyPair) throws CryptoException {
@@ -394,6 +395,7 @@ public class Crypto {
      * @return the signature of the message
      * @throws CryptoException if any error occurs during signing
      */
+    @SuppressWarnings("java:S3242")
     public byte[] sign(final byte[] message,
                        final IdentitySecretKey secretKey) throws CryptoException {
         final byte[] signatureBytes = new byte[Sign.BYTES];
@@ -416,6 +418,7 @@ public class Crypto {
      * @param publicKey the public key that signed the message
      * @return {@code true} if the signature is valid for the message
      */
+    @SuppressWarnings("java:S3242")
     public boolean verifySignature(final byte[] signature,
                                    final byte[] message,
                                    final IdentityPublicKey publicKey) {

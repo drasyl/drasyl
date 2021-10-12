@@ -144,11 +144,22 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
-            final IdentityManager identityManager = new IdentityManager(config);
-            identityManager.loadOrCreateIdentity();
-            identity = identityManager.getIdentity();
+            final Identity configIdentity = config.getIdentity();
+            if (configIdentity != null) {
+                LOG.info("Use identity embedded in config.");
+                identity = configIdentity;
+            }
+            else if (config.getIdentityPath() != null && IdentityManager.isIdentityFilePresent(config.getIdentityPath())) {
+                LOG.info("Read identity from file specified in config `{}`", config.getIdentityPath());
+                identity = IdentityManager.readIdentityFile(config.getIdentityPath());
+            }
+            else {
+                LOG.info("No ientity present. Generate a new one and write to file specified in config `{}`.", config.getIdentityPath());
+                identity = Identity.generateIdentity();
+                IdentityManager.writeIdentityFile(config.getIdentityPath(), identity);
+            }
         }
-        catch (final IOException e) {
+        catch (final IllegalStateException | IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
         }
 

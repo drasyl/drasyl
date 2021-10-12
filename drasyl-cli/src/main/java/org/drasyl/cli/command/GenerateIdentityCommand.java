@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.cli.CliException;
 import org.drasyl.identity.Identity;
-import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingSupplier;
 import org.drasyl.util.logging.Logger;
@@ -58,7 +57,7 @@ public class GenerateIdentityCommand extends AbstractCommand {
         this(
                 System.out, // NOSONAR
                 System.err, // NOSONAR
-                IdentityManager::generateIdentity,
+                Identity::generateIdentity,
                 (myOut, identity) -> JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(myOut, identity)
         );
     }

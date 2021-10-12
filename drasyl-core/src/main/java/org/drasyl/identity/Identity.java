@@ -26,6 +26,7 @@ import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 
 /**
@@ -79,18 +80,34 @@ public abstract class Identity extends SocketAddress {
         return getProofOfWork().isValid(getIdentityKeyPair().getPublicKey(), POW_DIFFICULTY);
     }
 
+    /**
+     * @throws NullPointerException if {@code proofOfWork}, {@code identityKeyPair} or {@code
+     *                              keyAgreementKeyPair} is {@code null}.
+     */
     public static Identity of(final ProofOfWork proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
                               final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
         return new AutoValue_Identity(proofOfWork, identityKeyPair, keyAgreementKeyPair);
     }
 
+    /**
+     * @throws NullPointerException     if {@code proofOfWork}, {@code identityPublicKey} or {@code
+     *                                  identitySecretKey} is {@code null}.
+     * @throws IllegalArgumentException if {@code identityPublicKey} and {@code identitySecretKey}
+     *                                  can not be converted to a key agreement key pair.
+     */
     public static Identity of(final ProofOfWork proofOfWork,
                               final IdentityPublicKey identityPublicKey,
                               final IdentitySecretKey identitySecretKey) {
         return of(proofOfWork, KeyPair.of(identityPublicKey, identitySecretKey));
     }
 
+    /**
+     * @throws IllegalArgumentException if {@code identityKeyPair} can not be converted to a key
+     *                                  agreement key pair.
+     * @throws NullPointerException     if {@code proofOfWork}, {@code identityKeyPair} or a key
+     *                                  within the pair is {@code null}
+     */
     public static Identity of(final ProofOfWork proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair) {
         try {
@@ -117,9 +134,30 @@ public abstract class Identity extends SocketAddress {
                 IdentitySecretKey.of(identitySecretKey)));
     }
 
+    /**
+     * @throws NullPointerException if {@code proofOfWork} is {@code null}
+     */
     public static Identity of(final int proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
                               final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
         return of(ProofOfWork.of(proofOfWork), identityKeyPair, keyAgreementKeyPair);
+    }
+
+    /**
+     * Generates a new random identity.
+     *
+     * @return the generated identity
+     * @throws IOException if an identity could not be generated
+     */
+    public static Identity generateIdentity() throws IOException {
+        try {
+            final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair = Crypto.INSTANCE.generateLongTimeKeyPair();
+            final ProofOfWork pow = ProofOfWork.generateProofOfWork(identityKeyPair.getPublicKey(), POW_DIFFICULTY);
+
+            return of(pow, identityKeyPair);
+        }
+        catch (final CryptoException e) {
+            throw new IOException("Unable to generate new identity", e);
+        }
     }
 }

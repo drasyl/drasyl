@@ -40,6 +40,9 @@ public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
     @NonNull
     public abstract S getSecretKey();
 
+    /**
+     * @throws NullPointerException if {@code publiceKey} or {@code secretKey} is {@code null}.
+     */
     public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(final P publicKey,
                                                                               final S secretKey) {
         return new AutoValue_KeyPair<>(publicKey, secretKey);

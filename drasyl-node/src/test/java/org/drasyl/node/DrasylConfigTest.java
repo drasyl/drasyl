@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -65,6 +65,8 @@ import static org.drasyl.node.DrasylConfig.getURI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
@@ -85,30 +87,30 @@ class DrasylConfigTest {
 
         @Test
         void shouldReadNonNullIdentityPublicKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.public-key = " + IdentityTestUtil.ID_1.getIdentityPublicKey()).withFallback(ConfigFactory.load());
+            final Config config = ConfigFactory.parseString("drasyl.identity.public-key = " + ID_1.getIdentityPublicKey()).withFallback(ConfigFactory.load());
 
-            assertEquals(IdentityTestUtil.ID_1.getIdentityPublicKey(), DrasylConfig.of(config).getIdentityPublicKey());
+            assertEquals(ID_1.getIdentityPublicKey(), DrasylConfig.of(config).getIdentityPublicKey());
         }
 
         @Test
         void shouldReadNonNullIdentitySecretKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.secret-key = " + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
+            final Config config = ConfigFactory.parseString("drasyl.identity.secret-key = " + ID_1.getIdentitySecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
 
-            assertEquals(IdentityTestUtil.ID_1.getIdentitySecretKey(), DrasylConfig.of(config).getIdentitySecretKey());
+            assertEquals(ID_1.getIdentitySecretKey(), DrasylConfig.of(config).getIdentitySecretKey());
         }
 
         @Test
         void shouldReadNonNullKeyAgreementPublicKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.public-key = " + IdentityTestUtil.ID_1.getKeyAgreementPublicKey()).withFallback(ConfigFactory.load());
+            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.public-key = " + ID_1.getKeyAgreementPublicKey()).withFallback(ConfigFactory.load());
 
-            assertEquals(IdentityTestUtil.ID_1.getKeyAgreementPublicKey(), DrasylConfig.of(config).getKeyAgreementPublicKey());
+            assertEquals(ID_1.getKeyAgreementPublicKey(), DrasylConfig.of(config).getKeyAgreementPublicKey());
         }
 
         @Test
         void shouldReadNonNullKeyAgreementSecretKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.secret-key = " + IdentityTestUtil.ID_1.getKeyAgreementSecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
+            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.secret-key = " + ID_1.getKeyAgreementSecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
 
-            assertEquals(IdentityTestUtil.ID_1.getKeyAgreementSecretKey(), DrasylConfig.of(config).getKeyAgreementSecretKey());
+            assertEquals(ID_1.getKeyAgreementSecretKey(), DrasylConfig.of(config).getKeyAgreementSecretKey());
         }
 
         @Test
@@ -400,10 +402,10 @@ class DrasylConfigTest {
     class GetStaticRoutes {
         @Test
         void shouldReturnCorrectRoutes() {
-            final Config config = ConfigFactory.parseString("foo.bar {" + IdentityTestUtil.ID_1.getIdentityPublicKey() + " = \"140.211.24.157:22527\" }");
+            final Config config = ConfigFactory.parseString("foo.bar {" + ID_1.getIdentityPublicKey() + " = \"140.211.24.157:22527\" }");
 
             assertEquals(
-                    Map.of(IdentityTestUtil.ID_1.getIdentityPublicKey(), new InetSocketAddress("140.211.24.157", 22527)),
+                    Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("140.211.24.157", 22527)),
                     getStaticRoutes(config, "foo.bar")
             );
         }
@@ -417,7 +419,7 @@ class DrasylConfigTest {
 
         @Test
         void shouldThrowExceptionForInvalidAddress() {
-            final Config config = ConfigFactory.parseString("foo.bar { " + IdentityTestUtil.ID_1.getIdentityPublicKey() + " = \"140.211.24.157\" }");
+            final Config config = ConfigFactory.parseString("foo.bar { " + ID_1.getIdentityPublicKey() + " = \"140.211.24.157\" }");
 
             assertThrows(DrasylConfigException.class, () -> getStaticRoutes(config, "foo.bar"));
         }
@@ -428,7 +430,7 @@ class DrasylConfigTest {
         @Test
         void shouldReadConfigFromFile(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "drasyl.conf");
-            Files.writeString(path, "drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "&networkId=1337\"]", StandardOpenOption.CREATE);
+            Files.writeString(path, "drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337\"]", StandardOpenOption.CREATE);
 
             assertEquals(1337, DrasylConfig.parseFile(path.toFile()).getNetworkId());
         }
@@ -438,7 +440,32 @@ class DrasylConfigTest {
     class ParseString {
         @Test
         void shouldReadConfigFromString() {
-            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "&networkId=1337\"]").getNetworkId());
+            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337\ndrasyl.remote.super-peer.endpoints = [\"udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337\"]").getNetworkId());
+        }
+    }
+
+    @Nested
+    class GetIdentity {
+        @Test
+        void shouldLoadValidIdentityFromConfig(@Mock final DrasylConfig config) throws IOException {
+            when(config.getIdentity()).thenCallRealMethod();
+
+            when(config.getIdentityPublicKey()).thenReturn(ID_1.getIdentityPublicKey());
+            when(config.getIdentityProofOfWork()).thenReturn(ID_1.getProofOfWork());
+            when(config.getIdentitySecretKey()).thenReturn(ID_1.getIdentitySecretKey());
+
+            assertEquals(ID_1, config.getIdentity());
+        }
+
+        @Test
+        void shouldThrowExceptionIfIdentityFromConfigIsInvalid(@Mock final DrasylConfig config) throws IOException {
+            when(config.getIdentity()).thenCallRealMethod();
+
+            when(config.getIdentityPublicKey()).thenReturn(ID_1.getIdentityPublicKey());
+            when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
+            when(config.getIdentitySecretKey()).thenReturn(ID_1.getIdentitySecretKey());
+
+            assertThrows(IllegalStateException.class, config::getIdentity);
         }
     }
 
@@ -452,7 +479,7 @@ class DrasylConfigTest {
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remotePingCommunicationTimeout(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remotePingMaxPeers(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteUniteMinInterval(Duration.ofSeconds(-100))::build);
-            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().networkId(1).remoteSuperPeerEnabled(true).remoteSuperPeerEndpoints(ImmutableSet.of(PeerEndpoint.of("udp://example.org:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "&networkId=1337")))::build);
+            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().networkId(1).remoteSuperPeerEnabled(true).remoteSuperPeerEndpoints(ImmutableSet.of(PeerEndpoint.of("udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337")))::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteLocalHostDiscoveryLeaseTime(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMtu(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMaxContentLength(-1)::build);

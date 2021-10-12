@@ -22,7 +22,6 @@
 package org.drasyl.test;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +59,7 @@ class IdentityProvider {
 
     public void fill(final int count) throws IOException {
         for (int i = 0; i < count; i++) {
-            identities.add(IdentityManager.generateIdentity());
+            identities.add(Identity.generateIdentity());
         }
     }
 
@@ -77,7 +76,7 @@ class IdentityProvider {
             return identity;
         }
         catch (final NoSuchElementException e) {
-            return IdentityManager.generateIdentity();
+            return Identity.generateIdentity();
         }
     }
 

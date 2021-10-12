@@ -32,7 +32,6 @@ import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.PeerEndpoint;
 import org.drasyl.node.event.Event;
-import org.drasyl.node.identity.IdentityManager;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -66,7 +65,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
     }
 
     public DrasylNode create(final DrasylConfig baseConfig) throws DrasylException, IOException {
-        final Identity identity = IdentityManager.generateIdentity();
+        final Identity identity = Identity.generateIdentity();
 
         final DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
                 .identityPublicKey(identity.getIdentityPublicKey())

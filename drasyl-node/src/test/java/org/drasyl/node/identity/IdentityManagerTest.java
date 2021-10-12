@@ -22,7 +22,6 @@
 package org.drasyl.node.identity;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.util.ThrowingSupplier;
 import org.junit.jupiter.api.Nested;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,8 +47,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityManagerTest {
@@ -60,92 +57,60 @@ class IdentityManagerTest {
     private ThrowingSupplier<Identity, IOException> identityGenerator;
 
     @Nested
-    class LoadOrCreateIdentity {
-        @Test
-        void shouldLoadValidIdentityFromConfig() throws IOException {
-            when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-            when(config.getIdentityProofOfWork()).thenReturn(IdentityTestUtil.ID_1.getProofOfWork());
-            when(config.getIdentitySecretKey()).thenReturn(IdentityTestUtil.ID_1.getIdentitySecretKey());
-
-            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
-            identityManager.loadOrCreateIdentity();
-
-            assertEquals(IdentityTestUtil.ID_1.getIdentityPublicKey(), identityManager.getIdentityPublicKey());
-        }
-
+    class ReadIdentityFile {
         @Test
         void shouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
-            when(config.getIdentityPath()).thenReturn(path);
 
             // create existing file with identity
             Files.writeString(path, "{\n" +
-                    "  \"proofOfWork\" : " + IdentityTestUtil.ID_1.getProofOfWork().intValue() + ",\n" +
+                    "  \"proofOfWork\" : " + ID_1.getProofOfWork().intValue() + ",\n" +
                     "  \"identityKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
+                    "  \"publicKey\" : \"" + ID_1.getIdentityPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
                     "}," +
                     "  \"keyAgreementKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
+                    "  \"publicKey\" : \"" + ID_1.getKeyAgreementPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
                     "}" +
                     "}", StandardOpenOption.CREATE);
             if (hasPosixSupport(path)) {
                 Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
             }
 
-            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
-            identityManager.loadOrCreateIdentity();
-
-            assertEquals(
-                    IdentityTestUtil.ID_1,
-                    identityManager.getIdentity()
-            );
-        }
-
-        @Test
-        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IOException {
-            final Path path = Paths.get(dir.toString(), "my-identity.json");
-            when(config.getIdentityPath()).thenReturn(path);
-            when(identityGenerator.get()).thenReturn(IdentityTestUtil.ID_1);
-
-            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
-            identityManager.loadOrCreateIdentity();
-
-            verify(identityGenerator).get();
-            assertThat(path.toFile(), anExistingFile());
-        }
-
-        @Test
-        void shouldThrowExceptionIfIdentityFromConfigIsInvalid() {
-            when(config.getIdentityPublicKey()).thenReturn(IdentityTestUtil.ID_1.getIdentityPublicKey());
-            when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
-            when(config.getIdentitySecretKey()).thenReturn(IdentityTestUtil.ID_1.getIdentitySecretKey());
-
-            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
-            assertThrows(IOException.class, identityManager::loadOrCreateIdentity);
+            assertEquals(ID_1, IdentityManager.readIdentityFile(path));
         }
 
         @Test
         void shouldThrowExceptionIfIdentityFromFileIsInvalid(@TempDir final Path dir) throws IOException {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
-            when(config.getIdentityPath()).thenReturn(path);
 
             // create existing file with invalid identity
             Files.writeString(path, "{\n" +
                     "  \"proofOfWork\" : 42,\n" +
                     "  \"identityKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
+                    "  \"publicKey\" : \"" + ID_1.getIdentityPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
                     "}," +
                     "  \"keyAgreementKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + IdentityTestUtil.ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
+                    "  \"publicKey\" : \"" + ID_1.getKeyAgreementPublicKey() + "\",\n" +
+                    "  \"secretKey\" : \"" + ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
                     "}" +
                     "}", StandardOpenOption.CREATE);
 
-            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
-            assertThrows(IOException.class, identityManager::loadOrCreateIdentity);
+            assertThrows(IOException.class, () -> IdentityManager.readIdentityFile(path));
+        }
+    }
+
+    @Nested
+    class WriteIdentityFile {
+        @Test
+        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IOException {
+            final Path path = Paths.get(dir.toString(), "my-identity.json");
+
+            IdentityManager.writeIdentityFile(path, ID_1);
+
+            assertThat(path.toFile(), anExistingFile());
         }
     }
 

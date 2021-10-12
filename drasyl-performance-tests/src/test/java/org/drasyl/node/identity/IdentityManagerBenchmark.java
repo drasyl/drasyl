@@ -22,6 +22,7 @@
 package org.drasyl.node.identity;
 
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.identity.Identity;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -38,6 +39,6 @@ public class IdentityManagerBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.AverageTime)
     @Threads(1)
     public void generateIdentity(final Blackhole blackhole) throws IOException {
-        blackhole.consume(IdentityManager.generateIdentity());
+        blackhole.consume(Identity.generateIdentity());
     }
 }

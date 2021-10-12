@@ -29,6 +29,7 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
@@ -641,6 +642,35 @@ public abstract class DrasylConfig {
 
     @Nullable
     public abstract IdentitySecretKey getIdentitySecretKey();
+
+    /**
+     * @return the identity specified in {@link #getIdentityPublicKey()}, {@link
+     * #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if some of
+     * these properties are not present.
+     * @throws IllegalStateException if the key pair returned by {@link #getIdentityPublicKey()} and
+     *                               {@link #getIdentitySecretKey()} is not {@code null} and can not
+     *                               be converted to a key agreement key pair OR the {@link
+     *                               #getIdentityProofOfWork()} does not match to the identity key
+     *                               pair/required difficulty specified in {@link
+     *                               Identity#POW_DIFFICULTY}.
+     */
+    public Identity getIdentity() {
+        if (getIdentityProofOfWork() != null && getIdentityPublicKey() != null && getIdentitySecretKey() != null) {
+            try {
+                final Identity identity = Identity.of(getIdentityProofOfWork(), getIdentityPublicKey(), getIdentitySecretKey());
+                if (!identity.isValid()) {
+                    throw new IllegalStateException("Proof of work does not match to the identity key pair/required difficulty of " + Identity.POW_DIFFICULTY + ".");
+                }
+                return identity;
+            }
+            catch (final IllegalArgumentException e) {
+                throw new IllegalStateException("Identity key pair can not be converted to a key agreement key pair.", e);
+            }
+        }
+        else {
+            return null;
+        }
+    }
 
     @Nullable
     public abstract KeyAgreementPublicKey getKeyAgreementPublicKey();

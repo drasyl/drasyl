@@ -23,17 +23,7 @@ package org.drasyl.node.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.KeyPair;
-import org.drasyl.identity.ProofOfWork;
-import org.drasyl.node.DrasylConfig;
-import org.drasyl.util.ThrowingSupplier;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,75 +41,16 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.JSONUtil.JACKSON_READER;
 import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.PathUtil.hasPosixSupport;
 
 /**
- * This class holds the identity of the node. Messages to the node are addressed to the identity's
- * public key. Messages will be encrypted with public-private key pair contained in the identity.
+ * Utility class for writing an {@link Identity} to a {@link Path} and vice versa.
  */
-public class IdentityManager {
-    private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private final ThrowingSupplier<Identity, IOException> identityGenerator;
-    private final DrasylConfig config;
-    private Identity identity;
-
-    /**
-     * Manages the identity at the specified file path. If there is no identity at this file path
-     * yet, a new one is created.
-     */
-    public IdentityManager(final DrasylConfig config) {
-        this(IdentityManager::generateIdentity, config, null);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    IdentityManager(final ThrowingSupplier<Identity, IOException> identityGenerator,
-                    final DrasylConfig config,
-                    final Identity identity) {
-        this.identityGenerator = identityGenerator;
-        this.config = config;
-        this.identity = identity;
-    }
-
-    /**
-     * Attempts to load the identity defined in the configuration: First it tries to read the key
-     * pair directly from the configuration. If no key pair is specified there, the identity is
-     * loaded from the identity file path specified in the configuration. If the file does not
-     * exist, a new identity is generated and written to the file. If all this fails and no identity
-     * can be loaded, an {@link IOException} is thrown.
-     *
-     * @throws IOException if identity could not be loaded or created
-     */
-    public void loadOrCreateIdentity() throws IOException {
-        if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentitySecretKey() != null) {
-            LOG.info("Load identity specified in config");
-            try {
-                this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentitySecretKey());
-            }
-            catch (final IllegalArgumentException e) {
-                throw new IOException("Identity read from configuration seems invalid", e);
-            }
-        }
-        else {
-            final Path path = config.getIdentityPath();
-
-            if (isIdentityFilePresent(path)) {
-                LOG.info("Read Identity from file `{}`", path);
-                this.identity = readIdentityFile(path);
-            }
-            else {
-                LOG.info("No Identity present. Generate a new one and write to file `{}`.", path);
-                final Identity myIdentity = identityGenerator.get();
-                writeIdentityFile(path, myIdentity);
-                this.identity = myIdentity;
-            }
-        }
-
-        if (!this.identity.isValid()) {
-            throw new IOException("Loaded or Created Identity is invalid.");
-        }
+public final class IdentityManager {
+    private IdentityManager() {
+        // util class
     }
 
     /**
@@ -129,7 +60,7 @@ public class IdentityManager {
      * @param path path to identity file
      * @return {@code true} if file exists
      */
-    private static boolean isIdentityFilePresent(final Path path) {
+    public static boolean isIdentityFilePresent(final Path path) {
         return path.toFile().exists() && path.toFile().isFile();
     }
 
@@ -141,7 +72,7 @@ public class IdentityManager {
      * @return The identity contained in the file
      * @throws IOException if identity could not be read from file
      */
-    private static Identity readIdentityFile(final Path path) throws IOException {
+    public static Identity readIdentityFile(final Path path) throws IOException {
         try {
             // check if file permissions are too open
             if (hasPosixSupport(path)) {
@@ -159,24 +90,6 @@ public class IdentityManager {
     }
 
     /**
-     * Generates a new random identity.
-     *
-     * @return the generated identity
-     * @throws IOException if an identity could not be generated
-     */
-    public static Identity generateIdentity() throws IOException {
-        try {
-            final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair = Crypto.INSTANCE.generateLongTimeKeyPair();
-            final ProofOfWork pow = ProofOfWork.generateProofOfWork(identityKeyPair.getPublicKey(), Identity.POW_DIFFICULTY);
-
-            return Identity.of(pow, identityKeyPair);
-        }
-        catch (final CryptoException e) {
-            throw new IOException("Unable to generate new identity", e);
-        }
-    }
-
-    /**
      * Writes the identity {@code identity} to the file {@code path}. Attention: If {@code path}
      * already contains an identity, it will be overwritten without warning.
      *
@@ -184,8 +97,8 @@ public class IdentityManager {
      * @param identity this identity is written to the file
      * @throws IOException if the identity could not be written to the file
      */
-    private static void writeIdentityFile(final Path path,
-                                          final Identity identity) throws IOException {
+    public static void writeIdentityFile(final Path path,
+                                         final Identity identity) throws IOException {
         final File file = path.toFile();
 
         if (Files.isDirectory(path) || (file.getParentFile() != null && !file.getParentFile().exists())) {
@@ -202,25 +115,6 @@ public class IdentityManager {
 
             JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
         }
-    }
-
-    public IdentityPublicKey getIdentityPublicKey() {
-        return identity.getIdentityPublicKey();
-    }
-
-    public IdentitySecretKey getIdentityPrivateKey() {
-        return identity.getIdentitySecretKey();
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return identity.getProofOfWork();
-    }
-
-    /**
-     * @return returns the node identity.
-     */
-    public Identity getIdentity() {
-        return requireNonNull(identity);
     }
 
     /**
