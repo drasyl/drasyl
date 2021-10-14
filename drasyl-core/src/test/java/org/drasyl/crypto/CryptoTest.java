@@ -21,9 +21,9 @@
  */
 package org.drasyl.crypto;
 
-import org.drasyl.crypto.sodium.Sodium;
 import org.drasyl.crypto.sodium.LazyDrasylSodium;
 import org.drasyl.crypto.sodium.SessionPair;
+import org.drasyl.crypto.sodium.Sodium;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
