@@ -50,7 +50,7 @@
             <artifactId>guava</artifactId>
         </dependency>
 
-        <!-- Crypto -->
+        <!-- JNA -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
