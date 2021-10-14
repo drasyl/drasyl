@@ -27,7 +27,7 @@ import java.util.Objects;
  * This is an immutable object.
  */
 @SuppressWarnings("java:S2974")
-public class HopCount {
+public class HopCount implements Comparable<HopCount> {
     public static final byte MIN_HOP_COUNT = 0;
     public static final byte MAX_HOP_COUNT = 127;
     private final byte value;
@@ -75,6 +75,11 @@ public class HopCount {
     @Override
     public String toString() {
         return String.valueOf(value);
+    }
+
+    @Override
+    public int compareTo(final HopCount o) {
+        return Byte.compare(getByte(), o.getByte());
     }
 
     /**

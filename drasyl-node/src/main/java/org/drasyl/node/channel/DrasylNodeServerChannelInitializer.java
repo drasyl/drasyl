@@ -32,7 +32,6 @@ import org.drasyl.crypto.Hashing;
 import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
-import org.drasyl.handler.remote.HopCountGuard;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
@@ -46,6 +45,7 @@ import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
 import org.drasyl.handler.remote.portmapper.PortMapper;
+import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.tcp.TcpClient;
 import org.drasyl.handler.remote.tcp.TcpServer;
@@ -181,16 +181,13 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new UnarmedMessageDecoder());
 
         ch.pipeline().addLast(new RateLimiter());
-
-        // outbound message guard
-        ch.pipeline().addLast(new HopCountGuard(config.getRemoteMessageHopLimit()));
     }
 
     private void discoveryStage(final DrasylServerChannel ch) {
         if (config.isRemoteEnabled()) {
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
-                final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.isRemoteSuperPeerEnabled() ? config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)) : Map.of();
+                final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));
                 ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(
                         config.getNetworkId(),
                         identity.getIdentityPublicKey(),
@@ -208,6 +205,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         identity.getProofOfWork(),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
+                        HopCount.of(config.getRemoteMessageHopLimit()),
                         config.getRemoteUniteMinInterval().toMillis()
                 ));
             }

@@ -26,6 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -42,6 +45,18 @@ class HopCountTest {
         void shouldThrowExceptionIfOverflowOccur() {
             final HopCount hopCount = HopCount.of(HopCount.MAX_HOP_COUNT);
             assertThrows(IllegalStateException.class, hopCount::increment);
+        }
+    }
+
+    @Nested
+    class CompareTo {
+        @Test
+        void shouldCompareTheHopCountBySize() {
+            assertEquals(0, HopCount.of(1).compareTo(HopCount.of(1)));
+            assertThat(HopCount.of(1).compareTo(HopCount.of(2)), lessThan(0));
+            assertThat(HopCount.of(2).compareTo(HopCount.of(1)), greaterThan(0));
+            assertThat(HopCount.of(127).compareTo(HopCount.of(1)), greaterThan(0));
+            assertThat(HopCount.of(1).compareTo(HopCount.of(127)), lessThan(0));
         }
     }
 
