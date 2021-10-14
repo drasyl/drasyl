@@ -61,7 +61,7 @@ class DrasylNodeServerChannelInitializerTest {
             final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(21)).addLast(any());
+            verify(channel.pipeline(), times(20)).addLast(any());
         }
     }
 }
