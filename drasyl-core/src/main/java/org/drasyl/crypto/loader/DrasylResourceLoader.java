@@ -68,23 +68,23 @@ public class DrasylResourceLoader {
      * @throws IOException        If at any point processing of the resource file fails.
      * @throws URISyntaxException If cannot find the resource file.
      */
-    public File copyToTempDirectory(String relativePath,
-                                    Class outsideClass) throws IOException, URISyntaxException {
+    public File copyToTempDirectory(final String relativePath,
+                                    final Class outsideClass) throws IOException, URISyntaxException {
         // Create a "main" temporary directory in which
         // everything can be thrown in.
-        File mainTempDir = createMainTempDirectory();
+        final File mainTempDir = createMainTempDirectory();
 
         // Create the required directories.
         mainTempDir.mkdirs();
 
         // Is the user loading resources that are
         // from inside a JAR?
-        URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
+        final URL fullJarPathURL = getThePathToTheJarWeAreIn(outsideClass);
 
         // Test if we are in a JAR and if we are
         // then do the following...
         if (isJarFile(fullJarPathURL)) {
-            File extracted = extractFromWithinAJarFile(fullJarPathURL, mainTempDir, relativePath);
+            final File extracted = extractFromWithinAJarFile(fullJarPathURL, mainTempDir, relativePath);
             if (extracted != null) {
                 return extracted;
             }
@@ -95,13 +95,13 @@ public class DrasylResourceLoader {
         return getFileFromFileSystem(relativePath, mainTempDir);
     }
 
-    public File extractFromWithinAJarFile(URL jarPath, File mainTempDir, String relativePath)
+    public File extractFromWithinAJarFile(final URL jarPath, final File mainTempDir, final String relativePath)
             throws IOException, URISyntaxException {
         if (jarPath == null) {
             return null;
         }
         // Split our JAR path
-        String fullPath = jarPath + prefixStringWithSlashIfNotAlready(relativePath);
+        final String fullPath = jarPath + prefixStringWithSlashIfNotAlready(relativePath);
         return nestedExtract(mainTempDir, fullPath);
     }
 
@@ -128,13 +128,13 @@ public class DrasylResourceLoader {
      * @throws IOException
      * @throws URISyntaxException
      */
-    private File nestedExtract(File extractTo,
-                               String fullPath) throws IOException, URISyntaxException {
+    private File nestedExtract(final File extractTo,
+                               final String fullPath) throws IOException, URISyntaxException {
         final String JAR = ".jar";
 
         // After this line we have something like
         // file:C/app, some/lazysodium, file.txt
-        String[] split = fullPath.split("(\\.jar/)");
+        final String[] split = fullPath.split("(\\.jar/)");
 
         if (split.length > 20) {
             // What monster would put a JAR in a JAR 20 times?
@@ -173,7 +173,7 @@ public class DrasylResourceLoader {
             // Now check if it's the last iteration of this for-loop.
             // If it isn't then add a ".jar" to nextPart, resulting
             // in something like "/lazysodium.jar"
-            boolean isLastIteration = (i == (split.length - 2));
+            final boolean isLastIteration = (i == (split.length - 2));
             if (!isLastIteration) {
                 nextPart = nextPart + JAR;
             }
@@ -198,27 +198,27 @@ public class DrasylResourceLoader {
      * @param jarUrl
      * @return
      */
-    private boolean isJarFile(URL jarUrl) {
+    private boolean isJarFile(final URL jarUrl) {
         if (jarUrl != null) {
             // Split jarinjar file path
             // Get first jar file
-            String[] split = jarUrl.getPath().split("(\\.jar/)");
-            String path;
+            final String[] split = jarUrl.getPath().split("(\\.jar/)");
+            final String path;
             if (split.length == 1) {
                 path = jarUrl.getPath();
             }
             else {
                 path = split[0] + ".jar";
             }
-            try (JarFile jarFile = new JarFile(new File(path))) {
+            try (final JarFile jarFile = new JarFile(new File(path))) {
                 // Successfully opened the jar file. Check if there's a manifest
                 // This is probably not necessary
-                Manifest manifest = jarFile.getManifest();
+                final Manifest manifest = jarFile.getManifest();
                 if (manifest != null) {
                     return true;
                 }
             }
-            catch (IOException | IllegalStateException | SecurityException e) {
+            catch (final IOException | IllegalStateException | SecurityException e) {
                 logger.debug("This is not a JAR file due to {}", e.getMessage());
             }
         }
@@ -236,12 +236,12 @@ public class DrasylResourceLoader {
      * @throws URISyntaxException If we could not ascertain our location.
      * @throws IOException        If whilst unzipping we had some problems.
      */
-    private File extractFilesOrFoldersFromJar(File outputDir,
-                                              URL jarUrl,
-                                              String pathInJar) throws IOException {
-        File jar = urlToFile(jarUrl);
+    private File extractFilesOrFoldersFromJar(final File outputDir,
+                                              final URL jarUrl,
+                                              final String pathInJar) throws IOException {
+        final File jar = urlToFile(jarUrl);
         unzip(jar.getAbsolutePath(), outputDir.getAbsolutePath());
-        String filePath = outputDir.getAbsolutePath() + pathInJar;
+        final String filePath = outputDir.getAbsolutePath() + pathInJar;
         return new File(filePath);
     }
 
@@ -256,7 +256,7 @@ public class DrasylResourceLoader {
      * @throws IOException Could not find your requested file.
      */
     private File getFileFromFileSystem(String relativePath,
-                                       File outputDir) throws IOException, URISyntaxException {
+                                       final File outputDir) throws IOException, URISyntaxException {
         relativePath = prefixStringWithSlashIfNotAlready(relativePath);
         final URL url = DrasylResourceLoader.class.getResource(relativePath);
         final String urlString = url.getFile();
@@ -269,8 +269,8 @@ public class DrasylResourceLoader {
         }
 
         if (file.isFile()) {
-            File resource = new File(relativePath);
-            File resourceCopiedToTempFolder = new File(outputDir, resource.getName());
+            final File resource = new File(relativePath);
+            final File resourceCopiedToTempFolder = new File(outputDir, resource.getName());
             doCopyFile(file, resourceCopiedToTempFolder);
             return resourceCopiedToTempFolder;
         }
@@ -292,10 +292,10 @@ public class DrasylResourceLoader {
         if (!(Files.exists(Paths.get(unzipLocation)))) {
             Files.createDirectories(Paths.get(unzipLocation));
         }
-        try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFilePath))) {
+        try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFilePath))) {
             ZipEntry entry = zipInputStream.getNextEntry();
             while (entry != null) {
-                Path filePath = Paths.get(unzipLocation, entry.getName());
+                final Path filePath = Paths.get(unzipLocation, entry.getName());
                 if (!entry.isDirectory()) {
                     filePath.getParent().toFile().mkdirs();
                     unzipFiles(zipInputStream, filePath);
@@ -312,8 +312,8 @@ public class DrasylResourceLoader {
 
     private static void unzipFiles(final ZipInputStream zipInputStream,
                                    final Path unzipFilePath) throws IOException {
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(unzipFilePath.toAbsolutePath().toString()))) {
-            byte[] bytesIn = new byte[1024];
+        try (final BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(unzipFilePath.toAbsolutePath().toString()))) {
+            final byte[] bytesIn = new byte[1024];
             int read = 0;
             while ((read = zipInputStream.read(bytesIn)) != -1) {
                 bos.write(bytesIn, 0, read);
@@ -336,10 +336,10 @@ public class DrasylResourceLoader {
             throw new IOException("Destination '" + destFile + "' exists but is a directory");
         }
 
-        try (FileInputStream fis = new FileInputStream(srcFile);
-             FileChannel input = fis.getChannel();
-             FileOutputStream fos = new FileOutputStream(destFile);
-             FileChannel output = fos.getChannel()) {
+        try (final FileInputStream fis = new FileInputStream(srcFile);
+             final FileChannel input = fis.getChannel();
+             final FileOutputStream fos = new FileOutputStream(destFile);
+             final FileChannel output = fos.getChannel()) {
             final long size = input.size(); // TODO See IO-386
             long pos = 0;
             long count = 0;
@@ -431,8 +431,8 @@ public class DrasylResourceLoader {
      * @throws IOException Could not create a temporary directory
      */
     public static File createMainTempDirectory() throws IOException {
-        Path path = Files.createTempDirectory("resource-loader");
-        File dir = path.toFile();
+        final Path path = Files.createTempDirectory("resource-loader");
+        final File dir = path.toFile();
         dir.mkdir();
         dir.deleteOnExit();
         return dir;
@@ -446,7 +446,7 @@ public class DrasylResourceLoader {
      * @throws IOException Could not set permissions
      * @see #setPermissions(File, Set)
      */
-    public File setPermissions(File file) throws IOException {
+    public File setPermissions(final File file) throws IOException {
         return setPermissions(file, new HashSet<>());
     }
 
@@ -459,12 +459,12 @@ public class DrasylResourceLoader {
      * @return The file with correct permissions set.
      * @throws IOException
      */
-    public File setPermissions(File file,
+    public File setPermissions(final File file,
                                Set<PosixFilePermission> filePermissions) throws IOException {
         if (isPosixCompliant()) {
             // For posix set fine grained permissions.
             if (filePermissions.isEmpty()) {
-                Set<PosixFilePermission> perms = new HashSet<>();
+                final Set<PosixFilePermission> perms = new HashSet<>();
                 perms.add(PosixFilePermission.OWNER_READ);
                 perms.add(PosixFilePermission.OWNER_WRITE);
                 perms.add(PosixFilePermission.OWNER_EXECUTE);
@@ -501,7 +501,7 @@ public class DrasylResourceLoader {
      *
      * @param file The file or directory to be deleted.
      */
-    public void requestDeletion(File file) {
+    public void requestDeletion(final File file) {
         if (isPosixCompliant()) {
             // The file can be deleted immediately after loading
             file.delete();
@@ -523,7 +523,7 @@ public class DrasylResourceLoader {
                     .supportedFileAttributeViews()
                     .contains("posix");
         }
-        catch (FileSystemNotFoundException | ProviderNotFoundException | SecurityException e) {
+        catch (final FileSystemNotFoundException | ProviderNotFoundException | SecurityException e) {
             return false;
         }
     }
@@ -584,7 +584,7 @@ public class DrasylResourceLoader {
 
         // Strip the class's path from the URL string
         // This will now give us jar:file:/C:/app.jar!/lazysodium.jar/
-        String path = url.substring(0, url.length() - suffix.length());
+        final String path = url.substring(0, url.length() - suffix.length());
 
         return getPathToTheNestedJar(path);
     }
@@ -659,7 +659,7 @@ public class DrasylResourceLoader {
             // file:/C:/app.jar/lazysodium.jar
             return new URL(url);
         }
-        catch (MalformedURLException e) {
+        catch (final MalformedURLException e) {
             return null;
         }
     }

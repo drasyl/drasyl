@@ -21,13 +21,13 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -65,7 +65,7 @@ public class FullReadMessageBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void arm(final Blackhole blackhole) {
         try {
-            final ArmedProtocolMessage armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, new SessionPair(sessionPair.getTx(), sessionPair.getRx()));
+            final ArmedProtocolMessage armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx()));
             blackhole.consume(armedMessage);
         }
         catch (final IOException e) {

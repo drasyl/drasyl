@@ -21,9 +21,9 @@
  */
 package org.drasyl.node.handler.crypto;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.KeyPair;

@@ -19,38 +19,17 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.node.handler.crypto;
+package org.drasyl.crypto.sodium;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.crypto.sodium.SessionPair;
 
-/**
- * This object represents a session key agreement between two nodes.
- */
 @AutoValue
-public abstract class Agreement {
-    public static final long RENEW_DIVISOR = 2;
+public abstract class SessionPair {
+    public abstract byte[] getRx();
 
-    public abstract AgreementId getAgreementId();
+    public abstract byte[] getTx();
 
-    public abstract SessionPair getSessionPair();
-
-    /**
-     * @return negative value means no stale (only for long time agreement)
-     */
-    public abstract long getStaleAt();
-
-    public boolean isStale() {
-        return getStaleAt() < 0 || getStaleAt() < System.currentTimeMillis();
-    }
-
-    public boolean isRenewable() {
-        return getStaleAt() < 0 || getStaleAt() < (System.currentTimeMillis() / RENEW_DIVISOR);
-    }
-
-    public static Agreement of(final AgreementId id,
-                               final SessionPair sessionPair,
-                               final long staleAt) {
-        return new AutoValue_Agreement(id, sessionPair, staleAt);
+    public static SessionPair of(final byte[] rx, final byte[] tx) {
+        return new AutoValue_SessionPair(rx, tx);
     }
 }

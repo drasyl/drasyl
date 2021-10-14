@@ -21,8 +21,8 @@
  */
 package org.drasyl.crypto;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;

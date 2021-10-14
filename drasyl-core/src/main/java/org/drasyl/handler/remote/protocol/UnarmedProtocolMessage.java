@@ -22,13 +22,13 @@
 package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;

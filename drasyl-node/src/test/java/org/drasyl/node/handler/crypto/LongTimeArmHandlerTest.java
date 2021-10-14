@@ -21,13 +21,13 @@
  */
 package org.drasyl.node.handler.crypto;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
