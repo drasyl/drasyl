@@ -21,7 +21,6 @@
  */
 package org.drasyl.crypto.sodium;
 
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.loader.LoaderException;
 import org.drasyl.crypto.loader.NativeLoader;
