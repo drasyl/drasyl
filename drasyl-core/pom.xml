@@ -52,16 +52,6 @@
 
         <!-- Crypto -->
         <dependency>
-            <groupId>com.goterl</groupId>
-            <artifactId>resource-loader</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.goterl</groupId>
-            <artifactId>lazysodium-java</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
         </dependency>

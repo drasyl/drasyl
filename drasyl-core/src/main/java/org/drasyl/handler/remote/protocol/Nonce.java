@@ -21,10 +21,10 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import com.goterl.lazysodium.interfaces.AEAD;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.crypto.sodium.LazyDrasylSodium;
 import org.drasyl.util.ImmutableByteArray;
 
 import java.util.Objects;
@@ -38,7 +38,7 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("java:S2974")
 public class Nonce {
-    public static final int NONCE_LENGTH = AEAD.XCHACHA20POLY1305_IETF_NPUBBYTES;
+    public static final int NONCE_LENGTH = LazyDrasylSodium.XCHACHA20POLY1305_IETF_NPUBBYTES;
     private final ImmutableByteArray bytes;
 
     private Nonce(@NonNull final ImmutableByteArray bytes) {

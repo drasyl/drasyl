@@ -33,9 +33,10 @@ public class LazyDrasylSodium {
     public static final short CURVE25519_SECRETKEYBYTES = 32;
     public static final short SESSIONKEYBYTES = 32;
     public static final short XCHACHA20POLY1305_IETF_ABYTES = 16;
-    private final DrasylSodium sodium;
+    public static final short XCHACHA20POLY1305_IETF_NPUBBYTES = 24;
+    private final Sodium sodium;
 
-    public LazyDrasylSodium(final DrasylSodium sodium) {
+    public LazyDrasylSodium(final Sodium sodium) {
         this.sodium = sodium;
     }
 
@@ -189,7 +190,7 @@ public class LazyDrasylSodium {
         return (res == 0);
     }
 
-    public DrasylSodium getSodium() {
+    public Sodium getSodium() {
         return sodium;
     }
 }

@@ -21,100 +21,42 @@
  */
 package org.drasyl.crypto.sodium;
 
-import com.sun.jna.Pointer;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.loader.LibraryLoader;
+import org.drasyl.crypto.loader.LoaderException;
+import org.drasyl.crypto.loader.NativeLoader;
 
-/**
- * This class presents a restricted view to the native sodium library. Only the required functions
- * for drasyl are considered.
- */
-public class DrasylSodium {
-    protected DrasylSodium() {
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.drasyl.crypto.loader.LibraryLoader.Mode.PREFER_SYSTEM;
+
+public class DrasylSodium extends Sodium {
+    public DrasylSodium() throws LoaderException {
+        this(PREFER_SYSTEM);
     }
 
-    protected void register() {
-        if (sodium_init() != 0) {
-            throw new IllegalStateException("Could not initialize sodium library properly.");
+    public DrasylSodium(final LibraryLoader.Mode loadingMode) throws LoaderException {
+        new LibraryLoader(getClassesToRegister()).loadLibrary(loadingMode, "sodium");
+        register();
+    }
+
+    public DrasylSodium(final File libFile) throws LoaderException {
+        try {
+            for (final Class clazz : getClassesToRegister()) {
+                NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), clazz);
+            }
+            register();
+        }
+        catch (final Exception e) {
+            throw new LoaderException("Could not load local library due to: ", e);
         }
     }
 
-    /*
-     * UTILS
-     */
-    public native int sodium_init();
-
-    /*
-     * SIGNING
-     */
-    public native int crypto_sign_keypair(byte[] publicKey, byte[] secretKey);
-
-    public native int crypto_sign_ed25519_pk_to_curve25519(
-            byte[] curve25519PublicKey,
-            byte[] ed25519PublicKey
-    );
-
-    public native int crypto_sign_ed25519_sk_to_curve25519(
-            byte[] curve25519SecretKey,
-            byte[] ed25519SecretKey
-    );
-
-    public native int crypto_sign_detached(
-            byte[] signature,
-            Pointer sigLength,
-            byte[] message,
-            long messageLen,
-            byte[] secretKey
-    );
-
-    public native int crypto_sign_verify_detached(byte[] signature,
-                                                  byte[] message,
-                                                  long messageLen,
-                                                  byte[] publicKey);
-
-    /*
-     * KEY EXCHANGE
-     */
-    public native int crypto_kx_keypair(byte[] publicKey, byte[] secretKey);
-
-    public native int crypto_kx_client_session_keys(
-            byte[] rx,
-            byte[] tx,
-            byte[] clientPk,
-            byte[] clientSk,
-            byte[] serverPk
-    );
-
-    public native int crypto_kx_server_session_keys(
-            byte[] rx,
-            byte[] tx,
-            byte[] serverPk,
-            byte[] serverSk,
-            byte[] clientPk
-    );
-
-    /*
-     * XCHACHA
-     */
-    public native int crypto_aead_xchacha20poly1305_ietf_encrypt(
-            byte[] c,
-            long[] cLen,
-            byte[] m,
-            long mLen,
-            byte[] ad,
-            long adLen,
-            byte[] nSec,
-            byte[] nPub,
-            byte[] k
-    );
-
-    public native int crypto_aead_xchacha20poly1305_ietf_decrypt(
-            byte[] m,
-            long[] mLen,
-            byte[] nSec,
-            byte[] c,
-            long cLen,
-            byte[] ad,
-            long adLen,
-            byte[] nPub,
-            byte[] k
-    );
+    public static List<Class> getClassesToRegister() {
+        final List<Class> classes = new ArrayList<>();
+        classes.add(Sodium.class);
+        return classes;
+    }
 }

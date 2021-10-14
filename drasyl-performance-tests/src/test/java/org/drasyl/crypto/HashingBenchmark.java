@@ -22,9 +22,6 @@
 package org.drasyl.crypto;
 
 import com.google.common.hash.HashFunction;
-import com.goterl.lazysodium.LazySodiumJava;
-import com.goterl.lazysodium.SodiumJava;
-import com.goterl.lazysodium.interfaces.Hash;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -42,14 +39,12 @@ public class HashingBenchmark extends AbstractBenchmark {
     @Param({ "32", "1432" })
     private int size;
     private byte[] message;
-    private LazySodiumJava sodium;
     private HashFunction googleSha256;
     private HashFunction googleSha512;
 
     @Setup
     public void setup() {
         message = RandomUtil.randomBytes(size);
-        sodium = new LazySodiumJava(new SodiumJava());
         googleSha256 = com.google.common.hash.Hashing.sha256();
         googleSha512 = com.google.common.hash.Hashing.sha512();
     }
@@ -66,19 +61,5 @@ public class HashingBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void googleSHA512(final Blackhole blackhole) {
         blackhole.consume(googleSha512.hashBytes(message));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void sodiumSHA256(final Blackhole blackhole) {
-        blackhole.consume(sodium.cryptoHashSha256(new byte[Hash.SHA256_BYTES], message, message.length));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void sodiumSHA512(final Blackhole blackhole) {
-        blackhole.consume(sodium.cryptoHashSha512(new byte[Hash.SHA512_BYTES], message, message.length));
     }
 }

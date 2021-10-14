@@ -21,15 +21,15 @@
  */
 package org.drasyl.node.handler.crypto;
 
-import com.goterl.lazysodium.interfaces.AEAD;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
+import org.drasyl.crypto.sodium.LazyDrasylSodium;
 import org.drasyl.handler.remote.protocol.Nonce;
 
 import java.util.Objects;
 
 public class ArmHeader extends DefaultByteBufHolder {
-    public static final int MIN_LENGTH = 28 + AEAD.XCHACHA20POLY1305_IETF_ABYTES;
+    public static final int MIN_LENGTH = 28 + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES;
     private final AgreementId agreementId;
     private final Nonce nonce;
 

@@ -19,12 +19,24 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
+package org.drasyl.crypto.loader;
 
-import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.crypto.sodium.DrasylSodium;
 
-public interface Key {
-    ImmutableByteArray getBytes();
+/**
+ * A CryptoException is thrown by {@link LibraryLoader}, {@link NativeLoader} and {@link
+ * DrasylSodium} when errors occur.
+ */
+public class LoaderException extends Exception {
+    public LoaderException(final String message) {
+        super(message);
+    }
 
-    byte[] toByteArray();
+    public LoaderException(final String message, final Exception cause) {
+        super(message, cause);
+    }
+
+    public LoaderException(final Exception wrapped) {
+        super(wrapped);
+    }
 }
