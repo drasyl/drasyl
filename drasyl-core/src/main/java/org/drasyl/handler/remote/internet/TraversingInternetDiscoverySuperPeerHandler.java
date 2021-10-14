@@ -25,6 +25,7 @@ import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.AddressedMessage;
+import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -59,10 +60,11 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                 final LongSupplier currentTime,
                                                 final long pingIntervalMillis,
                                                 final long pingTimeoutMillis,
+                                                final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
                                                 final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, childrenPeers, stalePeerCheckDisposable);
+        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
 
@@ -71,8 +73,9 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                        final ProofOfWork myProofOfWork,
                                                        final long pingIntervalMillis,
                                                        final long pingTimeoutMillis,
+                                                       final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis);
+        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
                     .maximumSize(1_000)
@@ -87,12 +90,12 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
 
     @Override
     protected void relayMessage(final ChannelHandlerContext ctx,
-                                final AddressedMessage<RemoteMessage, InetSocketAddress> msg,
+                                final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg,
                                 final InetSocketAddress inetAddress) {
-        super.relayMessage(ctx, msg, inetAddress);
+        super.relayMessage(ctx, addressedMsg, inetAddress);
 
-        final DrasylAddress senderKey = msg.message().getSender();
-        final DrasylAddress recipientKey = msg.message().getRecipient();
+        final DrasylAddress senderKey = addressedMsg.message().getSender();
+        final DrasylAddress recipientKey = addressedMsg.message().getRecipient();
         if (shouldInitiateRendezvous(senderKey, recipientKey)) {
             initiateRendezvous(ctx, senderKey, recipientKey);
         }

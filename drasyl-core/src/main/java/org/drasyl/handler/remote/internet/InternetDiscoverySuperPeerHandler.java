@@ -32,6 +32,7 @@ import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -66,6 +67,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private final long pingIntervalMillis;
     private final long pingTimeoutMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
+    private final HopCount hopLimit;
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
@@ -76,14 +78,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                       final long pingIntervalMillis,
                                       final long pingTimeoutMillis,
                                       final Map<DrasylAddress, ChildrenPeer> childrenPeers,
+                                      final HopCount hopLimit,
                                       final Future<?> stalePeerCheckDisposable) {
-        this.myNetworkId = requireNonNull(myNetworkId);
+        this.myNetworkId = myNetworkId;
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
         this.pingIntervalMillis = pingIntervalMillis;
         this.pingTimeoutMillis = pingTimeoutMillis;
         this.childrenPeers = requireNonNull(childrenPeers);
+        this.hopLimit = requireNonNull(hopLimit);
         this.stalePeerCheckDisposable = stalePeerCheckDisposable;
     }
 
@@ -91,7 +95,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                              final IdentityPublicKey myPublicKey,
                                              final ProofOfWork myProofOfWork,
                                              final long pingIntervalMillis,
-                                             final long pingTimeoutMillis) {
+                                             final long pingTimeoutMillis,
+                                             final HopCount hopLimit) {
         this(
                 myNetworkId,
                 myPublicKey,
@@ -100,6 +105,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 new HashMap<>(),
+                hopLimit,
                 null
         );
     }
@@ -207,10 +213,19 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S2325")
     protected void relayMessage(final ChannelHandlerContext ctx,
-                                final AddressedMessage<RemoteMessage, InetSocketAddress> msg,
+                                final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg,
                                 final InetSocketAddress inetAddress) {
-        LOG.trace("Got RemoteMessage for children peer `{}`. Relay it to address `{}`.", msg.message().getRecipient(), inetAddress);
-        ctx.writeAndFlush(msg.route(inetAddress));
+        final RemoteMessage msg = addressedMsg.message();
+        LOG.trace("Got RemoteMessage for children peer `{}`. Relay it to address `{}`.", msg::getRecipient, () -> inetAddress);
+
+        // increment hop count every time a message is relayed
+        if (hopLimit.compareTo(msg.getHopCount()) > 0) {
+            ctx.writeAndFlush(addressedMsg.route(inetAddress).replace(msg.incrementHopCount()));
+        }
+        else {
+            ReferenceCountUtil.release(addressedMsg);
+            LOG.trace("Hop limit has been reached. Drop message.");
+        }
     }
 
     /*
