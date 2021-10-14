@@ -26,7 +26,6 @@ import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
-import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,23 +40,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 class InvalidProofOfWorkFilterTest {
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
-    private Nonce correspondingId;
 
     @BeforeEach
     void setUp() {
-        senderPublicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+        senderPublicKey = ID_1.getIdentityPublicKey();
         recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
-        correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     }
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), correspondingId, System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -72,7 +70,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, IdentityTestUtil.ID_1.getProofOfWork(), correspondingId, System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ID_1.getProofOfWork(), System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -90,7 +88,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, correspondingId, System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {

@@ -30,7 +30,6 @@ import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.handler.remote.protocol.PartialReadMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class ByteToRemoteMessageCodecTest {
-    private final Nonce correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     private IdentityPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipientPublicKey;
@@ -68,7 +66,7 @@ class ByteToRemoteMessageCodecTest {
     class Decode {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
-            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, correspondingId, System.currentTimeMillis());
+            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

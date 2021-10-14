@@ -184,13 +184,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleDiscoveryMessageFromTraversingPeer(final ChannelHandlerContext ctx,
                                                           final DiscoveryMessage msg,
                                                           final InetSocketAddress inetAddress) {
-        LOG.trace("Got Discovery from traversing peer `{}`.", msg.getSender());
+        LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
         traversingPeer.setInetAddress(inetAddress);
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getNonce(), msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new AddressedMessage<>(acknowledgementMsg, inetAddress));
     }

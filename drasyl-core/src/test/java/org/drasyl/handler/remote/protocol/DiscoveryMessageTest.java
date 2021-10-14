@@ -28,31 +28,34 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
 public class DiscoveryMessageTest {
     private IdentityPublicKey sender;
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipient;
+    private long time;
 
     @BeforeEach
     void setUp() {
         sender = ID_1.getIdentityPublicKey();
         proofOfWork = ID_1.getProofOfWork();
-        recipient = IdentityTestUtil.ID_2.getIdentityPublicKey();
+        recipient = ID_2.getIdentityPublicKey();
+        time = System.currentTimeMillis();
     }
 
     @Nested
     class Of {
         @Test
         void shouldCreateDiscoveryMessage() {
-            final DiscoveryMessage discovery = DiscoveryMessage.of(1, recipient, sender, proofOfWork, 1337L);
+            final DiscoveryMessage discovery = DiscoveryMessage.of(1, recipient, sender, proofOfWork, time, 1337L);
 
             assertEquals(1, discovery.getNetworkId());
+            assertEquals(time, discovery.getTime());
             assertEquals(1337L, discovery.getChildrenTime());
         }
     }

@@ -28,7 +28,6 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
-import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -51,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_3;
 
 @ExtendWith(MockitoExtension.class)
 class RateLimiterTest {
@@ -62,7 +62,7 @@ class RateLimiterTest {
     void setUp() {
         sender = IdentityTestUtil.ID_1;
         ownIdentity = IdentityTestUtil.ID_2;
-        recipient = IdentityTestUtil.ID_3;
+        recipient = ID_3;
     }
 
     @Test
@@ -73,7 +73,7 @@ class RateLimiterTest {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Nonce.randomNonce(), System.currentTimeMillis());
+        final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), System.currentTimeMillis());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
@@ -121,7 +121,7 @@ class RateLimiterTest {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), IdentityTestUtil.ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
+        final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new AddressedMessage<>(msg, msgSender));
