@@ -22,7 +22,6 @@
 package org.drasyl.identity;
 
 import com.google.auto.value.AutoValue;
-import com.goterl.lazysodium.utils.Key;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
@@ -70,14 +69,6 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     @Override
     public byte[] toByteArray() {
         return getBytes().getArray();
-    }
-
-    /**
-     * @return this key as {@link Key}
-     */
-    @Override
-    public Key toSodiumKey() {
-        return Key.fromBytes(getBytes().getArray());
     }
 
     @Override

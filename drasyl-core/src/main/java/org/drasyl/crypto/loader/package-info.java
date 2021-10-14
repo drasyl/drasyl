@@ -20,6 +20,6 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * Helper to load resources from (nested) JARs
+ * Helper to load resources from (nested) JARs or file system
  */
 package org.drasyl.crypto.loader;

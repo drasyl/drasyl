@@ -22,7 +22,6 @@
 package org.drasyl.identity;
 
 import com.google.auto.value.AutoValue;
-import com.goterl.lazysodium.utils.Key;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.InternPool;
@@ -63,14 +62,6 @@ public abstract class IdentitySecretKey implements SecretKey {
     @Override
     public byte[] toByteArray() {
         return getBytes().getArray();
-    }
-
-    /**
-     * @return this key as {@link Key}
-     */
-    @Override
-    public Key toSodiumKey() {
-        return Key.fromBytes(toByteArray());
     }
 
     public static IdentitySecretKey of(final ImmutableByteArray bytes) {

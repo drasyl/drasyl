@@ -22,8 +22,9 @@
 package org.drasyl.crypto;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.goterl.resourceloader.ResourceLoaderException;
-import org.drasyl.crypto.loader.DrasylSodiumJava;
+import org.drasyl.crypto.loader.LibraryLoader;
+import org.drasyl.crypto.loader.LoaderException;
+import org.drasyl.crypto.sodium.DrasylSodium;
 import org.drasyl.crypto.sodium.LazyDrasylSodium;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.Nonce;
@@ -41,8 +42,6 @@ import java.io.File;
 import java.security.SecureRandom;
 import java.util.Objects;
 
-import static com.goterl.lazysodium.utils.LibraryLoader.getSodiumPathInResources;
-
 /**
  * Util class that provides cryptography functions for drasyl.
  */
@@ -56,43 +55,48 @@ public class Crypto {
     public static final short SK_CURVE_25519_KEY_LENGTH = LazyDrasylSodium.CURVE25519_SECRETKEYBYTES;
 
     static {
-        Crypto cryptoInstance;
-        final File lib = new File("./" + getSodiumPathInResources());
-
-        if (lib.isFile()) {
-            try {
-                cryptoInstance = new Crypto(new LazyDrasylSodium(new DrasylSodiumJava(lib)));
-
-                LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
-            }
-            catch (final ResourceLoaderException e) { // NOSONAR
-                // try default loading
-                cryptoInstance = new Crypto(
-                        new LazyDrasylSodium(new DrasylSodiumJava()));
-
-                LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
-            }
-        }
-        else {
-            cryptoInstance = new Crypto(
-                    new LazyDrasylSodium(new DrasylSodiumJava()));
-
-            LOG.debug("Loaded libsodium library with default constructor.");
-        }
-        INSTANCE = cryptoInstance;
-
-        // check for the optimal cryptographically secure pseudorandom number generator for the current platform
-        SecureRandom prng;
         try {
-            prng = SecureRandom.getInstance("Windows-PRNG");
-        }
-        catch (final Throwable e) { //NOSONAR
-            // the windows PRNG is not available switch over to default provider
-            // default for Unix-like systems is NativePRNG
-            prng = new SecureRandom();
-        }
+            Crypto cryptoInstance;
+            final File lib = new File("./" + LibraryLoader.getSodiumPlatformDependentPath());
 
-        CSPRNG = prng;
+            if (lib.isFile()) {
+                try {
+                    cryptoInstance = new Crypto(new LazyDrasylSodium(new DrasylSodium(lib)));
+
+                    LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
+                }
+                catch (final LoaderException e) { // NOSONAR
+                    // try default loading
+                    cryptoInstance = new Crypto(
+                            new LazyDrasylSodium(new DrasylSodium()));
+
+                    LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
+                }
+            }
+            else {
+                cryptoInstance = new Crypto(
+                        new LazyDrasylSodium(new DrasylSodium()));
+
+                LOG.debug("Loaded libsodium library with default constructor.");
+            }
+            INSTANCE = cryptoInstance;
+
+            // check for the optimal cryptographically secure pseudorandom number generator for the current platform
+            SecureRandom prng;
+            try {
+                prng = SecureRandom.getInstance("Windows-PRNG");
+            }
+            catch (final Throwable e) { //NOSONAR
+                // the windows PRNG is not available switch over to default provider
+                // default for Unix-like systems is NativePRNG
+                prng = new SecureRandom();
+            }
+
+            CSPRNG = prng;
+        }
+        catch (final LoaderException e) {
+            throw new RuntimeException(e); // NOSONAR
+        }
     }
 
     private final LazyDrasylSodium sodium;

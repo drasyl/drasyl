@@ -21,7 +21,7 @@
  */
 package org.drasyl.crypto;
 
-import org.drasyl.crypto.sodium.DrasylSodium;
+import org.drasyl.crypto.sodium.Sodium;
 import org.drasyl.crypto.sodium.LazyDrasylSodium;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.Nonce;
@@ -315,7 +315,7 @@ class CryptoTest {
             crypto.sign(message, key);
 
             verify(sodium).cryptoSignDetached(
-                    new byte[com.goterl.lazysodium.interfaces.Sign.BYTES], message, message.length,
+                    new byte[LazyDrasylSodium.ED25519_BYTES], message, message.length,
                     key.toByteArray());
         }
 
@@ -368,7 +368,7 @@ class CryptoTest {
     }
 
     // We've to wrap the SodiumJava, because Mockito does not support native calls
-    static class UnitSodium extends DrasylSodium {
+    static class UnitSodium extends Sodium {
         @Override
         public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
             return 0;
