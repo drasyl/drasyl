@@ -57,28 +57,27 @@ public class Crypto {
     static {
         try {
             Crypto cryptoInstance;
-            final File lib = new File("./" + LibraryLoader.getSodiumPlatformDependentPath());
 
-            if (lib.isFile()) {
-                try {
-                    cryptoInstance = new Crypto(new LazyDrasylSodium(new DrasylSodium(lib)));
-
-                    LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
-                }
-                catch (final LoaderException e) { // NOSONAR
-                    // try default loading
-                    cryptoInstance = new Crypto(
-                            new LazyDrasylSodium(new DrasylSodium()));
-
-                    LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
-                }
-            }
-            else {
+            try {
+                // try default loading
                 cryptoInstance = new Crypto(
                         new LazyDrasylSodium(new DrasylSodium()));
-
-                LOG.debug("Loaded libsodium library with default constructor.");
             }
+            catch (final LoaderException e) {
+                // try lib folder
+                final File lib = new File("./" + LibraryLoader.getSodiumPlatformDependentPath());
+                if (lib.isFile()) {
+                    cryptoInstance = new Crypto(
+                            new LazyDrasylSodium(new DrasylSodium(lib)));
+
+                    LOG.warn("Could not load sodium library with default constructor. Loaded sodium library from local path: {}", lib.getAbsolutePath());
+                }
+                else {
+                    LOG.warn("Could not load local libs from `{}`", lib.getAbsolutePath());
+                    throw new RuntimeException("Could not load crypto module."); // NOSONAR
+                }
+            }
+
             INSTANCE = cryptoInstance;
 
             // check for the optimal cryptographically secure pseudorandom number generator for the current platform
