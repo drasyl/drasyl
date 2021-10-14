@@ -85,7 +85,7 @@ public class NativeLoader {
                                                  final Class clazz,
                                                  final boolean fromJar) throws LoaderException {
         if (null == path || !path.startsWith("/")) {
-            throw new IllegalArgumentException("The path has to be absolute (start with '/'): " + path);
+            throw new LoaderException("The path has to be absolute (start with '/'): " + path);
         }
 
         // Obtain filename from path
@@ -94,7 +94,7 @@ public class NativeLoader {
 
         // Check if the filename is okay
         if (filename == null || filename.length() < MIN_PREFIX_LENGTH) {
-            throw new IllegalArgumentException("The filename has to be at least 3 characters long.");
+            throw new LoaderException("The filename has to be at least 3 characters long.");
         }
 
         // Prepare temporary file
@@ -112,9 +112,7 @@ public class NativeLoader {
 
         if (fromJar) {
             try (final InputStream is = NativeLoader.class.getResourceAsStream(path)) {
-                if (is != null) {
-                    Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
+                Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             catch (final IOException e) {
                 temp.delete(); // NOSONAR
@@ -132,10 +130,6 @@ public class NativeLoader {
             catch (final IOException e) {
                 temp.delete(); // NOSONAR
                 throw new LoaderException(e);
-            }
-            catch (final NullPointerException e) {
-                temp.delete(); // NOSONAR
-                throw new LoaderException("File " + path + " was not found inside JAR.");
             }
         }
 
