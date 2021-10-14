@@ -21,9 +21,9 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.sodium.SessionPair;
 
 import java.io.IOException;
 

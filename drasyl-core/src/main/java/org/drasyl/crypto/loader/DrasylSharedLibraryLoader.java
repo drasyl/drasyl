@@ -34,22 +34,22 @@ public class DrasylSharedLibraryLoader extends DrasylResourceLoader {
         return DrasylSharedLibraryLoader.SingletonHelper.INSTANCE;
     }
 
-    public void loadSystemLibrary(String libraryName, Class clzz) {
+    public void loadSystemLibrary(final String libraryName, final Class clzz) {
         loadSystemLibrary(libraryName, Collections.singletonList(clzz));
     }
 
-    public void loadSystemLibrary(String libraryName, List<Class> classes) {
+    public void loadSystemLibrary(final String libraryName, final List<Class> classes) {
         registerLibraryWithClasses(libraryName, classes);
     }
 
-    public File load(String relativePath, Class clzz) {
+    public File load(final String relativePath, final Class clzz) {
         return load(relativePath, Collections.singletonList(clzz));
     }
 
-    public File load(String relativePath, List<Class> classes) {
+    public File load(final String relativePath, final List<Class> classes) {
         synchronized (lock) {
             try {
-                File library = copyToTempDirectory(relativePath, classes.get(0));
+                final File library = copyToTempDirectory(relativePath, classes.get(0));
                 setPermissions(library);
                 if (library.isDirectory()) {
                     throw new IOException("Please supply a relative path to a file and not a directory.");
@@ -58,15 +58,15 @@ public class DrasylSharedLibraryLoader extends DrasylResourceLoader {
                 requestDeletion(library);
                 return library;
             }
-            catch (IOException e) {
-                String message = String.format(
+            catch (final IOException e) {
+                final String message = String.format(
                         "Failed to load the bundled library from resources by relative path (%s)",
                         relativePath
                 );
                 throw new ResourceLoaderException(message, e);
             }
-            catch (URISyntaxException e) {
-                String message = String.format(
+            catch (final URISyntaxException e) {
+                final String message = String.format(
                         "Finding the library from path (%s) failed!",
                         relativePath
                 );
@@ -75,10 +75,10 @@ public class DrasylSharedLibraryLoader extends DrasylResourceLoader {
         }
     }
 
-    private void registerLibraryWithClasses(String absolutePath, List<Class> classes) {
+    private void registerLibraryWithClasses(final String absolutePath, final List<Class> classes) {
         requireNonNull(absolutePath, "Please supply an absolute path.");
         synchronized (lock) {
-            for (Class clzz : classes) {
+            for (final Class clzz : classes) {
                 Native.register(clzz, absolutePath);
             }
         }

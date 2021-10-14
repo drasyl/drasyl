@@ -22,14 +22,10 @@
 package org.drasyl.crypto;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.goterl.lazysodium.LazySodiumJava;
-import com.goterl.lazysodium.exceptions.SodiumException;
-import com.goterl.lazysodium.interfaces.AEAD;
-import com.goterl.lazysodium.interfaces.Sign;
-import com.goterl.lazysodium.utils.SessionPair;
 import com.goterl.resourceloader.ResourceLoaderException;
-import org.drasyl.crypto.loader.DrasylLazySodiumJava;
 import org.drasyl.crypto.loader.DrasylSodiumJava;
+import org.drasyl.crypto.sodium.LazyDrasylSodium;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -54,10 +50,10 @@ public class Crypto {
     private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     public static final Crypto INSTANCE;
     public static final SecureRandom CSPRNG;
-    public static final short PK_LONG_TIME_KEY_LENGTH = Sign.PUBLICKEYBYTES;
-    public static final short SK_LONG_TIME_KEY_LENGTH = Sign.SECRETKEYBYTES;
-    public static final short PK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_PUBLICKEYBYTES;
-    public static final short SK_CURVE_25519_KEY_LENGTH = Sign.CURVE25519_SECRETKEYBYTES;
+    public static final short PK_LONG_TIME_KEY_LENGTH = LazyDrasylSodium.ED25519_PUBLICKEYBYTES;
+    public static final short SK_LONG_TIME_KEY_LENGTH = LazyDrasylSodium.ED25519_SECRETKEYBYTES;
+    public static final short PK_CURVE_25519_KEY_LENGTH = LazyDrasylSodium.CURVE25519_PUBLICKEYBYTES;
+    public static final short SK_CURVE_25519_KEY_LENGTH = LazyDrasylSodium.CURVE25519_SECRETKEYBYTES;
 
     static {
         Crypto cryptoInstance;
@@ -65,21 +61,21 @@ public class Crypto {
 
         if (lib.isFile()) {
             try {
-                cryptoInstance = new Crypto(new DrasylLazySodiumJava(new DrasylSodiumJava(lib)));
+                cryptoInstance = new Crypto(new LazyDrasylSodium(new DrasylSodiumJava(lib)));
 
                 LOG.debug("Loaded libsodium library from local path: {}", lib.getAbsolutePath());
             }
             catch (final ResourceLoaderException e) { // NOSONAR
                 // try default loading
                 cryptoInstance = new Crypto(
-                        new DrasylLazySodiumJava(new DrasylSodiumJava()));
+                        new LazyDrasylSodium(new DrasylSodiumJava()));
 
                 LOG.warn("Could not load local libs from `{}`. Loaded libsodium library with default constructor.", lib.getAbsolutePath());
             }
         }
         else {
             cryptoInstance = new Crypto(
-                    new DrasylLazySodiumJava(new DrasylSodiumJava()));
+                    new LazyDrasylSodium(new DrasylSodiumJava()));
 
             LOG.debug("Loaded libsodium library with default constructor.");
         }
@@ -99,9 +95,9 @@ public class Crypto {
         CSPRNG = prng;
     }
 
-    private final DrasylLazySodiumJava sodium;
+    private final LazyDrasylSodium sodium;
 
-    Crypto(final DrasylLazySodiumJava sodium) {
+    Crypto(final LazyDrasylSodium sodium) {
         this.sodium = sodium;
     }
 
@@ -185,9 +181,9 @@ public class Crypto {
     /**
      * <b>Is only for internal usage.</b>
      *
-     * @return returns the {@link LazySodiumJava} instance.
+     * @return returns the {@link LazyDrasylSodium} instance.
      */
-    public DrasylLazySodiumJava getSodium() {
+    public LazyDrasylSodium getSodium() {
         return sodium;
     }
 
@@ -284,21 +280,16 @@ public class Crypto {
         // We must ensure some order on the keys to work properly in async environments
         final int order = compare(myKeyPair.getPublicKey(), receiverPublicKey);
 
-        try {
-            switch (order) {
-                case -1:
-                    return sodium.cryptoKxClientSessionKeys(myKeyPair.getPublicKey().toSodiumKey(), myKeyPair.getSecretKey().toSodiumKey(), receiverPublicKey.toSodiumKey());
-                case 1:
-                    return sodium.cryptoKxServerSessionKeys(myKeyPair.getPublicKey().toSodiumKey(), myKeyPair.getSecretKey().toSodiumKey(), receiverPublicKey.toSodiumKey());
-                case 0:
-                    throw new CryptoException("Attention, there is probably an implementation error. " +
-                            "Sessions with yourself are not supported!");
-                default:
-                    throw new CryptoException("Unknown error during session generation.");
-            }
-        }
-        catch (final SodiumException e) {
-            throw new CryptoException(e);
+        switch (order) {
+            case -1:
+                return sodium.cryptoKxClientSessionKeys(myKeyPair.getPublicKey().toByteArray(), myKeyPair.getSecretKey().toByteArray(), receiverPublicKey.toByteArray());
+            case 1:
+                return sodium.cryptoKxServerSessionKeys(myKeyPair.getPublicKey().toByteArray(), myKeyPair.getSecretKey().toByteArray(), receiverPublicKey.toByteArray());
+            case 0:
+                throw new CryptoException("Attention, there is probably an implementation error. " +
+                        "Sessions with yourself are not supported!");
+            default:
+                throw new CryptoException("Unknown error during session generation.");
         }
     }
 
@@ -323,7 +314,7 @@ public class Crypto {
         Objects.requireNonNull(authTag);
 
         final long additionalDataLength = authTag.length;
-        final byte[] cipherBytes = new byte[message.length + AEAD.XCHACHA20POLY1305_IETF_ABYTES];
+        final byte[] cipherBytes = new byte[message.length + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
 
         if (!sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
                 cipherBytes,
@@ -362,12 +353,12 @@ public class Crypto {
         Objects.requireNonNull(cipher);
         Objects.requireNonNull(authTag);
 
-        if (cipher.length < AEAD.XCHACHA20POLY1305_IETF_ABYTES) {
-            throw new CryptoException("Could not decrypt the given cipher text. Cipher text is smaller than " + AEAD.XCHACHA20POLY1305_IETF_ABYTES + " bytes");
+        if (cipher.length < LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES) {
+            throw new CryptoException("Could not decrypt the given cipher text. Cipher text is smaller than " + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES + " bytes");
         }
 
         final long additionalDataLength = authTag.length;
-        final byte[] messageBytes = new byte[cipher.length - AEAD.XCHACHA20POLY1305_IETF_ABYTES];
+        final byte[] messageBytes = new byte[cipher.length - LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
 
         if (!sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
                 messageBytes,
@@ -398,7 +389,7 @@ public class Crypto {
     @SuppressWarnings("java:S3242")
     public byte[] sign(final byte[] message,
                        final IdentitySecretKey secretKey) throws CryptoException {
-        final byte[] signatureBytes = new byte[Sign.BYTES];
+        final byte[] signatureBytes = new byte[LazyDrasylSodium.ED25519_BYTES];
 
         if (!sodium.cryptoSignDetached(signatureBytes,
                 message,
