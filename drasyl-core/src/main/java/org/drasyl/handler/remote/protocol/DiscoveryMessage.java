@@ -125,6 +125,33 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      * @param recipient    the public key of the node to join
      * @param sender       the public key of the joining node
      * @param proofOfWork  the proof of work
+     * @param time         time in millis when this message was sent
+     * @param childrenTime if {@code 0} greater then 0, node will join a children.
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
+     *                              {@code null}
+     */
+    public static DiscoveryMessage of(final int networkId,
+                                      final DrasylAddress recipient,
+                                      final IdentityPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final long time,
+                                      final long childrenTime) {
+        return of(
+                HopCount.of(), false, networkId, randomNonce(),
+                recipient, sender,
+                proofOfWork,
+                time,
+                childrenTime
+        );
+    }
+
+    /**
+     * Creates a new {@link DiscoveryMessage} message.
+     *
+     * @param networkId    the network of the joining node
+     * @param recipient    the public key of the node to join
+     * @param sender       the public key of the joining node
+     * @param proofOfWork  the proof of work
      * @param childrenTime if {@code 0} greater then 0, node will join a children.
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
@@ -135,8 +162,9 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
                                       final ProofOfWork proofOfWork,
                                       final long childrenTime) {
         return of(
-                HopCount.of(), false, networkId, randomNonce(),
-                recipient, sender,
+                networkId,
+                recipient,
+                sender,
                 proofOfWork,
                 System.currentTimeMillis(),
                 childrenTime

@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
-import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -46,13 +45,11 @@ import static org.mockito.Mockito.when;
 class OtherNetworkFilterTest {
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
-    private Nonce correspondingId;
 
     @BeforeEach
     void setUp() {
         senderPublicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
         recipientPublicKey = IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b");
-        correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
     }
 
     @Test
@@ -74,7 +71,7 @@ class OtherNetworkFilterTest {
     @Test
     void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
         final ChannelHandler handler = new OtherNetworkFilter(123);
-        final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), correspondingId, System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));

@@ -28,7 +28,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
 
-import static org.drasyl.handler.remote.protocol.Nonce.NONCE_LENGTH;
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNOWLEDGEMENT;
 
@@ -38,14 +37,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNO
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class AcknowledgementMessage extends AbstractFullReadMessage<AcknowledgementMessage> {
-    public static final int LENGTH = 32;
-
-    /**
-     * Returns the {@link Nonce} to which this message corresponds.
-     *
-     * @return the {@link Nonce} to which this message corresponds
-     */
-    public abstract Nonce getCorrespondingId();
+    public static final int LENGTH = 8;
 
     /**
      * Returns the {@link DiscoveryMessage#getTime()} value of the corresponding {@link
@@ -55,7 +47,7 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
 
     @Override
     public AcknowledgementMessage incrementHopCount() {
-        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getCorrespondingId(), getTime());
+        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime());
     }
 
     @Override
@@ -65,7 +57,6 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
-        out.writeBytes(getCorrespondingId().toByteArray());
         out.writeLong(getTime());
     }
 
@@ -92,7 +83,6 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                             final DrasylAddress recipient,
                                             final DrasylAddress sender,
                                             final ProofOfWork proofOfWork,
-                                            final Nonce correspondingId,
                                             final long time) {
         return new AutoValue_AcknowledgementMessage(
                 nonce,
@@ -102,7 +92,6 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                 hopCount,
                 isArmed,
                 recipient,
-                correspondingId,
                 time
         );
     }
@@ -122,7 +111,6 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                             final DrasylAddress recipient,
                                             final IdentityPublicKey sender,
                                             final ProofOfWork proofOfWork,
-                                            final Nonce correspondingId,
                                             final long time) {
         return of(
                 HopCount.of(),
@@ -132,7 +120,6 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                 recipient,
                 sender,
                 proofOfWork,
-                correspondingId,
                 time
         );
     }
@@ -162,14 +149,10 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
             throw new InvalidMessageFormatException("AcknowledgementMessage requires " + LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
         }
 
-        final byte[] correspondingIdBuffer = new byte[NONCE_LENGTH];
-        body.readBytes(correspondingIdBuffer);
-
         return of(
                 hopCount, false, networkId, nonce,
                 recipient, sender,
                 proofOfWork,
-                Nonce.of(correspondingIdBuffer),
                 body.readLong());
     }
 }

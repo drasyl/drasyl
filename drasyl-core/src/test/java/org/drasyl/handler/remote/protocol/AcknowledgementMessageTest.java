@@ -38,7 +38,6 @@ public class AcknowledgementMessageTest {
     private IdentityPublicKey sender;
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipient;
-    private Nonce correspondingId;
     private long time;
 
     @BeforeEach
@@ -46,7 +45,6 @@ public class AcknowledgementMessageTest {
         sender = ID_1.getIdentityPublicKey();
         proofOfWork = ID_1.getProofOfWork();
         recipient = ID_2.getIdentityPublicKey();
-        correspondingId = Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7");
         time = System.currentTimeMillis();
     }
 
@@ -54,10 +52,10 @@ public class AcknowledgementMessageTest {
     class Of {
         @Test
         void shouldCreateAcknowledgementMessage() {
-            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, correspondingId, time);
+            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time);
 
             assertEquals(1, acknowledgement.getNetworkId());
-            assertEquals(correspondingId, acknowledgement.getCorrespondingId());
+            assertEquals(time, acknowledgement.getTime());
         }
     }
 }

@@ -190,7 +190,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         traversingPeer.setInetAddress(inetAddress);
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getNonce(), msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new AddressedMessage<>(acknowledgementMsg, inetAddress));
     }
