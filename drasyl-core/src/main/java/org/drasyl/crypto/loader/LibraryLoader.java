@@ -106,13 +106,13 @@ public class LibraryLoader {
                 catch (final LoaderException suppressed) {
                     // Attempt to load the bundled
                     loadBundledLibrary();
-                    LOG.debug("Loaded bundled sodium library.");
+                    LOG.debug("Loaded bundled sodium library: {}", LibraryLoader::getSodiumPlatformDependentPath);
                 }
                 break;
             case PREFER_BUNDLED:
                 try {
                     loadBundledLibrary();
-                    LOG.debug("Loaded bundled sodium library.");
+                    LOG.debug("Loaded bundled sodium library: {}", LibraryLoader::getSodiumPlatformDependentPath);
                 }
                 catch (final LoaderException suppressed) {
                     loadSystemLibrary(systemFallBack);
@@ -121,7 +121,7 @@ public class LibraryLoader {
                 break;
             case BUNDLED_ONLY:
                 loadBundledLibrary();
-                LOG.debug("Loaded bundled sodium library.");
+                LOG.debug("Loaded bundled sodium library: {}", LibraryLoader::getSodiumPlatformDependentPath);
                 break;
             case SYSTEM_ONLY:
                 loadSystemLibrary(systemFallBack);
