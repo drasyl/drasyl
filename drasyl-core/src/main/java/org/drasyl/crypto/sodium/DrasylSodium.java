@@ -47,7 +47,7 @@ public class DrasylSodium extends Sodium {
 
     public DrasylSodium(final File libFile) throws LoaderException {
         try {
-                NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), Sodium.class);
+            NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), Sodium.class);
             register();
         }
         catch (final Exception e) {

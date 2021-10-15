@@ -105,7 +105,7 @@ public class Crypto {
     }
 
     /**
-     * Compares to keys {@code k1} and {@code k2} to allow to form a total order on the keys. This
+     * Compares two keys {@code k1} and {@code k2} to allow to form a total order on the keys. This
      * is especially important in asynchronous environments to make deterministic decisions.
      *
      * @param k1 first key
