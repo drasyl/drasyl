@@ -37,12 +37,12 @@ import java.nio.file.StandardCopyOption;
  * Based on: https://github.com/adamheinrich/native-utils
  */
 public class NativeLoader {
+    public static final String NATIVE_FOLDER_PATH_PREFIX = "nativeloader";
     /**
      * The minimum length a prefix for a file has to have according to {@link
      * File#createTempFile(String, String)}}.
      */
     private static final int MIN_PREFIX_LENGTH = 3;
-    public static final String NATIVE_FOLDER_PATH_PREFIX = "nativeloader";
     private static File temporaryDir;
 
     /**

@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto.sodium;
 
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.loader.LoaderException;
 import org.drasyl.crypto.loader.NativeLoader;
@@ -29,14 +30,16 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.drasyl.crypto.loader.LibraryLoader.Mode.PREFER_SYSTEM;
+import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
 
 public class DrasylSodium extends Sodium {
+    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_SYSTEM);
+
     public DrasylSodium() throws LoaderException {
-        this(PREFER_SYSTEM);
+        this(DEFAULT_MODE);
     }
 
-    public DrasylSodium(final LibraryLoader.Mode loadingMode) throws LoaderException {
+    public DrasylSodium(final String loadingMode) throws LoaderException {
         new LibraryLoader(getClassesToRegister()).loadLibrary(loadingMode, "sodium");
         register();
     }

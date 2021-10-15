@@ -14,55 +14,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LibraryLoader {
+    public static final String PREFER_SYSTEM = "pref_system";
+    public static final String PREFER_BUNDLED = "pref_bundled";
+    public static final String BUNDLED_ONLY = "bundled_only";
+    public static final String SYSTEM_ONLY = "system_only";
     private final List<Class> classes = new ArrayList<>();
 
     public LibraryLoader(final List<Class> classesToRegister) {
         classes.addAll(classesToRegister);
-    }
-
-    public void loadSystemLibrary(final String library) throws LoaderException {
-        for (final Class clazz : classes) {
-            Native.register(clazz, library);
-        }
-    }
-
-    private void loadBundledLibrary() throws LoaderException {
-        final String pathInJar = LibraryLoader.getSodiumPathInResources();
-
-        for (final Class clazz : classes) {
-            NativeLoader.loadLibraryFromJar(pathInJar, clazz);
-        }
-    }
-
-    public void loadLibrary(final Mode mode,
-                            final String systemFallBack) throws LoaderException {
-        switch (mode) {
-            case PREFER_SYSTEM:
-                try {
-                    loadSystemLibrary(systemFallBack);
-                }
-                catch (final LoaderException suppressed) {
-                    // Attempt to load the bundled
-                    loadBundledLibrary();
-                }
-                break;
-            case PREFER_BUNDLED:
-                try {
-                    loadBundledLibrary();
-                }
-                catch (final LoaderException suppressed) {
-                    loadSystemLibrary(systemFallBack);
-                }
-                break;
-            case BUNDLED_ONLY:
-                loadBundledLibrary();
-                break;
-            case SYSTEM_ONLY:
-                loadSystemLibrary(systemFallBack);
-                break;
-            default:
-                throw new IllegalStateException("Unsupported mode: " + mode);
-        }
     }
 
     public static String getSodiumPlatformDependentPath() {
@@ -114,7 +73,53 @@ public class LibraryLoader {
         return String.join(separator, parts);
     }
 
-    public enum Mode {
-        PREFER_SYSTEM, PREFER_BUNDLED, BUNDLED_ONLY, SYSTEM_ONLY
+    public void loadSystemLibrary(final String library) throws LoaderException {
+        for (final Class clazz : classes) {
+            try {
+                Native.register(clazz, library);
+            }
+            catch (final UnsatisfiedLinkError e) {
+                throw new LoaderException(e);
+            }
+        }
+    }
+
+    private void loadBundledLibrary() throws LoaderException {
+        final String pathInJar = LibraryLoader.getSodiumPathInResources();
+
+        for (final Class clazz : classes) {
+            NativeLoader.loadLibraryFromJar(pathInJar, clazz);
+        }
+    }
+
+    public void loadLibrary(final String mode,
+                            final String systemFallBack) throws LoaderException {
+        switch (mode) {
+            case PREFER_SYSTEM:
+                try {
+                    loadSystemLibrary(systemFallBack);
+                }
+                catch (final LoaderException suppressed) {
+                    // Attempt to load the bundled
+                    loadBundledLibrary();
+                }
+                break;
+            case PREFER_BUNDLED:
+                try {
+                    loadBundledLibrary();
+                }
+                catch (final LoaderException suppressed) {
+                    loadSystemLibrary(systemFallBack);
+                }
+                break;
+            case BUNDLED_ONLY:
+                loadBundledLibrary();
+                break;
+            case SYSTEM_ONLY:
+                loadSystemLibrary(systemFallBack);
+                break;
+            default:
+                throw new IllegalStateException("Unsupported mode: " + mode);
+        }
     }
 }

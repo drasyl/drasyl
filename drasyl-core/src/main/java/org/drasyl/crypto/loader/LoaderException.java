@@ -36,7 +36,7 @@ public class LoaderException extends Exception {
         super(message, cause);
     }
 
-    public LoaderException(final Exception wrapped) {
+    public LoaderException(final Throwable wrapped) {
         super(wrapped);
     }
 }

@@ -25,11 +25,11 @@ import com.google.auto.value.AutoValue;
 
 @AutoValue
 public abstract class SessionPair {
-    public abstract byte[] getRx();
-
-    public abstract byte[] getTx();
-
     public static SessionPair of(final byte[] rx, final byte[] tx) {
         return new AutoValue_SessionPair(rx, tx);
     }
+
+    public abstract byte[] getRx();
+
+    public abstract byte[] getTx();
 }
