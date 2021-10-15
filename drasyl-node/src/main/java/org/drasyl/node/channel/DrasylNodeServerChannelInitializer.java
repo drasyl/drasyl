@@ -26,11 +26,13 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.EncoderException;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
+import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
@@ -70,6 +72,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -83,6 +87,22 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     public static final short MIN_DERIVED_PORT = 22528;
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer();
     private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
+    private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
+    private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
+    private static final int TELEMETRY_INTERVAL_SECONDS = SystemPropertyUtil.getInt("org.drasyl.telemetry.interval", 60);
+    private static final URI TELEMETRY_URI;
+
+    static {
+        URI uri = null;
+        try {
+            uri = new URI(SystemPropertyUtil.get("org.drasyl.telemetry.uri", "https://ping.drasyl.network/"));
+        }
+        catch (final URISyntaxException e) {
+            throw new RuntimeException(e); // NOSONARR
+        }
+        TELEMETRY_URI = uri;
+    }
+
     private final DrasylConfig config;
     private final DrasylNode node;
     private final Identity identity;
@@ -112,6 +132,10 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginManagerHandler(new PluginManager(config, identity)));
         ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
+
+        if (TELEMETRY_ENABLED) {
+            ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));
+        }
     }
 
     /**
