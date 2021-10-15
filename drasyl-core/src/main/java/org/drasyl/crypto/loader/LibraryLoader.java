@@ -9,11 +9,14 @@ package org.drasyl.crypto.loader;
 
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class LibraryLoader {
+    private static final Logger LOG = LoggerFactory.getLogger(LibraryLoader.class);
     public static final String PREFER_SYSTEM = "pref_system";
     public static final String PREFER_BUNDLED = "pref_bundled";
     public static final String BUNDLED_ONLY = "bundled_only";
@@ -98,25 +101,31 @@ public class LibraryLoader {
             case PREFER_SYSTEM:
                 try {
                     loadSystemLibrary(systemFallBack);
+                    LOG.debug("Loaded system sodium library.");
                 }
                 catch (final LoaderException suppressed) {
                     // Attempt to load the bundled
                     loadBundledLibrary();
+                    LOG.debug("Loaded bundled sodium library.");
                 }
                 break;
             case PREFER_BUNDLED:
                 try {
                     loadBundledLibrary();
+                    LOG.debug("Loaded bundled sodium library.");
                 }
                 catch (final LoaderException suppressed) {
                     loadSystemLibrary(systemFallBack);
+                    LOG.debug("Loaded system sodium library.");
                 }
                 break;
             case BUNDLED_ONLY:
                 loadBundledLibrary();
+                LOG.debug("Loaded bundled sodium library.");
                 break;
             case SYSTEM_ONLY:
                 loadSystemLibrary(systemFallBack);
+                LOG.debug("Loaded system sodium library.");
                 break;
             default:
                 throw new IllegalStateException("Unsupported mode: " + mode);
