@@ -25,6 +25,9 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import org.drasyl.crypto.CryptoException;
 
+/**
+ * Simple wrapper class that make native class easier.
+ */
 public class LazyDrasylSodium {
     public static final short ED25519_PUBLICKEYBYTES = 32;
     public static final short ED25519_SECRETKEYBYTES = 64;
@@ -117,67 +120,81 @@ public class LazyDrasylSodium {
         return SessionPair.of(rx, tx);
     }
 
-    public boolean cryptoAeadXChaCha20Poly1305IetfEncrypt(final byte[] c,
-                                                          final long[] cLen,
-                                                          final byte[] m,
-                                                          final long mLen,
-                                                          final byte[] ad,
-                                                          final long adLen,
-                                                          final byte[] nSec,
-                                                          final byte[] nPub,
-                                                          final byte[] k) {
-        return successful(getSodium().crypto_aead_xchacha20poly1305_ietf_encrypt(c, cLen, m, mLen, ad, adLen, nSec, nPub, k));
+    /**
+     * This function encrypts the given message {@code m}.
+     *
+     * @param m    the message as byte array
+     * @param ad   the authentication tag
+     * @param nPub the public nonce
+     * @param k    the key for encryption
+     * @return the encrypted message or {@code null} on failure
+     */
+    public byte[] cryptoAeadXChaCha20Poly1305IetfEncrypt(
+            final byte[] m,
+            final byte[] ad,
+            final byte[] nPub,
+            final byte[] k) {
+        final byte[] cipherBytes = new byte[m.length + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
+
+        if (successful(getSodium().crypto_aead_xchacha20poly1305_ietf_encrypt(cipherBytes, null, m, m.length, ad, ad.length, null, nPub, k))) {
+            return cipherBytes;
+        }
+
+        return null;
     }
 
-    public boolean cryptoAeadXChaCha20Poly1305IetfDecrypt(final byte[] m,
-                                                          final long[] mLen,
-                                                          final byte[] nSec,
-                                                          final byte[] c,
-                                                          final long cLen,
-                                                          final byte[] ad,
-                                                          final long adLen,
-                                                          final byte[] nPub,
-                                                          final byte[] k) {
-        return successful(getSodium().crypto_aead_xchacha20poly1305_ietf_decrypt(m, mLen, nSec, c, cLen, ad, adLen, nPub, k));
+    /**
+     * This function decrypts the given ciphertext {@code c}.
+     *
+     * @param c    the cipher text
+     * @param ad   the authentication tag
+     * @param nPub the public nonce
+     * @param k    the key for encryption
+     * @return the decrypted message or {@code null} on failure
+     */
+    public byte[] cryptoAeadXChaCha20Poly1305IetfDecrypt(final byte[] c,
+                                                         final byte[] ad,
+                                                         final byte[] nPub,
+                                                         final byte[] k) {
+        final byte[] messageBytes = new byte[c.length - LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
+
+        if (successful(getSodium().crypto_aead_xchacha20poly1305_ietf_decrypt(messageBytes, null, null, c, c.length, ad, ad.length, nPub, k))) {
+            return messageBytes;
+        }
+
+        return null;
     }
 
     /**
      * Returns a signature for a message. This does not prepend the signature to the message.
      *
-     * @param signature  The signature will be added to this byte array.
-     * @param message    The message to sign.
-     * @param messageLen The message length.
-     * @param secretKey  The secret key.
-     * @return True if the secret key could provide a signature.
+     * @param message   The message to sign.
+     * @param secretKey The secret key.
+     * @return the signature or {@code null} on failure
      */
-    public boolean cryptoSignDetached(final byte[] signature,
-                                      final byte[] message,
-                                      final long messageLen,
-                                      final byte[] secretKey) {
-        if (messageLen < 0 || messageLen > message.length) {
-            throw new IllegalArgumentException("messageLen out of bounds: " + messageLen);
+    public byte[] cryptoSignDetached(final byte[] message,
+                                     final byte[] secretKey) {
+        final byte[] signatureBytes = new byte[LazyDrasylSodium.ED25519_BYTES];
+
+        if (successful(getSodium().crypto_sign_detached(signatureBytes, (new PointerByReference(Pointer.NULL)).getPointer(), message, message.length, secretKey))) {
+            return signatureBytes;
         }
-        return successful(getSodium().crypto_sign_detached(signature, (new PointerByReference(Pointer.NULL)).getPointer(), message, messageLen, secretKey));
+
+        return null;
     }
 
     /**
      * Verifies that {@code signature} is valid for the {@code message}.
      *
-     * @param signature  The signature.
-     * @param message    The message.
-     * @param messageLen The message length.
-     * @param publicKey  The public key that signed the message.
+     * @param signature The signature.
+     * @param message   The message.
+     * @param publicKey The public key that signed the message.
      * @return Returns true if the signature is valid for the message.
-     * @see #cryptoSignDetached(byte[], byte[], long, byte[])
      */
     public boolean cryptoSignVerifyDetached(final byte[] signature,
                                             final byte[] message,
-                                            final int messageLen,
                                             final byte[] publicKey) {
-        if (messageLen < 0 || messageLen > message.length) {
-            throw new IllegalArgumentException("messageLen out of bounds: " + messageLen);
-        }
-        return successful(getSodium().crypto_sign_verify_detached(signature, message, messageLen, publicKey));
+        return successful(getSodium().crypto_sign_verify_detached(signature, message, message.length, publicKey));
     }
 
     /**

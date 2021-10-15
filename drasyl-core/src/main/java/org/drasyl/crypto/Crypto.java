@@ -46,13 +46,13 @@ import java.util.Objects;
  * Util class that provides cryptography functions for drasyl.
  */
 public class Crypto {
-    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     public static final Crypto INSTANCE;
     public static final SecureRandom CSPRNG;
     public static final short PK_LONG_TIME_KEY_LENGTH = LazyDrasylSodium.ED25519_PUBLICKEYBYTES;
     public static final short SK_LONG_TIME_KEY_LENGTH = LazyDrasylSodium.ED25519_SECRETKEYBYTES;
     public static final short PK_CURVE_25519_KEY_LENGTH = LazyDrasylSodium.CURVE25519_PUBLICKEYBYTES;
     public static final short SK_CURVE_25519_KEY_LENGTH = LazyDrasylSodium.CURVE25519_SECRETKEYBYTES;
+    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
 
     static {
         try {
@@ -316,20 +316,14 @@ public class Crypto {
         Objects.requireNonNull(message);
         Objects.requireNonNull(authTag);
 
-        final long additionalDataLength = authTag.length;
-        final byte[] cipherBytes = new byte[message.length + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
-
-        if (!sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                cipherBytes,
-                null,
+        final byte[] cipherBytes = sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
                 message,
-                message.length,
                 authTag,
-                additionalDataLength,
-                null,
                 nonce.toByteArray(),
                 sessionPair.getTx()
-        )) {
+        );
+
+        if (cipherBytes == null) {
             throw new CryptoException("Could not encrypt the given message with the given parameters.");
         }
 
@@ -360,20 +354,14 @@ public class Crypto {
             throw new CryptoException("Could not decrypt the given cipher text. Cipher text is smaller than " + LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES + " bytes");
         }
 
-        final long additionalDataLength = authTag.length;
-        final byte[] messageBytes = new byte[cipher.length - LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES];
-
-        if (!sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                messageBytes,
-                null,
-                null,
+        final byte[] messageBytes = sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
                 cipher,
-                cipher.length,
                 authTag,
-                additionalDataLength,
                 nonce.toByteArray(),
                 sessionPair.getRx()
-        )) {
+        );
+
+        if (messageBytes == null) {
             throw new CryptoException("Could not decrypt the given cipher text.");
         }
 
@@ -392,12 +380,11 @@ public class Crypto {
     @SuppressWarnings("java:S3242")
     public byte[] sign(final byte[] message,
                        final IdentitySecretKey secretKey) throws CryptoException {
-        final byte[] signatureBytes = new byte[LazyDrasylSodium.ED25519_BYTES];
-
-        if (!sodium.cryptoSignDetached(signatureBytes,
+        final byte[] signatureBytes = sodium.cryptoSignDetached(
                 message,
-                message.length,
-                secretKey.toByteArray())) {
+                secretKey.toByteArray());
+
+        if (signatureBytes == null) {
             throw new CryptoException("Could not create a signature for your message in detached mode.");
         }
 
@@ -416,10 +403,8 @@ public class Crypto {
     public boolean verifySignature(final byte[] signature,
                                    final byte[] message,
                                    final IdentityPublicKey publicKey) {
-
         return sodium.cryptoSignVerifyDetached(signature,
                 message,
-                message.length,
                 publicKey.toByteArray());
     }
 }

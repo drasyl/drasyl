@@ -12,19 +12,19 @@ import com.sun.jna.Platform;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Helper class to load the libsodium library from the preferred location.
+ */
 public class LibraryLoader {
-    private static final Logger LOG = LoggerFactory.getLogger(LibraryLoader.class);
     public static final String PREFER_SYSTEM = "pref_system";
     public static final String PREFER_BUNDLED = "pref_bundled";
     public static final String BUNDLED_ONLY = "bundled_only";
     public static final String SYSTEM_ONLY = "system_only";
-    private final List<Class> classes = new ArrayList<>();
+    private static final Logger LOG = LoggerFactory.getLogger(LibraryLoader.class);
+    private final Class clazz;
 
-    public LibraryLoader(final List<Class> classesToRegister) {
-        classes.addAll(classesToRegister);
+    public LibraryLoader(final Class classToRegister) {
+        clazz = classToRegister;
     }
 
     public static String getSodiumPlatformDependentPath() {
@@ -77,26 +77,22 @@ public class LibraryLoader {
     }
 
     public void loadSystemLibrary(final String library) throws LoaderException {
-        for (final Class clazz : classes) {
-            try {
-                Native.register(clazz, library);
-            }
-            catch (final UnsatisfiedLinkError e) {
-                throw new LoaderException(e);
-            }
+        try {
+            Native.register(clazz, library);
+        }
+        catch (final UnsatisfiedLinkError e) {
+            throw new LoaderException(e);
         }
     }
 
     private void loadBundledLibrary() throws LoaderException {
         final String pathInJar = LibraryLoader.getSodiumPathInResources();
 
-        for (final Class clazz : classes) {
-            try {
-                NativeLoader.loadLibraryFromJar(pathInJar, clazz);
-            }
-            catch (final UnsatisfiedLinkError e) {
-                throw new LoaderException("Could not load lib from " + pathInJar, e);
-            }
+        try {
+            NativeLoader.loadLibraryFromJar(pathInJar, clazz);
+        }
+        catch (final UnsatisfiedLinkError e) {
+            throw new LoaderException("Could not load lib from " + pathInJar, e);
         }
     }
 

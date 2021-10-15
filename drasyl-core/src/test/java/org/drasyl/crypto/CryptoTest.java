@@ -44,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,6 +52,14 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTest {
+    // We've to wrap the SodiumJava, because Mockito does not support native calls
+    static class UnitSodium extends Sodium {
+        @Override
+        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
+            return 0;
+        }
+    }
+
     @Nested
     class LongTimeKeyPair {
         @Test
@@ -246,16 +253,14 @@ class CryptoTest {
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    any(), any(), any(), anyLong(), any(), anyLong(), any(), any(), any())).thenReturn(true);
             final byte[] message = new byte[0];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
+                    any(), any(), any(), any())).thenReturn(message);
 
             crypto.encrypt(message, new byte[0], nonce, sessionPair);
 
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    new byte[LazyDrasylSodium.XCHACHA20POLY1305_IETF_ABYTES], null, message,
-                    message.length, new byte[0], 0,
-                    null, nonce.toByteArray(), sessionPair.getTx());
+                    message, new byte[0], nonce.toByteArray(), sessionPair.getTx());
         }
 
         @Test
@@ -263,9 +268,9 @@ class CryptoTest {
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    any(), any(), any(), anyLong(), any(), anyLong(), any(), any(), any())).thenReturn(false);
             final byte[] message = new byte[0];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
+                    any(), any(), any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.encrypt(message, new byte[0], nonce, sessionPair));
         }
@@ -278,15 +283,15 @@ class CryptoTest {
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    any(), any(), any(), any(), anyLong(), any(), anyLong(), any(), any())).thenReturn(true);
             final byte[] cipher = new byte[16];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
+                    any(), any(), any(), any())).thenReturn(cipher);
 
             crypto.decrypt(cipher, new byte[0], nonce, sessionPair);
 
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    new byte[0], null, null, cipher,
-                    cipher.length, new byte[0], 0,
+                    cipher,
+                    new byte[0],
                     nonce.toByteArray(), sessionPair.getTx());
         }
 
@@ -295,9 +300,9 @@ class CryptoTest {
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    any(), any(), any(), any(), anyLong(), any(), anyLong(), any(), any())).thenReturn(false);
             final byte[] cipher = new byte[16];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
+                    any(), any(), any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.decrypt(cipher, new byte[0], nonce, sessionPair));
         }
@@ -310,13 +315,11 @@ class CryptoTest {
                         @Mock final IdentitySecretKey key) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
-            when(sodium.cryptoSignDetached(any(), any(), anyLong(), any())).thenReturn(true);
+            when(sodium.cryptoSignDetached(any(), any())).thenReturn(message);
 
             crypto.sign(message, key);
 
-            verify(sodium).cryptoSignDetached(
-                    new byte[LazyDrasylSodium.ED25519_BYTES], message, message.length,
-                    key.toByteArray());
+            verify(sodium).cryptoSignDetached(message, key.toByteArray());
         }
 
         @Test
@@ -324,7 +327,7 @@ class CryptoTest {
                                          @Mock final IdentitySecretKey key) {
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
-            when(sodium.cryptoSignDetached(any(), any(), anyLong(), any())).thenReturn(false);
+            when(sodium.cryptoSignDetached(any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.sign(message, key));
         }
@@ -338,8 +341,7 @@ class CryptoTest {
 
             crypto.verifySignature(signature, message, key);
 
-            verify(sodium).cryptoSignVerifyDetached(signature, message, message.length,
-                    key.toByteArray());
+            verify(sodium).cryptoSignVerifyDetached(signature, message, key.toByteArray());
         }
     }
 
@@ -364,14 +366,6 @@ class CryptoTest {
 
             assertTrue(number > -1, "Number " + number + " should be positive.");
             assertTrue(number <= size, "Number " + number + " should be smaller than or equals to " + size + ".");
-        }
-    }
-
-    // We've to wrap the SodiumJava, because Mockito does not support native calls
-    static class UnitSodium extends Sodium {
-        @Override
-        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
-            return 0;
         }
     }
 }

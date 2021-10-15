@@ -27,38 +27,31 @@ import org.drasyl.crypto.loader.LoaderException;
 import org.drasyl.crypto.loader.NativeLoader;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
-import static org.drasyl.crypto.loader.LibraryLoader.PREFER_BUNDLED;
+import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
 
+/**
+ * This class loads and binds the JNA {@link Sodium}.
+ */
 public class DrasylSodium extends Sodium {
-    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_BUNDLED);
+    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_SYSTEM);
 
     public DrasylSodium() throws LoaderException {
         this(DEFAULT_MODE);
     }
 
     public DrasylSodium(final String loadingMode) throws LoaderException {
-        new LibraryLoader(getClassesToRegister()).loadLibrary(loadingMode, "sodium");
+        new LibraryLoader(Sodium.class).loadLibrary(loadingMode, "sodium");
         register();
     }
 
     public DrasylSodium(final File libFile) throws LoaderException {
         try {
-            for (final Class clazz : getClassesToRegister()) {
-                NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), clazz);
-            }
+                NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), Sodium.class);
             register();
         }
         catch (final Exception e) {
             throw new LoaderException("Could not load local library due to: ", e);
         }
-    }
-
-    public static List<Class> getClassesToRegister() {
-        final List<Class> classes = new ArrayList<>();
-        classes.add(Sodium.class);
-        return classes;
     }
 }

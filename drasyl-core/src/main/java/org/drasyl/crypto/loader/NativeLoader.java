@@ -34,6 +34,8 @@ import java.nio.file.ProviderNotFoundException;
 import java.nio.file.StandardCopyOption;
 
 /**
+ * This class helps to load native libraries, used with JNA.
+ * <p>
  * Based on: https://github.com/adamheinrich/native-utils
  */
 public class NativeLoader {
@@ -45,10 +47,8 @@ public class NativeLoader {
     private static final int MIN_PREFIX_LENGTH = 3;
     private static File temporaryDir;
 
-    /**
-     * Private constructor - this class will never be instanced
-     */
     private NativeLoader() {
+        // util class
     }
 
     /**
@@ -63,7 +63,21 @@ public class NativeLoader {
      */
     public static synchronized void loadLibraryFromJar(final String path,
                                                        final Class clazz) throws LoaderException {
-        loadLibrary(path, clazz, true);
+        if (null == path || !path.startsWith("/")) {
+            throw new LoaderException("The path has to be absolute (start with '/'): " + path);
+        }
+
+        try {
+            final File temp = Native.extractFromResourcePath(path, clazz.getClassLoader());
+
+            Native.register(clazz, temp.getAbsolutePath());
+        }
+        catch (final IOException e) {
+            throw new LoaderException(e);
+        }
+        catch (final NullPointerException e) {
+            throw new LoaderException("File " + path + " was not found inside JAR.");
+        }
     }
 
     /**
@@ -78,12 +92,6 @@ public class NativeLoader {
      */
     public static synchronized void loadLibraryFromFileSystem(final String path,
                                                               final Class clazz) throws LoaderException {
-        loadLibrary(path, clazz, false);
-    }
-
-    private static synchronized void loadLibrary(final String path,
-                                                 final Class clazz,
-                                                 final boolean fromJar) throws LoaderException {
         if (null == path || !path.startsWith("/")) {
             throw new LoaderException("The path has to be absolute (start with '/'): " + path);
         }
@@ -109,32 +117,18 @@ public class NativeLoader {
         }
 
         final File temp = new File(temporaryDir, filename);
+        // hack nicked from netty
+        temp.setReadable(false, false);
+        temp.setReadable(true, true);
 
-        if (fromJar) {
-            try (final InputStream is = NativeLoader.class.getResourceAsStream(path)) {
-                Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            catch (final IOException e) {
-                temp.delete(); // NOSONAR
-                throw new LoaderException(e);
-            }
-            catch (final NullPointerException e) {
-                temp.delete(); // NOSONAR
-                throw new LoaderException("File " + path + " was not found inside JAR.");
-            }
-        }
-        else {
-            try (final InputStream is = new FileInputStream(path)) {
-                Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-            catch (final IOException e) {
-                temp.delete(); // NOSONAR
-                throw new LoaderException(e);
-            }
-        }
+        try (final InputStream is = new FileInputStream(path)) {
+            Files.copy(is, temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        try {
             Native.register(clazz, temp.getAbsolutePath());
+        }
+        catch (final IOException e) {
+            temp.delete(); // NOSONAR
+            throw new LoaderException(e);
         }
         finally {
             if (isPosixCompliant()) {
