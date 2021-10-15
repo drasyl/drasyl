@@ -104,6 +104,7 @@ jobs:
       - name: Build Package on *nix x86
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
@@ -113,6 +114,7 @@ jobs:
       - name: Build Package on *nix ARM
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
@@ -122,6 +124,7 @@ jobs:
       - name: Build Package on Mac x86
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
@@ -131,6 +134,7 @@ jobs:
       - name: Build Package on Windows
         run: |
           $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
+          New-Item "./drasyl-${VERSION}-${{ matrix.job_name }}/bin/" -ItemType Directory -ea 0
           Move-Item -Path ./drasyl.exe -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}/bin"
           Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
