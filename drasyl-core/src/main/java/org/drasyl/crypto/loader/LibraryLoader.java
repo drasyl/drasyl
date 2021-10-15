@@ -71,29 +71,26 @@ public class LibraryLoader {
             if (is64Bit) {
                 return getPath("windows64", "libsodium.dll");
             }
-            else {
-                return getPath("windows", "libsodium.dll");
-            }
+            return getPath("windows", "libsodium.dll");
         }
         if (Platform.isMac()) {
             // check for Apple Silicon
             if (Platform.isARM()) {
                 return getPath("mac/aarch64", "libsodium.dylib");
             }
-            else {
-                return getPath("mac/intel", "libsodium.dylib");
-            }
+            return getPath("mac/intel", "libsodium.dylib");
         }
         if (Platform.isARM()) {
+            if (is64Bit) {
+                return getPath("arm64", "libsodium.so");
+            }
             return getPath("armv6", "libsodium.so");
         }
         if (Platform.isLinux()) {
             if (is64Bit) {
                 return getPath("linux64", "libsodium.so");
             }
-            else {
-                return getPath("linux", "libsodium.so");
-            }
+            return getPath("linux", "libsodium.so");
         }
 
         return null;

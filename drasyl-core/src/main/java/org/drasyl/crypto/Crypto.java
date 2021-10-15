@@ -62,6 +62,8 @@ public class Crypto {
                 // try default loading
                 cryptoInstance = new Crypto(
                         new LazyDrasylSodium(new DrasylSodium()));
+
+                LOG.debug("Loaded sodium library with default constructor.");
             }
             catch (final LoaderException e) {
                 // try lib folder
