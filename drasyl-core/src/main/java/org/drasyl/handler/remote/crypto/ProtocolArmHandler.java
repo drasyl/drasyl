@@ -103,7 +103,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getRecipient());
         final ArmedProtocolMessage armedMessage = msg.message().arm(ctx.alloc().ioBuffer(), crypto, session);
         out.add(msg.replace(armedMessage));
-        LOG.debug("Armed protocol msg: {}", armedMessage);
+        LOG.trace("Armed protocol msg: {}", armedMessage);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getSender());
         final FullReadMessage<?> disarmedMessage = msg.message().disarm(crypto, session);
         out.add(msg.replace(disarmedMessage));
-        LOG.debug("Disarmed protocol msg: {}", disarmedMessage);
+        LOG.trace("Disarmed protocol msg: {}", disarmedMessage);
     }
 
     private SessionPair getOrComputeSession(final IdentityPublicKey peer) throws CryptoException {
