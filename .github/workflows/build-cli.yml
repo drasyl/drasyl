@@ -119,6 +119,7 @@ jobs:
 
       - name: Build Package on *nix ARM
         run: |
+          apt-get install zip
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
           mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
