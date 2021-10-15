@@ -1,70 +1,70 @@
 [
   {
-    "name": "org.drasyl.handler.PeersManagerHandler",
+    "name": "org.drasyl.node.handler.PeersManagerHandler",
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyMixin$BytesToHexStringSerializer",
+    "name": "org.drasyl.node.identity.serialization.KeyMixin$BytesToHexStringSerializer",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyMixin$BytesToHexStringDeserializer",
+    "name": "org.drasyl.node.identity.serialization.KeyMixin$BytesToHexStringDeserializer",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.IdentityMixin",
+    "name": "org.drasyl.node.identity.serialization.IdentityMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.IdentityPublicKeyMixin",
+    "name": "org.drasyl.node.identity.serialization.IdentityPublicKeyMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.IdentitySecretKeyMixin",
+    "name": "org.drasyl.node.identity.serialization.IdentitySecretKeyMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyAgreementPublicKeyMixin",
+    "name": "org.drasyl.node.identity.serialization.KeyAgreementPublicKeyMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyAgreementSecretKeyMixin",
+    "name": "org.drasyl.node.identity.serialization.KeyAgreementSecretKeyMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyMixin",
+    "name": "org.drasyl.node.identity.serialization.KeyMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.KeyPairMixin",
+    "name": "org.drasyl.node.identity.serialization.KeyPairMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.identity.serialization.ProofOfWorkMixin",
+    "name": "org.drasyl.node.identity.serialization.ProofOfWorkMixin",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.handler.serialization.BooleanSerializer",
+    "name": "org.drasyl.node.handler.serialization.BooleanSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -73,7 +73,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.ByteArraySerializer",
+    "name": "org.drasyl.node.handler.serialization.ByteArraySerializer",
     "methods": [
       {
         "name": "<init>",
@@ -82,7 +82,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.ByteSerializer",
+    "name": "org.drasyl.node.handler.serialization.ByteSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -91,7 +91,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.CharacterSerializer",
+    "name": "org.drasyl.node.handler.serialization.CharacterSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -100,7 +100,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.FloatSerializer",
+    "name": "org.drasyl.node.handler.serialization.FloatSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -109,7 +109,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.IntegerSerializer",
+    "name": "org.drasyl.node.handler.serialization.IntegerSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -118,7 +118,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.JacksonJsonSerializer",
+    "name": "org.drasyl.node.handler.serialization.JacksonJsonSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -127,7 +127,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.JavaSerializer",
+    "name": "org.drasyl.node.handler.serialization.JavaSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -136,7 +136,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.LongSerializer",
+    "name": "org.drasyl.node.handler.serialization.LongSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -145,7 +145,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.ProtobufSerializer",
+    "name": "org.drasyl.node.handler.serialization.ProtobufSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -154,7 +154,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.ShortSerializer",
+    "name": "org.drasyl.node.handler.serialization.ShortSerializer",
     "methods": [
       {
         "name": "<init>",
@@ -163,7 +163,7 @@
     ]
   },
   {
-    "name": "org.drasyl.handler.serialization.StringSerializer",
+    "name": "org.drasyl.node.handler.serialization.StringSerializer",
     "methods": [
       {
         "name": "<init>",

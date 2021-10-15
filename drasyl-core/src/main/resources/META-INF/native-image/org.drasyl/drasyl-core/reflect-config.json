@@ -191,10 +191,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.handler.remote.HopCountGuard",
-    "allDeclaredMethods": true
-  },
-  {
     "name": "org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler",
     "allDeclaredMethods": true
   },
@@ -223,7 +219,7 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.handler.remote.RemoteMessageToByteBufCodec",
+    "name": "org.drasyl.handler.remote.ByteToRemoteMessageCodec",
     "allDeclaredMethods": true
   },
   {
