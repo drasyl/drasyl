@@ -139,7 +139,7 @@ public class NativeLoader {
         finally {
             if (isPosixCompliant()) {
                 // Assume POSIX compliant file system, can be deleted after loading
-                temp.deleteOnExit(); // NOSONAR
+                temp.delete(); // NOSONAR
             }
             else {
                 // Assume non-POSIX, and don't delete until last file descriptor closed

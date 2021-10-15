@@ -30,10 +30,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
+import static org.drasyl.crypto.loader.LibraryLoader.PREFER_BUNDLED;
 
 public class DrasylSodium extends Sodium {
-    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_SYSTEM);
+    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_BUNDLED);
 
     public DrasylSodium() throws LoaderException {
         this(DEFAULT_MODE);
