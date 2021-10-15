@@ -74,7 +74,7 @@ public class Crypto {
                 }
                 else {
                     LOG.warn("Could not load local libs from `{}`", lib.getAbsolutePath());
-                    throw new RuntimeException("Could not load crypto module."); // NOSONAR
+                    throw new RuntimeException("Could not load crypto module.", e); // NOSONAR
                 }
             }
 
