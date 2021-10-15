@@ -100,9 +100,10 @@ public class LibraryLoader {
     }
 
     public static String getSodiumPathInResources() throws LoaderException {
-        final String path = getPath("/META-INF", "native", "libsodium");
+        final String platformPath = getSodiumPlatformDependentPath();
+        final String path = getPath("/META-INF", "native", "libsodium", platformPath);
 
-        if (path == null) {
+        if (platformPath == null) {
             final String message = String.format("Unsupported platform: %s/%s", System.getProperty("os.name"),
                     System.getProperty("os.arch"));
             throw new LoaderException(message);
