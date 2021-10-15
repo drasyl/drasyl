@@ -32,7 +32,7 @@ public class LoaderException extends Exception {
         super(message);
     }
 
-    public LoaderException(final String message, final Exception cause) {
+    public LoaderException(final String message, final Throwable cause) {
         super(message, cause);
     }
 

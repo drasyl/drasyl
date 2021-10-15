@@ -91,7 +91,12 @@ public class LibraryLoader {
         final String pathInJar = LibraryLoader.getSodiumPathInResources();
 
         for (final Class clazz : classes) {
-            NativeLoader.loadLibraryFromJar(pathInJar, clazz);
+            try {
+                NativeLoader.loadLibraryFromJar(pathInJar, clazz);
+            }
+            catch (final UnsatisfiedLinkError e) {
+                throw new LoaderException("Could not load lib from " + pathInJar, e);
+            }
         }
     }
 
@@ -128,7 +133,7 @@ public class LibraryLoader {
                 LOG.debug("Loaded system sodium library.");
                 break;
             default:
-                throw new IllegalStateException("Unsupported mode: " + mode);
+                throw new LoaderException("Unsupported mode: " + mode);
         }
     }
 }
