@@ -119,7 +119,7 @@ jobs:
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'ARM64' && matrix.os == 'linux'
+        if: success() && matrix.job_name == 'linux-arm64'
 
       - name: Build Package on Mac x86
         run: |
