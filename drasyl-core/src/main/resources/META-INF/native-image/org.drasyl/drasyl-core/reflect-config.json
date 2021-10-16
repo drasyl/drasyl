@@ -67,7 +67,7 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "com.goterl.lazysodium.Sodium",
+    "name": "org.drasyl.crypto.sodium.Sodium",
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true

@@ -19,12 +19,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
+package org.drasyl.crypto.loader;
 
-import org.drasyl.util.ImmutableByteArray;
+import org.junit.jupiter.api.Test;
 
-public interface Key {
-    ImmutableByteArray getBytes();
+import java.io.IOException;
 
-    byte[] toByteArray();
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class NativeLoaderTest {
+    @Test
+    void testLoadLibraryIllegalPath() {
+        assertThrows(IOException.class, () -> NativeLoader.loadLibraryFromJar("test.so", NativeLoader.class));
+    }
+
+    @Test
+    void testLoadLibraryIllegalPrefix() {
+        assertThrows(IOException.class, () -> NativeLoader.loadLibraryFromJar("/t", NativeLoader.class));
+    }
+
+    @Test
+    void testLoadLibraryNonExistentPath() {
+        assertThrows(IOException.class, () -> NativeLoader.loadLibraryFromJar("/test.so", NativeLoader.class));
+    }
+
+    @Test
+    void testLoadLibraryNonExistentPath2() {
+        assertThrows(IOException.class, () -> NativeLoader.loadLibraryFromFileSystem("/test.so", NativeLoader.class));
+    }
+
+    @Test
+    void testLoadLibraryNullPath() {
+        assertThrows(IOException.class, () -> NativeLoader.loadLibraryFromJar(null, NativeLoader.class));
+    }
 }

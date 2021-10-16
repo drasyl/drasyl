@@ -19,12 +19,39 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
+package org.drasyl.crypto.sodium;
 
-import org.drasyl.util.ImmutableByteArray;
+import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.crypto.loader.LibraryLoader;
+import org.drasyl.crypto.loader.NativeLoader;
 
-public interface Key {
-    ImmutableByteArray getBytes();
+import java.io.File;
+import java.io.IOException;
 
-    byte[] toByteArray();
+import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
+
+/**
+ * This class loads and binds the JNA {@link Sodium}.
+ */
+public class DrasylSodium extends Sodium {
+    private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_SYSTEM);
+
+    public DrasylSodium() throws IOException {
+        this(DEFAULT_MODE);
+    }
+
+    public DrasylSodium(final String loadingMode) throws IOException {
+        new LibraryLoader(Sodium.class).loadLibrary(loadingMode, "sodium");
+        register();
+    }
+
+    public DrasylSodium(final File libFile) throws IOException {
+        try {
+            NativeLoader.loadLibraryFromFileSystem(libFile.getAbsolutePath(), Sodium.class);
+            register();
+        }
+        catch (final Exception e) {
+            throw new IOException("Could not load local library due to: ", e);
+        }
+    }
 }

@@ -47,7 +47,28 @@
         "pattern": "\\QMETA-INF/org.drasyl.versions.properties\\E"
       },
       {
-        "pattern": ".*/libsodium.(so|dll|dylib)$"
+        "pattern": "\\QMETA-INF/native/libsodium/arm64/libsodium.so\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/armv6/libsodium.so\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/linux/libsodium.so\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/linux64/libsodium.so\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/mac/aarch64/libsodium.dylib\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/mac/intel/libsodium.dylib\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/windows/libsodium.dll\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/native/libsodium/windows64/libsodium.dll\\E"
       }
     ]
   },

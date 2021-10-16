@@ -21,16 +21,12 @@
  */
 package org.drasyl.crypto;
 
-import com.goterl.lazysodium.LazySodiumJava;
-import com.goterl.lazysodium.SodiumJava;
-import com.goterl.lazysodium.utils.LibraryLoader;
 import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
@@ -39,24 +35,11 @@ import org.openjdk.jmh.infra.Blackhole;
 public class RandomBenchmark extends AbstractBenchmark {
     @Param({ "4", "8", "16", "24", "32", "64" })
     private int size;
-    private LazySodiumJava sodium;
-
-    @Setup
-    public void setup() {
-        sodium = new LazySodiumJava(new SodiumJava(LibraryLoader.Mode.BUNDLED_ONLY));
-    }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void ownRandomCSPRNG(final Blackhole blackhole) {
         blackhole.consume(Crypto.randomBytes(size));
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void sodiumRandomCSPRNG(final Blackhole blackhole) {
-        blackhole.consume(sodium.randomBytesBuf(size));
     }
 }

@@ -22,12 +22,12 @@
 package org.drasyl.handler.remote.crypto;
 
 import com.google.common.cache.CacheBuilder;
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.AddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.identity.Identity;
