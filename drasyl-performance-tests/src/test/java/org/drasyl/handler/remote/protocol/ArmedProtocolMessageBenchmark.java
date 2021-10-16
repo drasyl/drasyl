@@ -21,11 +21,11 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.Unpooled;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
@@ -51,7 +51,7 @@ public class ArmedProtocolMessageBenchmark extends AbstractBenchmark {
         try {
             final ApplicationMessage message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(1024)));
             sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, new SessionPair(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+            armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
         }
         catch (final CryptoException | InvalidMessageFormatException e) {
             handleUnexpectedException(e);

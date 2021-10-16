@@ -42,7 +42,7 @@ public class IdentityPublicKeyBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void ofStringWithConversionToSodiumKey(final Blackhole blackhole) {
-        blackhole.consume(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127").toSodiumKey());
+    public void ofStringWithConversionToByteArray(final Blackhole blackhole) {
+        blackhole.consume(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127").toByteArray());
     }
 }

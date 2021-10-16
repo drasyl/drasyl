@@ -19,12 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
-
-import org.drasyl.util.ImmutableByteArray;
-
-public interface Key {
-    ImmutableByteArray getBytes();
-
-    byte[] toByteArray();
-}
+/**
+ * Libsodium wrappers for the crypto operations of drasyl
+ */
+package org.drasyl.crypto.sodium;

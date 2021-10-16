@@ -21,11 +21,9 @@
  */
 package org.drasyl.crypto;
 
-import com.goterl.lazysodium.exceptions.SodiumException;
-import com.goterl.lazysodium.interfaces.AEAD;
-import com.goterl.lazysodium.utils.SessionPair;
-import org.drasyl.crypto.loader.DrasylLazySodiumJava;
-import org.drasyl.crypto.loader.DrasylSodiumJava;
+import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
+import org.drasyl.crypto.sodium.SessionPair;
+import org.drasyl.crypto.sodium.Sodium;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -46,7 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -55,10 +52,18 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CryptoTest {
+    // We've to wrap the SodiumJava, because Mockito does not support native calls
+    static class UnitSodium extends Sodium {
+        @Override
+        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
+            return 0;
+        }
+    }
+
     @Nested
     class LongTimeKeyPair {
         @Test
-        void shouldGenerate(@Mock final DrasylLazySodiumJava sodium) throws CryptoException {
+        void shouldGenerate(@Mock final DrasylSodiumWrapper sodium) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             doReturn(true).when(sodium).cryptoSignKeypair(any(), any());
 
@@ -70,7 +75,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium) {
+        void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium) {
             final Crypto crypto = new Crypto(sodium);
             doReturn(false).when(sodium).cryptoSignKeypair(any(), any());
 
@@ -78,7 +83,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldConvertKey(@Mock final DrasylLazySodiumJava sodium,
+        void shouldConvertKey(@Mock final DrasylSodiumWrapper sodium,
                               @Mock final KeyPair keyPair,
                               @Mock final IdentityPublicKey pk,
                               @Mock final IdentitySecretKey sk) throws CryptoException {
@@ -99,7 +104,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldThrowExceptionOnWrongKeyToConvert(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnWrongKeyToConvert(@Mock final DrasylSodiumWrapper sodium,
                                                      @Mock final KeyPair keyPair,
                                                      @Mock final IdentityPublicKey pk,
                                                      @Mock final IdentitySecretKey sk) {
@@ -113,7 +118,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldConvertPublicKey(@Mock final DrasylLazySodiumJava sodium,
+        void shouldConvertPublicKey(@Mock final DrasylSodiumWrapper sodium,
                                     @Mock final IdentityPublicKey pk) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             doReturn(true).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
@@ -125,7 +130,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldThrowExceptionOnWrongPublicKeyToConvert(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnWrongPublicKeyToConvert(@Mock final DrasylSodiumWrapper sodium,
                                                            @Mock final IdentityPublicKey pk) {
             final Crypto crypto = new Crypto(sodium);
             doReturn(false).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
@@ -137,7 +142,7 @@ class CryptoTest {
     @Nested
     class EphemeralKeyPair {
         @Test
-        void shouldGenerate(@Mock final DrasylLazySodiumJava sodium,
+        void shouldGenerate(@Mock final DrasylSodiumWrapper sodium,
                             @Mock final UnitSodium sodiumJava) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
@@ -152,7 +157,7 @@ class CryptoTest {
         }
 
         @Test
-        void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final UnitSodium sodiumJava) {
             final Crypto crypto = new Crypto(sodium);
             doReturn(sodiumJava).when(sodium).getSodium();
@@ -168,12 +173,12 @@ class CryptoTest {
     @Nested
     class SessionPairTest {
         @Test
-        void shouldGenerateOnSmallerOwnKey(@Mock final DrasylLazySodiumJava sodium,
+        void shouldGenerateOnSmallerOwnKey(@Mock final DrasylSodiumWrapper sodium,
                                            @Mock final KeyPair keyPair,
                                            @Mock final IdentityPublicKey pk,
                                            @Mock final IdentitySecretKey sk,
                                            @Mock final IdentityPublicKey key,
-                                           @Mock final SessionPair sp) throws CryptoException, SodiumException {
+                                           @Mock final SessionPair sp) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
@@ -184,17 +189,17 @@ class CryptoTest {
             final SessionPair rtnKeyPair = crypto.generateSessionKeyPair(keyPair, key);
 
             assertEquals(sp, rtnKeyPair);
-            verify(sodium).cryptoKxClientSessionKeys(pk.toSodiumKey(), sk.toSodiumKey(), key.toSodiumKey());
-            verify(sodium, never()).cryptoKxServerSessionKeys(pk.toSodiumKey(), sk.toSodiumKey(), key.toSodiumKey());
+            verify(sodium).cryptoKxClientSessionKeys(pk.toByteArray(), sk.toByteArray(), key.toByteArray());
+            verify(sodium, never()).cryptoKxServerSessionKeys(pk.toByteArray(), sk.toByteArray(), key.toByteArray());
         }
 
         @Test
-        void shouldGenerateOnBiggerOwnKey(@Mock final DrasylLazySodiumJava sodium,
+        void shouldGenerateOnBiggerOwnKey(@Mock final DrasylSodiumWrapper sodium,
                                           @Mock final KeyPair keyPair,
                                           @Mock final IdentityPublicKey pk,
                                           @Mock final IdentitySecretKey sk,
                                           @Mock final IdentityPublicKey key,
-                                          @Mock final SessionPair sp) throws CryptoException, SodiumException {
+                                          @Mock final SessionPair sp) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
@@ -205,12 +210,12 @@ class CryptoTest {
             final SessionPair rtnKeyPair = crypto.generateSessionKeyPair(keyPair, key);
 
             assertEquals(sp, rtnKeyPair);
-            verify(sodium).cryptoKxServerSessionKeys(pk.toSodiumKey(), sk.toSodiumKey(), key.toSodiumKey());
-            verify(sodium, never()).cryptoKxClientSessionKeys(pk.toSodiumKey(), sk.toSodiumKey(), key.toSodiumKey());
+            verify(sodium).cryptoKxServerSessionKeys(pk.toByteArray(), sk.toByteArray(), key.toByteArray());
+            verify(sodium, never()).cryptoKxClientSessionKeys(pk.toByteArray(), sk.toByteArray(), key.toByteArray());
         }
 
         @Test
-        void shouldThrowExceptionOnEqualsKeys(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnEqualsKeys(@Mock final DrasylSodiumWrapper sodium,
                                               @Mock final KeyPair keyPair,
                                               @Mock final IdentityPublicKey pk,
                                               @Mock final IdentityPublicKey key) {
@@ -225,17 +230,17 @@ class CryptoTest {
         }
 
         @Test
-        void shouldRethrowException(@Mock final DrasylLazySodiumJava sodium,
+        void shouldRethrowException(@Mock final DrasylSodiumWrapper sodium,
                                     @Mock final KeyPair keyPair,
                                     @Mock final IdentityPublicKey pk,
                                     @Mock final IdentitySecretKey sk,
-                                    @Mock final IdentityPublicKey key) throws SodiumException {
+                                    @Mock final IdentityPublicKey key) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
             when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
             when(key.toByteArray()).thenReturn(new byte[]{ 0x02 });
-            when(sodium.cryptoKxClientSessionKeys(any(), any(), any())).thenThrow(SodiumException.class);
+            when(sodium.cryptoKxClientSessionKeys(any(), any(), any())).thenThrow(CryptoException.class);
 
             assertThrows(CryptoException.class, () -> crypto.generateSessionKeyPair(keyPair, key));
         }
@@ -244,30 +249,28 @@ class CryptoTest {
     @Nested
     class Encrypt {
         @Test
-        void shouldEncrypt(@Mock final DrasylLazySodiumJava sodium,
+        void shouldEncrypt(@Mock final DrasylSodiumWrapper sodium,
                            @Mock final Nonce nonce,
-                           @Mock final com.goterl.lazysodium.utils.SessionPair sessionPair) throws CryptoException {
+                           @Mock final SessionPair sessionPair) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    any(), any(), any(), anyLong(), any(), anyLong(), any(), any(), any())).thenReturn(true);
             final byte[] message = new byte[0];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
+                    any(), any(), any(), any())).thenReturn(message);
 
             crypto.encrypt(message, new byte[0], nonce, sessionPair);
 
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    new byte[AEAD.XCHACHA20POLY1305_IETF_ABYTES], null, message,
-                    message.length, new byte[0], 0,
-                    null, nonce.toByteArray(), sessionPair.getTx());
+                    message, new byte[0], nonce.toByteArray(), sessionPair.getTx());
         }
 
         @Test
-        void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final Nonce nonce,
-                                         @Mock final com.goterl.lazysodium.utils.SessionPair sessionPair) {
+                                         @Mock final SessionPair sessionPair) {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    any(), any(), any(), anyLong(), any(), anyLong(), any(), any(), any())).thenReturn(false);
             final byte[] message = new byte[0];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
+                    any(), any(), any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.encrypt(message, new byte[0], nonce, sessionPair));
         }
@@ -276,30 +279,30 @@ class CryptoTest {
     @Nested
     class Decrypt {
         @Test
-        void shouldDecrypt(@Mock final DrasylLazySodiumJava sodium,
+        void shouldDecrypt(@Mock final DrasylSodiumWrapper sodium,
                            @Mock final Nonce nonce,
-                           @Mock final com.goterl.lazysodium.utils.SessionPair sessionPair) throws CryptoException {
+                           @Mock final SessionPair sessionPair) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    any(), any(), any(), any(), anyLong(), any(), anyLong(), any(), any())).thenReturn(true);
             final byte[] cipher = new byte[16];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
+                    any(), any(), any(), any())).thenReturn(cipher);
 
             crypto.decrypt(cipher, new byte[0], nonce, sessionPair);
 
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    new byte[0], null, null, cipher,
-                    cipher.length, new byte[0], 0,
+                    cipher,
+                    new byte[0],
                     nonce.toByteArray(), sessionPair.getTx());
         }
 
         @Test
-        void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final Nonce nonce,
-                                         @Mock final com.goterl.lazysodium.utils.SessionPair sessionPair) {
+                                         @Mock final SessionPair sessionPair) {
             final Crypto crypto = new Crypto(sodium);
-            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
-                    any(), any(), any(), any(), anyLong(), any(), anyLong(), any(), any())).thenReturn(false);
             final byte[] cipher = new byte[16];
+            when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
+                    any(), any(), any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.decrypt(cipher, new byte[0], nonce, sessionPair));
         }
@@ -308,31 +311,29 @@ class CryptoTest {
     @Nested
     class Sign {
         @Test
-        void shouldSign(@Mock final DrasylLazySodiumJava sodium,
+        void shouldSign(@Mock final DrasylSodiumWrapper sodium,
                         @Mock final IdentitySecretKey key) throws CryptoException {
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
-            when(sodium.cryptoSignDetached(any(), any(), anyLong(), any())).thenReturn(true);
+            when(sodium.cryptoSignDetached(any(), any())).thenReturn(message);
 
             crypto.sign(message, key);
 
-            verify(sodium).cryptoSignDetached(
-                    new byte[com.goterl.lazysodium.interfaces.Sign.BYTES], message, message.length,
-                    key.toByteArray());
+            verify(sodium).cryptoSignDetached(message, key.toByteArray());
         }
 
         @Test
-        void shouldThrowExceptionOnError(@Mock final DrasylLazySodiumJava sodium,
+        void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final IdentitySecretKey key) {
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
-            when(sodium.cryptoSignDetached(any(), any(), anyLong(), any())).thenReturn(false);
+            when(sodium.cryptoSignDetached(any(), any())).thenReturn(null);
 
             assertThrows(CryptoException.class, () -> crypto.sign(message, key));
         }
 
         @Test
-        void shouldVerifySignature(@Mock final DrasylLazySodiumJava sodium,
+        void shouldVerifySignature(@Mock final DrasylSodiumWrapper sodium,
                                    @Mock final IdentityPublicKey key) {
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
@@ -340,8 +341,7 @@ class CryptoTest {
 
             crypto.verifySignature(signature, message, key);
 
-            verify(sodium).cryptoSignVerifyDetached(signature, message, message.length,
-                    key.toByteArray());
+            verify(sodium).cryptoSignVerifyDetached(signature, message, key.toByteArray());
         }
     }
 
@@ -366,14 +366,6 @@ class CryptoTest {
 
             assertTrue(number > -1, "Number " + number + " should be positive.");
             assertTrue(number <= size, "Number " + number + " should be smaller than or equals to " + size + ".");
-        }
-    }
-
-    // We've to wrap the SodiumJava, because Mockito does not support native calls
-    static class UnitSodium extends DrasylSodiumJava {
-        @Override
-        public int crypto_kx_keypair(final byte[] publicKey, final byte[] secretKey) {
-            return 0;
         }
     }
 }

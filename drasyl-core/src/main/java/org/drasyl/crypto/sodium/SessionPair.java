@@ -19,12 +19,17 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.identity;
+package org.drasyl.crypto.sodium;
 
-import org.drasyl.util.ImmutableByteArray;
+import com.google.auto.value.AutoValue;
 
-public interface Key {
-    ImmutableByteArray getBytes();
+@AutoValue
+public abstract class SessionPair {
+    public static SessionPair of(final byte[] rx, final byte[] tx) {
+        return new AutoValue_SessionPair(rx, tx);
+    }
 
-    byte[] toByteArray();
+    public abstract byte[] getRx();
+
+    public abstract byte[] getTx();
 }

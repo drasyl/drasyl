@@ -22,7 +22,7 @@
 package org.drasyl.node.handler.crypto;
 
 import com.google.auto.value.AutoValue;
-import com.goterl.lazysodium.utils.SessionPair;
+import org.drasyl.crypto.sodium.SessionPair;
 
 /**
  * This object represents a session key agreement between two nodes.

@@ -21,9 +21,9 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import com.goterl.lazysodium.utils.SessionPair;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -50,8 +50,8 @@ public interface FullReadMessage<T extends FullReadMessage<?>> extends RemoteMes
     T incrementHopCount();
 
     /**
-     * Returns an armed version ({@link ArmedProtocolMessage}) of this message for sending it through
-     * untrustworthy channels.
+     * Returns an armed version ({@link ArmedProtocolMessage}) of this message for sending it
+     * through untrustworthy channels.
      *
      * @param byteBuf        the {@link ByteBuf} to write through
      * @param cryptoInstance the crypto instance that should be used
