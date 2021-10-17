@@ -193,19 +193,18 @@ public class TcpClient extends ChannelDuplexHandler {
             // reset counter so that no connection is attempted more often then defined in `drasyl.remote.tcp-fallback.client.timeout`
             noResponseFromSuperPeerSince.set(currentTime);
 
-            superPeerChannel = bootstrap
-                    .channel(NioSocketChannel.class)
-                    .handler(new TcpClientHandler(ctx))
-                    .connect(address);
+            superPeerChannel = bootstrap.connect(address);
             superPeerChannel.addListener(new TcpClientFutureListener());
         }
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
 
-        bootstrap.group((EventLoopGroup) ctx.executor().parent());
+        bootstrap.group((EventLoopGroup) ctx.executor().parent())
+                .channel(NioSocketChannel.class)
+                .handler(new TcpClientHandler(ctx));
     }
 
     @Override
