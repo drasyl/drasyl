@@ -74,13 +74,16 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
-        node.channels.add(ch);
-
+        addToChannelGroup(ch);
         firstStage(ch);
         chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);
         lastStage(ch);
+    }
+
+    protected void addToChannelGroup(final DrasylChannel ch) {
+        node.channels.add(ch);
     }
 
     protected void firstStage(final DrasylChannel ch) {
@@ -110,7 +113,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     /**
      * This stage arms outbound and disarms inbound messages.
      */
-    private void armStage(final DrasylChannel ch) throws CryptoException {
+    protected void armStage(final DrasylChannel ch) throws CryptoException {
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmApplicationEnabled()) {
             ch.pipeline().addLast(ARM_HEADER_CODEC);
