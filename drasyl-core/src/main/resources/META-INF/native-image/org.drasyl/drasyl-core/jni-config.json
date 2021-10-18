@@ -385,5 +385,11 @@
     "allDeclaredConstructors": true,
     "allDeclaredFields": true,
     "allDeclaredMethods": true
+  },
+  {
+    "name": "com.sun.jna.Platform",
+    "allDeclaredConstructors": true,
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true
   }
 ]
