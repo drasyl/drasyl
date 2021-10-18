@@ -117,6 +117,7 @@ class SendingWormholeNodeTest {
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
                                                                     @Mock final EventLoop eventLoop) {
                 when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                when(childChannel.eventLoop()).thenReturn(eventLoop);
                 doAnswer(invocation -> {
                     invocation.getArgument(0, Runnable.class).run();
                     return null;
@@ -140,6 +141,7 @@ class SendingWormholeNodeTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
                                                                   @Mock final EventLoop eventLoop) {
                 when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                when(childChannel.eventLoop()).thenReturn(eventLoop);
                 doAnswer(invocation -> {
                     invocation.getArgument(0, Runnable.class).run();
                     return null;

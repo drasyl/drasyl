@@ -154,6 +154,7 @@ class PerfClientNodeTest {
                     void shouldRequestSession(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
                                               @Mock final EventLoop eventLoop) {
                         when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        when(childChannel.eventLoop()).thenReturn(eventLoop);
                         doAnswer(invocation -> {
                             invocation.getArgument(0, Runnable.class).run();
                             return null;
@@ -181,6 +182,7 @@ class PerfClientNodeTest {
                     void shouldTriggerDirectConnection(@Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
                                                        @Mock final EventLoop eventLoop) {
                         when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        when(childChannel.eventLoop()).thenReturn(eventLoop);
                         doAnswer(invocation -> {
                             invocation.getArgument(0, Runnable.class).run();
                             return null;
@@ -220,6 +222,7 @@ class PerfClientNodeTest {
                                               @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey address,
                                               @Mock final EventLoop eventLoop) {
                         when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                        when(childChannel.eventLoop()).thenReturn(eventLoop);
                         doAnswer(invocation -> {
                             invocation.getArgument(0, Runnable.class).run();
                             return null;
@@ -247,6 +250,7 @@ class PerfClientNodeTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel childChannel,
                                           @Mock final EventLoop eventLoop) {
                     when(channelFuture.channel().eventLoop()).thenReturn(eventLoop);
+                    when(childChannel.eventLoop()).thenReturn(eventLoop);
                     doAnswer(invocation -> {
                         invocation.getArgument(0, Runnable.class).run();
                         return null;

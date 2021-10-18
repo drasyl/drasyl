@@ -320,7 +320,8 @@ public abstract class DrasylNode {
                 // look for existing channel
                 for (final Channel channel : channels) {
                     if (address.equals(channel.remoteAddress())) {
-                        future.complete(channel);
+                        // delay future completion to make sure Channel's childHandler is done
+                        channel.eventLoop().execute(() -> future.complete(channel));
                         return;
                     }
                 }
