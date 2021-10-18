@@ -11,6 +11,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - We did it again: The overlay protocol has been changed with breaking changes making it impossible
   to communicate with peers running older drasyl versions.
+- New Javadoc website: https://api.drasyl.org/
 
 ### Added
 
