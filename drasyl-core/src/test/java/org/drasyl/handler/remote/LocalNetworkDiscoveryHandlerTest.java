@@ -143,7 +143,7 @@ class LocalNetworkDiscoveryTest {
             verify(peer).isStale();
             verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
             assertTrue(peers.isEmpty());
-            verify(ctx).write(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
         }
     }
 
