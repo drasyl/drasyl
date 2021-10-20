@@ -25,6 +25,7 @@ import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.DrasylAddress;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -61,6 +62,11 @@ public abstract class MessageEvent implements Event {
         final MessageEvent that = (MessageEvent) o;
         return Objects.equals(getSender(), that.getSender()) &&
                 Objects.deepEquals(getPayload(), that.getPayload());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.deepHashCode(new Object[]{ getSender(), getPayload() });
     }
 
     /**

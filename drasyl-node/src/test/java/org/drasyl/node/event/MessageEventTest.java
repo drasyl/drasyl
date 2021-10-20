@@ -59,9 +59,15 @@ class MessageEventTest {
             final MessageEvent event1 = MessageEvent.of(sender, message);
             final MessageEvent event2 = MessageEvent.of(sender, message);
             final MessageEvent event3 = MessageEvent.of(sender, message2);
+            final MessageEvent event4 = MessageEvent.of(sender, new Object[]{ message });
+            final MessageEvent event5 = MessageEvent.of(sender, new Object[]{ message });
+            final MessageEvent event6 = MessageEvent.of(sender, new Object[]{ message2 });
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
+
+            assertEquals(event4, event5);
+            assertNotEquals(event4, event6);
         }
 
         @Test
@@ -83,9 +89,15 @@ class MessageEventTest {
             final MessageEvent event1 = MessageEvent.of(sender, message);
             final MessageEvent event2 = MessageEvent.of(sender, message);
             final MessageEvent event3 = MessageEvent.of(sender, message2);
+            final MessageEvent event4 = MessageEvent.of(sender, new Object[]{ message });
+            final MessageEvent event5 = MessageEvent.of(sender, new Object[]{ message });
+            final MessageEvent event6 = MessageEvent.of(sender, new Object[]{ message2 });
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());
+
+            assertEquals(event4.hashCode(), event5.hashCode());
+            assertNotEquals(event4.hashCode(), event6.hashCode());
         }
     }
 
