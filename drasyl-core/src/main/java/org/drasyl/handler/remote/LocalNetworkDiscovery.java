@@ -216,7 +216,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
         final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(networkId, myPublicKey, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
-        ctx.write(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
+        ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, future::cause);
             }
