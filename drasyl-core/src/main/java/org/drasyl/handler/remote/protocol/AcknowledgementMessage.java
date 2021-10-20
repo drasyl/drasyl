@@ -63,14 +63,13 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     /**
      * Creates new acknowledgement message.
      *
-     * @param hopCount        the hop count
+     * @param hopCount    the hop count
      * @param isArmed
-     * @param networkId       the network id
-     * @param nonce           the nonce
-     * @param recipient       the public key of the recipient
-     * @param sender          the public key of the sender
-     * @param proofOfWork     the proof of work of {@code sender}
-     * @param correspondingId the {@link Nonce} to which this message corresponds
+     * @param networkId   the network id
+     * @param nonce       the nonce
+     * @param recipient   the public key of the recipient
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
      *                              recipient}, {@code hopCount}, or {@code correspondingId} is
      *                              {@code null}
@@ -99,11 +98,10 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     /**
      * Creates new acknowledgement message with random {@link Nonce}, and minimal {@link HopCount}.
      *
-     * @param networkId       the network id
-     * @param recipient       the public key of the recipient
-     * @param sender          the public key of the sender
-     * @param proofOfWork     the proof of work of {@code sender}
-     * @param correspondingId the {@link Nonce} to which this message corresponds
+     * @param networkId   the network id
+     * @param recipient   the public key of the recipient
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, {@code recipient}, or
      *                              {@code correspondingId} is {@code null}
      */
