@@ -107,7 +107,7 @@ public class UdpServer extends ChannelDuplexHandler {
                 .channel(NioDatagramChannel.class)
                 .handler(new UdpServerHandler(ctx))
                 .bind(bindAddress)
-                .addListener(new UdpServerHandlerFutureListener(ctx));
+                .addListener(new UdpServerBindListener(ctx));
     }
 
     @Override
@@ -118,10 +118,8 @@ public class UdpServer extends ChannelDuplexHandler {
             final SocketAddress socketAddress = channel.localAddress();
             LOG.debug("Stop Server listening at udp:/{}...", socketAddress);
             // shutdown server
-            channel.close().addListener(future -> {
-                channel = null;
-                LOG.debug("Server stopped.");
-            });
+            channel.close();
+            channel = null;
         }
         pendingWrites.removeAndFailAll(new ClosedChannelException());
     }
@@ -195,10 +193,13 @@ public class UdpServer extends ChannelDuplexHandler {
         }
     }
 
-    private class UdpServerHandlerFutureListener implements ChannelFutureListener {
+    /**
+     * Listener that gets called once the channel is bound.
+     */
+    private class UdpServerBindListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public UdpServerHandlerFutureListener(final ChannelHandlerContext ctx) {
+        public UdpServerBindListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 
@@ -206,10 +207,12 @@ public class UdpServer extends ChannelDuplexHandler {
         public void operationComplete(final ChannelFuture future) throws Exception {
             if (future.isSuccess()) {
                 // server successfully started
-                UdpServer.this.channel = future.channel();
-                final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                LOG.info("Server started and listening at udp:/{}", socketAddress);
+                final Channel myChannel = future.channel();
+                myChannel.closeFuture().addListener(new UdpServerCloseListener());
+                final InetSocketAddress socketAddress = (InetSocketAddress) myChannel.localAddress();
+                LOG.info("Server started and listening at udp:/{}.", socketAddress);
 
+                UdpServer.this.channel = myChannel;
                 ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
                 ctx.fireChannelActive();
             }
@@ -217,6 +220,17 @@ public class UdpServer extends ChannelDuplexHandler {
                 // server start failed
                 ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
             }
+        }
+    }
+
+    /**
+     * Listener that gets called once the channel is closed.
+     */
+    private static class UdpServerCloseListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(final ChannelFuture future) throws Exception {
+            final InetSocketAddress socketAddress = (InetSocketAddress) future.channel().localAddress();
+            LOG.debug("Server listening at udp:/{} stopped.", socketAddress);
         }
     }
 
