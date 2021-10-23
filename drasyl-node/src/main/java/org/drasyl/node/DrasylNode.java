@@ -154,7 +154,7 @@ public abstract class DrasylNode {
                 identity = IdentityManager.readIdentityFile(config.getIdentityPath());
             }
             else {
-                LOG.info("No ientity present. Generate a new one and write to file specified in config `{}`.", config.getIdentityPath());
+                LOG.info("No ientity present. Generate a new one and write to file specified in config: `{}`", config.getIdentityPath());
                 identity = Identity.generateIdentity();
                 IdentityManager.writeIdentityFile(config.getIdentityPath(), identity);
             }
