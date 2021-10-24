@@ -22,7 +22,6 @@
 package org.drasyl;
 
 import org.drasyl.annotation.NonNull;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
@@ -35,7 +34,9 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import test.util.IdentityTestUtil;
+
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
@@ -46,21 +47,15 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         try {
-            final Identity identity1 = IdentityTestUtil.ID_1;
-            final Identity identity2 = IdentityTestUtil.ID_2;
 
             final DrasylConfig config1 = DrasylConfig.newBuilder()
-                    .identityProofOfWork(identity1.getProofOfWork())
-                    .identityPublicKey(identity1.getIdentityPublicKey())
-                    .identitySecretKey(identity1.getIdentitySecretKey())
+                    .identity(ID_1)
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
-                    .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getIdentityPublicKey())
-                    .identitySecretKey(identity2.getIdentitySecretKey())
+                    .identity(ID_2)
                     .intraVmDiscoveryEnabled(true)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(false)

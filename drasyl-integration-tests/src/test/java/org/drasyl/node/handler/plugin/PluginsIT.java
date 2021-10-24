@@ -26,7 +26,6 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.EmbeddedNode;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.event.MessageEvent;
@@ -36,12 +35,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import java.util.Set;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 class PluginsIT {
@@ -54,16 +53,12 @@ class PluginsIT {
 
     @BeforeEach
     void setup() throws DrasylException {
-        final Identity identity = IdentityTestUtil.ID_1;
-
         config = DrasylConfig.newBuilder()
                 .plugins(Set.of(new TestPlugin(ConfigFactory.empty())))
                 .build();
 
         config = DrasylConfig.newBuilder(config)
-                .identityProofOfWork(identity.getProofOfWork())
-                .identityPublicKey(identity.getIdentityPublicKey())
-                .identitySecretKey(identity.getIdentitySecretKey())
+                .identity(ID_1)
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
                 .remoteBindPort(0)

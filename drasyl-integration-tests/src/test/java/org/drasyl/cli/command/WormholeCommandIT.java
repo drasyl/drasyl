@@ -74,9 +74,7 @@ class WormholeCommandIT {
         // create super peer
         final DrasylConfig superPeerConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ID_1.getProofOfWork())
-                .identityPublicKey(ID_1.getIdentityPublicKey())
-                .identitySecretKey(ID_1.getIdentitySecretKey())
+                .identity(ID_1)
                 .remoteExposeEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
@@ -115,9 +113,7 @@ class WormholeCommandIT {
         // create sending node
         final DrasylConfig senderConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ID_2.getProofOfWork())
-                .identityPublicKey(ID_2.getIdentityPublicKey())
-                .identitySecretKey(ID_2.getIdentitySecretKey())
+                .identity(ID_2)
                 .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
@@ -153,9 +149,7 @@ class WormholeCommandIT {
         // create receiving node
         final DrasylConfig receiverConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(ID_3.getProofOfWork())
-                .identityPublicKey(ID_3.getIdentityPublicKey())
-                .identitySecretKey(ID_3.getIdentitySecretKey())
+                .identity(ID_3)
                 .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)

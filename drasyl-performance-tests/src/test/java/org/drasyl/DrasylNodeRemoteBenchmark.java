@@ -22,7 +22,6 @@
 package org.drasyl;
 
 import org.drasyl.annotation.NonNull;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
@@ -36,7 +35,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import test.util.IdentityTestUtil;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -44,6 +42,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
@@ -58,30 +59,23 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
         try {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
 
-            final Identity identity1 = IdentityTestUtil.ID_1;
-            final Identity identity2 = IdentityTestUtil.ID_2;
-
             final DrasylConfig config1 = DrasylConfig.newBuilder()
-                    .identityProofOfWork(identity1.getProofOfWork())
-                    .identityPublicKey(identity1.getIdentityPublicKey())
-                    .identitySecretKey(identity1.getIdentitySecretKey())
+                    .identity(ID_1)
                     .intraVmDiscoveryEnabled(false)
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22528)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
+                    .remoteStaticRoutes(Map.of(ID_2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
                     .build();
             final DrasylConfig config2 = DrasylConfig.newBuilder()
-                    .identityProofOfWork(identity2.getProofOfWork())
-                    .identityPublicKey(identity2.getIdentityPublicKey())
-                    .identitySecretKey(identity2.getIdentitySecretKey())
+                    .identity(ID_2)
                     .intraVmDiscoveryEnabled(false)
                     .remoteBindHost(InetAddress.getByName("127.0.0.1"))
                     .remoteBindPort(22529)
                     .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(identity1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
+                    .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                     .remoteLocalHostDiscoveryEnabled(false)
                     .remoteEnabled(true)
                     .build();
@@ -90,7 +84,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             node1 = new DrasylNode(config1) {
                 @Override
                 public void onEvent(final @NonNull Event event) {
-                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(identity2.getIdentityPublicKey()) && !node1Ready.isDone()) {
+                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(ID_2.getIdentityPublicKey()) && !node1Ready.isDone()) {
                         node1Ready.complete(null);
                     }
                 }
@@ -104,7 +98,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);
                     }
-                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(identity1.getIdentityPublicKey()) && !node2Ready.isDone()) {
+                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(ID_1.getIdentityPublicKey()) && !node2Ready.isDone()) {
                         node2Ready.complete(null);
                     }
                 }

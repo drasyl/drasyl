@@ -47,7 +47,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
-import test.util.IdentityTestUtil;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -75,6 +74,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
+import static test.util.IdentityTestUtil.ID_4;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -126,9 +126,7 @@ class DrasylNodeIT {
                 // super peer
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -145,9 +143,7 @@ class DrasylNodeIT {
                 // client1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -166,9 +162,7 @@ class DrasylNodeIT {
                 // client2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_3.getProofOfWork())
-                        .identityPublicKey(ID_3.getIdentityPublicKey())
-                        .identitySecretKey(ID_3.getIdentitySecretKey())
+                        .identity(ID_3)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -287,9 +281,7 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(22528)
@@ -309,9 +301,7 @@ class DrasylNodeIT {
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(22529)
@@ -387,9 +377,7 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("0.0.0.0"))
                         .remoteBindPort(0)
@@ -406,9 +394,7 @@ class DrasylNodeIT {
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("0.0.0.0"))
                         .remoteBindPort(0)
@@ -487,9 +473,7 @@ class DrasylNodeIT {
                 // super peer
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -507,9 +491,7 @@ class DrasylNodeIT {
                 // client
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
@@ -577,9 +559,7 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -593,9 +573,7 @@ class DrasylNodeIT {
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -609,9 +587,7 @@ class DrasylNodeIT {
                 // node3
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_3.getProofOfWork())
-                        .identityPublicKey(ID_3.getIdentityPublicKey())
-                        .identitySecretKey(ID_3.getIdentitySecretKey())
+                        .identity(ID_3)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -625,9 +601,7 @@ class DrasylNodeIT {
                 // node4
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(IdentityTestUtil.ID_4.getProofOfWork())
-                        .identityPublicKey(IdentityTestUtil.ID_4.getIdentityPublicKey())
-                        .identitySecretKey(IdentityTestUtil.ID_4.getIdentitySecretKey())
+                        .identity(ID_4)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -719,9 +693,7 @@ class DrasylNodeIT {
                 // node1
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(true)
                         .remoteBindPort(0)
@@ -740,9 +712,7 @@ class DrasylNodeIT {
                 // node2
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_2.getProofOfWork())
-                        .identityPublicKey(ID_2.getIdentityPublicKey())
-                        .identitySecretKey(ID_2.getIdentitySecretKey())
+                        .identity(ID_2)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(true)
                         .remoteBindPort(0)
@@ -802,9 +772,7 @@ class DrasylNodeIT {
             // node
             config = DrasylConfig.newBuilder()
                     .networkId(0)
-                    .identityProofOfWork(ID_1.getProofOfWork())
-                    .identityPublicKey(ID_1.getIdentityPublicKey())
-                    .identitySecretKey(ID_1.getIdentitySecretKey())
+                    .identity(ID_1)
                     .remoteExposeEnabled(false)
                     .remoteEnabled(false)
                     .remoteSuperPeerEnabled(false)
@@ -853,9 +821,7 @@ class DrasylNodeIT {
                 //
                 final DrasylConfig config = DrasylConfig.newBuilder()
                         .networkId(0)
-                        .identityProofOfWork(ID_1.getProofOfWork())
-                        .identityPublicKey(ID_1.getIdentityPublicKey())
-                        .identitySecretKey(ID_1.getIdentitySecretKey())
+                        .identity(ID_1)
                         .remoteExposeEnabled(false)
                         .remoteEnabled(false)
                         .remoteSuperPeerEnabled(false)
@@ -888,9 +854,7 @@ class DrasylNodeIT {
         void setUp() {
             configBuilder = DrasylConfig.newBuilder()
                     .networkId(0)
-                    .identityProofOfWork(ID_1.getProofOfWork())
-                    .identityPublicKey(ID_1.getIdentityPublicKey())
-                    .identitySecretKey(ID_1.getIdentitySecretKey())
+                    .identity(ID_1)
                     .remoteExposeEnabled(false)
                     .remoteEnabled(true)
                     .remoteBindHost(createInetAddress("127.0.0.1"))

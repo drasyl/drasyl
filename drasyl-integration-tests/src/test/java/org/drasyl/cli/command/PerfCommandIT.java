@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
-import test.util.IdentityTestUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,6 +54,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
 import static test.util.DrasylConfigRenderer.renderConfig;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
+import static test.util.IdentityTestUtil.ID_3;
 
 class PerfCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeCommandIT.class);
@@ -72,9 +74,7 @@ class PerfCommandIT {
         // create super peer
         final DrasylConfig superPeerConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_1.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_1.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_1.getIdentitySecretKey())
+                .identity(ID_1)
                 .remoteExposeEnabled(false)
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
@@ -113,10 +113,8 @@ class PerfCommandIT {
         // create server
         final DrasylConfig serverConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_2.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_2.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_2.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .identity(ID_2)
+                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)
@@ -148,10 +146,8 @@ class PerfCommandIT {
         // create client
         final DrasylConfig clientConfig = DrasylConfig.newBuilder()
                 .networkId(0)
-                .identityProofOfWork(IdentityTestUtil.ID_3.getProofOfWork())
-                .identityPublicKey(IdentityTestUtil.ID_3.getIdentityPublicKey())
-                .identitySecretKey(IdentityTestUtil.ID_3.getIdentitySecretKey())
-                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey())))
+                .identity(ID_3)
+                .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteLocalHostDiscoveryEnabled(false)

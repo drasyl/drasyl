@@ -767,11 +767,19 @@ public abstract class DrasylConfig {
     public abstract static class Builder {
         public abstract Builder networkId(final int networkId);
 
-        public abstract Builder identityProofOfWork(final ProofOfWork identityProofOfWork);
-
         public abstract Builder identityPublicKey(final IdentityPublicKey identityPublicKey);
 
+        public abstract Builder identityProofOfWork(final ProofOfWork identityProofOfWork);
+
         public abstract Builder identitySecretKey(final IdentitySecretKey identitySecretKey);
+
+        /**
+         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)}, {@link
+         * #identityProofOfWork(ProofOfWork)}, and {@link #identitySecretKey(IdentitySecretKey)}.
+         */
+        public Builder identity(final Identity identity) {
+            return identityPublicKey(identity.getIdentityPublicKey()).identityProofOfWork(identity.getProofOfWork()).identitySecretKey(identity.getIdentitySecretKey());
+        }
 
         public abstract Builder keyAgreementPublicKey(final KeyAgreementPublicKey keyAgreementPublicKey);
 

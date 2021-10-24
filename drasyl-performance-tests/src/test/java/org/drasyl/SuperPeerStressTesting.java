@@ -68,9 +68,7 @@ public class SuperPeerStressTesting extends AbstractBenchmark {
         final Identity identity = Identity.generateIdentity();
 
         final DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
-                .identityPublicKey(identity.getIdentityPublicKey())
-                .identitySecretKey(identity.getIdentitySecretKey())
-                .identityProofOfWork(identity.getProofOfWork())
+                .identity(identity)
                 .intraVmDiscoveryEnabled(false)
                 .build();
         final DrasylNode node = new DrasylNode(config) {
