@@ -36,7 +36,7 @@ class PlatformDependentTest {
     class JavaVersion {
         @Test
         void shouldReturnVersion() {
-            assertThat(javaVersion(), greaterThan(0));
+            assertThat(javaVersion(), greaterThan(0f));
         }
     }
 
@@ -53,7 +53,7 @@ class PlatformDependentTest {
     class JavaSpecificationVersion {
         @Test
         void shouldReturnVersion() {
-            assertThat(javaSpecificationVersion(), greaterThan(0));
+            assertThat(javaSpecificationVersion(), greaterThan(0f));
         }
     }
 }

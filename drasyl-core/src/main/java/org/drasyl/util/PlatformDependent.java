@@ -32,7 +32,7 @@ import java.lang.reflect.Field;
  */
 public final class PlatformDependent {
     private static final Logger LOG = LoggerFactory.getLogger(PlatformDependent.class);
-    private static final int JAVA_VERSION = detectJavaVersion();
+    private static final float JAVA_VERSION = detectJavaVersion();
     // See https://github.com/oracle/graal/blob/master/sdk/src/org.graalvm.nativeimage/src/org/graalvm/nativeimage/
     // ImageInfo.java
     private static final boolean RUNNING_IN_NATIVE_IMAGE = System.getProperty("org.graalvm.nativeimage.imagecode") != null;
@@ -46,7 +46,7 @@ public final class PlatformDependent {
      *
      * @return the Java version
      */
-    public static int javaVersion() {
+    public static float javaVersion() {
         return JAVA_VERSION;
     }
 
@@ -62,12 +62,12 @@ public final class PlatformDependent {
         return !RUNNING_IN_NATIVE_IMAGE;
     }
 
-    static int javaSpecificationVersion() {
-        return Integer.parseInt(System.getProperty("java.specification.version", "11"));
+    static float javaSpecificationVersion() {
+        return Float.parseFloat(System.getProperty("java.specification.version", "11"));
     }
 
-    private static int detectJavaVersion() {
-        final int majorVersion = javaSpecificationVersion();
+    private static float detectJavaVersion() {
+        final float majorVersion = javaSpecificationVersion();
 
         LOG.debug("Java version: {}", majorVersion);
 
