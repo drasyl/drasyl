@@ -130,7 +130,7 @@
         <mockito.version>4.0.0</mockito.version>
         <jackson.version>2.13.0</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <awaitility.version>4.1.0</awaitility.version>
+        <awaitility.version>4.1.1</awaitility.version>
         <netty.version>4.1.69.Final</netty.version>
         <guava.version>31.0.1-jre</guava.version>
         <maven.scm>1.11.2</maven.scm>
