@@ -15,7 +15,7 @@
         <meta name="author" content="drasyl">
       
       <link rel="shortcut icon" href="../assets/img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-5.5.12">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-5.5.12">
     
     
       
@@ -592,21 +592,26 @@
 &lt;/repositories&gt;</code></pre></p>
 <pre class="highlight"><code class="language-xml">&lt;dependency&gt;
     &lt;groupId&gt;org.drasyl&lt;/groupId&gt;
-    &lt;artifactId&gt;drasyl-core&lt;/artifactId&gt;
+    &lt;artifactId&gt;drasyl-node&lt;/artifactId&gt;
     &lt;version&gt;0.6.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</code></pre>
-<p>Other dependency managers:
-<pre class="highlight"><code class="language-java">Gradle : compile "org.drasyl:drasyl-core:0.6.0-SNAPSHOT" // build.gradle 
-        Ivy : &lt;dependency org="org.drasyl" name="drasyl-core" rev="0.6.0-SNAPSHOT" conf="build" /&gt; // ivy.xml
-        SBT : libraryDependencies += "org.drasyl" % "drasyl-core" % "0.6.0-SNAPSHOT" // build.sbt</code></pre></p>
+<p>Other dependency managers:</p>
+<pre class="highlight"><code class="language-java">Gradle:compile"org.drasyl:drasyl-node:0.6.0-SNAPSHOT" // build.gradle 
+        Ivy:&lt;dependency org="org.drasyl"name="drasyl-node"rev="0.6.0-SNAPSHOT"conf="build"/&gt; // ivy.xml
+        SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.6.0-SNAPSHOT" // build.sbt</code></pre>
 <h2 id="implementing-drasylnode">Implementing <code>DrasylNode</code><a class="headerlink" href="#implementing-drasylnode" title="Permanent link">&para;</a></h2>
 <p>Next, you can create your own drasyl node by implementing <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html"><code>DrasylNode</code></a>.</p>
 <p>This class contains the following methods that are now relevant for you:</p>
 <ul>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)"><code>send(...)</code></a>: allows your application to send arbitrary messages to other drasyl nodes.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.event.Event)"><code>onEvent(...)</code></a>: allows your application to react to certain events (e.g. process received messages, connection to the network established/lost). This method must be implemented.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()"><code>start()</code></a>: starts the node, which will then automatically connect to the drasyl network.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()"><code>shutdown()</code></a>: disconnects from the drasyl network and shuts down the node.</li>
+<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)"><code>send(...)</code></a>:
+  allows your application to send arbitrary messages to other drasyl nodes.</li>
+<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.node.event.Event)"><code>onEvent(...)</code></a>:
+  allows your application to react to certain events (e.g. process received messages, connection to
+  the network established/lost). This method must be implemented.</li>
+<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()"><code>start()</code></a>:
+  starts the node, which will then automatically connect to the drasyl network.</li>
+<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()"><code>shutdown()</code></a>:
+  disconnects from the drasyl network and shuts down the node.</li>
 </ul>
 <p>Here you can see a minimal working example of a node that forwards all received events to <code>System.out</code>:
 <pre class="highlight"><code class="language-java">DrasylNode node = new DrasylNode() {
@@ -675,7 +680,7 @@ to see how drasyl can be used for different scenarios.</p>
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 6, 2021</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 25, 2021</span>
     
   </small>
 </div>

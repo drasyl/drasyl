@@ -15,7 +15,7 @@
         <meta name="author" content="drasyl">
       
       <link rel="shortcut icon" href="../assets/img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-5.5.12">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-5.5.12">
     
     
       
@@ -559,7 +559,11 @@ Available builder methods can be obtained from the <a href="https://www.javadoc.
     .remoteSuperPeerEndpoint(Endpoint.of("udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"))
     .remoteEnabled(false)
     .build();</code></pre></p>
-<p>The resulting <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html"><code>DrasylConfig</code></a> object can now be passed to the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.DrasylConfig)"><code>DrasylNode</code> constructor</a>.</p>
+<p>The
+resulting <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html"><code>DrasylConfig</code></a>
+object can now be passed to
+the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig)"><code>DrasylNode</code> constructor</a>
+.</p>
 <h3 id="use-applicationconf-file">Use <code>application.conf</code> file<a class="headerlink" href="#use-applicationconf-file" title="Permanent link">&para;</a></h3>
 <p>You can add a resource called <code>application.conf</code> to your java classpath to provide a custom config used by all your nodes.
 This file has to use the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON Syntax</a>.
@@ -595,7 +599,7 @@ drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppE
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 6, 2021</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 25, 2021</span>
     
   </small>
 </div>

@@ -15,7 +15,7 @@
         <meta name="author" content="drasyl">
       
       <link rel="shortcut icon" href="../../assets/img/favicon.ico">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-5.5.12">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-5.5.12">
     
     
       
@@ -569,9 +569,9 @@ you want to use, like this:</p>
 <pre class="highlight"><code>drasyl {
   serialization {
     serializers {
-      java = "org.drasyl.handler.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.handler.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.handler.serialization.ProtobufSerializer"
+      java = "org.drasyl.node.handler.serialization.JavaSerializer"
+      jackson-json = "org.drasyl.node.handler.serialization.JacksonJsonSerializer"
+      proto = "org.drasyl.node.handler.serialization.ProtobufSerializer"
       myown = "docs.serialization.MyOwnSerializer"
     }
   }
@@ -584,9 +584,9 @@ the <code>drasyl.serialization.bindings.inbound</code>-section for inbound messa
 <pre class="highlight"><code>drasyl {
   serialization {
     serializers {
-      java = "org.drasyl.handler.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.handler.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.handler.serialization.ProtobufSerializer"
+      java = "org.drasyl.node.handler.serialization.JavaSerializer"
+      jackson-json = "org.drasyl.node.handler.serialization.JacksonJsonSerializer"
+      proto = "org.drasyl.node.handler.serialization.ProtobufSerializer"
       myown = "docs.serialization.MyOwnSerializer"
     }
 
@@ -738,7 +738,7 @@ An attacker can choose the URL arbitrarily. By calling getConnection, Server Sid
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 6, 2021</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">October 25, 2021</span>
     
   </small>
 </div>
