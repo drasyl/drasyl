@@ -33,11 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IdentitySecretKeyTest {
+    private Identity identity;
     private IdentitySecretKey secretKey;
 
     @BeforeEach
     void setUp() {
-        secretKey = IdentityTestUtil.ID_1.getIdentitySecretKey();
+        identity = IdentityTestUtil.ID_1;
+        secretKey = identity.getIdentitySecretKey();
     }
 
     @Nested
@@ -53,6 +55,14 @@ class IdentitySecretKeyTest {
         @Test
         void shouldReturnUnmaskedKey() {
             assertEquals("65f20fc3fdcaf569cdcf043f79047723d8856b0169bd4c475ba15ef1b37d27ae18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127", secretKey.toUnmaskedString());
+        }
+    }
+
+    @Nested
+    class DerivePublicKey {
+        @Test
+        void shouldDeriveTheCorrectPublicKey() {
+            assertEquals(identity.getIdentityPublicKey(), secretKey.derivePublicKey());
         }
     }
 

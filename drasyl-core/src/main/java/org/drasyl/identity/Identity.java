@@ -134,12 +134,38 @@ public abstract class Identity {
     }
 
     /**
-     * @throws NullPointerException if {@code proofOfWork} is {@code null}
+     * @throws NullPointerException if {@code identityKeyPair} or {@code keyAgreementKeyPair} is
+     *                              {@code null}.
      */
     public static Identity of(final int proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
                               final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> keyAgreementKeyPair) {
         return of(ProofOfWork.of(proofOfWork), identityKeyPair, keyAgreementKeyPair);
+    }
+
+    /**
+     * @throws NullPointerException if {@code identitySecretKey} is {@code null}.
+     */
+    public static Identity of(final int proofOfWork,
+                              final IdentitySecretKey identitySecretKey) {
+        return of(ProofOfWork.of(proofOfWork), identitySecretKey);
+    }
+
+    /**
+     * @throws NullPointerException if {@code proofOfWork} or {@code identitySecretKey} is {@code
+     *                              null}.
+     */
+    public static Identity of(final ProofOfWork proofOfWork,
+                              final IdentitySecretKey identitySecretKey) {
+        return of(proofOfWork, identitySecretKey.derivePublicKey(), identitySecretKey);
+    }
+
+    /**
+     * @throws IllegalArgumentException if {@code identitySecretKey} is not a valid secret key.
+     */
+    public static Identity of(final int proofOfWork,
+                              final String identitySecretKey) {
+        return of(ProofOfWork.of(proofOfWork), IdentitySecretKey.of(identitySecretKey));
     }
 
     /**

@@ -26,6 +26,8 @@ import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.InternPool;
 
+import java.util.Arrays;
+
 import static org.drasyl.crypto.Crypto.SK_LONG_TIME_KEY_LENGTH;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -62,6 +64,16 @@ public abstract class IdentitySecretKey implements SecretKey {
     @Override
     public byte[] toByteArray() {
         return getBytes().getArray();
+    }
+
+    /**
+     * Derives the {@link IdentityPublicKey} from this secret key.
+     *
+     * @return {@link IdentityPublicKey} dervied from this secret key.
+     */
+    public IdentityPublicKey derivePublicKey() {
+        // the public key is located in the last n bytes of the secret key
+        return IdentityPublicKey.of(Arrays.copyOfRange(getBytes().getArray(), KEY_LENGTH_AS_BYTES - IdentityPublicKey.KEY_LENGTH_AS_BYTES, KEY_LENGTH_AS_BYTES));
     }
 
     public static IdentitySecretKey of(final ImmutableByteArray bytes) {
