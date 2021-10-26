@@ -54,6 +54,19 @@ public abstract class Identity {
     }
 
     /**
+     * Unlike {@link #toString()}, this method returns the identity with the unmasked secret keys.
+     *
+     * @return identity with unmasked secret keys
+     */
+    public String toUnmaskedString() {
+        return "Identity{"
+                + "proofOfWork=" + getProofOfWork().toString() + ", "
+                + "identityKeyPair=" + getIdentityKeyPair().toUnmaskedString() + ", "
+                + "keyAgreementKeyPair=" + getKeyAgreementKeyPair().toUnmaskedString()
+                + "}";
+    }
+
+    /**
      * Returns the address for this identity.
      *
      * @return returns the address for this identity.

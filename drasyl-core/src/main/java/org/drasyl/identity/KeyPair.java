@@ -41,6 +41,18 @@ public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
     public abstract S getSecretKey();
 
     /**
+     * Unlike {@link #toString()}, this method returns the key pair with the unmasked secret key.
+     *
+     * @return key pair with unmasked secret key
+     */
+    public String toUnmaskedString() {
+        return "KeyPair{"
+                + "publicKey=" + getPublicKey() + ", "
+                + "secretKey=" + getSecretKey().toUnmaskedString()
+                + "}";
+    }
+
+    /**
      * @throws NullPointerException if {@code publiceKey} or {@code secretKey} is {@code null}.
      */
     public static <P extends PublicKey, S extends SecretKey> KeyPair<P, S> of(final P publicKey,
