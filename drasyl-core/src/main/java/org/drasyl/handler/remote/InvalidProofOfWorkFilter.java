@@ -64,7 +64,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
      */
     public static class InvalidProofOfWorkException extends Exception {
         public InvalidProofOfWorkException(final RemoteMessage msg) {
-            super("Message `" + msg.getNonce() + "` with invalid proof of work dropped.");
+            super("Message `" + msg.getNonce() + "` from `" + (msg.getSender() != null ? msg.getSender() : null) + "` with invalid proof of work (" + (msg.getProofOfWork() != null ? msg.getProofOfWork() : null) + ") dropped.");
         }
     }
 }
