@@ -44,6 +44,16 @@ class ProofOfWorkTest {
     }
 
     @Nested
+    class ToString {
+        @Test
+        void shouldReturnNonce() {
+            final ProofOfWork proof1 = ProofOfWork.of(1);
+
+            assertEquals("1", proof1.toString());
+        }
+    }
+
+    @Nested
     class GenerateProofOfWork {
         @Test
         void shouldGenerateCorrectProof() {

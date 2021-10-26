@@ -41,6 +41,11 @@ public abstract class ProofOfWork {
 
     public abstract int getNonce();
 
+    @Override
+    public String toString() {
+        return Integer.toString(getNonce());
+    }
+
     /**
      * Returns the value of this {@code ProofOfWork} as an {@code int}.
      */
