@@ -131,8 +131,8 @@ public abstract class DrasylNode {
 
     /**
      * Creates a new drasyl Node with the given <code>config</code>. The node is only being created,
-     * it neither connects to the Overlay * Network, nor can send or receive messages. To do this
-     * you have to call {@link #start()}.
+     * it neither connects to the overlay network, nor can send or receive messages. To do this you
+     * have to call {@link #start()}.
      * <p>
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
@@ -143,25 +143,7 @@ public abstract class DrasylNode {
      */
     @SuppressWarnings({ "java:S2095" })
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
-        try {
-            final Identity configIdentity = config.getIdentity();
-            if (configIdentity != null) {
-                LOG.info("Use identity embedded in config.");
-                identity = configIdentity;
-            }
-            else if (config.getIdentityPath() != null && IdentityManager.isIdentityFilePresent(config.getIdentityPath())) {
-                LOG.info("Read identity from file specified in config: `{}`", config.getIdentityPath());
-                identity = IdentityManager.readIdentityFile(config.getIdentityPath());
-            }
-            else {
-                LOG.info("No ientity present. Generate a new one and write to file specified in config: `{}`", config.getIdentityPath());
-                identity = Identity.generateIdentity();
-                IdentityManager.writeIdentityFile(config.getIdentityPath(), identity);
-            }
-        }
-        catch (final IllegalStateException | IOException e) {
-            throw new DrasylException("Couldn't load or create identity", e);
-        }
+        identity = DrasylNode.generateIdentity(config);
 
         bootstrap = new ServerBootstrap()
                 .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
@@ -171,6 +153,36 @@ public abstract class DrasylNode {
                 .childHandler(new DrasylNodeChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
+    }
+
+    /**
+     * Generates an identity or uses the already generated identity from the given {@code config}.
+     *
+     * @param config custom configuration used for this identity
+     * @return generated or already present identity
+     */
+    public static Identity generateIdentity(final DrasylConfig config) throws DrasylException {
+        try {
+            final Identity configIdentity = config.getIdentity();
+            if (configIdentity != null) {
+                LOG.info("Use identity embedded in config.");
+                return configIdentity;
+            }
+            else if (config.getIdentityPath() != null && IdentityManager.isIdentityFilePresent(config.getIdentityPath())) {
+                LOG.info("Read identity from file specified in config `{}`", config.getIdentityPath());
+                return IdentityManager.readIdentityFile(config.getIdentityPath());
+            }
+            else {
+                LOG.info("No identity present. Generate a new one and write to file specified in config `{}`.", config.getIdentityPath());
+                final Identity identity = Identity.generateIdentity();
+                IdentityManager.writeIdentityFile(config.getIdentityPath(), identity);
+
+                return identity;
+            }
+        }
+        catch (final IllegalStateException | IOException e) {
+            throw new DrasylException("Couldn't load or create identity", e);
+        }
     }
 
     /**

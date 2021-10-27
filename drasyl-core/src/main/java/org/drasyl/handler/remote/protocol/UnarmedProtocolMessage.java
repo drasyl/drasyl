@@ -31,6 +31,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.InputStreamHelper;
 import org.drasyl.util.UnsignedShort;
 
 import java.io.IOException;
@@ -192,14 +193,14 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final UnsignedShort armedLength = PrivateHeader.getArmedLength(getBytes());
-                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(in.readNBytes(PrivateHeader.LENGTH), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(), getNonce(), sessionPair);
                 final byte[] encryptedBytes;
 
                 if (armedLength.getValue() > 0) {
-                    encryptedBytes = cryptoInstance.encrypt(in.readAllBytes(), new byte[0], getNonce(), sessionPair);
+                    encryptedBytes = cryptoInstance.encrypt(InputStreamHelper.readAllBytes(in), new byte[0], getNonce(), sessionPair);
                 }
                 else {
-                    encryptedBytes = in.readAllBytes();
+                    encryptedBytes = InputStreamHelper.readAllBytes(in);
                 }
 
                 return ArmedProtocolMessage.of(
