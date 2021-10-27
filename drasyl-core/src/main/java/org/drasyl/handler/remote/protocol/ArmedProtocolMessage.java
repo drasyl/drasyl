@@ -32,6 +32,7 @@ import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.InputStreamHelper;
 
 import java.io.IOException;
 
@@ -123,15 +124,15 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
         try {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
-                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(in.readNBytes(PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
                 final PrivateHeader privateHeader = PrivateHeader.of(Unpooled.wrappedBuffer(decryptedPrivateHeader));
 
                 final byte[] decryptedBytes;
                 if (privateHeader.getArmedLength().getValue() > 0) {
-                    decryptedBytes = cryptoInstance.decrypt(in.readNBytes(privateHeader.getArmedLength().getValue() + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), new byte[0], getNonce(), sessionPair);
+                    decryptedBytes = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, privateHeader.getArmedLength().getValue() + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), new byte[0], getNonce(), sessionPair);
                 }
                 else {
-                    decryptedBytes = in.readAllBytes();
+                    decryptedBytes = InputStreamHelper.readAllBytes(in);
                 }
 
                 return UnarmedProtocolMessage.of(

@@ -61,7 +61,7 @@ public class UpnpIgdUtil {
     public static final InetSocketAddress SSDP_MULTICAST_ADDRESS = new InetSocketAddress("239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
-    public static final Pattern SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
+    public static final Pattern SSDP_HEADER_PATTERN;
     public static final Pattern UPNP_SERVICE_PATTERN = Pattern.compile("<serviceType>(urn:schemas-upnp-org:service:WANIPConnection:\\d+?)</serviceType>.*?<controlURL>(.+?)</controlURL>", DOTALL);
     public static final Pattern UPNP_EXTERNAL_IP_ADDRESS_PATTERN = Pattern.compile("<NewExternalIPAddress>(.+?)</NewExternalIPAddress>");
     public static final Pattern UPNP_ERROR_PATTERN = Pattern.compile("<errorCode>(\\d+?)</errorCode>");
@@ -76,6 +76,15 @@ public class UpnpIgdUtil {
     private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
     private final HttpClient httpClient;
     private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
+
+    static {
+        if(UNICODE_CHARACTER_CLASS == 256) {
+            SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
+        } else {
+            // Android does not support the UNICODE_CHARACTER_CLASS flag
+            SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$");
+        }
+    }
 
     UpnpIgdUtil(final HttpClient httpClient,
                 final Function<InetSocketAddress, InetAddress> remoteAddressProvider) {
