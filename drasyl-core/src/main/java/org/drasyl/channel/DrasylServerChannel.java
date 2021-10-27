@@ -36,6 +36,8 @@ import io.netty.channel.nio.NioEventLoop;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
 
@@ -54,6 +56,7 @@ import static java.util.Objects.requireNonNull;
 public class DrasylServerChannel extends AbstractServerChannel {
     enum State {OPEN, ACTIVE, CLOSED}
 
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private ChannelGroup channels;
@@ -156,33 +159,38 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 ctx.fireChannelRead(msg);
             }
             else {
-                final AddressedMessage<?, IdentityPublicKey> childMsg = (AddressedMessage<?, IdentityPublicKey>) msg;
-                final Object o = childMsg.message();
-                final IdentityPublicKey peer = childMsg.address();
+                try {
+                    final AddressedMessage<?, IdentityPublicKey> childMsg = (AddressedMessage<?, IdentityPublicKey>) msg;
+                    final Object o = childMsg.message();
+                    final IdentityPublicKey peer = childMsg.address();
 
-                // create/get channel
-                final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
-                Channel channel = null;
-                if (serverChannel.channels != null) {
-                    for (final Channel c : serverChannel.channels) {
-                        if (peer.equals(c.remoteAddress())) {
-                            channel = c;
-                            break;
+                    // create/get channel
+                    final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
+                    Channel channel = null;
+                    if (serverChannel.channels != null) {
+                        for (final Channel c : serverChannel.channels) {
+                            if (peer.equals(c.remoteAddress())) {
+                                channel = c;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (channel == null) {
-                    channel = new DrasylChannel(serverChannel, peer);
-                    ctx.fireChannelRead(channel);
-                }
+                    if (channel == null) {
+                        channel = new DrasylChannel(serverChannel, peer);
+                        ctx.fireChannelRead(channel);
+                    }
 
-                // pass message to channel
-                final Channel finalChannel = channel;
-                channel.eventLoop().execute(() -> {
-                    finalChannel.pipeline().fireChannelRead(o);
-                    finalChannel.pipeline().fireChannelReadComplete();
-                });
+                    // pass message to channel
+                    final Channel finalChannel = channel;
+                    channel.eventLoop().execute(() -> {
+                        finalChannel.pipeline().fireChannelRead(o);
+                        finalChannel.pipeline().fireChannelReadComplete();
+                    });
+                }
+                catch (final ClassCastException e) {
+                    LOG.debug("Can't cast address of message `{}`: ", msg, e);
+                }
             }
         }
     }
