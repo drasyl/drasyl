@@ -146,9 +146,8 @@
         <sonar.organization>drasyl</sonar.organization>
         <sonar.projectName>drasyl</sonar.projectName>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-        <sonar.exclusions>**/org/drasyl/handler/MessageSerializerProtocol.java,**/org/drasyl/handler/remote/protocol/Protocol.java</sonar.exclusions>
         <sonar.coverage.exclusions>
-            **/org/drasyl/handler/MessageSerializerProtocol.java,**/org/drasyl/handler/remote/protocol/Protocol.java,drasyl-examples/**/*,drasyl-performance-tests/**/*
+            drasyl-examples/**/*,drasyl-performance-tests/**/*
         </sonar.coverage.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
