@@ -252,10 +252,15 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      */
 
     private boolean isRoutableOutboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage<?, ?> &&
+        if (msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey &&
-                traversingPeers.containsKey(((ApplicationMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient());
+                ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
+            final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient());
+            return traversingPeer != null && !traversingPeer.isStale();
+        }
+        else {
+            return false;
+        }
     }
 
     static class TraversingPeer {
