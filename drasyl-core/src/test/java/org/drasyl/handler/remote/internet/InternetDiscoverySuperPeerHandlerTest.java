@@ -70,7 +70,7 @@ class InternetDiscoverySuperPeerHandlerTest {
     private HopCount hopLimit;
 
     @Test
-    void shouldCheckForStaleChidlrenOnChannelActive(@Mock final IdentityPublicKey publicKey,
+    void shouldCheckForStaleChildrenOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
