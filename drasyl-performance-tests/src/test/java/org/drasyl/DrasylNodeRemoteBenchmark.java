@@ -84,7 +84,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             node1 = new DrasylNode(config1) {
                 @Override
                 public void onEvent(final @NonNull Event event) {
-                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(ID_2.getIdentityPublicKey()) && !node1Ready.isDone()) {
+                    if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getAddress().equals(ID_2.getIdentityPublicKey()) && !node1Ready.isDone()) {
                         node1Ready.complete(null);
                     }
                 }
@@ -98,7 +98,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);
                     }
-                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getIdentityPublicKey().equals(ID_1.getIdentityPublicKey()) && !node2Ready.isDone()) {
+                    else if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getAddress().equals(ID_1.getIdentityPublicKey()) && !node2Ready.isDone()) {
                         node2Ready.complete(null);
                     }
                 }

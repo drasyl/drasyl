@@ -297,10 +297,10 @@ public class PerfClientNode extends BehavioralDrasylNode {
      */
     Behavior handlePeerEvent(final PeerEvent event) {
         if (event instanceof PeerDirectEvent) {
-            directConnections.add(event.getPeer().getIdentityPublicKey());
+            directConnections.add(event.getPeer().getAddress());
         }
         else {
-            directConnections.remove(event.getPeer().getIdentityPublicKey());
+            directConnections.remove(event.getPeer().getAddress());
         }
         return same();
     }

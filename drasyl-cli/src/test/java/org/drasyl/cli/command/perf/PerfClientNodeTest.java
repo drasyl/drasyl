@@ -332,15 +332,15 @@ class PerfClientNodeTest {
         void shouldAddPeerOnDirectEvent(@Mock(answer = RETURNS_DEEP_STUBS) final PeerDirectEvent event) {
             assertEquals(Behaviors.same(), underTest.handlePeerEvent(event));
 
-            assertThat(directConnections, hasItem(event.getPeer().getIdentityPublicKey()));
+            assertThat(directConnections, hasItem(event.getPeer().getAddress()));
         }
 
         @Test
         void shouldRemovePeerOnRelayEvent(@Mock(answer = RETURNS_DEEP_STUBS) final PeerRelayEvent event) {
-            directConnections.add(event.getPeer().getIdentityPublicKey());
+            directConnections.add(event.getPeer().getAddress());
             assertEquals(Behaviors.same(), underTest.handlePeerEvent(event));
 
-            assertThat(directConnections, not(hasItem(event.getPeer().getIdentityPublicKey())));
+            assertThat(directConnections, not(hasItem(event.getPeer().getAddress())));
         }
     }
 
