@@ -233,7 +233,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S1067")
     private boolean isAcknowledgementMessageFromSuperPeer(final Object msg) {
         return msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<AcknowledgementMessage, ?>) msg).message() instanceof AcknowledgementMessage &&
+                ((AddressedMessage<?, ?>) msg).message() instanceof AcknowledgementMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 superPeers.containsKey(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getSender()) &&
                 myPublicKey.equals(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getRecipient()) &&

@@ -198,7 +198,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @SuppressWarnings("java:S1067")
     private boolean isAcknowledgementMessageFromTraversingPeer(final Object msg) {
         return msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<AcknowledgementMessage, ?>) msg).message() instanceof AcknowledgementMessage &&
+                ((AddressedMessage<?, ?>) msg).message() instanceof AcknowledgementMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 myPublicKey.equals(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getRecipient()) &&
                 traversingPeers.containsKey(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getSender()) &&
