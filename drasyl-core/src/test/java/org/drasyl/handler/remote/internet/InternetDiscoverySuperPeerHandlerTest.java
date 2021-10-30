@@ -117,6 +117,48 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
+    void shouldDropTooOldDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+                                           @Mock final InetSocketAddress inetAddress) {
+        when(currentTime.getAsLong()).thenReturn(1_000_000L);
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
+        when(discoveryMsg.getTime()).thenReturn(10L);
+        when(discoveryMsg.getSender()).thenReturn(publicKey);
+        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
+        when(discoveryMsg.getChildrenTime()).thenReturn(100L);
+        final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
+
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+
+        channel.writeInbound(msg);
+
+        assertNull(channel.readInbound());
+        assertNull(channel.readOutbound());
+    }
+
+    @Test
+    void shouldDropTooNewDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+                                           @Mock final InetSocketAddress inetAddress) {
+        when(currentTime.getAsLong()).thenReturn(10L);
+        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
+        when(discoveryMsg.getTime()).thenReturn(1_000_000L);
+        when(discoveryMsg.getSender()).thenReturn(publicKey);
+        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
+        when(discoveryMsg.getChildrenTime()).thenReturn(100L);
+        final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
+
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+
+        channel.writeInbound(msg);
+
+        assertNull(channel.readInbound());
+        assertNull(channel.readOutbound());
+    }
+
+    @Test
     void shouldPassThroughInboundApplicationMessageAddressedToMe(@Mock final IdentityPublicKey publicKey,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                  @Mock final InetSocketAddress inetAddress) {

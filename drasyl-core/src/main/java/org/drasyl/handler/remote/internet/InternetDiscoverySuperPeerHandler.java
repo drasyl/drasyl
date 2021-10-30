@@ -180,7 +180,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private boolean isRoutableInboundMessage(final Object msg) {
         return msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress;
+                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) > pingTimeoutMillis);
     }
 
     private void handleRoutableMessage(final ChannelHandlerContext ctx,
@@ -282,7 +283,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
                 (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getChildrenTime() > 0 &&
-                (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime() > currentTime.getAsLong() - pingTimeoutMillis;
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= pingTimeoutMillis;
     }
 
     static class ChildrenPeer {
