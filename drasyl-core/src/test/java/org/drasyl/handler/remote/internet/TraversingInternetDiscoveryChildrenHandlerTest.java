@@ -89,6 +89,27 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
+    void shouldDropUniteMessageNotFromSuperPeer(@Mock final IdentityPublicKey superPeerPublicKey,
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final UniteMessage uniteMsg,
+                                                @Mock final SuperPeer superPeer,
+                                                @Mock final InetSocketAddress otherPeerInetAddress,
+                                                @Mock final InetSocketAddress superPeerInetAddress) {
+        when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
+        when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
+        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
+        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
+        final AddressedMessage<UniteMessage, InetSocketAddress> msg = new AddressedMessage<>(uniteMsg, superPeerInetAddress);
+
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, superPeers, null, null, 60L, 100, traversingPeers);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(msg);
+
+        assertNull(channel.readInbound());
+        assertNull(channel.readOutbound());
+    }
+
+    @Test
     void shouldHandleDiscoveryMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
                                                         @Mock final InetSocketAddress inetAddress,
                                                         @Mock final IdentityPublicKey traversingPeerPublicKey,
