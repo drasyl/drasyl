@@ -93,7 +93,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private static final URI TELEMETRY_URI;
 
     static {
-        URI uri = null;
+        URI uri;
         try {
             uri = new URI(SystemPropertyUtil.get("org.drasyl.telemetry.uri", "https://ping.drasyl.network/"));
         }
@@ -218,6 +218,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         identity.getProofOfWork(),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
+                        config.getRemotePingTimeout().multipliedBy(2).toMillis(),
                         superPeerAddresses,
                         config.getRemotePingCommunicationTimeout().toMillis(),
                         config.getRemotePingMaxPeers()));
@@ -229,6 +230,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         identity.getProofOfWork(),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
+                        config.getRemotePingTimeout().multipliedBy(2).toMillis(),
                         HopCount.of(config.getRemoteMessageHopLimit()),
                         config.getRemoteUniteMinInterval().toMillis()
                 ));

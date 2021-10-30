@@ -75,7 +75,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
 
         // channel active
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -104,7 +104,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(discoveryMsg.getChildrenTime()).thenReturn(100L);
         final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -128,7 +128,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(discoveryMsg.getChildrenTime()).thenReturn(100L);
         final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -149,7 +149,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(discoveryMsg.getChildrenTime()).thenReturn(100L);
         final AddressedMessage<DiscoveryMessage, InetSocketAddress> msg = new AddressedMessage<>(discoveryMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -159,14 +159,13 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldPassThroughInboundApplicationMessageAddressedToMe(@Mock final IdentityPublicKey publicKey,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
+    void shouldPassThroughInboundApplicationMessageAddressedToMe(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                  @Mock final InetSocketAddress inetAddress) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(applicationMsg.getRecipient()).thenReturn(myPublicKey);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -186,7 +185,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -209,7 +208,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(hopLimit.compareTo(any())).thenReturn(0);
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -223,7 +222,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = Map.of();
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -242,7 +241,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final AddressedMessage<ApplicationMessage, IdentityPublicKey> msg = new AddressedMessage<>(applicationMsg, publicKey);
 
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, childrenPeers, hopLimit, null);
+        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeOutbound(msg);

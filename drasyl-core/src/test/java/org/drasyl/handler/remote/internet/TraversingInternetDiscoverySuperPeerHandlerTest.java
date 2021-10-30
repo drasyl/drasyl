@@ -78,7 +78,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
         final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache = new HashMap<>();
 
-        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, hopLimit, childrenPeers, null, uniteAttemptsCache);
+        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);

@@ -45,6 +45,8 @@ import java.util.Map.Entry;
 import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Extends {@link InternetDiscoveryChildrenHandler} by performing a rendezvous initiated by one of
@@ -52,6 +54,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see TraversingInternetDiscoverySuperPeerHandler
  */
+@SuppressWarnings("unchecked")
 public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscoveryChildrenHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoveryChildrenHandler.class);
     private static final Object PATH = TraversingInternetDiscoveryChildrenHandler.class;
@@ -66,15 +69,16 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final LongSupplier currentTime,
                                                final long pingIntervalMillis,
                                                final long pingTimeoutMillis,
+                                               final long maxTimeOffsetMillis,
                                                final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
                                                final IdentityPublicKey bestSuperPeer,
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, superPeers, heartbeatDisposable, bestSuperPeer);
-        this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
-        this.maxPeers = maxPeers;
+        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
+        this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
+        this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 
@@ -84,12 +88,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                       final ProofOfWork myProofOfWork,
                                                       final long pingIntervalMillis,
                                                       final long pingTimeoutMillis,
+                                                      final long maxTimeOffsetMillis,
                                                       final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
                                                       final long pingCommunicationTimeoutMillis,
                                                       final long maxPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, superPeerAddresses);
+        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
-        this.maxPeers = maxPeers;
+        this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = new HashMap<>();
     }
 
@@ -147,7 +152,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      * Traversing
      */
 
-    @SuppressWarnings("java:S1067")
+    @SuppressWarnings({ "java:S1067", "SuspiciousMethodCalls" })
     private boolean isUniteMessageFromSuperPeer(final Object msg) {
         return msg instanceof AddressedMessage &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof UniteMessage &&
@@ -177,7 +182,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
                 traversingPeers.containsKey(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getSender()) &&
-                (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime() > currentTime.getAsLong() - pingTimeoutMillis &&
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis &&
                 ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getChildrenTime() == 0;
     }
 
@@ -202,7 +207,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 myPublicKey.equals(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getRecipient()) &&
                 traversingPeers.containsKey(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getSender()) &&
-                ((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getTime() > currentTime.getAsLong() - pingTimeoutMillis;
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<AcknowledgementMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
     }
 
     private void handleAcknowledgementMessageFromTraversingPeer(final ChannelHandlerContext ctx,
@@ -267,10 +272,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private final long pingCommunicationTimeoutMillis;
-        private InetSocketAddress inetAddress;
         long firstDiscoveryTime;
         long lastAcknowledgementTime;
         long lastApplicationTime;
+        private InetSocketAddress inetAddress;
 
         TraversingPeer(final LongSupplier currentTime,
                        final long pingTimeoutMillis,

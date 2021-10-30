@@ -49,6 +49,7 @@ import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -57,6 +58,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  *
  * @see InternetDiscoveryChildrenHandler
  */
+@SuppressWarnings("unchecked")
 public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoverySuperPeerHandler.class);
     private static final Object PATH = InternetDiscoverySuperPeerHandler.class;
@@ -66,6 +68,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private final LongSupplier currentTime;
     private final long pingIntervalMillis;
     private final long pingTimeoutMillis;
+    private final long maxTimeOffsetMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     private final HopCount hopLimit;
     Future<?> stalePeerCheckDisposable;
@@ -77,6 +80,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                       final LongSupplier currentTime,
                                       final long pingIntervalMillis,
                                       final long pingTimeoutMillis,
+                                      final long maxTimeOffsetMillis,
                                       final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                       final HopCount hopLimit,
                                       final Future<?> stalePeerCheckDisposable) {
@@ -84,8 +88,9 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
-        this.pingIntervalMillis = pingIntervalMillis;
-        this.pingTimeoutMillis = pingTimeoutMillis;
+        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
+        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
+        this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.childrenPeers = requireNonNull(childrenPeers);
         this.hopLimit = requireNonNull(hopLimit);
         this.stalePeerCheckDisposable = stalePeerCheckDisposable;
@@ -96,6 +101,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                              final ProofOfWork myProofOfWork,
                                              final long pingIntervalMillis,
                                              final long pingTimeoutMillis,
+                                             final long maxTimeOffsetMillis,
                                              final HopCount hopLimit) {
         this(
                 myNetworkId,
@@ -104,6 +110,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 System::currentTimeMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
+                maxTimeOffsetMillis,
                 new HashMap<>(),
                 hopLimit,
                 null
@@ -169,7 +176,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     protected boolean isUnexpectedMessage(final Object msg) {
         return msg instanceof AddressedMessage &&
                 !(((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null);
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null) &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis);
     }
 
     /*
@@ -181,7 +189,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         return msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) > pingTimeoutMillis);
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) > maxTimeOffsetMillis);
     }
 
     private void handleRoutableMessage(final ChannelHandlerContext ctx,
@@ -283,7 +291,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
                 (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getChildrenTime() > 0 &&
-                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= pingTimeoutMillis;
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
     }
 
     static class ChildrenPeer {

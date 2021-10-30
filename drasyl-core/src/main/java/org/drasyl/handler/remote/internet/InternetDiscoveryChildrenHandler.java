@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -56,6 +57,7 @@ import static org.drasyl.util.RandomUtil.randomLong;
  *
  * @see InternetDiscoverySuperPeerHandler
  */
+@SuppressWarnings("unchecked")
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
@@ -63,8 +65,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;
     protected final LongSupplier currentTime;
-    private final long pingIntervalMillis;
     protected final long pingTimeoutMillis;
+    private final long pingIntervalMillis;
+    protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
     Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
@@ -76,6 +79,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final LongSupplier currentTime,
                                      final long pingIntervalMillis,
                                      final long pingTimeoutMillis,
+                                     final long maxTimeOffsetMillis,
                                      final Map<IdentityPublicKey, SuperPeer> superPeers,
                                      final Future<?> heartbeatDisposable,
                                      final IdentityPublicKey bestSuperPeer) {
@@ -83,19 +87,22 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
-        this.pingIntervalMillis = pingIntervalMillis;
-        this.pingTimeoutMillis = pingTimeoutMillis;
+        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
+        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
+        this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.superPeers = requireNonNull(superPeers);
         this.heartbeatDisposable = heartbeatDisposable;
         this.bestSuperPeer = bestSuperPeer;
     }
 
+    @SuppressWarnings("java:S107")
     public InternetDiscoveryChildrenHandler(final int myNetworkId,
                                             final IdentityPublicKey myPublicKey,
                                             final ProofOfWork myProofOfWork,
                                             final LongSupplier currentTime,
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
+                                            final long maxTimeOffsetMillis,
                                             final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
         this(
                 myNetworkId,
@@ -104,6 +111,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 currentTime,
                 pingIntervalMillis,
                 pingTimeoutMillis,
+                maxTimeOffsetMillis,
                 superPeerAddresses.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, pingTimeoutMillis, e.getValue()))),
                 null,
                 null
@@ -115,6 +123,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final ProofOfWork myProofOfWork,
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
+                                            final long maxTimeOffsetMillis,
                                             final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
         this(
                 myNetworkId,
@@ -123,6 +132,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 System::currentTimeMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
+                maxTimeOffsetMillis,
                 superPeerAddresses
         );
     }
@@ -230,16 +240,17 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      * Ponging
      */
 
-    @SuppressWarnings("java:S1067")
+    @SuppressWarnings({ "java:S1067", "SuspiciousMethodCalls" })
     private boolean isAcknowledgementMessageFromSuperPeer(final Object msg) {
         return msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof AcknowledgementMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
                 superPeers.containsKey(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getSender()) &&
                 myPublicKey.equals(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getRecipient()) &&
-                ((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getTime() > currentTime.getAsLong() - pingTimeoutMillis;
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<AcknowledgementMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     private void handleAcknowledgementMessage(final ChannelHandlerContext ctx,
                                               final AcknowledgementMessage msg,
                                               final InetSocketAddress inetAddress) {
@@ -297,6 +308,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     private void routeMessage(final ChannelHandlerContext ctx,
                               final ChannelPromise promise,
                               final ApplicationMessage msg) {

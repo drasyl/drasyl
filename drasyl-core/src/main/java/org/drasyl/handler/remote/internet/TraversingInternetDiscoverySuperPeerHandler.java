@@ -60,22 +60,25 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                 final LongSupplier currentTime,
                                                 final long pingIntervalMillis,
                                                 final long pingTimeoutMillis,
+                                                final long maxTimeOffsetMillis,
                                                 final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
                                                 final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
+        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
 
+    @SuppressWarnings("java:S107")
     public TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
                                                        final IdentityPublicKey myPublicKey,
                                                        final ProofOfWork myProofOfWork,
                                                        final long pingIntervalMillis,
                                                        final long pingTimeoutMillis,
+                                                       final long maxTimeOffsetMillis,
                                                        final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, hopLimit);
+        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = CacheBuilder.newBuilder()
                     .maximumSize(1_000)
