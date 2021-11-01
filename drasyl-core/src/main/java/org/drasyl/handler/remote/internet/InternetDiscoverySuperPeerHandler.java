@@ -141,11 +141,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
         else if (isRoutableInboundMessage(msg)) {
             final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg = (AddressedMessage<RemoteMessage, InetSocketAddress>) msg;
-            handleRoutableMessage(ctx, addressedMsg);
+            handleRoutableInboundMessage(ctx, addressedMsg);
         }
         else if (isUnexpectedMessage(msg)) {
-            LOG.trace("Got unexpected message `{}`. Drop it.", msg);
-            ReferenceCountUtil.release(msg);
+            handleUnexpectedMessage(ctx, msg);
         }
         else {
             // unknown message type/recipient -> pass through
@@ -160,11 +159,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         if (isRoutableOutboundMessage(msg)) {
             // for one of my children -> route
             final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg = (AddressedMessage<ApplicationMessage, InetSocketAddress>) msg;
-            final DrasylAddress address = addressedMsg.message().getRecipient();
-            final InetSocketAddress inetAddress = childrenPeers.get(address).inetAddress();
-
-            LOG.trace("Got ApplicationMessage for children peer `{}`. Route it to address `{}`.", address, inetAddress);
-            ctx.write(addressedMsg.route(inetAddress), promise);
+            handleRoutableOutboundMessage(ctx, addressedMsg, promise);
         }
         else {
             // unknown message type/recipient -> pass through
@@ -172,19 +167,11 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
     }
 
-    @SuppressWarnings({ "java:S1067", "java:S2325" })
-    protected boolean isUnexpectedMessage(final Object msg) {
-        return msg instanceof AddressedMessage &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null) &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis);
-    }
-
     /*
      * Routing/Relaying
      */
 
-    @SuppressWarnings("java:S2325")
+    @SuppressWarnings({ "java:S1067", "java:S2325" })
     private boolean isRoutableInboundMessage(final Object msg) {
         return msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage &&
@@ -192,8 +179,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) > maxTimeOffsetMillis);
     }
 
-    private void handleRoutableMessage(final ChannelHandlerContext ctx,
-                                       final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg) {
+    private void handleRoutableInboundMessage(final ChannelHandlerContext ctx,
+                                              final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg) {
         if (myPublicKey.equals(addressedMsg.message().getRecipient())) {
             // for me? -> pass through
             ctx.fireChannelRead(addressedMsg);
@@ -218,6 +205,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey &&
                 childrenPeers.containsKey(((ApplicationMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient());
+    }
+
+    private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
+                                               final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg,
+                                               final ChannelPromise promise) {
+        final DrasylAddress address = addressedMsg.message().getRecipient();
+        final InetSocketAddress inetAddress = childrenPeers.get(address).inetAddress();
+
+        LOG.trace("Got ApplicationMessage for children peer `{}`. Route it to address `{}`.", address, inetAddress);
+        ctx.write(addressedMsg.route(inetAddress), promise);
     }
 
     @SuppressWarnings("java:S2325")
@@ -269,6 +266,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("java:S1067")
+    private boolean isDiscoveryMessageWithChildrenTime(final Object msg) {
+        return msg instanceof AddressedMessage<?, ?> &&
+                ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage &&
+                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
+                myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
+                (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getChildrenTime() > 0 &&
+                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
+    }
+
     private void handleDiscoveryMessage(final ChannelHandlerContext ctx,
                                         final DiscoveryMessage msg,
                                         final InetSocketAddress inetAddress) {
@@ -284,14 +291,19 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         ctx.writeAndFlush(new AddressedMessage<>(acknowledgementMsg, inetAddress));
     }
 
-    @SuppressWarnings("java:S1067")
-    private boolean isDiscoveryMessageWithChildrenTime(final Object msg) {
-        return msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
-                myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
-                (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getChildrenTime() > 0 &&
-                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
+    @SuppressWarnings({ "java:S1067", "java:S2325" })
+    private boolean isUnexpectedMessage(final Object msg) {
+        return msg instanceof AddressedMessage &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null) &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis);
+    }
+
+    @SuppressWarnings({ "unused", "java:S2325" })
+    private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
+                                         final Object msg) {
+        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
+        ReferenceCountUtil.release(msg);
     }
 
     static class ChildrenPeer {

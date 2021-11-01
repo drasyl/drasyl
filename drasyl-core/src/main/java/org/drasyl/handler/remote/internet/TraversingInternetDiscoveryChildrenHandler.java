@@ -131,16 +131,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (isRoutableOutboundMessage(msg)) {
+        if (isRoutableOutboundMessageToTraversingPeer(msg)) {
             // for one of my traversing peers -> route
             final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg = (AddressedMessage<ApplicationMessage, InetSocketAddress>) msg;
-            final DrasylAddress address = addressedMsg.message().getRecipient();
-            final TraversingPeer traversingPeer = traversingPeers.get(address);
-            final InetSocketAddress inetAddress = traversingPeer.inetAddress();
-            traversingPeer.applicationSentOrReceived();
-
-            LOG.trace("Got ApplicationMessage for traversing peer `{}`. Route it to address `{}`.", address, inetAddress);
-            ctx.write(addressedMsg.route(inetAddress), promise);
+            handleRoutableOutboundMessageToTraversingPeer(ctx, promise, addressedMsg);
         }
         else {
             // unknown message type/no traversing recipient -> pass through
@@ -256,7 +250,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      * Routing
      */
 
-    private boolean isRoutableOutboundMessage(final Object msg) {
+    private boolean isRoutableOutboundMessageToTraversingPeer(final Object msg) {
         if (msg instanceof AddressedMessage<?, ?> &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
                 ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
@@ -266,6 +260,18 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         else {
             return false;
         }
+    }
+
+    private void handleRoutableOutboundMessageToTraversingPeer(final ChannelHandlerContext ctx,
+                                                               final ChannelPromise promise,
+                                                               final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg) {
+        final DrasylAddress address = addressedMsg.message().getRecipient();
+        final TraversingPeer traversingPeer = traversingPeers.get(address);
+        final InetSocketAddress inetAddress = traversingPeer.inetAddress();
+        traversingPeer.applicationSentOrReceived();
+
+        LOG.trace("Got ApplicationMessage for traversing peer `{}`. Route it to address `{}`.", address, inetAddress);
+        ctx.write(addressedMsg.route(inetAddress), promise);
     }
 
     static class TraversingPeer {

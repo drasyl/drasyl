@@ -160,8 +160,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             handleAcknowledgementMessage(ctx, addressedMsg.message(), addressedMsg.address());
         }
         else if (isUnexpectedMessage(msg)) {
-            LOG.trace("Got unexpected message `{}`. Drop it.", msg);
-            ReferenceCountUtil.release(msg);
+            handleUnexpectedMessage(ctx, msg);
         }
         else {
             // pass through
@@ -173,21 +172,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (isRoutableMessage(msg)) {
+        if (isRoutableOutboundMessage(msg)) {
             final AddressedMessage<ApplicationMessage, IdentityPublicKey> addressedMsg = (AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg;
-            routeMessage(ctx, promise, addressedMsg.message());
+            handleRoutableOutboundMessage(ctx, promise, addressedMsg.message());
         }
         else {
             // pass through
             ctx.write(msg, promise);
         }
-    }
-
-    @SuppressWarnings({ "java:S1067", "java:S2325" })
-    protected boolean isUnexpectedMessage(final Object msg) {
-        return msg instanceof AddressedMessage &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) &&
-                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null);
     }
 
     /*
@@ -301,7 +293,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      * Routing
      */
 
-    private boolean isRoutableMessage(final Object msg) {
+    private boolean isRoutableOutboundMessage(final Object msg) {
         return bestSuperPeer != null &&
                 msg instanceof AddressedMessage &&
                 ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
@@ -309,9 +301,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
-    private void routeMessage(final ChannelHandlerContext ctx,
-                              final ChannelPromise promise,
-                              final ApplicationMessage msg) {
+    private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
+                                               final ChannelPromise promise,
+                                               final ApplicationMessage msg) {
         final SuperPeer superPeer = superPeers.get(msg.getRecipient());
         if (superPeer != null) {
             LOG.trace("Message is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.getRecipient(), superPeer.inetAddress());
@@ -322,6 +314,24 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message for peer `{}` to super peer `{}` via well-known address `{}`.", msg.getRecipient(), bestSuperPeer, inetAddress);
             ctx.write(new AddressedMessage<>(msg, inetAddress), promise);
         }
+    }
+
+    /*
+     * Unexpected messages handling
+     */
+
+    @SuppressWarnings({ "java:S1067", "java:S2325" })
+    protected boolean isUnexpectedMessage(final Object msg) {
+        return msg instanceof AddressedMessage &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage) &&
+                !(((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage && ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient() == null);
+    }
+
+    @SuppressWarnings({ "unused", "java:S2325" })
+    private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
+                                         final Object msg) {
+        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
+        ReferenceCountUtil.release(msg);
     }
 
     static class SuperPeer {
