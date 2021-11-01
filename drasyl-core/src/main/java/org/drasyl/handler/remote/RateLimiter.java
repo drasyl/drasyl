@@ -89,7 +89,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
         }
         else {
             msg.release();
-            LOG.debug("Message `{}` exceeding rate limit dropped.", fullReadMsg::getNonce);
+            LOG.debug("Message `{}` from `{}` exceeding rate limit dropped.", fullReadMsg::getNonce, msg::address);
         }
     }
 
