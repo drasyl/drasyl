@@ -248,7 +248,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
     void stopStalePeerCheck() {
         if (stalePeerCheckDisposable != null) {
-            LOG.debug("Start StalePeerCheck stop.");
+            LOG.debug("Stop StalePeerCheck job.");
             stalePeerCheckDisposable.cancel(false);
             stalePeerCheckDisposable = null;
         }
