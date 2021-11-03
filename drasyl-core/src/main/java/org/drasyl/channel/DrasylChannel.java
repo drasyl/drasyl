@@ -161,7 +161,7 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             ReferenceCountUtil.retain(msg);
-            parent().write(new AddressedMessage<>(msg, remoteAddress));
+            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress));
             in.remove();
         }
         parent().flush();

@@ -27,7 +27,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.PartialReadMessage;
@@ -41,8 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,17 +64,17 @@ class ByteToRemoteMessageCodecTest {
     @Nested
     class Decode {
         @Test
-        void shouldConvertByteBufToEnvelope(@Mock final SocketAddress sender) throws IOException {
+        void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddress sender) {
             final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(byteBuf, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(byteBuf, sender));
 
-                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
-                assertThat(actual.message(), instanceOf(PartialReadMessage.class));
+                final InetAddressedMessage<Object> actual = channel.readInbound();
+                assertThat(actual.content(), instanceOf(PartialReadMessage.class));
 
                 actual.release();
             }
@@ -88,7 +87,7 @@ class ByteToRemoteMessageCodecTest {
     @Nested
     class Encode {
         @Test
-        void shouldConvertEnvelopeToByteBuf(@Mock final SocketAddress recipient) throws IOException {
+        void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddress recipient) {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), Unpooled.copiedBuffer("Hello World", UTF_8));
             final ByteBuf byteBuf = Unpooled.buffer();
             message.writeTo(byteBuf);
@@ -96,10 +95,10 @@ class ByteToRemoteMessageCodecTest {
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(message, recipient));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(byteBuf, recipient), actual);
+                assertEquals(new InetAddressedMessage<>(byteBuf, recipient), actual);
 
                 actual.release();
             }

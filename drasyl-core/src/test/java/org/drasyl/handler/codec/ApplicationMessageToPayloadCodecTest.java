@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -56,9 +56,9 @@ class ApplicationMessageToPayloadCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.copiedBuffer("Hello World", UTF_8);
-            channel.writeAndFlush(new AddressedMessage<>(byteBuf, address));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(byteBuf, address));
 
-            assertThat(((AddressedMessage<?, ?>) channel.readOutbound()).message(), instanceOf(ApplicationMessage.class));
+            assertThat(((OverlayAddressedMessage<?>) channel.readOutbound()).content(), instanceOf(ApplicationMessage.class));
             byteBuf.release();
         }
 
@@ -67,9 +67,9 @@ class ApplicationMessageToPayloadCodecTest {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.writeAndFlush(new AddressedMessage<>("Hello World", address));
+            channel.writeAndFlush(new OverlayAddressedMessage<>("Hello World", address));
 
-            assertEquals(new AddressedMessage<>("Hello World", address), channel.readOutbound());
+            assertEquals(new OverlayAddressedMessage<>("Hello World", address), channel.readOutbound());
         }
     }
 
@@ -81,9 +81,9 @@ class ApplicationMessageToPayloadCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.buffer();
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(ApplicationMessage.of(networkId, sender, myPublicKey, myProofOfWork, byteBuf), sender));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(ApplicationMessage.of(networkId, sender, myPublicKey, myProofOfWork, byteBuf), sender));
 
-            assertThat(((AddressedMessage<?, ?>) channel.readInbound()).message(), instanceOf(ByteBuf.class));
+            assertThat(((OverlayAddressedMessage<?>) channel.readInbound()).content(), instanceOf(ByteBuf.class));
             byteBuf.release();
         }
 
@@ -92,9 +92,9 @@ class ApplicationMessageToPayloadCodecTest {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.pipeline().fireChannelRead(new AddressedMessage<>("Hello World", address));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>("Hello World", address));
 
-            assertEquals(new AddressedMessage<>("Hello World", address), channel.readInbound());
+            assertEquals(new OverlayAddressedMessage<>("Hello World", address), channel.readInbound());
         }
     }
 }

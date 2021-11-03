@@ -24,7 +24,7 @@ package org.drasyl.handler.discovery;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -102,7 +102,7 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
                 verify(ctx).fireChannelRead(any());
             }
@@ -118,10 +118,10 @@ class IntraVmDiscoveryTest {
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
             final EmbeddedChannel pichanneleline = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                pichanneleline.writeAndFlush(new AddressedMessage<>(message, recipient));
+                pichanneleline.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
                 final ReferenceCounted actual = pichanneleline.readOutbound();
-                assertEquals(new AddressedMessage<>(message, recipient), actual);
+                assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }

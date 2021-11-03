@@ -22,7 +22,8 @@
 package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
@@ -75,8 +76,8 @@ class InternetDiscoveryChildrenHandlerTest {
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
             final Object msg = channel.readOutbound();
-            assertThat(msg, instanceOf(AddressedMessage.class));
-            assertThat(((AddressedMessage<?, ?>) msg).message(), instanceOf(DiscoveryMessage.class));
+            assertThat(msg, instanceOf(InetAddressedMessage.class));
+            assertThat(((InetAddressedMessage<?>) msg).content(), instanceOf(DiscoveryMessage.class));
         });
 
         // channel inactive
@@ -89,13 +90,13 @@ class InternetDiscoveryChildrenHandlerTest {
     void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                          @Mock final AcknowledgementMessage acknowledgementMsg,
-                                                         @Mock final InetSocketAddress inetAddress) throws InterruptedException {
+                                                         @Mock final InetSocketAddress inetAddress) {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         when(acknowledgementMsg.getSender()).thenReturn(publicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getTime()).thenReturn(1L);
         when(currentTime.getAsLong()).thenReturn(2L);
-        final AddressedMessage<AcknowledgementMessage, InetSocketAddress> msg = new AddressedMessage<>(acknowledgementMsg, inetAddress);
+        final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -110,10 +111,10 @@ class InternetDiscoveryChildrenHandlerTest {
     void shouldRouteOutboundApplicationMessageAdressedToSuperPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                              @Mock final ApplicationMessage applicationMsg,
-                                                                             @Mock final InetSocketAddress inetAddress) throws InterruptedException {
+                                                                             @Mock final InetSocketAddress inetAddress) {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
-        final AddressedMessage<ApplicationMessage, IdentityPublicKey> msg = new AddressedMessage<>(applicationMsg, myPublicKey);
+        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, publicKey);
@@ -121,17 +122,17 @@ class InternetDiscoveryChildrenHandlerTest {
 
         channel.writeOutbound(msg);
 
-        final AddressedMessage<ApplicationMessage, InetSocketAddress> routedMsg = channel.readOutbound();
-        assertSame(inetAddress, routedMsg.address());
+        final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
+        assertSame(inetAddress, routedMsg.recipient());
     }
 
     @Test
     void shouldRouteOutboundApplicationMessageAdressedToUnknownPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                               @Mock final InetSocketAddress inetAddress) throws InterruptedException {
+                                                                               @Mock final InetSocketAddress inetAddress) {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
-        final AddressedMessage<ApplicationMessage, IdentityPublicKey> msg = new AddressedMessage<>(applicationMsg, myPublicKey);
+        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, publicKey);
@@ -139,8 +140,8 @@ class InternetDiscoveryChildrenHandlerTest {
 
         channel.writeOutbound(msg);
 
-        final AddressedMessage<ApplicationMessage, InetSocketAddress> routedMsg = channel.readOutbound();
-        assertSame(inetAddress, routedMsg.address());
+        final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
+        assertSame(inetAddress, routedMsg.recipient());
     }
 
     @Nested

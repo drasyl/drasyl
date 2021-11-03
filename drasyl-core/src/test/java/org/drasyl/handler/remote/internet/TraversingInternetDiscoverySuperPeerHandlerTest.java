@@ -21,7 +21,7 @@
  */
 package org.drasyl.handler.remote.internet;
 
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -75,7 +75,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
-        final AddressedMessage<ApplicationMessage, InetSocketAddress> msg = new AddressedMessage<>(applicationMsg, inetAddress);
+        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, inetAddress);
         final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache = new HashMap<>();
 
         final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);
@@ -84,19 +84,19 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         channel.writeInbound(msg);
 
         // relayed message
-        final AddressedMessage<RemoteMessage, InetSocketAddress> relayedMsg = channel.readOutbound();
-        assertSame(applicationMsg, relayedMsg.message());
-        assertSame(childrenAInetAddress, relayedMsg.address());
+        final InetAddressedMessage<RemoteMessage> relayedMsg = channel.readOutbound();
+        assertSame(applicationMsg, relayedMsg.content());
+        assertSame(childrenAInetAddress, relayedMsg.recipient());
 
         // rendezvous message to sender
-        final AddressedMessage<UniteMessage, InetSocketAddress> rendezvousMsgB = channel.readOutbound();
-        assertThat(rendezvousMsgB.message(), instanceOf(UniteMessage.class));
-        assertSame(childrenBInetAddress, rendezvousMsgB.address());
+        final InetAddressedMessage<UniteMessage> rendezvousMsgB = channel.readOutbound();
+        assertThat(rendezvousMsgB.content(), instanceOf(UniteMessage.class));
+        assertSame(childrenBInetAddress, rendezvousMsgB.recipient());
 
         // rendezvous message to recipient
-        final AddressedMessage<UniteMessage, InetSocketAddress> rendezvousMsgA = channel.readOutbound();
-        assertThat(rendezvousMsgA.message(), instanceOf(UniteMessage.class));
-        assertSame(childrenAInetAddress, rendezvousMsgA.address());
+        final InetAddressedMessage<UniteMessage> rendezvousMsgA = channel.readOutbound();
+        assertThat(rendezvousMsgA.content(), instanceOf(UniteMessage.class));
+        assertSame(childrenAInetAddress, rendezvousMsgA.recipient());
 
         assertFalse(uniteAttemptsCache.isEmpty());
     }

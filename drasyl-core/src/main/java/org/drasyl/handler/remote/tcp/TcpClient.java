@@ -33,7 +33,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -111,8 +111,8 @@ public class TcpClient extends ChannelDuplexHandler {
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         ctx.fireChannelRead(msg);
 
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            checkForReachableSuperPeer(((AddressedMessage<?, ?>) msg).address());
+        if (msg instanceof InetAddressedMessage) {
+            checkForReachableSuperPeer(((InetAddressedMessage<?>) msg).sender());
         }
     }
 
@@ -129,13 +129,14 @@ public class TcpClient extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            final ByteBuf byteBufMsg = ((AddressedMessage<ByteBuf, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<ByteBuf, ?>) msg).address();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+            final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
+            final SocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
 
             // check if we can route the message via a tcp connection
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
@@ -145,7 +146,7 @@ public class TcpClient extends ChannelDuplexHandler {
             }
             else {
                 // pass through message
-                ctx.write(new AddressedMessage<>(byteBufMsg, recipient), promise);
+                ctx.write(msg, promise);
 
                 checkForUnreachableSuperPeers(ctx, recipient);
             }
@@ -217,7 +218,7 @@ public class TcpClient extends ChannelDuplexHandler {
 
     private class TcpClientFutureListener implements ChannelFutureListener {
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 final Channel channel = future.channel();
                 LOG.debug("TCP connection to `{}` established.", address);
@@ -251,7 +252,7 @@ public class TcpClient extends ChannelDuplexHandler {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
             ctx.executor().execute(() -> {
-                ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+                ctx.fireChannelRead(new InetAddressedMessage<>(msg, sender));
                 ctx.fireChannelReadComplete();
             });
         }

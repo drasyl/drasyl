@@ -24,7 +24,8 @@ package org.drasyl.handler.remote.internet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -106,20 +107,20 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     public void channelRead(final ChannelHandlerContext ctx,
                             final Object msg) {
         if (isUniteMessageFromSuperPeer(msg)) {
-            final AddressedMessage<UniteMessage, ?> addressedMsg = (AddressedMessage<UniteMessage, ?>) msg;
-            handleUniteMessage(ctx, addressedMsg.message());
+            final InetAddressedMessage<UniteMessage> addressedMsg = (InetAddressedMessage<UniteMessage>) msg;
+            handleUniteMessage(ctx, addressedMsg.content());
         }
         else if (isDiscoveryMessageFromTraversingPeer(msg)) {
-            final AddressedMessage<DiscoveryMessage, InetSocketAddress> addressedMsg = (AddressedMessage<DiscoveryMessage, InetSocketAddress>) msg;
-            handleDiscoveryMessageFromTraversingPeer(ctx, addressedMsg.message(), addressedMsg.address());
+            final InetAddressedMessage<DiscoveryMessage> addressedMsg = (InetAddressedMessage<DiscoveryMessage>) msg;
+            handleDiscoveryMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isAcknowledgementMessageFromTraversingPeer(msg)) {
-            final AddressedMessage<AcknowledgementMessage, InetSocketAddress> addressedMsg = (AddressedMessage<AcknowledgementMessage, InetSocketAddress>) msg;
-            handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.message(), addressedMsg.address());
+            final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
+            handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
-                final TraversingPeer traversingPeer = traversingPeers.get(((AddressedMessage<ApplicationMessage, ?>) msg).message().getSender());
+                final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
                 traversingPeer.applicationSentOrReceived();
             }
 
@@ -133,7 +134,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                       final ChannelPromise promise) {
         if (isRoutableOutboundMessageToTraversingPeer(msg)) {
             // for one of my traversing peers -> route
-            final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg = (AddressedMessage<ApplicationMessage, InetSocketAddress>) msg;
+            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
             handleRoutableOutboundMessageToTraversingPeer(ctx, promise, addressedMsg);
         }
         else {
@@ -148,10 +149,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     @SuppressWarnings({ "java:S1067", "SuspiciousMethodCalls" })
     private boolean isUniteMessageFromSuperPeer(final Object msg) {
-        return msg instanceof AddressedMessage &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof UniteMessage &&
-                myPublicKey.equals(((AddressedMessage<UniteMessage, ?>) msg).message().getRecipient()) &&
-                superPeers.containsKey(((AddressedMessage<UniteMessage, ?>) msg).message().getSender());
+        return msg instanceof InetAddressedMessage &&
+                ((InetAddressedMessage<?>) msg).content() instanceof UniteMessage &&
+                myPublicKey.equals(((InetAddressedMessage<UniteMessage>) msg).content().getRecipient()) &&
+                superPeers.containsKey(((InetAddressedMessage<UniteMessage>) msg).content().getSender());
     }
 
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
@@ -171,13 +172,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     @SuppressWarnings("java:S1067")
     private boolean isDiscoveryMessageFromTraversingPeer(final Object msg) {
-        return msg instanceof AddressedMessage &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
-                myPublicKey.equals(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getRecipient()) &&
-                traversingPeers.containsKey(((AddressedMessage<DiscoveryMessage, ?>) msg).message().getSender()) &&
-                Math.abs(currentTime.getAsLong() - (((AddressedMessage<DiscoveryMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis &&
-                ((AddressedMessage<DiscoveryMessage, ?>) msg).message().getChildrenTime() == 0;
+        return msg instanceof InetAddressedMessage &&
+                ((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage &&
+                myPublicKey.equals(((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient()) &&
+                traversingPeers.containsKey(((InetAddressedMessage<DiscoveryMessage>) msg).content().getSender()) &&
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis &&
+                ((InetAddressedMessage<DiscoveryMessage>) msg).content().getChildrenTime() == 0;
     }
 
     private void handleDiscoveryMessageFromTraversingPeer(final ChannelHandlerContext ctx,
@@ -191,17 +191,16 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
-        ctx.writeAndFlush(new AddressedMessage<>(acknowledgementMsg, inetAddress));
+        ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
     }
 
     @SuppressWarnings("java:S1067")
     private boolean isAcknowledgementMessageFromTraversingPeer(final Object msg) {
-        return msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof AcknowledgementMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress &&
-                myPublicKey.equals(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getRecipient()) &&
-                traversingPeers.containsKey(((AddressedMessage<AcknowledgementMessage, ?>) msg).message().getSender()) &&
-                Math.abs(currentTime.getAsLong() - (((AddressedMessage<AcknowledgementMessage, ?>) msg).message()).getTime()) <= maxTimeOffsetMillis;
+        return msg instanceof InetAddressedMessage<?> &&
+                ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
+                myPublicKey.equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
+                traversingPeers.containsKey(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
     }
 
     private void handleAcknowledgementMessageFromTraversingPeer(final ChannelHandlerContext ctx,
@@ -241,9 +240,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     }
 
     private boolean isApplicationMessageFromTraversingPeer(final Object msg) {
-        return msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
-                traversingPeers.containsKey(((ApplicationMessage) ((AddressedMessage<?, ?>) msg).message()).getSender());
+        return msg instanceof InetAddressedMessage<?> &&
+                ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
+                traversingPeers.containsKey(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getSender());
     }
 
     /*
@@ -251,10 +250,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      */
 
     private boolean isRoutableOutboundMessageToTraversingPeer(final Object msg) {
-        if (msg instanceof AddressedMessage<?, ?> &&
-                ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage &&
-                ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
-            final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((AddressedMessage<?, ?>) msg).message()).getRecipient());
+        if (msg instanceof OverlayAddressedMessage<?> &&
+                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+            final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
             return traversingPeer != null && !traversingPeer.isStale();
         }
         else {
@@ -264,14 +262,14 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     private void handleRoutableOutboundMessageToTraversingPeer(final ChannelHandlerContext ctx,
                                                                final ChannelPromise promise,
-                                                               final AddressedMessage<ApplicationMessage, InetSocketAddress> addressedMsg) {
-        final DrasylAddress address = addressedMsg.message().getRecipient();
+                                                               final OverlayAddressedMessage<ApplicationMessage> addressedMsg) {
+        final DrasylAddress address = addressedMsg.content().getRecipient();
         final TraversingPeer traversingPeer = traversingPeers.get(address);
         final InetSocketAddress inetAddress = traversingPeer.inetAddress();
         traversingPeer.applicationSentOrReceived();
 
-        LOG.trace("Got ApplicationMessage for traversing peer `{}`. Route it to address `{}`.", address, inetAddress);
-        ctx.write(addressedMsg.route(inetAddress), promise);
+        LOG.trace("Got ApplicationMessage for traversing peer `{}`. Resolve it to inet address `{}`.", address, inetAddress);
+        ctx.write(addressedMsg.resolve(inetAddress), promise);
     }
 
     static class TraversingPeer {

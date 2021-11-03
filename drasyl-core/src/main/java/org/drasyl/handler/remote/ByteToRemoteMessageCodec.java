@@ -26,7 +26,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.MagicNumberMissmatchException;
 import org.drasyl.handler.remote.protocol.PartialReadMessage;
@@ -41,35 +41,35 @@ import java.util.List;
  */
 @SuppressWarnings("java:S110")
 @Sharable
-public class ByteToRemoteMessageCodec extends MessageToMessageCodec<AddressedMessage<ByteBuf, ?>, AddressedMessage<RemoteMessage, ?>> {
+public class ByteToRemoteMessageCodec extends MessageToMessageCodec<InetAddressedMessage<ByteBuf>, InetAddressedMessage<RemoteMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(ByteToRemoteMessageCodec.class);
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage;
     }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<RemoteMessage, ?> msg,
+                          final InetAddressedMessage<RemoteMessage> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
-        final RemoteMessage remoteMsg = msg.message();
+        final RemoteMessage remoteMsg = msg.content();
         final ByteBuf buffer = ctx.alloc().ioBuffer();
         remoteMsg.writeTo(buffer);
-        out.add(new AddressedMessage<>(buffer, msg.address()));
+        out.add(msg.replace(buffer));
     }
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf;
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<ByteBuf, ?> msg,
+                          final InetAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
         try {
-            out.add(msg.replace(PartialReadMessage.of(msg.message().retain())));
+            out.add(msg.replace(PartialReadMessage.of(msg.content().retain())));
         }
         catch (final MagicNumberMissmatchException e) {
             ReferenceCountUtil.release(msg);

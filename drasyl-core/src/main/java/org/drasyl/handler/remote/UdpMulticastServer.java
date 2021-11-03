@@ -34,14 +34,13 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -168,13 +167,13 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         @Override
         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                     final DatagramPacket packet) {
-            final SocketAddress sender = packet.sender();
+            final InetSocketAddress sender = packet.sender();
             final ByteBuf content = packet.content();
             nodes.forEach(nodeCtx -> {
                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
                 final ByteBuf byteBuf = content.retainedDuplicate();
                 nodeCtx.executor().execute(() -> {
-                    nodeCtx.fireChannelRead(new AddressedMessage<>(byteBuf, sender));
+                    nodeCtx.fireChannelRead(new InetAddressedMessage<>(byteBuf, sender));
                     nodeCtx.fireChannelReadComplete();
                 });
             });
@@ -190,7 +189,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         }
 
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 // server successfully started
                 final DatagramChannel myChannel = (DatagramChannel) future.channel();

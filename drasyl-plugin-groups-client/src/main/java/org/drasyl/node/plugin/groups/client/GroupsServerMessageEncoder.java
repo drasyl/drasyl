@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
 
 import java.io.OutputStream;
@@ -37,22 +37,22 @@ import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
  * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s with magic number {@link
  * #MAGIC_NUMBER}.
  */
-public class GroupsServerMessageEncoder extends MessageToMessageEncoder<AddressedMessage<GroupsServerMessage, ?>> {
+public class GroupsServerMessageEncoder extends MessageToMessageEncoder<OverlayAddressedMessage<GroupsServerMessage>> {
     public static final int MAGIC_NUMBER = 578_611_197;
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsServerMessage;
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof GroupsServerMessage;
     }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<GroupsServerMessage, ?> msg,
+                          final OverlayAddressedMessage<GroupsServerMessage> msg,
                           final List<Object> out) throws Exception {
         final ByteBuf byteBuf = ctx.alloc().ioBuffer();
         byteBuf.writeInt(MAGIC_NUMBER);
         try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            JACKSON_WRITER.writeValue(outputStream, msg.message());
+            JACKSON_WRITER.writeValue(outputStream, msg.content());
         }
         out.add(msg.replace(byteBuf));
     }

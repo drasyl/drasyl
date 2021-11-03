@@ -21,13 +21,13 @@
  */
 package org.drasyl.handler.logging;
 
+import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.channel.AddressedMessage;
 
 import java.io.PrintStream;
 import java.net.SocketAddress;
@@ -131,9 +131,9 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage) {
+        if (msg instanceof AddressedEnvelope) {
             outboundMessages.increment();
-            if (consumeOutbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
+            if (consumeOutbound.test(((AddressedEnvelope<?, ?>) msg).recipient(), ((AddressedEnvelope<?, ?>) msg).content())) {
                 promise.setSuccess();
             }
             else {
@@ -147,9 +147,9 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof AddressedMessage) {
+        if (msg instanceof AddressedEnvelope) {
             inboundMessages.increment();
-            if (!consumeInbound.test(((AddressedMessage<?, ?>) msg).address(), ((AddressedMessage<?, ?>) msg).message())) {
+            if (!consumeInbound.test(((AddressedEnvelope<?, ?>) msg).sender(), ((AddressedEnvelope<?, ?>) msg).content())) {
                 ctx.fireChannelRead(msg);
             }
         }

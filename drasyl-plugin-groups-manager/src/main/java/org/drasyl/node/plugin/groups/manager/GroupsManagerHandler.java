@@ -24,7 +24,7 @@ package org.drasyl.node.plugin.groups.manager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedMessage<GroupsClientMessage, IdentityPublicKey>> {
+public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<GroupsClientMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     public static final String UNABLE_TO_SEND = "Unable to send {}";
     private final DatabaseAdapter database;
@@ -76,7 +76,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                         member.getMember().getPublicKey(),
                         org.drasyl.node.plugin.groups.client.Group.of(member.getGroup().getName()));
 
-                ctx.writeAndFlush(new AddressedMessage<>(leftMessage, member.getMember().getPublicKey())).addListener(future -> {
+                ctx.writeAndFlush(new OverlayAddressedMessage<>(leftMessage, member.getMember().getPublicKey())).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                     }
@@ -103,7 +103,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
         try {
             final Set<Membership> recipients = database.getGroupMembers(group);
 
-            recipients.forEach(member -> ctx.writeAndFlush(new AddressedMessage<>(msg, member.getMember().getPublicKey())).addListener(future -> {
+            recipients.forEach(member -> ctx.writeAndFlush(new OverlayAddressedMessage<>(msg, member.getMember().getPublicKey())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, msg.getClass()::getSimpleName, future::cause);
                 }
@@ -115,20 +115,20 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
     }
 
     @Override
-    public boolean acceptInboundMessage(final Object msg) throws Exception {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsClientMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
+    public boolean acceptInboundMessage(final Object msg) {
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof GroupsClientMessage;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<GroupsClientMessage, IdentityPublicKey> msg) {
-        final GroupsClientMessage grpMsg = msg.message();
+                                final OverlayAddressedMessage<GroupsClientMessage> msg) {
+        final GroupsClientMessage grpMsg = msg.content();
 
         if (grpMsg instanceof GroupJoinMessage) {
-            ctx.executor().execute(() -> handleJoinRequest(ctx, msg.address(), (GroupJoinMessage) grpMsg));
+            ctx.executor().execute(() -> handleJoinRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupJoinMessage) grpMsg));
         }
         else if (grpMsg instanceof GroupLeaveMessage) {
-            ctx.executor().execute(() -> handleLeaveRequest(ctx, msg.address(), (GroupLeaveMessage) grpMsg));
+            ctx.executor().execute(() -> handleLeaveRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupLeaveMessage) grpMsg));
         }
     }
 
@@ -151,7 +151,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                     doJoin(ctx, sender, group, msg.isRenew());
                 }
                 else {
-                    ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), sender)).addListener(future -> {
+                    ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), sender)).addListener(future -> {
                         if (!future.isSuccess()) {
                             LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                         }
@@ -160,7 +160,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                 }
             }
             else {
-                ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), sender)).addListener(future -> {
+                ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                     }
@@ -180,6 +180,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
      * @param sender the sender of the leave request
      * @param msg    the leave request
      */
+    @SuppressWarnings("unchecked")
     private void handleLeaveRequest(final ChannelHandlerContext ctx,
                                     final IdentityPublicKey sender,
                                     final GroupLeaveMessage msg) {
@@ -187,7 +188,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
             final MemberLeftMessage leftMessage = new MemberLeftMessage(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
-            ctx.writeAndFlush(new AddressedMessage<>(leftMessage, sender)).addListener(future -> {
+            ctx.writeAndFlush(new OverlayAddressedMessage<>(leftMessage, sender)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                 }
@@ -223,7 +224,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
-                ctx.writeAndFlush(new AddressedMessage<>(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships), sender)).addListener(future -> {
+                ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships), sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupWelcomeMessage.class::getSimpleName, future::cause);
                     }
@@ -238,7 +239,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<AddressedM
             }
         }
         catch (final DatabaseException e) {
-            ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), sender)).addListener(future -> {
+            ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), sender)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                 }

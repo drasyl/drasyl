@@ -24,7 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -54,12 +54,12 @@ class OtherNetworkFilterTest {
 
     @Test
     void shouldDropMessagesFromOtherNetworks(@Mock final RemoteMessage msg,
-                                             @Mock final SocketAddress address) {
+                                             @Mock final InetSocketAddress address) {
         when(msg.getNetworkId()).thenReturn(1337);
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, address));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, address));
 
             assertNull(channel.readInbound());
         }
@@ -69,15 +69,15 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock final SocketAddress sender) {
+    void shouldPassMessagesFromSameNetwork(@Mock final InetSocketAddress sender) {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, sender));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, sender));
 
             final ReferenceCounted actual = channel.readInbound();
-            assertEquals(new AddressedMessage<>(message, sender), actual);
+            assertEquals(new InetAddressedMessage<>(message, sender), actual);
 
             actual.release();
         }

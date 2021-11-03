@@ -25,7 +25,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
@@ -142,18 +143,13 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof DiscoveryMessage) {
-            final DiscoveryMessage discoveryMsg = ((AddressedMessage<DiscoveryMessage, ?>) msg).message();
-            final SocketAddress sender = ((AddressedMessage<DiscoveryMessage, ?>) msg).address();
-
-            if (scheduledPingFuture != null && sender instanceof InetSocketAddress && discoveryMsg.getRecipient() == null) {
-                handlePing(ctx, (InetSocketAddress) sender, discoveryMsg, new CompletableFuture<>());
-            }
-            else {
-                ctx.fireChannelRead(msg);
-            }
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((DiscoveryMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient() == null && scheduledPingFuture != null) {
+            final DiscoveryMessage discoveryMsg = ((InetAddressedMessage<DiscoveryMessage>) msg).content();
+            final InetSocketAddress sender = ((InetAddressedMessage<DiscoveryMessage>) msg).sender();
+            handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
         }
         else {
             ctx.fireChannelRead(msg);
@@ -175,19 +171,18 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         future.complete(null);
     }
 
-    @SuppressWarnings("SuspiciousMethodCalls")
+    @SuppressWarnings("unchecked")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage) {
-            final RemoteMessage remoteMsg = ((AddressedMessage<RemoteMessage, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<RemoteMessage, ?>) msg).address();
+        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+            final SocketAddress recipient = ((OverlayAddressedMessage<RemoteMessage>) msg).recipient();
 
             final Peer peer = peers.get(recipient);
             if (peer != null) {
-                LOG.trace("[{}] Send message `{}` via local network route `{}`.", ctx.channel()::id, () -> remoteMsg, peer::getAddress);
-                ctx.write(((AddressedMessage<?, ?>) msg).route(peer.getAddress()), promise);
+                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", () -> recipient, peer::getAddress);
+                ctx.write(((OverlayAddressedMessage<RemoteMessage>) msg).resolve(peer.getAddress()), promise);
             }
             else {
                 ctx.write(msg, promise);
@@ -216,7 +211,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
         final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(networkId, myPublicKey, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
-        ctx.writeAndFlush(new AddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
+        ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, future::cause);
             }
@@ -225,21 +220,21 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     static class Peer {
         private final Duration pingTimeout;
-        private final SocketAddress address;
+        private final InetSocketAddress address;
         private long lastInboundPingTime;
 
-        Peer(final Duration pingTimeout, final SocketAddress address,
+        Peer(final Duration pingTimeout, final InetSocketAddress address,
              final long lastInboundPingTime) {
             this.pingTimeout = pingTimeout;
             this.address = requireNonNull(address);
             this.lastInboundPingTime = lastInboundPingTime;
         }
 
-        public Peer(final SocketAddress address, final Duration pingTimeout) {
+        public Peer(final InetSocketAddress address, final Duration pingTimeout) {
             this(pingTimeout, address, 0L);
         }
 
-        public SocketAddress getAddress() {
+        public InetSocketAddress getAddress() {
             return address;
         }
 

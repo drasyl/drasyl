@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -201,7 +201,7 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         externalAddressRequested.set(true);
 
-        ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)).addListener(future -> {
+        ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send external address request message to `{}`", () -> defaultGateway, future::cause);
             }
@@ -232,7 +232,7 @@ public class NatPmpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.set(true);
 
-        ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)).addListener(future -> {
+        ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, future::cause);
             }

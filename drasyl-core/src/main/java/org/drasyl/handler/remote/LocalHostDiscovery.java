@@ -25,7 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -41,7 +41,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -79,7 +78,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     public static final String FILE_SUFFIX = ".txt";
     private final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     private final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
-    private final Map<IdentityPublicKey, SocketAddress> routes;
+    private final Map<IdentityPublicKey, InetSocketAddress> routes;
     private final boolean watchEnabled;
     private final InetAddress bindHost;
     private final Duration leaseTime;
@@ -110,7 +109,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
                        final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
-                       final Map<IdentityPublicKey, SocketAddress> routes,
+                       final Map<IdentityPublicKey, InetSocketAddress> routes,
                        final boolean watchEnabled,
                        final InetAddress bindHost,
                        final Duration leaseTime,
@@ -130,18 +129,18 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this.postDisposable = postDisposable;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
-            final ApplicationMessage applicationMsg = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).message();
-            final IdentityPublicKey recipient = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).address();
+        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+            final IdentityPublicKey recipient = (IdentityPublicKey) ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
 
-            final SocketAddress localAddress = routes.get(recipient);
+            final InetSocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
-                LOG.trace("[{}] Send message `{}` via local route {}.", ctx.channel()::id, () -> applicationMsg, () -> localAddress);
-                ctx.write(new AddressedMessage<>(applicationMsg, localAddress), promise);
+                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", () -> recipient, () -> localAddress);
+                ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
             }
             else {
                 // pass through message

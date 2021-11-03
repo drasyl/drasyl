@@ -22,9 +22,10 @@
 package org.drasyl.handler.codec;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -36,7 +37,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * This codec converts {@link ApplicationMessage}s to the embedded payload and vice versa.
  */
-public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedMessage<ApplicationMessage, ?>, AddressedMessage<ByteBuf, IdentityPublicKey>> {
+public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedEnvelope<ApplicationMessage, ?>, OverlayAddressedMessage<ByteBuf>> {
     private final int networkId;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
@@ -51,26 +52,26 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey;
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf;
     }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<ByteBuf, IdentityPublicKey> msg,
+                          final OverlayAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws Exception {
-        final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, msg.address(), myPublicKey, myProofOfWork, msg.message().retain());
+        final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) msg.recipient(), myPublicKey, myProofOfWork, msg.content().retain());
         out.add(msg.replace(wrappedMsg));
     }
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage;
+        return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, ?>) msg).content() instanceof ApplicationMessage;
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<ApplicationMessage, ?> msg,
+                          final AddressedEnvelope<ApplicationMessage, ?> msg,
                           final List<Object> out) {
-        out.add(new AddressedMessage<>(msg.message().getPayload().retain(), msg.message().getSender()));
+        out.add(new OverlayAddressedMessage<>(msg.content().getPayload().retain(), msg.content().getSender()));
     }
 }

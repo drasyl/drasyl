@@ -37,7 +37,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -124,13 +124,14 @@ public class UdpServer extends ChannelDuplexHandler {
         pendingWrites.removeAndFailAll(new ClosedChannelException());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            final ByteBuf byteBufMsg = ((AddressedMessage<ByteBuf, InetSocketAddress>) msg).message();
-            final InetSocketAddress recipient = ((AddressedMessage<ByteBuf, InetSocketAddress>) msg).address();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+            final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
+            final InetSocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
             final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
 
             pendingWrites.add(packet, promise);
@@ -187,7 +188,7 @@ public class UdpServer extends ChannelDuplexHandler {
                                     final DatagramPacket packet) {
             LOG.trace("Datagram received {}", packet);
             ctx.executor().execute(() -> {
-                ctx.fireChannelRead(new AddressedMessage<>(packet.content(), packet.sender()));
+                ctx.fireChannelRead(new InetAddressedMessage<>(packet.content(), packet.sender()));
                 ctx.fireChannelReadComplete();
             });
         }
@@ -204,7 +205,7 @@ public class UdpServer extends ChannelDuplexHandler {
         }
 
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 // server successfully started
                 final Channel myChannel = future.channel();
@@ -228,7 +229,7 @@ public class UdpServer extends ChannelDuplexHandler {
      */
     private static class UdpServerCloseListener implements ChannelFutureListener {
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             final InetSocketAddress socketAddress = (InetSocketAddress) future.channel().localAddress();
             LOG.debug("Server listening at udp:/{} stopped.", socketAddress);
         }

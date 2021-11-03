@@ -24,7 +24,8 @@ package org.drasyl.node.plugin.groups.client;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -54,7 +55,7 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMessage<GroupsServerMessage, ?>> {
+public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<GroupsServerMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private static final Duration RETRY_DELAY = Duration.ofSeconds(10);
     private static final Duration FIRST_JOIN_DELAY = Duration.ofSeconds(5);
@@ -84,13 +85,13 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof GroupsServerMessage;
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof GroupsServerMessage;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<GroupsServerMessage, ?> msg) {
-        final GroupsServerMessage grpMsg = msg.message();
+                                final OverlayAddressedMessage<GroupsServerMessage> msg) {
+        final GroupsServerMessage grpMsg = msg.content();
 
         if (grpMsg instanceof MemberJoinedMessage) {
             onMemberJoined(ctx, (MemberJoinedMessage) grpMsg);
@@ -99,7 +100,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
             onMemberLeft(ctx, (MemberLeftMessage) grpMsg);
         }
         else if (grpMsg instanceof GroupWelcomeMessage) {
-            onWelcome(ctx, msg.address(), (GroupWelcomeMessage) grpMsg);
+            onWelcome(ctx, msg.sender(), (GroupWelcomeMessage) grpMsg);
         }
         else if (grpMsg instanceof GroupJoinFailedMessage) {
             onJoinFailed(ctx, (GroupJoinFailedMessage) grpMsg);
@@ -122,7 +123,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).addListener(future -> {
+            ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                 }
@@ -220,7 +221,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> ctx.writeAndFlush(new AddressedMessage<>(new GroupLeaveMessage(group), sender)).addListener(future -> {
+                () -> ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupLeaveMessage(group), (DrasylAddress) sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                     }
@@ -240,7 +241,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<AddressedMe
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        ctx.writeAndFlush(new AddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)).addListener(future -> {
+        ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send GroupJoinMessage", future::cause);
             }

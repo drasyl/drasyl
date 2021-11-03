@@ -25,7 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
@@ -86,10 +87,10 @@ class StaticRoutesHandlerTest {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of(publicKey, address));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.writeAndFlush(new AddressedMessage<>(message, publicKey));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
 
             final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new AddressedMessage<>(message, address), actual);
+            assertEquals(new InetAddressedMessage<>(message, address), actual);
 
             actual.release();
         }
@@ -104,10 +105,10 @@ class StaticRoutesHandlerTest {
         final ChannelHandler handler = new StaticRoutesHandler(ImmutableMap.of());
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.writeAndFlush(new AddressedMessage<>(message, publicKey));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
 
             final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new AddressedMessage<>(message, publicKey), actual);
+            assertEquals(new OverlayAddressedMessage<>(message, publicKey), actual);
 
             actual.release();
         }

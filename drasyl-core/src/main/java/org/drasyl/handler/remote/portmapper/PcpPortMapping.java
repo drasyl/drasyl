@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -224,7 +224,7 @@ public class PcpPortMapping implements PortMapping {
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
         mappingRequested.incrementAndGet();
 
-        ctx.writeAndFlush(new AddressedMessage<>(msg, defaultGateway)).addListener(future1 -> {
+        ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future1 -> {
             if (!future1.isSuccess()) {
                 LOG.warn("Unable to send mapping request message to `{}`", () -> defaultGateway, future1::cause);
             }

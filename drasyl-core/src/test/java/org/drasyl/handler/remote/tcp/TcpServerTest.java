@@ -34,7 +34,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -129,7 +129,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 verify(client).writeAndFlush(any());
             }
@@ -149,7 +149,7 @@ class TcpServerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ChannelPromise promise = channel.newPromise();
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient), promise);
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient), promise);
                 assertFalse(promise.isSuccess());
             }
             finally {
@@ -163,10 +163,10 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(msg, recipient), actual);
+                assertEquals(new InetAddressedMessage<>(msg, recipient), actual);
 
                 actual.release();
             }

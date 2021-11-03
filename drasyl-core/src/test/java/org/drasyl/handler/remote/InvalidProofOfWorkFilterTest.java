@@ -23,7 +23,7 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -35,6 +35,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
+import java.net.InetSocketAddress;
+
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -45,11 +47,13 @@ import static test.util.IdentityTestUtil.ID_1;
 @ExtendWith(MockitoExtension.class)
 class InvalidProofOfWorkFilterTest {
     private IdentityPublicKey senderPublicKey;
+    private InetSocketAddress senderAddress;
     private IdentityPublicKey recipientPublicKey;
 
     @BeforeEach
     void setUp() {
         senderPublicKey = ID_1.getIdentityPublicKey();
+        senderAddress = new InetSocketAddress(12345);
         recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
     }
 
@@ -59,7 +63,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
 
             assertNull(channel.readInbound());
         }
@@ -74,10 +78,10 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
 
             final ReferenceCounted actual = channel.readInbound();
-            assertEquals(new AddressedMessage<>(message, message.getSender()), actual);
+            assertEquals(new InetAddressedMessage<>(message, senderAddress), actual);
 
             actual.release();
         }
@@ -92,9 +96,9 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(message, message.getSender()));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
 
-            verify(proofOfWork, never()).isValid((IdentityPublicKey) message.getSender(), POW_DIFFICULTY);
+            verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }
         finally {
             channel.releaseInbound();

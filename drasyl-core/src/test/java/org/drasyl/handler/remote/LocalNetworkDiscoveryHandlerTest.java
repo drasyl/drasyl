@@ -25,7 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
@@ -34,7 +35,6 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -54,6 +54,7 @@ import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -143,7 +144,7 @@ class LocalNetworkDiscoveryTest {
             verify(peer).isStale();
             verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
             assertTrue(peers.isEmpty());
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof DiscoveryMessage && m.address().equals(MULTICAST_ADDRESS)));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof DiscoveryMessage && m.recipient().equals(MULTICAST_ADDRESS)));
         }
     }
 
@@ -185,7 +186,7 @@ class LocalNetworkDiscoveryTest {
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
+            handler.channelRead(ctx, new InetAddressedMessage<>(msg, sender));
 
             verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
         }
@@ -199,7 +200,7 @@ class LocalNetworkDiscoveryTest {
             when(identity.getAddress()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            handler.channelRead(ctx, new AddressedMessage<>(msg, sender));
+            handler.channelRead(ctx, new InetAddressedMessage<>(msg, sender));
 
             verify(ctx, never()).fireUserEventTriggered(any(AddPathEvent.class));
         }
@@ -210,10 +211,10 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new AddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }
@@ -228,15 +229,16 @@ class LocalNetworkDiscoveryTest {
     void shouldRouteOutboundMessageWhenRouteIsPresent(@Mock final IdentityPublicKey recipient,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                       @Mock(answer = RETURNS_DEEP_STUBS) final LocalNetworkDiscovery.Peer peer) {
+        when(peer.getAddress()).thenReturn(new InetSocketAddress(12345));
         when(peers.get(any())).thenReturn(peer);
 
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
 
-        channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+        channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
         final ReferenceCounted actual = channel.readOutbound();
-        assertEquals(new AddressedMessage<>(message, peer.getAddress()), actual);
+        assertEquals(new InetAddressedMessage<>(message, peer.getAddress()), actual);
 
         actual.release();
     }
@@ -248,10 +250,10 @@ class LocalNetworkDiscoveryTest {
         final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
         try {
-            channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
             final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new AddressedMessage<>(message, recipient), actual);
+            assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
 
             actual.release();
         }
@@ -289,8 +291,8 @@ class LocalNetworkDiscoveryTest {
         class IsStale {
             @Test
             void shouldReturnCorrectValue(@Mock final InetSocketAddress address) {
-                Assertions.assertFalse(new LocalNetworkDiscovery.Peer(ofSeconds(60), address, System.currentTimeMillis()).isStale());
-                Assertions.assertTrue(new LocalNetworkDiscovery.Peer(ofSeconds(60), address, 1337L).isStale());
+                assertFalse(new LocalNetworkDiscovery.Peer(ofSeconds(60), address, System.currentTimeMillis()).isStale());
+                assertTrue(new LocalNetworkDiscovery.Peer(ofSeconds(60), address, 1337L).isStale());
             }
         }
     }

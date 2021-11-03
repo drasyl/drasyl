@@ -31,7 +31,7 @@ import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.DatagramPacket;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -43,8 +43,6 @@ import org.mockito.stubbing.Answer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -67,7 +65,7 @@ class UdpServerTest {
     private PendingWriteQueue pendingWrites;
 
     @BeforeEach
-    void setUp() throws UnknownHostException {
+    void setUp() {
         bindAddress = new InetSocketAddress(22527);
     }
 
@@ -119,12 +117,12 @@ class UdpServerTest {
         void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(channel.isWritable()).thenReturn(true);
 
-            final SocketAddress recipient = new InetSocketAddress(1234);
+            final InetSocketAddress recipient = new InetSocketAddress(1234);
 
             final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 verify(UdpServerTest.this.channel).writeAndFlush(any());
             }
@@ -152,8 +150,8 @@ class UdpServerTest {
             try {
                 channel.pipeline().fireChannelActive();
 
-                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
-                assertThat(actual.message(), instanceOf(ByteBuf.class));
+                final InetAddressedMessage<Object> actual = channel.readInbound();
+                assertThat(actual.content(), instanceOf(ByteBuf.class));
 
                 actual.release();
             }

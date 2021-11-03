@@ -24,7 +24,7 @@ package org.drasyl.handler.remote;
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
@@ -47,7 +47,7 @@ import static org.drasyl.util.DurationUtil.max;
  * Messages exceeding the rate limit are dropped.
  */
 @SuppressWarnings("java:S110")
-public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<FullReadMessage<?>, ?>> {
+public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessage<FullReadMessage<?>>> {
     private static final Logger LOG = LoggerFactory.getLogger(RateLimiter.class);
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
@@ -76,20 +76,20 @@ public class RateLimiter extends SimpleChannelInboundHandler<AddressedMessage<Fu
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof FullReadMessage;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<FullReadMessage<?>, ?> msg) {
-        final FullReadMessage<?> fullReadMsg = msg.message();
+                                final InetAddressedMessage<FullReadMessage<?>> msg) {
+        final FullReadMessage<?> fullReadMsg = msg.content();
 
         if (!ctx.channel().localAddress().equals(fullReadMsg.getRecipient()) || rateLimitGate(fullReadMsg)) {
             ctx.fireChannelRead(msg);
         }
         else {
             msg.release();
-            LOG.debug("Message `{}` from `{}` exceeding rate limit dropped.", fullReadMsg::getNonce, msg::address);
+            LOG.debug("Message `{}` from `{}` exceeding rate limit dropped.", fullReadMsg::getNonce, msg::sender);
         }
     }
 

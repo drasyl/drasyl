@@ -34,7 +34,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.Identity;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -45,12 +45,13 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import test.util.IdentityTestUtil;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 @State(Scope.Benchmark)
 public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     private MyHandlerContext ctx;
-    private SocketAddress msgSender;
+    private InetSocketAddress msgSender;
     private ApplicationMessage msgAddressedToMe;
     private ApplicationMessage msgNotAddressedToMe;
     private InvalidProofOfWorkFilter handler;
@@ -59,7 +60,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     public void setup() {
         final Identity sender = IdentityTestUtil.ID_1;
         ctx = new MyHandlerContext();
-        msgSender = new MyAddress();
+        msgSender = new InetSocketAddress("127.0.0.1", 22529);
         msgAddressedToMe = ApplicationMessage.of(1337, sender.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Unpooled.buffer());
         msgNotAddressedToMe = ApplicationMessage.of(1337, IdentityTestUtil.ID_3.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Unpooled.buffer());
         handler = new InvalidProofOfWorkFilter();
@@ -69,7 +70,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgNotAddressedToMe() {
         try {
-            handler.channelRead0(ctx, new AddressedMessage<>(msgAddressedToMe, msgSender));
+            handler.channelRead0(ctx, new InetAddressedMessage<>(msgAddressedToMe, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);
@@ -285,8 +286,5 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
         public <T> boolean hasAttr(final AttributeKey<T> key) {
             return false;
         }
-    }
-
-    private static class MyAddress extends SocketAddress {
     }
 }

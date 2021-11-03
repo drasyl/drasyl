@@ -24,7 +24,7 @@ package org.drasyl.handler.remote.internet;
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
@@ -93,12 +93,12 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
 
     @Override
     protected void relayMessage(final ChannelHandlerContext ctx,
-                                final AddressedMessage<RemoteMessage, InetSocketAddress> addressedMsg,
+                                final InetAddressedMessage<RemoteMessage> addressedMsg,
                                 final InetSocketAddress inetAddress) {
         super.relayMessage(ctx, addressedMsg, inetAddress);
 
-        final DrasylAddress senderKey = addressedMsg.message().getSender();
-        final DrasylAddress recipientKey = addressedMsg.message().getRecipient();
+        final DrasylAddress senderKey = addressedMsg.content().getSender();
+        final DrasylAddress recipientKey = addressedMsg.content().getRecipient();
         if (shouldInitiateRendezvous(senderKey, recipientKey)) {
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
@@ -120,6 +120,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
         return uniteAttemptsCache.putIfAbsent(key, TRUE) == null;
     }
 
+    @SuppressWarnings("unchecked")
     private void initiateRendezvous(final ChannelHandlerContext ctx,
                                     final DrasylAddress senderKey,
                                     final DrasylAddress recipientKey) {
@@ -135,7 +136,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             // send recipient's information to sender
             final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, recipientAddress);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> senderAddress);
-            ctx.write(new AddressedMessage<>(senderUnite, senderAddress)).addListener(future -> {
+            ctx.write(new InetAddressedMessage<>(senderUnite, senderAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, () -> senderAddress, future::cause);
                 }
@@ -144,7 +145,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             // send sender's information to recipient
             final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, senderAddress);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> recipientAddress);
-            ctx.write(new AddressedMessage<>(recipientUnite, recipientAddress)).addListener(future -> {
+            ctx.write(new InetAddressedMessage<>(recipientUnite, recipientAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, () -> recipientAddress, future::cause);
                 }

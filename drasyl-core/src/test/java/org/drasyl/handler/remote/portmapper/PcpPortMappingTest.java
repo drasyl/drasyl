@@ -25,9 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,13 +58,12 @@ public class PcpPortMappingTest {
                                   @Mock(answer = RETURNS_DEEP_STUBS) final Runnable onFailure,
                                   @Mock final Supplier<InetAddress> defaultGatewaySupplier,
                                   @Mock final Supplier<Set<InetAddress>> interfaceSupplier) throws UnknownHostException {
-            final IdentityPublicKey myAddress = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             when(defaultGatewaySupplier.get()).thenReturn(InetAddress.getByName("38.12.1.15"));
             when(interfaceSupplier.get()).thenReturn(Set.of(InetAddress.getByName("38.12.1.15")));
 
             new PcpPortMapping(new AtomicInteger(), 0, null, new byte[]{}, null, null, null, null, defaultGatewaySupplier, interfaceSupplier).start(ctx, 12345, onFailure);
 
-            verify(ctx).writeAndFlush(any(AddressedMessage.class));
+            verify(ctx).writeAndFlush(any(InetAddressedMessage.class));
         }
     }
 
@@ -81,7 +79,7 @@ public class PcpPortMappingTest {
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
-            verify(ctx).writeAndFlush(any(AddressedMessage.class));
+            verify(ctx).writeAndFlush(any(InetAddressedMessage.class));
         }
     }
 

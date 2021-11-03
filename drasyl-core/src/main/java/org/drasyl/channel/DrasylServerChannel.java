@@ -160,9 +160,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
             else {
                 try {
-                    final AddressedMessage<?, IdentityPublicKey> childMsg = (AddressedMessage<?, IdentityPublicKey>) msg;
-                    final Object o = childMsg.message();
-                    final IdentityPublicKey peer = childMsg.address();
+                    final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
+                    final Object o = childMsg.content();
+                    final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
 
                     // create/get channel
                     final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();

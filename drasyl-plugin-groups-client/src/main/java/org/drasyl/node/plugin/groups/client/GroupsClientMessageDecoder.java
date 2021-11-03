@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
 
 import java.io.InputStream;
@@ -38,17 +38,17 @@ import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MA
  * Decodes {@link ByteBuf}s with magic number {@link GroupsClientMessageEncoder#MAGIC_NUMBER} to
  * {@link GroupsClientMessage}s.
  */
-public class GroupsClientMessageDecoder extends MessageToMessageDecoder<AddressedMessage<ByteBuf, ?>> {
+public class GroupsClientMessageDecoder extends MessageToMessageDecoder<OverlayAddressedMessage<ByteBuf>> {
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf;
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf;
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<ByteBuf, ?> msg,
+                          final OverlayAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws Exception {
-        final ByteBuf byteBuf = msg.message();
+        final ByteBuf byteBuf = msg.content();
         byteBuf.markReaderIndex();
         final int magicNumber = byteBuf.readInt();
         if (magicNumber == MAGIC_NUMBER) {

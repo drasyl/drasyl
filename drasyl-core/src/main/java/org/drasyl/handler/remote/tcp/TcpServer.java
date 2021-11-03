@@ -36,7 +36,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.PromiseNotifier;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -92,13 +92,14 @@ public class TcpServer extends ChannelDuplexHandler {
         this.serverChannel = serverChannel;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress) {
-            final ByteBuf byteBufMsg = ((AddressedMessage<ByteBuf, ?>) msg).message();
-            final SocketAddress recipient = ((AddressedMessage<ByteBuf, ?>) msg).address();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+            final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
+            final SocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
 
             // check if we can route the message via a tcp connection
             final Channel client = clientChannels.get(recipient);
@@ -150,7 +151,7 @@ public class TcpServer extends ChannelDuplexHandler {
         }
 
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 // server successfully started
                 TcpServer.this.serverChannel = future.channel();
@@ -240,9 +241,9 @@ public class TcpServer extends ChannelDuplexHandler {
 
                 if (RemoteMessage.MAGIC_NUMBER == magicNumber) {
                     msg.resetReaderIndex();
-                    final SocketAddress sender = nettyCtx.channel().remoteAddress();
+                    final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
                     ctx.executor().execute(() -> {
-                        ctx.fireChannelRead(new AddressedMessage<>(msg, sender));
+                        ctx.fireChannelRead(new InetAddressedMessage<>(msg, sender));
                         ctx.fireChannelReadComplete();
                     });
                 }

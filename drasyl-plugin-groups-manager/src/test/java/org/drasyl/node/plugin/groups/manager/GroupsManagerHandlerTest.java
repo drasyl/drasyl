@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -51,7 +51,6 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -119,9 +118,9 @@ class GroupsManagerHandlerTest {
 
             handler.staleTask(ctx);
 
-            verify(ctx, times(2)).writeAndFlush(argThat((ArgumentMatcher<AddressedMessage<?, ?>>) m -> m.message() instanceof MemberLeftMessage &&
-                    ((MemberLeftMessage) m.message()).getMember().equals(publicKey) &&
-                    ((MemberLeftMessage) m.message()).getGroup().equals(org.drasyl.node.plugin.groups.client.Group.of(group.getName()))));
+            verify(ctx, times(2)).writeAndFlush(argThat((ArgumentMatcher<OverlayAddressedMessage<?>>) m -> m.content() instanceof MemberLeftMessage &&
+                    ((MemberLeftMessage) m.content()).getMember().equals(publicKey) &&
+                    ((MemberLeftMessage) m.content()).getGroup().equals(org.drasyl.node.plugin.groups.client.Group.of(group.getName()))));
         }
     }
 
@@ -169,11 +168,11 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
-                Assertions.assertEquals(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
-                Assertions.assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.node.plugin.groups.client.Group.of(group.getName())), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                Assertions.assertEquals(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                Assertions.assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.node.plugin.groups.client.Group.of(group.getName())), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -189,10 +188,10 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
-                Assertions.assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                Assertions.assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -209,10 +208,10 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -230,10 +229,10 @@ class GroupsManagerHandlerTest {
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -250,7 +249,7 @@ class GroupsManagerHandlerTest {
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
                 assertNull(channel.readOutbound());
@@ -261,6 +260,7 @@ class GroupsManagerHandlerTest {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Nested
     class Leave {
         @Test
@@ -272,11 +272,11 @@ class GroupsManagerHandlerTest {
             try {
                 final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()));
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((AddressedMessage<Object, SocketAddress>) channel.readOutbound()).message());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -292,7 +292,7 @@ class GroupsManagerHandlerTest {
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
                 channel.runPendingTasks();
 
                 assertNull(channel.readOutbound());

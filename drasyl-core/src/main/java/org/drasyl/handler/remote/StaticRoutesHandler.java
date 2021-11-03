@@ -24,10 +24,11 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -49,18 +50,18 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
         this.staticRoutes = requireNonNull(staticRoutes);
     }
 
+    @SuppressWarnings({ "unchecked", "SuspiciousMethodCalls" })
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ApplicationMessage && ((AddressedMessage<?, ?>) msg).address() instanceof IdentityPublicKey) {
-            final ApplicationMessage applicationMsg = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).message();
-            final IdentityPublicKey recipient = ((AddressedMessage<ApplicationMessage, IdentityPublicKey>) msg).address();
+        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+            final DrasylAddress recipient = ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
 
             final InetSocketAddress staticAddress = staticRoutes.get(recipient);
             if (staticAddress != null) {
-                LOG.trace("Send message `{}` via static route {}.", () -> applicationMsg, () -> staticAddress);
-                ctx.write(((AddressedMessage<?, ?>) msg).route(staticAddress), promise);
+                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", recipient, staticAddress);
+                ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(staticAddress), promise);
             }
             else {
                 // pass through message

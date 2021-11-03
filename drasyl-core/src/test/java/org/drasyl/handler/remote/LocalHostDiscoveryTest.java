@@ -26,7 +26,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -47,7 +47,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -89,7 +88,7 @@ class LocalHostDiscoveryTest {
     private ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     @Mock
     private ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
-    private final Map<IdentityPublicKey, SocketAddress> routes = new HashMap<>();
+    private final Map<IdentityPublicKey, InetSocketAddress> routes = new HashMap<>();
     @Mock
     private Future<?> watchDisposable;
     @Mock
@@ -205,7 +204,7 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock final IdentityPublicKey publicKey,
-                                                  @Mock final SocketAddress address,
+                                                  @Mock final InetSocketAddress address,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             routes.put(publicKey, address);
 
@@ -222,7 +221,7 @@ class LocalHostDiscoveryTest {
     class MessagePassing {
         @Test
         void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final SocketAddress address = new InetSocketAddress(22527);
+            final InetSocketAddress address = new InetSocketAddress(22527);
             final IdentityPublicKey recipient = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
             routes.put(recipient, address);
             when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
@@ -231,7 +230,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
                 final ReferenceCounted actual = channel.readOutbound();
                 assertNotNull(actual);
@@ -249,10 +248,10 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(message, recipient), actual);
+                assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }
@@ -267,7 +266,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldScanDirectory(@TempDir final Path dir,
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                 @Mock final SocketAddress address) throws IOException {
+                                 @Mock final InetSocketAddress address) throws IOException {
             when(fileReader.apply(any())).thenReturn(Set.of(new InetSocketAddress("192.168.188.23", 12345)));
 
             final IdentityPublicKey publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");

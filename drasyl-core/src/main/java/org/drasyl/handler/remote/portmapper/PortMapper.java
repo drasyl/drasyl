@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * all methods fail, the program waits for {@link #RETRY_DELAY} and then tries all methods again. It
  * never gives up.
  */
-public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<ByteBuf, InetSocketAddress>> {
+public class PortMapper extends SimpleChannelInboundHandler<InetAddressedMessage<ByteBuf>> {
     public static final Duration MAPPING_LIFETIME = ofMinutes(10);
     public static final Duration RETRY_DELAY = ofMinutes(5);
     private static final Logger LOG = LoggerFactory.getLogger(PortMapper.class);
@@ -68,14 +68,14 @@ public class PortMapper extends SimpleChannelInboundHandler<AddressedMessage<Byt
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ByteBuf && ((AddressedMessage<?, ?>) msg).address() instanceof InetSocketAddress;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<ByteBuf, InetSocketAddress> msg) {
-        final InetSocketAddress sender = msg.address();
-        final ByteBuf byteBufMsg = msg.message();
+                                final InetAddressedMessage<ByteBuf> msg) {
+        final InetSocketAddress sender = msg.sender();
+        final ByteBuf byteBufMsg = msg.content();
         if (methods.get(currentMethodPointer).acceptMessage(sender, byteBufMsg)) {
             ctx.executor().execute(() -> methods.get(currentMethodPointer).handleMessage(ctx, sender, byteBufMsg));
         }

@@ -36,7 +36,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.Nonce;
@@ -58,8 +58,8 @@ import java.util.List;
 @State(Scope.Benchmark)
 public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;
-    private SocketAddress sender;
-    private SocketAddress recipient;
+    private InetSocketAddress sender;
+    private InetSocketAddress recipient;
     private ByteBuf byteBuf;
     private ApplicationMessage message;
     private ByteToRemoteMessageCodec instance;
@@ -81,7 +81,7 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            instance.decode(ctx, new AddressedMessage<>(byteBuf.slice(), sender), out);
+            instance.decode(ctx, new InetAddressedMessage<>(byteBuf.slice(), sender), out);
             blackhole.consume(out);
         }
         catch (final Exception e) {
@@ -94,7 +94,7 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            instance.encode(ctx, new AddressedMessage<>(message, recipient), out);
+            instance.encode(ctx, new InetAddressedMessage<>(message, recipient), out);
             byteBuf.release();
             blackhole.consume(out);
         }

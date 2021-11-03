@@ -24,7 +24,7 @@ package org.drasyl.handler.remote.crypto;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -44,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.time.Duration;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
@@ -55,7 +54,7 @@ import static org.mockito.Mockito.doReturn;
 @ExtendWith(MockitoExtension.class)
 class ProtocolArmHandlerTest {
     private int networkId;
-    private SocketAddress receiveAddress;
+    private InetSocketAddress receiveAddress;
     private SessionPair sessionPairSender;
     private SessionPair sessionPairReceiver;
     private Duration sessionExpireTime;
@@ -84,11 +83,11 @@ class ProtocolArmHandlerTest {
             try {
                 final FullReadMessage<?> applicationMessage = ApplicationMessage.of(HopCount.of(), true, networkId, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(10)).retain());
 
-                channel.writeAndFlush(new AddressedMessage<>(applicationMessage, receiveAddress));
+                channel.writeAndFlush(new InetAddressedMessage<>(applicationMessage, receiveAddress));
 
-                final AddressedMessage<ArmedProtocolMessage, SocketAddress> actual1 = channel.readOutbound();
+                final InetAddressedMessage<ArmedProtocolMessage> actual1 = channel.readOutbound();
 
-                assertEquals(applicationMessage, actual1.message().disarm(Crypto.INSTANCE, sessionPairReceiver));
+                assertEquals(applicationMessage, actual1.content().disarm(Crypto.INSTANCE, sessionPairReceiver));
 
                 actual1.release();
             }
@@ -104,10 +103,10 @@ class ProtocolArmHandlerTest {
             try {
                 final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_3.getIdentityPublicKey(), IdentityTestUtil.ID_3.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(10)));
 
-                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, receiveAddress));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+                assertEquals(new InetAddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
@@ -126,10 +125,10 @@ class ProtocolArmHandlerTest {
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());
 
-                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, receiveAddress));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+                assertEquals(new InetAddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
@@ -145,10 +144,10 @@ class ProtocolArmHandlerTest {
             try {
                 final FullReadMessage<?> msg = ApplicationMessage.of(networkId, IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(10)));
 
-                channel.writeAndFlush(new AddressedMessage<>(msg, receiveAddress));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, receiveAddress));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(msg, receiveAddress), actual);
+                assertEquals(new InetAddressedMessage<>(msg, receiveAddress), actual);
 
                 actual.release();
             }
@@ -167,10 +166,10 @@ class ProtocolArmHandlerTest {
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
-                assertEquals(msg, actual.message());
+                final InetAddressedMessage<Object> actual = channel.readInbound();
+                assertEquals(msg, actual.content());
 
                 actual.release();
             }
@@ -187,10 +186,10 @@ class ProtocolArmHandlerTest {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, receiveAddress));
 
-                final AddressedMessage<Object, SocketAddress> actual = channel.readInbound();
-                assertEquals(msg, actual.message());
+                final InetAddressedMessage<Object> actual = channel.readInbound();
+                assertEquals(msg, actual.content());
 
                 actual.release();
             }
@@ -207,11 +206,11 @@ class ProtocolArmHandlerTest {
                 final FullReadMessage<?> applicationMessage = ApplicationMessage.of(HopCount.of(), true, networkId, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(10)).retain());
                 final ArmedProtocolMessage armedMessage = applicationMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, sessionPairSender);
 
-                channel.writeInbound(new AddressedMessage<>(armedMessage, receiveAddress));
+                channel.writeInbound(new InetAddressedMessage<>(armedMessage, receiveAddress));
 
-                final AddressedMessage<FullReadMessage<?>, SocketAddress> actual1 = channel.readInbound();
+                final InetAddressedMessage<FullReadMessage<?>> actual1 = channel.readInbound();
 
-                assertEquals(applicationMessage, actual1.message());
+                assertEquals(applicationMessage, actual1.content());
 
                 actual1.release();
             }

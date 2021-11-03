@@ -30,7 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -94,15 +94,15 @@ public class TcpClientTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPasstroughInboundMessages(@Mock final InetSocketAddress sender,
+        void shouldPassTroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new AddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }
@@ -122,10 +122,10 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new AddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());
@@ -143,10 +143,10 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new AddressedMessage<>(msg, recipient), actual);
+                assertEquals(new InetAddressedMessage<>(msg, recipient), actual);
 
                 actual.release();
             }
@@ -165,7 +165,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 verify(superPeerChannel.channel()).write(msg);
                 assertNull(channel.readOutbound());
@@ -193,7 +193,7 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeAndFlush(new AddressedMessage<>(msg, recipient));
+                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 verify(bootstrap).connect(any(InetSocketAddress.class));
                 verify(superPeerChannel).addListener(any());

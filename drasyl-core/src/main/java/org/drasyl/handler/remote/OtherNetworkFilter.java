@@ -23,14 +23,14 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 
 /**
  * This handler filters out all messages received from other networks.
  */
 @SuppressWarnings("java:S110")
-public final class OtherNetworkFilter extends SimpleChannelInboundHandler<AddressedMessage<RemoteMessage, ?>> {
+public final class OtherNetworkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
     private final int networkId;
 
     public OtherNetworkFilter(final int networkId) {
@@ -40,13 +40,13 @@ public final class OtherNetworkFilter extends SimpleChannelInboundHandler<Addres
 
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof RemoteMessage;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedMessage<RemoteMessage, ?> msg) throws OtherNetworkException {
-        final RemoteMessage remoteMsg = msg.message();
+                                final InetAddressedMessage<RemoteMessage> msg) throws OtherNetworkException {
+        final RemoteMessage remoteMsg = msg.content();
         if (networkId == remoteMsg.getNetworkId()) {
             ctx.fireChannelRead(msg);
         }

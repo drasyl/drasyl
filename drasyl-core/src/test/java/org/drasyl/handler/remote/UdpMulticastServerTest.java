@@ -22,7 +22,7 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
@@ -82,13 +81,10 @@ class UdpMulticastServerTest {
                 return null;
             });
             when(datagramChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).addListener(any())).then(new Answer<Object>() {
-                @Override
-                public Object answer(final InvocationOnMock invocation) throws Throwable {
-                    final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
-                    listener.operationComplete(null);
-                    return null;
-                }
+            when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).addListener(any())).then(invocation -> {
+                final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
+                listener.operationComplete(null);
+                return null;
             });
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);
@@ -109,14 +105,10 @@ class UdpMulticastServerTest {
         @Test
         void shouldStopServerOnChannelInactive() {
             when(nodes.isEmpty()).thenReturn(true);
-            when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(new Answer<Object>() {
-                @SuppressWarnings({ "rawtypes", "unchecked" })
-                @Override
-                public Object answer(final InvocationOnMock invocation) throws Throwable {
-                    final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
-                    listener.operationComplete(null);
-                    return null;
-                }
+            when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(invocation -> {
+                final GenericFutureListener<?> listener = invocation.getArgument(0, GenericFutureListener.class);
+                listener.operationComplete(null);
+                return null;
             });
 
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, channel);
@@ -139,13 +131,12 @@ class UdpMulticastServerTest {
         @Test
         @SuppressWarnings("unchecked")
         void shouldPassIngoingMessagesToAllPipelines(@Mock final ChannelHandlerContext channelCtx,
-                                                     @Mock final ByteBuf message,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                      @Mock final EventExecutor eventExecutor) {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
-                handler.channelRead(channelCtx, new DatagramPacket(message, new InetSocketAddress(22527), new InetSocketAddress(25421)));
+                handler.channelRead(channelCtx, new DatagramPacket(Unpooled.EMPTY_BUFFER, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
             });
             when(ctx.executor()).thenReturn(eventExecutor);

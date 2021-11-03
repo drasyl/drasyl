@@ -23,21 +23,21 @@ package org.drasyl.handler.remote.crypto;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 
 import java.util.List;
 
-public class UnarmedMessageDecoder extends MessageToMessageDecoder<AddressedMessage<UnarmedProtocolMessage, ?>> {
+public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof UnarmedProtocolMessage;
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage;
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<UnarmedProtocolMessage, ?> msg,
+                          final InetAddressedMessage<UnarmedProtocolMessage> msg,
                           final List<Object> out) throws Exception {
-        out.add(msg.replace(msg.message().retain().read()));
+        out.add(msg.replace(msg.content().retain().read()));
     }
 }

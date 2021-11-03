@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.event.Node;
@@ -53,7 +53,7 @@ import static org.awaitility.Awaitility.await;
 public class UdpServerBenchmark extends AbstractBenchmark {
     private DatagramSocket socket;
     private static CompletableFuture<Void>[] futures;
-    private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
+    private static final AtomicInteger THREAD_INDEX = new AtomicInteger(0);
     private InetAddress localHost;
     private int port;
     private UserEventAwareEmbeddedChannel channel;
@@ -72,12 +72,12 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             channel = new UserEventAwareEmbeddedChannel(
                     handler,
-                    new SimpleChannelInboundHandler<AddressedMessage<?, ?>>() {
+                    new SimpleChannelInboundHandler<InetAddressedMessage<?>>() {
                         @Override
                         protected void channelRead0(final ChannelHandlerContext ctx,
-                                                    final AddressedMessage<?, ?> msg) {
-                            if (msg.message() instanceof ByteBuf) {
-                                final int index = ((ByteBuf) msg.message()).readableBytes();
+                                                    final InetAddressedMessage<?> msg) {
+                            if (msg.content() instanceof ByteBuf) {
+                                final int index = ((ByteBuf) msg.content()).readableBytes();
                                 futures[index].complete(null);
                             }
                             else {

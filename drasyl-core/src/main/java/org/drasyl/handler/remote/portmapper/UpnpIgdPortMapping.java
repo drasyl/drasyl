@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -251,7 +251,7 @@ public class UpnpIgdPortMapping implements PortMapping {
             }
         }, SSDP_DISCOVERY_TIMEOUT.toMillis(), MILLISECONDS);
 
-        ctx.writeAndFlush(new AddressedMessage<>(msg, SSDP_MULTICAST_ADDRESS)).addListener(future -> {
+        ctx.writeAndFlush(new InetAddressedMessage<>(msg, SSDP_MULTICAST_ADDRESS)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send ssdp discovery message to `{}`", () -> SSDP_MULTICAST_ADDRESS, future::cause);
             }

@@ -24,7 +24,7 @@ package org.drasyl.handler.remote.portmapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.UdpServer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -97,7 +96,7 @@ class PortMapperTest {
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
 
                 assertNull(channel.readInbound());
             }
@@ -108,17 +107,17 @@ class PortMapperTest {
 
         @Test
         void shouldPassThroughNonMethodMessages(@Mock final PortMapping method,
-                                                @Mock final SocketAddress sender,
+                                                @Mock final InetSocketAddress sender,
                                                 @Mock final ByteBuf msg) {
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new AddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new AddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
 
                 actual.release();
             }

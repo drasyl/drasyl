@@ -25,7 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -85,11 +86,11 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldRecordOutboundMessage(@Mock final SocketAddress address) {
+    void shouldRecordOutboundMessage(@Mock final DrasylAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(new Object(), address));
 
             verify(outboundMessages).increment();
             verify(inboundMessages, never()).increment();
@@ -101,11 +102,11 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldRecordInboundMessage(@Mock final SocketAddress address) {
+    void shouldRecordInboundMessage(@Mock final DrasylAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(new Object(), address));
         }
         finally {
             channel.releaseInbound();
@@ -117,11 +118,11 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldConsumeMatchingOutboundMessage(@Mock final SocketAddress address) {
+    void shouldConsumeMatchingOutboundMessage(@Mock final DrasylAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler((myAddress, msg) -> true, consumeInbound, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.writeAndFlush(new AddressedMessage<>(new Object(), address));
+            channel.writeAndFlush(new OverlayAddressedMessage<>(new Object(), address));
 
             assertNull(channel.readOutbound());
         }
@@ -131,11 +132,11 @@ class MessagesThroughputHandlerTest {
     }
 
     @Test
-    void shouldConsumeMatchingInboundMessage(@Mock final SocketAddress address) {
+    void shouldConsumeMatchingInboundMessage(@Mock final DrasylAddress address) {
         final ChannelInboundHandler handler = new MessagesThroughputHandler(consumeOutbound, (myAddress, msg) -> true, outboundMessages, inboundMessages, printStream, null);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new AddressedMessage<>(new Object(), address));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(new Object(), address));
 
             assertNull(channel.readInbound());
         }

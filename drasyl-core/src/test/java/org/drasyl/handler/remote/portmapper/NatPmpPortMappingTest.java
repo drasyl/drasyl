@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.HexUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ class NatPmpPortMappingTest {
             final AtomicBoolean mappingRequested = new AtomicBoolean();
             new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, null, null, null, null, onFailure, defaultGatewaySupplier).start(ctx, 12345, onFailure);
 
-            verify(ctx).writeAndFlush(any(AddressedMessage.class));
+            verify(ctx).writeAndFlush(any(InetAddressedMessage.class));
             assertTrue(externalAddressRequested.get());
         }
     }
@@ -81,7 +81,7 @@ class NatPmpPortMappingTest {
 
             verify(timeoutGuard).cancel(false);
             verify(refreshTask).cancel(false);
-            verify(ctx).writeAndFlush(any(AddressedMessage.class));
+            verify(ctx).writeAndFlush(any(InetAddressedMessage.class));
         }
     }
 
@@ -98,7 +98,7 @@ class NatPmpPortMappingTest {
                 final AtomicBoolean mappingRequested = new AtomicBoolean();
                 new NatPmpPortMapping(externalAddressRequested, mappingRequested, 0, new InetSocketAddress(12345), null, null, null, null, defaultGatewaySupplier).handleMessage(ctx, sender, byteBuf);
 
-                verify(ctx).writeAndFlush(any(AddressedMessage.class));
+                verify(ctx).writeAndFlush(any(InetAddressedMessage.class));
             }
 
             @Test

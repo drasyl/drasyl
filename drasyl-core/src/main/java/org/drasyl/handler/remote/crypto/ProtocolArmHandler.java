@@ -24,7 +24,7 @@ package org.drasyl.handler.remote.crypto;
 import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<ArmedProtocolMessage, ?>, AddressedMessage<FullReadMessage<?>, ?>> {
+public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessage<ArmedProtocolMessage>, InetAddressedMessage<FullReadMessage<?>>> {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolArmHandler.class);
     private final Identity myIdentity;
     private final Map<IdentityPublicKey, SessionPair> sessions;
@@ -72,10 +72,11 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         super.channelInactive(ctx);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public boolean acceptInboundMessage(final Object msg) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof ArmedProtocolMessage) {
-            final ArmedProtocolMessage armedMessage = (ArmedProtocolMessage) ((AddressedMessage<?, ?>) msg).message();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ArmedProtocolMessage) {
+            final ArmedProtocolMessage armedMessage = ((InetAddressedMessage<ArmedProtocolMessage>) msg).content();
 
             return Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getRecipient())
                     && !Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getSender());
@@ -83,10 +84,11 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
-        if (msg instanceof AddressedMessage && ((AddressedMessage<?, ?>) msg).message() instanceof FullReadMessage) {
-            final FullReadMessage<?> fullReadMessage = (FullReadMessage<?>) ((AddressedMessage<?, ?>) msg).message();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof FullReadMessage) {
+            final FullReadMessage<?> fullReadMessage = ((InetAddressedMessage<FullReadMessage<?>>) msg).content();
 
             return fullReadMessage.getRecipient() != null &&
                     Objects.equals(myIdentity.getIdentityPublicKey(), fullReadMessage.getSender()) &&
@@ -98,20 +100,20 @@ public class ProtocolArmHandler extends MessageToMessageCodec<AddressedMessage<A
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<FullReadMessage<?>, ?> msg,
+                          final InetAddressedMessage<FullReadMessage<?>> msg,
                           final List<Object> out) throws Exception {
-        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getRecipient());
-        final ArmedProtocolMessage armedMessage = msg.message().arm(ctx.alloc().ioBuffer(), crypto, session);
+        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.content().getRecipient());
+        final ArmedProtocolMessage armedMessage = msg.content().arm(ctx.alloc().ioBuffer(), crypto, session);
         out.add(msg.replace(armedMessage));
         LOG.trace("Armed protocol msg: {}", armedMessage);
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedMessage<ArmedProtocolMessage, ?> msg,
+                          final InetAddressedMessage<ArmedProtocolMessage> msg,
                           final List<Object> out) throws Exception {
-        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.message().getSender());
-        final FullReadMessage<?> disarmedMessage = msg.message().disarm(crypto, session);
+        final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.content().getSender());
+        final FullReadMessage<?> disarmedMessage = msg.content().disarm(crypto, session);
         out.add(msg.replace(disarmedMessage));
         LOG.trace("Disarmed protocol msg: {}", disarmedMessage);
     }

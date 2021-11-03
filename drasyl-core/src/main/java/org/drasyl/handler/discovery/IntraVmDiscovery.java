@@ -24,13 +24,12 @@ package org.drasyl.handler.discovery;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.channel.AddressedMessage;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,8 +55,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof AddressedMessage) {
-            final SocketAddress recipient = ((AddressedMessage<?, ?>) msg).address();
+        if (msg instanceof OverlayAddressedMessage) {
+            final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
 
             final ChannelHandlerContext discoveree = discoveries.get(Pair.of(myNetworkId, recipient));
 
@@ -66,8 +65,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                 ctx.write(msg, promise);
             }
             else {
-                LOG.debug("Send message `{}` via Intra VM Discovery.", ((AddressedMessage<?, ?>) msg)::message);
-                discoveree.fireChannelRead(((AddressedMessage<?, ?>) msg).route(ctx.channel().localAddress()));
+                LOG.debug("Send message `{}` via Intra VM Discovery.", ((OverlayAddressedMessage<?>) msg)::content);
+                discoveree.fireChannelRead(((OverlayAddressedMessage<?>) msg).route((DrasylAddress) ctx.channel().localAddress()));
                 promise.setSuccess();
             }
         }
