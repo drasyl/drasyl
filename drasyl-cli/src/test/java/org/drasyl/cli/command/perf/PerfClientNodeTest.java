@@ -46,7 +46,6 @@ import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
-import org.drasyl.node.handler.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -87,8 +86,6 @@ class PerfClientNodeTest {
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ServerBootstrap bootstrap;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)

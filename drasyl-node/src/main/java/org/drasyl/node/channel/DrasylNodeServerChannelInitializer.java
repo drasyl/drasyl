@@ -65,8 +65,7 @@ import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.handler.PeersManagerHandler;
-import org.drasyl.node.handler.plugin.PluginManager;
-import org.drasyl.node.handler.plugin.PluginManagerHandler;
+import org.drasyl.node.handler.plugin.PluginsHandler;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -130,7 +129,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         protocolStage(ch);
 
         ch.pipeline().addLast(new PeersManagerHandler(identity));
-        ch.pipeline().addLast(new PluginManagerHandler(new PluginManager(config, identity)));
+        ch.pipeline().addLast(new PluginsHandler(config, identity));
         ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
 
         if (TELEMETRY_ENABLED) {

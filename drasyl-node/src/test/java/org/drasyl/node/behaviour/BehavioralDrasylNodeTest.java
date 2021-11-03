@@ -27,7 +27,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.group.ChannelGroup;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.event.Event;
-import org.drasyl.node.handler.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,6 @@ class BehavioralDrasylNodeTest {
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ServerBootstrap bootstrap;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PluginManager pluginManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)

@@ -22,84 +22,66 @@
 package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
-import org.drasyl.node.DrasylNode;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * The {@code PluginManager} notifies all enabled plugins about specific node events (like startup
- * or shutdown).
- */
-public class PluginManager {
-    private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
+public class PluginsHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(PluginsHandler.class);
     private final DrasylConfig config;
     private final Identity identity;
 
-    public PluginManager(final DrasylConfig config,
-                         final Identity identity) {
+    public PluginsHandler(final DrasylConfig config,
+                          final Identity identity) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
     }
 
-    /**
-     * This method is called first when the {@link DrasylNode} is started.
-     *
-     * @param ctx
-     */
-    public void beforeStart(final ChannelHandlerContext ctx) {
-        final ChannelPipeline pipeline = ctx.channel().pipeline();
+    @Override
+    public void channelRegistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelRegistered();
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
             LOG.debug("All onBeforeStart listeners executed");
         }
     }
 
-    /**
-     * This method is called last when the {@link DrasylNode} is started.
-     *
-     * @param ctx
-     */
-    public void afterStart(final ChannelHandlerContext ctx) {
-        final ChannelPipeline pipeline = ctx.channel().pipeline();
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
             LOG.debug("All onAfterStart listeners executed");
         }
     }
 
-    /**
-     * This method get called first when the {@link DrasylNode} is shut down.
-     *
-     * @param ctx
-     */
-    public void beforeShutdown(final ChannelHandlerContext ctx) {
-        final ChannelPipeline pipeline = ctx.channel().pipeline();
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
             LOG.debug("All onBeforeShutdown listeners executed");
         }
     }
 
-    /**
-     * This method get called last when the {@link DrasylNode} is shut down.
-     *
-     * @param ctx
-     */
-    public void afterShutdown(final ChannelHandlerContext ctx) {
+    @Override
+    public void channelUnregistered(final ChannelHandlerContext ctx) {
+        ctx.fireChannelUnregistered();
+
         final ChannelPipeline pipeline = ctx.channel().pipeline();
 
         if (!config.getPlugins().isEmpty()) {
