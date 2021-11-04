@@ -140,6 +140,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             final InetAddressedMessage<DiscoveryMessage> addressedMsg = (InetAddressedMessage<DiscoveryMessage>) msg;
             handleDiscoveryMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
+        else if (isApplicationMessageForMe(msg)) {
+            final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
+            handleApplicationMessage(ctx, addressedMsg);
+        }
         else if (isRoutableInboundMessage(msg)) {
             final InetAddressedMessage<RemoteMessage> addressedMsg = (InetAddressedMessage<RemoteMessage>) msg;
             handleRoutableInboundMessage(ctx, addressedMsg);
@@ -176,28 +180,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private boolean isRoutableInboundMessage(final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) > maxTimeOffsetMillis);
+                childrenPeers.containsKey((((InetAddressedMessage<RemoteMessage>) msg).content()).getRecipient());
     }
 
     private void handleRoutableInboundMessage(final ChannelHandlerContext ctx,
                                               final InetAddressedMessage<RemoteMessage> addressedMsg) {
-        if (myPublicKey.equals(addressedMsg.content().getRecipient())) {
-            // for me? -> pass through
-            ctx.fireChannelRead(addressedMsg);
-        }
-        else {
-            // for one of my children? -> try to relay
-            final DrasylAddress address = addressedMsg.content().getRecipient();
-            final ChildrenPeer childrenPeer = childrenPeers.get(address);
-            if (childrenPeer != null) {
-                final InetSocketAddress inetAddress = childrenPeer.inetAddress();
-                relayMessage(ctx, addressedMsg, inetAddress);
-            }
-            else {
-                LOG.trace("Got RemoteMessage for unknown peer `{}`. Drop it.", address);
-                addressedMsg.release();
-            }
-        }
+        // for one of my children? -> try to relay
+        final DrasylAddress address = addressedMsg.content().getRecipient();
+        final ChildrenPeer childrenPeer = childrenPeers.get(address);
+        final InetSocketAddress inetAddress = childrenPeer.inetAddress();
+        relayMessage(ctx, addressedMsg, inetAddress);
     }
 
     private boolean isRoutableOutboundMessage(final Object msg) {
@@ -289,10 +281,20 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
     }
 
+    private boolean isApplicationMessageForMe(final Object msg) {
+        return msg instanceof InetAddressedMessage<?> &&
+                ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
+                myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
+    }
+
+    private void handleApplicationMessage(final ChannelHandlerContext ctx,
+                                          final InetAddressedMessage<ApplicationMessage> addressedMsg) {
+        ctx.fireChannelRead(addressedMsg);
+    }
+
     @SuppressWarnings({ "java:S1067", "java:S2325" })
     private boolean isUnexpectedMessage(final Object msg) {
         return msg instanceof InetAddressedMessage &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage) &&
                 !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient() == null) &&
                 !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis);
     }

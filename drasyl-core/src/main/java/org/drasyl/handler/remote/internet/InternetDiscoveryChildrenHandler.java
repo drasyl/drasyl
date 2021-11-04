@@ -160,6 +160,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
             handleAcknowledgementMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
+        else if (isApplicationMessageForMe(msg)) {
+            final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
+            handleApplicationMessage(ctx, addressedMsg);
+        }
         else if (isUnexpectedMessage(msg)) {
             handleUnexpectedMessage(ctx, msg);
         }
@@ -175,7 +179,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (isRoutableOutboundMessage(msg)) {
             final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
-            handleRoutableOutboundMessage(ctx, promise, addressedMsg.content());
+            handleRoutableOutboundMessage(ctx, addressedMsg, promise);
         }
         else {
             // pass through
@@ -258,6 +262,17 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         determineBestSuperPeer(ctx);
     }
 
+    private boolean isApplicationMessageForMe(final Object msg) {
+        return msg instanceof InetAddressedMessage<?> &&
+                ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
+                myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
+    }
+
+    private void handleApplicationMessage(final ChannelHandlerContext ctx,
+                                          final InetAddressedMessage<ApplicationMessage> addressedMsg) {
+        ctx.fireChannelRead(addressedMsg);
+    }
+
     private void determineBestSuperPeer(final ChannelHandlerContext ctx) {
         IdentityPublicKey newBestSuperPeer = null;
         long bestLatency = Long.MAX_VALUE;
@@ -301,17 +316,17 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     @SuppressWarnings("SuspiciousMethodCalls")
     private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
-                                               final ChannelPromise promise,
-                                               final ApplicationMessage msg) {
-        final SuperPeer superPeer = superPeers.get(msg.getRecipient());
+                                               final OverlayAddressedMessage<ApplicationMessage> msg,
+                                               final ChannelPromise promise) {
+        final SuperPeer superPeer = superPeers.get(msg.recipient());
         if (superPeer != null) {
-            LOG.trace("Message is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.getRecipient(), superPeer.inetAddress());
-            ctx.write(new InetAddressedMessage<>(msg, superPeer.inetAddress()), promise);
+            LOG.trace("Message is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.recipient(), superPeer.inetAddress());
+            ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
         else {
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
-            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message for peer `{}` to super peer `{}` via well-known address `{}`.", msg.getRecipient(), bestSuperPeer, inetAddress);
-            ctx.write(new InetAddressedMessage<>(msg, inetAddress), promise);
+            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message for peer `{}` to super peer `{}` via well-known address `{}`.", msg.recipient(), bestSuperPeer, inetAddress);
+            ctx.write(msg.resolve(inetAddress), promise);
         }
     }
 
@@ -322,15 +337,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S1067", "java:S2325" })
     protected boolean isUnexpectedMessage(final Object msg) {
         return msg instanceof InetAddressedMessage &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage) &&
                 !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient() == null);
     }
 
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
-        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
+        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
     }
 
     static class SuperPeer {

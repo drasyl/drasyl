@@ -333,7 +333,7 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+            void applicationMessagesShouldBeDelivered() {
                 assertBidirectionalMessageDelivery(node1, node2, true);
                 assertBidirectionalMessageDelivery(node1, node2, (byte) 23);
                 assertBidirectionalMessageDelivery(node1, node2, 'C');
@@ -422,7 +422,7 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+            void applicationMessagesShouldBeDelivered() {
                 assertBidirectionalMessageDelivery(node1, node2, true);
                 assertBidirectionalMessageDelivery(node1, node2, (byte) 23);
                 assertBidirectionalMessageDelivery(node1, node2, 'C');
@@ -741,7 +741,7 @@ class DrasylNodeIT {
              */
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
-            void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+            void applicationMessagesShouldBeDelivered() {
                 await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
                 await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
@@ -794,7 +794,7 @@ class DrasylNodeIT {
          */
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void applicationMessagesShouldBeDelivered() throws ExecutionException, InterruptedException {
+        void applicationMessagesShouldBeDelivered() {
             assertMessageDelivery(node, node, "Hallo Welt");
         }
     }

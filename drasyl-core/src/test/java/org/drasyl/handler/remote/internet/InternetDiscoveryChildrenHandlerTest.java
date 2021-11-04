@@ -108,12 +108,11 @@ class InternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldRouteOutboundApplicationMessageAdressedToSuperPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
-                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
-                                                                             @Mock final ApplicationMessage applicationMsg,
-                                                                             @Mock final InetSocketAddress inetAddress) {
+    void shouldRouteOutboundApplicationMessageAddressedToSuperPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
+                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
+                                                                              @Mock final ApplicationMessage applicationMsg,
+                                                                              @Mock final InetSocketAddress inetAddress) {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
-        when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
@@ -127,10 +126,10 @@ class InternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldRouteOutboundApplicationMessageAdressedToUnknownPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
-                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                               @Mock final InetSocketAddress inetAddress) {
+    void shouldRouteOutboundApplicationMessageAddressedToUnknownPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
+                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
+                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
+                                                                                @Mock final InetSocketAddress inetAddress) {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
