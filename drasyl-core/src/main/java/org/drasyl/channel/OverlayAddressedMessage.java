@@ -13,10 +13,10 @@ import java.util.Objects;
  */
 public class OverlayAddressedMessage<M> extends DefaultAddressedEnvelope<M, DrasylAddress> {
     /**
-     * @throws NullPointerException if {@code message} or {@code address} is {@code null}
+     * @throws NullPointerException if {@code message} or {@code recipient} is {@code null}
      */
-    public OverlayAddressedMessage(final M message, final DrasylAddress address) {
-        super(message, address, address);
+    public OverlayAddressedMessage(final M message, final DrasylAddress recipient) {
+        super(message, recipient);
     }
 
     /**

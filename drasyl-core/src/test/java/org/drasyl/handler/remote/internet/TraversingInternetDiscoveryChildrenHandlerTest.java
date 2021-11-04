@@ -77,7 +77,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
-        final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, superPeerInetAddress);
+        final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -100,7 +100,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
-        final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, superPeerInetAddress);
+        final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -121,7 +121,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(discoveryMsg.getTime()).thenReturn(40L);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
-        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, inetAddress);
+        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, null, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -141,7 +141,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
-        final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, inetAddress);
+        final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -161,7 +161,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(applicationMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
-        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, inetAddress);
+        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);

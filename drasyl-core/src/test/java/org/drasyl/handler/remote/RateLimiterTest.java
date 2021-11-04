@@ -75,16 +75,16 @@ class RateLimiterTest {
         final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), System.currentTimeMillis());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(2)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(3)).fireChannelRead(any());
     }
 
@@ -99,16 +99,16 @@ class RateLimiterTest {
         final DiscoveryMessage msg = DiscoveryMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), 0);
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(2)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(3)).fireChannelRead(any());
     }
 
@@ -123,16 +123,16 @@ class RateLimiterTest {
         final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(2)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(3)).fireChannelRead(any());
     }
 
@@ -145,16 +145,16 @@ class RateLimiterTest {
         final UniteMessage msg = UniteMessage.of(0, recipient.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(2)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(3)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(4)).fireChannelRead(any());
     }
 
@@ -167,16 +167,16 @@ class RateLimiterTest {
         final ApplicationMessage msg = ApplicationMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), Unpooled.buffer());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(2)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(3)).fireChannelRead(any());
 
-        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, msgSender));
+        rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
         verify(ctx, times(4)).fireChannelRead(any());
     }
 }

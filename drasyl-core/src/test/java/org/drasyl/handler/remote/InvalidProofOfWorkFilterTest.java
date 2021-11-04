@@ -63,7 +63,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
-            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, null, senderAddress));
 
             assertNull(channel.readInbound());
         }
@@ -78,10 +78,10 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
-            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, null, senderAddress));
 
             final ReferenceCounted actual = channel.readInbound();
-            assertEquals(new InetAddressedMessage<>(message, senderAddress), actual);
+            assertEquals(new InetAddressedMessage<>(message, null, senderAddress), actual);
 
             actual.release();
         }
@@ -96,7 +96,7 @@ class InvalidProofOfWorkFilterTest {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, senderAddress));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, null, senderAddress));
 
             verify(proofOfWork, never()).isValid(message.getSender(), POW_DIFFICULTY);
         }

@@ -243,7 +243,7 @@ public class TcpServer extends ChannelDuplexHandler {
                     msg.resetReaderIndex();
                     final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
                     ctx.executor().execute(() -> {
-                        ctx.fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                        ctx.fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
                         ctx.fireChannelReadComplete();
                     });
                 }

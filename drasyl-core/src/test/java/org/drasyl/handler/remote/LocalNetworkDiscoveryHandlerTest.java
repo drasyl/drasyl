@@ -186,7 +186,7 @@ class LocalNetworkDiscoveryTest {
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            handler.channelRead(ctx, new InetAddressedMessage<>(msg, sender));
+            handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
             verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
         }
@@ -200,7 +200,7 @@ class LocalNetworkDiscoveryTest {
             when(identity.getAddress()).thenReturn(publicKey);
             final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
-            handler.channelRead(ctx, new InetAddressedMessage<>(msg, sender));
+            handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
             verify(ctx, never()).fireUserEventTriggered(any(AddPathEvent.class));
         }
@@ -211,10 +211,10 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, null, sender), actual);
 
                 actual.release();
             }

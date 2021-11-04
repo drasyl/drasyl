@@ -99,10 +99,10 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, null, sender), actual);
 
                 actual.release();
             }
@@ -122,10 +122,10 @@ public class TcpClientTest {
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, null, sender), actual);
                 verify(superPeerChannel).cancel(true);
                 verify(superPeerChannel.channel()).close();
                 assertEquals(0, noResponseFromSuperPeerSince.get());

@@ -162,7 +162,7 @@ class GroupsClientHandlerTest {
             try {
                 final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
 
-                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
                 Assertions.assertEquals(GroupMemberJoinedEvent.of(publicKey, group), channel.readEvent());
             }
@@ -178,7 +178,7 @@ class GroupsClientHandlerTest {
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
 
-                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
                 Assertions.assertEquals(GroupMemberLeftEvent.of(publicKey, group), channel.readEvent());
             }
@@ -196,7 +196,7 @@ class GroupsClientHandlerTest {
             try {
                 final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
 
-                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
                 Assertions.assertEquals(GroupLeftEvent.of(group, () -> {
                 }), channel.readEvent());
@@ -217,7 +217,7 @@ class GroupsClientHandlerTest {
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
 
-                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
                 Assertions.assertEquals(GroupJoinedEvent.of(group, Set.of(publicKey), () -> {
                 }), channel.readEvent());
@@ -235,7 +235,7 @@ class GroupsClientHandlerTest {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
                 final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
 
-                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, publicKey));
+                channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
                 Assertions.assertEquals(GroupJoinFailedEvent.of(group, error, () -> {
                 }), channel.readEvent());

@@ -71,7 +71,7 @@ class ByteToRemoteMessageCodecTest {
             try {
                 final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
                 message.writeTo(byteBuf);
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(byteBuf, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(byteBuf, null, sender));
 
                 final InetAddressedMessage<Object> actual = channel.readInbound();
                 assertThat(actual.content(), instanceOf(PartialReadMessage.class));

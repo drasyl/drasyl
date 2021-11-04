@@ -12,10 +12,10 @@ import java.util.Objects;
  */
 public class InetAddressedMessage<M> extends DefaultAddressedEnvelope<M, InetSocketAddress> {
     /**
-     * @throws NullPointerException if {@code message} or {@code address} is {@code null}
+     * @throws NullPointerException if {@code message} or {@code recipient} is {@code null}
      */
-    public InetAddressedMessage(final M message, final InetSocketAddress address) {
-        super(message, address, address);
+    public InetAddressedMessage(final M message, final InetSocketAddress recipient) {
+        super(message, recipient);
     }
 
     /**

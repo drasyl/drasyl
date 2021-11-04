@@ -96,7 +96,7 @@ class PortMapperTest {
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
 
                 assertNull(channel.readInbound());
             }
@@ -114,10 +114,10 @@ class PortMapperTest {
             final PortMapper handler = new PortMapper(methods, 0, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, sender));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
 
                 final ReferenceCounted actual = channel.readInbound();
-                assertEquals(new InetAddressedMessage<>(msg, sender), actual);
+                assertEquals(new InetAddressedMessage<>(msg, null, sender), actual);
 
                 actual.release();
             }

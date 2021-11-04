@@ -70,7 +70,7 @@ public class InvalidProofOfWorkFilterBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void acceptMsgNotAddressedToMe() {
         try {
-            handler.channelRead0(ctx, new InetAddressedMessage<>(msgAddressedToMe, msgSender));
+            handler.channelRead0(ctx, new InetAddressedMessage<>(msgAddressedToMe, null, msgSender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);

@@ -166,7 +166,7 @@ class ProtocolArmHandlerTest {
             try {
                 doReturn(IdentityTestUtil.ID_2.getIdentityPublicKey()).when(msg).getRecipient();
 
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, receiveAddress));
 
                 final InetAddressedMessage<Object> actual = channel.readInbound();
                 assertEquals(msg, actual.content());
@@ -186,7 +186,7 @@ class ProtocolArmHandlerTest {
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getRecipient();
                 doReturn(IdentityTestUtil.ID_1.getIdentityPublicKey()).when(msg).getSender();
 
-                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, receiveAddress));
+                channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, receiveAddress));
 
                 final InetAddressedMessage<Object> actual = channel.readInbound();
                 assertEquals(msg, actual.content());
@@ -206,7 +206,7 @@ class ProtocolArmHandlerTest {
                 final FullReadMessage<?> applicationMessage = ApplicationMessage.of(HopCount.of(), true, networkId, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(10)).retain());
                 final ArmedProtocolMessage armedMessage = applicationMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, sessionPairSender);
 
-                channel.writeInbound(new InetAddressedMessage<>(armedMessage, receiveAddress));
+                channel.writeInbound(new InetAddressedMessage<>(armedMessage, null, receiveAddress));
 
                 final InetAddressedMessage<FullReadMessage<?>> actual1 = channel.readInbound();
 

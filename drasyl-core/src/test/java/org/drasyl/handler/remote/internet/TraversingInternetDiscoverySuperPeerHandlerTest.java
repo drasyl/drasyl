@@ -75,7 +75,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
-        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, inetAddress);
+        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
         final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache = new HashMap<>();
 
         final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);

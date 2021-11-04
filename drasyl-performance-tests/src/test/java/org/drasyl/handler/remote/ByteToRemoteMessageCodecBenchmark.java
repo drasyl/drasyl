@@ -81,7 +81,7 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     public void decode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            instance.decode(ctx, new InetAddressedMessage<>(byteBuf.slice(), sender), out);
+            instance.decode(ctx, new InetAddressedMessage<>(byteBuf.slice(), null, sender), out);
             blackhole.consume(out);
         }
         catch (final Exception e) {
@@ -94,7 +94,7 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     public void encode(final Blackhole blackhole) {
         try {
             final List<Object> out = new ArrayList<>();
-            instance.encode(ctx, new InetAddressedMessage<>(message, recipient), out);
+            instance.encode(ctx, new InetAddressedMessage<>(message, null, recipient), out);
             byteBuf.release();
             blackhole.consume(out);
         }

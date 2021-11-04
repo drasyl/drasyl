@@ -59,7 +59,7 @@ class OtherNetworkFilterTest {
         final ChannelHandler handler = new OtherNetworkFilter(123);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, address));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, address));
 
             assertNull(channel.readInbound());
         }
@@ -74,10 +74,10 @@ class OtherNetworkFilterTest {
         final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
-            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, sender));
+            channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, null, sender));
 
             final ReferenceCounted actual = channel.readInbound();
-            assertEquals(new InetAddressedMessage<>(message, sender), actual);
+            assertEquals(new InetAddressedMessage<>(message, null, sender), actual);
 
             actual.release();
         }

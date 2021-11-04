@@ -72,6 +72,6 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedEnvelope<ApplicationMessage, ?> msg,
                           final List<Object> out) {
-        out.add(new OverlayAddressedMessage<>(msg.content().getPayload().retain(), msg.content().getSender()));
+        out.add(new OverlayAddressedMessage<>(msg.content().getPayload().retain(), msg.content().getRecipient(), msg.content().getSender()));
     }
 }

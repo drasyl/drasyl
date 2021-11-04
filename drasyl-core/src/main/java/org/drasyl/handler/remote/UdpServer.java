@@ -188,7 +188,7 @@ public class UdpServer extends ChannelDuplexHandler {
                                     final DatagramPacket packet) {
             LOG.trace("Datagram received {}", packet);
             ctx.executor().execute(() -> {
-                ctx.fireChannelRead(new InetAddressedMessage<>(packet.content(), packet.sender()));
+                ctx.fireChannelRead(new InetAddressedMessage<>(packet.content(), null, packet.sender()));
                 ctx.fireChannelReadComplete();
             });
         }

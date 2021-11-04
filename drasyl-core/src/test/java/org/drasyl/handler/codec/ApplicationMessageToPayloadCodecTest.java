@@ -81,7 +81,7 @@ class ApplicationMessageToPayloadCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.buffer();
-            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(ApplicationMessage.of(networkId, sender, myPublicKey, myProofOfWork, byteBuf), sender));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(ApplicationMessage.of(networkId, sender, myPublicKey, myProofOfWork, byteBuf), null, sender));
 
             assertThat(((OverlayAddressedMessage<?>) channel.readInbound()).content(), instanceOf(ByteBuf.class));
             byteBuf.release();
@@ -92,9 +92,9 @@ class ApplicationMessageToPayloadCodecTest {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec(networkId, myPublicKey, myProofOfWork);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>("Hello World", address));
+            channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>("Hello World", null, address));
 
-            assertEquals(new OverlayAddressedMessage<>("Hello World", address), channel.readInbound());
+            assertEquals(new OverlayAddressedMessage<>("Hello World", null, address), channel.readInbound());
         }
     }
 }
