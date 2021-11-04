@@ -30,9 +30,9 @@ import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.Hashing;
-import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
+import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
@@ -92,7 +92,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private static final URI TELEMETRY_URI;
 
     static {
-        URI uri;
+        final URI uri;
         try {
             uri = new URI(SystemPropertyUtil.get("org.drasyl.telemetry.uri", "https://ping.drasyl.network/"));
         }
@@ -126,7 +126,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             gatekeeperStage(ch);
         }
         discoveryStage(ch);
-        protocolStage(ch);
 
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginsHandler(config, identity));
@@ -261,17 +260,15 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
             }
+
+            // convert ByteBuf <-> ApplicationMessage
+            ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
         }
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
             ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId()));
         }
-    }
-
-    private void protocolStage(final DrasylServerChannel ch) {
-        // convert ByteBuf <-> ApplicationMessage
-        ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
     private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {

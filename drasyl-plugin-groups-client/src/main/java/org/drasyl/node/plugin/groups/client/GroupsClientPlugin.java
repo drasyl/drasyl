@@ -22,7 +22,7 @@
 package org.drasyl.node.plugin.groups.client;
 
 import com.typesafe.config.Config;
-import org.drasyl.handler.codec.ApplicationMessageToPayloadCodec;
+import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;

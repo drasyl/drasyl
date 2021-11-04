@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.codec;
+package org.drasyl.handler.remote;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.AddressedEnvelope;
