@@ -246,7 +246,7 @@ public class Crypto {
         final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, publicKey.toByteArray());
 
         if (!pkSuccess) {
-            throw new CryptoException("Could not convert this key.");
+            throw new CryptoException("Could not convert this key: "+ publicKey);
         }
 
         return KeyAgreementPublicKey.of(curve25519Pk);
