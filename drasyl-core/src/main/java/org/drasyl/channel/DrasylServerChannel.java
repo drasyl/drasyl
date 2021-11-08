@@ -30,8 +30,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoop;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -40,6 +38,9 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -59,12 +60,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private ChannelGroup channels;
+    private final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
-                        final ChannelGroup channels,
+                        final Map<SocketAddress, DrasylChannel> channels,
                         final DrasylAddress localAddress) {
         this.state = requireNonNull(state);
         this.channels = channels;
@@ -73,7 +74,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, null, null);
+        this(State.OPEN, new HashMap<>(), null);
     }
 
     @Override
@@ -100,14 +101,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doRegister() throws Exception {
         super.doRegister();
 
-        channels = new DefaultChannelGroup(eventLoop());
-
         pipeline().addLast((new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
-                ch.pipeline().addLast(new PendingWritesFlusher(channels));
+                ch.pipeline().addLast(new PendingWritesFlusher(channels.values()));
             }
         }));
     }
@@ -123,7 +122,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
             // close all child channels
             if (channels != null) {
-                channels.close();
+                for (final Channel channel : channels.values()) {
+                    channel.close();
+                }
             }
         }
     }
@@ -184,7 +185,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
             Channel channel = null;
             if (serverChannel.channels != null) {
-                for (final Channel c : serverChannel.channels) {
+                for (final Channel c : serverChannel.channels.values()) {
                     if (c.remoteAddress().equals(peer)) {
                         channel = c;
                         break;
@@ -200,13 +201,14 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
     }
 
-    private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<Channel> {
+    private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<DrasylChannel> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final Channel msg) {
-            if (((DrasylServerChannel) ctx.channel()).channels != null) {
-                ((DrasylServerChannel) ctx.channel()).channels.close(channel -> channel.remoteAddress().equals(msg.remoteAddress()));
-                ((DrasylServerChannel) ctx.channel()).channels.add(msg);
+                                    final DrasylChannel msg) {
+            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
+            msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
+            if (oldValue != null) {
+                oldValue.close();
             }
 
             ctx.fireChannelRead(msg);
@@ -214,9 +216,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     private static class PendingWritesFlusher extends ChannelInboundHandlerAdapter {
-        private final ChannelGroup channels;
+        private final Collection<DrasylChannel> channels;
 
-        public PendingWritesFlusher(final ChannelGroup channels) {
+        public PendingWritesFlusher(final Collection<DrasylChannel> channels) {
             this.channels = requireNonNull(channels);
         }
 
@@ -225,7 +227,11 @@ public class DrasylServerChannel extends AbstractServerChannel {
             ctx.fireChannelWritabilityChanged();
 
             if (ctx.channel().isWritable()) {
-                channels.flush(channel -> ((DrasylChannel) channel).pendingWrites);
+                for (final DrasylChannel channel : channels) {
+                    if (channel.pendingWrites) {
+                        channel.flush();
+                    }
+                }
             }
         }
     }
