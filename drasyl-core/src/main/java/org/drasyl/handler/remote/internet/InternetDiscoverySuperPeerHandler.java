@@ -287,6 +287,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
     }
 
+    @SuppressWarnings("java:S2325")
     private void handleApplicationMessage(final ChannelHandlerContext ctx,
                                           final InetAddressedMessage<ApplicationMessage> addressedMsg) {
         ctx.fireChannelRead(addressedMsg);
