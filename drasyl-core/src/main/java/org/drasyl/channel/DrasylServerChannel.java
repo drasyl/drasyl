@@ -153,7 +153,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static class ChildChannelRouter extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(final ChannelHandlerContext ctx,
-                                final Object msg) throws Exception {
+                                final Object msg) {
             if (msg instanceof Channel) {
                 // pass through
                 ctx.fireChannelRead(msg);
@@ -169,7 +169,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     Channel channel = null;
                     if (serverChannel.channels != null) {
                         for (final Channel c : serverChannel.channels) {
-                            if (peer.equals(c.remoteAddress())) {
+                    if (c.remoteAddress().equals(peer)) {
                                 channel = c;
                                 break;
                             }
@@ -198,7 +198,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<Channel> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final Channel msg) throws Exception {
+                                    final Channel msg) {
             if (((DrasylServerChannel) ctx.channel()).channels != null) {
                 ((DrasylServerChannel) ctx.channel()).channels.close(channel -> channel.remoteAddress().equals(msg.remoteAddress()));
                 ((DrasylServerChannel) ctx.channel()).channels.add(msg);
