@@ -163,35 +163,40 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-
-                    // create/get channel
-                    final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
-                    Channel channel = null;
-                    if (serverChannel.channels != null) {
-                        for (final Channel c : serverChannel.channels) {
-                    if (c.remoteAddress().equals(peer)) {
-                                channel = c;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (channel == null) {
-                        channel = new DrasylChannel(serverChannel, peer);
-                        ctx.fireChannelRead(channel);
-                    }
+                    final Channel channel = getOrCreateChildChannel(ctx, peer);
 
                     // pass message to channel
-                    final Channel finalChannel = channel;
                     channel.eventLoop().execute(() -> {
-                        finalChannel.pipeline().fireChannelRead(o);
-                        finalChannel.pipeline().fireChannelReadComplete();
+                        if (channel.isActive()) {
+                            channel.pipeline().fireChannelRead(o);
+                            channel.pipeline().fireChannelReadComplete();
+                        }
                     });
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of message `{}`: ", msg, e);
                 }
             }
+        }
+
+        private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
+                                                       final IdentityPublicKey peer) {
+            final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
+            Channel channel = null;
+            if (serverChannel.channels != null) {
+                for (final Channel c : serverChannel.channels) {
+                    if (c.remoteAddress().equals(peer)) {
+                        channel = c;
+                        break;
+                    }
+                }
+            }
+
+            if (channel == null) {
+                channel = new DrasylChannel(serverChannel, peer);
+                ctx.fireChannelRead(channel);
+            }
+            return channel;
         }
     }
 
