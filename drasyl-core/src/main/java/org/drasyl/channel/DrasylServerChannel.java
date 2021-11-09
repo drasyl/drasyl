@@ -39,8 +39,8 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 
@@ -74,7 +74,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, new HashMap<>(), null);
+        this(State.OPEN, new ConcurrentHashMap<>(), null);
     }
 
     @Override
