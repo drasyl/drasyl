@@ -181,22 +181,15 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
 
         private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                                       final IdentityPublicKey peer) {
-            final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
-            Channel channel = null;
-            if (serverChannel.channels != null) {
-                for (final Channel c : serverChannel.channels.values()) {
-                    if (c.remoteAddress().equals(peer)) {
-                        channel = c;
-                        break;
-                    }
-                }
-            }
+                                                       final IdentityPublicKey remoteAddress) {
+            final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
 
+            Channel channel = parent.channels.get(remoteAddress);
             if (channel == null) {
-                channel = new DrasylChannel(serverChannel, peer);
+                channel = new DrasylChannel(parent, remoteAddress);
                 ctx.fireChannelRead(channel);
             }
+
             return channel;
         }
     }
