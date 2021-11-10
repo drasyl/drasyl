@@ -272,7 +272,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         LOG.trace("Got Discovery from `{}`.", msg.getSender());
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress));
-        childrenPeer.discoveryReceived();
+        childrenPeer.discoveryReceived(inetAddress);
         ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH));
 
         // reply with Acknowledgement
@@ -310,7 +310,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     static class ChildrenPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
-        private final InetSocketAddress inetAddress;
+        private InetSocketAddress inetAddress;
         long lastDiscoveryTime;
 
         ChildrenPeer(final LongSupplier currentTime,
@@ -333,8 +333,9 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             return inetAddress;
         }
 
-        public void discoveryReceived() {
+        public void discoveryReceived(final InetSocketAddress inetAddress) {
             this.lastDiscoveryTime = currentTime.getAsLong();
+            this.inetAddress = requireNonNull(inetAddress);
         }
 
         public boolean isStale() {

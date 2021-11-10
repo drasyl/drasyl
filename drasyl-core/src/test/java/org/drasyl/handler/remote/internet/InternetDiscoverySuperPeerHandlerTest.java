@@ -266,7 +266,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                 when(currentTime.getAsLong()).thenReturn(1L);
 
                 final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 0L, inetAddress);
-                childrenPeer.discoveryReceived();
+                childrenPeer.discoveryReceived(inetAddress);
 
                 assertEquals(1L, childrenPeer.lastDiscoveryTime);
             }
