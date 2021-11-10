@@ -181,7 +181,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
             final Peer peer = peers.get(recipient);
             if (peer != null) {
-                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", () -> recipient, peer::getAddress);
+                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<RemoteMessage>) msg).content().getNonce(), () -> recipient, peer::getAddress);
                 ctx.write(((OverlayAddressedMessage<RemoteMessage>) msg).resolve(peer.getAddress()), promise);
             }
             else {

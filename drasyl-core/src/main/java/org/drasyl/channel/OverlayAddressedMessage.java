@@ -80,13 +80,6 @@ public class OverlayAddressedMessage<M> extends DefaultAddressedEnvelope<M, Dras
     }
 
     /**
-     * Returns a copy of this message with {@code newRecipient} as the new {@link #recipient()}.
-     */
-    public OverlayAddressedMessage<M> route(final DrasylAddress newRecipient) {
-        return new OverlayAddressedMessage<>(content(), newRecipient, sender());
-    }
-
-    /**
      * Returns a copy of this message with {@code newContent} as the new {@link #content()}.
      */
     public <N> OverlayAddressedMessage<N> replace(final N newContent) {

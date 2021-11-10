@@ -204,7 +204,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         final DrasylAddress address = addressedMsg.content().getRecipient();
         final InetSocketAddress inetAddress = childrenPeers.get(address).inetAddress();
 
-        LOG.trace("Got ApplicationMessage for children peer `{}`. Resolve it to inet address `{}`.", address, inetAddress);
+        LOG.trace("Got ApplicationMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
     }
 
@@ -213,7 +213,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                 final InetAddressedMessage<RemoteMessage> addressedMsg,
                                 final InetSocketAddress inetAddress) {
         final RemoteMessage msg = addressedMsg.content();
-        LOG.trace("Got RemoteMessage for children peer `{}`. Resolve it to inet address `{}`.", msg::getRecipient, () -> inetAddress);
+        LOG.trace("Got RemoteMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", msg::getNonce, msg::getRecipient, () -> inetAddress);
 
         // increment hop count every time a message is relayed
         if (hopLimit.compareTo(msg.getHopCount()) > 0) {
@@ -221,7 +221,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
         else {
             ReferenceCountUtil.release(addressedMsg);
-            LOG.trace("Hop limit has been reached. Drop message.");
+            LOG.trace("Hop limit has been reached. Drop message `{}`.", msg::getNonce);
         }
     }
 

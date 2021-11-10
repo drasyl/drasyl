@@ -139,7 +139,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             final InetSocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
-                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", () -> recipient, () -> localAddress);
+                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
             }
             else {

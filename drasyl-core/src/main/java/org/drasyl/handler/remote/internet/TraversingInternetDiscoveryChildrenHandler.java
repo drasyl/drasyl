@@ -268,7 +268,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final InetSocketAddress inetAddress = traversingPeer.inetAddress();
         traversingPeer.applicationSentOrReceived();
 
-        LOG.trace("Got ApplicationMessage for traversing peer `{}`. Resolve it to inet address `{}`.", address, inetAddress);
+        LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
     }
 

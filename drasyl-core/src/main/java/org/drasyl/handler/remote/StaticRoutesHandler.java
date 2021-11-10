@@ -60,7 +60,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
             final InetSocketAddress staticAddress = staticRoutes.get(recipient);
             if (staticAddress != null) {
-                LOG.trace("Resolve message for peer `{}` to inet address `{}`.", recipient, staticAddress);
+                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", (((OverlayAddressedMessage<ApplicationMessage>) msg).content()).getNonce(), recipient, staticAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(staticAddress), promise);
             }
             else {
