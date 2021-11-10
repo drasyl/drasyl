@@ -25,12 +25,12 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.nio.channels.ClosedChannelException;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.arq.stopandwait.StopAndWaitArqAck.STOP_AND_WAIT_ACK_1;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -60,7 +60,7 @@ class StopAndWaitArqHandlerTest {
         assertNull(channel.readOutbound());
 
         // got ack1 -> succeed data0, write data1
-        channel.writeInbound(StopAndWaitArqAck.STOP_AND_WAIT_ACK_1);
+        channel.writeInbound(STOP_AND_WAIT_ACK_1);
         assertTrue(write0.isSuccess());
         assertNull(channel.readInbound());
         assertEquals(data1, channel.readOutbound());
@@ -88,13 +88,13 @@ class StopAndWaitArqHandlerTest {
         // write expected DATA -> pass through data0, write ack1
         channel.pipeline().fireChannelRead(data0);
         assertEquals(data0, channel.readInbound());
-        Assertions.assertEquals(StopAndWaitArqAck.STOP_AND_WAIT_ACK_1, channel.readOutbound());
+        assertEquals(STOP_AND_WAIT_ACK_1, channel.readOutbound());
         assertEquals(1, data0.refCnt());
 
         // write unexpected DATA -> drop data0, write ack1
         channel.pipeline().fireChannelRead(data0);
         assertNull(channel.readInbound());
-        Assertions.assertEquals(StopAndWaitArqAck.STOP_AND_WAIT_ACK_1, channel.readOutbound());
+        assertEquals(STOP_AND_WAIT_ACK_1, channel.readOutbound());
         assertEquals(0, data0.refCnt());
     }
 }

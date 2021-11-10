@@ -114,19 +114,22 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
             if (expectedInboundSequenceNo == data.sequenceNo()) {
                 LOG.trace("[{}] Got expected {}. Pass through.", ctx.channel().id()::asShortText, () -> data);
 
-                // expected sequence no -> pass DATA inbound
-                ctx.fireChannelRead(msg);
-
                 // flip sequence no
                 expectedInboundSequenceNo = !expectedInboundSequenceNo;
+
+                // reply with ACK
+                writeAck(ctx);
+
+                // expected sequence no -> pass DATA inbound
+                ctx.fireChannelRead(msg);
             }
             else {
                 LOG.trace("[{}] Got unexpected {}. Drop it.", ctx.channel().id()::asShortText, () -> data);
                 data.release();
-            }
 
-            // reply with ACK
-            writeAck(ctx);
+                // reply with ACK
+                writeAck(ctx);
+            }
         }
         else if (msg instanceof StopAndWaitArqAck) {
             final StopAndWaitArqAck ack = (StopAndWaitArqAck) msg;
