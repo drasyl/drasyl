@@ -166,7 +166,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
                 recipient,
                 sender,
                 proofOfWork,
-                System.nanoTime(),
+                System.currentTimeMillis(),
                 childrenTime
         );
     }
@@ -187,7 +187,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
                 HopCount.of(), false, networkId, randomNonce(),
                 null, sender,
                 proofOfWork,
-                System.nanoTime(),
+                System.currentTimeMillis(),
                 0
         );
     }

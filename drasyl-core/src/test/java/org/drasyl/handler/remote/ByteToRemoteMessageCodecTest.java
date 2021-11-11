@@ -65,7 +65,7 @@ class ByteToRemoteMessageCodecTest {
     class Decode {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddress sender) {
-            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.nanoTime());
+            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

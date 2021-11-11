@@ -59,7 +59,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.nanoTime());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -74,7 +74,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ID_1.getProofOfWork(), System.nanoTime());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ID_1.getProofOfWork(), System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -92,7 +92,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.nanoTime());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
