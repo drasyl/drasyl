@@ -38,6 +38,7 @@ import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerEvent;
+import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -149,6 +150,7 @@ class DrasylNodeIT {
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
+                        .remotePingCommunicationTimeout(ofSeconds(1))
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
@@ -168,6 +170,7 @@ class DrasylNodeIT {
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
+                        .remotePingCommunicationTimeout(ofSeconds(1))
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
@@ -224,18 +227,6 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the correct {@link PeerEvent}s are emitted in the correct
-             * order.
-             */
-            @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-            void correctPeerEventsShouldBeEmitted() {
-                await().untilAsserted(() -> assertNull(superPeer.readEvent()));
-                await().untilAsserted(() -> assertNull(client1.readEvent()));
-                await().untilAsserted(() -> assertNull(client2.readEvent()));
-            }
-
-            /**
              * This test checks whether the correct {@link PeerEvent}s are sent out by the other
              * nodes when a node is shut down
              */
@@ -251,10 +242,31 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void shouldCreateDirectConnectionOnCommunication() {
+                // should trigger direct connection establishment between both peers
                 client1.send(client2.identity().getAddress(), "Ping");
 
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> {
+                    final Object actual = client1.readEvent();
+                    System.err.println(actual);
+                    assertThat(actual, instanceOf(PeerDirectEvent.class));
+                });
+                await().untilAsserted(() -> {
+                    final Object actual = client2.readEvent();
+                    System.err.println(actual);
+                    assertThat(actual, instanceOf(PeerDirectEvent.class));
+                });
+
+                // should tear down direct connection on inactivity
+                await().untilAsserted(() -> {
+                    final Object actual = client1.readEvent();
+                    System.err.println(actual);
+                    assertThat(actual, instanceOf(PeerRelayEvent.class));
+                });
+                await().untilAsserted(() -> {
+                    final Object actual = client2.readEvent();
+                    System.err.println(actual);
+                    assertThat(actual, instanceOf(PeerRelayEvent.class));
+                });
             }
         }
 

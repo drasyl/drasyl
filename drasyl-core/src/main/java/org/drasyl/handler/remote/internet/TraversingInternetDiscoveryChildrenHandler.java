@@ -352,11 +352,11 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
 
         /**
-         * Returns {@code true}, if {@link #isNew()}, {@link #hasApplicationTraffic()}, and {@link
-         * #isReachable()} return {@code false}.
+         * Returns {@code true}, if {@link #isNew()} ()} and ({@link #isNew()} or {@link
+         * #isReachable()}) return {@code false}.
          */
         public boolean isStale() {
-            return !isNew() && !hasApplicationTraffic() && !isReachable();
+            return !isNew() && (!hasApplicationTraffic() || !isReachable());
         }
     }
 }
