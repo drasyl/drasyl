@@ -121,7 +121,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
                 final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
-                traversingPeer.applicationSentOrReceived();
+                traversingPeer.applicationTrafficSentOrReceived();
             }
 
             super.channelRead(ctx, msg);
@@ -163,7 +163,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             // send Discovery
             final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress));
-            traversingPeer.applicationSentOrReceived();
+            traversingPeer.applicationTrafficSentOrReceived();
             traversingPeer.discoverySent();
             writeDiscoveryMessage(ctx, address, traversingPeer.inetAddress(), false);
             ctx.flush();
@@ -253,7 +253,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         if (msg instanceof OverlayAddressedMessage<?> &&
                 ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
             final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
-            return traversingPeer != null && !traversingPeer.isStale();
+            return traversingPeer != null && traversingPeer.isReachable();
         }
         else {
             return false;
@@ -266,7 +266,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final DrasylAddress address = addressedMsg.content().getRecipient();
         final TraversingPeer traversingPeer = traversingPeers.get(address);
         final InetSocketAddress inetAddress = traversingPeer.inetAddress();
-        traversingPeer.applicationSentOrReceived();
+        traversingPeer.applicationTrafficSentOrReceived();
 
         LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
@@ -323,13 +323,40 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             this.lastAcknowledgementTime = currentTime.getAsLong();
         }
 
-        public void applicationSentOrReceived() {
+        public void applicationTrafficSentOrReceived() {
             this.lastApplicationTime = currentTime.getAsLong();
         }
 
+        /**
+         * Returns {@code true}, if we just started to ping (within the last {@link
+         * #pingTimeoutMillis} the peer.
+         */
+        public boolean isNew() {
+            return firstDiscoveryTime >= currentTime.getAsLong() - pingTimeoutMillis;
+        }
+
+        /**
+         * Returns {@code true}, application message has been sent to or received from the peer
+         * within the last {@link #pingCommunicationTimeoutMillis}.
+         */
+        public boolean hasApplicationTraffic() {
+            return lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
+        }
+
+        /**
+         * Returns {@code true}, if we have received an acknowledgement message from the peer within
+         * the last {@link #pingTimeoutMillis}ms.
+         */
+        public boolean isReachable() {
+            return lastAcknowledgementTime >= currentTime.getAsLong() - pingTimeoutMillis;
+        }
+
+        /**
+         * Returns {@code true}, if {@link #isNew()}, {@link #hasApplicationTraffic()}, and {@link
+         * #isReachable()} return {@code false}.
+         */
         public boolean isStale() {
-            return lastApplicationTime < currentTime.getAsLong() - pingCommunicationTimeoutMillis ||
-                    Math.max(firstDiscoveryTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
+            return !isNew() && !hasApplicationTraffic() && !isReachable();
         }
     }
 }

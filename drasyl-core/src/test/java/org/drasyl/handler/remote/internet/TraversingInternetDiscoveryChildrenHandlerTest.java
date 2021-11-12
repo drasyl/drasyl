@@ -168,7 +168,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(traversingPeer).applicationSentOrReceived();
+        verify(traversingPeer).applicationTrafficSentOrReceived();
     }
 
     @Test
@@ -191,7 +191,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
         assertSame(applicationMsg, routedMsg.content());
         assertSame(traversingPeerInetAddress, routedMsg.recipient());
-        verify(traversingPeer).applicationSentOrReceived();
+        verify(traversingPeer).applicationTrafficSentOrReceived();
     }
 
     @Nested
@@ -248,7 +248,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
                 final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddress, 0L, 0L, 0L);
-                traversingPeer.applicationSentOrReceived();
+                traversingPeer.applicationTrafficSentOrReceived();
 
                 assertEquals(1L, traversingPeer.lastApplicationTime);
             }
