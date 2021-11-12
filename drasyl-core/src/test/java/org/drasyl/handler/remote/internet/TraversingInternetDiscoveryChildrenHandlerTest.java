@@ -179,6 +179,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                                      @Mock final InetSocketAddress traversingPeerInetAddress) {
         when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
         when(traversingPeer.inetAddress()).thenReturn(traversingPeerInetAddress);
+        when(traversingPeer.isReachable()).thenReturn(true);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
