@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.stream;
 
+import com.google.common.primitives.UnsignedBytes;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.TooLongFrameException;
@@ -40,7 +41,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * @see ChunkedMessageInput
  */
 public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
-    private static final int MAX_CHUNKS = 255;
+    static final int MAX_CHUNKS = 255;
     private final int maxContentLength;
     private final int allChunksTimeout;
     private Byte id;
@@ -97,7 +98,7 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
 
             if (msg instanceof LastMessageChunk) {
                 if (lastChunk == null) {
-                    if (msg.chunkNo() < chunks.size()) {
+                    if (UnsignedBytes.toInt(msg.chunkNo()) < chunks.size()) {
                         discard();
                         throw new TooLongFrameException("More chunks received then specified in chunk header.");
                     }
@@ -106,7 +107,7 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
                 }
             }
             else {
-                chunks.set(msg.chunkNo(), (MessageChunk) msg.retain());
+                chunks.set(UnsignedBytes.toInt(msg.chunkNo()), (MessageChunk) msg.retain());
             }
 
             checkCompleteness(out);
@@ -114,7 +115,7 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
     }
 
     private void checkCompleteness(final List<Object> out) {
-        if (lastChunk != null && lastChunk.chunkNo() == chunks.size()) {
+        if (lastChunk != null && UnsignedBytes.toInt(lastChunk.chunkNo()) == chunks.size()) {
             timeoutGuard.cancel(false);
 
             out.addAll(chunks);

@@ -31,6 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.stream.MessageChunksBuffer.MAX_CHUNKS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -60,6 +61,20 @@ class MessageChunksBufferTest {
         chunk1.release();
         chunk2.release();
         chunk3.release();
+    }
+
+    @Test
+    void shouldCollectMaxNumberOfChunks() {
+        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        for (short i = 0; i < MAX_CHUNKS; i++) {
+            final MessageChunk chunk = new MessageChunk((byte) 42, (byte) i, Unpooled.EMPTY_BUFFER);
+            assertFalse(channel.writeInbound(chunk));
+        }
+
+        final MessageChunk chunk = new LastMessageChunk((byte) 42, (byte) MAX_CHUNKS, Unpooled.EMPTY_BUFFER);
+        assertTrue(channel.writeInbound(chunk));
     }
 
     @Test
