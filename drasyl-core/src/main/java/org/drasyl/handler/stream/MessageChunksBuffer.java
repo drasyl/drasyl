@@ -61,7 +61,7 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
                         final LastMessageChunk lastChunk,
                         final ScheduledFuture<?> timeoutGuard) {
         this.maxContentLength = requirePositive(maxContentLength);
-        this.allChunksTimeout = requirePositive(allChunksTimeout);
+        this.allChunksTimeout = requireNonNegative(allChunksTimeout);
         this.chunks = requireNonNull(chunks);
         this.id = id;
         this.contentLength = requireNonNegative(contentLength);
@@ -75,22 +75,28 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
      * @param maxContentLength the maximum cumulative length of the aggregated message. If the
      *                         length of the buffered content exceeds this value, a {@link
      *                         TooLongFrameException)} will be thrown.
+     * @param allChunksTimeout time in milliseconds after receiving the first chunk to wait for
+     *                         remaining chunks. Upon timeout, received chunks will be discarded. A
+     *                         value of {@code 0} deactivates the timeout function.
      */
     public MessageChunksBuffer(final int maxContentLength,
                                final int allChunksTimeout) {
         this(maxContentLength, allChunksTimeout, new MessageChunksBufferInputList(MAX_CHUNKS), null, 0, null, null);
     }
 
+    @SuppressWarnings("java:S3776")
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final MessageChunk msg, final List<Object> out) throws Exception {
         // first chunk?
         if (id == null) {
             id = msg.msgId();
-            timeoutGuard = ctx.executor().schedule(() -> {
-                LOG.trace("Not all chunks have been received within {}ms. Discard {} chunks.", () -> allChunksTimeout, chunks::size);
-                discard();
-            }, allChunksTimeout, MILLISECONDS);
+            if (allChunksTimeout > 0) {
+                timeoutGuard = ctx.executor().schedule(() -> {
+                    LOG.trace("Not all chunks have been received within {}ms. Discard {} chunks.", () -> allChunksTimeout, chunks::size);
+                    discard();
+                }, allChunksTimeout, MILLISECONDS);
+            }
         }
 
         // does the chunk belong to same ByteBuf?
@@ -122,7 +128,9 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
 
     private void checkCompleteness(final List<Object> out) {
         if (lastChunk != null && UnsignedBytes.toInt(lastChunk.chunkNo()) == chunks.size()) {
-            timeoutGuard.cancel(false);
+            if (timeoutGuard != null) {
+                timeoutGuard.cancel(false);
+            }
 
             out.addAll(chunks);
             out.add(lastChunk);
