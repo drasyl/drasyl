@@ -245,28 +245,12 @@ class DrasylNodeIT {
                 // should trigger direct connection establishment between both peers
                 client1.send(client2.identity().getAddress(), "Ping");
 
-                await().untilAsserted(() -> {
-                    final Object actual = client1.readEvent();
-                    System.err.println(actual);
-                    assertThat(actual, instanceOf(PeerDirectEvent.class));
-                });
-                await().untilAsserted(() -> {
-                    final Object actual = client2.readEvent();
-                    System.err.println(actual);
-                    assertThat(actual, instanceOf(PeerDirectEvent.class));
-                });
+                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 // should tear down direct connection on inactivity
-                await().untilAsserted(() -> {
-                    final Object actual = client1.readEvent();
-                    System.err.println(actual);
-                    assertThat(actual, instanceOf(PeerRelayEvent.class));
-                });
-                await().untilAsserted(() -> {
-                    final Object actual = client2.readEvent();
-                    System.err.println(actual);
-                    assertThat(actual, instanceOf(PeerRelayEvent.class));
-                });
+                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerRelayEvent.class)));
+                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerRelayEvent.class)));
             }
         }
 
