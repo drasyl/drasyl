@@ -65,7 +65,7 @@ public class LargeByteBufToChunkedMessageEncoder extends MessageToMessageEncoder
             throw new EncoderException("ByteBuf has a size of " + contentLength + " bytes and is too large. The max. allowed size is " + maxContentLength + " bytes. ByteBuf dropped.");
         }
         else {
-            LOG.trace("ByteBuf has a size of {} bytes and is therefore split into chunks of max. {} bytes.", contentLength, maxChunkLength);
+            LOG.trace("ByteBuf has a size of {} bytes and is therefore split into {} chunks of max. {} bytes.", () -> contentLength, () -> (int) Math.ceil((double) contentLength / maxChunkLength), () -> maxChunkLength);
             out.add(new ChunkedMessageInput(new ChunkedStream(new ByteBufInputStream(msg.retain(), true), maxChunkLength)));
         }
     }
