@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ReassembledMessageDecoderTest {
     @Test
     void shouldUnpackToByteBuf() {
-        final ChannelHandler handler = ReassembledMessageDecoder.INSTANCE;
+        final ChannelHandler handler = new ReassembledMessageDecoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ByteBuf byteBuf = Unpooled.buffer();

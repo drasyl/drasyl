@@ -32,12 +32,6 @@ import java.util.List;
  */
 @Sharable
 public final class ReassembledMessageDecoder extends MessageToMessageDecoder<ReassembledMessage> {
-    public static final ReassembledMessageDecoder INSTANCE = new ReassembledMessageDecoder();
-
-    private ReassembledMessageDecoder() {
-        // singleton
-    }
-
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ReassembledMessage msg,

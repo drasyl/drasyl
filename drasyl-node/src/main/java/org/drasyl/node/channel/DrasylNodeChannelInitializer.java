@@ -62,6 +62,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     public static final int PROTOCOL_OVERHEAD = 127;
     private static final MessageChunkEncoder MESSAGE_CHUNK_ENCODER = new MessageChunkEncoder();
     private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder();
+    private static final ReassembledMessageDecoder REASSEMBLED_MESSAGE_DECODER = new ReassembledMessageDecoder();
     private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
     private final DrasylConfig config;
     private final DrasylNode node;
@@ -106,7 +107,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
                 MESSAGE_CHUNK_DECODER,
                 new MessageChunksBuffer(this.config.getRemoteMessageMaxContentLength(), (int) this.config.getRemoteMessageComposedMessageTransferTimeout().toMillis()),
                 new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
-                ReassembledMessageDecoder.INSTANCE
+                REASSEMBLED_MESSAGE_DECODER
         );
     }
 
