@@ -50,6 +50,13 @@ public class LongTimeArmHandler extends AbstractArmHandler {
         super(crypto, expireAfter, maxAgreements, identity, peerIdentity);
     }
 
+    public LongTimeArmHandler(final Duration expireAfter,
+                              final int maxAgreements,
+                              final Identity identity,
+                              final IdentityPublicKey peerIdentity) throws CryptoException {
+        super(Crypto.INSTANCE, expireAfter, maxAgreements, identity, peerIdentity);
+    }
+
     @Override
     protected void inboundArmMessage(final ChannelHandlerContext ctx, final Object msg) {
         // NO-OP
