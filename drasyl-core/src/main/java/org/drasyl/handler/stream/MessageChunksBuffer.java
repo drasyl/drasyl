@@ -26,6 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -41,6 +43,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * @see ChunkedMessageInput
  */
 public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageChunksBuffer.class);
     static final int MAX_CHUNKS = 255;
     private final int maxContentLength;
     private final int allChunksTimeout;
@@ -84,7 +87,10 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
         // first chunk?
         if (id == null) {
             id = msg.msgId();
-            timeoutGuard = ctx.executor().schedule(this::discard, allChunksTimeout, MILLISECONDS);
+            timeoutGuard = ctx.executor().schedule(() -> {
+                LOG.trace("Not all chunks have been received within {}ms. Discard {} chunks.", () -> allChunksTimeout, chunks::size);
+                discard();
+            }, allChunksTimeout, MILLISECONDS);
         }
 
         // does the chunk belong to same ByteBuf?
