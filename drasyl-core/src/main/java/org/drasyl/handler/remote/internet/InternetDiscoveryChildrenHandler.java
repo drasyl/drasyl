@@ -30,6 +30,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -70,6 +71,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private final long pingIntervalMillis;
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
+    protected final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
     Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
 
@@ -257,7 +259,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final SuperPeer superPeer = superPeers.get(publicKey);
         superPeer.acknowledgementReceived(latency);
 
-        ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH));
+        final AddPathAndSuperPeerEvent event = AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH);
+        if (pathEventFilter.add(event)) {
+            ctx.fireUserEventTriggered(event);
+        }
 
         determineBestSuperPeer(ctx);
     }
@@ -287,7 +292,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 }
             }
             else {
-                ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH));
+                final RemoveSuperPeerAndPathEvent event = RemoveSuperPeerAndPathEvent.of(publicKey, PATH);
+                if (pathEventFilter.add(event)) {
+                    ctx.fireUserEventTriggered(event);
+                }
             }
         }
 
