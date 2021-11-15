@@ -29,6 +29,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
+import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -72,6 +73,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private final long maxTimeOffsetMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     private final HopCount hopLimit;
+    private final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
@@ -252,7 +254,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (childrenPeer.isStale()) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH));
+                final RemoveChildrenAndPathEvent event = RemoveChildrenAndPathEvent.of(address, PATH);
+                if (pathEventFilter.add(event)) {
+                    ctx.fireUserEventTriggered(event);
+                }
             }
         }
     }
@@ -273,7 +278,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress));
         childrenPeer.discoveryReceived(inetAddress);
-        ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH));
+        final AddPathAndChildrenEvent event = AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH);
+        if (pathEventFilter.add(event)) {
+            ctx.fireUserEventTriggered(event);
+        }
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
