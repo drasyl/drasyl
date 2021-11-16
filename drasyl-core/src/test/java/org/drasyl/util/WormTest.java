@@ -91,6 +91,25 @@ class WormTest {
     }
 
     @Nested
+    class TrySet {
+        @Test
+        void shouldSetValueAndReturnTrueIfWormIsEmpty() {
+            final Worm<String> worm = new Worm<>();
+
+            assertTrue(worm.trySet("Hello World"));
+            assertEquals("Hello World", worm.get());
+        }
+
+        @Test
+        void shouldReturnFalseIfWormIsNotEmpty() {
+            final Worm<String> worm = new Worm<>("Alice");
+
+            assertFalse(worm.trySet("Bob"));
+            assertEquals("Alice", worm.get());
+        }
+    }
+
+    @Nested
     class GetOrSet {
         @Test
         void shouldSetAndReturnValueIfWormWasEmpty() {

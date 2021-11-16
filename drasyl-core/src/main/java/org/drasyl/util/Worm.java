@@ -60,18 +60,32 @@ public class Worm<T> {
     }
 
     /**
-     * Sets the value to {@code value},
+     * Sets the value to {@code value}.
      *
      * @param value the new value
      * @throws IllegalStateException if value is already present
      */
+    @SuppressWarnings("java:S2886")
     public void set(final T value) {
+        if (!trySet(value)) {
+            throw new IllegalStateException("Value already present");
+        }
+    }
+
+    /**
+     * Sets the value to {@code value} if no value is present yet.
+     *
+     * @param value the new value
+     * @return returns {@code true}, if value has been set to {@code value}
+     */
+    public boolean trySet(final T value) {
         synchronized (this) {
             if (this.value == null) {
                 this.value = Optional.ofNullable(value);
+                return true;
             }
             else {
-                throw new IllegalStateException("Value already present");
+                return false;
             }
         }
     }
@@ -120,7 +134,7 @@ public class Worm<T> {
     }
 
     /**
-     * If a value is  not present, returns {@code true}, otherwise {@code false}.
+     * If a value is not present, returns {@code true}, otherwise {@code false}.
      *
      * @return {@code true} if a value is not present, otherwise {@code false}
      */
