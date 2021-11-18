@@ -29,8 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetSocketAddress;
 
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
+import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 public class InetSocketAddressUtilTest {
@@ -38,33 +38,34 @@ public class InetSocketAddressUtilTest {
     class SocketAddressFromString {
         @Test
         void shouldReturnCorrectSocketAddress() {
-            assertEquals(new InetSocketAddress("example.com", 22527), socketAddressFromString("example.com:22527"));
-        }
+            InetSocketAddress address = socketAddressFromString("127.0.0.1");
+            assertEquals("127.0.0.1", address.getAddress().getHostAddress());
 
-        @SuppressWarnings("ConstantConditions")
-        @Test
-        void shouldThrowNullPointerExceptionForNullString() {
-            assertThrows(NullPointerException.class, () -> socketAddressFromString(null));
-        }
+            final InetSocketAddress ip6 = socketAddressFromString("2001:db8:85a3:8d3:1319:8a2e:370:7348");
+            assertEquals("2001:db8:85a3:8d3:1319:8a2e:370:7348", ip6.getAddress().getHostAddress());
 
-        @Test
-        void shouldThrowIllegalArgumentExceptionForStringWithoutHostname() {
-            assertThrows(IllegalArgumentException.class, () -> socketAddressFromString("123"));
-        }
+            final InetSocketAddress ip6port = socketAddressFromString("[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443");
+            assertEquals("2001:db8:85a3:8d3:1319:8a2e:370:7348", ip6port.getAddress().getHostAddress());
+            assertEquals(443, ip6port.getPort());
 
-        @Test
-        void shouldThrowIllegalArgumentExceptionForStringWithoutPort() {
-            assertThrows(IllegalArgumentException.class, () -> socketAddressFromString("example.com"));
-        }
+            final String host = "example.com";
+            address = socketAddressFromString(host);
+            assertEquals(host, address.getHostName());
 
-        @Test
-        void shouldThrowIllegalArgumentExceptionForStringWithInvalidPort() {
-            assertThrows(IllegalArgumentException.class, () -> socketAddressFromString("example.com:999999"));
+            final String hostAndPort = host + ":80";
+            address = socketAddressFromString(hostAndPort);
+            assertEquals(host, address.getHostName());
+            assertEquals(80, address.getPort());
         }
+    }
 
+    @Nested
+    class SocketAddressToString {
         @Test
-        void shouldThrowIllegalArgumentExceptionForStringWithInvalidPortFormat() {
-            assertThrows(IllegalArgumentException.class, () -> socketAddressFromString("example.com:baz"));
+        void shouldReturnCorrectString() {
+            assertEquals("127.0.0.1:8080", socketAddressToString(new InetSocketAddress("127.0.0.1", 8080)));
+            assertEquals("example.com:6667", socketAddressToString(new InetSocketAddress("example.com", 6667)));
+            assertEquals("[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443", socketAddressToString(new InetSocketAddress("2001:db8:85a3:8d3:1319:8a2e:370:7348", 443)));
         }
     }
 }

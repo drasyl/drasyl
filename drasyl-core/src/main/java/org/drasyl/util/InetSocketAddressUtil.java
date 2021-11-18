@@ -23,6 +23,8 @@ package org.drasyl.util;
 
 import org.drasyl.annotation.NonNull;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 
@@ -35,29 +37,60 @@ public final class InetSocketAddressUtil {
     }
 
     /**
-     * Converts {@code s} to an {@link InetSocketAddress}.
+     * Convert a {@link String} to a {@link InetSocketAddress}.
+     * <p>
+     * Implementation from <a href="https://github.com/FasterXML/jackson-databind/blob/2.13/src/main/java/com/fasterxml/jackson/databind/deser/std/FromStringDeserializer.java#L328-L349">Jackson</a>.
      *
-     * @param s string to convert
-     * @return {@link InetSocketAddress} converted from string
-     * @throws NullPointerException     if {@code s} is {@code null}
-     * @throws IllegalArgumentException if {@code s} does not contain hostname and port or could not
-     *                                  be converted to a valid {@link InetSocketAddress}.
+     * @param s address to deserialize
+     * @return {@link InetSocketAddress} representation of {@code s}
      */
     @SuppressWarnings("java:S109")
     public static InetSocketAddress socketAddressFromString(@NonNull final String s) {
-        final String[] split = s.split(":", 2);
-        if (split.length != 2) {
-            throw new IllegalArgumentException("string must contain hostname and port divided by colon");
+        if (s.startsWith("[")) {
+            // bracketed IPv6 (with port number)
+            final int i = s.lastIndexOf(']');
+            if (i == -1) {
+                throw new IllegalArgumentException("Bracketed IPv6 address must contain closing bracket");
+            }
+
+            final int j = s.indexOf(':', i);
+            final int port = j > -1 ? Integer.parseInt(s.substring(j + 1)) : 0;
+            return new InetSocketAddress(s.substring(0, i + 1), port);
+        }
+        final int ix = s.indexOf(':');
+        if (ix >= 0 && s.indexOf(':', ix + 1) < 0) {
+            // host:port
+            final int port = Integer.parseInt(s.substring(ix + 1));
+            return new InetSocketAddress(s.substring(0, ix), port);
+        }
+        // host or unbracketed IPv6, without port number
+        return new InetSocketAddress(s, 0);
+    }
+
+    /**
+     * Convert a {@link InetSocketAddress} to a {@link String}.
+     * <p>
+     * Implementation from <a href="https://github.com/FasterXML/jackson-databind/blob/2.13/src/main/java/com/fasterxml/jackson/databind/deser/std/FromStringDeserializer.java#L328-L349">Jackson</a>.
+     *
+     * @param s address to deserialize
+     * @return {@link String} representation of {@code s}
+     */
+    @SuppressWarnings("java:S109")
+    public static String socketAddressToString(@NonNull final InetSocketAddress s) {
+        final InetAddress addr = s.getAddress();
+        String str = addr == null ? s.getHostName() : addr.toString().trim();
+        final int ix = str.indexOf('/');
+        if (ix >= 0) {
+            if (ix == 0) { // missing host name; use address
+                str = addr instanceof Inet6Address
+                        ? "[" + str.substring(1) + "]" // bracket IPv6 addresses with
+                        : str.substring(1);
+            }
+            else { // otherwise use name
+                str = str.substring(0, ix);
+            }
         }
 
-        try {
-            final String hostname = split[0];
-            final int port = Integer.parseInt(split[1]);
-
-            return new InetSocketAddress(hostname, port);
-        }
-        catch (final NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid port number format", e);
-        }
+        return str + ":" + s.getPort();
     }
 }

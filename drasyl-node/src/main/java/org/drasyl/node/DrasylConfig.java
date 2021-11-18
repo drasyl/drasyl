@@ -573,6 +573,9 @@ public abstract class DrasylConfig {
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
                 final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
+                if (address.getPort() < 1) {
+                    throw new IllegalArgumentException("port missing");
+                }
 
                 routes.put(publicKey, address);
             }

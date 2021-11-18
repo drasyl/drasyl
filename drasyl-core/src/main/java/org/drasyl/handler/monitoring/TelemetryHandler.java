@@ -23,7 +23,6 @@ package org.drasyl.handler.monitoring;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.remote.LocalHostPeerInformation;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -42,6 +41,8 @@ import static java.net.http.HttpClient.Version.HTTP_1_1;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Send telemetry data (Neighbour list and, if desired, also the peers' ip addresses) to a given
@@ -69,7 +70,7 @@ public class TelemetryHandler extends TopologyHandler {
                      final boolean includeIp) {
         super(superPeers, childrenPeers, peers);
         this.httpClient = requireNonNull(httpClient);
-        this.submitIntervalSeconds = requireNonNull(submitIntervalSeconds);
+        this.submitIntervalSeconds = requirePositive(submitIntervalSeconds);
         this.uri = requireNonNull(uri);
         this.includeIp = includeIp;
         LOG.info("Telemetry enabled: submitIntervalSeconds={}s uri={} includeIp={}", submitIntervalSeconds, uri, includeIp);
@@ -140,7 +141,7 @@ public class TelemetryHandler extends TopologyHandler {
 
     private static String serializePeersMap(final Map<DrasylAddress, InetSocketAddress> peers) {
         return peers.entrySet().stream()
-                .map(entry -> "\"" + entry.getKey().toString() + "\":\"" + LocalHostPeerInformation.serializeAddress(entry.getValue()) + "\"")
+                .map(entry -> "\"" + entry.getKey().toString() + "\":\"" + socketAddressToString(entry.getValue()) + "\"")
                 .collect(Collectors.joining(","));
     }
 }

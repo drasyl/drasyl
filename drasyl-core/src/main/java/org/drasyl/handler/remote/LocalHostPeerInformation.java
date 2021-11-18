@@ -28,14 +28,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.Inet6Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
+import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
 
 public class LocalHostPeerInformation {
     final Set<InetSocketAddress> addresses;
@@ -51,7 +51,7 @@ public class LocalHostPeerInformation {
     void writeTo(final File file) throws IOException {
         try (final FileOutputStream out = new FileOutputStream(file)) {
             for (final InetSocketAddress address : addresses) {
-                out.write(serializeAddress(address).getBytes(UTF_8));
+                out.write(socketAddressToString(address).getBytes(UTF_8));
                 out.write("\n".getBytes(UTF_8));
             }
         }
@@ -66,7 +66,7 @@ public class LocalHostPeerInformation {
         try (final BufferedReader reader = new BufferedReader(new FileReader(file, UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                final InetSocketAddress address = deserializeAddress(line);
+                final InetSocketAddress address = socketAddressFromString(line);
                 addresses.add(address);
             }
         }
@@ -75,62 +75,5 @@ public class LocalHostPeerInformation {
 
     public static LocalHostPeerInformation of(final Path path) throws IOException {
         return of(path.toFile());
-    }
-
-    /**
-     * Serializes {@code value} to a {@link String}.
-     * <p>
-     * Implementation from <a href="https://github.com/FasterXML/jackson-databind/blob/2.13/src/main/java/com/fasterxml/jackson/databind/ser/std/InetSocketAddressSerializer.java">Jackson</a>.
-     *
-     * @param value address to serialize
-     * @return {@link String} representation of {@code vlaue}
-     */
-    @SuppressWarnings("java:S864")
-    public static String serializeAddress(final InetSocketAddress value) {
-        final InetAddress addr = value.getAddress();
-        String str = addr == null ? value.getHostName() : addr.toString().trim();
-        final int ix = str.indexOf('/');
-        if (ix >= 0) {
-            if (ix == 0) { // missing host name; use address
-                str = addr instanceof Inet6Address
-                        ? "[" + str.substring(1) + "]" // bracket IPv6 addresses with
-                        : str.substring(1);
-            }
-            else { // otherwise use name
-                str = str.substring(0, ix);
-            }
-        }
-
-        return str + ":" + value.getPort();
-    }
-
-    /**
-     * Deserializes {@code value} to a {@link InetSocketAddress}.
-     * <p>
-     * Implementation from <a href="https://github.com/FasterXML/jackson-databind/blob/2.13/src/main/java/com/fasterxml/jackson/databind/deser/std/FromStringDeserializer.java#L328-L349">Jackson</a>.
-     *
-     * @param value address to deserialize
-     * @return {@link InetSocketAddress} representation of {@code vlaue}
-     */
-    static InetSocketAddress deserializeAddress(final String value) {
-        if (value.startsWith("[")) {
-            // bracketed IPv6 (with port number)
-            final int i = value.lastIndexOf(']');
-            if (i == -1) {
-                throw new IllegalArgumentException("Bracketed IPv6 address must contain closing bracket");
-            }
-
-            final int j = value.indexOf(':', i);
-            final int port = j > -1 ? Integer.parseInt(value.substring(j + 1)) : 0;
-            return new InetSocketAddress(value.substring(0, i + 1), port);
-        }
-        final int ix = value.indexOf(':');
-        if (ix >= 0 && value.indexOf(':', ix + 1) < 0) {
-            // host:port
-            final int port = Integer.parseInt(value.substring(ix + 1));
-            return new InetSocketAddress(value.substring(0, ix), port);
-        }
-        // host or unbracketed IPv6, without port number
-        return new InetSocketAddress(value, 0);
     }
 }
