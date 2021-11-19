@@ -19,40 +19,39 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.wormhole;
 
+import org.drasyl.cli.wormhole.message.PasswordMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import picocli.CommandLine;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@ExtendWith(MockitoExtension.class)
-class CliTest {
+class PasswordMessageTest {
     @Nested
-    class Run {
+    class Equals {
         @Test
-        void shouldPassArgumentsToCommandLineAndPassExitCode(@Mock final Function<Cli, CommandLine> commandLineSupplier,
-                                                             @Mock final Consumer<Integer> exitSupplier,
-                                                             @Mock final CommandLine commandLine) {
-            when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+        void notSameBecauseOfText() {
+            final PasswordMessage message1 = new PasswordMessage("foo");
+            final PasswordMessage message2 = new PasswordMessage("foo");
+            final PasswordMessage message3 = new PasswordMessage("bar");
 
-            final Cli cli = new Cli(commandLineSupplier, exitSupplier);
+            assertEquals(message1, message2);
+            assertNotEquals(message2, message3);
+        }
+    }
 
-            final String[] args = { "foo", "bar" };
-            cli.run(args);
+    @Nested
+    class HashCode {
+        @Test
+        void notSameBecauseOfText() {
+            final PasswordMessage message1 = new PasswordMessage("foo");
+            final PasswordMessage message2 = new PasswordMessage("foo");
+            final PasswordMessage message3 = new PasswordMessage("bar");
 
-            verify(commandLine).execute(args);
-            verify(exitSupplier).accept(123);
+            assertEquals(message1.hashCode(), message2.hashCode());
+            assertNotEquals(message2.hashCode(), message3.hashCode());
         }
     }
 }

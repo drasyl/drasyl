@@ -19,40 +19,38 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.handler;
 
+import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import picocli.CommandLine;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.io.PrintStream;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CliTest {
+class PrintAndCloseOnExceptionHandlerTest {
     @Nested
-    class Run {
+    class ExceptionCaught {
         @Test
-        void shouldPassArgumentsToCommandLineAndPassExitCode(@Mock final Function<Cli, CommandLine> commandLineSupplier,
-                                                             @Mock final Consumer<Integer> exitSupplier,
-                                                             @Mock final CommandLine commandLine) {
-            when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+        void shouldPrintExceptionAndCloseChannel(@Mock final PrintStream printStream,
+                                                 @Mock final Worm<Integer> exitCode,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                 @Mock final Throwable cause) {
+            when(ctx.channel().isOpen()).thenReturn(true);
 
-            final Cli cli = new Cli(commandLineSupplier, exitSupplier);
+            final PrintAndCloseOnExceptionHandler handler = new PrintAndCloseOnExceptionHandler(printStream, exitCode);
+            handler.exceptionCaught(ctx, cause);
 
-            final String[] args = { "foo", "bar" };
-            cli.run(args);
-
-            verify(commandLine).execute(args);
-            verify(exitSupplier).accept(123);
+            verify(cause).printStackTrace(printStream);
+            verify(ctx.channel()).close();
         }
     }
 }

@@ -1,42 +1,42 @@
 [
   {
-    "name": "org.drasyl.cli.command.perf.message.SessionConfirmation",
+    "name": "org.drasyl.cli.perf.message.SessionConfirmation",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.perf.message.SessionRejection",
+    "name": "org.drasyl.cli.perf.message.SessionRejection",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.perf.message.SessionRequest",
+    "name": "org.drasyl.cli.perf.message.SessionRequest",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.perf.message.TestResults",
+    "name": "org.drasyl.cli.perf.message.TestResults",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.wormhole.PasswordMessage",
+    "name": "org.drasyl.cli.wormhole.message.PasswordMessage",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.wormhole.TextMessage",
+    "name": "org.drasyl.cli.wormhole.message.TextMessage",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
   },
   {
-    "name": "org.drasyl.cli.command.wormhole.WrongPasswordMessage",
+    "name": "org.drasyl.cli.wormhole.message.WrongPasswordMessage",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
     "allDeclaredConstructors": true
