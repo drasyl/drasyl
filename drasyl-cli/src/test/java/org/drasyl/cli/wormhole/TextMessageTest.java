@@ -19,40 +19,39 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.wormhole;
 
+import org.drasyl.cli.wormhole.message.TextMessage;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import picocli.CommandLine;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@ExtendWith(MockitoExtension.class)
-class CliTest {
+class TextMessageTest {
     @Nested
-    class Run {
+    class Equals {
         @Test
-        void shouldPassArgumentsToCommandLineAndPassExitCode(@Mock final Function<Cli, CommandLine> commandLineSupplier,
-                                                             @Mock final Consumer<Integer> exitSupplier,
-                                                             @Mock final CommandLine commandLine) {
-            when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+        void notSameBecauseOfText() {
+            final TextMessage message1 = new TextMessage("foo");
+            final TextMessage message2 = new TextMessage("foo");
+            final TextMessage message3 = new TextMessage("bar");
 
-            final Cli cli = new Cli(commandLineSupplier, exitSupplier);
+            assertEquals(message1, message2);
+            assertNotEquals(message2, message3);
+        }
+    }
 
-            final String[] args = { "foo", "bar" };
-            cli.run(args);
+    @Nested
+    class HashCode {
+        @Test
+        void notSameBecauseOfText() {
+            final TextMessage message1 = new TextMessage("foo");
+            final TextMessage message2 = new TextMessage("foo");
+            final TextMessage message3 = new TextMessage("bar");
 
-            verify(commandLine).execute(args);
-            verify(exitSupplier).accept(123);
+            assertEquals(message1.hashCode(), message2.hashCode());
+            assertNotEquals(message2.hashCode(), message3.hashCode());
         }
     }
 }

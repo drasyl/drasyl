@@ -35,6 +35,8 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
@@ -51,6 +53,7 @@ import java.nio.channels.NotYetConnectedException;
  * @see DrasylServerChannel
  */
 public class DrasylChannel extends AbstractChannel {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
 
@@ -161,7 +164,11 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress));
+            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
+                if (!future.isSuccess()) {
+                    LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
+                }
+            });
             in.remove();
         }
         parent().flush();

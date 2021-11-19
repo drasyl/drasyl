@@ -19,40 +19,34 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.perf.message;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import picocli.CommandLine;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class CliTest {
+class TestResultsTest {
     @Nested
-    class Run {
+    class IncrementLostMessages {
         @Test
-        void shouldPassArgumentsToCommandLineAndPassExitCode(@Mock final Function<Cli, CommandLine> commandLineSupplier,
-                                                             @Mock final Consumer<Integer> exitSupplier,
-                                                             @Mock final CommandLine commandLine) {
-            when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+        void shouldThrowExceptionWhenStopped() {
+            final TestResults testResults = new TestResults(1, 1, 1, 1, 1, 1, 1);
 
-            final Cli cli = new Cli(commandLineSupplier, exitSupplier);
+            assertThrows(IllegalStateException.class, testResults::incrementLostMessages);
+        }
+    }
 
-            final String[] args = { "foo", "bar" };
-            cli.run(args);
+    @Nested
+    class IncrementOutOfOrderMessages {
+        @Test
+        void shouldThrowExceptionWhenStopped() {
+            final TestResults testResults = new TestResults(1, 1, 1, 1, 1, 1, 1);
 
-            verify(commandLine).execute(args);
-            verify(exitSupplier).accept(123);
+            assertThrows(IllegalStateException.class, testResults::incrementOutOfOrderMessages);
         }
     }
 }

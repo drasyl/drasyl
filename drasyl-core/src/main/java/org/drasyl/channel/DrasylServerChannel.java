@@ -31,6 +31,7 @@ import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoop;
+import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -178,6 +179,26 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     LOG.debug("Can't cast address of message `{}`: ", msg, e);
                 }
             }
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) {
+            if (evt instanceof PathEvent) {
+                try {
+                    final PathEvent e = (PathEvent) evt;
+                    final IdentityPublicKey peer = (IdentityPublicKey) e.getAddress();
+                    final Channel channel = getOrCreateChildChannel(ctx, peer);
+
+                    // pass message to channel
+                    channel.pipeline().fireUserEventTriggered(e);
+                }
+                catch (final ClassCastException e) {
+                    LOG.debug("Can't cast address of event `{}`: ", evt, e);
+                }
+            }
+
+            ctx.fireUserEventTriggered(evt);
         }
 
         private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,

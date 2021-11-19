@@ -19,40 +19,47 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.perf.message;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import picocli.CommandLine;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class CliTest {
+class SessionRequestTest {
     @Nested
-    class Run {
+    class Constructor {
         @Test
-        void shouldPassArgumentsToCommandLineAndPassExitCode(@Mock final Function<Cli, CommandLine> commandLineSupplier,
-                                                             @Mock final Consumer<Integer> exitSupplier,
-                                                             @Mock final CommandLine commandLine) {
-            when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+        void shouldRejectInvalidTestDuration() {
+            assertThrows(IllegalArgumentException.class, () -> new SessionRequest(0, 1, 1, false));
+        }
 
-            final Cli cli = new Cli(commandLineSupplier, exitSupplier);
+        @Test
+        void shouldRejectInvalidMessagesPerSecond() {
+            assertThrows(IllegalArgumentException.class, () -> new SessionRequest(1, 0, 1, false));
+        }
 
-            final String[] args = { "foo", "bar" };
-            cli.run(args);
+        @Test
+        void shouldRejectInvalidMessageSize() {
+            assertThrows(IllegalArgumentException.class, () -> new SessionRequest(1, 1, 0, false));
+        }
+    }
 
-            verify(commandLine).execute(args);
-            verify(exitSupplier).accept(123);
+    @Nested
+    class Getter {
+        @Test
+        void shouldReturnCorrectValues() {
+            final SessionRequest request = new SessionRequest(1, 2, 3, true);
+
+            assertEquals(1, request.getTime());
+            assertEquals(2, request.getMps());
+            assertEquals(3, request.getSize());
+            assertTrue(request.isReverse());
         }
     }
 }

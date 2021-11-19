@@ -21,18 +21,18 @@
  */
 package org.drasyl.cli;
 
-import org.drasyl.cli.command.Command;
-import org.drasyl.cli.command.GenerateIdentityCommand;
-import org.drasyl.cli.command.HelpCommand;
-import org.drasyl.cli.command.NodeCommand;
-import org.drasyl.cli.command.PerfCommand;
-import org.drasyl.cli.command.VersionCommand;
-import org.drasyl.cli.command.WormholeCommand;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.cli.converter.IdentityPublicKeyConverter;
+import org.drasyl.cli.converter.InetSocketAddressConverter;
+import org.drasyl.cli.perf.PerfCommand;
+import org.drasyl.cli.wormhole.WormholeCommand;
+import org.drasyl.identity.IdentityPublicKey;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 
-import java.util.Map;
+import java.net.InetSocketAddress;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,35 +40,33 @@ import static java.util.Objects.requireNonNull;
  * Provides a command line interface with drasyl-related tools (run root node, generate identity,
  * etc.).
  */
-@SuppressWarnings("SameParameterValue")
+@Command(
+        name = "drasyl",
+        subcommands = {
+                GenerateIdentityCommand.class,
+                HelpCommand.class,
+                NodeCommand.class,
+                PerfCommand.class,
+                VersionCommand.class,
+                WormholeCommand.class
+        },
+        headerHeading = "drasyl Command Line Interface: ",
+        header = "A collection of utilities for drasyl.%n",
+        commandListHeading = "%n",
+        footerHeading = "%n",
+        footer = "The environment variable JAVA_OPTS can be used to pass options to the JVM."
+)
 public class Cli {
-    private static final Logger LOG = LoggerFactory.getLogger(Cli.class);
-    public static final Map<String, Command> COMMANDS;
-    public static final int EXIT_SUCCESS = 0;
-    public static final int EXIT_FAILURE = 1;
-
-    static {
-        COMMANDS = Map.of(
-                "genidentity", new GenerateIdentityCommand(),
-                "help", new HelpCommand(),
-                "node", new NodeCommand(),
-                "perf", new PerfCommand(),
-                "version", new VersionCommand(),
-                "wormhole", new WormholeCommand()
-        );
-    }
-
-    private final Map<String, Command> myCommands;
+    private final Function<Cli, CommandLine> commandLineSupplier;
     private final Consumer<Integer> exitSupplier;
 
     public Cli() {
-        this(COMMANDS, System::exit); // NOSONAR
+        this(cli -> new CommandLine(cli), System::exit); // NOSONAR
     }
 
-    @SuppressWarnings("SameParameterValue")
-    Cli(final Map<String, Command> myCommands,
+    Cli(final Function<Cli, CommandLine> commandLineSupplier,
         final Consumer<Integer> exitSupplier) {
-        this.myCommands = requireNonNull(myCommands);
+        this.commandLineSupplier = requireNonNull(commandLineSupplier);
         this.exitSupplier = requireNonNull(exitSupplier);
     }
 
@@ -76,29 +74,11 @@ public class Cli {
         new Cli().run(args);
     }
 
-    public void run(String[] args) {
-        final String commandName;
-        if (args.length > 0 && !"--help".equals(args[0]) && !"-h".equals(args[0])) {
-            commandName = args[0];
-        }
-        else {
-            commandName = "help";
-            args = new String[0];
-        }
-
-        try {
-            final Command command = myCommands.get(commandName);
-            if (command != null) {
-                command.execute(args);
-                exitSupplier.accept(EXIT_SUCCESS);
-            }
-            else {
-                throw new CliException("Unknown command \"" + commandName + "\" for \"drasyl\".");
-            }
-        }
-        catch (final CliException e) {
-            LOG.error(e);
-            exitSupplier.accept(EXIT_FAILURE);
-        }
+    public void run(final String[] args) {
+        final CommandLine commandLine = commandLineSupplier.apply(this);
+        commandLine.registerConverter(IdentityPublicKey.class, new IdentityPublicKeyConverter());
+        commandLine.registerConverter(InetSocketAddress.class, new InetSocketAddressConverter());
+        final int exitCode = commandLine.execute(args);
+        exitSupplier.accept(exitCode);
     }
 }
