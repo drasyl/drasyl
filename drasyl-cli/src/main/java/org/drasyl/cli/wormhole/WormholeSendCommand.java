@@ -118,9 +118,20 @@ public class WormholeSendCommand extends ChannelOptions {
                 required = true
         )
         private String text;
+        @Option(
+                names = { "--file" },
+                description = "File to send.",
+                paramLabel = "<file>",
+                required = true
+        )
+        private File file;
 
-        Payload(final String text) {
+        Payload(final String text, final File file) {
+            if (text == null && file == null) {
+                throw new IllegalArgumentException("text and file");
+            }
             this.text = text;
+            this.file = file;
         }
 
         public Payload() {
@@ -128,6 +139,10 @@ public class WormholeSendCommand extends ChannelOptions {
 
         public String getText() {
             return text;
+        }
+
+        public File getFile() {
+            return file;
         }
     }
 }

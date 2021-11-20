@@ -30,7 +30,7 @@ import static picocli.CommandLine.Command;
  */
 @Command(
         name = "wormhole",
-        header = "Transfer a text message from one computer to another, safely and through NATs and firewalls",
+        header = "Transfer a text message or file from one computer to another, safely and through NATs and firewalls",
         synopsisHeading = "%nUsage: ",
         commandListHeading = "%nCommands:%n",
         subcommands = {

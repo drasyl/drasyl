@@ -21,17 +21,49 @@
  */
 package org.drasyl.cli.wormhole.message;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@JsonTypeInfo(use = Id.NAME)
-@JsonSubTypes({
-        @Type(value = FileMessage.class),
-        @Type(value = PasswordMessage.class),
-        @Type(value = TextMessage.class),
-        @Type(value = WrongPasswordMessage.class),
-})
-public interface WormholeMessage {
+import java.util.Objects;
+
+/**
+ * Announce that the sender will send a file.
+ */
+public class FileMessage implements WormholeMessage {
+    private final String name;
+    private final long length;
+
+    @JsonCreator
+    public FileMessage(@JsonProperty("name") final String name,
+                       @JsonProperty("length") final long length) {
+        this.name = name;
+        this.length = length;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public long getLength() {
+        return length;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, length);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final FileMessage that = (FileMessage) o;
+        return length == that.length &&
+                Objects.equals(name, that.name);
+    }
 }
+
