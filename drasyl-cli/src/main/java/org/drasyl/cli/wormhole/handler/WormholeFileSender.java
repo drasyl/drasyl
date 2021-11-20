@@ -48,8 +48,8 @@ public class WormholeFileSender extends AbstractWormholeSender {
     public static final int PROGRESS_BAR_INTERVAL = 250;
     public static final DecimalFormat PROGRESS_BAR_SPEED_FORMAT = new DecimalFormat("0.00");
     // mtu: 1432
-    // protocol overhead: 175 bytes
-    private static final int CHUNK_SIZE = 1432 - 175;
+    // protocol overhead: 185 bytes
+    private static final int CHUNK_SIZE = 1432 - 185;
     private final File file;
 
     public WormholeFileSender(final PrintStream out,
