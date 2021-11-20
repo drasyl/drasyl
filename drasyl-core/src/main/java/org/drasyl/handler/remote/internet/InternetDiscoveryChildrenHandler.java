@@ -50,8 +50,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
-import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
  * Joins one ore multiple super peer(s) as a children. Uses the super peer with the best latency as
@@ -67,6 +67,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;
     protected final LongSupplier currentTime;
+    private final long initialPingDelayMillis;
     protected final long pingTimeoutMillis;
     private final long pingIntervalMillis;
     protected final long maxTimeOffsetMillis;
@@ -80,6 +81,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final IdentityPublicKey myPublicKey,
                                      final ProofOfWork myProofOfWork,
                                      final LongSupplier currentTime,
+                                     final long initialPingDelayMillis,
                                      final long pingIntervalMillis,
                                      final long pingTimeoutMillis,
                                      final long maxTimeOffsetMillis,
@@ -90,6 +92,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
+        this.initialPingDelayMillis = requireNonNegative(initialPingDelayMillis);
         this.pingIntervalMillis = requirePositive(pingIntervalMillis);
         this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
@@ -103,6 +106,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final IdentityPublicKey myPublicKey,
                                             final ProofOfWork myProofOfWork,
                                             final LongSupplier currentTime,
+                                            final long initialPingDelayMillis,
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
@@ -112,6 +116,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 myPublicKey,
                 myProofOfWork,
                 currentTime,
+                initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
@@ -121,9 +126,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         );
     }
 
+    @SuppressWarnings("java:S107")
     public InternetDiscoveryChildrenHandler(final int myNetworkId,
                                             final IdentityPublicKey myPublicKey,
                                             final ProofOfWork myProofOfWork,
+                                            final long initialPingDelayMillis,
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
@@ -133,6 +140,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 myPublicKey,
                 myProofOfWork,
                 System::currentTimeMillis,
+                initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
@@ -195,7 +203,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
         LOG.debug("Start Heartbeat job.");
-        heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(pingIntervalMillis), pingIntervalMillis, MILLISECONDS);
+        heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, pingIntervalMillis, MILLISECONDS);
     }
 
     void stopHeartbeat() {

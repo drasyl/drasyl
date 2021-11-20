@@ -68,6 +68,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final IdentityPublicKey myPublicKey,
                                                final ProofOfWork myProofOfWork,
                                                final LongSupplier currentTime,
+                                               final long initialPingDelayMillis,
                                                final long pingIntervalMillis,
                                                final long pingTimeoutMillis,
                                                final long maxTimeOffsetMillis,
@@ -77,7 +78,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
+        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
         this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -87,13 +88,14 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
                                                       final IdentityPublicKey myPublicKey,
                                                       final ProofOfWork myProofOfWork,
+                                                      final long initialPingDelayMillis,
                                                       final long pingIntervalMillis,
                                                       final long pingTimeoutMillis,
                                                       final long maxTimeOffsetMillis,
                                                       final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
                                                       final long pingCommunicationTimeoutMillis,
                                                       final long maxPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
+        super(myNetworkId, myPublicKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = new HashMap<>();

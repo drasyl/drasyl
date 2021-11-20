@@ -75,7 +75,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         p.addLast(new OtherNetworkFilter(networkId));
         p.addLast(new InvalidProofOfWorkFilter());
         p.addLast(new ProtocolArmHandler(identity, MAX_PEERS));
-        p.addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork(), PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
+        p.addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
         p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
     }

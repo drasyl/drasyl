@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.RandomUtil.randomLong;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
@@ -214,6 +215,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.getNetworkId(),
                         identity.getIdentityPublicKey(),
                         identity.getProofOfWork(),
+                        randomLong(config.getRemotePingInterval().toMillis()),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
                         config.getRemotePingTimeout().multipliedBy(2).toMillis(),
