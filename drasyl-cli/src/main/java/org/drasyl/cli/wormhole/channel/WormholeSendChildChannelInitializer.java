@@ -26,6 +26,7 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
+import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.crypto.CryptoException;
@@ -84,7 +85,12 @@ public class WormholeSendChildChannelInitializer extends ChannelInitializer<Dras
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
-        p.addLast(new WormholeTextSender(out, password, payload.getText()));
+        if (payload.getText() != null) {
+            p.addLast(new WormholeTextSender(out, password, payload.getText()));
+        }
+        else {
+            p.addLast(new WormholeFileSender(out, password, payload.getFile()));
+        }
 
         p.addLast(new PrintAndCloseOnExceptionHandler(err, exitCode));
 

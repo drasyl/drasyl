@@ -41,9 +41,12 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -54,6 +57,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.Ansi.ansi;
+import static org.drasyl.util.RandomUtil.randomString;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -130,7 +134,7 @@ class WormholeCommandIT {
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
                 "",
-                new Payload("Hello World")
+                new Payload("Hello World", null)
         ).call());
         senderThread.start();
 
@@ -166,5 +170,76 @@ class WormholeCommandIT {
 
         // receive text
         await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
+    }
+
+    @Test
+    @Timeout(value = 30_000, unit = MILLISECONDS)
+    void shouldTransferFile(@TempDir final Path path) throws IOException {
+        // create file
+        final File file = path.resolve("WormholeCommandIT-" + randomString(5) + ".bin").toFile();
+
+        final RandomAccessFile f = new RandomAccessFile(file, "rw");
+        f.setLength(1024 * 1024);
+        f.close();
+
+        // create server
+        final Path senderPath = path.resolve("sender.identity.json");
+        IdentityManager.writeIdentityFile(senderPath, ID_2);
+        final EventLoopGroup senderParentGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup senderChildGroup = senderParentGroup;
+        senderThread = new Thread(() -> new WormholeSendCommand(
+                new PrintStream(senderOut, true),
+                System.err,
+                senderParentGroup,
+                senderChildGroup,
+                Level.WARN,
+                senderPath.toFile(),
+                new InetSocketAddress("127.0.0.1", 0),
+                10_000,
+                0,
+                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                "",
+                new Payload(null, file)
+        ).call());
+        senderThread.start();
+
+        // get wormhole code
+        final Pair<IdentityPublicKey, String> code = await("get wormhole code").atMost(ofSeconds(30)).until(() -> {
+            final Matcher matcher = CODE_PATTERN.matcher(senderOut.toString());
+            if (matcher.find()) {
+                return new WormholeCodeConverter().convert(matcher.group(1));
+            }
+            else {
+                return null;
+            }
+        }, notNullValue());
+
+        try {
+            // create receiving node
+            final Path receiverPath = path.resolve("receiver.identity.json");
+            IdentityManager.writeIdentityFile(receiverPath, ID_3);
+            final EventLoopGroup receiverParentGroup = new NioEventLoopGroup(1);
+            final EventLoopGroup receiverChildGroup = receiverParentGroup;
+            receiverThread = new Thread(() -> new WormholeReceiveCommand(
+                    new PrintStream(receiverOut, true),
+                    System.err,
+                    receiverParentGroup,
+                    receiverChildGroup,
+                    Level.WARN,
+                    receiverPath.toFile(),
+                    new InetSocketAddress("127.0.0.1", 0),
+                    10_000,
+                    0,
+                    Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                    code
+            ).call());
+            receiverThread.start();
+
+            // receive text
+            await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
+        }
+        finally {
+            Files.deleteIfExists(Path.of(file.getName()));
+        }
     }
 }

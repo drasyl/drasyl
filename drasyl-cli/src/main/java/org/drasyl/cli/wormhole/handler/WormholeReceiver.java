@@ -24,10 +24,12 @@ package org.drasyl.cli.wormhole.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
+import org.drasyl.cli.wormhole.message.FileMessage;
 import org.drasyl.cli.wormhole.message.PasswordMessage;
 import org.drasyl.cli.wormhole.message.TextMessage;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.cli.wormhole.message.WrongPasswordMessage;
+import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -94,6 +96,11 @@ public class WormholeReceiver extends SimpleChannelInboundHandler<WormholeMessag
             LOG.debug("Got text from `{}`: {}", () -> ctx.channel().remoteAddress(), textMsg::getText);
             out.println(textMsg.getText());
             ctx.close();
+        }
+        else if (msg instanceof FileMessage) {
+            timeoutTask.cancel(false);
+            ctx.channel().pipeline().addBefore(ctx.channel().pipeline().context(JacksonCodec.class).name(), null, new WormholeFileReceiver(out, (FileMessage) msg));
+            ctx.channel().pipeline().remove(ctx.name());
         }
         else {
             ctx.fireChannelRead(msg);
