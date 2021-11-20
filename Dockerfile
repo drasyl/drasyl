@@ -3,7 +3,7 @@ FROM openjdk:11-jdk-buster AS build
 ADD . /build
 
 RUN cd /build && \
-    ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests package && \
+    ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./drasyl-*.zip -d /
 
 FROM adoptopenjdk:11-jre-openj9
@@ -12,9 +12,6 @@ RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
 COPY --from=build /drasyl-* /usr/local/share/drasyl/
-
-# create share class folder for openj9
-RUN mkdir /opt/shareclasses
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -34,9 +31,22 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/drasyl/logback.xml
 
+# run as non-root user
+RUN groupadd -g 22527 drasyl && \
+    useradd -r -u 22527 -g drasyl -d /drasyl/ drasyl && \
+    mkdir /drasyl/ && \
+    chown drasyl:drasyl /drasyl/
+
+USER drasyl
+
+# create share class folder for openj9
+RUN mkdir /drasyl/shareclasses
+
 EXPOSE 22527 443
 
-ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=drasyl_scc,cacheDir=/opt/shareclasses -Xscmx50M"
+WORKDIR /drasyl/
+
+ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=drasyl_scc,cacheDir=/drasyl/shareclasses -Xscmx50M"
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["drasyl"]
