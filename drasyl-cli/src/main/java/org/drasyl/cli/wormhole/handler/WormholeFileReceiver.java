@@ -63,6 +63,7 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
         this(out, new File(fileMessage.getName()), fileMessage.getLength());
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         out.println("Receiving file (" + numberToHumanData(length) + ") into: " + file.getName());
@@ -75,7 +76,6 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
         try {
             file.createNewFile(); // NOSONAR
             randomAccessFile = new RandomAccessFile(file, "rw");
-            randomAccessFile.getChannel();
         }
         catch (final IOException e) {
             ctx.fireExceptionCaught(e);
@@ -95,7 +95,18 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        progressBar.close();
+        if (progressBar != null) {
+            progressBar.close();
+        }
+
+        if (randomAccessFile != null) {
+            try {
+                randomAccessFile.close();
+            }
+            catch (final IOException e) {
+                // ignore
+            }
+        }
 
         ctx.fireChannelInactive();
     }
