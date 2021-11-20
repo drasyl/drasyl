@@ -22,7 +22,6 @@
 package org.drasyl.node.identity;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.node.DrasylConfig;
 import org.drasyl.util.ThrowingSupplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,8 +50,6 @@ import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityManagerTest {
-    @Mock
-    private DrasylConfig config;
     @Mock
     private ThrowingSupplier<Identity, IOException> identityGenerator;
 
@@ -97,6 +94,9 @@ class IdentityManagerTest {
                     "  \"secretKey\" : \"" + ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
                     "}" +
                     "}", StandardOpenOption.CREATE);
+            if (hasPosixSupport(path)) {
+                Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
+            }
 
             assertThrows(IOException.class, () -> IdentityManager.readIdentityFile(path));
         }

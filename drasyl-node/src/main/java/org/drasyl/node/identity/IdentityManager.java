@@ -70,7 +70,7 @@ public final class IdentityManager {
      *
      * @param path path to identity file
      * @return The identity contained in the file
-     * @throws IOException if identity could not be read from file
+     * @throws IOException if identity could not be read from file or has an invalid proof of work
      */
     public static Identity readIdentityFile(final Path path) throws IOException {
         try {
@@ -82,7 +82,13 @@ public final class IdentityManager {
                 }
             }
 
-            return JACKSON_READER.readValue(path.toFile(), Identity.class);
+            final Identity identity = JACKSON_READER.readValue(path.toFile(), Identity.class);
+
+            if (!identity.isValid()) {
+                throw new IOException("Identity from file '" + path + "' has an invalid proof of work.");
+            }
+
+            return identity;
         }
         catch (final JsonProcessingException e) {
             throw new IOException("Unable to load identity from file '" + path + "': ", e);
