@@ -45,7 +45,7 @@ public class DuplicatePathEventFilter {
     }
 
     /**
-     * @return {@code true} if the last (if any) {@link PathEvent} is not equal to {@link event}.
+     * @return {@code true} if the last (if any) {@link PathEvent} is not equal to {@code event}.
      * Otherwise {@code false}.
      */
     public boolean add(final PathEvent event) {

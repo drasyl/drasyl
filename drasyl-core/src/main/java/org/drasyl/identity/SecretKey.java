@@ -23,7 +23,7 @@ package org.drasyl.identity;
 
 public interface SecretKey extends Key {
     /**
-     * Unlike {@link #toString()}, this method returns an unmasked secret key.
+     * Unlike {@link Object#toString()}, this method returns an unmasked secret key.
      *
      * @return unmasked string representation of the secret key
      */

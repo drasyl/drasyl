@@ -40,9 +40,9 @@ import static java.util.Objects.requireNonNull;
  * <pre>
  *  {@link ChannelPipeline} p = ...;
  *  ...
- *  p.addLast("encoder", <b>{@link MessageChunkEncoder#INSTANCE}()</b>);
+ *  p.addLast("encoder", <b>new {@link MessageChunkEncoder}()</b>);
  *  p.addLast("chunked_write", <b>new {@link io.netty.handler.stream.ChunkedWriteHandler}</b>);
- *  p.addLast("decoder", <b>{@link MessageChunkDecoder#INSTANCE}()</b>);
+ *  p.addLast("decoder", <b>new {@link MessageChunkDecoder}()</b>);
  *  p.addLast("buffer", <b>new {@link MessageChunksBuffer}(65536, 5000)</b>);
  *  p.addLast("aggregator", <b>new {@link ChunkedMessageAggregator}(65536)</b>);
  *  ...
