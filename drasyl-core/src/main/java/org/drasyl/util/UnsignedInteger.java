@@ -86,8 +86,29 @@ public final class UnsignedInteger {
         return new UnsignedInteger(value);
     }
 
+    /**
+     * Does increment the unsigned integer but does a modulo operation to handle overflows.
+     *
+     * @return incremented unsigned integer
+     */
+    public UnsignedInteger safeIncrement() {
+        if (value == MAX_VALUE.value) {
+            return MIN_VALUE;
+        }
+
+        return increment();
+    }
+
     public UnsignedInteger increment() {
         return UnsignedInteger.of(value + 1L);
+    }
+
+    public UnsignedInteger safeDecrement() {
+        if(value == MIN_VALUE.value) {
+            return MIN_VALUE;
+        }
+
+        return decrement();
     }
 
     public UnsignedInteger decrement() {

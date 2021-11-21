@@ -32,6 +32,7 @@ package org.drasyl.util;
 public final class Preconditions {
     public static final String MUST_BE_NON_NEGATIVE = "must be non-negative";
     public static final String MUST_BE_POSITIVE = "must be positive";
+    public static final String MUST_BE_POWER_OF_TWO = "must be power of two";
 
     private Preconditions() {
         // util class
