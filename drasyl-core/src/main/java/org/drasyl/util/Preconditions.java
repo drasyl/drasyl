@@ -42,7 +42,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar);
+     *     this.bar = Preconditions.requireNonNegative(bar);
      * }
      * </pre></blockquote>
      *
@@ -64,7 +64,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar, "bar must be non-negative");
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
      * }
      * </pre></blockquote>
      *
@@ -87,7 +87,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar);
+     *     this.bar = Preconditions.requireNonNegative(bar);
      * }
      * </pre></blockquote>
      *
@@ -109,7 +109,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar, "bar must be non-negative");
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
      * }
      * </pre></blockquote>
      *
@@ -132,7 +132,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar);
+     *     this.bar = Preconditions.requireNonNegative(bar);
      * }
      * </pre></blockquote>
      *
@@ -154,7 +154,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar, "bar must be non-negative");
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
      * }
      * </pre></blockquote>
      *
@@ -177,7 +177,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar);
+     *     this.bar = Preconditions.requireNonNegative(bar);
      * }
      * </pre></blockquote>
      *
@@ -199,7 +199,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requireNonNegative(bar, "bar must be non-negative");
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
      * }
      * </pre></blockquote>
      *
@@ -222,7 +222,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar);
+     *     this.bar = Preconditions.requirePositive(bar);
      * }
      * </pre></blockquote>
      *
@@ -244,7 +244,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar, "bar must be positive");
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
      * }
      * </pre></blockquote>
      *
@@ -267,7 +267,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar);
+     *     this.bar = Preconditions.requirePositive(bar);
      * }
      * </pre></blockquote>
      *
@@ -289,7 +289,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar, "bar must be positive");
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
      * }
      * </pre></blockquote>
      *
@@ -312,7 +312,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar);
+     *     this.bar = Preconditions.requirePositive(bar);
      * }
      * </pre></blockquote>
      *
@@ -334,7 +334,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar, "bar must be positive");
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
      * }
      * </pre></blockquote>
      *
@@ -357,7 +357,7 @@ public final class Preconditions {
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar);
+     *     this.bar = Preconditions.requirePositive(bar);
      * }
      * </pre></blockquote>
      *
@@ -379,7 +379,7 @@ public final class Preconditions {
      * validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
-     *     this.bar = ObjectsUtil.requirePositive(bar, "bar must be positive");
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
      * }
      * </pre></blockquote>
      *
