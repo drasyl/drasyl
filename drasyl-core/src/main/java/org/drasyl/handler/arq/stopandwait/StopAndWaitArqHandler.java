@@ -163,7 +163,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
         }
         else {
             // pass through
-            ctx.write(msg);
+            ctx.write(msg, promise);
         }
     }
 
