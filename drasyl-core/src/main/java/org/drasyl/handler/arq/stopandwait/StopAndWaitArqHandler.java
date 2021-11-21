@@ -77,6 +77,7 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     private int retryTimeout;
     private boolean expectedInboundSequenceNo;
     private long lastWriteAttempt;
+    private Object lastWrite;
 
     /**
      * @param retryTimeout              see {@link #setRetryTimeout(int)}
@@ -238,6 +239,13 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
             lastWriteAttempt = currentTime;
 
             // perform next write
+            if (LOG.isTraceEnabled()) {
+                if (lastWrite == currentWrite) {
+                    LOG.trace("[{}] Got no ACK for current DATA. Send again.", ctx.channel().id()::asShortText);
+                }
+                lastWrite = currentWrite;
+            }
+
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> currentWrite);
             ctx.writeAndFlush(currentWrite.retainedDuplicate()).addListener(future -> {
                 if (!future.isSuccess()) {
