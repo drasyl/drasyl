@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.drasyl.util.UnsignedInteger.MAX_VALUE;
+import static org.drasyl.util.UnsignedInteger.MIN_VALUE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -47,7 +49,7 @@ class UnsignedIntegerTest {
         @Test
         void shouldThrowExceptionOnInvalidValue() {
             assertThrows(IllegalArgumentException.class, () -> UnsignedInteger.of(-1));
-            assertThrows(IllegalArgumentException.class, UnsignedInteger.MAX_VALUE::increment);
+            assertThrows(IllegalArgumentException.class, MAX_VALUE::increment);
         }
 
         @Test
@@ -74,7 +76,7 @@ class UnsignedIntegerTest {
                     (byte) 0xFF,
                     (byte) 0xFF
             }).getValue());
-            assertEquals(UnsignedInteger.MAX_VALUE, UnsignedInteger.of(0xFFFFFFFFL));
+            assertEquals(MAX_VALUE, UnsignedInteger.of(0xFFFFFFFFL));
         }
     }
 
@@ -130,12 +132,24 @@ class UnsignedIntegerTest {
         void shouldIncrementShort() {
             assertEquals(UnsignedInteger.of(3), UnsignedInteger.of(2).increment());
         }
+
+        @Test
+        void shouldIncrementSafe() {
+            assertEquals(MIN_VALUE, MAX_VALUE.safeIncrement());
+            assertEquals(UnsignedInteger.of(3), UnsignedInteger.of(2).increment());
+        }
     }
 
     @Nested
     class Decrement {
         @Test
         void shouldDecrementShort() {
+            assertEquals(UnsignedInteger.of(3), UnsignedInteger.of(4).decrement());
+        }
+
+        @Test
+        void shouldDecrementSafe() {
+            assertEquals(MIN_VALUE, MIN_VALUE.safeDecrement());
             assertEquals(UnsignedInteger.of(3), UnsignedInteger.of(4).decrement());
         }
     }

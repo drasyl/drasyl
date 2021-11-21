@@ -73,6 +73,7 @@ class StopAndWaitArqHandlerTest {
 
         // close channel -> fail data1
         channel.close();
+        data0.release();
         data1.release();
         data1.release();
         assertThat(write1.cause(), instanceOf(ClosedChannelException.class));
