@@ -67,6 +67,26 @@ class GoBackNArqCodecTest {
         }
 
         @Test
+        void shouldEncodeLastData() {
+            final ChannelHandler handler = new GoBackNArqCodec();
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final AbstractGoBackNArqData data = new GoBackNArqLastData(UnsignedInteger.MIN_VALUE, Unpooled.copiedBuffer("Hallo", UTF_8));
+            channel.writeOutbound(data);
+
+            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[]{
+                    21, 117, -121, -108, // magic number
+                    0, 0, 0, 0, // sequence no
+                    72, 97, 108, 108, 111 // payload
+            });
+            final ByteBuf actual = channel.readOutbound();
+            assertEquals(expected, actual);
+
+            expected.release();
+            actual.release();
+        }
+
+        @Test
         void shouldEncodeData() {
             final ChannelHandler handler = new GoBackNArqCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -149,6 +169,21 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             assertThat(channel.readInbound(), instanceOf(GoBackNArqFirstData.class));
+        }
+
+        @Test
+        void shouldDecodeLastData() {
+            final ChannelHandler handler = new GoBackNArqCodec();
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{
+                    21, 117, -121, -108, // magic number
+                    0, 0, 0, 0, // sequence no
+                    72, 97, 108, 108, 111 // payload
+            });
+            channel.writeInbound(msg);
+
+            assertThat(channel.readInbound(), instanceOf(GoBackNArqLastData.class));
         }
 
         @Test

@@ -45,6 +45,7 @@ public class WormholeTextSender extends AbstractWormholeSender {
     @SuppressWarnings("java:S1905")
     @Override
     protected void transferPayload(final ChannelHandlerContext ctx) {
+        ctx.pipeline().remove(ctx.name());
         ctx.writeAndFlush(new TextMessage(text)).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
                 out.println("text message sent");

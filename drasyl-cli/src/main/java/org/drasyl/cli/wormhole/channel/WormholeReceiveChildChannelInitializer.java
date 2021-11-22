@@ -28,9 +28,9 @@ import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
+import org.drasyl.handler.arq.gbn.ByteToGoBackNArqDataCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -41,11 +41,14 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_RETRY_TIMEOUT;
+import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveChildChannelInitializer.class);
@@ -56,19 +59,22 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
     private final Identity identity;
     private final IdentityPublicKey sender;
     private final String password;
+    private final Duration ackInterval;
 
     public WormholeReceiveChildChannelInitializer(final PrintStream out,
                                                   final PrintStream err,
                                                   final Worm<Integer> exitCode,
                                                   final Identity identity,
                                                   final IdentityPublicKey sender,
-                                                  final String password) {
+                                                  final String password,
+                                                  final long ackInterval) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.sender = requireNonNull(sender);
         this.password = requireNonNull(password);
+        this.ackInterval = Duration.ofMillis(requirePositive(ackInterval));
     }
 
     @Override
@@ -81,13 +87,13 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
 
         final ChannelPipeline p = ch.pipeline();
 
-        // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new StopAndWaitArqCodec());
-        ch.pipeline().addLast(new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT));
-        ch.pipeline().addLast(new ByteToStopAndWaitArqDataCodec());
-
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        // add ARQ to make sure messages arrive
+        ch.pipeline().addLast(new GoBackNArqCodec());
+        ch.pipeline().addLast(new GoBackNArqHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT), ackInterval));
+        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));

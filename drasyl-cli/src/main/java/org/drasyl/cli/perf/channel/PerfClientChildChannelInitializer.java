@@ -30,9 +30,9 @@ import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
+import org.drasyl.handler.arq.gbn.ByteToGoBackNArqDataCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -41,6 +41,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer.ARQ_RETRY_TIMEOUT;
@@ -86,9 +87,9 @@ public class PerfClientChildChannelInitializer extends ChannelInitializer<Drasyl
         p.addLast(new ProbeCodec());
 
         // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new StopAndWaitArqCodec());
-        ch.pipeline().addLast(new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT));
-        ch.pipeline().addLast(new ByteToStopAndWaitArqDataCodec());
+        ch.pipeline().addLast(new GoBackNArqCodec());
+        ch.pipeline().addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
+        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
