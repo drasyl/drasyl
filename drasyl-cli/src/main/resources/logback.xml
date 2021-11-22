@@ -36,9 +36,6 @@
     <logger name="io.netty" level="WARN">
     </logger>
 
-    <logger name="org.drasyl.cli.tunnel" level="TRACE">
-    </logger>
-
     <root level="warn">
         <appender-ref ref="Console"/>
     </root>
