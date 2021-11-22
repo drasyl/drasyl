@@ -44,8 +44,8 @@ public class PrintAndCloseOnExceptionHandler extends ChannelInboundHandlerAdapte
                                 final Throwable cause) {
         if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
-            ctx.channel().close();
             exitCode.trySet(1);
+            ctx.channel().close();
         }
     }
 }
