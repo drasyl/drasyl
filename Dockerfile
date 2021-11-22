@@ -42,7 +42,8 @@ USER drasyl
 # create share class folder for openj9
 RUN mkdir /drasyl/shareclasses
 
-EXPOSE 22527 443
+EXPOSE 22527/udp
+EXPOSE 443/tcp
 
 WORKDIR /drasyl/
 
