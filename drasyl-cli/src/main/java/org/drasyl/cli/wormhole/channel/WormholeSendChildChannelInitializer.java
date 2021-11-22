@@ -30,9 +30,9 @@ import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
+import org.drasyl.handler.arq.gbn.ByteToGoBackNArqDataCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqCodec;
+import org.drasyl.handler.arq.gbn.GoBackNArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -45,9 +45,11 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class WormholeSendChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    public static final int ARQ_RETRY_TIMEOUT = 250;
+    public static final int ARQ_RETRY_TIMEOUT = 150;
+    public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream out;
     private final PrintStream err;
@@ -55,32 +57,38 @@ public class WormholeSendChildChannelInitializer extends ChannelInitializer<Dras
     private final Identity identity;
     private final String password;
     private final Payload payload;
+    private final int windowSize;
+    private final Duration windowTimeout;
 
     public WormholeSendChildChannelInitializer(final PrintStream out,
                                                final PrintStream err,
                                                final Worm<Integer> exitCode,
                                                final Identity identity,
                                                final String password,
-                                               final Payload payload) {
+                                               final Payload payload,
+                                               final int windowSize,
+                                               final long windowTimeout) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
+        this.windowSize = requirePositive(windowSize);
+        this.windowTimeout = Duration.ofMillis(requirePositive(windowTimeout));
     }
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws CryptoException {
         final ChannelPipeline p = ch.pipeline();
 
-        // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new StopAndWaitArqCodec());
-        ch.pipeline().addLast(new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT));
-        ch.pipeline().addLast(new ByteToStopAndWaitArqDataCodec());
-
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        // add ARQ to make sure messages arrive
+        ch.pipeline().addLast(new GoBackNArqCodec());
+        ch.pipeline().addLast(new GoBackNArqHandler(windowSize, windowTimeout, windowTimeout.dividedBy(5)));
+        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));

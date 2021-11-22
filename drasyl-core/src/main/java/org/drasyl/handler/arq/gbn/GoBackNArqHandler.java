@@ -200,10 +200,14 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
                             final Object msg) {
         // if we receive this message and our nextInboundSequenceNo > 0, then
         // we have to synchronize/reset our nextInboundSequenceNo
-        if (msg instanceof GoBackNArqFirstData && nextInboundSequenceNo.getValue() > 0) {
-            LOG.trace("[{}] Got first data {}. Reset sequence number.", ctx.channel().id()::asShortText, () -> msg);
+        if (msg instanceof GoBackNArqFirstData) {
+            if (nextInboundSequenceNo.getValue() > 0) {
+                LOG.trace("[{}] Got first data {}. Reset sequence number.", ctx.channel().id()::asShortText, () -> msg);
 
-            nextInboundSequenceNo = UnsignedInteger.MIN_VALUE;
+                nextInboundSequenceNo = UnsignedInteger.MIN_VALUE;
+            }
+            // reply with ACK of current message
+            ctx.writeAndFlush(new GoBackNArqAck(UnsignedInteger.MIN_VALUE));
         }
 
         if (msg instanceof AbstractGoBackNArqData) {
@@ -212,11 +216,17 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             ackRequired = true;
 
             if (!data.sequenceNo().equals(nextInboundSequenceNo)) {
-                LOG.trace("[{}] Got unexpected data {}. Drop it.", ctx.channel().id()::asShortText, () -> data);
+                LOG.trace("[{}] Got unexpected data {}. Expected {}. Drop it.", ctx.channel().id()::asShortText, () -> data, () -> nextInboundSequenceNo);
                 data.release();
             }
             else {
                 LOG.trace("[{}] Got expected {}. Pass through.", ctx.channel().id()::asShortText, () -> data);
+
+                // send explicit ACK on last message
+                if (msg instanceof GoBackNArqLastData) {
+                    // reply with ACK of current message
+                    ctx.writeAndFlush(new GoBackNArqAck(nextInboundSequenceNo));
+                }
 
                 // increase sequence no
                 nextInboundSequenceNo = nextInboundSequenceNo.safeIncrement();
@@ -354,7 +364,12 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
                 data = new GoBackNArqFirstData(msg.content().retainedSlice());
             }
             else {
-                data = new GoBackNArqData(seqNo, msg.content().retainedSlice());
+                if (overflow.isEmpty()) {
+                    data = new GoBackNArqLastData(seqNo, msg.content().retainedSlice());
+                }
+                else {
+                    data = new GoBackNArqData(seqNo, msg.content().retainedSlice());
+                }
             }
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> data);
             ctx.write(data);

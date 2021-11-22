@@ -68,6 +68,7 @@ public class WormholeFileSender extends AbstractWormholeSender {
             if (f.isSuccess()) {
                 ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
                 ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
+                ctx.pipeline().remove(ctx.name());
 
                 final ChunkedFile chunkedFile = new ChunkedFile(file, CHUNK_SIZE);
 

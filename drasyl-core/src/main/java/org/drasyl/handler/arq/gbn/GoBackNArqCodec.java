@@ -38,6 +38,7 @@ public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMe
     public static final int MAGIC_NUMBER_FIRST_DATA = 360_023_953;
     public static final int MAGIC_NUMBER_RST = 360_023_954;
     public static final int MAGIC_NUMBER_ACK = 360_023_955;
+    public static final int MAGIC_NUMBER_LAST_DATA = 360_023_956;
     // magic number: 4 bytes
     // sequence number: 4 bytes
     public static final int MIN_MESSAGE_LENGTH = 8;
@@ -46,7 +47,14 @@ public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMe
     protected void encode(final ChannelHandlerContext ctx,
                           final GoBackNArqMessage msg,
                           final List<Object> out) throws Exception {
-        if (msg instanceof GoBackNArqData) {
+        if (msg instanceof GoBackNArqLastData) {
+            final ByteBuf buf = ctx.alloc().buffer();
+            buf.writeInt(MAGIC_NUMBER_LAST_DATA);
+            buf.writeBytes(msg.sequenceNo().toBytes());
+            buf.writeBytes(((GoBackNArqLastData) msg).content());
+            out.add(buf);
+        }
+        else if (msg instanceof GoBackNArqData) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_DATA);
             buf.writeBytes(msg.sequenceNo().toBytes());
@@ -92,6 +100,10 @@ public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMe
                 }
                 case MAGIC_NUMBER_ACK: {
                     out.add(new GoBackNArqAck(sequenceNo));
+                    break;
+                }
+                case MAGIC_NUMBER_LAST_DATA: {
+                    out.add(new GoBackNArqLastData(sequenceNo, in.retain()));
                     break;
                 }
                 case MAGIC_NUMBER_FIRST_DATA: {
