@@ -24,6 +24,12 @@
     "allDeclaredConstructors": true
   },
   {
+    "name": "org.drasyl.cli.wormhole.message.FileMessage",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
     "name": "org.drasyl.cli.wormhole.message.PasswordMessage",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
