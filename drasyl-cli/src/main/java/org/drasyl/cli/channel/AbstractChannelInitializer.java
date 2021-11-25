@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.channe;
+package org.drasyl.cli.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

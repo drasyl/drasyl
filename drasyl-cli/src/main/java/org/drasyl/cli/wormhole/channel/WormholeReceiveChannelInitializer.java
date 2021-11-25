@@ -23,7 +23,7 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.cli.channe.AbstractChannelInitializer;
+import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
 import org.drasyl.identity.Identity;
