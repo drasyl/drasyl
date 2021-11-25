@@ -64,7 +64,7 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+            public void channelActive(final ChannelHandlerContext ctx) {
                 out.println("----------------------------------------------------------------------------------------------");
                 out.println("Server listening on address " + ch.localAddress());
                 out.println("----------------------------------------------------------------------------------------------");

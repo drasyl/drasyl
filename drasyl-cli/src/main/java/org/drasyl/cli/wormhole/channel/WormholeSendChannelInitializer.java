@@ -69,7 +69,7 @@ public class WormholeSendChannelInitializer extends AbstractChannelInitializer {
 
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+            public void channelActive(final ChannelHandlerContext ctx) {
                 final String code = ch.localAddress() + password;
                 out.println("Wormhole code is: " + code);
                 out.println("On the other computer, please run:");
