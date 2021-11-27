@@ -24,6 +24,7 @@ package org.drasyl.cli;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.perf.PerfCommand;
+import org.drasyl.cli.tunnel.TunnelCommand;
 import org.drasyl.cli.wormhole.WormholeCommand;
 import org.drasyl.identity.IdentityPublicKey;
 import picocli.CommandLine;
@@ -47,6 +48,7 @@ import static java.util.Objects.requireNonNull;
                 HelpCommand.class,
                 NodeCommand.class,
                 PerfCommand.class,
+                TunnelCommand.class,
                 VersionCommand.class,
                 WormholeCommand.class
         },

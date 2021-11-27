@@ -19,17 +19,16 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.wormhole.channel;
+package org.drasyl.cli.tunnel.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
-import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
-import org.drasyl.cli.wormhole.handler.WormholeFileSender;
-import org.drasyl.cli.wormhole.handler.WormholeTextSender;
-import org.drasyl.cli.wormhole.message.WormholeMessage;
-import org.drasyl.crypto.CryptoException;
+import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
+import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
+import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.arq.gbn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gbn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gbn.GoBackNArqHandler;
@@ -39,67 +38,70 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.util.Worm;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
-import static org.drasyl.util.Preconditions.requirePositive;
+import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
+import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
+import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
+import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARQ_RETRY_TIMEOUT;
+import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
-public class WormholeSendChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    public static final int ARQ_RETRY_TIMEOUT = 150;
-    public static final int ARQ_WINDOW_SIZE = 50;
-    public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
+public class TunnelConsumeChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    private static final Logger LOG = LoggerFactory.getLogger(TunnelConsumeChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final Identity identity;
+    private final IdentityPublicKey exposer;
     private final String password;
-    private final Payload payload;
-    private final int windowSize;
-    private final Duration windowTimeout;
+    private final int port;
 
-    @SuppressWarnings("java:S107")
-    public WormholeSendChildChannelInitializer(final PrintStream out,
-                                               final PrintStream err,
-                                               final Worm<Integer> exitCode,
-                                               final Identity identity,
-                                               final String password,
-                                               final Payload payload,
-                                               final int windowSize,
-                                               final long windowTimeout) {
+    public TunnelConsumeChildChannelInitializer(final PrintStream out,
+                                                final PrintStream err,
+                                                final Worm<Integer> exitCode,
+                                                final Identity identity,
+                                                final IdentityPublicKey exposer,
+                                                final String password,
+                                                final int port) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
+        this.exposer = requireNonNull(exposer);
         this.password = requireNonNull(password);
-        this.payload = requireNonNull(payload);
-        this.windowSize = requirePositive(windowSize);
-        this.windowTimeout = Duration.ofMillis(requirePositive(windowTimeout));
+        this.port = requireNonNegative(port);
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) throws CryptoException {
+    protected void initChannel(final DrasylChannel ch) throws Exception {
+        if (!exposer.equals(ch.remoteAddress())) {
+            LOG.trace("Close channel for peer `{}` that is not the service exposer.", ch.remoteAddress());
+            ch.close();
+            return;
+        }
+
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
 
         // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqHandler(windowSize, windowTimeout, windowTimeout.dividedBy(5)));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+        p.addLast(new GoBackNArqCodec());
+        p.addLast(new GoBackNArqHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(50)));
+        p.addLast(new ByteToGoBackNArqDataCodec());
+        p.addLast(new WriteTimeoutHandler(WRITE_TIMEOUT_SECONDS));
 
-        // (de)serializer for WormholeMessages
-        ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
+        // (de)serializers for TunnelMessages
+        p.addLast(new TunnelWriteCodec());
+        p.addLast(new JacksonCodec<>(JacksonCodecTunnelMessage.class));
 
-        if (payload.getText() != null) {
-            p.addLast(new WormholeTextSender(out, password, payload.getText()));
-        }
-        else {
-            p.addLast(new WormholeFileSender(out, password, payload.getFile()));
-        }
+        p.addLast(new ConsumeDrasylHandler(out, port, exposer, password));
 
         p.addLast(new PrintAndCloseOnExceptionHandler(err, exitCode));
 
