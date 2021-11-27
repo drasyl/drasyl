@@ -28,6 +28,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   separtely in
   the [config](drasyl-node/src/main/resources/reference.conf) (`drasyl.remote.message.arm.protocol.enabled`
   /`drasyl.remote.message.arm.application.enabled`).
+- CLI: `wormhole` sub-command is now able to send files as well.
+- CLI: `tunnel` sub-command added.
 
 ### Changed
 
