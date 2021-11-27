@@ -131,7 +131,9 @@ public class ChatGui {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(final WindowEvent e) {
-                shutdownNode();
+                if(node != null) {
+                    shutdownNode();
+                }
             }
         });
 
