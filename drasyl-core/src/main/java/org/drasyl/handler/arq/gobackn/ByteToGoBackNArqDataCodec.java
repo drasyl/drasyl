@@ -19,16 +19,29 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.arq.gbn;
+package org.drasyl.handler.arq.gobackn;
 
-import org.drasyl.util.UnsignedInteger;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToMessageCodec;
+
+import java.util.List;
 
 /**
- * Message of the Go-Back-N ARQ protocol.
+ * Encodes {@link ByteBuf}s to {@link AbstractGoBackNArqData}s and vice versa.
  */
-public interface GoBackNArqMessage {
-    /**
-     * @return message's sequence number
-     */
-    UnsignedInteger sequenceNo();
+public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<AbstractGoBackNArqData, ByteBuf> {
+    @Override
+    protected void encode(final ChannelHandlerContext ctx,
+                          final ByteBuf msg,
+                          final List<Object> out) throws Exception {
+        out.add(new GoBackNArqData(msg.retain()));
+    }
+
+    @Override
+    protected void decode(final ChannelHandlerContext ctx,
+                          final AbstractGoBackNArqData msg,
+                          final List<Object> out) throws Exception {
+        out.add(msg.content().retain());
+    }
 }

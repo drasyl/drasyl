@@ -19,7 +19,24 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
+package org.drasyl.handler.arq.gobackn;
+
+import io.netty.buffer.ByteBuf;
+import org.drasyl.util.UnsignedInteger;
+
 /**
- * Codecs, Handlers, and Messages for the Go-Back-N protocol.
+ * First data message of the Go-Back-N ARQ protocol.
  */
-package org.drasyl.handler.arq.stopandwait;
+public class GoBackNArqFirstData extends AbstractGoBackNArqData {
+    public GoBackNArqFirstData(final ByteBuf content) {
+        super(content);
+        this.sequenceNo = UnsignedInteger.MIN_VALUE;
+    }
+
+    @Override
+    public String toString() {
+        return "GoBackNArqFirstData{" +
+                "data=" + content() +
+                "}";
+    }
+}

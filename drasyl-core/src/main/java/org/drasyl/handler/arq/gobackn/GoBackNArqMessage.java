@@ -19,50 +19,16 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.arq.gbn;
+package org.drasyl.handler.arq.gobackn;
 
 import org.drasyl.util.UnsignedInteger;
 
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
-
 /**
- * Ack message of the Go-Back-N ARQ protocol.
+ * Message of the Go-Back-N ARQ protocol.
  */
-public class GoBackNArqAck implements GoBackNArqMessage {
-    private final UnsignedInteger sequenceNo;
-
-    public GoBackNArqAck(final UnsignedInteger sequenceNo) {
-        this.sequenceNo = requireNonNull(sequenceNo);
-    }
-
-    @Override
-    public UnsignedInteger sequenceNo() {
-        return sequenceNo;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final GoBackNArqAck that = (GoBackNArqAck) o;
-        return Objects.equals(sequenceNo, that.sequenceNo);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(sequenceNo);
-    }
-
-    @Override
-    public String toString() {
-        return "GoBackNArqAck{" +
-                "sequenceNo=" + sequenceNo +
-                '}';
-    }
+public interface GoBackNArqMessage {
+    /**
+     * @return message's sequence number
+     */
+    UnsignedInteger sequenceNo();
 }

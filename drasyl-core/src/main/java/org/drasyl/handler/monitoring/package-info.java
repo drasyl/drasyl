@@ -20,6 +20,6 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * Codecs, Handlers, and Messages for the Go-Back-N protocol.
+ * Logs channel events/messages for monitoring purpose.
  */
-package org.drasyl.handler.arq.stopandwait;
+package org.drasyl.handler.monitoring;

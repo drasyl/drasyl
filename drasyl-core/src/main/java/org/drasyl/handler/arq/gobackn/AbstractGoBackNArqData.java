@@ -19,29 +19,51 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.arq.gbn;
+package org.drasyl.handler.arq.gobackn;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.buffer.DefaultByteBufHolder;
+import org.drasyl.util.UnsignedInteger;
 
-import java.util.List;
+import java.util.Objects;
 
-/**
- * Encodes {@link ByteBuf}s to {@link AbstractGoBackNArqData}s and vice versa.
- */
-public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<AbstractGoBackNArqData, ByteBuf> {
-    @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final ByteBuf msg,
-                          final List<Object> out) throws Exception {
-        out.add(new GoBackNArqData(msg.retain()));
+abstract class AbstractGoBackNArqData extends DefaultByteBufHolder implements GoBackNArqMessage {
+    protected UnsignedInteger sequenceNo;
+
+    protected AbstractGoBackNArqData(final ByteBuf content) {
+        super(content);
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final AbstractGoBackNArqData msg,
-                          final List<Object> out) throws Exception {
-        out.add(msg.content().retain());
+    public UnsignedInteger sequenceNo() {
+        return sequenceNo;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        final AbstractGoBackNArqData that = (AbstractGoBackNArqData) o;
+        return Objects.equals(sequenceNo, that.sequenceNo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), sequenceNo);
+    }
+
+    @Override
+    public String toString() {
+        return "AbstractGoBackNArqData{" +
+                "sequenceNo=" + sequenceNo +
+                ", data=" + content() +
+                "}";
     }
 }

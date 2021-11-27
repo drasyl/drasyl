@@ -19,19 +19,22 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.arq.gbn;
+package org.drasyl.handler.arq.gobackn;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.DefaultByteBufHolder;
 import org.drasyl.util.UnsignedInteger;
 
 import java.util.Objects;
 
-abstract class AbstractGoBackNArqData extends DefaultByteBufHolder implements GoBackNArqMessage {
-    protected UnsignedInteger sequenceNo;
+import static java.util.Objects.requireNonNull;
 
-    protected AbstractGoBackNArqData(final ByteBuf content) {
-        super(content);
+/**
+ * Ack message of the Go-Back-N ARQ protocol.
+ */
+public class GoBackNArqAck implements GoBackNArqMessage {
+    private final UnsignedInteger sequenceNo;
+
+    public GoBackNArqAck(final UnsignedInteger sequenceNo) {
+        this.sequenceNo = requireNonNull(sequenceNo);
     }
 
     @Override
@@ -47,23 +50,19 @@ abstract class AbstractGoBackNArqData extends DefaultByteBufHolder implements Go
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final AbstractGoBackNArqData that = (AbstractGoBackNArqData) o;
+        final GoBackNArqAck that = (GoBackNArqAck) o;
         return Objects.equals(sequenceNo, that.sequenceNo);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), sequenceNo);
+        return Objects.hash(sequenceNo);
     }
 
     @Override
     public String toString() {
-        return "AbstractGoBackNArqData{" +
+        return "GoBackNArqAck{" +
                 "sequenceNo=" + sequenceNo +
-                ", data=" + content() +
-                "}";
+                '}';
     }
 }
