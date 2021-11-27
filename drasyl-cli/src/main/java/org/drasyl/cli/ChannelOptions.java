@@ -81,7 +81,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             names = { "--super-peer" },
             description = "The super peers the server joins to.",
             paramLabel = "<public-key=host:port>",
-            defaultValue = "0e6617646826bf64846d7b5d2191f4329af22c5f703d8938c94325505eca0108=sp-sto1.drasyl.org:22527,1e6161f3f648781eadca2a47c3e2912b1c63675f68a7ddc2d69205f5df8b22db=sp-nbg3.drasyl.org:22527",
+            defaultValue = "c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fra1.drasyl.org:22527,5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c=sp-nbg2.drasyl.org:22527",
             split = ","
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;
