@@ -25,10 +25,6 @@ drasyl node without having to write configuration files or provide IP addresses 
 
 ![drasyl architecture](https://docs.drasyl.org/master/assets/img/drasyl-architecture.png)
 
-_As drasyl is primarily developed for the research project
-[Smart Networks for Urban Participation (SANE)](https://sane.city/) and focuses on functionalities
-necessary for the project. However, drasyl is open to contributions made by the community._
-
 # Features
 
 * Provides Communication Channels between any two Nodes (on the Internet).
@@ -47,10 +43,8 @@ necessary for the project. However, drasyl is open to contributions made by the 
 
 * [Getting Started](https://docs.drasyl.org/getting-started/)
 * [Configuration](https://docs.drasyl.org/configuration/)
-* [JavaDoc](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/index.html)  
 * [Command Line Interface](https://docs.drasyl.org/cli/)
-* [Chat](https://gitter.im/drasyl-overlay/drasyl)
 
 # License
 
-This is free software under the terms of the [MIT License](LICENSE)
+This is free software under the terms of the [MIT License](LICENSE).
