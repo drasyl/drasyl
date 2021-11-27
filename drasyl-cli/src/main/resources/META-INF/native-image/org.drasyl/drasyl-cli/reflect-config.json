@@ -24,6 +24,36 @@
     "allDeclaredConstructors": true
   },
   {
+    "name": "org.drasyl.cli.tunnel.message.ChannelActive",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.cli.tunnel.message.Close",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.cli.tunnel.message.Connect",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.cli.tunnel.message.ConnectFailed",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
+    "name": "org.drasyl.cli.tunnel.message.Flush",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
     "name": "org.drasyl.cli.wormhole.message.FileMessage",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
