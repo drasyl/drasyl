@@ -4,8 +4,12 @@ This file describes how to make the various kinds of releases.
 
 ## Making a release
 
-* Remove the nightly/snapshot information from the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
-* Update version in [README.md](README.md) and [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
+* Remove the nightly/snapshot information from
+  the [getting-started.md](docs/content/getting-started.md) and
+  the [index.md](docs/content/index.md).
+* Update version
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
+  and [Chart.yaml](chart/Chart.yaml).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Build software and push to maven repository:
 ```bash
@@ -14,7 +18,7 @@ mvn clean release:prepare
 ```
 An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.
 
-* Wait for the GitLab Action to deploy new version to Maven Central ("Deploy" workflow).
+* Wait for the GitHub Action to deploy new version to Maven Central ("Deploy" workflow).
 * Deploy to our public super peers (this is a manual process).
 * Create Release on GitHub:
   * Go to https://github.com/drasyl-overlay/drasyl/tags.
