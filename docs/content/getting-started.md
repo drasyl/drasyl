@@ -1,14 +1,22 @@
 # Getting Started
 
-This guide describes the necessary steps to create your first drasyl node and how to integrate it into your application.
+!!! important "Nightly Version"
 
-Once the node is set up, it and therefore your application can participate in the drasyl Overlay Network and communicate with other nodes and applications.
+    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
+
+This guide describes the necessary steps to create your first drasyl node and how to integrate it
+into your application.
+
+Once the node is set up, it and therefore your application can participate in the drasyl Overlay
+Network and communicate with other nodes and applications.
 
 ## Add Dependency
 
-Create a new maven project and add the dependency to your [pom.xml](http://maven.apache.org/pom.html):
+Create a new maven project and add the dependency to
+your [pom.xml](http://maven.apache.org/pom.html):
 
 Maven:
+
 ```xml
 <repositories>
     <repository>
@@ -28,16 +36,16 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-node</artifactId>
-    <version>0.6.0-SNAPSHOT</version>
+    <version>0.7.0-SNAPSHOT</version>
 </dependency>
 ```
 
 Other dependency managers:
 
 ```java
-Gradle:compile"org.drasyl:drasyl-node:0.6.0-SNAPSHOT" // build.gradle 
-        Ivy:<dependency org="org.drasyl"name="drasyl-node"rev="0.6.0-SNAPSHOT"conf="build"/> // ivy.xml
-        SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.6.0-SNAPSHOT" // build.sbt
+Gradle:compile"org.drasyl:drasyl-node:0.7.0-SNAPSHOT" // build.gradle 
+        Ivy:<dependency org="org.drasyl"name="drasyl-node"rev="0.7.0-SNAPSHOT"conf="build"/> // ivy.xml
+        SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0-SNAPSHOT" // build.sbt
 ```
 
 ## Implementing `DrasylNode`
