@@ -21,11 +21,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   return a dedicated [`Channel`](https://netty.io/4.1/api/io/netty/channel/Channel.html) for
   communication with the given peer.
 - The above mentioned [`Channel`](https://netty.io/4.1/api/io/netty/channel/Channel.html) comes with
-  an backpressure mechanism (`Channel#isWritable`/`Channel#bytesBeforeWritable`
+  a backpressure mechanism (`Channel#isWritable`/`Channel#bytesBeforeWritable`
   /`Channel#bytesBeforeUnwritable`) allowing the application to control how fast traffic is written
   to the overlay.
 - The encryption of overlay management messages and application messages can now be disabled
-  separtely in
+  separately in
   the [config](drasyl-node/src/main/resources/reference.conf) (`drasyl.remote.message.arm.protocol.enabled`
   /`drasyl.remote.message.arm.application.enabled`).
 - CLI: `wormhole` sub-command is now able to send files as well.
@@ -41,7 +41,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- Overwhelming Application Traffic will no longer cause the node to drop out of the overlay.
+- Overwhelming application traffic will no longer cause the node to drop out of the overlay.
 
 ## [0.5.1] - 2021-09-14
 
