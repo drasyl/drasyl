@@ -43,7 +43,7 @@ extra:
       link: https://hub.docker.com/r/drasyl/drasyl
       name: Docker repo of drasyl
     - icon: fontawesome/solid/mug-hot
-      link: https://www.javadoc.io/doc/org.drasyl/drasyl-core
+      link: https://api.drasyl.org
       name: JavaDoc of drasyl
     - icon: fontawesome/brands/gitter
       link: https://gitter.im/drasyl-overlay/drasyl
