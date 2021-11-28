@@ -10,21 +10,6 @@ Create a new maven project and add the dependency to your [pom.xml](http://maven
 
 Maven:
 ```xml
-<repositories>
-    <repository>
-        <id>oss.sonatype.org-snapshot</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        <releases>
-            <enabled>false</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-</repositories>
-```
-
-```xml
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-node</artifactId>
