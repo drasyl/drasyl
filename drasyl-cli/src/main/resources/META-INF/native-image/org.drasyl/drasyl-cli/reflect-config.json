@@ -1,5 +1,11 @@
 [
   {
+    "name": "org.drasyl.cli.perf.message.Noop",
+    "allDeclaredFields": true,
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+  {
     "name": "org.drasyl.cli.perf.message.SessionConfirmation",
     "allDeclaredFields": true,
     "allDeclaredMethods": true,
