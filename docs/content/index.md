@@ -1,9 +1,5 @@
 # Welcome
 
-!!! important "Nightly Version"
-
-    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
-
 ![drasyl architecture](assets/img/drasyl-architecture.png)
 
 drasyl [dʁazy:l] is an [open-source](https://github.com/drasyl-overlay/drasyl) general-purpose

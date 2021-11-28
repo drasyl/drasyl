@@ -4,12 +4,9 @@ This file describes how to make the various kinds of releases.
 
 ## Making a release
 
-* Remove the nightly/snapshot information from
-  the [getting-started.md](docs/content/getting-started.md) and
-  the [index.md](docs/content/index.md).
-* Update version
+* Update  version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
-  and [Chart.yaml](chart/Chart.yaml).
+  and [Chart.yaml](chart/Chart.yaml) and [getting-started.md](docs/content/getting-started.md).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Build software and push to maven repository:
 ```bash
@@ -26,7 +23,9 @@ An additional call of `mvn release:perform` is not necessary! GitLab CI performs
   * **Title:** `v1.2.0`
   * **Description:** `[CHANGELOG.md](CHANGELOG.md)`
 * Wait for GitHub Action to complete "Release" workflow.
-* Re-add the nightly/snapshot information to the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
+* Update back to next SNAPSHOT version
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
+  and [Chart.yaml](chart/Chart.yaml) and [getting-started.md](docs/content/getting-started.md).
 * Push the new version to chocolatey. For instructions see this repo: [https://github.com/drasyl-overlay/drasyl-choco](https://github.com/drasyl-overlay/drasyl-choco/blob/master/RELEASE.md)
 
 ## Making a manual build of docker

@@ -57,6 +57,7 @@ extra_javascript:
   - assets/js/mermaid.min.js
   - assets/js/hljs/highlight.min.js # Download from https://highlightjs.org/download/
   - assets/js/extra.js
+  - assets/js/nightly.js
 
 plugins:
   - search

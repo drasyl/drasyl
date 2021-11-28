@@ -1,9 +1,5 @@
 # Getting Started
 
-!!! important "Nightly Version"
-
-    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
-
 This guide describes the necessary steps to create your first drasyl node and how to integrate it
 into your application.
 
