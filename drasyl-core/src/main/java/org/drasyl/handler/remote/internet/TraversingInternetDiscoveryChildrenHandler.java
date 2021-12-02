@@ -188,7 +188,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
-        traversingPeer.setInetAddress(inetAddress);
+        if(traversingPeer.setInetAddress(inetAddress)) {
+            // send Discovery
+            traversingPeer.applicationTrafficSentOrReceived();
+            traversingPeer.discoverySent();
+            writeDiscoveryMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
+            ctx.flush();
+        }
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
@@ -312,8 +318,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             this(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress, 0L, 0L, 0L);
         }
 
-        public void setInetAddress(final InetSocketAddress inetAddress) {
-            this.inetAddress = requireNonNull(inetAddress);
+        public boolean setInetAddress(final InetSocketAddress inetAddress) {
+            if(requireNonNull(inetAddress).equals(this.inetAddress)) {
+                this.inetAddress = inetAddress;
+                return false;
+            }
+            this.inetAddress = inetAddress;
+            return true;
         }
 
         public InetSocketAddress inetAddress() {
