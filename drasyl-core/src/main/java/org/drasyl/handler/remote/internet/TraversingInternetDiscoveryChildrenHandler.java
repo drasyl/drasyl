@@ -319,12 +319,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
 
         public boolean setInetAddress(final InetSocketAddress inetAddress) {
-            if(requireNonNull(inetAddress).equals(this.inetAddress)) {
-                this.inetAddress = inetAddress;
-                return false;
-            }
-            this.inetAddress = inetAddress;
-            return true;
+            final boolean changed = Objects.equals(inetAddress, this.inetAddress);
+            this.inetAddress = requireNonNull(inetAddress);
+            return changed;
         }
 
         public InetSocketAddress inetAddress() {
