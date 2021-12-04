@@ -107,7 +107,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
     private boolean shouldInitiateRendezvous(final DrasylAddress sender,
                                              final DrasylAddress recipient) {
         if (uniteAttemptsCache == null) {
-            return true;
+            return false;
         }
 
         final Pair<DrasylAddress, DrasylAddress> key;
