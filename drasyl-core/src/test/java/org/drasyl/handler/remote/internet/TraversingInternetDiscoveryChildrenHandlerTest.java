@@ -203,12 +203,13 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         @Nested
         class SetInetAddress {
             @Test
-            void shouldSetInetAddress(@Mock final InetSocketAddress inetAddressA,
-                                      @Mock final InetSocketAddress inetAddressB) {
+            void shouldSetInetAddress() {
+                final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
+                final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
+
                 final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddressA, 0L, 0L, 0L);
 
-                traversingPeer.setInetAddress(inetAddressB);
-
+                assertTrue(traversingPeer.setInetAddress(inetAddressB));
                 assertSame(inetAddressB, traversingPeer.inetAddress());
             }
         }
@@ -230,8 +231,9 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         @Nested
         class AcknowledgementReceived {
             @Test
-            void shouldRecordLastAcknowledgementTimeAndInetAddress(@Mock final InetSocketAddress inetAddressA,
-                                                                   @Mock final InetSocketAddress inetAddressB) {
+            void shouldRecordLastAcknowledgementTimeAndInetAddress() {
+                final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
+                final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
                 when(currentTime.getAsLong()).thenReturn(1L);
 
                 final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddressA, 0L, 0L, 0L);

@@ -189,18 +189,20 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
-        if(traversingPeer.setInetAddress(inetAddress)) {
-            // send Discovery
-            traversingPeer.applicationTrafficSentOrReceived();
-            traversingPeer.discoverySent();
-            writeDiscoveryMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
-            ctx.flush();
-        }
+        boolean inetAddressHasChanged = traversingPeer.setInetAddress(inetAddress);
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
+
+        if (inetAddressHasChanged) {
+            // send Discovery immediately to speed up traversal
+            traversingPeer.applicationTrafficSentOrReceived();
+            traversingPeer.discoverySent();
+            writeDiscoveryMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
+            ctx.flush();
+        }
     }
 
     @SuppressWarnings("java:S1067")
