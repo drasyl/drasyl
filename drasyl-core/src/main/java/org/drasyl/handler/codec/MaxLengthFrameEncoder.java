@@ -23,21 +23,21 @@ package org.drasyl.handler.codec;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
 
 import java.util.List;
 
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * A decoder that splits received {@link ByteBuf}s into frames not larger then {@link
+ * An encoder that splits received {@link ByteBuf}s into frames not larger then {@link
  * #maxFrameLength}. For example, if you received the following four fragmented packets:
  * <pre>
  * +---+----+-----+----+
  * | A | BC | DEF | GH |
  * +---+----+-----+----+
  * </pre>
- * A {@link MaxLengthFrameDecoder}{@code (2)} will decode them into the following three packets with
+ * A {@link MaxLengthFrameEncoder}{@code (2)} will encode them into the following three packets with
  * the fixed length:
  * <pre>
  * +---+----+----+---+----+
@@ -45,7 +45,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * +---+----+----+---+----+
  * </pre>
  */
-public class MaxLengthFrameDecoder extends ByteToMessageDecoder {
+public class MaxLengthFrameEncoder extends MessageToMessageEncoder<ByteBuf> {
     private final int maxFrameLength;
 
     /**
@@ -53,14 +53,16 @@ public class MaxLengthFrameDecoder extends ByteToMessageDecoder {
      *
      * @param maxFrameLength the maximum length of the frame
      */
-    public MaxLengthFrameDecoder(final int maxFrameLength) {
+    public MaxLengthFrameEncoder(final int maxFrameLength) {
         this.maxFrameLength = requirePositive(maxFrameLength);
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
+    protected void encode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) throws Exception {
-        out.add(in.readRetainedSlice(Math.min(in.readableBytes(), maxFrameLength)));
+        while (in.readableBytes() > 0) {
+            out.add(in.readRetainedSlice(Math.min(in.readableBytes(), maxFrameLength)));
+        }
     }
 }
