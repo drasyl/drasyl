@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * This class represents an unsigned short in a rang of [0, 2^16 - 1]
+ * This class represents an unsigned short in a rang of [0, 2^16).
  */
 public final class UnsignedShort {
     public static final UnsignedShort MIN_VALUE = UnsignedShort.of(new byte[2]);
@@ -38,7 +38,7 @@ public final class UnsignedShort {
 
     private UnsignedShort(final int value) {
         if (value < MIN_VALUE.value || value > MAX_VALUE.value) {
-            throw new IllegalArgumentException("Value must be in range of [0, 2^16 - 1], but was " + value);
+            throw new IllegalArgumentException("Value must be in range of [0, 2^16), but was " + value);
         }
 
         this.value = value;
@@ -57,7 +57,7 @@ public final class UnsignedShort {
      *
      * @param value the value as integer
      * @return an unaligned short
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^16 - 1].
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^16).
      */
     public static UnsignedShort of(final int value) {
         return new UnsignedShort(value);
@@ -68,7 +68,7 @@ public final class UnsignedShort {
      *
      * @param value the value as byte array in big-endian (BE) format
      * @return an unaligned short
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^16 - 1].
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^16).
      */
     public static UnsignedShort of(final byte[] value) {
         return new UnsignedShort(value);

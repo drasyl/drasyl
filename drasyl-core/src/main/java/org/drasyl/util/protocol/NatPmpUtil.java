@@ -110,7 +110,7 @@ public final class NatPmpUtil {
      * </pre>
      *
      * @throws IllegalArgumentException if {@code internalPort} or {@code externalPort} is not in
-     *                                  range of [0, 2^16 - 1]
+     *                                  range of [0, 2^16)
      */
     public static byte[] buildMappingRequestMessage(final int internalPort,
                                                     final int externalPort,

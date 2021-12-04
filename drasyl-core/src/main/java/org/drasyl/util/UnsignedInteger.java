@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * This class represents an unsigned integer in a rang of [0, 2^32 - 1]
+ * This class represents an unsigned integer in a rang of [0, 2^32).
  */
 public final class UnsignedInteger {
     public static final UnsignedInteger MIN_VALUE = UnsignedInteger.of(new byte[4]);
@@ -40,7 +40,7 @@ public final class UnsignedInteger {
 
     private UnsignedInteger(final long value) {
         if (value < MIN_VALUE.value || value > MAX_VALUE.value) {
-            throw new IllegalArgumentException("Value must be in range of [0, 2^32 - 1], but was " + value);
+            throw new IllegalArgumentException("Value must be in range of [0, 2^32), but was " + value);
         }
 
         this.value = value;
@@ -69,7 +69,7 @@ public final class UnsignedInteger {
      *
      * @param value the value as long
      * @return an unaligned int
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^32 - 1].
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
      */
     public static UnsignedInteger of(final long value) {
         return new UnsignedInteger(value);
@@ -80,7 +80,7 @@ public final class UnsignedInteger {
      *
      * @param value the value as byte array in big-endian (BE) format
      * @return an unaligned int
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^32 - 1].
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
      */
     public static UnsignedInteger of(final byte[] value) {
         return new UnsignedInteger(value);

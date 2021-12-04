@@ -166,7 +166,7 @@ public final class PcpPortUtil {
      *       the address-family-specific all-zeros address (see Section 5).
      * </pre>
      *
-     * @throws IllegalArgumentException if {@code port} is not in range of [0, 2^16 - 1]
+     * @throws IllegalArgumentException if {@code port} is not in range of [0, 2^16)
      */
     public static byte[] buildMappingRequestMessage(final Duration lifetime,
                                                     final InetAddress clientAddress,
