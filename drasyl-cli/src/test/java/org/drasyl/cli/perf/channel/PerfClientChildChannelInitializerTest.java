@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
@@ -50,7 +49,6 @@ class PerfClientChildChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final PrintStream out,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey server,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final SessionRequest sessionRequest,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
@@ -58,7 +56,7 @@ class PerfClientChildChannelInitializerTest {
             when(ctx.channel()).thenReturn(channel);
             when(channel.remoteAddress()).thenReturn(server);
 
-            final ChannelInboundHandler handler = new PerfClientChildChannelInitializer(out, err, exitCode, identity, server, false, sessionRequest);
+            final ChannelInboundHandler handler = new PerfClientChildChannelInitializer(out, err, exitCode, server, false, sessionRequest);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(7)).addLast(any());

@@ -121,7 +121,7 @@ public class PerfClientCommand extends ChannelOptions {
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
         final SessionRequest request = new SessionRequest(testDuration, messagesPerSecond, messageSize, reverseMode);
-        return new PerfClientChildChannelInitializer(out, err, exitCode, identity, server, waitForDirectConnection, request);
+        return new PerfClientChildChannelInitializer(out, err, exitCode, server, waitForDirectConnection, request);
     }
 
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,

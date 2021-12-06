@@ -34,7 +34,6 @@ import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -52,7 +51,6 @@ public class PerfClientChildChannelInitializer extends ChannelInitializer<Drasyl
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
-    private final Identity identity;
     private final IdentityPublicKey server;
     private final boolean waitForDirectConnection;
     private final SessionRequest sessionRequest;
@@ -60,14 +58,12 @@ public class PerfClientChildChannelInitializer extends ChannelInitializer<Drasyl
     public PerfClientChildChannelInitializer(final PrintStream out,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode,
-                                             final Identity identity,
                                              final IdentityPublicKey server,
                                              final boolean waitForDirectConnection,
                                              final SessionRequest sessionRequest) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
-        this.identity = requireNonNull(identity);
         this.server = requireNonNull(server);
         this.waitForDirectConnection = waitForDirectConnection;
         this.sessionRequest = requireNonNull(sessionRequest);
