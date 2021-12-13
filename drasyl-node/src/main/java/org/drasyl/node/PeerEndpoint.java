@@ -21,8 +21,6 @@
  */
 package org.drasyl.node;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.auto.value.AutoValue;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
@@ -95,7 +93,6 @@ public abstract class PeerEndpoint {
         return new InetSocketAddress(getHost(), getPort());
     }
 
-    @JsonValue
     @Override
     public String toString() {
         return getURI().toString();
@@ -185,7 +182,6 @@ public abstract class PeerEndpoint {
      * @throws NullPointerException     if {@code endpoint} is {@code null}
      * @throws IllegalArgumentException if {@code endpoint} creates an invalid {@code Endpoint}
      */
-    @JsonCreator
     public static PeerEndpoint of(final String endpoint) {
         try {
             return of(new URI(endpoint));

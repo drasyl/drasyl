@@ -19,41 +19,29 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.node.identity.serialization;
+package org.drasyl.node;
 
-import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.identity.ProofOfWork;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
-import java.io.IOException;
+/**
+ * Holder for the JSON serializer and JSON deserializer.
+ */
+public final class JSONUtil {
+    public static final ObjectMapper JACKSON_MAPPER;
+    public static final ObjectWriter JACKSON_WRITER;
+    public static final ObjectReader JACKSON_READER;
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-public class ProofOfWorkMixinTest {
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "123";
-
-            assertEquals(
-                    ProofOfWork.of(123),
-                    JACKSON_READER.readValue(json, ProofOfWork.class)
-            );
-        }
+    static {
+        JACKSON_MAPPER = new ObjectMapper();
+        JACKSON_MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        JACKSON_WRITER = JACKSON_MAPPER.writer();
+        JACKSON_READER = JACKSON_MAPPER.reader();
     }
 
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(ProofOfWork.of(123)))
-                    .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("123");
-        }
+    private JSONUtil() {
+        // util class
     }
 }

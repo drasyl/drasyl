@@ -21,20 +21,15 @@
  */
 package org.drasyl.node;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -182,49 +177,6 @@ class PeerEndpointTest {
             final PeerEndpoint endpoint = PeerEndpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "&networkId=1337");
 
             assertEquals(PeerEndpoint.of("localhost", 123, IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337), endpoint);
-        }
-    }
-
-    @SuppressWarnings("java:S5976")
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeEndpointToCorrectObject() throws IOException {
-            final String json = "\"udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\"";
-
-            assertEquals(PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()), JACKSON_READER.readValue(json, PeerEndpoint.class));
-        }
-
-        @Test
-        void shouldRejectNonUdpEndpoint() {
-            final String json = "\"http://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\"";
-
-            assertThrows(JsonMappingException.class, () -> JACKSON_READER.readValue(json, PeerEndpoint.class));
-        }
-
-        @Test
-        void shouldRejectEndpointWithoutPublicKey() {
-            final String json = "\"udp://example.com:22527\"";
-
-            assertThrows(JsonMappingException.class, () -> JACKSON_READER.readValue(json, PeerEndpoint.class));
-        }
-
-        @Test
-        void shouldRejectEndpointWithoutPort() {
-            final String json = "\"udp://example.com?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "\"";
-
-            assertThrows(JsonMappingException.class, () -> JACKSON_READER.readValue(json, PeerEndpoint.class));
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeEndpointToCorrectJson() throws IOException {
-            final PeerEndpoint endpoint = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-
-            JsonAssertions.assertThatJson(JACKSON_WRITER.writeValueAsString(endpoint))
-                    .isEqualTo("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
         }
     }
 }

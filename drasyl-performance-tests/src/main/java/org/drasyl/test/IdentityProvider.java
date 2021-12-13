@@ -22,6 +22,7 @@
 package org.drasyl.test;
 
 import org.drasyl.identity.Identity;
+import org.drasyl.node.IdentityFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
-
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
 
 @SuppressWarnings("unused")
 class IdentityProvider {
@@ -48,7 +47,7 @@ class IdentityProvider {
         for (final File file : path.toFile().listFiles()) {
             if (file.getName().endsWith(".identity")) {
                 try {
-                    identities.add(JACKSON_READER.readValue(file, Identity.class));
+                    identities.add(IdentityFile.readFrom(file));
                 }
                 catch (final IOException e) {
                     throw new IOException("Unable to read identity from " + file.toString(), e);

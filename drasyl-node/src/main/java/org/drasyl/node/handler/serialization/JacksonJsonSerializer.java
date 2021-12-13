@@ -21,22 +21,33 @@
  */
 package org.drasyl.node.handler.serialization;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A serializer based on the <a href="https://github.com/FasterXML/jackson">Jackson Library</a> for
  * converting java objects to and from JSON.
  */
 public class JacksonJsonSerializer implements Serializer {
+    private final ObjectMapper mapper;
+
+    private JacksonJsonSerializer(final ObjectMapper mapper) {
+        this.mapper = requireNonNull(mapper);
+    }
+
+    public JacksonJsonSerializer() {
+        this(new ObjectMapper());
+    }
+
     @Override
     public byte[] toByteArray(final Object o) throws IOException {
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            JACKSON_WRITER.writeValue(out, o);
+            mapper.writeValue(out, o);
             return out.toByteArray();
         }
     }
@@ -44,7 +55,7 @@ public class JacksonJsonSerializer implements Serializer {
     @Override
     public <T> T fromByteArray(final byte[] bytes, final Class<T> type) throws IOException {
         try (final ByteArrayInputStream in = new ByteArrayInputStream(bytes)) {
-            return JACKSON_READER.readValue(in, type);
+            return mapper.readValue(in, type);
         }
     }
 }
