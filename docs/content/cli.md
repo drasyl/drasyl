@@ -10,24 +10,24 @@ Run `drasyl help` to get an overview of available commands and flags:
 
 ```bash
 $ drasyl help
-Usage:
-  drasyl [flags]
-  drasyl [command]
+drasyl Command Line Interface: A collection of utilities for drasyl.
 
-Available Commands:
-help           Show help for drasyl commands and flags.
-node           Run a drasyl node.
-genidentity    Generate and output new Identity.
-wormhole       Transfer a text message from one node to another, safely.
-version        Show the version number.
+Usage: drasyl [COMMAND]
 
-Flags:
--c,--config <file>        Load configuration from specified file (default:
-                          /Users/heiko/drasyl.conf).
--h,--help                 Show this help.
--v,--verbose <level>      Sets the log level (off, error, warn, info, debug, trace; default: warn)
+  genidentity  Generates and outputs a new identity
+  help         Displays help information about the specified command
+  node         Runs a drasyl node
+  perf         Tool for measuring network performance
+  pubkey       Dervices the public key and prints it to standard output from a
+                 private key given on standard input
+  tunnel       Expose safely local networked services behind through NATs and
+                 firewalls to other computers
+  version      Shows the drasyl version number, the java version, and the
+                 architecture
+  wormhole     Transfer a text message or file from one computer to another,
+                 safely and through NATs and firewalls
 
-Use "drasyl [command] --help" for more information about a command.
+The environment variable JAVA_OPTS can be used to pass options to the JVM.
 ```
 
 ## Docker
@@ -38,11 +38,15 @@ For instance:
 
 ```bash
 $ docker run -i -t drasyl/drasyl version
-drasyl v0.2.0 (ef906c1)
-- os.name Linux
-- os.version 4.19.76-linuxkit
-- os.arch amd64
-- java.version 11.0.8
+- drasyl-cli.version 0.6.0 (01183ed)
+- drasyl-core.version 0.6.0 (01183ed)
+- drasyl-node.version 0.6.0 (01183ed)
+- drasyl-plugin-groups-client.version 0.6.0 (01183ed)
+- drasyl-plugin-groups-manager.version 0.6.0 (01183ed)
+- java.version 17.0.1
+- os.name Mac OS X
+- os.version 11.4
+- os.arch x86_64
 ```
 
 To run a node:
