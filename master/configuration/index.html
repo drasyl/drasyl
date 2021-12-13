@@ -554,7 +554,7 @@ It is done by calling <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core
 Available builder methods can be obtained from the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html">Javadoc</a>.</p>
 <p>Example:
 <pre class="highlight"><code class="language-java">DrasylConfig config = DrasylConfig.newBuilder()
-    .identityPath(Path.of("/Users/heiko/drasyl.identity.json"))
+    .identityPath(Path.of("/Users/heiko/drasyl.identity"))
     .networkId(-25421)
     .remoteSuperPeerEndpoint(Endpoint.of("udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"))
     .remoteEnabled(false)
@@ -569,7 +569,7 @@ the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl
 This file has to use the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON Syntax</a>.
 The file only needs to contain the parameters you want to overwrite because it will be merged with the default values found in <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-core/src/main/resources/reference.conf">reference.conf</a>.</p>
 <p>Example:
-<pre class="highlight"><code class="language-hocon">drasyl.identity.path = /Users/heiko/drasyl.identity.json
+<pre class="highlight"><code class="language-hocon">drasyl.identity.path = /Users/heiko/drasyl.identity
 drasyl.network.id = -25421
 drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"</code></pre></p>
 <h3 id="use-environment-variables">Use environment variables<a class="headerlink" href="#use-environment-variables" title="Permanent link">&para;</a></h3>
@@ -583,7 +583,7 @@ drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppE
 </ul>
 <p>i.e. The environment variable <code>CONFIG_FORCE_a_b__c___d</code> set the configuration key <code>a.b-c_d</code></p>
 <p>Example:
-<pre class="highlight"><code class="language-bash">$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity.json \
+<pre class="highlight"><code class="language-bash">$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity \
     CONFIG_FORCE_drasyl_network_id=-25421 \
     CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC \
     your-application.jar</code></pre></p>

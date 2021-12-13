@@ -548,11 +548,11 @@ drasyl v0.2.0 (ef906c1)
 - java.version 11.0.8</code></pre>
 <p>To run a node:
 <pre class="highlight"><code class="language-bash"># generate an identity (this can take some time)
-$ docker run -i -t drasyl/drasyl genidentity | grep -v "WARNING:" &gt; drasyl.identity.json
+$ docker run -i -t drasyl/drasyl genidentity | grep -v "WARNING:" &gt; drasyl.identity
 
 # start a node
 $ docker run -i -t -p 22527:22527 \
-    -v $PWD/drasyl.identity.json:/drasyl.identity.json \
+    -v $PWD/drasyl.identity:/drasyl.identity \
     drasyl/drasyl node</code></pre></p>
 <p>This command passes the just generated identity to the docker container and then launch the <code>drasyl node</code> command.</p>
 <h2 id="homebrew">Homebrew<a class="headerlink" href="#homebrew" title="Permanent link">&para;</a></h2>
