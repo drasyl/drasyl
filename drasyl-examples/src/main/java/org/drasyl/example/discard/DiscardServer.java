@@ -39,7 +39,7 @@ import java.util.concurrent.ExecutionException;
  */
 @SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S2096" })
 public class DiscardServer extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "discard-server.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "discard-server.identity");
 
     protected DiscardServer(final DrasylConfig config) throws DrasylException {
         super(config);

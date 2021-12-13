@@ -34,9 +34,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Set;
 
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.drasyl.util.PathUtil.hasPosixSupport;
@@ -60,17 +60,9 @@ class IdentityManagerTest {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
 
             // create existing file with identity
-            Files.writeString(path, "{\n" +
-                    "  \"proofOfWork\" : " + ID_1.getProofOfWork().intValue() + ",\n" +
-                    "  \"identityKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + ID_1.getIdentityPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
-                    "}," +
-                    "  \"keyAgreementKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + ID_1.getKeyAgreementPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
-                    "}" +
-                    "}", StandardOpenOption.CREATE);
+            Files.writeString(path, "[Identity]\n" +
+                    "SecretKey = " + ID_1.getIdentitySecretKey().toUnmaskedString() + "\n" +
+                    "ProofOfWork = " + ID_1.getProofOfWork().intValue(), CREATE);
             if (hasPosixSupport(path)) {
                 Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
             }
@@ -83,17 +75,9 @@ class IdentityManagerTest {
             final Path path = Paths.get(dir.toString(), "my-identity.json");
 
             // create existing file with invalid identity
-            Files.writeString(path, "{\n" +
-                    "  \"proofOfWork\" : 42,\n" +
-                    "  \"identityKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + ID_1.getIdentityPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + ID_1.getIdentitySecretKey().toUnmaskedString() + "\"\n" +
-                    "}," +
-                    "  \"keyAgreementKeyPair\" : {" +
-                    "  \"publicKey\" : \"" + ID_1.getKeyAgreementPublicKey() + "\",\n" +
-                    "  \"secretKey\" : \"" + ID_1.getKeyAgreementSecretKey().toUnmaskedString() + "\"\n" +
-                    "}" +
-                    "}", StandardOpenOption.CREATE);
+            Files.writeString(path, "[Identity]\n" +
+                    "SecretKey = " + ID_1.getIdentitySecretKey().toUnmaskedString() + "\n" +
+                    "ProofOfWork = 42", CREATE);
             if (hasPosixSupport(path)) {
                 Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
             }

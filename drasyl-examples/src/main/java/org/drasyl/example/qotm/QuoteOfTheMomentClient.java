@@ -38,7 +38,7 @@ import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings({ "java:S106", "java:S1845", "java:S2096" })
 public class QuoteOfTheMomentClient extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "qotm-client.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "qotm-client.identity");
     private static final Duration pullTimeout = Duration.ofSeconds(3);
     private final CompletableFuture<Void> online = new CompletableFuture<>();
 

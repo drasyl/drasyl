@@ -116,7 +116,7 @@ class PerfCommandIT {
     @Timeout(value = 30_000, unit = MILLISECONDS)
     void shouldTransferText(@TempDir final Path path) throws IOException {
         // create server
-        final Path serverPath = path.resolve("server.identity.json");
+        final Path serverPath = path.resolve("server.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_2);
         final EventLoopGroup serverParentGroup = new NioEventLoopGroup(1);
         final EventLoopGroup serverChildGroup = new NioEventLoopGroup();
@@ -146,7 +146,7 @@ class PerfCommandIT {
         }, notNullValue());
 
         // create client
-        final Path clientPath = path.resolve("client.identity.json");
+        final Path clientPath = path.resolve("client.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_3);
         final EventLoopGroup clientParentGroup = new NioEventLoopGroup(1);
         final EventLoopGroup clientChildGroup = clientParentGroup;

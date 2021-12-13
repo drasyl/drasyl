@@ -46,7 +46,7 @@ class IdentityProvider {
 
     public IdentityProvider(final Path path) throws IOException {
         for (final File file : path.toFile().listFiles()) {
-            if (file.getName().endsWith(".identity.json")) {
+            if (file.getName().endsWith(".identity")) {
                 try {
                     identities.add(JACKSON_READER.readValue(file, Identity.class));
                 }

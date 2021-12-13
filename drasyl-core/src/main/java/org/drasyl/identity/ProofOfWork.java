@@ -101,6 +101,13 @@ public abstract class ProofOfWork {
         return new AutoValue_ProofOfWork(nonce);
     }
 
+    /**
+     * @throws IllegalArgumentException if {@code nonce} does not contain a parsable integer.
+     */
+    public static ProofOfWork of(final String nonce) {
+        return of(Integer.parseInt(nonce));
+    }
+
     private static ProofOfWork of() {
         return of(Integer.MIN_VALUE);
     }

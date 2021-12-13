@@ -39,7 +39,7 @@ public class Fork extends BehavioralDrasylNode {
 
     protected Fork(final String name) throws DrasylException {
         super(DrasylConfig.newBuilder()
-                .identityPath(Path.of(name + ".identity.json"))
+                .identityPath(Path.of(name + ".identity"))
                 .build());
         this.name = requireNonNull(name);
     }

@@ -119,7 +119,7 @@ class WormholeCommandIT {
     @Timeout(value = 30_000, unit = MILLISECONDS)
     void shouldTransferText(@TempDir final Path path) throws IOException {
         // create server
-        final Path senderPath = path.resolve("sender.identity.json");
+        final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
         final EventLoopGroup senderGroup = new NioEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
@@ -152,7 +152,7 @@ class WormholeCommandIT {
         }, notNullValue());
 
         // create receiving node
-        final Path receiverPath = path.resolve("receiver.identity.json");
+        final Path receiverPath = path.resolve("receiver.identity");
         IdentityManager.writeIdentityFile(receiverPath, ID_3);
         final EventLoopGroup receiverGroup = new NioEventLoopGroup(1);
         receiverThread = new Thread(() -> new WormholeReceiveCommand(
@@ -186,7 +186,7 @@ class WormholeCommandIT {
         f.close();
 
         // create server
-        final Path senderPath = path.resolve("sender.identity.json");
+        final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
         final EventLoopGroup senderParentGroup = new NioEventLoopGroup(1);
         final EventLoopGroup senderChildGroup = senderParentGroup;
@@ -221,7 +221,7 @@ class WormholeCommandIT {
 
         try {
             // create receiving node
-            final Path receiverPath = path.resolve("receiver.identity.json");
+            final Path receiverPath = path.resolve("receiver.identity");
             IdentityManager.writeIdentityFile(receiverPath, ID_3);
             final EventLoopGroup receiverParentGroup = new NioEventLoopGroup(1);
             final EventLoopGroup receiverChildGroup = receiverParentGroup;

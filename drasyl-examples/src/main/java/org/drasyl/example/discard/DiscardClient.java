@@ -44,7 +44,7 @@ import static org.drasyl.util.RandomUtil.randomString;
  */
 @SuppressWarnings({ "java:S106", "java:S112", "java:S2096", "StatementWithEmptyBody" })
 public class DiscardClient extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "discard-client.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "discard-client.identity");
     private static final int SIZE = Integer.parseInt(System.getProperty("size", "256"));
     private static final int PERIOD = Integer.parseInt(System.getProperty("period", "1000"));
     private final CompletableFuture<Void> online = new CompletableFuture<>();

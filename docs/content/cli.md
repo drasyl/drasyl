@@ -48,11 +48,11 @@ drasyl v0.2.0 (ef906c1)
 To run a node:
 ```bash
 # generate an identity (this can take some time)
-$ docker run -i -t drasyl/drasyl genidentity | grep -v "WARNING:" > drasyl.identity.json
+$ docker run -i -t drasyl/drasyl genidentity | grep -v "WARNING:" > drasyl.identity
 
 # start a node
 $ docker run -i -t -p 22527:22527 \
-    -v $PWD/drasyl.identity.json:/drasyl.identity.json \
+    -v $PWD/drasyl.identity:/drasyl.identity \
     drasyl/drasyl node
 ```
 

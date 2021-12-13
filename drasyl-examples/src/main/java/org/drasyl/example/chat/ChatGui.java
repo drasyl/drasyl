@@ -67,7 +67,7 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  */
 @SuppressWarnings({ "java:S126", "java:S138", "java:S1188", "java:S1192", "java:S2096" })
 public class ChatGui {
-    private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();

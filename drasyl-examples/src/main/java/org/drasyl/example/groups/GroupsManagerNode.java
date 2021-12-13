@@ -41,7 +41,7 @@ import java.util.Set;
  */
 @SuppressWarnings({ "squid:S106", "java:S1845", "java:S2096" })
 public class GroupsManagerNode extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "groups-manager.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "groups-manager.identity");
     private final Group group;
 
     public GroupsManagerNode(final Group group) throws DrasylException {
