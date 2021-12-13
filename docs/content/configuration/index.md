@@ -20,7 +20,7 @@ Available builder methods can be obtained from the [Javadoc](https://www.javadoc
 Example:
 ```java
 DrasylConfig config = DrasylConfig.newBuilder()
-    .identityPath(Path.of("/Users/heiko/drasyl.identity.json"))
+    .identityPath(Path.of("/Users/heiko/drasyl.identity"))
     .networkId(-25421)
     .remoteSuperPeerEndpoint(Endpoint.of("udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"))
     .remoteEnabled(false)
@@ -41,7 +41,7 @@ The file only needs to contain the parameters you want to overwrite because it w
 
 Example:
 ```hocon
-drasyl.identity.path = /Users/heiko/drasyl.identity.json
+drasyl.identity.path = /Users/heiko/drasyl.identity
 drasyl.network.id = -25421
 drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"
 ```
@@ -61,7 +61,7 @@ i.e. The environment variable `CONFIG_FORCE_a_b__c___d` set the configuration ke
 
 Example:
 ```bash
-$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity.json \
+$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity \
     CONFIG_FORCE_drasyl_network_id=-25421 \
     CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC \
     your-application.jar

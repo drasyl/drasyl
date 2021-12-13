@@ -22,8 +22,8 @@
 package org.drasyl.node.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.drasyl.identity.Identity;
+import org.drasyl.node.IdentityFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,8 +41,6 @@ import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
 import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.PathUtil.hasPosixSupport;
 
 /**
@@ -82,7 +80,7 @@ public final class IdentityManager {
                 }
             }
 
-            final Identity identity = JACKSON_READER.readValue(path.toFile(), Identity.class);
+            final Identity identity = IdentityFile.readFrom(path);
 
             if (!identity.isValid()) {
                 throw new IOException("Identity from file '" + path + "' has an invalid proof of work.");
@@ -119,7 +117,7 @@ public final class IdentityManager {
                 Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
             }
 
-            JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
+            IdentityFile.writeTo(file, identity);
         }
     }
 

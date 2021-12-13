@@ -45,7 +45,7 @@ import java.util.Set;
  */
 @SuppressWarnings({ "squid:S106", "squid:S126", "java:S1845", "java:S1943", "java:S2096" })
 public class GroupsClientNode extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "groups-client.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "groups-client.identity");
     private final Set<IdentityPublicKey> members = new HashSet<>();
 
     protected GroupsClientNode(final GroupUri group) throws DrasylException {

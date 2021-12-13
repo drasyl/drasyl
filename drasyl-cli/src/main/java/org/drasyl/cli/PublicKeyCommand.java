@@ -21,14 +21,11 @@
  */
 package org.drasyl.cli;
 
-import org.drasyl.identity.Identity;
-import org.drasyl.node.IdentityFile;
-import org.drasyl.util.ThrowingBiConsumer;
-import org.drasyl.util.ThrowingSupplier;
+import org.drasyl.identity.IdentitySecretKey;
 import picocli.CommandLine.Command;
 
-import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Scanner;
 
 import static java.util.Objects.requireNonNull;
 
@@ -36,40 +33,28 @@ import static java.util.Objects.requireNonNull;
  * Generate and output new a identity in JSON format.
  */
 @Command(
-        name = "genidentity",
-        header = "Generates and outputs a new identity",
+        name = "pubkey",
+        header = "Dervices the public key and prints it to standard output from a private key given on standard input",
         synopsisHeading = "%nUsage: "
 )
-public class GenerateIdentityCommand implements Runnable {
+public class PublicKeyCommand implements Runnable {
+    private final Scanner in;
     private final PrintStream out;
-    private final ThrowingSupplier<Identity, IOException> identitySupplier;
-    private final ThrowingBiConsumer<PrintStream, Identity, IOException> identityWriter;
 
-    GenerateIdentityCommand(final PrintStream out,
-                            final ThrowingSupplier<Identity, IOException> identitySupplier,
-                            final ThrowingBiConsumer<PrintStream, Identity, IOException> identityWriter) {
+    PublicKeyCommand(final Scanner in, final PrintStream out) {
+        this.in = requireNonNull(in);
         this.out = requireNonNull(out);
-        this.identitySupplier = requireNonNull(identitySupplier);
-        this.identityWriter = requireNonNull(identityWriter);
     }
 
     @SuppressWarnings("unused")
-    public GenerateIdentityCommand() {
-        this(
-                System.out, // NOSONAR
-                Identity::generateIdentity,
-                (myOut, identity) -> IdentityFile.writeTo(myOut, identity)
-        );
+    public PublicKeyCommand() {
+        this(new Scanner(System.in), System.out); // NOSONAR
     }
 
     @Override
     public void run() {
-        try {
-            final Identity identity = identitySupplier.get();
-            identityWriter.accept(out, identity);
-        }
-        catch (final IOException e) {
-            throw new CliException("Unable to output identity:", e);
-        }
+        final IdentitySecretKey secretKey = IdentitySecretKey.of(in.nextLine());
+        out.println(secretKey.derivePublicKey());
+        in.close();
     }
 }

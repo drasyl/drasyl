@@ -53,7 +53,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
             paramLabel = "<file>",
-            defaultValue = "drasyl.identity.json"
+            defaultValue = "drasyl.identity"
     )
     protected File identityFile;
     @Option(

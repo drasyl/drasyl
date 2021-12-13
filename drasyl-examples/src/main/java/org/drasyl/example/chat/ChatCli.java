@@ -62,7 +62,7 @@ import static java.time.Duration.ofSeconds;
         "java:S3776"
 })
 public class ChatCli {
-    private static final String IDENTITY = System.getProperty("identity", "chat-cli.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "chat-cli.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     private static final Scanner scanner = new Scanner(System.in, UTF_8);
     private static String prompt;

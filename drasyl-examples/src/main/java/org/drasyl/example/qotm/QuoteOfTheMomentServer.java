@@ -33,7 +33,7 @@ import java.nio.file.Path;
 
 @SuppressWarnings({ "java:S106", "java:S2096" })
 public class QuoteOfTheMomentServer extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "qotm-server.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "qotm-server.identity");
     private static final Quote[] QUOTES = {
             Quote.of("Stay hungry, stay foolish", "Steve Jobs"),
             Quote.of("Information is not knowledge", "Albert Einstein"),

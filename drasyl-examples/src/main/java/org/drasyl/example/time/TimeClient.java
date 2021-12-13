@@ -52,7 +52,7 @@ import static org.drasyl.example.time.TimeServer.UNIX_TIME_OFFSET;
         "java:S2143"
 })
 public class TimeClient extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "time-client.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "time-client.identity");
     private final CompletableFuture<Void> online = new CompletableFuture<>();
 
     protected TimeClient(final DrasylConfig config) throws DrasylException {

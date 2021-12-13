@@ -48,6 +48,7 @@ import static java.util.Objects.requireNonNull;
                 HelpCommand.class,
                 NodeCommand.class,
                 PerfCommand.class,
+                PublicKeyCommand.class,
                 TunnelCommand.class,
                 VersionCommand.class,
                 WormholeCommand.class

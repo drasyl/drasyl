@@ -49,7 +49,7 @@ public class Philosopher extends BehavioralDrasylNode {
                        final String rightName,
                        final IdentityPublicKey rightAddress) throws DrasylException {
         super(DrasylConfig.newBuilder()
-                .identityPath(Path.of(name + ".identity.json"))
+                .identityPath(Path.of(name + ".identity"))
                 .build());
         this.name = requireNonNull(name);
         this.leftName = requireNonNull(leftName);

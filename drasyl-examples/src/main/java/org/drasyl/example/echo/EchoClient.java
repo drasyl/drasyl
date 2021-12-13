@@ -43,7 +43,7 @@ import static org.drasyl.util.RandomUtil.randomString;
  */
 @SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S126", "java:S2096" })
 public class EchoClient extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "echo-client.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "echo-client.identity");
     private static final int SIZE = Integer.parseInt(System.getProperty("size", "256"));
     private final CompletableFuture<Void> online = new CompletableFuture<>();
 

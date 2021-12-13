@@ -39,7 +39,7 @@ import java.util.concurrent.ExecutionException;
  */
 @SuppressWarnings({ "java:S106", "java:S125", "java:S112", "java:S2096" })
 public class EchoServer extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "echo-server.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "echo-server.identity");
 
     protected EchoServer(final DrasylConfig config) throws DrasylException {
         super(config);

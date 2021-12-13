@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutionException;
  */
 @SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S2096" })
 public class TimeServer extends DrasylNode {
-    private static final String IDENTITY = System.getProperty("identity", "time-server.identity.json");
+    private static final String IDENTITY = System.getProperty("identity", "time-server.identity");
     public static final long UNIX_TIME_OFFSET = 2_208_988_800L;
 
     protected TimeServer(final DrasylConfig config) throws DrasylException {
