@@ -4,7 +4,7 @@ drasyl is designed to work with zero-configuration.
 However, some use cases (e.g. using an own super peer) require customization configurations.
 For this situation there are various parameters available to adjust the behavior of drasyl nodes.
 
-An overview of all available parameters, their purpose and default values can be found in the [reference.conf](https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-core/src/main/resources/reference.conf) file.
+An overview of all available parameters, their purpose and default values can be found in the [reference.conf](https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-node/src/main/resources/reference.conf) file.
 
 ## Create custom configurations
 
