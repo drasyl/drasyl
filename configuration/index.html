@@ -567,7 +567,7 @@ the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl
 <h3 id="use-applicationconf-file">Use <code>application.conf</code> file<a class="headerlink" href="#use-applicationconf-file" title="Permanent link">&para;</a></h3>
 <p>You can add a resource called <code>application.conf</code> to your java classpath to provide a custom config used by all your nodes.
 This file has to use the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON Syntax</a>.
-The file only needs to contain the parameters you want to overwrite because it will be merged with the default values found in <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-core/src/main/resources/reference.conf">reference.conf</a>.</p>
+The file only needs to contain the parameters you want to overwrite because it will be merged with the default values found in <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-node/src/main/resources/reference.conf">reference.conf</a>.</p>
 <p>Example:
 <pre class="highlight"><code class="language-hocon">drasyl.identity.path = /Users/heiko/drasyl.identity.json
 drasyl.network.id = -25421
