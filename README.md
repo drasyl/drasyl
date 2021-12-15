@@ -15,8 +15,8 @@
 
 # drasyl
 
-drasyl is a general-purpose overlay network framework for rapid development of distributed P2P
-applications.
+drasyl [dʁazy:l] is a general-purpose overlay network framework for rapid development of distributed
+P2P applications.
 
 By using drasyl developers can fully concentrate on creating distributed applications. With drasyl,
 boundaries between IP-based networks will be eliminated and secure communication channels between
