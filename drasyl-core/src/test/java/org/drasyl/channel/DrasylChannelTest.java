@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
@@ -61,21 +60,6 @@ class DrasylChannelTest {
             channel.doRegister();
 
             assertTrue(channel.isActive());
-        }
-    }
-
-    @Nested
-    class DoBind {
-        @Test
-        void shouldBindChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                               @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                               @Mock(answer = RETURNS_DEEP_STUBS) final SocketAddress localAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
-
-            channel.doBind(localAddress);
-
-            assertTrue(channel.isOpen());
-            assertFalse(channel.isActive());
         }
     }
 
@@ -113,7 +97,7 @@ class DrasylChannelTest {
         void shouldThrowExceptionIfChannelIsNotBound(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.BOUND, localAddress, remoteAddress);
+            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, localAddress, remoteAddress);
 
             assertThrows(NotYetConnectedException.class, () -> channel.doWrite(null));
         }

@@ -57,7 +57,7 @@ public class DrasylChannel extends AbstractChannel {
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
 
-    enum State {OPEN, BOUND, CONNECTED, CLOSED}
+    enum State {OPEN, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
@@ -107,7 +107,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doBind(final SocketAddress localAddress) {
-        state = State.BOUND;
+        throw new AlreadyConnectedException();
     }
 
     @Override
@@ -143,7 +143,6 @@ public class DrasylChannel extends AbstractChannel {
     protected void doWrite(final ChannelOutboundBuffer in) throws Exception {
         switch (state) {
             case OPEN:
-            case BOUND:
                 throw new NotYetConnectedException();
             case CLOSED:
                 throw new ClosedChannelException();
@@ -199,15 +198,7 @@ public class DrasylChannel extends AbstractChannel {
         public void connect(final SocketAddress remoteAddress,
                             final SocketAddress localAddress,
                             final ChannelPromise promise) {
-            if (!promise.setUncancellable() || !ensureOpen(promise)) {
-                return;
-            }
-
-            if (state == State.CONNECTED) {
-                final Exception cause = new AlreadyConnectedException();
-                safeSetFailure(promise, cause);
-                pipeline().fireExceptionCaught(cause);
-            }
+            throw new AlreadyConnectedException();
         }
     }
 }
