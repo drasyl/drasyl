@@ -206,3 +206,4 @@ jobs:
           commit_user_name: drasyl-bot
           commit_user_email: ${{ secrets.DRASYL_BOT_EMAIL }}
           commit_author: drasyl-bot <${{ secrets.DRASYL_BOT_EMAIL }}>
+          file_pattern: Formula/drasyl.rb
