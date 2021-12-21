@@ -198,8 +198,8 @@ public class Crypto {
      * @throws CryptoException if any error occurs during key generation
      */
     public KeyPair<IdentityPublicKey, IdentitySecretKey> generateLongTimeKeyPair() throws CryptoException {
-        final byte[] publicKey = randomBytes(PK_LONG_TIME_KEY_LENGTH);
-        final byte[] secretKey = randomBytes(SK_LONG_TIME_KEY_LENGTH);
+        final byte[] publicKey = new byte[PK_LONG_TIME_KEY_LENGTH];
+        final byte[] secretKey = new byte[SK_LONG_TIME_KEY_LENGTH];
 
         if (!sodium.cryptoSignKeypair(publicKey, secretKey)) {
             throw new CryptoException("Could not generate a signing keypair.");
@@ -260,8 +260,8 @@ public class Crypto {
      * @throws CryptoException if any error occurs during key generation
      */
     public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> generateEphemeralKeyPair() throws CryptoException {
-        final byte[] publicKey = randomBytes(PK_CURVE_25519_KEY_LENGTH);
-        final byte[] secretKey = randomBytes(SK_CURVE_25519_KEY_LENGTH);
+        final byte[] publicKey = new byte[PK_CURVE_25519_KEY_LENGTH];
+        final byte[] secretKey = new byte[SK_CURVE_25519_KEY_LENGTH];
 
         if (!sodium.successful(sodium.getSodium().crypto_kx_keypair(publicKey, secretKey))) {
             throw new CryptoException("Unable to create a public and private key.");
