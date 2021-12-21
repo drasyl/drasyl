@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.tunnel.handler;
 
-import com.google.common.primitives.Ints;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -36,14 +35,12 @@ public class TunnelWriteCodec extends MessageToMessageCodec<ByteBuf, Write> {
      * Is used to identity probe messages. probe messages are used for actual performance
      * measurements.
      */
-    static final int MAGIC_NUMBER = Ints.fromByteArray(new byte[]{
-            -125, -19, 31, 5
-    });
+    static final int MAGIC_NUMBER = -2_081_612_027;
     static final int MIN_LENGTH = Integer.BYTES + Integer.BYTES;
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final Write msg, final List<Object> out) throws Exception {
+                          final Write msg, final List<Object> out) {
         final ByteBuf buf = ctx.alloc().buffer();
         buf.writeInt(MAGIC_NUMBER);
         buf.writeInt(msg.getChannelId().length());
@@ -55,7 +52,7 @@ public class TunnelWriteCodec extends MessageToMessageCodec<ByteBuf, Write> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         if (in.readableBytes() >= MIN_LENGTH) {
             in.markReaderIndex();
             if (in.readInt() == MAGIC_NUMBER) {

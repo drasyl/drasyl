@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.perf.handler;
 
-import com.google.common.primitives.Longs;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -39,23 +38,14 @@ public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
      * Is used to identity probe messages. probe messages are used for actual performance
      * measurements.
      */
-    static final long MAGIC_NUMBER_PROBE = Longs.fromByteArray(new byte[]{
-            20,
-            21,
-            1,
-            23,
-            0,
-            1,
-            38,
-            16
-    });
+    static final int MAGIC_NUMBER_PROBE = -376_669_039;
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Probe msg,
                           final List<Object> out) {
         final ByteBuf buf = ctx.alloc().buffer();
-        buf.writeLong(MAGIC_NUMBER_PROBE);
+        buf.writeInt(MAGIC_NUMBER_PROBE);
         buf.writeLong(msg.getMessageNo());
         buf.writeBytes(msg.getPayload());
         out.add(buf);
@@ -67,7 +57,7 @@ public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
                           final List<Object> out) {
         if (in.readableBytes() >= Long.BYTES) {
             in.markReaderIndex();
-            if (in.readLong() == MAGIC_NUMBER_PROBE) {
+            if (in.readInt() == MAGIC_NUMBER_PROBE) {
                 final long messageNo = in.readLong();
                 // ignore payload
                 out.add(new Probe(new byte[0], messageNo));
