@@ -23,7 +23,7 @@ package org.drasyl.crypto;
 
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
-import com.google.common.primitives.Bytes;
+import org.drasyl.util.ArrayUtil;
 
 import java.nio.charset.StandardCharsets;
 
@@ -46,7 +46,7 @@ public final class Hashing {
      * @return SHA-256 hash of the input
      */
     public static byte[] sha256(final byte[]... input) {
-        return SHA256.hashBytes(Bytes.concat(input)).asBytes();
+        return SHA256.hashBytes(ArrayUtil.concat(input)).asBytes();
     }
 
     /**
@@ -126,6 +126,6 @@ public final class Hashing {
      * @return MurMur3x32 hash
      */
     public static byte[] murmur3x32(final byte[]... input) {
-        return MURMUR3_32.hashBytes(Bytes.concat(input)).asBytes();
+        return MURMUR3_32.hashBytes(ArrayUtil.concat(input)).asBytes();
     }
 }

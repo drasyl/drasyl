@@ -24,29 +24,30 @@ package org.drasyl.util;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.util.ArrayUtil.concat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class ArrayUtilTest {
     @Nested
     class Concat {
         @Test
-        void shouldConcatTwoStringArrays() {
-            final String[] a = { "Dog", "Cat" };
-            final String[] b = { "Bird", "Cow" };
-
-            final String[] result = ArrayUtil.concat(a, b);
-
-            assertArrayEquals(new String[]{ "Dog", "Cat", "Bird", "Cow" }, result);
-        }
-
-        @Test
-        void shouldConcatTwoByteArrays() {
-            final byte[] a = { 0, 1 };
-            final byte[] b = { 2, 3 };
-
-            final byte[] result = ArrayUtil.concat(a, b);
-
-            assertArrayEquals(new byte[]{ 0, 1, 2, 3 }, result);
+        void shouldConcatGivenArrays() {
+            assertArrayEquals(new String[]{}, concat());
+            assertArrayEquals(
+                    new String[]{ "Dog", "Cat", "Bird", "Cow" },
+                    concat(new String[]{ "Dog", "Cat" }, new String[]{ "Bird", "Cow" })
+            );
+            assertArrayEquals(
+                    new String[]{ "Dog", "Cat", "Bird", "Cow" },
+                    concat(new String[]{ "Dog", "Cat" }, new String[]{}, new String[]{
+                            "Bird",
+                            "Cow"
+                    })
+            );
+            assertArrayEquals(new byte[]{ 0, 1, 2, 3 }, concat(new byte[]{ 0, 1 }, new byte[]{
+                    2,
+                    3
+            }));
         }
     }
 }

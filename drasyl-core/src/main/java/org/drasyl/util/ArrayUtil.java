@@ -21,11 +21,7 @@
  */
 package org.drasyl.util;
 
-import com.google.common.primitives.Bytes;
-
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 /**
  * Utility class for operations on arrays.
@@ -36,29 +32,66 @@ public final class ArrayUtil {
     }
 
     /**
-     * Creates a new array containing all elements from {@code a} first and then from {@code b}.
+     * Returns an empty arrray. This noop method is required to prevent ambiguous calls.
      *
-     * @param a   array a
-     * @param b   array b
-     * @param <E> the arrays element type
-     * @return array containing all elements from {@code a} first and then from {@code b}
-     * @throws NullPointerException if {@code a} or {@code b} is {@code null}
+     * @param <E> array element type
+     * @return empty array
      */
-    @SuppressWarnings("unchecked")
-    public static <E> E[] concat(final E[] a, final E[] b) {
-        return Stream.concat(Arrays.stream(a), Arrays.stream(b)).toArray(
-                size -> (E[]) Array.newInstance(a.getClass().getComponentType(), size));
+    public static <E> E[] concat() {
+        return (E[]) new Object[0];
     }
 
     /**
-     * Creates a new byte array containing all bytes from {@code a} first and then from {@code b}.
+     * Returns a new array containing all elements from given {@code arrays}.
      *
-     * @param a array a
-     * @param b array b
-     * @return byte array containing all bytes from {@code a} first and then from {@code b}
-     * @throws NullPointerException if {@code a} or {@code b} is {@code null}
+     * @param arrays arrays to concatenate
+     * @param <E>    array element type
+     * @return array containing all elements from given {@code arrays}
      */
-    public static byte[] concat(final byte[] a, final byte[] b) {
-        return Bytes.concat(a, b);
+    @SuppressWarnings("java:S3047")
+    public static <E> E[] concat(final E[]... arrays) {
+        if (arrays.length == 0) {
+            return (E[]) new Object[0];
+        }
+
+        int length = 0;
+        for (final E[] array : arrays) {
+            length += array.length;
+        }
+
+        final E[] result = (E[]) Array.newInstance(arrays[0].getClass().getComponentType(), length);
+        int destPos = 0;
+        for (final E[] array : arrays) {
+            System.arraycopy(array, 0, result, destPos, array.length);
+            destPos += array.length;
+        }
+        return result;
+    }
+
+    /**
+     * Returns a new array containing all elements from given {@code arrays}.
+     *
+     * @param arrays arrays to concatenate
+     * @param <E>    array element type
+     * @return array containing all elements from given {@code arrays}
+     */
+    @SuppressWarnings("java:S3047")
+    public static byte[] concat(final byte[]... arrays) {
+        if (arrays.length == 0) {
+            return new byte[0];
+        }
+
+        int length = 0;
+        for (final byte[] array : arrays) {
+            length += array.length;
+        }
+
+        final byte[] result = new byte[length];
+        int destPos = 0;
+        for (final byte[] array : arrays) {
+            System.arraycopy(array, 0, result, destPos, array.length);
+            destPos += array.length;
+        }
+        return result;
     }
 }
