@@ -48,7 +48,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "send",
-        header = "Sends a text message"
+        header = "Sends a text message or file"
 )
 public class WormholeSendCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeSendCommand.class);
