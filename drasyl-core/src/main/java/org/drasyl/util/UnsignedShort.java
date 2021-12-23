@@ -56,7 +56,7 @@ public final class UnsignedShort {
      * Creates a new {@link UnsignedShort}.
      *
      * @param value the value as integer
-     * @return an unaligned short
+     * @return an unsigned short
      * @throws IllegalArgumentException if the value is not in range of [0, 2^16).
      */
     public static UnsignedShort of(final int value) {
@@ -67,7 +67,7 @@ public final class UnsignedShort {
      * Creates a new {@link UnsignedShort}.
      *
      * @param value the value as byte array in big-endian (BE) format
-     * @return an unaligned short
+     * @return an unsigned short
      * @throws IllegalArgumentException if the value is not in range of [0, 2^16).
      */
     public static UnsignedShort of(final byte[] value) {

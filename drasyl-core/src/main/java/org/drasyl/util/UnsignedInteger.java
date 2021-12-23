@@ -68,7 +68,7 @@ public final class UnsignedInteger {
      * Creates a new {@link UnsignedInteger}.
      *
      * @param value the value as long
-     * @return an unaligned int
+     * @return an unsigned int
      * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
      */
     public static UnsignedInteger of(final long value) {
@@ -79,7 +79,7 @@ public final class UnsignedInteger {
      * Creates a new {@link UnsignedInteger}.
      *
      * @param value the value as byte array in big-endian (BE) format
-     * @return an unaligned int
+     * @return an unsigned int
      * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
      */
     public static UnsignedInteger of(final byte[] value) {
