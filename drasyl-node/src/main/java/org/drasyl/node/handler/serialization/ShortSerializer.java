@@ -21,9 +21,9 @@
  */
 package org.drasyl.node.handler.serialization;
 
-import com.google.common.primitives.Shorts;
-
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 
 /**
  * This Serializer (de)serializes {@link Integer} objects.
@@ -31,16 +31,16 @@ import java.io.IOException;
 public class ShortSerializer extends BoundedSerializer<Short> {
     @Override
     protected byte[] matchedToByArray(final Short o) throws IOException {
-        return Shorts.toByteArray(o);
+        return ByteBuffer.allocate(Short.BYTES).putShort(o).array();
     }
 
     @Override
     protected Short matchedFromByteArray(final byte[] bytes,
                                          final Class<Short> type) throws IOException {
         try {
-            return Shorts.fromByteArray(bytes);
+            return ByteBuffer.wrap(bytes).getShort();
         }
-        catch (final IllegalArgumentException e) {
+        catch (final BufferUnderflowException e) {
             throw new IOException(e);
         }
     }

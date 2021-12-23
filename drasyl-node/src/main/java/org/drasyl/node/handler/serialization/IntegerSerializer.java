@@ -21,9 +21,9 @@
  */
 package org.drasyl.node.handler.serialization;
 
-import com.google.common.primitives.Ints;
-
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 
 /**
  * This Serializer (de)serializes {@link Integer} objects.
@@ -31,16 +31,16 @@ import java.io.IOException;
 public class IntegerSerializer extends BoundedSerializer<Integer> {
     @Override
     protected byte[] matchedToByArray(final Integer o) {
-        return Ints.toByteArray(o);
+        return ByteBuffer.allocate(Integer.BYTES).putInt(o).array();
     }
 
     @Override
     protected Integer matchedFromByteArray(final byte[] bytes,
                                            final Class<Integer> type) throws IOException {
         try {
-            return Ints.fromByteArray(bytes);
+            return ByteBuffer.wrap(bytes).getInt();
         }
-        catch (final IllegalArgumentException e) {
+        catch (final BufferUnderflowException e) {
             throw new IOException(e);
         }
     }

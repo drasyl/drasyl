@@ -21,9 +21,9 @@
  */
 package org.drasyl.node.handler.serialization;
 
-import com.google.common.primitives.Longs;
-
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.nio.ByteBuffer;
 
 /**
  * This Serializer (de)serializes {@link Long} objects.
@@ -31,16 +31,16 @@ import java.io.IOException;
 public class LongSerializer extends BoundedSerializer<Long> {
     @Override
     protected byte[] matchedToByArray(final Long o) {
-        return Longs.toByteArray(o);
+        return ByteBuffer.allocate(Long.BYTES).putLong(o).array();
     }
 
     @Override
     protected Long matchedFromByteArray(final byte[] bytes,
                                         final Class<Long> type) throws IOException {
         try {
-            return Longs.fromByteArray(bytes);
+            return ByteBuffer.wrap(bytes).getLong();
         }
-        catch (final IllegalArgumentException e) {
+        catch (final BufferUnderflowException e) {
             throw new IOException(e);
         }
     }
