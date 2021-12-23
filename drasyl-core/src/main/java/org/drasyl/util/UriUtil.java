@@ -21,8 +21,6 @@
  */
 package org.drasyl.util;
 
-import com.google.common.base.Splitter;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -120,10 +118,11 @@ public final class UriUtil {
         final String query = Optional.ofNullable(uri.getQuery()).orElse("");
         final Map<String, String> map = new HashMap<>();
 
-        for (final String param : Splitter.on("&").omitEmptyStrings().split(query)) {
-            final String name = param.split("=")[0];
-            final String value = param.split("=")[1];
-            map.put(name, value);
+        for (final String param : query.split("&")) {
+            if (!param.isEmpty() && param.indexOf('=') != -1) {
+                final String[] split = param.split("=", 2);
+                map.put(split[0], split[1]);
+            }
         }
 
         return map;
