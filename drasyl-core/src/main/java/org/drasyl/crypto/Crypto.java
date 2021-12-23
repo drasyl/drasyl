@@ -21,7 +21,6 @@
  */
 package org.drasyl.crypto;
 
-import com.google.common.primitives.UnsignedBytes;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.sodium.DrasylSodium;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
@@ -40,6 +39,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -113,9 +113,7 @@ public class Crypto {
      * @return -1 if the first key is smaller than, 0 if equals to, 1 if greater than the second key
      */
     public static int compare(final Key k1, final Key k2) {
-        return Integer.signum(UnsignedBytes.lexicographicalComparator().compare(
-                k1.toByteArray(),
-                k2.toByteArray()));
+        return Integer.signum(Arrays.compareUnsigned(k1.toByteArray(), k2.toByteArray()));
     }
 
     /**
