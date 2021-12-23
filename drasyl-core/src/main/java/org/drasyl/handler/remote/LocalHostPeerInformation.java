@@ -21,8 +21,6 @@
  */
 package org.drasyl.handler.remote;
 
-import com.google.common.collect.ImmutableSet;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,7 +39,7 @@ public class LocalHostPeerInformation {
     final Set<InetSocketAddress> addresses;
 
     public LocalHostPeerInformation(final Set<InetSocketAddress> addresses) {
-        this.addresses = ImmutableSet.copyOf(addresses);
+        this.addresses = Set.copyOf(addresses);
     }
 
     public Set<InetSocketAddress> addresses() {

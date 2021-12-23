@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.monitoring;
 
-import com.google.common.collect.ImmutableMap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
@@ -119,15 +118,15 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
         }
 
         public Map<DrasylAddress, InetSocketAddress> superPeers() {
-            return ImmutableMap.copyOf(superPeers);
+            return Map.copyOf(superPeers);
         }
 
         public Map<DrasylAddress, InetSocketAddress> childrenPeers() {
-            return ImmutableMap.copyOf(childrenPeers);
+            return Map.copyOf(childrenPeers);
         }
 
         public Map<DrasylAddress, InetSocketAddress> peers() {
-            return ImmutableMap.copyOf(peers);
+            return Map.copyOf(peers);
         }
 
         @Override

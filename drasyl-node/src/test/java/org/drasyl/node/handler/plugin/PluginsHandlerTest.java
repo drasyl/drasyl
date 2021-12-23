@@ -1,6 +1,5 @@
 package org.drasyl.node.handler.plugin;
 
-import com.google.common.collect.ImmutableSet;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
@@ -10,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Set;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,14 +28,14 @@ class PluginsHandlerTest {
 
     @BeforeEach
     void setUp() {
-        when(config.getPlugins()).thenReturn(ImmutableSet.of(plugin));
+        when(config.getPlugins()).thenReturn(Set.of(plugin));
     }
 
     @Nested
     class ChannelRegistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelRegistered(ctx);
 
@@ -46,7 +47,7 @@ class PluginsHandlerTest {
     class ChannelActive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelActive(ctx);
 
@@ -58,7 +59,7 @@ class PluginsHandlerTest {
     class ChannelInactive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelInactive(ctx);
 
@@ -70,7 +71,7 @@ class PluginsHandlerTest {
     class ChannelUnregistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelUnregistered(ctx);
 

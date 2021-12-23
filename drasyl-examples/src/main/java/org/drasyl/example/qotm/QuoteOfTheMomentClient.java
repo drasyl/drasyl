@@ -32,6 +32,7 @@ import org.drasyl.node.event.NodeOnlineEvent;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
@@ -44,7 +45,7 @@ public class QuoteOfTheMomentClient extends DrasylNode {
 
     public QuoteOfTheMomentClient() throws DrasylException {
         super(DrasylConfig.newBuilder()
-                .addSerializationsBindingsInbound(Quote.class, "jackson-json")
+                .serializationsBindingsInbound(Map.of(Quote.class, "jackson-json"))
                 .identityPath(Path.of(IDENTITY))
                 .build());
     }

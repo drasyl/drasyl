@@ -30,6 +30,7 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.util.RandomUtil;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 @SuppressWarnings({ "java:S106", "java:S2096" })
 public class QuoteOfTheMomentServer extends DrasylNode {
@@ -46,7 +47,7 @@ public class QuoteOfTheMomentServer extends DrasylNode {
 
     protected QuoteOfTheMomentServer() throws DrasylException {
         super(DrasylConfig.newBuilder()
-                .addSerializationsBindingsOutbound(Quote.class, "jackson-json")
+                .serializationsBindingsOutbound(Map.of(Quote.class, "jackson-json"))
                 .identityPath(Path.of(IDENTITY))
                 .build());
     }

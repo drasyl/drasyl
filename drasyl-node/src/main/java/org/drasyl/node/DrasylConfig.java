@@ -22,8 +22,6 @@
 package org.drasyl.node;
 
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -159,7 +157,7 @@ public abstract class DrasylConfig {
             builder.remoteEnabled(config.getBoolean(REMOTE_ENABLED));
             builder.remoteBindHost(getInetAddress(config, REMOTE_BIND_HOST));
             builder.remoteBindPort(config.getInt(REMOTE_BIND_PORT));
-            builder.remoteEndpoints(getEndpointSet(config, REMOTE_ENDPOINTS));
+            builder.remoteEndpoints(Set.copyOf(getEndpointSet(config, REMOTE_ENDPOINTS)));
             builder.remoteExposeEnabled(config.getBoolean(REMOTE_EXPOSE_ENABLED));
             builder.remotePingInterval(config.getDuration(REMOTE_PING_INTERVAL));
             builder.remotePingTimeout(config.getDuration(REMOTE_PING_TIMEOUT));
@@ -167,8 +165,8 @@ public abstract class DrasylConfig {
             builder.remotePingMaxPeers(config.getInt(REMOTE_PING_MAX_PEERS));
             builder.remoteUniteMinInterval(config.getDuration(REMOTE_UNITE_MIN_INTERVAL));
             builder.remoteSuperPeerEnabled(config.getBoolean(REMOTE_SUPER_PEER_ENABLED));
-            builder.remoteSuperPeerEndpoints(getEndpointSet(config, REMOTE_SUPER_PEER_ENDPOINTS));
-            builder.remoteStaticRoutes(getStaticRoutes(config, REMOTE_STATIC_ROUTES));
+            builder.remoteSuperPeerEndpoints(Set.copyOf(getEndpointSet(config, REMOTE_SUPER_PEER_ENDPOINTS)));
+            builder.remoteStaticRoutes(Map.copyOf(getStaticRoutes(config, REMOTE_STATIC_ROUTES)));
             builder.remoteLocalHostDiscoveryEnabled(config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED));
             if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
                 builder.remoteLocalHostDiscoveryPath(Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery"));
@@ -202,12 +200,12 @@ public abstract class DrasylConfig {
             builder.intraVmDiscoveryEnabled(config.getBoolean(INTRA_VM_DISCOVERY_ENABLED));
 
             // plugins
-            builder.plugins(DrasylConfig.getPlugins(config, PLUGINS));
+            builder.plugins(Set.copyOf(getPlugins(config, PLUGINS)));
 
             // serialization
-            builder.serializationSerializers(DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS));
-            builder.serializationsBindingsInbound(DrasylConfig.getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet()));
-            builder.serializationsBindingsOutbound(DrasylConfig.getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, DrasylConfig.getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet()));
+            builder.serializationSerializers(Map.copyOf(getSerializationSerializers(config, SERIALIZATION_SERIALIZERS)));
+            builder.serializationsBindingsInbound(Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_INBOUND, getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet())));
+            builder.serializationsBindingsOutbound(Map.copyOf(getSerializationBindings(config, SERIALIZATION_BINDINGS_OUTBOUND, getSerializationSerializers(config, SERIALIZATION_SERIALIZERS).keySet())));
 
             // channel
             builder.channelInactivityTimeout(config.getDuration(CHANNEL_INACTIVITY_TIMEOUT));
@@ -691,7 +689,7 @@ public abstract class DrasylConfig {
 
     public abstract int getRemoteBindPort();
 
-    public abstract ImmutableSet<PeerEndpoint> getRemoteEndpoints();
+    public abstract Set<PeerEndpoint> getRemoteEndpoints();
 
     public abstract boolean isRemoteExposeEnabled();
 
@@ -707,9 +705,9 @@ public abstract class DrasylConfig {
 
     public abstract boolean isRemoteSuperPeerEnabled();
 
-    public abstract ImmutableSet<PeerEndpoint> getRemoteSuperPeerEndpoints();
+    public abstract Set<PeerEndpoint> getRemoteSuperPeerEndpoints();
 
-    public abstract ImmutableMap<IdentityPublicKey, InetSocketAddress> getRemoteStaticRoutes();
+    public abstract Map<IdentityPublicKey, InetSocketAddress> getRemoteStaticRoutes();
 
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
@@ -755,13 +753,13 @@ public abstract class DrasylConfig {
 
     public abstract boolean isIntraVmDiscoveryEnabled();
 
-    public abstract ImmutableSet<DrasylPlugin> getPlugins();
+    public abstract Set<DrasylPlugin> getPlugins();
 
-    public abstract ImmutableMap<String, Serializer> getSerializationSerializers();
+    public abstract Map<String, Serializer> getSerializationSerializers();
 
-    public abstract ImmutableMap<Class<?>, String> getSerializationsBindingsInbound();
+    public abstract Map<Class<?>, String> getSerializationsBindingsInbound();
 
-    public abstract ImmutableMap<Class<?>, String> getSerializationsBindingsOutbound();
+    public abstract Map<Class<?>, String> getSerializationsBindingsOutbound();
 
     public abstract Duration getChannelInactivityTimeout();
 
@@ -868,21 +866,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder serializationsBindingsInbound(final Map<Class<?>, String> serializationsBindingsInbound);
 
-        public abstract ImmutableMap.Builder<Class<?>, String> serializationsBindingsInboundBuilder();
-
-        public Builder addSerializationsBindingsInbound(final Class<?> clazz, final String name) {
-            serializationsBindingsInboundBuilder().put(clazz, name);
-            return this;
-        }
-
-        abstract Builder serializationsBindingsOutbound(final Map<Class<?>, String> serializationsBindingsOutbound);
-
-        public abstract ImmutableMap.Builder<Class<?>, String> serializationsBindingsOutboundBuilder();
-
-        public Builder addSerializationsBindingsOutbound(final Class<?> clazz, final String name) {
-            serializationsBindingsOutboundBuilder().put(clazz, name);
-            return this;
-        }
+        public abstract Builder serializationsBindingsOutbound(final Map<Class<?>, String> serializationsBindingsOutbound);
 
         abstract Builder channelInactivityTimeout(final Duration channelInactivityTimeout);
 

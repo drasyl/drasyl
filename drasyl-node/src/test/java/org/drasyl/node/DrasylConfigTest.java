@@ -21,7 +21,6 @@
  */
 package org.drasyl.node;
 
-import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.identity.ProofOfWork;
@@ -479,7 +478,7 @@ class DrasylConfigTest {
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remotePingCommunicationTimeout(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remotePingMaxPeers(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteUniteMinInterval(Duration.ofSeconds(-100))::build);
-            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().networkId(1).remoteSuperPeerEnabled(true).remoteSuperPeerEndpoints(ImmutableSet.of(PeerEndpoint.of("udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337")))::build);
+            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().networkId(1).remoteSuperPeerEnabled(true).remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337")))::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteLocalHostDiscoveryLeaseTime(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMtu(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMaxContentLength(-1)::build);
