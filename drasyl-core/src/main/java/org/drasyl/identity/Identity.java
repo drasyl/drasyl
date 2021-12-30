@@ -194,7 +194,7 @@ public abstract class Identity {
 
             return of(pow, identityKeyPair);
         }
-        catch (final CryptoException e) {
+        catch (final CryptoException | IllegalStateException e) {
             throw new IOException("Unable to generate new identity", e);
         }
     }

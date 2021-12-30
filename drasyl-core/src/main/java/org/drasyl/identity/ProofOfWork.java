@@ -90,8 +90,19 @@ public abstract class ProofOfWork {
         return i;
     }
 
+    /**
+     * Returns a Proof of Work with nonce incremented by 1.
+     *
+     * @return a Proof of Work with nonce incremented by 1
+     * @throws IllegalStateException if incrementing would lead to an overflow of the nonce
+     */
     public ProofOfWork incNonce() {
-        return of(getNonce() + 1);
+        if (getNonce() == Integer.MAX_VALUE) {
+            throw new IllegalStateException("nonce cannot be incremented any further because this will cause an integer overflow.");
+        }
+        else {
+            return of(getNonce() + 1);
+        }
     }
 
     /**
@@ -112,16 +123,24 @@ public abstract class ProofOfWork {
         return of(Integer.MIN_VALUE);
     }
 
+    /**
+     * @throws IllegalStateException if there is no valid nonce for {@code address} at given {@code
+     *                               difficulty}. In this case a new {@code address} should be
+     *                               generated or {@code difficulty} should be reduced.
+     */
     public static ProofOfWork generateProofOfWork(final DrasylAddress address,
                                                   final byte difficulty) {
-        LOG.info("Generate proof of work. This may take a while ...");
+        LOG.info("Generate proof of work for address `{}` and difficulty `{}`. This may take a while ...", address, difficulty);
         ProofOfWork pow = ProofOfWork.of();
 
         while (!pow.isValid(address, difficulty)) {
+            if (LOG.isDebugEnabled() && pow.getNonce() % 1_000_000 == 0) {
+                LOG.debug("[{}/{}] Proof of work generation in progress...", pow.getNonce(), Integer.MAX_VALUE);
+            }
             pow = pow.incNonce();
         }
 
-        LOG.info("Proof of work was performed.");
+        LOG.info("Proof of work `{}` for address `{}` and difficulty `{}` was performed.", pow, address, difficulty);
 
         return pow;
     }
