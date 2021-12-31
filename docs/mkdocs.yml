@@ -29,7 +29,7 @@ theme:
   icon:
     repo: fontawesome/brands/github
 
-copyright: "Copyright &copy; 2020-2021 Heiko Bornholdt and Kevin Röbert"
+copyright: "Copyright &copy; 2020-2022 Heiko Bornholdt and Kevin Röbert"
 
 extra:
   social:
