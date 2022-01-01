@@ -21,6 +21,7 @@
  */
 package org.drasyl.util.protocol;
 
+import io.netty.util.NetUtil;
 import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -58,7 +59,7 @@ import static java.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
  */
 @SuppressWarnings({ "java:S1192" })
 public class UpnpIgdUtil {
-    public static final InetSocketAddress SSDP_MULTICAST_ADDRESS = new InetSocketAddress("239.255.255.250", 1900);
+    public static final InetSocketAddress SSDP_MULTICAST_ADDRESS = new InetSocketAddress(NetUtil.isIpV6AddressesPreferred() ? "ff05::c" : "239.255.255.250", 1900);
     public static final Duration SSDP_MAX_WAIT_TIME = ofSeconds(3);
     public static final Pattern SSDP_DISCOVERY_RESPONSE_PATTERN = Pattern.compile("^HTTP/1\\.1 [0-9]+?");
     public static final Pattern SSDP_HEADER_PATTERN;
@@ -78,9 +79,10 @@ public class UpnpIgdUtil {
     private final Function<InetSocketAddress, InetAddress> remoteAddressProvider;
 
     static {
-        if(UNICODE_CHARACTER_CLASS == 256) {
+        if (UNICODE_CHARACTER_CLASS == 256) {
             SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$", UNICODE_CHARACTER_CLASS);
-        } else {
+        }
+        else {
             // Android does not support the UNICODE_CHARACTER_CLASS flag
             SSDP_HEADER_PATTERN = Pattern.compile("(.*?):\\s*(.*)$");
         }
