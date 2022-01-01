@@ -169,7 +169,7 @@ public abstract class DrasylNode {
                 return configIdentity;
             }
             else if (config.getIdentityPath() != null && IdentityManager.isIdentityFilePresent(config.getIdentityPath())) {
-                LOG.info("Read identity from file specified in config `{}`", config.getIdentityPath());
+                LOG.info("Read identity from file specified in config: `{}`", config.getIdentityPath());
                 return IdentityManager.readIdentityFile(config.getIdentityPath());
             }
             else {
