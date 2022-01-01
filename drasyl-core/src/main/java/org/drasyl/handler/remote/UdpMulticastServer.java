@@ -33,6 +33,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.logging.Logger;
@@ -70,7 +71,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     static {
         try {
-            final String stringValue = SystemPropertyUtil.get("org.drasyl.remote.multicast.address", "239.22.5.27:22527");
+            final String stringValue = SystemPropertyUtil.get("org.drasyl.remote.multicast.address", NetUtil.isIpV6AddressesPreferred() ? "[ff00::22:5:27]:22527" : "239.22.5.27:22527");
             final URI uriValue = new URI("my://" + stringValue);
             MULTICAST_ADDRESS = new InetSocketAddress(uriValue.getHost(), uriValue.getPort());
         }
