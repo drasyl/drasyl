@@ -237,13 +237,14 @@ public class TcpClient extends ChannelDuplexHandler {
     /**
      * This handler passes all receiving messages to the pipeline.
      */
+    @Sharable
     static class TcpClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
-        private final ChannelHandlerContext ctx;
+        private final ChannelHandlerContext drasylCtx;
 
         public TcpClientHandler(
-                final ChannelHandlerContext ctx) {
+                final ChannelHandlerContext drasylCtx) {
             super(false);
-            this.ctx = requireNonNull(ctx);
+            this.drasylCtx = requireNonNull(drasylCtx);
         }
 
         @Override
@@ -251,9 +252,9 @@ public class TcpClient extends ChannelDuplexHandler {
                                     final ByteBuf msg) {
             LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
             final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            ctx.executor().execute(() -> {
-                ctx.fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
-                ctx.fireChannelReadComplete();
+            drasylCtx.executor().execute(() -> {
+                drasylCtx.fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
+                drasylCtx.fireChannelReadComplete();
             });
         }
 
