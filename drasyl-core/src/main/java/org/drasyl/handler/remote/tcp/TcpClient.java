@@ -134,24 +134,24 @@ public class TcpClient extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+        if (msg instanceof InetAddressedMessage && superPeerAddresses.contains(((InetAddressedMessage<?>) msg).recipient()) && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
             final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
-            final SocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
 
             // check if we can route the message via a tcp connection
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
-                LOG.trace("Send message `{}` via TCP connection to `{}`.", () -> byteBufMsg, () -> recipient);
+                LOG.trace("Send message `{}` for `{}` via TCP connection.", () -> byteBufMsg, ((InetAddressedMessage<ByteBuf>) msg)::recipient);
                 mySuperPeerChannel.channel().write(byteBufMsg).addListener(new PromiseNotifier<>(promise));
             }
             else {
                 // pass through message
                 ctx.write(msg, promise);
 
-                checkForUnreachableSuperPeers(ctx, recipient);
+                checkForUnreachableSuperPeers();
             }
         }
         else {
+            // pass through message
             ctx.write(msg, promise);
         }
     }
@@ -171,21 +171,17 @@ public class TcpClient extends ChannelDuplexHandler {
      * received from a super peer and then tries to establish a fallback TCP connection if
      * necessary.
      */
-    private void checkForUnreachableSuperPeers(final ChannelHandlerContext ctx,
-                                               final SocketAddress recipient) {
-        // message to super peer?
-        if (superPeerAddresses.contains(recipient)) {
-            final long currentTimeMillis = System.currentTimeMillis();
-            noResponseFromSuperPeerSince.compareAndSet(0, currentTimeMillis);
-            if (noResponseFromSuperPeerSince.get() < currentTimeMillis - timeout.toMillis()) {
-                // no response from super peer(s) for a too long duration -> establish fallback connection!
-                startClient(ctx);
-            }
+    private void checkForUnreachableSuperPeers() {
+        final long currentTimeMillis = System.currentTimeMillis();
+        noResponseFromSuperPeerSince.compareAndSet(0, currentTimeMillis);
+        if (noResponseFromSuperPeerSince.get() < currentTimeMillis - timeout.toMillis()) {
+            // no response from super peer(s) for a too long duration -> establish fallback connection!
+            startClient();
         }
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })
-    private void startClient(final ChannelHandlerContext ctx) {
+    private void startClient() {
         if (superPeerChannel == null) {
             final long currentTime = System.currentTimeMillis();
             LOG.debug("No response from any super peer since {}ms. UDP traffic" +

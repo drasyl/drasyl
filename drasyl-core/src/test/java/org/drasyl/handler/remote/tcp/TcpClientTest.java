@@ -161,6 +161,7 @@ public class TcpClientTest {
                                                                   @Mock final ChannelFuture channelFuture) {
             when(superPeerChannel.isSuccess()).thenReturn(true);
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
+            when(superPeerAddresses.contains(any())).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
