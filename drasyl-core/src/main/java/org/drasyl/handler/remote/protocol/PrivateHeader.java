@@ -34,6 +34,7 @@ import static org.drasyl.handler.remote.protocol.ArmedProtocolMessage.ARMED_HEAD
  * <ul>
  * <li><b>Type</b>: The 1 byte type value. Indicates the message type.</li>
  * <li><b>ArmedLength</b>: The 2 bytes armed length value. Indicates, the length of the encrypted portion of the message without AEAD tag.</li>
+ * <li><b>AuthenticationHeader:</b> If ArmedLength value is greater than 0, a 16 bytes long authentication header is used. Otherwise this field is not present (0 bytes long).</li>
  * </ul>
  */
 @SuppressWarnings({ "java:S109", "java:S118", "java:S1142" })

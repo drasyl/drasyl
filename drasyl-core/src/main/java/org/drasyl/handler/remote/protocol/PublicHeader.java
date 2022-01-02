@@ -42,12 +42,64 @@ import org.drasyl.identity.ProofOfWork;
  * <li><b>Sender</b>: The 32 bytes sender address.</li>
  * <li><b>ProofOfWork</b>: The 4 bytes proof of work for the sender address.</li>
  * </ul>
- * The public header is only authenticated and protected at the 5th byte. The magic number, and hop count are not protected. This allows us to update the hop count in-place.
+ * The public header is only authenticated and protected from the 2th byte. The hop count is not protected. This allows us to update the hop count in-place during relaying.
  */
 @SuppressWarnings({ "java:S118", "java:S2047", "java:S2301" })
 @AutoValue
 public abstract class PublicHeader {
     public static final int LENGTH = 98;
+
+    public static PublicHeader of(final HopCount hopCount,
+                                  final boolean isArmed,
+                                  final int networkId,
+                                  final Nonce nonce,
+                                  final DrasylAddress recipient,
+                                  final DrasylAddress sender,
+                                  final ProofOfWork proofOfWork) {
+        return new AutoValue_PublicHeader(hopCount, isArmed, networkId, nonce, recipient, sender, proofOfWork);
+    }
+
+    public static PublicHeader of(final RemoteMessage msg) {
+        return of(msg.getHopCount(), msg.getArmed(), msg.getNetworkId(), msg.getNonce(), msg.getRecipient(), msg.getSender(), msg.getProofOfWork());
+    }
+
+    public static PublicHeader of(final ByteBuf byteBuf) throws InvalidMessageFormatException {
+        if (byteBuf.readableBytes() < LENGTH) {
+            throw new InvalidMessageFormatException("PublicHeader requires " + LENGTH + " readable bytes. Only " + byteBuf.readableBytes() + " left.");
+        }
+
+        final HopCount hopCount;
+        final boolean isArmed;
+        final int networkId;
+        final Nonce nonce;
+        IdentityPublicKey recipient;
+        final IdentityPublicKey sender;
+        final ProofOfWork proofOfWork;
+
+        hopCount = HopCount.of(byteBuf.readByte());
+        isArmed = byteBuf.readBoolean();
+        networkId = byteBuf.readInt();
+
+        final byte[] nonceBuffer = new byte[Nonce.NONCE_LENGTH];
+        byteBuf.readBytes(nonceBuffer);
+        nonce = Nonce.of(nonceBuffer);
+
+        final byte[] recipientBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+        byteBuf.readBytes(recipientBuffer);
+        recipient = IdentityPublicKey.of(recipientBuffer);
+
+        if (recipient == IdentityPublicKey.ZERO_ID) {
+            recipient = null;
+        }
+
+        final byte[] senderBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+        byteBuf.readBytes(senderBuffer);
+        sender = IdentityPublicKey.of(senderBuffer);
+
+        proofOfWork = ProofOfWork.of(byteBuf.readInt());
+
+        return of(hopCount, isArmed, networkId, nonce, recipient, sender, proofOfWork);
+    }
 
     public abstract HopCount getHopCount();
 
@@ -63,20 +115,6 @@ public abstract class PublicHeader {
     public abstract DrasylAddress getSender();
 
     public abstract ProofOfWork getProofOfWork();
-
-    public static PublicHeader of(final HopCount hopCount,
-                                  final boolean isArmed,
-                                  final int networkId,
-                                  final Nonce nonce,
-                                  final DrasylAddress recipient,
-                                  final DrasylAddress sender,
-                                  final ProofOfWork proofOfWork) {
-        return new AutoValue_PublicHeader(hopCount, isArmed, networkId, nonce, recipient, sender, proofOfWork);
-    }
-
-    public static PublicHeader of(final RemoteMessage msg) {
-        return of(msg.getHopCount(), msg.getArmed(), msg.getNetworkId(), msg.getNonce(), msg.getRecipient(), msg.getSender(), msg.getProofOfWork());
-    }
 
     /**
      * Builds the authentication tag from this public header.
@@ -123,43 +161,5 @@ public abstract class PublicHeader {
      */
     public void writeTo(final ByteBuf byteBuf) {
         writeTo(byteBuf, true);
-    }
-
-    public static PublicHeader of(final ByteBuf byteBuf) throws InvalidMessageFormatException {
-        if (byteBuf.readableBytes() < LENGTH) {
-            throw new InvalidMessageFormatException("PublicHeader requires " + LENGTH + " readable bytes. Only " + byteBuf.readableBytes() + " left.");
-        }
-
-        final HopCount hopCount;
-        final boolean isArmed;
-        final int networkId;
-        final Nonce nonce;
-        IdentityPublicKey recipient;
-        final IdentityPublicKey sender;
-        final ProofOfWork proofOfWork;
-
-        hopCount = HopCount.of(byteBuf.readByte());
-        isArmed = byteBuf.readBoolean();
-        networkId = byteBuf.readInt();
-
-        final byte[] nonceBuffer = new byte[Nonce.NONCE_LENGTH];
-        byteBuf.readBytes(nonceBuffer);
-        nonce = Nonce.of(nonceBuffer);
-
-        final byte[] recipientBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-        byteBuf.readBytes(recipientBuffer);
-        recipient = IdentityPublicKey.of(recipientBuffer);
-
-        if (recipient == IdentityPublicKey.ZERO_ID) {
-            recipient = null;
-        }
-
-        final byte[] senderBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-        byteBuf.readBytes(senderBuffer);
-        sender = IdentityPublicKey.of(senderBuffer);
-
-        proofOfWork = ProofOfWork.of(byteBuf.readInt());
-
-        return of(hopCount, isArmed, networkId, nonce, recipient, sender, proofOfWork);
     }
 }
