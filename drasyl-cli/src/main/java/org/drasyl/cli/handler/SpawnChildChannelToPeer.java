@@ -27,23 +27,36 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
 
+import java.util.Set;
+
 import static java.util.Objects.requireNonNull;
 
+/**
+ * This handler spawns the creation of {@link DrasylChannel}s to given peers once the server channel
+ * becomes active.
+ */
 public class SpawnChildChannelToPeer extends ChannelInboundHandlerAdapter {
     private final DrasylServerChannel ch;
-    private final IdentityPublicKey remoteAddress;
+    private final Set<IdentityPublicKey> remoteAddresses;
+
+    public SpawnChildChannelToPeer(final DrasylServerChannel ch,
+                                   final Set<IdentityPublicKey> remoteAddresses) {
+        this.ch = requireNonNull(ch);
+        this.remoteAddresses = requireNonNull(remoteAddresses);
+    }
 
     public SpawnChildChannelToPeer(final DrasylServerChannel ch,
                                    final IdentityPublicKey remoteAddress) {
-        this.ch = requireNonNull(ch);
-        this.remoteAddress = requireNonNull(remoteAddress);
+        this(ch, Set.of(remoteAddress));
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
 
-        final DrasylChannel childChannel = new DrasylChannel(ch, remoteAddress);
-        ctx.fireChannelRead(childChannel);
+        for (final IdentityPublicKey remoteAddress : remoteAddresses) {
+            final DrasylChannel childChannel = new DrasylChannel(ch, remoteAddress);
+            ctx.fireChannelRead(childChannel);
+        }
     }
 }
