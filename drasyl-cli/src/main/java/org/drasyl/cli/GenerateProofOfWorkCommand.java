@@ -25,31 +25,38 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingBiFunction;
-import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.IDefaultValueProvider;
+import picocli.CommandLine.Model.ArgSpec;
+import picocli.CommandLine.Model.OptionSpec;
+import picocli.CommandLine.Option;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Scanner;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
 /**
  * Generate and output a new proof of work for a given public key.
  */
-@CommandLine.Command(
+@Command(
         name = "genpow",
         header = "Generates and outputs a new proof of work for a given public key",
-        synopsisHeading = "%nUsage: "
+        synopsisHeading = "%nUsage: ",
+        optionListHeading = "%n",
+        showDefaultValues = true,
+        defaultValueProvider = GenerateProofOfWorkCommand.MyDefaultProvider.class
 )
 public class GenerateProofOfWorkCommand implements Runnable {
     private final Scanner in;
     private final PrintStream out;
     private final ThrowingBiFunction<IdentityPublicKey, Byte, ProofOfWork, IOException> proofOfWorkFunction;
     private final ThrowingBiConsumer<PrintStream, ProofOfWork, IOException> proofOfWorkWriter;
-    @CommandLine.Option(
+    @Option(
             names = { "--difficulty" },
-            description = "Sets the difficulty of the proof of work.",
-            defaultValue = "6"
+            description = "Sets the difficulty of the proof of work."
     )
     private byte difficulty;
 
@@ -82,6 +89,26 @@ public class GenerateProofOfWorkCommand implements Runnable {
         }
         catch (final IOException e) {
             throw new CliException("Unable to output proof of work:", e);
+        }
+    }
+
+    static class MyDefaultProvider implements IDefaultValueProvider {
+        public MyDefaultProvider() {
+            // do not remove
+        }
+
+        @Override
+        public String defaultValue(ArgSpec argSpec) throws Exception {
+            return argSpec.isOption() ? optionDefaultValue((OptionSpec) argSpec) : null;
+        }
+
+        private String optionDefaultValue(OptionSpec optionSpec) {
+            if ("--difficulty".equals(optionSpec.longestName())) {
+                return Integer.toString(POW_DIFFICULTY);
+            }
+            else {
+                return null;
+            }
         }
     }
 }

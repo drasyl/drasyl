@@ -31,7 +31,9 @@ import static picocli.CommandLine.Command;
 @Command(
         name = "version",
         header = "Shows the drasyl version number, the java version, and the architecture",
-        synopsisHeading = "%nUsage: "
+        synopsisHeading = "%nUsage: ",
+        optionListHeading = "%n",
+        showDefaultValues = true
 )
 public class VersionCommand implements Runnable {
     protected final PrintStream out;

@@ -38,7 +38,9 @@ import static java.util.Objects.requireNonNull;
 @Command(
         name = "genidentity",
         header = "Generates and outputs a new identity",
-        synopsisHeading = "%nUsage: "
+        synopsisHeading = "%nUsage: ",
+        optionListHeading = "%n",
+        showDefaultValues = true
 )
 public class GenerateIdentityCommand implements Runnable {
     private final PrintStream out;
