@@ -30,7 +30,7 @@ import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -114,7 +114,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             handleUniteMessage(ctx, addressedMsg.content());
         }
         else if (isDiscoveryMessageFromTraversingPeer(msg)) {
-            final InetAddressedMessage<DiscoveryMessage> addressedMsg = (InetAddressedMessage<DiscoveryMessage>) msg;
+            final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
             handleDiscoveryMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isAcknowledgementMessageFromTraversingPeer(msg)) {
@@ -167,8 +167,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             // send Discovery
             final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress));
             traversingPeer.applicationTrafficSentOrReceived();
-            traversingPeer.discoverySent();
-            writeDiscoveryMessage(ctx, address, traversingPeer.inetAddress(), false);
+            traversingPeer.helloSent();
+            writeHelloMessage(ctx, address, traversingPeer.inetAddress(), false);
             ctx.flush();
         }
     }
@@ -176,15 +176,15 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @SuppressWarnings("java:S1067")
     private boolean isDiscoveryMessageFromTraversingPeer(final Object msg) {
         return msg instanceof InetAddressedMessage &&
-                ((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage &&
-                myPublicKey.equals(((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient()) &&
-                traversingPeers.containsKey(((InetAddressedMessage<DiscoveryMessage>) msg).content().getSender()) &&
-                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis &&
-                ((InetAddressedMessage<DiscoveryMessage>) msg).content().getChildrenTime() == 0;
+                ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
+                myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
+                traversingPeers.containsKey(((InetAddressedMessage<HelloMessage>) msg).content().getSender()) &&
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis &&
+                ((InetAddressedMessage<HelloMessage>) msg).content().getChildrenTime() == 0;
     }
 
     private void handleDiscoveryMessageFromTraversingPeer(final ChannelHandlerContext ctx,
-                                                          final DiscoveryMessage msg,
+                                                          final HelloMessage msg,
                                                           final InetSocketAddress inetAddress) {
         LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
@@ -199,8 +199,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         if (inetAddressHasChanged) {
             // send Discovery immediately to speed up traversal
             traversingPeer.applicationTrafficSentOrReceived();
-            traversingPeer.discoverySent();
-            writeDiscoveryMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
+            traversingPeer.helloSent();
+            writeHelloMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
             ctx.flush();
         }
     }
@@ -249,8 +249,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             }
             else {
                 // send Discovery
-                traversingPeer.discoverySent();
-                writeDiscoveryMessage(ctx, address, traversingPeer.inetAddress, false);
+                traversingPeer.helloSent();
+                writeHelloMessage(ctx, address, traversingPeer.inetAddress, false);
                 ctx.flush();
             }
         }
@@ -293,7 +293,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private final long pingCommunicationTimeoutMillis;
-        long firstDiscoveryTime;
+        long firstHelloTime;
         long lastAcknowledgementTime;
         long lastApplicationTime;
         private InetSocketAddress inetAddress;
@@ -302,14 +302,14 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                        final long pingTimeoutMillis,
                        final long pingCommunicationTimeoutMillis,
                        final InetSocketAddress inetAddress,
-                       final long firstDiscoveryTime,
+                       final long firstHelloTime,
                        final long lastAcknowledgementTime,
                        final long lastApplicationTime) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
-            this.firstDiscoveryTime = firstDiscoveryTime;
+            this.firstHelloTime = firstHelloTime;
             this.lastAcknowledgementTime = lastAcknowledgementTime;
             this.lastApplicationTime = lastApplicationTime;
         }
@@ -331,9 +331,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             return inetAddress;
         }
 
-        public void discoverySent() {
-            if (this.firstDiscoveryTime == 0) {
-                this.firstDiscoveryTime = currentTime.getAsLong();
+        public void helloSent() {
+            if (this.firstHelloTime == 0) {
+                this.firstHelloTime = currentTime.getAsLong();
             }
         }
 
@@ -351,7 +351,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * #pingTimeoutMillis} the peer.
          */
         public boolean isNew() {
-            return firstDiscoveryTime >= currentTime.getAsLong() - pingTimeoutMillis;
+            return firstHelloTime >= currentTime.getAsLong() - pingTimeoutMillis;
         }
 
         /**

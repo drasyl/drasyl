@@ -29,7 +29,7 @@ import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -95,15 +95,15 @@ class InternetDiscoverySuperPeerHandlerTest {
 
     @Test
     void shouldHandleDiscoveryMessageWithChildrenTime(@Mock final IdentityPublicKey publicKey,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                                       @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(11L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
-        when(discoveryMsg.getTime()).thenReturn(10L);
-        when(discoveryMsg.getSender()).thenReturn(publicKey);
-        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
-        when(discoveryMsg.getChildrenTime()).thenReturn(100L);
-        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, null, inetAddress);
+        when(helloMsg.getTime()).thenReturn(10L);
+        when(helloMsg.getSender()).thenReturn(publicKey);
+        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
+        when(helloMsg.getChildrenTime()).thenReturn(100L);
+        final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -119,15 +119,15 @@ class InternetDiscoverySuperPeerHandlerTest {
 
     @Test
     void shouldDropTooOldDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                            @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(1_000_000L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
-        when(discoveryMsg.getTime()).thenReturn(10L);
-        when(discoveryMsg.getSender()).thenReturn(publicKey);
-        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
-        when(discoveryMsg.getChildrenTime()).thenReturn(100L);
-        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, null, inetAddress);
+        when(helloMsg.getTime()).thenReturn(10L);
+        when(helloMsg.getSender()).thenReturn(publicKey);
+        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
+        when(helloMsg.getChildrenTime()).thenReturn(100L);
+        final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -140,15 +140,15 @@ class InternetDiscoverySuperPeerHandlerTest {
 
     @Test
     void shouldDropTooNewDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                            @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(10L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
-        when(discoveryMsg.getTime()).thenReturn(1_000_000L);
-        when(discoveryMsg.getSender()).thenReturn(publicKey);
-        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
-        when(discoveryMsg.getChildrenTime()).thenReturn(100L);
-        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, null, inetAddress);
+        when(helloMsg.getTime()).thenReturn(1_000_000L);
+        when(helloMsg.getSender()).thenReturn(publicKey);
+        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
+        when(helloMsg.getChildrenTime()).thenReturn(100L);
+        final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
@@ -266,9 +266,9 @@ class InternetDiscoverySuperPeerHandlerTest {
                 when(currentTime.getAsLong()).thenReturn(1L);
 
                 final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 0L, inetAddress);
-                childrenPeer.discoveryReceived(inetAddress);
+                childrenPeer.helloReceived(inetAddress);
 
-                assertEquals(1L, childrenPeer.lastDiscoveryTime);
+                assertEquals(1L, childrenPeer.lastHelloTime);
             }
         }
 

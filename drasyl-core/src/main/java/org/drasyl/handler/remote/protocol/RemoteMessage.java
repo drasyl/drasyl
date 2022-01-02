@@ -44,7 +44,7 @@ import org.drasyl.identity.ProofOfWork;
  *     |       {@link PrivateHeader} ({@link PrivateHeader#LENGTH} or        |
  *     |          {@link PrivateHeader#ARMED_LENGTH} Bytes)          |
  *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *     /     Body ({@link DiscoveryMessage}, {@link ApplicationMessage},     /
+ *     /     Body ({@link HelloMessage}, {@link ApplicationMessage},     /
  *     \      {@link AcknowledgementMessage}, or {@link UniteMessage})       \
  *     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * </pre>

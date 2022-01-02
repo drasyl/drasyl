@@ -33,7 +33,7 @@ import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -139,7 +139,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (isDiscoveryMessageWithChildrenTime(msg)) {
-            final InetAddressedMessage<DiscoveryMessage> addressedMsg = (InetAddressedMessage<DiscoveryMessage>) msg;
+            final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
             handleDiscoveryMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isApplicationMessageForMe(msg)) {
@@ -265,19 +265,19 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S1067")
     private boolean isDiscoveryMessageWithChildrenTime(final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
-                ((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage &&
-                myPublicKey.equals(((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient()) &&
-                (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getChildrenTime() > 0 &&
-                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
+                ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
+                myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
+                (((InetAddressedMessage<HelloMessage>) msg).content()).getChildrenTime() > 0 &&
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
     }
 
     private void handleDiscoveryMessage(final ChannelHandlerContext ctx,
-                                        final DiscoveryMessage msg,
+                                        final HelloMessage msg,
                                         final InetSocketAddress inetAddress) {
         LOG.trace("Got Discovery from `{}`.", msg.getSender());
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress));
-        childrenPeer.discoveryReceived(inetAddress);
+        childrenPeer.helloReceived(inetAddress);
         final AddPathAndChildrenEvent event = AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
@@ -304,8 +304,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S1067", "java:S2325" })
     private boolean isUnexpectedMessage(final Object msg) {
         return msg instanceof InetAddressedMessage &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient() == null) &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<DiscoveryMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis);
+                !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && ((InetAddressedMessage<HelloMessage>) msg).content().getRecipient() == null) &&
+                !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis);
     }
 
     @SuppressWarnings({ "unused", "java:S2325" })
@@ -319,16 +319,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private InetSocketAddress inetAddress;
-        long lastDiscoveryTime;
+        long lastHelloTime;
 
         ChildrenPeer(final LongSupplier currentTime,
                      final long pingTimeoutMillis,
                      final InetSocketAddress inetAddress,
-                     final long lastDiscoveryTime) {
+                     final long lastHelloTime) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
-            this.lastDiscoveryTime = lastDiscoveryTime;
+            this.lastHelloTime = lastHelloTime;
         }
 
         public ChildrenPeer(final LongSupplier currentTime,
@@ -341,13 +341,13 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             return inetAddress;
         }
 
-        public void discoveryReceived(final InetSocketAddress inetAddress) {
-            this.lastDiscoveryTime = currentTime.getAsLong();
+        public void helloReceived(final InetSocketAddress inetAddress) {
+            this.lastHelloTime = currentTime.getAsLong();
             this.inetAddress = requireNonNull(inetAddress);
         }
 
         public boolean isStale() {
-            return lastDiscoveryTime < currentTime.getAsLong() - pingTimeoutMillis;
+            return lastHelloTime < currentTime.getAsLong() - pingTimeoutMillis;
         }
     }
 }

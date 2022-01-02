@@ -30,7 +30,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -144,7 +144,7 @@ class LocalNetworkDiscoveryTest {
             verify(peer).isStale();
             verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
             assertTrue(peers.isEmpty());
-            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof DiscoveryMessage && m.recipient().equals(MULTICAST_ADDRESS)));
+            verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof HelloMessage && m.recipient().equals(MULTICAST_ADDRESS)));
         }
     }
 
@@ -182,7 +182,7 @@ class LocalNetworkDiscoveryTest {
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                    @Mock final LocalNetworkDiscovery.Peer peer) {
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
-            final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, ID_2.getProofOfWork());
+            final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
             when(peers.computeIfAbsent(any(), any())).thenReturn(peer);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
@@ -198,7 +198,7 @@ class LocalNetworkDiscoveryTest {
             when(ctx.channel().localAddress()).thenReturn(publicKey);
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
             when(identity.getAddress()).thenReturn(publicKey);
-            final DiscoveryMessage msg = DiscoveryMessage.of(0, publicKey, ID_2.getProofOfWork());
+            final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(peers, identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, pingTimeout, 0, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 

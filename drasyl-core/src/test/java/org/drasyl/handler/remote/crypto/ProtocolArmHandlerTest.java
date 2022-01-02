@@ -30,8 +30,8 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.Nonce;
@@ -120,7 +120,7 @@ class ProtocolArmHandlerTest {
             final ProtocolArmHandler handler = new ProtocolArmHandler(IdentityTestUtil.ID_1, Crypto.INSTANCE, maxSessionsCount, sessionExpireTime);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final FullReadMessage<?> msg = DiscoveryMessage.of(
+                final FullReadMessage<?> msg = HelloMessage.of(
                         networkId,
                         IdentityTestUtil.ID_1.getIdentityPublicKey(),
                         IdentityTestUtil.ID_1.getProofOfWork());

@@ -29,7 +29,7 @@ import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -56,12 +56,12 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * local network.
  * <p>
  * For this purpose, the {@link UdpMulticastServer} joins a multicast group and forwards received
- * {@link DiscoveryMessage}s to this handler, which thus becomes aware of other nodes in the local
- * network. In case no {@link DiscoveryMessage} has been received for a longer period of time, the
- * other node is considered stale.
+ * {@link HelloMessage}s to this handler, which thus becomes aware of other nodes in the local
+ * network. In case no {@link HelloMessage} has been received for a longer period of time, the other
+ * node is considered stale.
  * <p>
- * In addition, this handler periodically sends a {@link DiscoveryMessage} messages to a multicast
- * group so that other nodes become aware of this node.
+ * In addition, this handler periodically sends a {@link HelloMessage} messages to a multicast group
+ * so that other nodes become aware of this node.
  *
  * @see UdpMulticastServer
  */
@@ -146,10 +146,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings("unchecked")
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((DiscoveryMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient() == null && scheduledPingFuture != null) {
-            final DiscoveryMessage discoveryMsg = ((InetAddressedMessage<DiscoveryMessage>) msg).content();
-            final InetSocketAddress sender = ((InetAddressedMessage<DiscoveryMessage>) msg).sender();
-            handlePing(ctx, sender, discoveryMsg, new CompletableFuture<>());
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && ((HelloMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient() == null && scheduledPingFuture != null) {
+            final HelloMessage helloMsg = ((InetAddressedMessage<HelloMessage>) msg).content();
+            final InetSocketAddress sender = ((InetAddressedMessage<HelloMessage>) msg).sender();
+            handlePing(ctx, sender, helloMsg, new CompletableFuture<>());
         }
         else {
             ctx.fireChannelRead(msg);
@@ -209,7 +209,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final DiscoveryMessage messageEnvelope = DiscoveryMessage.of(networkId, myPublicKey, myProofOfWork);
+        final HelloMessage messageEnvelope = HelloMessage.of(networkId, myPublicKey, myProofOfWork);
         LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
         ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
             if (!future.isSuccess()) {

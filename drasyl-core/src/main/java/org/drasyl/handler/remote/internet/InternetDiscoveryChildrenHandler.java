@@ -34,7 +34,7 @@ import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -67,12 +67,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;
     protected final LongSupplier currentTime;
-    private final long initialPingDelayMillis;
     protected final long pingTimeoutMillis;
-    private final long pingIntervalMillis;
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
     protected final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
+    private final long initialPingDelayMillis;
+    private final long pingIntervalMillis;
     Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
 
@@ -219,8 +219,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {
-            superPeer.discoverySent();
-            writeDiscoveryMessage(ctx, publicKey, superPeer.inetAddress(), true);
+            superPeer.helloSent();
+            writeHelloMessage(ctx, publicKey, superPeer.inetAddress(), true);
         }));
         ctx.flush();
     }
@@ -228,12 +228,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     /**
      * Make sure to call {@link Channel#flush()} by your own!
      */
-    protected void writeDiscoveryMessage(final ChannelHandlerContext ctx,
-                                         final DrasylAddress publicKey,
-                                         final InetSocketAddress inetAddress,
-                                         final boolean isChildrenJoin) {
+    protected void writeHelloMessage(final ChannelHandlerContext ctx,
+                                     final DrasylAddress publicKey,
+                                     final InetSocketAddress inetAddress,
+                                     final boolean isChildrenJoin) {
         final long childrenTime = isChildrenJoin ? currentTime.getAsLong() : 0;
-        final DiscoveryMessage msg = DiscoveryMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, childrenTime);
+        final HelloMessage msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, childrenTime);
         LOG.trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
             if (!future.isSuccess()) {
@@ -354,7 +354,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S1067", "java:S2325" })
     protected boolean isUnexpectedMessage(final Object msg) {
         return msg instanceof InetAddressedMessage &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof DiscoveryMessage && ((InetAddressedMessage<DiscoveryMessage>) msg).content().getRecipient() == null);
+                !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && ((InetAddressedMessage<HelloMessage>) msg).content().getRecipient() == null);
     }
 
     @SuppressWarnings({ "unused", "java:S2325" })
@@ -368,20 +368,20 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private final InetSocketAddress inetAddress;
-        long firstDiscoveryTime;
+        long firstHelloTime;
         long lastAcknowledgementTime;
         long latency;
 
         SuperPeer(final LongSupplier currentTime,
                   final long pingTimeoutMillis,
                   final InetSocketAddress inetAddress,
-                  final long firstDiscoveryTime,
+                  final long firstHelloTime,
                   final long lastAcknowledgementTime,
                   final long latency) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
-            this.firstDiscoveryTime = firstDiscoveryTime;
+            this.firstHelloTime = firstHelloTime;
             this.lastAcknowledgementTime = lastAcknowledgementTime;
             this.latency = latency;
         }
@@ -396,9 +396,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             return inetAddress;
         }
 
-        public void discoverySent() {
-            if (this.firstDiscoveryTime == 0) {
-                this.firstDiscoveryTime = currentTime.getAsLong();
+        public void helloSent() {
+            if (this.firstHelloTime == 0) {
+                this.firstHelloTime = currentTime.getAsLong();
             }
         }
 
@@ -408,7 +408,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         }
 
         public boolean isStale() {
-            return firstDiscoveryTime != 0 && Math.max(firstDiscoveryTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
+            return firstHelloTime != 0 && Math.max(firstHelloTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
         }
     }
 }

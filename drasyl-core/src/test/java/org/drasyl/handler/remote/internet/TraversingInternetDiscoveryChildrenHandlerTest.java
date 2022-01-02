@@ -30,7 +30,7 @@ import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.Super
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.TraversingPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -48,10 +48,7 @@ import java.util.function.LongSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -84,9 +81,9 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        final InetAddressedMessage<DiscoveryMessage> discoveryMsg = channel.readOutbound();
-        assertThat(discoveryMsg.content(), instanceOf(DiscoveryMessage.class));
-        assertSame(uniteMsg.getSocketAddress(), discoveryMsg.recipient());
+        final InetAddressedMessage<HelloMessage> helloMsg = channel.readOutbound();
+        assertThat(helloMsg.content(), instanceOf(HelloMessage.class));
+        assertSame(uniteMsg.getSocketAddress(), helloMsg.recipient());
         assertTrue(traversingPeers.containsKey(uniteMsg.getAddress()));
     }
 
@@ -112,16 +109,16 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldHandleDiscoveryMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DiscoveryMessage discoveryMsg,
+    void shouldHandleDiscoveryMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                                         @Mock final InetSocketAddress inetAddress,
                                                         @Mock final IdentityPublicKey traversingPeerPublicKey,
                                                         @Mock final TraversingPeer traversingPeer) {
-        when(discoveryMsg.getRecipient()).thenReturn(myPublicKey);
-        when(discoveryMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(discoveryMsg.getTime()).thenReturn(40L);
+        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
+        when(helloMsg.getSender()).thenReturn(traversingPeerPublicKey);
+        when(helloMsg.getTime()).thenReturn(40L);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
-        final InetAddressedMessage<DiscoveryMessage> msg = new InetAddressedMessage<>(discoveryMsg, null, inetAddress);
+        final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -221,10 +218,10 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
                 final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddress, 0L, 0L, 0L);
-                traversingPeer.discoverySent();
-                traversingPeer.discoverySent();
+                traversingPeer.helloSent();
+                traversingPeer.helloSent();
 
-                assertEquals(1L, traversingPeer.firstDiscoveryTime);
+                assertEquals(1L, traversingPeer.firstHelloTime);
             }
         }
 

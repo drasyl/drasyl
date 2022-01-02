@@ -40,7 +40,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.DISCO
  */
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class DiscoveryMessage extends AbstractFullReadMessage<DiscoveryMessage> {
+public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage> {
     public static final int LENGTH = 16;
 
     /**
@@ -65,8 +65,8 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     public abstract long getChildrenTime();
 
     @Override
-    public DiscoveryMessage incrementHopCount() {
-        return DiscoveryMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
+    public HelloMessage incrementHopCount() {
+        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
     }
 
     @Override
@@ -96,16 +96,16 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      *                              recipient}, or {@code hopCount} is {@code null}
      */
     @SuppressWarnings("java:S107")
-    public static DiscoveryMessage of(final HopCount hopCount,
-                                      final boolean isArmed,
-                                      final int networkId,
-                                      final Nonce nonce,
-                                      final DrasylAddress recipient,
-                                      final DrasylAddress sender,
-                                      final ProofOfWork proofOfWork,
-                                      final long time,
-                                      final long joinTime) {
-        return new AutoValue_DiscoveryMessage(
+    public static HelloMessage of(final HopCount hopCount,
+                                  final boolean isArmed,
+                                  final int networkId,
+                                  final Nonce nonce,
+                                  final DrasylAddress recipient,
+                                  final DrasylAddress sender,
+                                  final ProofOfWork proofOfWork,
+                                  final long time,
+                                  final long joinTime) {
+        return new AutoValue_HelloMessage(
                 nonce,
                 networkId,
                 sender,
@@ -119,7 +119,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     }
 
     /**
-     * Creates a new {@link DiscoveryMessage} message.
+     * Creates a new {@link HelloMessage} message.
      *
      * @param networkId    the network of the joining node
      * @param recipient    the public key of the node to join
@@ -130,12 +130,12 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
-    public static DiscoveryMessage of(final int networkId,
-                                      final DrasylAddress recipient,
-                                      final IdentityPublicKey sender,
-                                      final ProofOfWork proofOfWork,
-                                      final long time,
-                                      final long childrenTime) {
+    public static HelloMessage of(final int networkId,
+                                  final DrasylAddress recipient,
+                                  final IdentityPublicKey sender,
+                                  final ProofOfWork proofOfWork,
+                                  final long time,
+                                  final long childrenTime) {
         return of(
                 HopCount.of(), false, networkId, randomNonce(),
                 recipient, sender,
@@ -146,7 +146,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     }
 
     /**
-     * Creates a new {@link DiscoveryMessage} message.
+     * Creates a new {@link HelloMessage} message.
      *
      * @param networkId    the network of the joining node
      * @param recipient    the public key of the node to join
@@ -156,11 +156,11 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
-    public static DiscoveryMessage of(final int networkId,
-                                      final DrasylAddress recipient,
-                                      final IdentityPublicKey sender,
-                                      final ProofOfWork proofOfWork,
-                                      final long childrenTime) {
+    public static HelloMessage of(final int networkId,
+                                  final DrasylAddress recipient,
+                                  final IdentityPublicKey sender,
+                                  final ProofOfWork proofOfWork,
+                                  final long childrenTime) {
         return of(
                 networkId,
                 recipient,
@@ -172,7 +172,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     }
 
     /**
-     * Creates a new multicast {@link DiscoveryMessage} message (sent by {@link
+     * Creates a new multicast {@link HelloMessage} message (sent by {@link
      * LocalNetworkDiscovery}}.
      *
      * @param networkId   the network of the joining node
@@ -180,9 +180,9 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      * @param proofOfWork the proof of work
      * @throws NullPointerException if {@code sender}, or {@code proofOfWork} is {@code null}
      */
-    public static DiscoveryMessage of(final int networkId,
-                                      final IdentityPublicKey sender,
-                                      final ProofOfWork proofOfWork) {
+    public static HelloMessage of(final int networkId,
+                                  final IdentityPublicKey sender,
+                                  final ProofOfWork proofOfWork) {
         return of(
                 HopCount.of(), false, networkId, randomNonce(),
                 null, sender,
@@ -193,7 +193,7 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
     }
 
     /**
-     * Creates new discovery message.
+     * Creates new hello message.
      *
      * @param hopCount    the hop count
      * @param networkId   the network id
@@ -207,13 +207,13 @@ public abstract class DiscoveryMessage extends AbstractFullReadMessage<Discovery
      * @throws IllegalArgumentException if {@code body} contains an invalid address
      */
     @SuppressWarnings("java:S107")
-    static DiscoveryMessage of(final HopCount hopCount,
-                               final int networkId,
-                               final Nonce nonce,
-                               final DrasylAddress recipient,
-                               final DrasylAddress sender,
-                               final ProofOfWork proofOfWork,
-                               final ByteBuf body) throws InvalidMessageFormatException {
+    static HelloMessage of(final HopCount hopCount,
+                           final int networkId,
+                           final Nonce nonce,
+                           final DrasylAddress recipient,
+                           final DrasylAddress sender,
+                           final ProofOfWork proofOfWork,
+                           final ByteBuf body) throws InvalidMessageFormatException {
         if (body.readableBytes() < LENGTH) {
             throw new InvalidMessageFormatException("DiscoveryMessage requires " + LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
         }

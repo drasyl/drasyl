@@ -26,8 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.DurationUtil.max;
 
 /**
- * This handler rate limits {@link AcknowledgementMessage}, {@link DiscoveryMessage}, and {@link
+ * This handler rate limits {@link AcknowledgementMessage}, {@link HelloMessage}, and {@link
  * UniteMessage} messages addressed to us. 1 message per type per sender per 100ms is allowed.
  * Messages exceeding the rate limit are dropped.
  */
@@ -51,7 +51,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessag
     private static final Logger LOG = LoggerFactory.getLogger(RateLimiter.class);
     private static final long CACHE_SIZE = 1_000;
     private static final long ACKNOWLEDGEMENT_RATE_LIMIT = 100; // 1 ack msg per 100ms
-    private static final long DISCOVERY_RATE_LIMIT = 100; // 1 discovery msg per 100ms
+    private static final long HELLO_RATE_LIMIT = 100; // 1 hello msg per 100ms
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
     private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache;
@@ -68,7 +68,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessag
                 System::currentTimeMillis,
                 CacheBuilder.newBuilder()
                         .maximumSize(CACHE_SIZE)
-                        .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(DISCOVERY_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
+                        .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(HELLO_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
                         .<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long>build()
                         .asMap()
         );
@@ -98,8 +98,8 @@ public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessag
         if (msg instanceof AcknowledgementMessage) {
             return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), ACKNOWLEDGEMENT_RATE_LIMIT);
         }
-        else if (msg instanceof DiscoveryMessage) {
-            return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), DISCOVERY_RATE_LIMIT);
+        else if (msg instanceof HelloMessage) {
+            return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), HELLO_RATE_LIMIT);
         }
         else if (msg instanceof UniteMessage) {
             return rateLimitMessage(msg.getSender(), (Class<? extends FullReadMessage<?>>) msg.getClass(), UNITE_RATE_LIMIT);

@@ -32,7 +32,7 @@ import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNOWLEDGEMENT;
 
 /**
- * Acknowledges a {@link DiscoveryMessage}.
+ * Acknowledges a {@link HelloMessage}.
  */
 @AutoValue
 @SuppressWarnings("java:S118")
@@ -40,8 +40,7 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     public static final int LENGTH = 8;
 
     /**
-     * Returns the {@link DiscoveryMessage#getTime()} value of the corresponding {@link
-     * DiscoveryMessage}.
+     * Returns the {@link HelloMessage#getTime()} value of the corresponding {@link HelloMessage}.
      */
     public abstract long getTime();
 

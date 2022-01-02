@@ -157,7 +157,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                             getBytes()
                     );
                 case DISCOVERY:
-                    return DiscoveryMessage.of(
+                    return HelloMessage.of(
                             getHopCount(),
                             getNetworkId(),
                             getNonce(),

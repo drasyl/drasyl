@@ -29,7 +29,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.DiscoveryMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
@@ -77,7 +77,7 @@ class InternetDiscoveryChildrenHandlerTest {
             channel.runScheduledPendingTasks();
             final Object msg = channel.readOutbound();
             assertThat(msg, instanceOf(InetAddressedMessage.class));
-            assertThat(((InetAddressedMessage<?>) msg).content(), instanceOf(DiscoveryMessage.class));
+            assertThat(((InetAddressedMessage<?>) msg).content(), instanceOf(HelloMessage.class));
         });
 
         // channel inactive
@@ -157,10 +157,10 @@ class InternetDiscoveryChildrenHandlerTest {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
                 final SuperPeer superPeer = new SuperPeer(currentTime, 0L, inetAddress);
-                superPeer.discoverySent();
-                superPeer.discoverySent();
+                superPeer.helloSent();
+                superPeer.helloSent();
 
-                assertEquals(1L, superPeer.firstDiscoveryTime);
+                assertEquals(1L, superPeer.firstHelloTime);
             }
         }
 

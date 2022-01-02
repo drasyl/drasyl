@@ -34,7 +34,7 @@ import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
-public class DiscoveryMessageTest {
+public class HelloMessageTest {
     private IdentityPublicKey sender;
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipient;
@@ -52,11 +52,11 @@ public class DiscoveryMessageTest {
     class Of {
         @Test
         void shouldCreateDiscoveryMessage() {
-            final DiscoveryMessage discovery = DiscoveryMessage.of(1, recipient, sender, proofOfWork, time, 1337L);
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L);
 
-            assertEquals(1, discovery.getNetworkId());
-            assertEquals(time, discovery.getTime());
-            assertEquals(1337L, discovery.getChildrenTime());
+            assertEquals(1, hello.getNetworkId());
+            assertEquals(time, hello.getTime());
+            assertEquals(1337L, hello.getChildrenTime());
         }
     }
 }
