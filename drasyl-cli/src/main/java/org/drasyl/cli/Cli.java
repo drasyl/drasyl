@@ -45,6 +45,7 @@ import static java.util.Objects.requireNonNull;
         name = "drasyl",
         subcommands = {
                 GenerateIdentityCommand.class,
+                GenerateProofOfWorkCommand.class,
                 HelpCommand.class,
                 NodeCommand.class,
                 PerfCommand.class,

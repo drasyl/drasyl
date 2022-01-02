@@ -33,7 +33,7 @@ import java.io.PrintStream;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Generate and output new a identity in JSON format.
+ * Generate and output a new identity in JSON format.
  */
 @Command(
         name = "genidentity",
