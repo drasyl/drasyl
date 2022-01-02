@@ -33,8 +33,13 @@ import org.drasyl.util.UnsignedShort;
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.DISCOVERY;
 
-/*
- * Describes a method that is used to announce this node to peers or join a super node.
+/**
+ * Describes a message that is used to announce this node to peers or to join a super node. The
+ * message's body is structured as follows:
+ * <ul>
+ * <li><b>Time</b>: The sender's current time in milliseconds stored in 8 bytes.</li>
+ * <li><b>JoinTime</b>: Specifies how many seconds (8 bytes) the sender wants to join the receiving super peer. If the value is 0, the message is an announcement and not a join.</li>
+ * </ul>
  * <p>
  * This is an immutable object.
  */
@@ -42,43 +47,6 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.DISCO
 @SuppressWarnings("java:S118")
 public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage> {
     public static final int LENGTH = 16;
-
-    /**
-     * Returns the {@link IdentityPublicKey} of the message recipient. If the message has no
-     * recipient (e.g. because it is a multicast message) {@code null} is returned.
-     *
-     * @return
-     */
-    @Nullable
-    public abstract DrasylAddress getRecipient();
-
-    /**
-     * Returns the time this message has been sent.
-     */
-    public abstract long getTime();
-
-    /**
-     * If the value is greater than {@code 0}, it indicates that this node wants to join the
-     * receiver as a child. For this, the receiver must be configured as a super node. In all other
-     * cases, the message is used to announce this node's presence to the recipient.
-     */
-    public abstract long getChildrenTime();
-
-    @Override
-    public HelloMessage incrementHopCount() {
-        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
-    }
-
-    @Override
-    protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(DISCOVERY, UnsignedShort.of(LENGTH)).writeTo(out);
-    }
-
-    @Override
-    protected void writeBodyTo(final ByteBuf out) {
-        out.writeLong(getTime());
-        out.writeLong(getChildrenTime());
-    }
 
     /**
      * Creates new application message.
@@ -225,5 +193,42 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 body.readLong(),
                 body.readLong()
         );
+    }
+
+    /**
+     * Returns the {@link IdentityPublicKey} of the message recipient. If the message has no
+     * recipient (e.g. because it is a multicast message) {@code null} is returned.
+     *
+     * @return
+     */
+    @Nullable
+    public abstract DrasylAddress getRecipient();
+
+    /**
+     * Returns the time this message has been sent.
+     */
+    public abstract long getTime();
+
+    /**
+     * If the value is greater than {@code 0}, it indicates that this node wants to join the
+     * receiver as a child. For this, the receiver must be configured as a super node. In all other
+     * cases, the message is used to announce this node's presence to the recipient.
+     */
+    public abstract long getChildrenTime();
+
+    @Override
+    public HelloMessage incrementHopCount() {
+        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
+    }
+
+    @Override
+    protected void writePrivateHeaderTo(final ByteBuf out) {
+        PrivateHeader.of(DISCOVERY, UnsignedShort.of(LENGTH)).writeTo(out);
+    }
+
+    @Override
+    protected void writeBodyTo(final ByteBuf out) {
+        out.writeLong(getTime());
+        out.writeLong(getChildrenTime());
     }
 }

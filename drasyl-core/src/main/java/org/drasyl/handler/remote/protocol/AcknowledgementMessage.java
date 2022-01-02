@@ -32,32 +32,17 @@ import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNOWLEDGEMENT;
 
 /**
- * Acknowledges a {@link HelloMessage}.
+ * Acknowledges a {@link HelloMessage}. The message's body is structured as follows:
+ * <ul>
+ * <li><b>Time</b>: The received {@link HelloMessage#getTime()} value this message is refers (8 bytes).</li>
+ * </ul>
+ * <p>
+ * This is an immutable object.
  */
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class AcknowledgementMessage extends AbstractFullReadMessage<AcknowledgementMessage> {
     public static final int LENGTH = 8;
-
-    /**
-     * Returns the {@link HelloMessage#getTime()} value of the corresponding {@link HelloMessage}.
-     */
-    public abstract long getTime();
-
-    @Override
-    public AcknowledgementMessage incrementHopCount() {
-        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime());
-    }
-
-    @Override
-    protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(ACKNOWLEDGEMENT, UnsignedShort.of(LENGTH)).writeTo(out);
-    }
-
-    @Override
-    protected void writeBodyTo(final ByteBuf out) {
-        out.writeLong(getTime());
-    }
 
     /**
      * Creates new acknowledgement message.
@@ -151,5 +136,25 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                 recipient, sender,
                 proofOfWork,
                 body.readLong());
+    }
+
+    /**
+     * Returns the {@link HelloMessage#getTime()} value of the corresponding {@link HelloMessage}.
+     */
+    public abstract long getTime();
+
+    @Override
+    public AcknowledgementMessage incrementHopCount() {
+        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime());
+    }
+
+    @Override
+    protected void writePrivateHeaderTo(final ByteBuf out) {
+        PrivateHeader.of(ACKNOWLEDGEMENT, UnsignedShort.of(LENGTH)).writeTo(out);
+    }
+
+    @Override
+    protected void writeBodyTo(final ByteBuf out) {
+        out.writeLong(getTime());
     }
 }

@@ -35,8 +35,14 @@ import java.net.UnknownHostException;
 
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE;
 
-/*
- * This message is sent by a super node for NAT traversal. The message provides routing information for a peer we want to directly communicate.
+/**
+ * This message is sent by a super node for NAT traversal. The message provides routing information
+ * for a peer we want to directly communicate. The message's body is structured as follows:
+ * <ul>
+ * <li><b>Address</b>: The {@link DrasylAddress} to which this message contains routing information (32 bytes).</li>
+ * <li><b>Port</b>: The UDP port through which the node can be reached (2 bytes).</li>
+ * <li><b>InetAddress</b>: The IP address which the node can be reached. IPv4 addresses will be mapped to IPv6 addresses (16 bytes).</li>
+ * </ul>
  * <p>
  * This is an immutable object.
  */
@@ -45,48 +51,6 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE
 public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage> {
     public static final int LENGTH = 50;
     private static final int IPV6_LENGTH = 16;
-
-    /**
-     * Returns the public key of the peer.
-     *
-     * @return the public key of the peer.
-     */
-    public abstract DrasylAddress getAddress();
-
-    /**
-     * Returns the ip address of the peer.
-     *
-     * @return the ip address of the peer.
-     */
-    public abstract InetAddress getInetAddress();
-
-    /**
-     * Returns the port of the peer.
-     *
-     * @return the port of the peer.
-     */
-    public abstract UnsignedShort getPort();
-
-    public InetSocketAddress getSocketAddress() {
-        return new InetSocketAddress(getInetAddress(), getPort().getValue());
-    }
-
-    @Override
-    public UniteMessage incrementHopCount() {
-        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getAddress(), getInetAddress(), getPort());
-    }
-
-    @Override
-    protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(UNITE, UnsignedShort.of(LENGTH)).writeTo(out);
-    }
-
-    @Override
-    protected void writeBodyTo(final ByteBuf out) {
-        out.writeBytes(getAddress().toByteArray())
-                .writeBytes(getPort().toBytes())
-                .writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(getInetAddress()));
-    }
 
     /**
      * Creates new unit message.
@@ -212,5 +176,47 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
         catch (final UnknownHostException e) {
             throw new IllegalArgumentException("address is of illegal length.", e);
         }
+    }
+
+    /**
+     * Returns the public key of the peer.
+     *
+     * @return the public key of the peer.
+     */
+    public abstract DrasylAddress getAddress();
+
+    /**
+     * Returns the ip address of the peer.
+     *
+     * @return the ip address of the peer.
+     */
+    public abstract InetAddress getInetAddress();
+
+    /**
+     * Returns the port of the peer.
+     *
+     * @return the port of the peer.
+     */
+    public abstract UnsignedShort getPort();
+
+    public InetSocketAddress getSocketAddress() {
+        return new InetSocketAddress(getInetAddress(), getPort().getValue());
+    }
+
+    @Override
+    public UniteMessage incrementHopCount() {
+        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getAddress(), getInetAddress(), getPort());
+    }
+
+    @Override
+    protected void writePrivateHeaderTo(final ByteBuf out) {
+        PrivateHeader.of(UNITE, UnsignedShort.of(LENGTH)).writeTo(out);
+    }
+
+    @Override
+    protected void writeBodyTo(final ByteBuf out) {
+        out.writeBytes(getAddress().toByteArray())
+                .writeBytes(getPort().toBytes())
+                .writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(getInetAddress()));
     }
 }

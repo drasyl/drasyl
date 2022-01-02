@@ -31,14 +31,85 @@ import org.drasyl.util.UnsignedShort;
 
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLICATION;
 
-/*
- * Describes a message sent by an application running on drasyl.
+/**
+ * Describes a message sent by an application running on drasyl. The message's body is structured as
+ * follows:
+ * <ul>
+ * <li><b>Payload</b>: The payload sent by the application (any number of bytes).</li>
+ * </ul>
  * <p>
  * This is an immutable object.
  */
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> implements ReferenceCounted, AutoCloseable {
+    /**
+     * Creates new application message.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
+     *
+     * @param hopCount    the hop count
+     * @param isArmed     if the message is armed or not
+     * @param networkId   the network id
+     * @param nonce       the nonce
+     * @param recipient   the public key of the recipient
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param payload     the payload
+     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
+     *                              recipient}, {@code hopCount}, or {@code payload} is {@code
+     *                              null}
+     */
+    @SuppressWarnings("java:S107")
+    public static ApplicationMessage of(final HopCount hopCount,
+                                        final boolean isArmed,
+                                        final int networkId,
+                                        final Nonce nonce,
+                                        final DrasylAddress recipient,
+                                        final DrasylAddress sender,
+                                        final ProofOfWork proofOfWork,
+                                        final ByteBuf payload) {
+        return new AutoValue_ApplicationMessage(
+                nonce,
+                networkId,
+                sender,
+                proofOfWork,
+                hopCount,
+                isArmed,
+                recipient,
+                payload
+        );
+    }
+
+    /**
+     * Creates new application message with random {@link Nonce}, and minimal {@link HopCount}
+     * value.
+     * <p>
+     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
+     * PartialReadMessage}.
+     *
+     * @param networkId   the network id
+     * @param recipient   the public key of the recipient
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param payload     the payload
+     * @throws NullPointerException if  {@code sender}, {@code proofOfWork}, {@code recipient}, or
+     *                              {@code payload} is {@code null}
+     */
+    public static ApplicationMessage of(final int networkId,
+                                        final IdentityPublicKey recipient,
+                                        final IdentityPublicKey sender,
+                                        final ProofOfWork proofOfWork,
+                                        final ByteBuf payload) {
+        return of(
+                HopCount.of(), false, networkId, Nonce.randomNonce(),
+                recipient, sender,
+                proofOfWork,
+                payload
+        );
+    }
+
     /**
      * Returns the payload.
      *
@@ -115,72 +186,5 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
     @Override
     public void close() throws Exception {
         release();
-    }
-
-    /**
-     * Creates new application message.
-     * <p>
-     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
-     * PartialReadMessage}.
-     *
-     * @param hopCount    the hop count
-     * @param isArmed     if the message is armed or not
-     * @param networkId   the network id
-     * @param nonce       the nonce
-     * @param recipient   the public key of the recipient
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param payload     the payload
-     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
-     *                              recipient}, {@code hopCount}, or {@code payload} is {@code
-     *                              null}
-     */
-    @SuppressWarnings("java:S107")
-    public static ApplicationMessage of(final HopCount hopCount,
-                                        final boolean isArmed,
-                                        final int networkId,
-                                        final Nonce nonce,
-                                        final DrasylAddress recipient,
-                                        final DrasylAddress sender,
-                                        final ProofOfWork proofOfWork,
-                                        final ByteBuf payload) {
-        return new AutoValue_ApplicationMessage(
-                nonce,
-                networkId,
-                sender,
-                proofOfWork,
-                hopCount,
-                isArmed,
-                recipient,
-                payload
-        );
-    }
-
-    /**
-     * Creates new application message with random {@link Nonce}, and minimal {@link HopCount}
-     * value.
-     * <p>
-     * {@link ByteBuf#release()} ownership of {@code getPayload()} is transferred to this {@link
-     * PartialReadMessage}.
-     *
-     * @param networkId   the network id
-     * @param recipient   the public key of the recipient
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
-     * @param payload     the payload
-     * @throws NullPointerException if  {@code sender}, {@code proofOfWork}, {@code recipient}, or
-     *                              {@code payload} is {@code null}
-     */
-    public static ApplicationMessage of(final int networkId,
-                                        final IdentityPublicKey recipient,
-                                        final IdentityPublicKey sender,
-                                        final ProofOfWork proofOfWork,
-                                        final ByteBuf payload) {
-        return of(
-                HopCount.of(), false, networkId, Nonce.randomNonce(),
-                recipient, sender,
-                proofOfWork,
-                payload
-        );
     }
 }

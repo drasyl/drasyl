@@ -61,6 +61,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings("unchecked")
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
+    private static final long DEFAULT_JOIN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
     protected final int myNetworkId;
@@ -232,7 +233,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final DrasylAddress publicKey,
                                      final InetSocketAddress inetAddress,
                                      final boolean isChildrenJoin) {
-        final long childrenTime = isChildrenJoin ? currentTime.getAsLong() : 0;
+        final long childrenTime = isChildrenJoin ? DEFAULT_JOIN_TIME : 0;
         final HelloMessage msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, childrenTime);
         LOG.trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
