@@ -34,8 +34,8 @@ import org.drasyl.identity.ProofOfWork;
  * This class models the public header of a drasyl protocol message. The header is structured as
  * follows:
  * <ul>
- * <li><b>Armed</b>: The 1 byte armed value. Indicates, if the message is armed or not.</li>
  * <li><b>HopCount</b>: The 1 byte hop count value. Is incremented on each hop. Used to avoid loops.</li>
+ * <li><b>Armed</b>: The 1 byte armed value. Indicates, if the message is armed or not.</li>
  * <li><b>NetworkId</b>: The 4 bytes network id value. Is a unique network-wide value. Used to filter messages from other networks.</li>
  * <li><b>Nonce</b>: The 24 bytes nonce value. Is used for encryption and as message id.</li>
  * <li><b>Recipient</b>: The 32 bytes recipient address. This value is optional. If not set it MUST be sent as 0.</li>
