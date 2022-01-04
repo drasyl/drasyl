@@ -39,7 +39,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,11 +48,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
  * This handler, along with the {@link UdpMulticastServer}, is used to discover other nodes on the
- * local network.
+ * local network via IP multicast.
  * <p>
  * For this purpose, the {@link UdpMulticastServer} joins a multicast group and forwards received
  * {@link HelloMessage}s to this handler, which thus becomes aware of other nodes in the local
@@ -66,45 +66,45 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * @see UdpMulticastServer
  */
 @SuppressWarnings("java:S110")
-public class LocalNetworkDiscovery extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
-    private static final Object path = LocalNetworkDiscovery.class;
+public class IpMulticastDiscovery extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(IpMulticastDiscovery.class);
+    private static final Object path = IpMulticastDiscovery.class;
     private final Map<DrasylAddress, Peer> peers;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
-    private final Duration pingInterval;
-    private final Duration pingTimeout;
+    private final long pingIntervalMillis;
+    private final long pingTimeoutMillis;
     private final int networkId;
     private Future<?> scheduledPingFuture;
 
-    public LocalNetworkDiscovery(final Map<DrasylAddress, Peer> peers,
-                                 final IdentityPublicKey myPublicKey,
-                                 final ProofOfWork myProofOfWork,
-                                 final Duration pingInterval,
-                                 final Duration pingTimeout,
-                                 final int networkId,
-                                 final Future<?> scheduledPingFuture) {
+    IpMulticastDiscovery(final Map<DrasylAddress, Peer> peers,
+                         final IdentityPublicKey myPublicKey,
+                         final ProofOfWork myProofOfWork,
+                         final long pingIntervalMillis,
+                         final long pingTimeoutMillis,
+                         final int networkId,
+                         final Future<?> scheduledPingFuture) {
         this.peers = requireNonNull(peers);
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
-        this.pingInterval = requireNonNull(pingInterval);
-        this.pingTimeout = requireNonNull(pingTimeout);
+        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
+        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.networkId = networkId;
         this.scheduledPingFuture = scheduledPingFuture;
     }
 
-    public LocalNetworkDiscovery(final int networkId,
-                                 final Duration pingInterval,
-                                 final Duration pingTimeout,
-                                 final IdentityPublicKey myPublicKey,
-                                 final ProofOfWork myProofOfWork) {
-        this(new ConcurrentHashMap<>(), myPublicKey, myProofOfWork, pingInterval, pingTimeout, networkId, null);
+    public IpMulticastDiscovery(final int networkId,
+                                final long pingIntervalMillis,
+                                final long pingTimeoutMillis,
+                                final IdentityPublicKey myPublicKey,
+                                final ProofOfWork myProofOfWork) {
+        this(new ConcurrentHashMap<>(), myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, networkId, null);
     }
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
         if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
-            scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(pingInterval.toMillis()), pingInterval.toMillis(), MILLISECONDS);
+            scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(pingIntervalMillis), pingIntervalMillis, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }
@@ -163,7 +163,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
-            final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeout));
+            final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeoutMillis));
             peer.inboundPingOccurred();
             ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
         }
@@ -219,19 +219,20 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     static class Peer {
-        private final Duration pingTimeout;
+        private final long pingTimeoutMillis;
         private final InetSocketAddress address;
         private long lastInboundPingTime;
 
-        Peer(final Duration pingTimeout, final InetSocketAddress address,
+        Peer(final long pingTimeoutMillis,
+             final InetSocketAddress address,
              final long lastInboundPingTime) {
-            this.pingTimeout = pingTimeout;
+            this.pingTimeoutMillis = pingTimeoutMillis;
             this.address = requireNonNull(address);
             this.lastInboundPingTime = lastInboundPingTime;
         }
 
-        public Peer(final InetSocketAddress address, final Duration pingTimeout) {
-            this(pingTimeout, address, 0L);
+        public Peer(final InetSocketAddress address, final long pingTimeoutMillis) {
+            this(pingTimeoutMillis, address, 0L);
         }
 
         public InetSocketAddress getAddress() {
@@ -243,7 +244,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
 
         public boolean isStale() {
-            return lastInboundPingTime < System.currentTimeMillis() - pingTimeout.toMillis();
+            return lastInboundPingTime < System.currentTimeMillis() - pingTimeoutMillis;
         }
 
         public long getLastInboundPingTime() {

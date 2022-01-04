@@ -35,8 +35,8 @@ import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.handler.remote.IpMulticastDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
-import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
@@ -238,10 +238,10 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             // discover nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addLast(new LocalNetworkDiscovery(
+                ch.pipeline().addLast(new IpMulticastDiscovery(
                         config.getNetworkId(),
-                        config.getRemotePingInterval(),
-                        config.getRemotePingTimeout(),
+                        config.getRemotePingInterval().toMillis(),
+                        config.getRemotePingTimeout().toMillis(),
                         identity.getIdentityPublicKey(),
                         identity.getProofOfWork()
                 ));
