@@ -27,6 +27,7 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -564,10 +565,10 @@ public abstract class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
-    public static Map<IdentityPublicKey, InetSocketAddress> getStaticRoutes(final Config config,
-                                                                            final String path) {
+    public static Map<DrasylAddress, InetSocketAddress> getStaticRoutes(final Config config,
+                                                                        final String path) {
         try {
-            final Map<IdentityPublicKey, InetSocketAddress> routes = new HashMap<>();
+            final Map<DrasylAddress, InetSocketAddress> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
                 final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
@@ -707,7 +708,7 @@ public abstract class DrasylConfig {
 
     public abstract Set<PeerEndpoint> getRemoteSuperPeerEndpoints();
 
-    public abstract Map<IdentityPublicKey, InetSocketAddress> getRemoteStaticRoutes();
+    public abstract Map<DrasylAddress, InetSocketAddress> getRemoteStaticRoutes();
 
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
@@ -810,7 +811,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
-        public abstract Builder remoteStaticRoutes(final Map<IdentityPublicKey, InetSocketAddress> remoteStaticRoutes);
+        public abstract Builder remoteStaticRoutes(final Map<DrasylAddress, InetSocketAddress> remoteStaticRoutes);
 
         public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
 
