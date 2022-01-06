@@ -26,7 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
-import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
+import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -71,6 +71,6 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
                 ctx.fireChannelActive();
             }
         });
-        p.addLast(new PrintAndCloseOnExceptionHandler(err, exitCode));
+        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

@@ -22,6 +22,7 @@
 package org.drasyl.cli.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,20 +36,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PrintAndCloseOnExceptionHandlerTest {
+class PrintAndExitOnExceptionHandlerTest {
     @Nested
     class ExceptionCaught {
         @Test
         void shouldPrintExceptionAndCloseChannel(@Mock final PrintStream printStream,
+                                                 @Mock final Worm<Integer> exitCode,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                  @Mock final Throwable cause) {
             when(ctx.channel().isOpen()).thenReturn(true);
 
-            final PrintAndCloseOnExceptionHandler handler = new PrintAndCloseOnExceptionHandler(printStream);
+            final PrintAndExitOnExceptionHandler handler = new PrintAndExitOnExceptionHandler(printStream, exitCode);
             handler.exceptionCaught(ctx, cause);
 
             verify(cause).printStackTrace(printStream);
             verify(ctx.channel()).close();
+            verify(exitCode).trySet(1);
         }
     }
 }

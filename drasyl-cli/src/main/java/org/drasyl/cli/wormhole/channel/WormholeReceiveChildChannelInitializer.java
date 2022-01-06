@@ -24,7 +24,7 @@ package org.drasyl.cli.wormhole.channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
+import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.crypto.CryptoException;
@@ -100,7 +100,7 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
 
         p.addLast(new WormholeReceiver(out, password, REQUEST_TIMEOUT_MILLIS));
 
-        p.addLast(new PrintAndCloseOnExceptionHandler(err, exitCode));
+        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
 
         // close parent as well
         ch.closeFuture().addListener(f -> ch.parent().close());
