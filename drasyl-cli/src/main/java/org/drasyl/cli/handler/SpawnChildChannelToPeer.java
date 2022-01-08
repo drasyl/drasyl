@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Set;
@@ -37,10 +38,10 @@ import static java.util.Objects.requireNonNull;
  */
 public class SpawnChildChannelToPeer extends ChannelInboundHandlerAdapter {
     private final DrasylServerChannel ch;
-    private final Set<IdentityPublicKey> remoteAddresses;
+    private final Set<DrasylAddress> remoteAddresses;
 
     public SpawnChildChannelToPeer(final DrasylServerChannel ch,
-                                   final Set<IdentityPublicKey> remoteAddresses) {
+                                   final Set<DrasylAddress> remoteAddresses) {
         this.ch = requireNonNull(ch);
         this.remoteAddresses = requireNonNull(remoteAddresses);
     }
@@ -54,7 +55,7 @@ public class SpawnChildChannelToPeer extends ChannelInboundHandlerAdapter {
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
 
-        for (final IdentityPublicKey remoteAddress : remoteAddresses) {
+        for (final DrasylAddress remoteAddress : remoteAddresses) {
             final DrasylChannel childChannel = new DrasylChannel(ch, remoteAddress);
             ctx.fireChannelRead(childChannel);
         }

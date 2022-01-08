@@ -34,7 +34,6 @@ import io.netty.channel.nio.NioEventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -76,7 +75,7 @@ public class DrasylChannel extends AbstractChannel {
         this.remoteAddress = remoteAddress;
     }
 
-    public DrasylChannel(final DrasylServerChannel parent, final IdentityPublicKey remoteAddress) {
+    public DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
         this(parent, null, parent.localAddress0(), remoteAddress);
     }
 
