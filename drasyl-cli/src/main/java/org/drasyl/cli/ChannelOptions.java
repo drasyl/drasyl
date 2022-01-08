@@ -47,8 +47,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public abstract class ChannelOptions extends GlobalOptions implements Callable<Integer> {
     protected final PrintStream out;
     protected final PrintStream err;
-    private final EventLoopGroup parentGroup;
-    private final EventLoopGroup childGroup;
+    protected final EventLoopGroup parentGroup;
+    protected final EventLoopGroup childGroup;
     @Option(
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
