@@ -2,7 +2,7 @@ image: openjdk:11-jdk
 
 variables:
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
-  MAVEN_CLI_OPTS: "-s ci_settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+  MAVEN_CLI_OPTS: "-s ci_settings.xml --batch-mode --errors --fail-at-end --show-version --update-snapshots --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true"
   GIT_DEPTH: 0 # disable git shallow clone for SonarQube https://docs.sonarqube.org/8.5/analysis/gitlab-cicd/?q=cache:iXz6-up8hpIJ:https://docs.sonarqube.org/8.5/analysis/gitlab-cicd/+&cd=1&hl=de&ct=clnk&gl=de
 
 cache:
