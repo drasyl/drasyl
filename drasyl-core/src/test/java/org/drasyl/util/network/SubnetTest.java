@@ -66,12 +66,4 @@ class SubnetTest {
         assertEquals(subnet2.last(), subnet2.nth(subnet2.networkSize() - 1));
         assertThrows(IllegalArgumentException.class, () -> subnet2.nth(256 * 256 * 256 - 2));
     }
-
-    @Test
-    void shouldWorkIPv6() throws UnknownHostException {
-        final Subnet subnet = new Subnet("2002::1234:abcd:ffff:c0a8:101/64");
-        assertEquals(InetAddress.getByName("2002::1234:abcd:ffff:c0a8:101"), subnet.address());
-        assertEquals(64, subnet.netmaskLength());
-        assertEquals(InetAddress.getByName("ffff:ffff:ffff:ffff::"), subnet.netmask());
-    }
 }
