@@ -81,6 +81,13 @@
             <version>0.9.2</version>
         </dependency>
 
+        <!-- TUN device access -->
+        <dependency>
+            <groupId>org.drasyl</groupId>
+            <artifactId>netty-tun</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>${project.groupId}</groupId>
