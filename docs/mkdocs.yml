@@ -92,9 +92,7 @@ nav:
       - 'Logging': 'configuration/logging.md'
   - 'Command Line Tool': 'cli.md'
   - 'Public Super Peers': 'public-super-peers.md'
-  - 'Architecture':
-      - 'Concepts': 'architecture/concepts.md'
-      - 'Diagrams': 'architecture/diagrams.md'
+  - 'Insights': 'insights.md'
+  - 'Contributing': 'contributing.md'
   - 'Plugins':
       - 'drasyl Groups': 'plugins/groups.md'
-  - 'Contributing': 'contributing.md'
