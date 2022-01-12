@@ -79,6 +79,8 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
+    public static final int RETRY_MILLIS = 500;
+    public static final int TIMEOUT_SECONDS = 5;
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");
@@ -88,6 +90,7 @@ public class ChatGui {
     private DrasylNode node;
     private Future<?> onlineTimeoutDisposable;
 
+    @SuppressWarnings("java:S3776")
     public ChatGui(final DrasylConfig config) {
         this.config = config;
 
@@ -212,10 +215,11 @@ public class ChatGui {
                     super.firstStage(ch);
 
                     final ChannelPipeline p = ch.pipeline();
+
                     p.addLast(new StopAndWaitArqCodec());
-                    p.addLast(new StopAndWaitArqHandler(500));
+                    p.addLast(new StopAndWaitArqHandler(RETRY_MILLIS));
                     p.addLast(new ByteToStopAndWaitArqDataCodec());
-                    p.addLast(new WriteTimeoutHandler(5));
+                    p.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void exceptionCaught(final ChannelHandlerContext ctx,
