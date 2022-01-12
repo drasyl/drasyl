@@ -21,7 +21,17 @@
  */
 package org.drasyl.example.chat;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.timeout.WriteTimeoutException;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
+import io.netty.util.internal.ThrowableUtil;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
+import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
+import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -29,6 +39,7 @@ import org.drasyl.node.DrasylNode;
 import org.drasyl.node.behaviour.Behavior;
 import org.drasyl.node.behaviour.BehavioralDrasylNode;
 import org.drasyl.node.behaviour.Behaviors;
+import org.drasyl.node.channel.DrasylNodeChannelInitializer;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.LongTimeEncryptionEvent;
 import org.drasyl.node.event.NodeDownEvent;
@@ -45,7 +56,6 @@ import org.drasyl.node.handler.serialization.Serialization;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -54,11 +64,11 @@ import java.awt.BorderLayout;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 
 /**
@@ -114,14 +124,14 @@ public class ChatGui {
             if (node != null) {
                 final String recipient = recipientField.getText().trim();
                 if (!recipient.isBlank()) {
-                    messageField.setEditable(false);
-                    node.send(recipient, messageField.getText()).whenComplete((result, e) -> {
-                        if (e != null) {
-                            JOptionPane.showMessageDialog(frame, e, "Error", ERROR_MESSAGE);
+                    final String text = messageField.getText();
+                    messageField.setText("");
+                    node.send(recipient, null);
+                    appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
+                    node.send(recipient, text).whenComplete((result, e) -> {
+                        if (e != null && !(e instanceof ClosedChannelException)) {
+                            appendTextToMessageArea("Unable to send message: " + ThrowableUtil.stackTraceToString(e) + "\n");
                         }
-                        appendTextToMessageArea(" To " + recipient + ": " + messageField.getText() + "\n");
-                        messageField.setText("");
-                        messageField.setEditable(true);
                     });
                 }
             }
@@ -131,7 +141,7 @@ public class ChatGui {
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(final WindowEvent e) {
-                if(node != null) {
+                if (node != null) {
                     shutdownNode();
                 }
             }
@@ -147,115 +157,7 @@ public class ChatGui {
 
     private void run() throws DrasylException {
         frame.setTitle("Create Node...");
-        node = new BehavioralDrasylNode(config) {
-            @Override
-            protected Behavior created() {
-                return offline();
-            }
-
-            /**
-             * Node is not connected to super peer.
-             */
-            private Behavior offline() {
-                messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
-                return newBehaviorBuilder()
-                        .onEvent(NodeUpEvent.class, event -> {
-                            appendTextToMessageArea("drasyl Node started. Connecting to super peer...\n");
-                            recipientField.setEditable(true);
-                            messageField.setEditable(true);
-                            return Behaviors.withScheduler(scheduler -> {
-                                onlineTimeoutDisposable = scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
-                                return offline();
-                            });
-                        })
-                        .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
-                            appendTextToMessageArea("drasyl Node encountered an unrecoverable error: " + event.getError().getMessage() + " \n");
-                            return Behaviors.shutdown();
-                        })
-                        .onEvent(NodeNormalTerminationEvent.class, event -> {
-                            appendTextToMessageArea("drasyl Node has been shut down.\n");
-                            return Behaviors.same();
-                        })
-                        .onEvent(NodeDownEvent.class, this::downEvent)
-                        .onEvent(NodeOnlineEvent.class, event -> {
-                            appendTextToMessageArea("drasyl Node is connected to super peer. Relayed communication and discovery available.\n");
-                            return online();
-                        })
-                        .onEvent(OnlineTimeout.class, event -> {
-                            appendTextToMessageArea("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable or your configuration is faulty.\n");
-                            return Behaviors.same();
-                        })
-                        .onEvent(PeerEvent.class, this::peerEvent)
-                        .onMessage(String.class, this::messageEvent)
-                        .onAnyEvent(event -> Behaviors.same())
-                        .build();
-            }
-
-            /**
-             * Node is connected to super peer.
-             */
-            private Behavior online() {
-                messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
-                return newBehaviorBuilder()
-                        .onEvent(NodeDownEvent.class, this::downEvent)
-                        .onEvent(NodeOfflineEvent.class, event -> {
-                            appendTextToMessageArea("drasyl Node lost connection to super peer. Relayed communication and discovery not available.\n");
-                            return Behaviors.same();
-                        })
-                        .onEvent(PeerEvent.class, this::peerEvent)
-                        .onMessage(String.class, this::messageEvent)
-                        .onAnyEvent(event -> Behaviors.same())
-                        .build();
-            }
-
-            /**
-             * Reaction to a {@link NodeDownEvent}.
-             */
-            private Behavior downEvent(final NodeDownEvent event) {
-                appendTextToMessageArea("drasyl Node is shutting down. No more communication possible.\n");
-                if (onlineTimeoutDisposable != null) {
-                    onlineTimeoutDisposable.cancel(false);
-                    onlineTimeoutDisposable = null;
-                }
-                recipientField.setEditable(false);
-                messageField.setEditable(false);
-                return offline();
-            }
-
-            /**
-             * Reaction to a {@link org.drasyl.node.event.MessageEvent}.
-             */
-            private Behavior messageEvent(final DrasylAddress sender, final String payload) {
-                appendTextToMessageArea(" From " + sender + ": " + payload + "\n");
-                Toolkit.getDefaultToolkit().beep();
-                return Behaviors.same();
-            }
-
-            /**
-             * Reaction to a {@link PeerEvent}.
-             */
-            private Behavior peerEvent(final PeerEvent event) {
-                if (event instanceof PeerDirectEvent) {
-                    appendTextToMessageArea("Direct connection to " + event.getPeer().getIdentityPublicKey() + " available.\n");
-                }
-                else if (event instanceof PeerRelayEvent) {
-                    appendTextToMessageArea("Relayed connection to " + event.getPeer().getIdentityPublicKey() + " available.\n");
-                }
-                else if (event instanceof PerfectForwardSecrecyEncryptionEvent) {
-                    appendTextToMessageArea("Using now perfect forwarded encryption with peer " + event.getPeer() + "\n");
-                }
-                else if (event instanceof LongTimeEncryptionEvent) {
-                    appendTextToMessageArea("Using now long time encryption with peer " + event.getPeer() + "\n");
-                }
-                return Behaviors.same();
-            }
-
-            /**
-             * Signals that the node could not go online.
-             */
-            class OnlineTimeout implements Event {
-            }
-        };
+        node = new ChatGuiNode();
         frame.setTitle("Chat: " + node.identity().getIdentityPublicKey().toString());
         appendTextToMessageArea("*******************************************************************************************************\n");
         appendTextToMessageArea("This is an Example of a Chat Application running on the drasyl Overlay Network.\n");
@@ -298,5 +200,144 @@ public class ChatGui {
 
         final ChatGui gui = new ChatGui(config);
         gui.run();
+    }
+
+    private class ChatGuiNode extends BehavioralDrasylNode {
+        public ChatGuiNode() throws DrasylException {
+            super(ChatGui.this.config);
+
+            bootstrap.childHandler(new DrasylNodeChannelInitializer(ChatGui.this.config, this) {
+                @Override
+                protected void firstStage(final DrasylChannel ch) {
+                    super.firstStage(ch);
+
+                    final ChannelPipeline p = ch.pipeline();
+                    p.addLast(new StopAndWaitArqCodec());
+                    p.addLast(new StopAndWaitArqHandler(500));
+                    p.addLast(new ByteToStopAndWaitArqDataCodec());
+                    p.addLast(new WriteTimeoutHandler(5));
+                    p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) {
+                            if (cause instanceof WriteTimeoutException) {
+                                appendTextToMessageArea("Message to " + ctx.channel().remoteAddress() + " was not acknowledged. Maybe recipient is offline/unreachable?\n");
+                            }
+                            else {
+                                ctx.fireExceptionCaught(cause);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        @Override
+        protected Behavior created() {
+            return offline();
+        }
+
+        /**
+         * Node is not connected to super peer.
+         */
+        private Behavior offline() {
+            messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
+            return newBehaviorBuilder()
+                    .onEvent(NodeUpEvent.class, event -> {
+                        appendTextToMessageArea("drasyl Node started. Connecting to super peer...\n");
+                        recipientField.setEditable(true);
+                        messageField.setEditable(true);
+                        return Behaviors.withScheduler(scheduler -> {
+                            onlineTimeoutDisposable = scheduler.scheduleEvent(new OnlineTimeout(), ONLINE_TIMEOUT);
+                            return offline();
+                        });
+                    })
+                    .onEvent(NodeUnrecoverableErrorEvent.class, event -> {
+                        appendTextToMessageArea("drasyl Node encountered an unrecoverable error: " + event.getError().getMessage() + " \n");
+                        return Behaviors.shutdown();
+                    })
+                    .onEvent(NodeNormalTerminationEvent.class, event -> {
+                        appendTextToMessageArea("drasyl Node has been shut down.\n");
+                        return Behaviors.same();
+                    })
+                    .onEvent(NodeDownEvent.class, this::downEvent)
+                    .onEvent(NodeOnlineEvent.class, event -> {
+                        appendTextToMessageArea("drasyl Node is connected to super peer. Relayed communication and Internet discovery available.\n");
+                        return online();
+                    })
+                    .onEvent(OnlineTimeout.class, event -> {
+                        appendTextToMessageArea("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable, your configuration is faulty, or system time is wrong.\n");
+                        return Behaviors.same();
+                    })
+                    .onEvent(PeerEvent.class, this::peerEvent)
+                    .onMessage(String.class, this::messageEvent)
+                    .onAnyEvent(event -> Behaviors.same())
+                    .build();
+        }
+
+        /**
+         * Node is connected to super peer.
+         */
+        private Behavior online() {
+            messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
+            return newBehaviorBuilder()
+                    .onEvent(NodeDownEvent.class, this::downEvent)
+                    .onEvent(NodeOfflineEvent.class, event -> {
+                        appendTextToMessageArea("drasyl Node lost connection to super peer. Relayed communication and Internet discovery not available.\n");
+                        return Behaviors.same();
+                    })
+                    .onEvent(PeerEvent.class, this::peerEvent)
+                    .onMessage(String.class, this::messageEvent)
+                    .onAnyEvent(event -> Behaviors.same())
+                    .build();
+        }
+
+        /**
+         * Reaction to a {@link NodeDownEvent}.
+         */
+        private Behavior downEvent(final NodeDownEvent event) {
+            appendTextToMessageArea("drasyl Node is shutting down. No more communication possible.\n");
+            if (onlineTimeoutDisposable != null) {
+                onlineTimeoutDisposable.cancel(false);
+                onlineTimeoutDisposable = null;
+            }
+            recipientField.setEditable(false);
+            messageField.setEditable(false);
+            return offline();
+        }
+
+        /**
+         * Reaction to a {@link org.drasyl.node.event.MessageEvent}.
+         */
+        private Behavior messageEvent(final DrasylAddress sender, final String payload) {
+            appendTextToMessageArea(" From " + sender + ": " + payload + "\n");
+            Toolkit.getDefaultToolkit().beep();
+            return Behaviors.same();
+        }
+
+        /**
+         * Reaction to a {@link PeerEvent}.
+         */
+        private Behavior peerEvent(final PeerEvent event) {
+            if (event instanceof PeerDirectEvent) {
+                appendTextToMessageArea("Direct connection to " + event.getPeer().getAddress() + " available.\n");
+            }
+            else if (event instanceof PeerRelayEvent) {
+                appendTextToMessageArea("Relayed connection to " + event.getPeer().getAddress() + " available.\n");
+            }
+            else if (event instanceof PerfectForwardSecrecyEncryptionEvent) {
+                appendTextToMessageArea("Using now perfect forwarded encryption with peer " + event.getPeer() + "\n");
+            }
+            else if (event instanceof LongTimeEncryptionEvent) {
+                appendTextToMessageArea("Using now long time encryption with peer " + event.getPeer() + "\n");
+            }
+            return Behaviors.same();
+        }
+
+        /**
+         * Signals that the node could not go online.
+         */
+        class OnlineTimeout implements Event {
+        }
     }
 }
