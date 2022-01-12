@@ -205,7 +205,7 @@ public class Behavior {
                                              final BiFunction<DrasylAddress, M, Behavior> handler) {
             return onEvent(
                     MessageEvent.class,
-                    event -> messageType.isAssignableFrom(event.getPayload().getClass()) && test.test(event.getSender(), (M) event.getPayload()),
+                    event -> event.getPayload() != null && messageType.isAssignableFrom(event.getPayload().getClass()) && test.test(event.getSender(), (M) event.getPayload()),
                     event -> handler.apply(event.getSender(), (M) event.getPayload()));
         }
 
