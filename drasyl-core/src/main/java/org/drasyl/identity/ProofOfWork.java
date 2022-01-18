@@ -71,9 +71,7 @@ public abstract class ProofOfWork {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
 
-        final String hash = generateHash(address, getNonce());
-
-        return hash.startsWith("0".repeat(difficulty));
+        return getDifficulty(this, address) >= difficulty;
     }
 
     /**
@@ -84,7 +82,7 @@ public abstract class ProofOfWork {
     }
 
     public static byte getDifficulty(final ProofOfWork proofOfWork,
-                                     final IdentityPublicKey publicKey) {
+                                     final DrasylAddress publicKey) {
         final String hash = generateHash(publicKey, proofOfWork.getNonce());
         byte i;
 
