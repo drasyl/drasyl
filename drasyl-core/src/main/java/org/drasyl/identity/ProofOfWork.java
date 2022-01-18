@@ -60,7 +60,13 @@ public abstract class ProofOfWork {
      * @throws NullPointerException     if {@code address} is {@code null}
      * @throws IllegalArgumentException if the difficulty is not in between [0,64]
      */
+    @SuppressWarnings("java:S2259")
     public boolean isValid(final DrasylAddress address, final byte difficulty) {
+        if (address != null && difficulty == (byte) 0) {
+            // with difficulty 0 every address is valid
+            return true;
+        }
+
         if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
