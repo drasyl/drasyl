@@ -26,8 +26,6 @@ import org.drasyl.crypto.Hashing;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * This class models the proof of work for a given public key. Hence, identity creation becomes an
  * expensive operation and sybil attacks should be made more difficult.
@@ -59,10 +57,10 @@ public abstract class ProofOfWork {
      * @param address    the public key
      * @param difficulty the difficulty
      * @return if valid {@code true}, otherwise {@code false}
+     * @throws NullPointerException     if {@code address} is {@code null}
      * @throws IllegalArgumentException if the difficulty is not in between [0,64]
      */
     public boolean isValid(final DrasylAddress address, final byte difficulty) {
-        requireNonNull(address);
         if (difficulty < MIN_DIFFICULTY || difficulty > MAX_DIFFICULTY) {
             throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
         }
@@ -72,6 +70,9 @@ public abstract class ProofOfWork {
         return hash.startsWith("0".repeat(difficulty));
     }
 
+    /**
+     * @throws NullPointerException if {@code address} is {@code null}
+     */
     private static String generateHash(final DrasylAddress address, final int nonce) {
         return Hashing.sha256Hex(address.toString() + nonce);
     }
