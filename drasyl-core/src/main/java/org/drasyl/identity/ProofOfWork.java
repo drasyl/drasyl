@@ -23,6 +23,7 @@ package org.drasyl.identity;
 
 import com.google.auto.value.AutoValue;
 import org.drasyl.crypto.Hashing;
+import org.drasyl.util.ByteUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -77,22 +78,25 @@ public abstract class ProofOfWork {
     /**
      * @throws NullPointerException if {@code address} is {@code null}
      */
-    private static String generateHash(final DrasylAddress address, final int nonce) {
-        return Hashing.sha256Hex(address.toString() + nonce);
+    private static byte[] generateHash(final DrasylAddress address, final int nonce) {
+        return Hashing.sha256(address.toString() + nonce);
     }
 
+    @SuppressWarnings("java:S109")
     public static byte getDifficulty(final ProofOfWork proofOfWork,
                                      final DrasylAddress publicKey) {
-        final String hash = generateHash(publicKey, proofOfWork.getNonce());
-        byte i;
+        final byte[] hash = generateHash(publicKey, proofOfWork.getNonce());
 
-        for (i = 0; i < hash.length(); i++) {
-            if (hash.charAt(i) != '0') {
+        byte n = 0;
+        for (int i = 0; i < hash.length; i++) {
+            final int zeros = ByteUtil.numberOfLeadingZeros(hash[i]);
+            n += zeros;
+            if (zeros != Byte.SIZE) {
                 break;
             }
         }
 
-        return i;
+        return n;
     }
 
     /**

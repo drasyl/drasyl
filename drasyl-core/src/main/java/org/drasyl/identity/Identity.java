@@ -37,7 +37,7 @@ import java.io.IOException;
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class Identity {
-    public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 6);
+    public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 24);
 
     public abstract ProofOfWork getProofOfWork();
 

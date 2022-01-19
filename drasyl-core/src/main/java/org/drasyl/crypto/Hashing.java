@@ -45,6 +45,18 @@ public final class Hashing {
      * @param input the input to hash
      * @return SHA-256 hash of the input
      */
+    @SuppressWarnings("java:S1845")
+    public static byte[] sha256(final String input) {
+        return sha256(input.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Generates a SHA-256 hash of the given input.
+     *
+     * @param input the input to hash
+     * @return SHA-256 hash of the input
+     */
+    @SuppressWarnings("java:S1845")
     public static byte[] sha256(final byte[]... input) {
         return SHA256.hashBytes(ArrayUtil.concat(input)).asBytes();
     }
