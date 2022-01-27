@@ -591,14 +591,18 @@ We strongly advise against turning off the encryption!</p>
 drasyl operates in two modes of encryption:</p>
 <ol>
 <li>
-<p>In the first mode, drasyl uses the ed25519 keys and converts them into a curve25519, to do an 0-RTT x25519 key agreement – 
-   we call this the long-time encryption. Long-time encryption is the default case.</p>
+<p>In the first mode, drasyl uses the ed25519 keys and converts them into a curve25519, to do an
+   0-RTT x25519 key agreement – we call this the long-time encryption. Long-time encryption is the
+   default case.</p>
 </li>
 <li>
-<p>To raise the security and provide perfect forward secrecy, drasyl tries in the background to do key exchange and agreement 
-   with a newly generated ephemeral curve25519. If a perfect forward secrecy session was established between the two nodes, 
-   drasyl fires a <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/PerfectForwardSecrecyEncryptionEvent.html">PerfectForwardSecrecyEncryptionEvent</a>. 
-   If the connection provides no longer perfect forward secrecy a <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/LongTimeEncryptionEvent.html">LongTimeEncryptionEvent</a> is fired.</p>
+<p>To raise the security and provide perfect forward secrecy, drasyl tries in the background to do
+   key exchange and agreement with a newly generated ephemeral curve25519. If a perfect forward
+   secrecy session was established between the two nodes, drasyl fires
+   a <a href="https://api.drasyl.org/master/org/drasyl/node/event/PerfectForwardSecrecyEncryptionEvent.html">PerfectForwardSecrecyEncryptionEvent</a>
+   . If the connection provides no longer perfect forward secrecy
+   a <a href="https://api.drasyl.org/master/org/drasyl/node/event/LongTimeEncryptionEvent.html">LongTimeEncryptionEvent</a>
+   is fired.</p>
 </li>
 </ol>
 <p>Both x25519 key agreements generate two shared secrets, to avoid the need for any synchronization.</p>
@@ -625,7 +629,7 @@ Depending on the use case, these features can be provided by higher protocols.</
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 24, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 27, 2022</span>
     
   </small>
 </div>

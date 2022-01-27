@@ -510,21 +510,23 @@ For this situation there are various parameters available to adjust the behavior
 <h2 id="create-custom-configurations">Create custom configurations<a class="headerlink" href="#create-custom-configurations" title="Permanent link">&para;</a></h2>
 <p>Because drasyl's configuration is based on <a href="https://github.com/lightbend/config">Lightbend Config library</a>, there are many ways to create custom configurations.</p>
 <h3 id="use-drasylconfigbuidler">Use <code>DrasylConfig.Buidler</code><a class="headerlink" href="#use-drasylconfigbuidler" title="Permanent link">&para;</a></h3>
-<p>With the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html"><code>DrasylConfig.Buidler</code></a> class, configurations can be created within Java.
-This allows you to define individual configurations for each node.
-It is done by calling <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html#newBuilder()"><code>DrasylConfig.newBuilder() ... .build()</code></a>.
-Available builder methods can be obtained from the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html">Javadoc</a>.</p>
-<p>Example:
+<p>With
+the <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.Builder.html"><code>DrasylConfig.Buidler</code></a>
+class, configurations can be created within Java. This allows you to define individual
+configurations for each node. It is done by
+calling <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.html#newBuilder()"><code>DrasylConfig.newBuilder() ... .build()</code></a>
+. Available builder methods can be obtained from
+the <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.Builder.html">Javadoc</a>.</p>
+<p>Example:</p>
 <pre class="highlight"><code class="language-java">DrasylConfig config = DrasylConfig.newBuilder()
     .identityPath(Path.of("/Users/heiko/drasyl.identity"))
-    .networkId(-25421)
-    .remoteSuperPeerEndpoint(Endpoint.of("udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"))
-    .remoteEnabled(false)
-    .build();</code></pre></p>
-<p>The
-resulting <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html"><code>DrasylConfig</code></a>
+        .networkId(-25421)
+        .remoteSuperPeerEndpoint(Endpoint.of("udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&amp;networkId=1"))
+        .remoteEnabled(false)
+    .build();</code></pre>
+<p>The resulting <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.html"><code>DrasylConfig</code></a>
 object can now be passed to
-the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig)"><code>DrasylNode</code> constructor</a>
+the <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig)"><code>DrasylNode</code> constructor</a>
 .</p>
 <h3 id="use-applicationconf-file">Use <code>application.conf</code> file<a class="headerlink" href="#use-applicationconf-file" title="Permanent link">&para;</a></h3>
 <p>You can add a resource called <code>application.conf</code> to your java classpath to provide a custom config used by all your nodes.
@@ -533,7 +535,7 @@ The file only needs to contain the parameters you want to overwrite because it w
 <p>Example:
 <pre class="highlight"><code class="language-hocon">drasyl.identity.path = /Users/heiko/drasyl.identity
 drasyl.network.id = -25421
-drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"</code></pre></p>
+drasyl.remote.super-peer.endpoint = "udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&amp;networkId=1"</code></pre></p>
 <h3 id="use-environment-variables">Use environment variables<a class="headerlink" href="#use-environment-variables" title="Permanent link">&para;</a></h3>
 <p>By setting the JVM property <code>-Dconfig.override_with_env_vars=true</code> it is possible to override any configuration value using environment variables.</p>
 <p>With this option enabled only environment variables starting with <code>CONFIG_FORCE_</code> are considered, and the name is mangled as follows:</p>
@@ -547,7 +549,7 @@ drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppE
 <p>Example:
 <pre class="highlight"><code class="language-bash">$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity \
     CONFIG_FORCE_drasyl_network_id=-25421 \
-    CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC \
+    CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&amp;networkId=1 \
     your-application.jar</code></pre></p>
 <div class="admonition info">
 <p class="admonition-title">Advanced References</p>
@@ -561,7 +563,7 @@ drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppE
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 24, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 27, 2022</span>
     
   </small>
 </div>

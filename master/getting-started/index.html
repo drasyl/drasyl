@@ -561,17 +561,18 @@ your <a href="http://maven.apache.org/pom.html">pom.xml</a>:</p>
 Ivy:&lt;dependency org="org.drasyl"name="drasyl-node"rev="0.7.0-SNAPSHOT"conf="build"/&gt; // ivy.xml
 SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0-SNAPSHOT" // build.sbt</code></pre>
 <h2 id="implementing-drasylnode">Implementing <code>DrasylNode</code><a class="headerlink" href="#implementing-drasylnode" title="Permanent link">&para;</a></h2>
-<p>Next, you can create your own drasyl node by implementing <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html"><code>DrasylNode</code></a>.</p>
+<p>Next, you can create your own drasyl node by
+implementing <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html"><code>DrasylNode</code></a>.</p>
 <p>This class contains the following methods that are now relevant for you:</p>
 <ul>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)"><code>send(...)</code></a>:
+<li><a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#send(java.lang.String,java.lang.Object)"><code>send(...)</code></a>:
   allows your application to send arbitrary messages to other drasyl nodes.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.node.event.Event)"><code>onEvent(...)</code></a>:
+<li><a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#onEvent(org.drasyl.node.event.Event)"><code>onEvent(...)</code></a>:
   allows your application to react to certain events (e.g. process received messages, connection to
   the network established/lost). This method must be implemented.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()"><code>start()</code></a>:
+<li><a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#start()"><code>start()</code></a>:
   starts the node, which will then automatically connect to the drasyl network.</li>
-<li><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()"><code>shutdown()</code></a>:
+<li><a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#shutdown()"><code>shutdown()</code></a>:
   disconnects from the drasyl network and shuts down the node.</li>
 </ul>
 <p>Here you can see a minimal working example of a node that forwards all received events to <code>System.out</code>:
@@ -582,11 +583,13 @@ SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0-SNAPSHOT" // build.sb
     }
 };</code></pre></p>
 <h2 id="node-events">Node Events<a class="headerlink" href="#node-events" title="Permanent link">&para;</a></h2>
-<p>As mentioned before, different events are received by the application.
-These provide information about the state of your node, received messages or connections to other nodes.
-It is therefore important that you become familiar with the <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/package-summary.html">definitions and implications</a> of
-the different event types.</p>
-<p>For example, you should listen for <code>NodeOnlineEvent</code> before start sending messages, and pause when <code>NodeOfflineEvent</code> has been received.</p>
+<p>As mentioned before, different events are received by the application. These provide information
+about the state of your node, received messages or connections to other nodes. It is therefore
+important that you become familiar with
+the <a href="https://api.drasyl.org/master/org/drasyl/node/event/package-summary.html">definitions and implications</a>
+of the different event types.</p>
+<p>For example, you should listen for <code>NodeOnlineEvent</code> before start sending messages, and pause
+when <code>NodeOfflineEvent</code> has been received.</p>
 <div class="admonition info">
 <p class="admonition-title">Advanced References</p>
 <p>If you are interested in the life cycle of the individual events, you can find a state diagram <a href="../architecture/diagrams/#node-events">here</a>.</p>
@@ -607,27 +610,38 @@ Otherwise the future is completed exceptionally.</p>
 The <a href="../plugins/groups/">Groups Plugin</a> can be used to get automatically notified about other nodes joining and leaving the network.</p>
 </div>
 <h2 id="receiving-messages">Receiving Messages<a class="headerlink" href="#receiving-messages" title="Permanent link">&para;</a></h2>
-<p>Each received message is announced by an <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/MessageEvent.html"><code>MessageEvent</code></a> to the application.
-The event contains a getters for the message's sender and payload.</p>
-<p>Example:
+<p>Each received message is announced by
+an <a href="https://api.drasyl.org/master/org/drasyl/node/event/MessageEvent.html"><code>MessageEvent</code></a> to the
+application. The event contains a getters for the message's sender and payload.</p>
+<p>Example:</p>
 <pre class="highlight"><code class="language-java">...
-public void onEvent(Event event) {
-    if (event instanceof MessageEvent) {
-        MessageEvent message = (MessageEvent) event;
-        System.out.println("Message received from " + message.getSender() + " with payload " + new String(message.getPayload()));
-    }
-}
-...</code></pre></p>
+public void onEvent(Event event){
+        if(event instanceof MessageEvent){
+        MessageEvent message=(MessageEvent)event;
+        System.out.println("Message received from "+message.getSender()+" with payload "+new String(message.getPayload()));
+        }
+        }
+        ...</code></pre>
 <h2 id="starting-stopping-the-drasyl-node">Starting &amp; Stopping the drasyl Node<a class="headerlink" href="#starting-stopping-the-drasyl-node" title="Permanent link">&para;</a></h2>
-<p>Before you can use the drasyl node, you must start it using <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()"><code>node.start()</code></a>.
-For communication with other nodes in the local network, the node starts a server
-listening on port 22527. Make sure that the port is available.
-After the node has been successfully started, it emits an <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeUpEvent.html"><code>NodeUpEvent</code></a> to the application.
-Then, once it has successfully connected to the overlay network, an <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeOnlineEvent.html"><code>NodeOnlineEvent</code></a> is emitted.</p>
-<p>If the node is temporarily or permanently no longer needed, it can be shut down using <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()"><code>node.shutdown()</code></a>.
-A <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeDownEvent.html"><code>NodeDownEvent</code></a> is emitted immediately after this call. The application should now no longer attempt to send messages.
-As soon as the connection to the drasyl network is terminated, an <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeOfflineEvent.html"><code>NodeOfflineEvent</code></a> is emitted.
-A <a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeNormalTerminationEvent.html"><code>NodeNormalTerminationEvent</code></a> is emitted when the shutdown is done.</p>
+<p>Before you can use the drasyl node, you must start it
+using <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#start()"><code>node.start()</code></a>. For
+communication with other nodes in the local network, the node starts a server listening on port</p>
+<ol>
+<li>Make sure that the port is available. After the node has been successfully started, it emits
+       an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeUpEvent.html"><code>NodeUpEvent</code></a> to
+       the application. Then, once it has successfully connected to the overlay network,
+       an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeOnlineEvent.html"><code>NodeOnlineEvent</code></a>
+       is emitted.</li>
+</ol>
+<p>If the node is temporarily or permanently no longer needed, it can be shut down
+using <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#shutdown()"><code>node.shutdown()</code></a>.
+A <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeDownEvent.html"><code>NodeDownEvent</code></a> is
+emitted immediately after this call. The application should now no longer attempt to send messages.
+As soon as the connection to the drasyl network is terminated,
+an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeOfflineEvent.html"><code>NodeOfflineEvent</code></a>
+is emitted.
+A <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeNormalTerminationEvent.html"><code>NodeNormalTerminationEvent</code></a>
+is emitted when the shutdown is done.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
 <p>In this chapter, we had a quick tour of drasyl with a demonstration on how to create a node, start
 and stop it, send messages, and process emitted events.</p>
@@ -641,7 +655,7 @@ to see how drasyl can be used for different scenarios.</p>
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 24, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 27, 2022</span>
     
   </small>
 </div>

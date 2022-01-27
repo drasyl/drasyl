@@ -526,7 +526,7 @@ serializer should be used for what.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>In order for drasyl to know which serializer to use for what, you need to edit your configuration:</p>
 <p>In the <code>drasyl.serialization.serializers</code>-section, bind names to implementations of
-<a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/Serializer.html"><code>Serializer</code></a>
+<a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html"><code>Serializer</code></a>
 you want to use, like this:</p>
 <pre class="highlight"><code>drasyl {
   serialization {
@@ -539,7 +539,7 @@ you want to use, like this:</p>
   }
 }</code></pre>
 <p>After you’ve bound names to different implementations of
-<a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/Serializer.html"><code>Serializer</code></a>
+<a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html"><code>Serializer</code></a>
 you need to wire which classes should be serialized using which serializer. This is done in
 the <code>drasyl.serialization.bindings.inbound</code>-section for inbound messages and
 <code>drasyl.serialization.bindings.outbound</code>-section for outbound messages:</p>
@@ -587,47 +587,47 @@ classes.</p>
 <tbody>
 <tr>
 <td align="left"><code>primitive-boolean</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/BooleanSerializer.html"><code>BooleanSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/BooleanSerializer.html"><code>BooleanSerializer</code></a></td>
 <td align="left"><code>Boolean</code>, <code>boolean</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-byte</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ByteSerializer.html"><code>ByteSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteSerializer.html"><code>ByteSerializer</code></a></td>
 <td align="left"><code>Byte</code>, <code>byte</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-char</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/CharacterSerializer.html"><code>CharacterSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/CharacterSerializer.html"><code>CharacterSerializer</code></a></td>
 <td align="left"><code>Character</code>, <code>char</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-float</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/FloatSerializer.html"><code>FloatSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/FloatSerializer.html"><code>FloatSerializer</code></a></td>
 <td align="left"><code>Float</code>, <code>float</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-int</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/IntegerSerializer.html"><code>IntegerSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/IntegerSerializer.html"><code>IntegerSerializer</code></a></td>
 <td align="left"><code>Integer</code>, <code>int</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-long</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/LongSerializer.html"><code>LongSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/LongSerializer.html"><code>LongSerializer</code></a></td>
 <td align="left"><code>Long</code>, <code>long</code></td>
 </tr>
 <tr>
 <td align="left"><code>primitive-short</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ShortSerializer.html"><code>ShortSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ShortSerializer.html"><code>ShortSerializer</code></a></td>
 <td align="left"><code>Short</code>, <code>short</code></td>
 </tr>
 <tr>
 <td align="left"><code>bytes</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ByteArraySerializer.html"><code>ByteArraySerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteArraySerializer.html"><code>ByteArraySerializer</code></a></td>
 <td align="left"><code>byte[]</code></td>
 </tr>
 <tr>
 <td align="left"><code>string</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/StringSerializer.html"><code>StringSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/StringSerializer.html"><code>StringSerializer</code></a></td>
 <td align="left"><code>String</code></td>
 </tr>
 </tbody>
@@ -646,17 +646,17 @@ anything!</p>
 <tbody>
 <tr>
 <td align="left"><code>java</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/JavaSerializer.html"><code>JavaSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JavaSerializer.html"><code>JavaSerializer</code></a></td>
 <td align="left"><a href="https://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html"><code>Serializable</code></a></td>
 </tr>
 <tr>
 <td align="left"><code>jackson-json</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/JacksonJsonSerializer.html"><code>JacksonJsonSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JacksonJsonSerializer.html"><code>JacksonJsonSerializer</code></a></td>
 <td align="left">all Jackson-compatible classes</td>
 </tr>
 <tr>
 <td align="left"><code>proto</code></td>
-<td align="left"><a href="https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ProtobufSerializer.html"><code>ProtobufSerializer</code></a></td>
+<td align="left"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ProtobufSerializer.html"><code>ProtobufSerializer</code></a></td>
 <td align="left">Protobuf <a href="https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/Message"><code>Message</code></a></td>
 </tr>
 </tbody>
@@ -700,7 +700,7 @@ An attacker can choose the URL arbitrarily. By calling getConnection, Server Sid
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 24, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">January 27, 2022</span>
     
   </small>
 </div>
