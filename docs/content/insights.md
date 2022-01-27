@@ -69,13 +69,17 @@ Once a super node relays a message it will help both peers to traverse any possi
 drasyl uses the public part of an ed25519 key pair to address any node in the drasyl network. To provide fast 0-RTT encryption, 
 drasyl operates in two modes of encryption:
 
-1. In the first mode, drasyl uses the ed25519 keys and converts them into a curve25519, to do an 0-RTT x25519 key agreement – 
-   we call this the long-time encryption. Long-time encryption is the default case.
+1. In the first mode, drasyl uses the ed25519 keys and converts them into a curve25519, to do an
+   0-RTT x25519 key agreement – we call this the long-time encryption. Long-time encryption is the
+   default case.
 
-2. To raise the security and provide perfect forward secrecy, drasyl tries in the background to do key exchange and agreement 
-   with a newly generated ephemeral curve25519. If a perfect forward secrecy session was established between the two nodes, 
-   drasyl fires a [PerfectForwardSecrecyEncryptionEvent](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/PerfectForwardSecrecyEncryptionEvent.html). 
-   If the connection provides no longer perfect forward secrecy a [LongTimeEncryptionEvent](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/LongTimeEncryptionEvent.html) is fired.
+2. To raise the security and provide perfect forward secrecy, drasyl tries in the background to do
+   key exchange and agreement with a newly generated ephemeral curve25519. If a perfect forward
+   secrecy session was established between the two nodes, drasyl fires
+   a [PerfectForwardSecrecyEncryptionEvent](https://api.drasyl.org/master/org/drasyl/node/event/PerfectForwardSecrecyEncryptionEvent.html)
+   . If the connection provides no longer perfect forward secrecy
+   a [LongTimeEncryptionEvent](https://api.drasyl.org/master/org/drasyl/node/event/LongTimeEncryptionEvent.html)
+   is fired.
 
 Both x25519 key agreements generate two shared secrets, to avoid the need for any synchronization.
 

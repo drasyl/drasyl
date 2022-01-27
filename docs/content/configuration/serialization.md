@@ -13,7 +13,7 @@ serializer should be used for what.
 In order for drasyl to know which serializer to use for what, you need to edit your configuration:
 
 In the `drasyl.serialization.serializers`-section, bind names to implementations of
-[`Serializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/Serializer.html)
+[`Serializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html)
 you want to use, like this:
 
 ```
@@ -30,7 +30,7 @@ drasyl {
 ```
 
 After you’ve bound names to different implementations of
-[`Serializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/Serializer.html)
+[`Serializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html)
 you need to wire which classes should be serialized using which serializer. This is done in
 the `drasyl.serialization.bindings.inbound`-section for inbound messages and
 `drasyl.serialization.bindings.outbound`-section for outbound messages:
@@ -77,15 +77,15 @@ classes.
 
 | Name   | Class   | Serializable Classes   |
 |:-------|:--------|:-----------------------|
-| `primitive-boolean` | [`BooleanSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/BooleanSerializer.html)         | `Boolean`, `boolean` |
-| `primitive-byte`    | [`ByteSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ByteSerializer.html)               | `Byte`, `byte`       |
-| `primitive-char`    | [`CharacterSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/CharacterSerializer.html)     | `Character`, `char`  |
-| `primitive-float`   | [`FloatSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/FloatSerializer.html)             | `Float`, `float`     |
-| `primitive-int`     | [`IntegerSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/IntegerSerializer.html)         | `Integer`, `int`     |
-| `primitive-long`    | [`LongSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/LongSerializer.html)               | `Long`, `long`       |
-| `primitive-short`   | [`ShortSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ShortSerializer.html)             | `Short`, `short`     |
-| `bytes`             | [`ByteArraySerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ByteArraySerializer.html)     | `byte[]`             |
-| `string`            | [`StringSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/StringSerializer.html)           | `String`             |
+| `primitive-boolean` | [`BooleanSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/BooleanSerializer.html)         | `Boolean`, `boolean` |
+| `primitive-byte`    | [`ByteSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteSerializer.html)               | `Byte`, `byte`       |
+| `primitive-char`    | [`CharacterSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/CharacterSerializer.html)     | `Character`, `char`  |
+| `primitive-float`   | [`FloatSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/FloatSerializer.html)             | `Float`, `float`     |
+| `primitive-int`     | [`IntegerSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/IntegerSerializer.html)         | `Integer`, `int`     |
+| `primitive-long`    | [`LongSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/LongSerializer.html)               | `Long`, `long`       |
+| `primitive-short`   | [`ShortSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ShortSerializer.html)             | `Short`, `short`     |
+| `bytes`             | [`ByteArraySerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteArraySerializer.html)     | `byte[]`             |
+| `string`            | [`StringSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/StringSerializer.html)           | `String`             |
 
 So if you only send object types that are included in this table, you don't need to configure
 anything!
@@ -94,9 +94,9 @@ anything!
 
 | Name   | Class   | Serializable Classes   |
 |:-------|:--------|:-----------------------|
-| `java`              | [`JavaSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/JavaSerializer.html)           | [`Serializable`](https://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html)       |
-| `jackson-json`      | [`JacksonJsonSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/JacksonJsonSerializer.html) | all Jackson-compatible classes       |
-| `proto`             | [`ProtobufSerializer`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/serialization/ProtobufSerializer.html)       | Protobuf [`Message`](https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/Message)        |
+| `java`              | [`JavaSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JavaSerializer.html)           | [`Serializable`](https://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html)       |
+| `jackson-json`      | [`JacksonJsonSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JacksonJsonSerializer.html) | all Jackson-compatible classes       |
+| `proto`             | [`ProtobufSerializer`](https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ProtobufSerializer.html)       | Protobuf [`Message`](https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/Message)        |
 
 * [Serialization with Jackson](https://github.com/FasterXML/jackson) is a good choice in many cases
   and our recommendation if you don’t have other preferences.

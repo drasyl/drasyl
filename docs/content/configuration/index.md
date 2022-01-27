@@ -12,25 +12,28 @@ Because drasyl's configuration is based on [Lightbend Config library](https://gi
 
 ### Use `DrasylConfig.Buidler`
 
-With the [`DrasylConfig.Buidler`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html) class, configurations can be created within Java.
-This allows you to define individual configurations for each node.
-It is done by calling [`DrasylConfig.newBuilder() ... .build()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html#newBuilder()).
-Available builder methods can be obtained from the [Javadoc](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html).
+With
+the [`DrasylConfig.Buidler`](https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.Builder.html)
+class, configurations can be created within Java. This allows you to define individual
+configurations for each node. It is done by
+calling [`DrasylConfig.newBuilder() ... .build()`](https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.html#newBuilder())
+. Available builder methods can be obtained from
+the [Javadoc](https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.Builder.html).
 
 Example:
+
 ```java
 DrasylConfig config = DrasylConfig.newBuilder()
     .identityPath(Path.of("/Users/heiko/drasyl.identity"))
-    .networkId(-25421)
-    .remoteSuperPeerEndpoint(Endpoint.of("udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"))
-    .remoteEnabled(false)
+        .networkId(-25421)
+        .remoteSuperPeerEndpoint(Endpoint.of("udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&networkId=1"))
+        .remoteEnabled(false)
     .build();
 ```
 
-The
-resulting [`DrasylConfig`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.html)
+The resulting [`DrasylConfig`](https://api.drasyl.org/master/org/drasyl/node/DrasylConfig.html)
 object can now be passed to
-the [`DrasylNode` constructor](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig))
+the [`DrasylNode` constructor](https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#%3Cinit%3E(org.drasyl.node.DrasylConfig))
 .
 
 ### Use `application.conf` file
@@ -43,7 +46,7 @@ Example:
 ```hocon
 drasyl.identity.path = /Users/heiko/drasyl.identity
 drasyl.network.id = -25421
-drasyl.remote.super-peer.endpoint = "udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC"
+drasyl.remote.super-peer.endpoint = "udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&networkId=1"
 ```
 
 ### Use environment variables
@@ -63,7 +66,7 @@ Example:
 ```bash
 $ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity \
     CONFIG_FORCE_drasyl_network_id=-25421 \
-    CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://staging.env.drasyl.org#Awlq4wgKNpgppEhH1a8fZSvvP5kh6eG7rWSXC6vm08UC \
+    CONFIG_FORCE_drasyl_remote_super__peer_endpoint=udp://sp-fra1.drasyl.org:22527?publicKey=c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d&networkId=1 \
     your-application.jar
 ```
 
