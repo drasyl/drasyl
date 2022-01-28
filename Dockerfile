@@ -32,8 +32,8 @@ RUN echo '<configuration>\n\
 </configuration>' >> /usr/local/share/drasyl/logback.xml
 
 # run as non-root user
-RUN groupadd -g 22527 drasyl && \
-    useradd -r -u 22527 -g drasyl -d /drasyl/ drasyl && \
+RUN groupadd --gid 22527 drasyl && \
+    useradd --system --uid 22527 --gid drasyl --home-dir /drasyl/ --no-log-init drasyl && \
     mkdir /drasyl/ && \
     chown drasyl:drasyl /drasyl/
 
