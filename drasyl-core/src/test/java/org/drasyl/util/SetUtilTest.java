@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -121,6 +123,29 @@ class SetUtilTest {
             final SortedSet<String> set = new TreeSet<>();
 
             assertNull(SetUtil.firstElement(set));
+        }
+    }
+
+    @Nested
+    class CartesianProduct {
+        @Test
+        void shouldReturnSetOfAllOrderesPairs() {
+            final Set<String> a = Set.of("Foo", "Bar", "Baz");
+            final Set<Integer> b = Set.of(1, 2, 3);
+
+            final Set<Pair<String, Integer>> product = SetUtil.cartesianProduct(a, b);
+            assertEquals(product.size(), a.size() * b.size());
+            assertThat(product, containsInAnyOrder(
+                    Pair.of("Foo", 1),
+                    Pair.of("Foo", 2),
+                    Pair.of("Foo", 3),
+                    Pair.of("Bar", 1),
+                    Pair.of("Bar", 2),
+                    Pair.of("Bar", 3),
+                    Pair.of("Baz", 1),
+                    Pair.of("Baz", 2),
+                    Pair.of("Baz", 3)
+            ));
         }
     }
 }

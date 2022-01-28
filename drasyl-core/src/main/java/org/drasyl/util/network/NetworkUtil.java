@@ -21,7 +21,7 @@
  */
 package org.drasyl.util.network;
 
-import com.google.common.net.InetAddresses;
+import org.drasyl.util.InetAddressUtil;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ThrowingFunction;
 import org.drasyl.util.ThrowingSupplier;
@@ -535,7 +535,7 @@ public final class NetworkUtil {
             final StringTokenizer tokenizer = new StringTokenizer(line);
             while (tokenizer.hasMoreTokens()) {
                 final String token = tokenizer.nextToken();
-                if (InetAddresses.isInetAddress(token)) {
+                if (InetAddressUtil.isInetAddress(token)) {
                     try {
                         final InetAddress address = InetAddress.getByName(token);
                         if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && address.isSiteLocalAddress()) {

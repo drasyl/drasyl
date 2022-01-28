@@ -135,4 +135,26 @@ public final class SetUtil {
             return null;
         }
     }
+
+    /**
+     * Returns the cartesian product of the two sets {@code a} and {@code b}. This is the set of all
+     * ordered {@link Pair}s {@code (x,y)} where {@code x} is in {@code a} and {@code y} is in
+     * {@code b}.
+     *
+     * @param a   first set for the cartesian product
+     * @param b   second set for the cartesian product
+     * @param <A> the type of the elements in set {@code a}
+     * @param <B> the type of the elements in set {@code b}
+     * @return the cartesian product of the two sets {@code a} and {@code b}
+     */
+    public static <A, B> Set<Pair<A, B>> cartesianProduct(final Set<A> a, final Set<B> b) {
+        final Set<Pair<A, B>> result = new HashSet<>(a.size() * b.size());
+        for (final A i : a) {
+            for (final B j : b) {
+                result.add(Pair.of(i, j));
+            }
+        }
+
+        return result;
+    }
 }
