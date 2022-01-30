@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.remote;
 
-import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
@@ -30,16 +29,16 @@ import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.ExpiringMap;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
-import static java.time.Duration.ofMillis;
+import static java.lang.Long.max;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.DurationUtil.max;
 
 /**
  * This handler rate limits {@link AcknowledgementMessage}, {@link HelloMessage}, and {@link
@@ -54,10 +53,10 @@ public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessag
     private static final long HELLO_RATE_LIMIT = 100; // 1 hello msg per 100ms
     private static final long UNITE_RATE_LIMIT = 100; // 1 unit msg per 100ms
     private final Supplier<Long> timeProvider;
-    private final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache;
+    private final Map<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache;
 
     RateLimiter(final Supplier<Long> timeProvider,
-                final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache) {
+                final Map<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache) {
         super(false);
         this.timeProvider = requireNonNull(timeProvider);
         this.cache = requireNonNull(cache);
@@ -66,11 +65,7 @@ public class RateLimiter extends SimpleChannelInboundHandler<InetAddressedMessag
     public RateLimiter() {
         this(
                 System::currentTimeMillis,
-                CacheBuilder.newBuilder()
-                        .maximumSize(CACHE_SIZE)
-                        .expireAfterAccess(max(max(ofMillis(ACKNOWLEDGEMENT_RATE_LIMIT), ofMillis(HELLO_RATE_LIMIT)), ofMillis(UNITE_RATE_LIMIT)))
-                        .<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long>build()
-                        .asMap()
+                new ExpiringMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long>(CACHE_SIZE, -1, max(max(ACKNOWLEDGEMENT_RATE_LIMIT, HELLO_RATE_LIMIT), UNITE_RATE_LIMIT))
         );
     }
 

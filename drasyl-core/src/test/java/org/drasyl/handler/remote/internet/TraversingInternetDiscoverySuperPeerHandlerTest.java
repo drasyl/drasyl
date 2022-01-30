@@ -39,7 +39,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,7 +78,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.getSender()).thenReturn(publicKeyB);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
-        final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache = new HashMap<>();
+        final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache = new HashSet<>();
 
         final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);

@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.remote.crypto;
 
-import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.InetAddressedMessage;
@@ -32,6 +31,7 @@ import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
 import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.ExpiringMap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -39,7 +39,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessage<ArmedProtocolMessage>, InetAddressedMessage<FullReadMessage<?>>> {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolArmHandler.class);
@@ -52,11 +51,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
                               final int maxSessionsCount,
                               final Duration expireAfter) {
         this.myIdentity = myIdentity;
-        this.sessions = CacheBuilder.newBuilder()
-                .expireAfterAccess(expireAfter.toMillis(), TimeUnit.MILLISECONDS)
-                .maximumSize(maxSessionsCount)
-                .<IdentityPublicKey, SessionPair>build()
-                .asMap();
+        this.sessions = new ExpiringMap<>(maxSessionsCount, -1, expireAfter.toMillis());
         this.crypto = crypto;
     }
 

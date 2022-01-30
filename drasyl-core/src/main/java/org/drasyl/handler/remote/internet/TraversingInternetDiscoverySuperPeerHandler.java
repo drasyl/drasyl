@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.remote.internet;
 
-import com.google.common.cache.CacheBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
@@ -31,17 +30,17 @@ import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.ExpiringSet;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
-import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Extends {@link InternetDiscoverySuperPeerHandler} by performing a rendezvous on communication
@@ -51,7 +50,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscoverySuperPeerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoverySuperPeerHandler.class);
-    private final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache;
+    private final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")
     TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
@@ -64,7 +63,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                 final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
-                                                final Map<Pair<DrasylAddress, DrasylAddress>, Boolean> uniteAttemptsCache) {
+                                                final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache) {
         super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
@@ -80,11 +79,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                        final long uniteMinIntervalMillis) {
         super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
-            uniteAttemptsCache = CacheBuilder.newBuilder()
-                    .maximumSize(1_000)
-                    .expireAfterWrite(uniteMinIntervalMillis, MILLISECONDS)
-                    .<Pair<DrasylAddress, DrasylAddress>, Boolean>build()
-                    .asMap();
+            uniteAttemptsCache = new ExpiringSet(1_000, uniteMinIntervalMillis, -1);
         }
         else {
             uniteAttemptsCache = null;
@@ -117,7 +112,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
         else {
             key = Pair.of(recipient, sender);
         }
-        return uniteAttemptsCache.putIfAbsent(key, TRUE) == null;
+        return !uniteAttemptsCache.contains(key) && uniteAttemptsCache.add(key);
     }
 
     @SuppressWarnings("unchecked")
