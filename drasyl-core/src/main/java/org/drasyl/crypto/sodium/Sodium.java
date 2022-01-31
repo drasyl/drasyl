@@ -43,6 +43,11 @@ public class Sodium {
     public native int sodium_init();
 
     /*
+     * HASHING
+     */
+    public native int crypto_hash_sha256(byte[] out, byte[] in, long inLen);
+
+    /*
      * SIGNING
      */
     public native int crypto_sign_keypair(byte[] publicKey, byte[] secretKey);

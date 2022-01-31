@@ -31,6 +31,7 @@ import static java.util.Objects.requireNonNull;
  * Simple wrapper class that make native class easier.
  */
 public class DrasylSodiumWrapper {
+    public static final short SHA256_BYTES = 32;
     public static final short ED25519_PUBLICKEYBYTES = 32;
     public static final short ED25519_SECRETKEYBYTES = 64;
     public static final short ED25519_BYTES = 64;
@@ -43,6 +44,22 @@ public class DrasylSodiumWrapper {
 
     public DrasylSodiumWrapper(final Sodium sodium) {
         this.sodium = requireNonNull(sodium);
+    }
+
+    /**
+     * Generates a SHA-256 hash of the given input.
+     *
+     * @param in the input to hash
+     * @return SHA-256 hash of the input
+     */
+    public byte[] sha256(final byte[] in) throws CryptoException {
+        final byte[] out = new byte[SHA256_BYTES];
+
+        if (!successful(getSodium().crypto_hash_sha256(out, in, in.length))) {
+            throw new CryptoException("Failed creating SHA-256 hash.");
+        }
+
+        return out;
     }
 
     /**

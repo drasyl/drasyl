@@ -189,6 +189,16 @@ public class Crypto {
     }
 
     /**
+     * Generates a SHA-256 hash of the given input.
+     *
+     * @param in the input to hash
+     * @return SHA-256 hash of the input
+     */
+    public byte[] sha256(final byte[] input) throws CryptoException {
+        return sodium.sha256(input);
+    }
+
+    /**
      * Generates a new ed25519 key pair for signing and on-demand encryption. This key pair can be
      * used as identity of a node.
      *
