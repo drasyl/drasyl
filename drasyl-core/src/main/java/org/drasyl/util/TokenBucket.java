@@ -21,7 +21,6 @@
  */
 package org.drasyl.util;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
 
 import java.time.Duration;
@@ -144,12 +143,12 @@ public class TokenBucket {
             this.lastRefillTime = -refillInterval;
         }
 
-        TokenProvider(final Duration refillInterval, final Stopwatch elapsedTimeProvider) {
-            this(refillInterval.toNanos(), () -> elapsedTimeProvider.elapsed(NANOSECONDS));
+        TokenProvider(final Duration refillInterval, final long startTime) {
+            this(refillInterval.toNanos(), () -> System.currentTimeMillis() - startTime);
         }
 
         TokenProvider(final Duration refillInterval) {
-            this(refillInterval, Stopwatch.createStarted());
+            this(refillInterval, System.currentTimeMillis());
         }
 
         public synchronized long provide() {
