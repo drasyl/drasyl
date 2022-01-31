@@ -21,13 +21,10 @@
  */
 package org.drasyl.util;
 
-import com.google.common.util.concurrent.Uninterruptibles;
-
 import java.time.Duration;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -79,7 +76,12 @@ public class TokenBucket {
         this(capacity, new TokenProvider(refillInterval), () -> {
             if (!doBusyWait) {
                 // sleep for the smallest possible unit of time to relinquish control and allow other threads to run.
-                Uninterruptibles.sleepUninterruptibly(1, NANOSECONDS);
+                try {
+                    Thread.sleep(1);
+                }
+                catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }, 0);
     }
