@@ -93,7 +93,7 @@ public abstract class PrivateHeader {
     public enum MessageType {
         ACKNOWLEDGEMENT((byte) 0),
         APPLICATION((byte) 1),
-        DISCOVERY((byte) 2),
+        HELLO((byte) 2),
         UNITE((byte) 3);
         private final byte value;
 
@@ -112,7 +112,7 @@ public abstract class PrivateHeader {
                 case 1:
                     return APPLICATION;
                 case 2:
-                    return DISCOVERY;
+                    return HELLO;
                 case 3:
                     return UNITE;
                 default:

@@ -31,14 +31,14 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
 
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
-import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.DISCOVERY;
+import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO;
 
 /**
  * Describes a message that is used to announce this node to peers or to join a super node. The
  * message's body is structured as follows:
  * <ul>
  * <li><b>Time</b>: The sender's current time in milliseconds stored in 8 bytes.</li>
- * <li><b>JoinTime</b>: Specifies how many seconds (8 bytes) the sender wants to join the receiving super peer. If the value is 0, the message is an announcement and not a join.</li>
+ * <li><b>ChildrenTime</b>: Specifies how many seconds (8 bytes) the sender wants to join the receiving super peer. If the value is 0, the message is an announcement and not a join.</li>
  * </ul>
  * <p>
  * This is an immutable object.
@@ -51,15 +51,15 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     /**
      * Creates new application message.
      *
-     * @param hopCount    the hop count
-     * @param isArmed     if the message is armed or not
-     * @param networkId   the network id
-     * @param nonce       the nonce
-     * @param recipient   the public key of the recipient
-     * @param sender      the public key of the sender
-     * @param proofOfWork the proof of work of {@code sender}
+     * @param hopCount     the hop count
+     * @param isArmed      if the message is armed or not
+     * @param networkId    the network id
+     * @param nonce        the nonce
+     * @param recipient    the public key of the recipient
+     * @param sender       the public key of the sender
+     * @param proofOfWork  the proof of work of {@code sender}
      * @param time
-     * @param joinTime    the join time
+     * @param childrenTime the children time
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
      *                              recipient}, or {@code hopCount} is {@code null}
      */
@@ -72,7 +72,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final DrasylAddress sender,
                                   final ProofOfWork proofOfWork,
                                   final long time,
-                                  final long joinTime) {
+                                  final long childrenTime) {
         return new AutoValue_HelloMessage(
                 nonce,
                 networkId,
@@ -82,7 +82,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 isArmed,
                 recipient,
                 time,
-                joinTime
+                childrenTime
         );
     }
 
@@ -222,7 +222,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
 
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(DISCOVERY, UnsignedShort.of(LENGTH)).writeTo(out);
+        PrivateHeader.of(HELLO, UnsignedShort.of(LENGTH)).writeTo(out);
     }
 
     @Override
