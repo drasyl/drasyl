@@ -78,7 +78,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                 hopCount,
                 isArmed,
                 recipient,
-                payload
+                payload.asReadOnly()
         );
     }
 
