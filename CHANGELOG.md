@@ -5,30 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.0] - 202X-XX-XX
+## [0.7.0] - 2022-XX-XX
 
 ### Upgrade Notes
 
--
--
--
+This version is introduces a new identity file format, every node will recreate a new identity on first start.
+If you would like to reuse your pre-existing identity, you have to migrate the file format by yourself.
+Asume you have the current file `drasyl.identity.json`:
+```json
+{
+    "proofOfWork" : -2144920491,
+    "identityKeyPair" : {
+        "publicKey" : "feb2fa8a69e2a59ce7586349b8e8a44610d902ef2a30b1a46ebc5ff989813033",
+        "secretKey" : "d716fdc9a164bea60a179eacf868416695ad8757035d0d83abd5a2b362bfa221feb2fa8a69e2a59ce7586349b8e8a44610d902ef2a30b1a46ebc5ff989813033"
+    },
+    "keyAgreementKeyPair" : {
+        "publicKey" : "62c201382e37a50c3ed20f15ccb5ba970a264a2765f8f8c6f8e1c27b2454ca34",
+        "secretKey" : "105672a9d44c3be1ba4b777f0c7d6cf711fb73defd404db7644f546ea71f0f5d"
+    }
+}
+```
+Then you need to create a **new** file `drasyl.identity` with the following format:
+```ini
+[Identity]
+SecretKey = d716fdc9a164bea60a179eacf868416695ad8757035d0d83abd5a2b362bfa221feb2fa8a69e2a59ce7586349b8e8a44610d902ef2a30b1a46ebc5ff989813033
+ProofOfWork = -2144920491
+```
 
 ### Added
 
--
--
+- CLI: `genidentity` sub-command added.
+- CLI: `genpow` sub-command added.
+- CLI: `tun` sub-command added.
 -
 
 ### Changed
 
--
--
+- Dependencies have been updated.
+- Speed up direct connection establishment when traversing symmetrics NATs.
+- Switch to more compact (INI-formatted) identity file format.
 -
 
 ### Fixed
 
--
--
+- Fix endless identity creation, when none of the available nonces result in a valid identity.
+- Fix IP multicast discovery for IPv6-only environments.
+- Fix SSDP discovery for IPv6-only environments.
+- Stop sending IP multicast messages to super peers when node is running in TCP-fallback mode.
+- Fix problem with `null` message when using `BehavioralDrasylNode`.
 -
 
 ## [0.6.0] - 2021-11-28
