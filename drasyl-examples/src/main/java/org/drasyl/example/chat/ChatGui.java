@@ -61,6 +61,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -242,13 +245,13 @@ public class ChatGui {
         }
 
         /**
-         * Node is not connected to super peer.
+         * Node is not connected to any super peer.
          */
         private Behavior offline() {
             messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
             return newBehaviorBuilder()
                     .onEvent(NodeUpEvent.class, event -> {
-                        appendTextToMessageArea("drasyl Node started. Connecting to super peer...\n");
+                        appendTextToMessageArea("drasyl Node started. Connecting to super peer(s)...\n");
                         recipientField.setEditable(true);
                         messageField.setEditable(true);
                         return Behaviors.withScheduler(scheduler -> {
@@ -266,11 +269,11 @@ public class ChatGui {
                     })
                     .onEvent(NodeDownEvent.class, this::downEvent)
                     .onEvent(NodeOnlineEvent.class, event -> {
-                        appendTextToMessageArea("drasyl Node is connected to super peer. Relayed communication and Internet discovery available.\n");
+                        appendTextToMessageArea("drasyl Node is connected to at least one super peer. Relayed communication and Internet discovery available.\n");
                         return online();
                     })
                     .onEvent(OnlineTimeout.class, event -> {
-                        appendTextToMessageArea("No response from the Super Peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably the Super Peer is unavailable, your configuration is faulty, or system time is wrong.\n");
+                        appendTextToMessageArea("No response from any super peer within " + ONLINE_TIMEOUT.toSeconds() + "s. Probably all super peers are unavailable, your configuration is faulty, or system time is wrong.\n");
                         return Behaviors.same();
                     })
                     .onEvent(PeerEvent.class, this::peerEvent)
@@ -280,14 +283,14 @@ public class ChatGui {
         }
 
         /**
-         * Node is connected to super peer.
+         * Node is connected to at least one super peer.
          */
         private Behavior online() {
             messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
             return newBehaviorBuilder()
                     .onEvent(NodeDownEvent.class, this::downEvent)
                     .onEvent(NodeOfflineEvent.class, event -> {
-                        appendTextToMessageArea("drasyl Node lost connection to super peer. Relayed communication and Internet discovery not available.\n");
+                        appendTextToMessageArea("drasyl Node lost connection to all super peers. Relayed communication and Internet discovery not available.\n");
                         return Behaviors.same();
                     })
                     .onEvent(PeerEvent.class, this::peerEvent)
@@ -342,6 +345,35 @@ public class ChatGui {
          * Signals that the node could not go online.
          */
         class OnlineTimeout implements Event {
+        }
+    }
+
+    @SuppressWarnings({ "java:S110" })
+    public static class JTextFieldWithPlaceholder extends JTextField {
+        private final String placeholder;
+
+        public JTextFieldWithPlaceholder(final int columns, final String placeholder) {
+            super(columns);
+            this.placeholder = placeholder;
+        }
+
+        public JTextFieldWithPlaceholder(final String placeholder) {
+            this(0, placeholder);
+        }
+
+        @Override
+        public void paintComponent(final Graphics g) {
+            super.paintComponent(g);
+
+            if (super.getText().length() > 0 || placeholder == null) {
+                return;
+            }
+
+            final Graphics2D g2 = (Graphics2D) g;
+
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(super.getDisabledTextColor());
+            g2.drawString(placeholder, getInsets().left, g.getFontMetrics().getMaxAscent() + getInsets().top);
         }
     }
 }
