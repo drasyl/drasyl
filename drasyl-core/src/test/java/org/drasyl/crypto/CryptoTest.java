@@ -90,6 +90,8 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x03 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
             doReturn(true).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
             doReturn(true).when(sodium).convertSecretKeyEd25519ToCurve25519(any(), any());
 
@@ -111,6 +113,8 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x03 });
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
             doReturn(true).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
             doReturn(false).when(sodium).convertSecretKeyEd25519ToCurve25519(any(), any());
 
@@ -120,6 +124,8 @@ class CryptoTest {
         @Test
         void shouldConvertPublicKey(@Mock final DrasylSodiumWrapper sodium,
                                     @Mock final IdentityPublicKey pk) throws CryptoException {
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
+
             final Crypto crypto = new Crypto(sodium);
             doReturn(true).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
 
@@ -132,6 +138,8 @@ class CryptoTest {
         @Test
         void shouldThrowExceptionOnWrongPublicKeyToConvert(@Mock final DrasylSodiumWrapper sodium,
                                                            @Mock final IdentityPublicKey pk) {
+            when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
+
             final Crypto crypto = new Crypto(sodium);
             doReturn(false).when(sodium).convertPublicKeyEd25519ToCurve25519(any(), any());
 
@@ -183,7 +191,8 @@ class CryptoTest {
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
             when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
-            when(key.toByteArray()).thenReturn(new byte[]{ 0x02 });
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x02 });
+            when(key.toByteArray()).thenReturn(new byte[]{ 0x03 });
             doReturn(sp).when(sodium).cryptoKxClientSessionKeys(any(), any(), any());
 
             final SessionPair rtnKeyPair = crypto.generateSessionKeyPair(keyPair, key);
@@ -203,6 +212,7 @@ class CryptoTest {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
             when(keyPair.getSecretKey()).thenReturn(sk);
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x03 });
             when(pk.toByteArray()).thenReturn(new byte[]{ 0x02 });
             when(key.toByteArray()).thenReturn(new byte[]{ 0x01 });
             doReturn(sp).when(sodium).cryptoKxServerSessionKeys(any(), any(), any());
@@ -218,10 +228,13 @@ class CryptoTest {
         void shouldThrowExceptionOnEqualsKeys(@Mock final DrasylSodiumWrapper sodium,
                                               @Mock final KeyPair keyPair,
                                               @Mock final IdentityPublicKey pk,
+                                              @Mock final IdentitySecretKey sk,
                                               @Mock final IdentityPublicKey key) {
             final Crypto crypto = new Crypto(sodium);
             when(keyPair.getPublicKey()).thenReturn(pk);
+            when(keyPair.getSecretKey()).thenReturn(sk);
             when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x01 });
             when(key.toByteArray()).thenReturn(new byte[]{ 0x01 });
 
             assertThrows(CryptoException.class, () -> crypto.generateSessionKeyPair(keyPair, key));
@@ -240,6 +253,7 @@ class CryptoTest {
             when(keyPair.getSecretKey()).thenReturn(sk);
             when(pk.toByteArray()).thenReturn(new byte[]{ 0x01 });
             when(key.toByteArray()).thenReturn(new byte[]{ 0x02 });
+            when(sk.toByteArray()).thenReturn(new byte[]{ 0x03 });
             when(sodium.cryptoKxClientSessionKeys(any(), any(), any())).thenThrow(CryptoException.class);
 
             assertThrows(CryptoException.class, () -> crypto.generateSessionKeyPair(keyPair, key));
@@ -252,6 +266,9 @@ class CryptoTest {
         void shouldEncrypt(@Mock final DrasylSodiumWrapper sodium,
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
+            when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
             when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
@@ -267,6 +284,9 @@ class CryptoTest {
         void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
+            when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
             when(sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
@@ -282,6 +302,10 @@ class CryptoTest {
         void shouldDecrypt(@Mock final DrasylSodiumWrapper sodium,
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
+            when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getRx()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] cipher = new byte[16];
             when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
@@ -299,6 +323,9 @@ class CryptoTest {
         void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
+            when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getRx()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] cipher = new byte[16];
             when(sodium.cryptoAeadXChaCha20Poly1305IetfDecrypt(
@@ -313,6 +340,8 @@ class CryptoTest {
         @Test
         void shouldSign(@Mock final DrasylSodiumWrapper sodium,
                         @Mock final IdentitySecretKey key) throws CryptoException {
+            when(key.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
             when(sodium.cryptoSignDetached(any(), any())).thenReturn(message);
@@ -325,6 +354,8 @@ class CryptoTest {
         @Test
         void shouldThrowExceptionOnError(@Mock final DrasylSodiumWrapper sodium,
                                          @Mock final IdentitySecretKey key) {
+            when(key.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
             when(sodium.cryptoSignDetached(any(), any())).thenReturn(null);
@@ -335,6 +366,8 @@ class CryptoTest {
         @Test
         void shouldVerifySignature(@Mock final DrasylSodiumWrapper sodium,
                                    @Mock final IdentityPublicKey key) {
+            when(key.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
             final byte[] signature = new byte[0];

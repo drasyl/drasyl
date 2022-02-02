@@ -40,7 +40,8 @@ import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Util class that provides cryptography functions for drasyl.
@@ -195,6 +196,8 @@ public class Crypto {
      * @return SHA-256 hash of the input
      */
     public byte[] sha256(final byte[] input) throws CryptoException {
+        requireNonNull(input);
+
         return sodium.sha256(input);
     }
 
@@ -226,6 +229,8 @@ public class Crypto {
      */
     public KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> convertLongTimeKeyPairToKeyAgreementKeyPair(
             final KeyPair<IdentityPublicKey, IdentitySecretKey> keyPair) throws CryptoException {
+        requireNonNull(keyPair.getPublicKey().toByteArray());
+
         final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
         final byte[] curve25519Sk = new byte[SK_CURVE_25519_KEY_LENGTH];
 
@@ -249,12 +254,14 @@ public class Crypto {
      */
     @SuppressWarnings("java:S3242")
     public KeyAgreementPublicKey convertIdentityKeyToKeyAgreementKey(final IdentityPublicKey publicKey) throws CryptoException {
+        requireNonNull(publicKey.toByteArray());
+
         final byte[] curve25519Pk = new byte[PK_CURVE_25519_KEY_LENGTH];
 
         final boolean pkSuccess = sodium.convertPublicKeyEd25519ToCurve25519(curve25519Pk, publicKey.toByteArray());
 
         if (!pkSuccess) {
-            throw new CryptoException("Could not convert this key: "+ publicKey);
+            throw new CryptoException("Could not convert this key: " + publicKey);
         }
 
         return KeyAgreementPublicKey.of(curve25519Pk);
@@ -288,6 +295,10 @@ public class Crypto {
     public <P extends PublicKey, S extends org.drasyl.identity.SecretKey> SessionPair generateSessionKeyPair(
             final KeyPair<P, S> myKeyPair,
             final PublicKey receiverPublicKey) throws CryptoException {
+        requireNonNull(myKeyPair.getPublicKey().toByteArray());
+        requireNonNull(myKeyPair.getSecretKey().toByteArray());
+        requireNonNull(receiverPublicKey.toByteArray());
+
         // We must ensure some order on the keys to work properly in async environments
         final int order = compare(myKeyPair.getPublicKey(), receiverPublicKey);
 
@@ -321,8 +332,10 @@ public class Crypto {
                           final byte[] authTag,
                           final Nonce nonce,
                           final SessionPair sessionPair) throws CryptoException {
-        Objects.requireNonNull(message);
-        Objects.requireNonNull(authTag);
+        requireNonNull(message);
+        requireNonNull(authTag);
+        requireNonNull(nonce.toByteArray());
+        requireNonNull(sessionPair.getTx());
 
         final byte[] cipherBytes = sodium.cryptoAeadXChaCha20Poly1305IetfEncrypt(
                 message,
@@ -355,8 +368,10 @@ public class Crypto {
                           final byte[] authTag,
                           final Nonce nonce,
                           final SessionPair sessionPair) throws CryptoException {
-        Objects.requireNonNull(cipher);
-        Objects.requireNonNull(authTag);
+        requireNonNull(cipher);
+        requireNonNull(authTag);
+        requireNonNull(nonce.toByteArray());
+        requireNonNull(sessionPair.getRx());
 
         if (cipher.length < DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES) {
             throw new CryptoException("Could not decrypt the given cipher text. Cipher text is smaller than " + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES + " bytes");
@@ -388,6 +403,9 @@ public class Crypto {
     @SuppressWarnings("java:S3242")
     public byte[] sign(final byte[] message,
                        final IdentitySecretKey secretKey) throws CryptoException {
+        requireNonNull(message);
+        requireNonNull(secretKey.toByteArray());
+
         final byte[] signatureBytes = sodium.cryptoSignDetached(
                 message,
                 secretKey.toByteArray());
@@ -411,6 +429,10 @@ public class Crypto {
     public boolean verifySignature(final byte[] signature,
                                    final byte[] message,
                                    final IdentityPublicKey publicKey) {
+        requireNonNull(signature);
+        requireNonNull(message);
+        requireNonNull(publicKey.toByteArray());
+
         return sodium.cryptoSignVerifyDetached(signature,
                 message,
                 publicKey.toByteArray());
