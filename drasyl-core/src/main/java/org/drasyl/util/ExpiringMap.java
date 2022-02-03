@@ -47,11 +47,16 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
     /**
      * @param maximumSize       maximum number of entries that the map should contain. On overflow,
-     *                          oldest entries are removed
-     * @param expireAfterWrite  time in milliseconds after which entries are automatically removed
-     *                          from the map after being added
-     * @param expireAfterAccess time in milliseconds after which entries are automatically removed
-     *                          from the map after last access
+     *                          first elements based on expiration policy are removed. {@code -1}
+     *                          deactivates a size limitation.
+     * @param expireAfterWrite  time in milliseconds after which elements are automatically removed
+     *                          from the map after being added. {@code -1} deactivates this
+     *                          expiration policy.
+     * @param expireAfterAccess time in milliseconds after which elements are automatically removed
+     *                          from the map after last access. {@code -1} deactivates this
+     *                          expiration  policy.
+     * @throws IllegalArgumentException if {@code expireAfterWrite} and {@code expireAfterAccess}
+     *                                  are both {@code -1}.
      */
     public ExpiringMap(final long maximumSize,
                        final long expireAfterWrite,
@@ -65,9 +70,11 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         if (expireAfterWrite != -1) {
             builder.expireAfterWrite(expireAfterWrite, MILLISECONDS);
         }
-
-        if (expireAfterAccess != -1) {
+        else if (expireAfterAccess != -1) {
             builder.expireAfterAccess(expireAfterAccess, MILLISECONDS);
+        }
+        else {
+            throw new IllegalArgumentException("expireAfterWrite and expireAfterAccess must not both be -1");
         }
 
         final Cache<K, V> cache = builder.build();
