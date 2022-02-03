@@ -1,9 +1,9 @@
 code-navigation:
   stage: visualize
-  image: haynes/lsifjava:latest
+  image: sourcegraph/lsif-java:latest
   allow_failure: true # recommended
   script:
-    - /opt/lsifjava/bin/lsifjava -projectRoot ./ -out dump.lsif
+    - lsif-java index --build-tool Maven --output dump.lsif
   artifacts:
     reports:
       lsif: dump.lsif

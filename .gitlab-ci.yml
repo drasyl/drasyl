@@ -21,7 +21,7 @@ include:
   #- local: /.gitlab/ci/Deployments.gitlab-ci.yml
   - local: /.gitlab/ci/Docker.gitlab-ci.yml
   - local: /.gitlab/ci/VisualCoverage.gitlab-ci.yml
-  #- local: /.gitlab/ci/CodeIntelligence.gitlab-ci.yml
+  - local: /.gitlab/ci/CodeIntelligence.gitlab-ci.yml
   # - local: /.gitlab/ci/Native-Image.gitlab-ci.yml
 
 #sast:
