@@ -20,4 +20,3 @@ docker-build:
   retry: 2
   rules:
     - if: '$CI_COMMIT_REF_NAME == "master"'
-    - when: manual
