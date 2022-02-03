@@ -21,10 +21,11 @@
  */
 package org.drasyl.node.handler.crypto;
 
+import com.google.common.primitives.Bytes;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.util.Murmur3;
 
 import java.util.Objects;
 
@@ -69,9 +70,10 @@ public class AgreementId {
 
         switch (compare) {
             case -1:
-                return of(Hashing.murmur3x32(pk1.toByteArray(), pk2.toByteArray()));
+                return of(Murmur3.murmur3_x86_32BytesLE(Bytes.concat(pk1.toByteArray(), pk2.toByteArray())));
             case 1:
-                return of(Hashing.murmur3x32(pk2.toByteArray(), pk1.toByteArray()));
+                final byte[] id = Murmur3.murmur3_x86_32BytesLE(Bytes.concat(pk2.toByteArray(), pk1.toByteArray()));
+                return of(id);
             case 0:
             default:
                 throw new IllegalArgumentException("pk1 and pk2 must be not equals.");

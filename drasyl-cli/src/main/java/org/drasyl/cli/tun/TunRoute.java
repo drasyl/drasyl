@@ -21,8 +21,8 @@
  */
 package org.drasyl.cli.tun;
 
-import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.network.Subnet;
 
@@ -65,7 +65,7 @@ public class TunRoute {
 
     static InetAddress deriveInetAddressFromOverlayAddress(final Subnet subnet,
                                                            final DrasylAddress overlayAddress) {
-        final long identityHash = UnsignedInteger.of(Hashing.murmur3x32(overlayAddress.toByteArray())).getValue();
+        final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(overlayAddress.toByteArray())).getValue();
         final int n = (int) (identityHash % subnet.networkSize());
         return subnet.nth(n);
     }
