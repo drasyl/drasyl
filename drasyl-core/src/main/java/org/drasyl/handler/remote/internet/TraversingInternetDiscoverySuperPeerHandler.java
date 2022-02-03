@@ -79,7 +79,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                        final long uniteMinIntervalMillis) {
         super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
-            uniteAttemptsCache = new ExpiringSet(1_000, uniteMinIntervalMillis, -1);
+            uniteAttemptsCache = new ExpiringSet(1_000, uniteMinIntervalMillis);
         }
         else {
             uniteAttemptsCache = null;

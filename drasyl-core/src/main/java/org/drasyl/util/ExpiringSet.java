@@ -30,8 +30,8 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A map that expires entries based on oldest age (when maximum size has been exceeded), write time,
- * or last access time.
+ * A map that expires entries based on oldest age (when maximum size has been exceeded) or write
+ * time.
  *
  * @param <E> the type of elements maintained by this set
  */
@@ -43,17 +43,16 @@ public class ExpiringSet<E> implements Set<E> {
     }
 
     /**
-     * @param maximumSize       maximum number of entries that the set should contain. On overflow,
-     *                          oldest elements are removed
-     * @param expireAfterWrite  time in milliseconds after which elements are automatically removed
-     *                          from the set after being added
-     * @param expireAfterAccess time in milliseconds after which elements are automatically removed
-     *                          from the set after last access
+     * @param maximumSize      maximum number of entries that the set should contain. On overflow,
+     *                         first elements based on expiration policy are removed. {@code -1}
+     *                         deactivates a size limitation.
+     * @param expireAfterWrite time in milliseconds after which elements are automatically removed
+     *                         from the set after being added.
+     * @throws IllegalArgumentException if {@code expireAfterWrite} is {@code -1}.
      */
     public ExpiringSet(final long maximumSize,
-                       final long expireAfterWrite,
-                       final long expireAfterAccess) {
-        this(new ExpiringMap<>(maximumSize, expireAfterWrite, expireAfterAccess));
+                       final long expireAfterWrite) {
+        this(new ExpiringMap<>(maximumSize, expireAfterWrite, -1));
     }
 
     @Override
