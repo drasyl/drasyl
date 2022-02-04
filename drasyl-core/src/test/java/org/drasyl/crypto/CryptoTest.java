@@ -37,6 +37,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.ARGON2ID_MEMLIMIT_INTERACTIVE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -400,6 +401,23 @@ class CryptoTest {
             assertTrue(number > -1, "Number " + number + " should be positive.");
             assertTrue(number <= size, "Number " + number + " should be smaller than or equals to " + size + ".");
         }
+    }
+
+    @Nested
+    class Argon2id {
+//        @Test
+//        void shouldGenerate(@Mock final DrasylSodiumWrapper sodium) throws CryptoException {
+//            String valueToHash = "ABC";
+//
+//            final Crypto crypto = new Crypto(sodium);
+//            doReturn(true).when(sodium).cryptoSignKeypair(any(), any());
+//
+//            final KeyPair keyPair = crypto.generateLongTimeKeyPair();
+//
+//            assertNotNull(keyPair.getPublicKey());
+//            assertNotNull(keyPair.getSecretKey());
+//            verify(sodium).cryptoSignKeypair(any(), any());
+//        }
     }
 }
 

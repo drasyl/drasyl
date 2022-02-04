@@ -77,4 +77,32 @@ public final class ByteUtil {
         }
         return n + (b >>> 1);
     }
+
+    /**
+     * Returns the given {@code bs} byte-array without trailing zeros.
+     *
+     * @param bs the byte array
+     * @return the byte array without trailing zeros
+     */
+    public static byte[] removeTrailingZeros(final byte[] bs) {
+        int count = 0;
+        for (int i = bs.length - 1; i >= 0; i--) {
+            if (bs[i] == 0) {
+                count++;
+            }
+            else {
+                break;
+            }
+        }
+
+        if (count == 0) {
+            return bs;
+        }
+
+        final int len = bs.length - count;
+        final byte[] rtn = new byte[len];
+        System.arraycopy(bs, 0, rtn, 0, len);
+
+        return rtn;
+    }
 }

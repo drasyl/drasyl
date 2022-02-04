@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto;
 
+import com.sun.jna.NativeLong;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.sodium.DrasylSodium;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
@@ -42,6 +43,8 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.ARGON2ID_STR_BYTES;
+import static org.drasyl.util.ByteUtil.removeTrailingZeros;
 
 /**
  * Util class that provides cryptography functions for drasyl.
@@ -192,7 +195,7 @@ public class Crypto {
     /**
      * Generates a SHA-256 hash of the given input.
      *
-     * @param in the input to hash
+     * @param input the input to hash
      * @return SHA-256 hash of the input
      */
     public byte[] sha256(final byte[] input) throws CryptoException {
@@ -436,5 +439,31 @@ public class Crypto {
         return sodium.cryptoSignVerifyDetached(signature,
                 message,
                 publicKey.toByteArray());
+    }
+
+    public byte[] argon2idHash(final byte[] value,
+                               final long opsLimit,
+                               final NativeLong memLimit) throws CryptoException {
+        requireNonNull(memLimit);
+        final byte[] hash = new byte[ARGON2ID_STR_BYTES];
+        final boolean res = sodium.cryptoPwHashStr(hash, value, value.length, opsLimit, memLimit);
+
+        if (!res) {
+            throw new CryptoException("Hashing failed.");
+        }
+
+        return removeTrailingZeros(hash);
+    }
+
+    public boolean argon2idHashVerify(final byte[] hash, final byte[] value) {
+        byte[] hashBytes = hash;
+
+        if (hashBytes[hashBytes.length - 1] != 0) {
+            final byte[] hashWithNullByte = new byte[hashBytes.length + 1];
+            System.arraycopy(hashBytes, 0, hashWithNullByte, 0, hashBytes.length);
+            hashBytes = hashWithNullByte;
+        }
+
+        return sodium.cryptoPwHashStrVerify(hashBytes, value, value.length);
     }
 }

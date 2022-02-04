@@ -29,6 +29,7 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.Hashing;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -65,7 +66,6 @@ import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.handler.PeersManagerHandler;
 import org.drasyl.node.handler.plugin.PluginsHandler;
-import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -283,7 +283,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
              a completely random port would have the disadvantage that every time the node is
              started it would use a new port and this would make discovery more difficult
             */
-            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
+            final long identityHash = UnsignedInteger.of(Hashing.murmur3x32(address.toByteArray())).getValue();
             return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {

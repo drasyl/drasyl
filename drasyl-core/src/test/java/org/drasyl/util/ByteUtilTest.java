@@ -24,10 +24,12 @@ package org.drasyl.util;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.util.Arrays;
 
 import static org.drasyl.util.ByteUtil.numberOfLeadingZeros;
 import static org.drasyl.util.ByteUtil.numberOfTrailingZeros;
+import static org.drasyl.util.ByteUtil.removeTrailingZeros;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ByteUtilTest {
@@ -53,7 +55,7 @@ class ByteUtilTest {
     @Nested
     class NumberOfTrailingZeros {
         @Test
-        void shouldReturnNumberOfTrailingZeros() throws IOException {
+        void shouldReturnNumberOfTrailingZeros() {
             assertEquals(8, numberOfTrailingZeros((byte) 0));
             assertEquals(0, numberOfTrailingZeros((byte) 1));
             assertEquals(1, numberOfTrailingZeros((byte) 2));
@@ -66,6 +68,17 @@ class ByteUtilTest {
             assertEquals(7, numberOfTrailingZeros((byte) 128));
             assertEquals(0, numberOfTrailingZeros((byte) 255));
             assertEquals(0, numberOfTrailingZeros((byte) -1));
+        }
+    }
+
+    @Nested
+    class RemoveTrailingZeros {
+        @Test
+        void shouldRemoveTrailingZeros() {
+            assertArrayEquals(new byte[]{ 1 }, removeTrailingZeros(new byte[]{ 1, 0, 0 }));
+            assertArrayEquals(new byte[]{ 0, 1 }, removeTrailingZeros(new byte[]{ 0, 1 }));
+            assertArrayEquals(new byte[]{ 0, 1 }, removeTrailingZeros(new byte[]{ 0, 1, 0 }));
+            assertArrayEquals(new byte[]{ 1, 0, 3 }, removeTrailingZeros(new byte[]{ 1, 0, 3 }));
         }
     }
 }

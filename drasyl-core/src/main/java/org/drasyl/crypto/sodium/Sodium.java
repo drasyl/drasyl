@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto.sodium;
 
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 
 /**
@@ -122,4 +123,16 @@ public class Sodium {
             byte[] nPub,
             byte[] k
     );
+
+    /*
+     * ARGON2ID HASHING
+     */
+
+    public native int crypto_pwhash_str(byte[] outputStr,
+                                        byte[] password,
+                                        long passwordLen,
+                                        long opsLimit,
+                                        NativeLong memLimit);
+
+    public native int crypto_pwhash_str_verify(byte[] hash, byte[] password, long passwordLen);
 }

@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto.sodium;
 
+import com.sun.jna.NativeLong;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import org.drasyl.crypto.CryptoException;
@@ -40,6 +41,16 @@ public class DrasylSodiumWrapper {
     public static final short SESSIONKEYBYTES = 32;
     public static final short XCHACHA20POLY1305_IETF_ABYTES = 16;
     public static final short XCHACHA20POLY1305_IETF_NPUBBYTES = 24;
+    // ARGON
+    public static final short ARGON2ID_SALTBYTES = 16;
+    public static final short ARGON2ID_BYTES_MIN = 16;
+    public static final short ARGON2ID_STR_BYTES = 128;
+    public static final long ARGON2ID_OPSLIMIT_INTERACTIVE = 2L;
+    public static final long ARGON2ID_OPSLIMIT_MODERATE = 3L;
+    public static final long ARGON2ID_OPSLIMIT_SENSITIVE = 4L;
+    public static final NativeLong ARGON2ID_MEMLIMIT_INTERACTIVE = new NativeLong(67108864); // 64 MiB
+    public static final NativeLong ARGON2ID_MEMLIMIT_MODERATE = new NativeLong(268435456); // 256 MiB
+    public static final NativeLong ARGON2ID_MEMLIMIT_SENSITIVE = new NativeLong(1073741824); // 1024 GiB
     private final Sodium sodium;
 
     public DrasylSodiumWrapper(final Sodium sodium) {
@@ -214,6 +225,28 @@ public class DrasylSodiumWrapper {
                                             final byte[] message,
                                             final byte[] publicKey) {
         return successful(getSodium().crypto_sign_verify_detached(signature, message, message.length, publicKey));
+    }
+
+    public boolean cryptoPwHashStr(final byte[] outputStr,
+                                   final byte[] password,
+                                   final int passwordLen,
+                                   final long opsLimit,
+                                   final NativeLong memLimit) {
+        if (passwordLen < 0 || passwordLen > password.length) {
+            throw new IllegalArgumentException("passwordLen out of bounds: " + passwordLen);
+        }
+
+        return successful(getSodium().crypto_pwhash_str(outputStr, password, passwordLen, opsLimit, memLimit));
+    }
+
+    public boolean cryptoPwHashStrVerify(final byte[] hash,
+                                         final byte[] password,
+                                         final int passwordLen) {
+        if (passwordLen < 0 || passwordLen > password.length) {
+            throw new IllegalArgumentException("passwordLen out of bounds: " + passwordLen);
+        }
+
+        return successful(getSodium().crypto_pwhash_str_verify(hash, password, passwordLen));
     }
 
     /**
