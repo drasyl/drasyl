@@ -21,8 +21,6 @@
  */
 package org.drasyl.node.handler;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInboundInvoker;
@@ -41,6 +39,8 @@ import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.Peer;
 import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
+import org.drasyl.util.HashSetMultimap;
+import org.drasyl.util.SetMultimap;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -76,7 +76,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
     }
 
     public PeersManagerHandler(final Identity identity) {
-        this(HashMultimap.create(), new HashSet<>(), new HashSet<>(), identity);
+        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>(), identity);
     }
 
     @Override

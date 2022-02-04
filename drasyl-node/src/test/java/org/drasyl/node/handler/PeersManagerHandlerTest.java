@@ -21,8 +21,6 @@
  */
 package org.drasyl.node.handler;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -39,6 +37,8 @@ import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.Peer;
 import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
+import org.drasyl.util.HashSetMultimap;
+import org.drasyl.util.SetMultimap;
 import org.drasyl.util.SetUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -74,7 +74,7 @@ class PeersManagerHandlerTest {
 
     @BeforeEach
     void setUp() {
-        paths = HashMultimap.create();
+        paths = new HashSetMultimap<>();
         children = new HashSet<>();
         superPeers = new HashSet<>();
         identity = IdentityTestUtil.ID_1;
