@@ -41,7 +41,6 @@ import java.nio.channels.Channels;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChunkedMessageInputTest {
@@ -92,16 +91,6 @@ class ChunkedMessageInputTest {
     }
 
     @Test
-    void testTooManyChunks() {
-        final ChunkedMessageInput input = new ChunkedMessageInput(new ChunkedStream(new ByteArrayInputStream(BYTES), 100));
-        final EmbeddedChannel channel = new EmbeddedChannel(new ChunkedWriteHandler());
-
-        assertThrows(IOException.class, () -> channel.writeOutbound(input));
-
-        channel.finishAndReleaseAll();
-    }
-
-    @Test
     void testChunkedNioFile() throws IOException {
         check(new ChunkedMessageInput(new ChunkedNioFile(TMP)));
     }
@@ -117,7 +106,7 @@ class ChunkedMessageInputTest {
 
         int i = 0;
         int read = 0;
-        byte chunkNo = 0;
+        int chunkNo = 0;
         MessageChunk lastChunk = null;
         while (true) {
             final MessageChunk chunk = ch.readOutbound();
@@ -128,7 +117,8 @@ class ChunkedMessageInputTest {
             if (lastChunk != null) {
                 assertThat(lastChunk, instanceOf(MessageChunk.class));
 
-                assertEquals(chunkNo++, lastChunk.chunkNo());
+                assertEquals(chunkNo, lastChunk.chunkNo());
+                chunkNo++;
             }
 
             final ByteBuf buffer = chunk.content();

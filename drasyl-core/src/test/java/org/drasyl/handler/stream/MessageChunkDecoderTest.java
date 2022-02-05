@@ -41,8 +41,8 @@ class MessageChunkDecoderTest {
         final ByteBuf msg = Unpooled.buffer()
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_CONTENT) // magic number
                 .writeByte(42) // id
-                .writeByte(13) // chunk no
-                .writeBytes(new byte[]{1, 2, 3}); // payload
+                .writeShort(13) // chunk no
+                .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         channel.writeInbound(msg);
 
         final MessageChunk actual = channel.readInbound();
@@ -60,8 +60,8 @@ class MessageChunkDecoderTest {
         final ByteBuf msg = Unpooled.buffer()
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_LAST) // magic number
                 .writeByte(23) // id
-                .writeByte(2) // total chunks
-                .writeBytes(new byte[]{1, 2, 3}); // payload
+                .writeShort(2) // total chunks
+                .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         channel.writeInbound(msg);
 
         final LastMessageChunk actual = channel.readInbound();

@@ -34,14 +34,16 @@ import java.util.Objects;
  */
 public class MessageChunk extends DefaultByteBufHolder {
     private final byte msgId;
-    private final byte chunkNo;
+    private final int chunkNo;
 
     /**
      * @param msgId   id of the message to which this chunk belongs
      * @param chunkNo number of this chunk (starting with {@code 0})
      * @param content message's content portion of this chunk
      */
-    public MessageChunk(final byte msgId, final byte chunkNo, final ByteBuf content) {
+    public MessageChunk(final byte msgId,
+                        final int chunkNo,
+                        final ByteBuf content) {
         super(content);
         this.msgId = msgId;
         this.chunkNo = chunkNo;
@@ -66,13 +68,18 @@ public class MessageChunk extends DefaultByteBufHolder {
     /**
      * @return number of this chunk (starting with {@code 0})
      */
-    public byte chunkNo() {
+    public int chunkNo() {
         return chunkNo;
     }
 
     @Override
     public MessageChunk replace(final ByteBuf content) {
         return new MessageChunk(msgId, chunkNo, content);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), msgId, chunkNo);
     }
 
     @Override
@@ -87,11 +94,6 @@ public class MessageChunk extends DefaultByteBufHolder {
             return false;
         }
         final MessageChunk that = (MessageChunk) o;
-        return msgId == that.msgId && chunkNo == that.chunkNo;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), msgId, chunkNo);
+        return msgId == that.msgId && Objects.equals(chunkNo, that.chunkNo);
     }
 }

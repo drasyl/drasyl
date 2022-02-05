@@ -37,9 +37,26 @@ public class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
     public static final int MAGIC_NUMBER_LAST = -143_591_472;
     // magic number: 4 bytes
     // id: 1 byte
-    // chunk number (content) / total chunks (last content): 1 byte
+    // chunk number (content) / total chunks (last content): 1, 2, or 3 bytes
     // content: n bytes
     public static final int MIN_MESSAGE_LENGTH = 6;
+    private final int chunkNoFieldLength;
+
+    /**
+     * @param chunkNoFieldLength the length of the chunkNo field
+     * @throws IllegalArgumentException if {@code lengthFieldLength} is not 1, 2, or 3
+     */
+    public MessageChunkEncoder(final int chunkNoFieldLength) {
+        if (chunkNoFieldLength != 1 && chunkNoFieldLength != 2 &&
+                chunkNoFieldLength != 3) {
+            throw new IllegalArgumentException("chunkNoFieldLength must be either 1, 2, or 3: " + chunkNoFieldLength);
+        }
+        this.chunkNoFieldLength = chunkNoFieldLength;
+    }
+
+    public MessageChunkEncoder() {
+        this(2);
+    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -52,7 +69,33 @@ public class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
             out.writeInt(MAGIC_NUMBER_CONTENT);
         }
         out.writeByte(msg.msgId());
-        out.writeByte(msg.chunkNo());
+
+        switch (chunkNoFieldLength) {
+            case 1:
+                if (msg.chunkNo() >= 256) {
+                    throw new IllegalArgumentException(
+                            "length does not fit into a byte: " + msg.chunkNo());
+                }
+                out.writeByte((byte) msg.chunkNo());
+                break;
+            case 2:
+                if (msg.chunkNo() >= 65536) {
+                    throw new IllegalArgumentException(
+                            "length does not fit into a short integer: " + msg.chunkNo());
+                }
+                out.writeShort((short) msg.chunkNo());
+                break;
+            case 3:
+                if (msg.chunkNo() >= 16777216) {
+                    throw new IllegalArgumentException(
+                            "length does not fit into a medium integer: " + msg.chunkNo());
+                }
+                out.writeMedium(msg.chunkNo());
+                break;
+            default:
+                throw new Error("should not reach here");
+        }
+
         out.writeBytes(msg.content());
     }
 }

@@ -41,7 +41,7 @@ class MessageChunkEncoderTest {
         final ChannelHandler handler = new MessageChunkEncoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk msg = new MessageChunk((byte) 42, (byte) 13, Unpooled.wrappedBuffer(new byte[]{
+        final MessageChunk msg = new MessageChunk((byte) 42, 13, Unpooled.wrappedBuffer(new byte[]{
                 1,
                 2,
                 3
@@ -51,7 +51,7 @@ class MessageChunkEncoderTest {
         final ByteBuf expected = Unpooled.buffer()
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_CONTENT) // magic number
                 .writeByte(42) // id
-                .writeByte(13) // chunk no
+                .writeShort(13) // chunk no
                 .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         final ByteBuf actual = channel.readOutbound();
         assertEquals(expected, actual);
@@ -65,7 +65,7 @@ class MessageChunkEncoderTest {
         final ChannelHandler handler = new MessageChunkEncoder();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final LastMessageChunk msg = new LastMessageChunk((byte) 23, (byte) 2, Unpooled.wrappedBuffer(new byte[]{
+        final LastMessageChunk msg = new LastMessageChunk((byte) 23, 2, Unpooled.wrappedBuffer(new byte[]{
                 1,
                 2,
                 3
@@ -75,7 +75,7 @@ class MessageChunkEncoderTest {
         final ByteBuf expected = Unpooled.buffer()
                 .writeInt(MessageChunkEncoder.MAGIC_NUMBER_LAST) // magic number
                 .writeByte(23) // id
-                .writeByte(2) // total chunks
+                .writeShort(2) // total chunks
                 .writeBytes(new byte[]{ 1, 2, 3 }); // payload
         final ByteBuf actual = channel.readOutbound();
         assertEquals(expected, actual);

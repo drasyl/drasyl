@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * This class represents an unsigned short in a rang of [0, 2^16).
+ * This class represents an unsigned short in a rang of [0, 2^16)
  */
 public final class UnsignedShort {
     public static final UnsignedShort MIN_VALUE = UnsignedShort.of(new byte[2]);

@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.util.UnsignedByte;
+import org.drasyl.util.UnsignedMediumInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -44,7 +44,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageChunksBuffer.class);
-    static final int MAX_CHUNKS = 255;
+    static final int MAX_CHUNKS = UnsignedMediumInteger.MAX_VALUE.getValue();
     private final int maxContentLength;
     private final int allChunksTimeout;
     private Byte id;
@@ -110,16 +110,16 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
 
             if (msg instanceof LastMessageChunk) {
                 if (lastChunk == null) {
-                    if (UnsignedByte.of(msg.chunkNo()).getValue() < chunks.size()) {
+                    if (msg.chunkNo() < chunks.size()) {
                         discard();
-                        throw new TooLongFrameException("More chunks received then specified in chunk header.");
+                        throw new TooLongFrameException("More chunks received (" + chunks.size() + ") then specified in chunk header (" + msg.chunkNo() + ").");
                     }
 
                     lastChunk = (LastMessageChunk) msg.retain();
                 }
             }
             else {
-                chunks.set(UnsignedByte.of(msg.chunkNo()).getValue(), (MessageChunk) msg.retain());
+                chunks.set(msg.chunkNo(), (MessageChunk) msg.retain());
             }
 
             checkCompleteness(out);
@@ -127,7 +127,7 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
     }
 
     private void checkCompleteness(final List<Object> out) {
-        if (lastChunk != null && UnsignedByte.of(lastChunk.chunkNo()).getValue() == chunks.size()) {
+        if (lastChunk != null && lastChunk.chunkNo() == chunks.size()) {
             if (timeoutGuard != null) {
                 timeoutGuard.cancel(false);
             }

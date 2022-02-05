@@ -31,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.stream.MessageChunksBuffer.MAX_CHUNKS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -45,9 +44,9 @@ class MessageChunksBufferTest {
         final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk1 = new MessageChunk((byte) 42, (byte) 0, Unpooled.copiedBuffer("chunk1", UTF_8));
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
-        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, (byte) 2, Unpooled.copiedBuffer("chunk3", UTF_8));
+        final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, 2, Unpooled.copiedBuffer("chunk3", UTF_8));
 
         assertFalse(channel.writeInbound(chunk2));
         assertFalse(channel.writeInbound(chunk3));
@@ -68,12 +67,12 @@ class MessageChunksBufferTest {
         final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        for (short i = 0; i < MAX_CHUNKS; i++) {
-            final MessageChunk chunk = new MessageChunk((byte) 42, (byte) i, Unpooled.EMPTY_BUFFER);
+        for (int i = 0; i < 1_000; i++) {
+            final MessageChunk chunk = new MessageChunk((byte) 42, i, Unpooled.EMPTY_BUFFER);
             assertFalse(channel.writeInbound(chunk));
         }
 
-        final MessageChunk chunk = new LastMessageChunk((byte) 42, (byte) MAX_CHUNKS, Unpooled.EMPTY_BUFFER);
+        final MessageChunk chunk = new LastMessageChunk((byte) 42, 1_000, Unpooled.EMPTY_BUFFER);
         assertTrue(channel.writeInbound(chunk));
     }
 
@@ -82,8 +81,8 @@ class MessageChunksBufferTest {
         final ChannelHandler handler = new MessageChunksBuffer(10, 1000);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
-        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, (byte) 2, Unpooled.copiedBuffer("chunk3", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, 2, Unpooled.copiedBuffer("chunk3", UTF_8));
 
         assertFalse(channel.writeInbound(chunk2));
         assertThrows(TooLongFrameException.class, () -> channel.writeInbound(chunk3));
@@ -98,9 +97,9 @@ class MessageChunksBufferTest {
         final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk1 = new MessageChunk((byte) 42, (byte) 0, Unpooled.copiedBuffer("chunk1", UTF_8));
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
-        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk3", UTF_8));
+        final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk3", UTF_8));
 
         assertFalse(channel.writeInbound(chunk1));
         assertFalse(channel.writeInbound(chunk2));
@@ -116,8 +115,8 @@ class MessageChunksBufferTest {
         final ChannelHandler handler = new MessageChunksBuffer(1024, 10);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk1 = new MessageChunk((byte) 42, (byte) 0, Unpooled.copiedBuffer("chunk1", UTF_8));
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
 
         assertFalse(channel.writeInbound(chunk1));
         assertFalse(channel.writeInbound(chunk2));
