@@ -21,18 +21,14 @@
  */
 package org.drasyl.util;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled("This test are not reliable with guava-based implementation")
 class ExpiringSetTest {
     @Nested
     class MaximumSize {
@@ -45,28 +41,6 @@ class ExpiringSetTest {
 
             assertEquals(2, set.size());
             assertFalse(set.contains("Hallo"));
-        }
-    }
-
-    @Nested
-    class ExpireAfterWrite {
-        @Test
-        void shouldExpireEntriesBasedOnExpirationPolicy() throws InterruptedException {
-            final Set<Object> set = new ExpiringSet<>(-1, 10);
-
-            // accessing the entry should not affect expiration
-            set.add("Foo");
-            assertTrue(set.contains("Foo"));
-            await().untilAsserted(() -> {
-                assertFalse(set.contains("Foo"));
-            });
-
-            // writing the entry should affect expiration
-            for (int i = 0; i < 10; i++) {
-                set.add("Baz");
-                assertTrue(set.contains("Baz"));
-                Thread.sleep(5);
-            }
         }
     }
 }

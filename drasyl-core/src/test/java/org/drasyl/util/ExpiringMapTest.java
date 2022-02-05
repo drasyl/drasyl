@@ -21,87 +21,93 @@
  */
 package org.drasyl.util;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeSet;
+import java.util.function.LongSupplier;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
-@Disabled("This test are not reliable with guava-based implementation")
+@ExtendWith(MockitoExtension.class)
 class ExpiringMapTest {
     @Nested
     class MaximumSize {
         @Test
-        void shouldEvictFirstEntriesBasedOnExpirationPolicyWhenSizeIsExceeding() throws InterruptedException {
-            // expire after write
-            final Map<Object, Object> writeMap = new ExpiringMap<>(2, 10, -1);
-            writeMap.put("Hallo", 1);
-            writeMap.put("Hello", 1);
-            writeMap.put("Bonjour", 1);
+        void shouldEvictFirstEntriesBasedOnWriteExpirationPolicyWhenSizeIsExceeding(@Mock final LongSupplier currentTimeProvider) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 106L);
 
-            assertEquals(2, writeMap.size());
-            assertFalse(writeMap.containsKey("Hallo"));
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, 10, -1, new HashMap<>(), new TreeSet<>()); // t=100
+            map.put("Hallo", 1); // t=101,102
+            map.put("Hello", 1); // t=103,104
+            map.put("Bonjour", 1); // t=105,106
 
-            // expire after access
-            final Map<Object, Object> accessMap = new ExpiringMap<>(2, -1, 10);
-            accessMap.put("Hallo", 1);
-            accessMap.put("Hello", 1);
-            accessMap.get("Hallo");
-            accessMap.put("Bonjour", 1);
+            assertEquals(2, map.size());
+            assertFalse(map.containsKey("Hallo"));
+        }
 
-            assertEquals(2, accessMap.size());
-            assertFalse(accessMap.containsKey("Hello"));
+        @Test
+        void shouldEvictFirstEntriesBasedOnReadExpirationPolicyWhenSizeIsExceeding(@Mock final LongSupplier currentTimeProvider) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L);
+
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, -1, 10, new HashMap<>(), new TreeSet<>()); // t=100
+            map.put("Hallo", 1); // t=101,102
+            map.put("Hello", 1); // t=103,104
+            assertEquals(1, map.get("Hallo")); // t=105,106
+            map.put("Bonjour", 1); // t=107,108
+
+            assertEquals(2, map.size());
+            assertFalse(map.containsKey("Hello"));
         }
     }
 
     @Nested
     class ExpireAfterWrite {
         @Test
-        void shouldExpireEntriesBasedOnExpirationPolicy() throws InterruptedException {
-            final Map<Object, Object> map = new ExpiringMap<>(-1, 10, -1);
+        void shouldExpireEntriesBasedOnExpirationPolicy(@Mock final LongSupplier currentTimeProvider) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 111L, 200L, 201L, 205L, 206L, 214L);
+
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, 10, -1, new HashMap<>(), new TreeSet<>()); // t=100
 
             // accessing the entry should not affect expiration
-            map.put("Foo", "Bar");
-            assertTrue(map.containsKey("Foo"));
-            await().untilAsserted(() -> {
-                map.get("Foo");
-                assertFalse(map.containsKey("Foo"));
-            });
+            map.put("Foo", "Bar"); // t=101,102
+            assertTrue(map.containsKey("Foo")); // t=103
+            assertEquals("Bar", map.get("Foo")); // t=104
+            assertFalse(map.containsKey("Foo")); // t=111
 
             // writing the entry should affect expiration
-            for (int i = 0; i < 10; i++) {
-                map.put("Baz", "Bar");
-                assertTrue(map.containsKey("Baz"));
-                Thread.sleep(5);
-            }
+            map.put("Baz", "Bar"); // t=200,201
+            map.put("Baz", "Bar"); // t=205,206
+            assertTrue(map.containsKey("Baz")); // 214
         }
     }
 
     @Nested
     class ExpireAfterAccess {
         @Test
-        void shouldExpireEntriesBasedOnExpirationPolicy() throws InterruptedException {
-            final Map<Object, Object> map = new ExpiringMap<>(-1, -1, 10);
+        void shouldExpireEntriesBasedOnExpirationPolicy(@Mock final LongSupplier currentTimeProvider) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 113L, 200L, 201L, 202L, 203L, 211L);
+
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, -1, 10, new HashMap<>(), new TreeSet<>()); // t=100
 
             // accessing the entry should affect expiration
-            map.put("Foo", "Bar");
-            assertTrue(map.containsKey("Foo"));
-            for (int i = 0; i < 10; i++) {
-                map.get("Foo");
-                assertTrue(map.containsKey("Foo"));
-                Thread.sleep(5);
-            }
+            map.put("Foo", "Bar"); // t=101,102
+            assertTrue(map.containsKey("Foo")); // t=103
+            map.get("Foo"); // t=104,105
+            assertTrue(map.containsKey("Foo")); // t=113
 
             // writing the entry should not affect expiration
-            await().untilAsserted(() -> {
-                map.put("Baz", "Bar");
-                assertFalse(map.containsKey("Foo"));
-            });
+            map.put("Baz", "Bar"); // t=200,201
+            map.put("Baz", "Bar"); // t=202,203
+            assertFalse(map.containsKey("Baz")); // t=211
         }
     }
 }
