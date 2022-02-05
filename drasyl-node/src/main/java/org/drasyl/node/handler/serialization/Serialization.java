@@ -21,11 +21,11 @@
  */
 package org.drasyl.node.handler.serialization;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
+import org.drasyl.util.HashSetMultimap;
+import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -61,7 +60,7 @@ public class Serialization {
     protected static final NullSerializer NULL_SERIALIZER = new NullSerializer();
     private static final int EXPECTED_VALUES_PER_KEY = 16; // 2^4
     private static final Logger LOG = LoggerFactory.getLogger(Serialization.class);
-    private static Multimap<String, String> subclasses;
+    private static SetMultimap<String, String> subclasses;
 
     static {
         buildInheritanceGraph();
@@ -105,8 +104,7 @@ public class Serialization {
 
         // build inheritance graph
         final int expectedKeys = scanResult.getAllClasses().size();
-        final Multimap<String, String> newSubclasses = MultimapBuilder.hashKeys(expectedKeys)
-                .hashSetValues(EXPECTED_VALUES_PER_KEY).build();
+        final SetMultimap<String, String> newSubclasses = new HashSetMultimap<>(expectedKeys, EXPECTED_VALUES_PER_KEY);
         // does not include "java.lang.Object"
         for (final ClassInfo classInfo : scanResult.getAllClasses()) {
             final String className = classInfo.getName().intern();
@@ -136,7 +134,7 @@ public class Serialization {
      * @return serializer for given clazz or {@code null} if nothing found
      */
     public Serializer findSerializerFor(final String clazzName) {
-        if (isNullOrEmpty(clazzName)) {
+        if (clazzName == null || clazzName.isEmpty()) {
             return NULL_SERIALIZER;
         }
         else {

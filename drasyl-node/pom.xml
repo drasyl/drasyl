@@ -76,12 +76,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Utilities -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
         <!-- Test Dependencies -->
 
         <dependency>

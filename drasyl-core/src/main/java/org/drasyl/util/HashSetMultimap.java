@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,19 +40,27 @@ import static java.util.Objects.requireNonNull;
 public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     private final Map<K, Set<V>> map;
     private final Set<V> defaultValue;
+    private final Supplier<Set<V>> setSupplier;
 
-    HashSetMultimap(final Map<K, Set<V>> map, final Set<V> defaultValue) {
+    HashSetMultimap(final Map<K, Set<V>> map,
+                    final Set<V> defaultValue,
+                    final Supplier<Set<V>> setSupplier) {
         this.map = requireNonNull(map);
         this.defaultValue = requireNonNull(defaultValue);
+        this.setSupplier = requireNonNull(setSupplier);
+    }
+
+    public HashSetMultimap(final int initialMapCapacity, final int initialSetCapacity) {
+        this(new HashMap<>(initialMapCapacity), new HashSet<>(), () -> new HashSet<>(initialSetCapacity));
     }
 
     public HashSetMultimap() {
-        this(new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashSet<>(), () -> new HashSet<>());
     }
 
     @Override
     public boolean put(final K key, final V value) {
-        map.putIfAbsent(key, new HashSet<>());
+        map.putIfAbsent(key, setSupplier.get());
         return map.get(key).add(value);
     }
 
