@@ -40,6 +40,7 @@ public class DrasylSodiumWrapper {
     public static final short SESSIONKEYBYTES = 32;
     public static final short XCHACHA20POLY1305_IETF_ABYTES = 16;
     public static final short XCHACHA20POLY1305_IETF_NPUBBYTES = 24;
+    public static final short SIGN_BYTES = 64;
     private final Sodium sodium;
 
     public DrasylSodiumWrapper(final Sodium sodium) {
@@ -193,7 +194,7 @@ public class DrasylSodiumWrapper {
      */
     public byte[] cryptoSignDetached(final byte[] message,
                                      final byte[] secretKey) {
-        final byte[] signatureBytes = new byte[DrasylSodiumWrapper.ED25519_BYTES];
+        final byte[] signatureBytes = new byte[DrasylSodiumWrapper.SIGN_BYTES];
 
         if (successful(getSodium().crypto_sign_detached(signatureBytes, (new PointerByReference(Pointer.NULL)).getPointer(), message, message.length, secretKey))) {
             return signatureBytes;

@@ -58,6 +58,10 @@ public final class ImmutableByteArray {
         return array.length;
     }
 
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {

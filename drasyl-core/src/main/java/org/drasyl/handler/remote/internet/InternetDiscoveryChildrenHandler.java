@@ -37,6 +37,7 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -61,11 +62,12 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings("unchecked")
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
-    private static final long DEFAULT_JOIN_TIME = 60; // seconds
+    private static final long DEFAULT_CHILDREN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
     protected final int myNetworkId;
     protected final IdentityPublicKey myPublicKey;
+    private final IdentitySecretKey mySecretKey;
     protected final ProofOfWork myProofOfWork;
     protected final LongSupplier currentTime;
     protected final long pingTimeoutMillis;
@@ -80,6 +82,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S107")
     InternetDiscoveryChildrenHandler(final int myNetworkId,
                                      final IdentityPublicKey myPublicKey,
+                                     final IdentitySecretKey mySecretKey,
                                      final ProofOfWork myProofOfWork,
                                      final LongSupplier currentTime,
                                      final long initialPingDelayMillis,
@@ -91,6 +94,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final IdentityPublicKey bestSuperPeer) {
         this.myNetworkId = myNetworkId;
         this.myPublicKey = requireNonNull(myPublicKey);
+        this.mySecretKey = requireNonNull(mySecretKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
         this.initialPingDelayMillis = requireNonNegative(initialPingDelayMillis);
@@ -105,6 +109,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S107")
     public InternetDiscoveryChildrenHandler(final int myNetworkId,
                                             final IdentityPublicKey myPublicKey,
+                                            final IdentitySecretKey mySecretKey,
                                             final ProofOfWork myProofOfWork,
                                             final LongSupplier currentTime,
                                             final long initialPingDelayMillis,
@@ -115,6 +120,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this(
                 myNetworkId,
                 myPublicKey,
+                mySecretKey,
                 myProofOfWork,
                 currentTime,
                 initialPingDelayMillis,
@@ -130,6 +136,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S107")
     public InternetDiscoveryChildrenHandler(final int myNetworkId,
                                             final IdentityPublicKey myPublicKey,
+                                            final IdentitySecretKey mySecretKey,
                                             final ProofOfWork myProofOfWork,
                                             final long initialPingDelayMillis,
                                             final long pingIntervalMillis,
@@ -139,6 +146,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this(
                 myNetworkId,
                 myPublicKey,
+                mySecretKey,
                 myProofOfWork,
                 System::currentTimeMillis,
                 initialPingDelayMillis,
@@ -233,8 +241,16 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final DrasylAddress publicKey,
                                      final InetSocketAddress inetAddress,
                                      final boolean isChildrenJoin) {
-        final long childrenTime = isChildrenJoin ? DEFAULT_JOIN_TIME : 0;
-        final HelloMessage msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, childrenTime);
+        final HelloMessage msg;
+        if (isChildrenJoin) {
+            // hello message is used to register at super peer as children
+            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, DEFAULT_CHILDREN_TIME, mySecretKey);
+        }
+        else {
+            // hello message is used to announce us at peer
+            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork);
+        }
+
         LOG.trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
             if (!future.isSuccess()) {

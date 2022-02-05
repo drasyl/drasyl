@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -30,6 +31,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 
@@ -39,6 +42,7 @@ public class HelloMessageTest {
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipient;
     private long time;
+    private IdentitySecretKey secretKey;
 
     @BeforeEach
     void setUp() {
@@ -46,17 +50,31 @@ public class HelloMessageTest {
         proofOfWork = ID_1.getProofOfWork();
         recipient = ID_2.getIdentityPublicKey();
         time = System.currentTimeMillis();
+        secretKey = ID_1.getIdentitySecretKey();
     }
 
     @Nested
     class Of {
         @Test
-        void shouldCreateDiscoveryMessage() {
-            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L);
+        void shouldCreateSignedHelloMessageIfChildrenTimeIsPresent() {
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L, secretKey);
 
             assertEquals(1, hello.getNetworkId());
             assertEquals(time, hello.getTime());
             assertEquals(1337L, hello.getChildrenTime());
+            assertTrue(hello.isSigned());
+            assertTrue(hello.verifySignature());
+        }
+
+        @Test
+        void shouldCreateUnsignedHelloMessageIfChildrenTimeIsNotPresent() {
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 0, secretKey);
+
+            assertEquals(1, hello.getNetworkId());
+            assertEquals(time, hello.getTime());
+            assertEquals(0, hello.getChildrenTime());
+            assertFalse(hello.isSigned());
+            assertFalse(hello.verifySignature());
         }
     }
 }
