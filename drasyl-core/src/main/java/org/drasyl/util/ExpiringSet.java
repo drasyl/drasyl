@@ -30,15 +30,23 @@ import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A map that expires entries based on oldest age (when maximum size has been exceeded) or write
- * time.
+ * A {@link Set} that expires elements based on oldest age (when maximum size has been exceeded) or
+ * write
+ * <p>
+ * The expiration policy is only enforced on set access. There will be no automatic expiration
+ * handling running in a background thread or similar. For performance reasons the policy is not
+ * enforced on every single access, but only once every "expiration window" ({@link
+ * Math}.max(expireAfterWrite, expireAfterAccess)). Therefore, it may happen that elements are kept
+ * in the set up to the double expiration window length.
+ * <p>
+ * This data structure is not thread-safe!
  *
  * @param <E> the type of elements maintained by this set
  */
 public class ExpiringSet<E> implements Set<E> {
     private final Map<E, Boolean> map;
 
-    public ExpiringSet(final Map<E, Boolean> map) {
+    ExpiringSet(final Map<E, Boolean> map) {
         this.map = requireNonNull(map);
     }
 
@@ -48,7 +56,8 @@ public class ExpiringSet<E> implements Set<E> {
      *                         deactivates a size limitation.
      * @param expireAfterWrite time in milliseconds after which elements are automatically removed
      *                         from the set after being added.
-     * @throws IllegalArgumentException if {@code expireAfterWrite} is {@code -1}.
+     * @throws IllegalArgumentException if {@code maximumSize} is {@code 0} or {@code
+     *                                  expireAfterWrite} is {@code -1}.
      */
     public ExpiringSet(final long maximumSize,
                        final long expireAfterWrite) {

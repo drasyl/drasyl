@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -33,8 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.Duration;
 
 import static java.time.Duration.ofSeconds;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -65,6 +62,7 @@ class DrasylNodeServerChannelInitializerTest {
             when(config.getRemotePingTimeout()).thenReturn(ofSeconds(30L));
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(5L));
             when(config.getRemoteUniteMinInterval()).thenReturn(ofSeconds(20L));
+            when(config.getRemoteMessageArmProtocolSessionMaxCount()).thenReturn(100);
 
             final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node);
             handler.channelRegistered(ctx);
