@@ -54,12 +54,6 @@
             <artifactId>netty-buffer</artifactId>
         </dependency>
 
-        <!-- Utilities -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
         <!-- JNA -->
         <dependency>
             <groupId>net.java.dev.jna</groupId>

@@ -23,8 +23,6 @@ package org.drasyl.node.handler.serialization;
 
 import java.io.IOException;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
-
 /**
  * A Serializer represents a bimap between an object and an array of bytes representing that
  * object.
@@ -49,7 +47,7 @@ public interface Serializer {
     @SuppressWarnings("java:S2658")
     default Object fromByteArray(final byte[] bytes, final String typeName) throws IOException {
         try {
-            return fromByteArray(bytes, !isNullOrEmpty(typeName) ? Class.forName(typeName) : null);
+            return fromByteArray(bytes, typeName != null && !typeName.isEmpty() ? Class.forName(typeName) : null);
         }
         catch (final ClassNotFoundException e) {
             throw new IOException("Class with name `" + typeName + "` could not be located.", e);
