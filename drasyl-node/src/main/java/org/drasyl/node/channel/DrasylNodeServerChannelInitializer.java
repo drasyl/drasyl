@@ -214,6 +214,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(
                         config.getNetworkId(),
                         identity.getIdentityPublicKey(),
+                        identity.getIdentitySecretKey(),
                         identity.getProofOfWork(),
                         randomLong(config.getRemotePingInterval().toMillis()),
                         config.getRemotePingInterval().toMillis(),

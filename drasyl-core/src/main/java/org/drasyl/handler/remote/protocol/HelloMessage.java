@@ -23,13 +23,22 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import org.drasyl.annotation.Nullable;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.remote.IpMulticastDiscovery;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.ArrayUtil;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
 
+import java.nio.ByteBuffer;
+
+import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.SIGN_BYTES;
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO;
 
@@ -39,6 +48,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO
  * <ul>
  * <li><b>Time</b>: The sender's current time in milliseconds stored in 8 bytes.</li>
  * <li><b>ChildrenTime</b>: Specifies how many seconds (8 bytes) the sender wants to join the receiving super peer. If the value is 0, the message is an announcement and not a join.</li>
+ * <li><b>Signature</b>: 64 byte signature. Only present if ChildrenTime is > 0.</li>
  * </ul>
  * <p>
  * This is an immutable object.
@@ -46,7 +56,8 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage> {
-    public static final int LENGTH = 16;
+    public static final int UNSIGNED_LENGTH = 16;
+    public static final int SIGNED_LENGTH = UNSIGNED_LENGTH + SIGN_BYTES;
 
     /**
      * Creates new application message.
@@ -59,7 +70,8 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
      * @param sender       the public key of the sender
      * @param proofOfWork  the proof of work of {@code sender}
      * @param time
-     * @param childrenTime the children time
+     * @param childrenTime the join time
+     * @param signature
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
      *                              recipient}, or {@code hopCount} is {@code null}
      */
@@ -72,7 +84,8 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final DrasylAddress sender,
                                   final ProofOfWork proofOfWork,
                                   final long time,
-                                  final long childrenTime) {
+                                  final long childrenTime,
+                                  final ImmutableByteArray signature) {
         return new AutoValue_HelloMessage(
                 nonce,
                 networkId,
@@ -82,8 +95,69 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 isArmed,
                 recipient,
                 time,
-                childrenTime
+                childrenTime,
+                signature
         );
+    }
+
+    /**
+     * Creates new application message.
+     *
+     * @param hopCount     the hop count
+     * @param isArmed      if the message is armed or not
+     * @param networkId    the network id
+     * @param nonce        the nonce
+     * @param recipient    the public key of the recipient
+     * @param sender       the public key of the sender
+     * @param proofOfWork  the proof of work of {@code sender}
+     * @param time
+     * @param childrenTime the join time
+     * @param signature
+     * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
+     *                              recipient}, or {@code hopCount} is {@code null}
+     */
+    @SuppressWarnings("java:S107")
+    public static HelloMessage of(final HopCount hopCount,
+                                  final boolean isArmed,
+                                  final int networkId,
+                                  final Nonce nonce,
+                                  final DrasylAddress recipient,
+                                  final DrasylAddress sender,
+                                  final ProofOfWork proofOfWork,
+                                  final long time,
+                                  final long childrenTime,
+                                  final IdentitySecretKey secretKey) {
+        try {
+            final byte[] signature;
+            if (childrenTime > 0) {
+                // create signature that covers the recipient, sender, time, and children time
+                final byte[] message = ArrayUtil.concat(
+                        recipient.toByteArray(),
+                        sender.toByteArray(),
+                        ByteBuffer.allocate(Long.BYTES * 2).putLong(time).putLong(childrenTime).array()
+                );
+                signature = Crypto.INSTANCE.sign(message, secretKey);
+            }
+            else {
+                signature = new byte[0];
+            }
+
+            return new AutoValue_HelloMessage(
+                    nonce,
+                    networkId,
+                    sender,
+                    proofOfWork,
+                    hopCount,
+                    isArmed,
+                    recipient,
+                    time,
+                    childrenTime,
+                    ImmutableByteArray.of(signature)
+            );
+        }
+        catch (final CryptoException e) {
+            throw new IllegalArgumentException("Unable to sign message:", e);
+        }
     }
 
     /**
@@ -95,6 +169,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
      * @param proofOfWork  the proof of work
      * @param time         time in millis when this message was sent
      * @param childrenTime if {@code 0} greater then 0, node will join a children.
+     * @param secretKey    the secret key used to sign this message
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
@@ -103,13 +178,15 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final IdentityPublicKey sender,
                                   final ProofOfWork proofOfWork,
                                   final long time,
-                                  final long childrenTime) {
+                                  final long childrenTime,
+                                  final IdentitySecretKey secretKey) {
         return of(
                 HopCount.of(), false, networkId, randomNonce(),
                 recipient, sender,
                 proofOfWork,
                 time,
-                childrenTime
+                childrenTime,
+                secretKey
         );
     }
 
@@ -121,6 +198,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
      * @param sender       the public key of the joining node
      * @param proofOfWork  the proof of work
      * @param childrenTime if {@code 0} greater then 0, node will join a children.
+     * @param secretKey    the secret key used to sign this message
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
@@ -128,15 +206,40 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final DrasylAddress recipient,
                                   final IdentityPublicKey sender,
                                   final ProofOfWork proofOfWork,
-                                  final long childrenTime) {
+                                  final long childrenTime,
+                                  final IdentitySecretKey secretKey) {
         return of(
                 networkId,
                 recipient,
                 sender,
                 proofOfWork,
                 System.currentTimeMillis(),
-                childrenTime
-        );
+                childrenTime,
+                secretKey);
+    }
+
+    /**
+     * Creates a new {@link HelloMessage} message.
+     *
+     * @param networkId   the network of the joining node
+     * @param recipient   the public key of the node to join
+     * @param sender      the public key of the joining node
+     * @param proofOfWork the proof of work
+     * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
+     *                              {@code null}
+     */
+    public static HelloMessage of(final int networkId,
+                                  final DrasylAddress recipient,
+                                  final IdentityPublicKey sender,
+                                  final ProofOfWork proofOfWork) {
+        return of(
+                networkId,
+                recipient,
+                sender,
+                proofOfWork,
+                System.currentTimeMillis(),
+                0,
+                null);
     }
 
     /**
@@ -155,7 +258,8 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 null, sender,
                 proofOfWork,
                 System.currentTimeMillis(),
-                0
+                0,
+                ImmutableByteArray.of(new byte[0])
         );
     }
 
@@ -181,16 +285,28 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                            final DrasylAddress sender,
                            final ProofOfWork proofOfWork,
                            final ByteBuf body) throws InvalidMessageFormatException {
-        if (body.readableBytes() < LENGTH) {
-            throw new InvalidMessageFormatException("DiscoveryMessage requires " + LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
+        if (body.readableBytes() < UNSIGNED_LENGTH) {
+            throw new InvalidMessageFormatException("DiscoveryMessage requires " + UNSIGNED_LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
+        }
+
+        final long time = body.readLong();
+        final long childrenTime = body.readLong();
+        final byte[] signature;
+        // for backward compatibility reasons, the signature is currently optional
+        if (childrenTime > 0 && body.readableBytes() >= SIGN_BYTES) {
+            signature = ByteBufUtil.getBytes(body.readBytes(SIGN_BYTES));
+        }
+        else {
+            signature = new byte[0];
         }
 
         return of(
                 hopCount, false, networkId, nonce,
                 recipient, sender,
                 proofOfWork,
-                body.readLong(),
-                body.readLong()
+                time,
+                childrenTime,
+                ImmutableByteArray.of(signature)
         );
     }
 
@@ -215,19 +331,54 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
      */
     public abstract long getChildrenTime();
 
+    public abstract ImmutableByteArray getSignature();
+
     @Override
     public HelloMessage incrementHopCount() {
-        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime());
+        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime(), getSignature());
+    }
+
+    /**
+     * Returns {@code true} if message is signed. This message will <strong>not</strong> verifiy the
+     * signature! Use {@link #verifySignature()} to check if supplied signature is valid.
+     *
+     * @return {@code true} if message is signed
+     */
+    public boolean isSigned() {
+        return !getSignature().isEmpty();
+    }
+
+    /**
+     * Returns {@code true} if message is signed and the signature is valid. Use {@link #isSigned()}
+     * to check whether a message is signed.
+     *
+     * @return {@code true} if message is signed and the signature is valid
+     */
+    public boolean verifySignature() {
+        final byte[] message = signedAttributes(getRecipient(), getSender(), getTime(), getChildrenTime());
+        return Crypto.INSTANCE.verifySignature(getSignature().getArray(), message, (IdentityPublicKey) getSender());
     }
 
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(HELLO, UnsignedShort.of(LENGTH)).writeTo(out);
+        PrivateHeader.of(HELLO, UnsignedShort.of(getChildrenTime() > 0 ? SIGNED_LENGTH : UNSIGNED_LENGTH)).writeTo(out);
     }
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
         out.writeLong(getTime());
         out.writeLong(getChildrenTime());
+        out.writeBytes(getSignature().getArray());
+    }
+
+    private static byte[] signedAttributes(final DrasylAddress recipient,
+                                           final DrasylAddress sender,
+                                           final long time,
+                                           final long childrenTime) {
+        return ArrayUtil.concat(
+                recipient.toByteArray(),
+                sender.toByteArray(),
+                ByteBuffer.allocate(Long.BYTES * 2).putLong(time).putLong(childrenTime).array()
+        );
     }
 }

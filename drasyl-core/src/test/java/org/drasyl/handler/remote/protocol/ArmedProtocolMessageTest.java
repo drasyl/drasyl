@@ -150,7 +150,7 @@ public class ArmedProtocolMessageTest {
 
         @Test
         void shouldBeAbleToDisarmToDiscoveryMessage() throws CryptoException, InvalidMessageFormatException {
-            final FullReadMessage<?> message = HelloMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), 0, System.currentTimeMillis());
+            final FullReadMessage<?> message = HelloMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), 0, System.currentTimeMillis(), ID_1.getIdentitySecretKey());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
 

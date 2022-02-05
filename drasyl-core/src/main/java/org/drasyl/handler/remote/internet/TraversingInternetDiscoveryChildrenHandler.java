@@ -34,6 +34,7 @@ import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -67,6 +68,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @SuppressWarnings("java:S107")
     TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
                                                final IdentityPublicKey myPublicKey,
+                                               final IdentitySecretKey mySecretKey,
                                                final ProofOfWork myProofOfWork,
                                                final LongSupplier currentTime,
                                                final long initialPingDelayMillis,
@@ -79,7 +81,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
         this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -88,6 +90,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
                                                       final IdentityPublicKey myPublicKey,
+                                                      final IdentitySecretKey mySecretKey,
                                                       final ProofOfWork myProofOfWork,
                                                       final long initialPingDelayMillis,
                                                       final long pingIntervalMillis,
@@ -96,7 +99,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                       final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
                                                       final long pingCommunicationTimeoutMillis,
                                                       final long maxPeers) {
-        super(myNetworkId, myPublicKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = new HashMap<>();

@@ -24,7 +24,11 @@ package org.drasyl.handler.remote;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.*;
+import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.protocol.FullReadMessage;
+import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
@@ -42,7 +46,9 @@ import java.util.function.Supplier;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static test.util.IdentityTestUtil.ID_3;
 
 @ExtendWith(MockitoExtension.class)
@@ -90,7 +96,7 @@ class RateLimiterTest {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final HelloMessage msg = HelloMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), 0);
+        final HelloMessage msg = HelloMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork());
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));

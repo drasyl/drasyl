@@ -62,6 +62,15 @@ class ImmutableByteArrayTest {
     }
 
     @Test
+    void shouldDetectEmptyArrays() {
+        final byte[] array = new byte[1];
+
+        final ImmutableByteArray immutableArray = ImmutableByteArray.of(array);
+
+        assertFalse(immutableArray.isEmpty());
+    }
+
+    @Test
     void shouldBeEquals() {
         final byte[] array = new byte[1];
 

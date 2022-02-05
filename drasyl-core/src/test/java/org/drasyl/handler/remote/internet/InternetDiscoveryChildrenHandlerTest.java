@@ -31,6 +31,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,8 @@ class InternetDiscoveryChildrenHandlerTest {
     @Mock
     private IdentityPublicKey myPublicKey;
     @Mock
+    private IdentitySecretKey mySecretKey;
+    @Mock
     private ProofOfWork myProofOfWork;
     @Mock
     private LongSupplier currentTime;
@@ -67,9 +70,13 @@ class InternetDiscoveryChildrenHandlerTest {
     @Test
     void shouldContactSuperPeersOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer) {
+        when(publicKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(myPublicKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(mySecretKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null);
 
         // channel active
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -98,7 +105,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(currentTime.getAsLong()).thenReturn(2L);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -116,7 +123,7 @@ class InternetDiscoveryChildrenHandlerTest {
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeOutbound(msg);
@@ -134,7 +141,7 @@ class InternetDiscoveryChildrenHandlerTest {
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeOutbound(msg);
