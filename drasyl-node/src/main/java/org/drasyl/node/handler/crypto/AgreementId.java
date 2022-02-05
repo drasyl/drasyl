@@ -21,9 +21,9 @@
  */
 package org.drasyl.node.handler.crypto;
 
-import com.google.common.primitives.Bytes;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.util.ArrayUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.Murmur3;
 
@@ -70,9 +70,9 @@ public class AgreementId {
 
         switch (compare) {
             case -1:
-                return of(Murmur3.murmur3_x86_32BytesLE(Bytes.concat(pk1.toByteArray(), pk2.toByteArray())));
+                return of(Murmur3.murmur3_x86_32BytesLE(ArrayUtil.concat(pk1.toByteArray(), pk2.toByteArray())));
             case 1:
-                final byte[] id = Murmur3.murmur3_x86_32BytesLE(Bytes.concat(pk2.toByteArray(), pk1.toByteArray()));
+                final byte[] id = Murmur3.murmur3_x86_32BytesLE(ArrayUtil.concat(pk2.toByteArray(), pk1.toByteArray()));
                 return of(id);
             case 0:
             default:

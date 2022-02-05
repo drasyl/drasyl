@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.tun;
 
-import com.google.common.net.InetAddresses;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
@@ -216,7 +215,7 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // configurate network device
-            out.print("Created network device '" + ctx.channel().localAddress() + "'. Now assign address " + InetAddresses.toAddrString(address) + " with netmask " + subnet.netmaskLength() + " to it...");
+            out.print("Created network device '" + ctx.channel().localAddress() + "'. Now assign address " + address.getHostAddress() + " with netmask " + subnet.netmaskLength() + " to it...");
             configurateTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
             out.println("done!");
 
@@ -234,7 +233,7 @@ public class TunCommand extends ChannelOptions {
 
             for (final InetAddress inetAddress : inetAddresses) {
                 out.print("  ");
-                out.printf("%1$-14s", InetAddresses.toAddrString(inetAddress));
+                out.printf("%1$-14s", inetAddress.getHostAddress());
                 out.print(" <-> ");
                 out.print(routingTable.get(inetAddress));
                 if (address.equals(inetAddress)) {
@@ -250,7 +249,7 @@ public class TunCommand extends ChannelOptions {
         @SuppressWarnings("UnstableApiUsage")
         private void configurateTun(final TunChannel channel,
                                     final String name) throws IOException {
-            final String addressStr = InetAddresses.toAddrString(address);
+            final String addressStr = address.getHostAddress();
             if (PlatformDependent.isOsx()) {
                 // macOS
                 exec("/sbin/ifconfig", name, "add", addressStr, addressStr);

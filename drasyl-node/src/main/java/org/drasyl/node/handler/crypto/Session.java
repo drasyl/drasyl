@@ -21,13 +21,12 @@
  */
 package org.drasyl.node.handler.crypto;
 
-import com.google.common.cache.CacheBuilder;
 import org.drasyl.util.ConcurrentReference;
+import org.drasyl.util.ExpiringMap;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class holds the current (long time/session | active/inactive/stale) {@link Agreement
@@ -61,11 +60,7 @@ public class Session {
         this.longTimeAgreement = Objects.requireNonNull(longTimeAgreement);
         this.currentActiveAgreement = ConcurrentReference.of();
         this.currentInactiveAgreement = Objects.requireNonNull(currentInactiveAgreement);
-        this.initializedAgreements = CacheBuilder.newBuilder()
-                .expireAfterWrite(sessionExpireTime.toMillis(), TimeUnit.MILLISECONDS)
-                .maximumSize(maxAgreements)
-                .<AgreementId, Agreement>build()
-                .asMap();
+        this.initializedAgreements = new ExpiringMap<>(maxAgreements, sessionExpireTime.toMillis(), -1);
     }
 
     public Session(final Agreement longTimeAgreement,
