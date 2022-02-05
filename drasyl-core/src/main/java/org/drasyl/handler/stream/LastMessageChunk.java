@@ -35,7 +35,9 @@ public class LastMessageChunk extends MessageChunk {
      * @param chunkNo number of this chunk (starting with {@code 0})
      * @param content message's content portion of this chunk
      */
-    public LastMessageChunk(final byte msgId, final byte chunkNo, final ByteBuf content) {
+    public LastMessageChunk(final byte msgId,
+                            final int chunkNo,
+                            final ByteBuf content) {
         super(msgId, chunkNo, content);
     }
 

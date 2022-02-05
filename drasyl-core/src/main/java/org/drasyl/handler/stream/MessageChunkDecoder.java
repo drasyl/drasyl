@@ -24,9 +24,13 @@ package org.drasyl.handler.stream;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.MessageToMessageDecoder;
 
 import java.util.List;
+
+import static org.drasyl.handler.stream.MessageChunkEncoder.MAGIC_NUMBER_CONTENT;
+import static org.drasyl.handler.stream.MessageChunkEncoder.MAGIC_NUMBER_LAST;
 
 /**
  * Decodes {@link ByteBuf}s with correct magic number to {@link MessageChunk}s.
@@ -35,6 +39,24 @@ import java.util.List;
  */
 @Sharable
 public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
+    private final int chunkNoFieldLength;
+
+    /**
+     * @param chunkNoFieldLength the length of the chunkNo field
+     * @throws IllegalArgumentException if {@code lengthFieldLength} is not 1, 2, or 3
+     */
+    public MessageChunkDecoder(final int chunkNoFieldLength) {
+        if (chunkNoFieldLength != 1 && chunkNoFieldLength != 2 &&
+                chunkNoFieldLength != 3) {
+            throw new IllegalArgumentException("chunkNoFieldLength must be either 1, 2, or 3: " + chunkNoFieldLength);
+        }
+        this.chunkNoFieldLength = chunkNoFieldLength;
+    }
+
+    public MessageChunkDecoder() {
+        this(2);
+    }
+
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
@@ -43,12 +65,12 @@ public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
             in.markReaderIndex();
             final int magicNumber = in.readInt();
             final byte id = in.readByte();
-            if (MessageChunkEncoder.MAGIC_NUMBER_CONTENT == magicNumber) {
-                final byte chunkNo = in.readByte();
+            if (MAGIC_NUMBER_CONTENT == magicNumber) {
+                final int chunkNo = getChunkNo(in);
                 out.add(new MessageChunk(id, chunkNo, in.retainedSlice()));
             }
-            else if (MessageChunkEncoder.MAGIC_NUMBER_LAST == magicNumber) {
-                final byte totalChunks = in.readByte();
+            else if (MAGIC_NUMBER_LAST == magicNumber) {
+                final int totalChunks = getChunkNo(in);
                 out.add(new LastMessageChunk(id, totalChunks, in.retainedSlice()));
             }
             else {
@@ -61,5 +83,23 @@ public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
             // too short -> pass through message
             out.add(in.retain());
         }
+    }
+
+    private int getChunkNo(final ByteBuf buf) {
+        final int chunkNo;
+        switch (chunkNoFieldLength) {
+            case 1:
+                chunkNo = buf.readUnsignedByte();
+                break;
+            case 2:
+                chunkNo = buf.readUnsignedShort();
+                break;
+            case 3:
+                chunkNo = buf.readUnsignedMedium();
+                break;
+            default:
+                throw new DecoderException("unsupported lengthFieldLength: " + chunkNoFieldLength + " (expected: 1, 2, or 3)");
+        }
+        return chunkNo;
     }
 }

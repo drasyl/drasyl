@@ -25,65 +25,60 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * This class represents an unsigned integer in a rang of [0, 2^32)
+ * This class represents an unsigned integer in a rang of [0, 2^24)
  */
-public final class UnsignedInteger {
-    public static final UnsignedInteger MIN_VALUE = UnsignedInteger.of(new byte[4]);
-    public static final UnsignedInteger MAX_VALUE = UnsignedInteger.of(new byte[]{
-            (byte) 0xFF,
+public class UnsignedMediumInteger {
+    public static final UnsignedMediumInteger MIN_VALUE = UnsignedMediumInteger.of(new byte[3]);
+    public static final UnsignedMediumInteger MAX_VALUE = UnsignedMediumInteger.of(new byte[]{
             (byte) 0xFF,
             (byte) 0xFF,
             (byte) 0xFF
     });
-    private static final int INTEGER_LENGTH = 4;
-    private final long value;
+    private static final int INTEGER_LENGTH = 3;
+    private final int value;
 
-    private UnsignedInteger(final long value) {
+    private UnsignedMediumInteger(final int value) {
         if (value < MIN_VALUE.value || value > MAX_VALUE.value) {
-            throw new IllegalArgumentException("Value must be in range of [0, 2^32), but was " + value);
+            throw new IllegalArgumentException("Value must be in range of [0, 2^24), but was " + value);
         }
 
         this.value = value;
     }
 
     @SuppressWarnings("java:S109")
-    private UnsignedInteger(final byte[] value) {
+    private UnsignedMediumInteger(final byte[] value) {
         if (value.length != INTEGER_LENGTH) {
-            throw new IllegalArgumentException("Value must be a byte array of length 4, but was of length " + value.length);
+            throw new IllegalArgumentException("Value must be a byte array of length 3, but was of length " + value.length);
         }
 
         this.value = ByteBuffer.wrap(new byte[]{
                 0x0,
-                0x0,
-                0x0,
-                0x0,
                 value[0],
                 value[1],
-                value[2],
-                value[3]
-        }).getLong();
+                value[2]
+        }).getInt();
     }
 
     /**
-     * Creates a new {@link UnsignedInteger}.
+     * Creates a new {@link UnsignedMediumInteger}.
      *
-     * @param value the value as long
-     * @return an unsigned int
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
+     * @param value the value as int
+     * @return an unaligned int
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^24).
      */
-    public static UnsignedInteger of(final long value) {
-        return new UnsignedInteger(value);
+    public static UnsignedMediumInteger of(final int value) {
+        return new UnsignedMediumInteger(value);
     }
 
     /**
-     * Creates a new {@link UnsignedInteger}.
+     * Creates a new {@link UnsignedMediumInteger}.
      *
      * @param value the value as byte array in big-endian (BE) format
-     * @return an unsigned int
-     * @throws IllegalArgumentException if the value is not in range of [0, 2^32).
+     * @return an unaligned int
+     * @throws IllegalArgumentException if the value is not in range of [0, 2^24).
      */
-    public static UnsignedInteger of(final byte[] value) {
-        return new UnsignedInteger(value);
+    public static UnsignedMediumInteger of(final byte[] value) {
+        return new UnsignedMediumInteger(value);
     }
 
     /**
@@ -91,7 +86,7 @@ public final class UnsignedInteger {
      *
      * @return incremented unsigned integer
      */
-    public UnsignedInteger safeIncrement() {
+    public UnsignedMediumInteger safeIncrement() {
         if (value == MAX_VALUE.value) {
             return MIN_VALUE;
         }
@@ -99,40 +94,39 @@ public final class UnsignedInteger {
         return increment();
     }
 
-    public UnsignedInteger increment() {
-        return UnsignedInteger.of(value + 1L);
+    public UnsignedMediumInteger increment() {
+        return UnsignedMediumInteger.of(value + 1);
     }
 
-    public UnsignedInteger safeDecrement() {
-        if(value == MIN_VALUE.value) {
+    public UnsignedMediumInteger safeDecrement() {
+        if (value == MIN_VALUE.value) {
             return MIN_VALUE;
         }
 
         return decrement();
     }
 
-    public UnsignedInteger decrement() {
-        return UnsignedInteger.of(value - 1L);
+    public UnsignedMediumInteger decrement() {
+        return UnsignedMediumInteger.of(value - 1);
     }
 
     /**
-     * @return a byte array of length 4.
+     * @return a byte array of length 3.
      */
     public byte[] toBytes() {
         return toByteArray(value);
     }
 
     /**
-     * @return the value as long
+     * @return the value as int
      */
-    public long getValue() {
+    public int getValue() {
         return value;
     }
 
     @SuppressWarnings("java:S109")
-    private static byte[] toByteArray(final long value) {
+    private static byte[] toByteArray(final int value) {
         return new byte[]{
-                (byte) (value >> 32),
                 (byte) (value >> 16),
                 (byte) (value >> 8),
                 (byte) value
@@ -147,7 +141,7 @@ public final class UnsignedInteger {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final UnsignedInteger that = (UnsignedInteger) o;
+        final UnsignedMediumInteger that = (UnsignedMediumInteger) o;
         return value == that.value;
     }
 

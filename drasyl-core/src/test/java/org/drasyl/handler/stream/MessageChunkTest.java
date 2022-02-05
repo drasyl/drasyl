@@ -41,7 +41,7 @@ class MessageChunkTest {
     class ToString {
         @Test
         void shouldReturnCorrectString(@Mock final ByteBuf content) {
-            final MessageChunk chunk = new MessageChunk((byte) 1, (byte) 2, content);
+            final MessageChunk chunk = new MessageChunk((byte) 1, 2, content);
             assertNotNull(chunk);
         }
     }
@@ -50,8 +50,8 @@ class MessageChunkTest {
     class Replace {
         @Test
         void shouldReplaceByteBuf(@Mock final ByteBuf content, @Mock final ByteBuf replaceContent) {
-            final MessageChunk chunk = new MessageChunk((byte) 1, (byte) 2, content);
-            assertEquals(new MessageChunk((byte) 1, (byte) 2, replaceContent), chunk.replace(replaceContent));
+            final MessageChunk chunk = new MessageChunk((byte) 1, 2, content);
+            assertEquals(new MessageChunk((byte) 1, 2, replaceContent), chunk.replace(replaceContent));
         }
     }
 
@@ -60,8 +60,8 @@ class MessageChunkTest {
         @Test
         void shouldRecognizeEqualData() {
             final ByteBuf content = Unpooled.EMPTY_BUFFER;
-            assertEquals(new MessageChunk((byte) 1, (byte) 2, content), new MessageChunk((byte) 1, (byte) 2, content));
-            assertNotEquals(new MessageChunk((byte) 1, (byte) 2, content), new MessageChunk((byte) 2, (byte) 1, content));
+            assertEquals(new MessageChunk((byte) 1, 2, content), new MessageChunk((byte) 1, 2, content));
+            assertNotEquals(new MessageChunk((byte) 1, 2, content), new MessageChunk((byte) 2, 2, content));
         }
     }
 }

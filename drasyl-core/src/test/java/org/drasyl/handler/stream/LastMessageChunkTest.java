@@ -37,7 +37,7 @@ class LastMessageChunkTest {
     class ToString {
         @Test
         void shouldReturnCorrectString(@Mock final ByteBuf content) {
-            final LastMessageChunk chunk = new LastMessageChunk((byte) 1, (byte) 2, content);
+            final LastMessageChunk chunk = new LastMessageChunk((byte) 1, 2, content);
             assertNotNull(chunk);
         }
     }
@@ -46,8 +46,8 @@ class LastMessageChunkTest {
     class Replace {
         @Test
         void shouldReplaceByteBuf(@Mock final ByteBuf content, @Mock final ByteBuf replaceContent) {
-            final LastMessageChunk chunk = new LastMessageChunk((byte) 1, (byte) 2, content);
-            assertEquals(new LastMessageChunk((byte) 1, (byte) 2, replaceContent), chunk.replace(replaceContent));
+            final LastMessageChunk chunk = new LastMessageChunk((byte) 1, 2, content);
+            assertEquals(new LastMessageChunk((byte) 1, 2, replaceContent), chunk.replace(replaceContent));
         }
     }
 }

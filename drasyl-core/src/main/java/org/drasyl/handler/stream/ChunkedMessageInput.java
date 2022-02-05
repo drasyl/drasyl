@@ -28,9 +28,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedInput;
 import org.drasyl.util.RandomUtil;
 
-import java.io.IOException;
-
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Wraps each chunk of the specified {@link ChunkedInput<ByteBuf>} into a series of sortable {@link
@@ -53,18 +52,18 @@ import static java.util.Objects.requireNonNull;
 public class ChunkedMessageInput implements ChunkedInput<MessageChunk> {
     private final ChunkedInput<ByteBuf> input;
     private final byte id;
-    private byte chunkNo;
+    private int chunkNo;
 
     ChunkedMessageInput(final ChunkedInput<ByteBuf> input,
                         final byte id,
-                        final byte chunkNo) {
+                        final int chunkNo) {
         this.input = requireNonNull(input);
         this.id = id;
-        this.chunkNo = chunkNo;
+        this.chunkNo = requireNonNegative(chunkNo);
     }
 
     public ChunkedMessageInput(final ChunkedInput<ByteBuf> input) {
-        this(input, RandomUtil.randomByte(), (byte) 0);
+        this(input, RandomUtil.randomByte(), 0);
     }
 
     @Override
@@ -95,12 +94,9 @@ public class ChunkedMessageInput implements ChunkedInput<MessageChunk> {
             }
 
             if (!input.isEndOfInput()) {
-                if (chunkNo == -1) {
-                    buf.release();
-                    throw new IOException("chunkNo overflow (256 chunks maximum are allowed).");
-                }
-
-                return new MessageChunk(id, chunkNo++, buf);
+                final MessageChunk chunk = new MessageChunk(id, chunkNo, buf);
+                chunkNo++;
+                return chunk;
             }
             else {
                 return new LastMessageChunk(id, chunkNo, buf);

@@ -44,9 +44,9 @@ class ChunkedMessageAggregatorTest {
         final ChannelHandler handler = new ChunkedMessageAggregator(1024);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk1 = new MessageChunk((byte) 42, (byte) 0, Unpooled.copiedBuffer("chunk1", UTF_8));
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
-        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, (byte) 2, Unpooled.copiedBuffer("chunk3", UTF_8));
+        final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk3 = new LastMessageChunk((byte) 42, 2, Unpooled.copiedBuffer("chunk3", UTF_8));
 
         assertFalse(channel.writeInbound(chunk1));
         assertFalse(channel.writeInbound(chunk2));
@@ -65,8 +65,8 @@ class ChunkedMessageAggregatorTest {
         final ChannelHandler handler = new ChunkedMessageAggregator(10);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final MessageChunk chunk1 = new MessageChunk((byte) 42, (byte) 0, Unpooled.copiedBuffer("chunk1", UTF_8));
-        final MessageChunk chunk2 = new MessageChunk((byte) 42, (byte) 1, Unpooled.copiedBuffer("chunk2", UTF_8));
+        final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
+        final MessageChunk chunk2 = new MessageChunk((byte) 42, 2, Unpooled.copiedBuffer("chunk2", UTF_8));
 
         assertFalse(channel.writeInbound(chunk1));
         assertThrows(TooLongFrameException.class, () -> channel.writeInbound(chunk2));
