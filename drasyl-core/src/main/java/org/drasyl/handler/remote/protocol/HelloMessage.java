@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -294,7 +293,8 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
         final byte[] signature;
         // for backward compatibility reasons, the signature is currently optional
         if (childrenTime > 0 && body.readableBytes() >= SIGN_BYTES) {
-            signature = ByteBufUtil.getBytes(body.readBytes(SIGN_BYTES));
+            signature = new byte[SIGN_BYTES];
+            body.readBytes(signature);
         }
         else {
             signature = new byte[0];
