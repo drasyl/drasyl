@@ -21,6 +21,7 @@
  */
 package org.drasyl.crypto;
 
+import org.drasyl.crypto.argon2.Argon2idHash;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.crypto.sodium.Sodium;
@@ -37,7 +38,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.ARGON2ID_MEMLIMIT_INTERACTIVE;
+import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.ARGON2ID_MEMLIMIT_SENSITIVE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -405,19 +410,18 @@ class CryptoTest {
 
     @Nested
     class Argon2id {
-//        @Test
-//        void shouldGenerate(@Mock final DrasylSodiumWrapper sodium) throws CryptoException {
-//            String valueToHash = "ABC";
-//
-//            final Crypto crypto = new Crypto(sodium);
-//            doReturn(true).when(sodium).cryptoSignKeypair(any(), any());
-//
-//            final KeyPair keyPair = crypto.generateLongTimeKeyPair();
-//
-//            assertNotNull(keyPair.getPublicKey());
-//            assertNotNull(keyPair.getSecretKey());
-//            verify(sodium).cryptoSignKeypair(any(), any());
-//        }
+        @Test
+        void shouldGenerate() throws CryptoException {
+            String valueToHash = "ABC";
+
+            final Crypto crypto = Crypto.INSTANCE;
+            final Argon2idHash hash = crypto.argon2idHash(valueToHash.getBytes(StandardCharsets.UTF_8), 1, ARGON2ID_MEMLIMIT_INTERACTIVE);
+
+            System.out.println(new String(hash.getEncodedHash()));
+
+            assertTrue(crypto.argon2idHashVerify(hash, valueToHash.getBytes(StandardCharsets.UTF_8)));
+            System.err.println(hash.getHash().size());
+        }
     }
 }
 

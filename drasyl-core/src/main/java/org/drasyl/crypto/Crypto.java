@@ -22,6 +22,7 @@
 package org.drasyl.crypto;
 
 import com.sun.jna.NativeLong;
+import org.drasyl.crypto.argon2.Argon2idHash;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.sodium.DrasylSodium;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
@@ -43,8 +44,6 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.crypto.sodium.DrasylSodiumWrapper.ARGON2ID_STR_BYTES;
-import static org.drasyl.util.ByteUtil.removeTrailingZeros;
 
 /**
  * Util class that provides cryptography functions for drasyl.
@@ -441,22 +440,22 @@ public class Crypto {
                 publicKey.toByteArray());
     }
 
-    public byte[] argon2idHash(final byte[] value,
-                               final long opsLimit,
-                               final NativeLong memLimit) throws CryptoException {
+    public Argon2idHash argon2idHash(final byte[] value,
+                                     final int opsLimit,
+                                     final NativeLong memLimit) throws CryptoException {
         requireNonNull(memLimit);
-        final byte[] hash = new byte[ARGON2ID_STR_BYTES];
-        final boolean res = sodium.cryptoPwHashStr(hash, value, value.length, opsLimit, memLimit);
+        final byte[] hash = new byte[16];
+        final boolean res = sodium.cryptoPwHash(hash, hash.length, value, value.length, opsLimit, memLimit);
 
         if (!res) {
             throw new CryptoException("Hashing failed.");
         }
 
-        return removeTrailingZeros(hash);
+        return Argon2idHash.of(memLimit.longValue(), opsLimit, hash);
     }
 
-    public boolean argon2idHashVerify(final byte[] hash, final byte[] value) {
-        byte[] hashBytes = hash;
+    public boolean argon2idHashVerify(final Argon2idHash hash, final byte[] value) {
+        byte[] hashBytes = hash.getEncodedHash();
 
         if (hashBytes[hashBytes.length - 1] != 0) {
             final byte[] hashWithNullByte = new byte[hashBytes.length + 1];

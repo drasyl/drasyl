@@ -22,7 +22,6 @@
 package org.drasyl.crypto;
 
 import com.google.common.hash.HashFunction;
-import com.sun.jna.NativeLong;
 import org.drasyl.util.ArrayUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -74,21 +73,5 @@ public final class Hashing {
      */
     public static byte[] murmur3x32(final byte[]... input) {
         return MURMUR3_32.hashBytes(ArrayUtil.concat(input)).asBytes();
-    }
-
-    public static byte[] argon2id(final long opsLimit,
-                                  final NativeLong memLimit,
-                                  final byte[]... input) {
-        try {
-            return Crypto.INSTANCE.argon2idHash(ArrayUtil.concat(input), opsLimit, memLimit);
-        }
-        catch (final CryptoException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
-    public static boolean argon2idVerify(final byte[] hash,
-                                         final byte[]... input) {
-        return Crypto.INSTANCE.argon2idHashVerify(hash, ArrayUtil.concat(input));
     }
 }

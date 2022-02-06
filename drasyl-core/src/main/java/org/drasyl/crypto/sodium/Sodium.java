@@ -128,11 +128,14 @@ public class Sodium {
      * ARGON2ID HASHING
      */
 
-    public native int crypto_pwhash_str(byte[] outputStr,
-                                        byte[] password,
-                                        long passwordLen,
-                                        long opsLimit,
-                                        NativeLong memLimit);
-
     public native int crypto_pwhash_str_verify(byte[] hash, byte[] password, long passwordLen);
+
+    public native int crypto_pwhash(final byte[] out,
+                                    final long outLen,
+                                    final byte[] passwd,
+                                    final int passwdLen,
+                                    final byte[] salt,
+                                    final long opsLimit,
+                                    final NativeLong memLimit,
+                                    int alg);
 }

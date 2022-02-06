@@ -42,6 +42,7 @@ public class DrasylSodiumWrapper {
     public static final short XCHACHA20POLY1305_IETF_ABYTES = 16;
     public static final short XCHACHA20POLY1305_IETF_NPUBBYTES = 24;
     // ARGON
+    public static final short ARGON2ID_ALG_ARGON2ID13 = 2;
     public static final short ARGON2ID_SALTBYTES = 16;
     public static final short ARGON2ID_BYTES_MIN = 16;
     public static final short ARGON2ID_STR_BYTES = 128;
@@ -51,6 +52,7 @@ public class DrasylSodiumWrapper {
     public static final NativeLong ARGON2ID_MEMLIMIT_INTERACTIVE = new NativeLong(67108864); // 64 MiB
     public static final NativeLong ARGON2ID_MEMLIMIT_MODERATE = new NativeLong(268435456); // 256 MiB
     public static final NativeLong ARGON2ID_MEMLIMIT_SENSITIVE = new NativeLong(1073741824); // 1024 GiB
+    public static final byte[] ARGON2ID_FIXED_SALT = new byte[16];
     private final Sodium sodium;
 
     public DrasylSodiumWrapper(final Sodium sodium) {
@@ -227,18 +229,34 @@ public class DrasylSodiumWrapper {
         return successful(getSodium().crypto_sign_verify_detached(signature, message, message.length, publicKey));
     }
 
-    public boolean cryptoPwHashStr(final byte[] outputStr,
-                                   final byte[] password,
-                                   final int passwordLen,
-                                   final long opsLimit,
-                                   final NativeLong memLimit) {
-        if (passwordLen < 0 || passwordLen > password.length) {
-            throw new IllegalArgumentException("passwordLen out of bounds: " + passwordLen);
-        }
-
-        return successful(getSodium().crypto_pwhash_str(outputStr, password, passwordLen, opsLimit, memLimit));
+    /**
+     * Generates a raw Argon2id hash.
+     *
+     * @param out       the hash
+     * @param outLen    the length of the hash
+     * @param passwd    the value to hash
+     * @param passwdLen the length of the value to hash
+     * @param opsLimit  the operations cost
+     * @param memLimit  the memory cost
+     * @return Returns true if the hash could be generated.
+     */
+    public boolean cryptoPwHash(final byte[] out,
+                                final long outLen,
+                                final byte[] passwd,
+                                final int passwdLen,
+                                final long opsLimit,
+                                final NativeLong memLimit) {
+        return successful(getSodium().crypto_pwhash(out, outLen, passwd, passwdLen, ARGON2ID_FIXED_SALT, opsLimit, memLimit, ARGON2ID_ALG_ARGON2ID13));
     }
 
+    /**
+     * Verifies the given hash for the given value.
+     *
+     * @param hash        the hash
+     * @param password    the value that was hashed
+     * @param passwordLen the length of the value that was hashed
+     * @return Returns true if the hash is valid for the given value.
+     */
     public boolean cryptoPwHashStrVerify(final byte[] hash,
                                          final byte[] password,
                                          final int passwordLen) {
