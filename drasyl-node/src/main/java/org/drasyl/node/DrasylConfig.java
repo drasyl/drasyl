@@ -56,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 
 /**
@@ -169,7 +168,8 @@ public abstract class DrasylConfig {
             builder.remoteSuperPeerEndpoints(Set.copyOf(getEndpointSet(config, REMOTE_SUPER_PEER_ENDPOINTS)));
             builder.remoteStaticRoutes(Map.copyOf(getStaticRoutes(config, REMOTE_STATIC_ROUTES)));
             builder.remoteLocalHostDiscoveryEnabled(config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_ENABLED));
-            if (isNullOrEmpty(config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH))) {
+            final String discoveryPath = config.getString(REMOTE_LOCAL_HOST_DISCOVERY_PATH);
+            if (discoveryPath == null || discoveryPath.isEmpty()) {
                 builder.remoteLocalHostDiscoveryPath(Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery"));
             }
             else {
