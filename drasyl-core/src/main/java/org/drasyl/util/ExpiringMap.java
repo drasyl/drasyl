@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -50,7 +51,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 public class ExpiringMap<K, V> implements Map<K, V> {
     private final LongSupplier currentTimeProvider;
-    private final Map<K, V> map;
+    private final Map<K, ExpiringEntry<K, V>> map;
     private final SortedSet<ExpiringEntry<K, V>> sortedEntries;
     private final long maximumSize;
     private final long expireAfterWrite;
@@ -61,7 +62,8 @@ public class ExpiringMap<K, V> implements Map<K, V> {
                 final long maximumSize,
                 final long expireAfterWrite,
                 final long expireAfterAccess,
-                final Map<K, V> map, final SortedSet<ExpiringEntry<K, V>> sortedEntries) {
+                final Map<K, ExpiringEntry<K, V>> map,
+                final SortedSet<ExpiringEntry<K, V>> sortedEntries) {
         this.currentTimeProvider = requireNonNull(currentTimeProvider);
         if (maximumSize == 0) {
             throw new IllegalArgumentException("maximumSize must be -1 or positive.");
@@ -132,36 +134,47 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
     @Override
     public V get(final Object key) {
-        final V value = map.get(key);
-        if (expireAfterAccess != -1 && value != null) {
-            // remove existing entry, so it can be added below with updated access time
-            final ExpiringEntry<K, V> entry = new ExpiringEntry<>(currentTimeProvider, (K) key, value);
-            sortedEntries.remove(entry);
-            sortedEntries.add(entry);
+        final ExpiringEntry<K, V> existingEntry = map.get(key);
+
+        if (existingEntry != null && expireAfterAccess != -1) {
+            // remove existing entry, so it can be added below with updated time
+            map.remove(key);
+            sortedEntries.remove(existingEntry);
+
+            final ExpiringEntry<K, V> newEntry = new ExpiringEntry<>(currentTimeProvider, existingEntry.key(), existingEntry.value());
+            map.put((K) key, newEntry);
+            sortedEntries.add(newEntry);
         }
 
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return map.get(key);
+        return existingEntry != null ? existingEntry.value() : null;
     }
 
     @Override
     public V put(final K key, final V value) {
-        final ExpiringEntry<K, V> entry = new ExpiringEntry<>(currentTimeProvider, key, value);
-        if (expireAfterWrite != -1) {
-            // remove existing entry, so it can be added below with updated write time
-            sortedEntries.remove(entry);
-        }
-        sortedEntries.add(entry);
+        final ExpiringEntry<K, V> existingEntry = map.get(key);
 
-        // we add something, check capacity
-        evictExceedingEntries();
+        if (existingEntry != null && expireAfterWrite != -1) {
+            // remove existing entry, so it can be added below with updated time
+            map.remove(key);
+            sortedEntries.remove(existingEntry);
+        }
+
+        final ExpiringEntry<K, V> newEntry = new ExpiringEntry<>(currentTimeProvider, key, value);
+        map.put((K) key, newEntry);
+        sortedEntries.add(newEntry);
+
+        if (existingEntry == null) {
+            // we added something, check capacity
+            evictExceedingEntries();
+        }
 
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return map.put(key, value);
+        return existingEntry != null ? existingEntry.value() : null;
     }
 
     @Override
@@ -169,7 +182,8 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return map.remove(key);
+        final ExpiringEntry<K, V> removedEntry = map.remove(key);
+        return removedEntry != null ? removedEntry.value() : null;
     }
 
     @Override
@@ -196,15 +210,12 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return map.values();
+        return map.values().stream().map(ExpiringEntry::value).collect(Collectors.toList());
     }
 
     @Override
     public Set<Entry<K, V>> entrySet() {
-        // we return something, check for expired entries
-        removeExpiredEntries();
-
-        return map.entrySet();
+        throw new UnsupportedOperationException();
     }
 
     private void evictExceedingEntries() {
@@ -274,12 +285,12 @@ public class ExpiringMap<K, V> implements Map<K, V> {
                 return false;
             }
             final ExpiringEntry<?, ?> that = (ExpiringEntry<?, ?>) o;
-            return Objects.equals(key, that.key);
+            return timestamp == that.timestamp && key.equals(that.key);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(key);
+            return Objects.hash(timestamp, key);
         }
 
         @Override
@@ -289,22 +300,23 @@ public class ExpiringMap<K, V> implements Map<K, V> {
 
         @Override
         public int compareTo(final ExpiringEntry<K, V> o) {
-            // java's SortedSet implementations cannot sort elements by the "timestamp" attribute and
-            // distinguish elements by the "key" attribute. as soon as two elements have the same value
-            // in the attribute used for sorting, they are considered to be equal which would result in
-            // the removal of the "wrong" element. for this reason, we return 0 only if both key are
-            // equal. this comes at the cost of deterministic sorting, but in our use case this should
-            // (hopefully!) not be a problem.
-            if (key.equals(o.key)) {
-                return 0;
+            if (timestamp < o.timestamp) {
+                return -1;
+            }
+            else if (timestamp > o.timestamp) {
+                return 1;
             }
             else {
-                return timestamp < o.timestamp ? -1 : 1;
+                return Integer.compare(hashCode(), o.hashCode());
             }
         }
 
         K key() {
             return key;
+        }
+
+        V value() {
+            return value;
         }
 
         boolean isExpired(final long currentTime,
