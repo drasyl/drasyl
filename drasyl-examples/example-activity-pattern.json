@@ -1,0 +1,18 @@
+[
+  {
+    "_comment": "Wait for 10s",
+    "type": "sleep",
+    "duration": 10000
+  },
+  {
+    "_comment": "Send given payload to given recipient",
+    "type": "send",
+    "recipient": "b65aaf2a3517f807b62940815510a15c80ddf29b7cafdeea123737fc3362bff3",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "Go back to sleep activity",
+    "type": "goto",
+    "goto": 0
+  }
+]

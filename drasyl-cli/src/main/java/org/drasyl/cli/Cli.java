@@ -23,6 +23,7 @@ package org.drasyl.cli;
 
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
+import org.drasyl.cli.node.NodeCommand;
 import org.drasyl.cli.perf.PerfCommand;
 import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;

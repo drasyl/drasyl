@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,12 +19,18 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli;
+package org.drasyl.cli.node;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.cli.CliException;
+import org.drasyl.cli.GlobalOptions;
+import org.drasyl.cli.node.ActivityPattern.Activity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
+import org.drasyl.node.JSONUtil;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
@@ -36,7 +42,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -65,6 +73,12 @@ public class NodeCommand extends GlobalOptions implements Runnable {
             defaultValue = "drasyl.conf"
     )
     private final File configFile;
+    @Option(
+            names = { "--activity-pattern" },
+            description = "If supplied, the node will perform the given activities (e.g., send message, sleep, loop, etc.) specified in the file once started.",
+            paramLabel = "<file>"
+    )
+    private File sendPatternFile;
 
     NodeCommand(final PrintStream out,
                 final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier) {
@@ -111,11 +125,31 @@ public class NodeCommand extends GlobalOptions implements Runnable {
     public void run() {
         setLogLevel();
 
+        final List<Activity> sendPatternActivities;
+        if (sendPatternFile != null) {
+            try {
+                JSONUtil.JACKSON_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+                sendPatternActivities = JSONUtil.JACKSON_MAPPER.readValue(sendPatternFile, new TypeReference<List<Activity>>() {
+                });
+            }
+            catch (final IOException e) {
+                throw new CliException("Unable to read activity pattern:", e);
+            }
+        }
+        else {
+            sendPatternActivities = null;
+        }
+
         DrasylNode node = null;
         try {
             final DrasylConfig config = getDrasylConfig();
             final Pair<DrasylNode, CompletableFuture<Void>> pair = nodeSupplier.apply(config);
             node = pair.first();
+
+            if (sendPatternActivities != null) {
+                node.pipeline().addLast(new ActivityPatternHandler(sendPatternActivities));
+            }
+
             final CompletableFuture<Void> running = pair.second();
 
             final DrasylNode finalNode = node;
