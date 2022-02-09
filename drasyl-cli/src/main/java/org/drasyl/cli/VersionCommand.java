@@ -30,7 +30,7 @@ import static picocli.CommandLine.Command;
 
 @Command(
         name = "version",
-        header = "Shows the drasyl version number, the java version, and the architecture",
+        header = "Shows the drasyl version number, the java version, and the architecture.",
         synopsisHeading = "%nUsage: ",
         optionListHeading = "%n",
         showDefaultValues = true

@@ -37,7 +37,7 @@ import static picocli.CommandLine.Command;
  */
 @Command(
         name = "tunnel",
-        header = "Expose safely local networked services behind through NATs and firewalls to other computers",
+        header = "Expose safely local networked services behind through NATs and firewalls to other computers.",
         synopsisHeading = "%nUsage: ",
         commandListHeading = "%nCommands:%n",
         subcommands = {

@@ -75,7 +75,7 @@ import static picocli.CommandLine.Command;
 
 @Command(
         name = "tun",
-        header = "Creates a local network interface routing traffic to given peers"
+        header = "Create a local network interface routing traffic to given peers."
 )
 public class TunCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunCommand.class);

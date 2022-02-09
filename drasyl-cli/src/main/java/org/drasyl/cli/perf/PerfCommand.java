@@ -31,7 +31,7 @@ import static picocli.CommandLine.Command;
 @Command(
         name = "perf",
         header = {
-                "Tool for measuring network performance",
+                "Tool for measuring network performance.",
                 "A specified number of messages per second of the desired size are sent to another node over a defined period of time. The amount of transferred data, the bitrate, as well as the number of lost and (out of order) delivered messages, are recorded"
         },
         synopsisHeading = "%nUsage: ",

@@ -34,8 +34,8 @@ ProofOfWork = -2144920491
 
 ### Added
 
-- CLI: `genidentity` sub-command added.
-- CLI: `genpow` sub-command added.
+- CLI: `generate-identity` sub-command added.
+- CLI: `generate-pow` sub-command added.
 - CLI: `tun` sub-command added.
 - CLI: `generate-completion` sub-command added.
 -

@@ -36,8 +36,8 @@ import static java.util.Objects.requireNonNull;
  * Generate and output a new identity in JSON format.
  */
 @Command(
-        name = "genidentity",
-        header = "Generates and outputs a new identity",
+        name = "generate-identity",
+        header = "Generate and output a new identity.",
         synopsisHeading = "%nUsage: ",
         optionListHeading = "%n",
         showDefaultValues = true

@@ -57,7 +57,7 @@ import static java.util.concurrent.CompletableFuture.failedFuture;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 @Command(
         name = "node",
-        header = { "Runs a drasyl node", "Can, for example, be used to operate a super peer" },
+        header = { "Run a drasyl node.", "Can, for example, be used to operate a super peer" },
         synopsisHeading = "%nUsage: ",
         optionListHeading = "%n",
         showDefaultValues = true

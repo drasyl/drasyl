@@ -42,8 +42,8 @@ import static org.drasyl.identity.Identity.POW_DIFFICULTY;
  * Generate and output a new proof of work for a given public key.
  */
 @Command(
-        name = "genpow",
-        header = "Generates and outputs a new proof of work for a given public key",
+        name = "generate-pow",
+        header = "Generate and outputs a new proof of work for a given public key.",
         synopsisHeading = "%nUsage: ",
         optionListHeading = "%n",
         showDefaultValues = true,
@@ -98,11 +98,11 @@ public class GenerateProofOfWorkCommand implements Runnable {
         }
 
         @Override
-        public String defaultValue(ArgSpec argSpec) throws Exception {
+        public String defaultValue(final ArgSpec argSpec) throws Exception {
             return argSpec.isOption() ? optionDefaultValue((OptionSpec) argSpec) : null;
         }
 
-        private String optionDefaultValue(OptionSpec optionSpec) {
+        private String optionDefaultValue(final OptionSpec optionSpec) {
             if ("--difficulty".equals(optionSpec.longestName())) {
                 return Integer.toString(POW_DIFFICULTY);
             }

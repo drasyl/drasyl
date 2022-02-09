@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Command(
         name = "pubkey",
-        header = "Dervices the public key and prints it to standard output from a private key given on standard input",
+        header = "Dervices the public key and prints it to standard output from a private key given on standard input.",
         synopsisHeading = "%nUsage: ",
         optionListHeading = "%n",
         showDefaultValues = true
