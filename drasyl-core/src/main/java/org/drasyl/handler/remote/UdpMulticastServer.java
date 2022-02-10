@@ -60,10 +60,12 @@ import static java.util.Objects.requireNonNull;
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
+    private static final String MULTICAST_ADDRESS_PROPERTY = "org.drasyl.remote.multicast.address";
+    private static final String MULTICAST_BIND_HOST_PROPERTY = "org.drasyl.remote.multicast.bind-host";
     private static final String MULTICAST_INTERFACE_PROPERTY = "org.drasyl.remote.multicast.interface";
     private static final Logger LOG = LoggerFactory.getLogger(UdpMulticastServer.class);
     public static final InetSocketAddress MULTICAST_ADDRESS;
-    public static final NetworkInterface MULTICAST_INTERFACE;
+    private static final NetworkInterface MULTICAST_INTERFACE;
     private static final String MULTICAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
@@ -71,7 +73,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
 
     static {
         try {
-            final String stringValue = SystemPropertyUtil.get("org.drasyl.remote.multicast.address", NetUtil.isIpV6AddressesPreferred() ? "[ff00::22:5:27]:22527" : "239.22.5.27:22527");
+            final String stringValue = SystemPropertyUtil.get(MULTICAST_ADDRESS_PROPERTY, NetUtil.isIpV6AddressesPreferred() ? "[ff00::22:5:27]:22527" : "239.22.5.27:22527");
             final URI uriValue = new URI("my://" + stringValue);
             MULTICAST_ADDRESS = new InetSocketAddress(uriValue.getHost(), uriValue.getPort());
         }
@@ -79,7 +81,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             throw new RuntimeException("Invalid multicast address given:", e);
         }
 
-        MULTICAST_BIND_HOST = SystemPropertyUtil.get("org.drasyl.remote.multicast.bind-host", "0.0.0.0");
+        MULTICAST_BIND_HOST = SystemPropertyUtil.get(MULTICAST_BIND_HOST_PROPERTY, "0.0.0.0");
 
         final NetworkInterface multicastInterface;
         try {

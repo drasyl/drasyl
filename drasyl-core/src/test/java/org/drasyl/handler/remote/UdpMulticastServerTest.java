@@ -45,8 +45,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
-import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_INTERFACE;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -92,7 +90,7 @@ class UdpMulticastServerTest {
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
                 verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(anyString(), anyInt());
-                verify(datagramChannel).joinGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
+                verify(datagramChannel).joinGroup(any(InetSocketAddress.class), any());
             }
             finally {
                 channel.close();
@@ -105,7 +103,7 @@ class UdpMulticastServerTest {
         @Test
         void shouldStopServerOnChannelInactive() {
             when(nodes.isEmpty()).thenReturn(true);
-            when(UdpMulticastServerTest.this.channel.leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE).addListener(any())).then(invocation -> {
+            when(UdpMulticastServerTest.this.channel.leaveGroup(any(InetSocketAddress.class), any()).addListener(any())).then(invocation -> {
                 final GenericFutureListener<?> listener = invocation.getArgument(0, GenericFutureListener.class);
                 listener.operationComplete(null);
                 return null;
@@ -117,7 +115,7 @@ class UdpMulticastServerTest {
                 channel.pipeline().fireChannelInactive();
 
                 verify(nodes).remove(channel.pipeline().context(handler));
-                verify(UdpMulticastServerTest.this.channel, times(2)).leaveGroup(MULTICAST_ADDRESS, MULTICAST_INTERFACE);
+                verify(UdpMulticastServerTest.this.channel).leaveGroup(any(InetSocketAddress.class), any());
                 verify(UdpMulticastServerTest.this.channel).close();
             }
             finally {
