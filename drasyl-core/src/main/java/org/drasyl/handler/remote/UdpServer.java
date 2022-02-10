@@ -28,7 +28,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
@@ -46,6 +45,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
@@ -70,13 +70,18 @@ public class UdpServer extends ChannelDuplexHandler {
         this.channel = channel;
     }
 
-    public UdpServer(final InetSocketAddress bindAddress) {
+    public UdpServer(final Bootstrap bootstrap,
+                     final InetSocketAddress bindAddress) {
         this(
-                new Bootstrap().option(ChannelOption.SO_BROADCAST, false),
+                bootstrap,
                 bindAddress,
                 null,
                 null
         );
+    }
+
+    public UdpServer(final InetSocketAddress bindAddress) {
+        this(new Bootstrap().option(SO_BROADCAST, false), bindAddress);
     }
 
     public UdpServer(final InetAddress bindHost,
