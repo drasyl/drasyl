@@ -26,7 +26,7 @@ import io.netty.buffer.ByteBuf;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.remote.IpMulticastDiscovery;
+import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -242,7 +242,8 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     }
 
     /**
-     * Creates a new multicast {@link HelloMessage} message (sent by {@link IpMulticastDiscovery}}.
+     * Creates a new multicast {@link HelloMessage} message (sent by {@link
+     * LocalNetworkDiscovery}}.
      *
      * @param networkId   the network of the joining node
      * @param sender      the public key of the joining node

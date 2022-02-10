@@ -52,10 +52,10 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Starts an UDP server which joins a multicast group and together with the {@link
- * IpMulticastDiscovery} is responsible for discovering other nodes in the local network.
+ * Starts an UDP server which joins a IP multicast group and together with the {@link
+ * LocalNetworkDiscovery} is responsible for discovering other nodes in the local network.
  *
- * @see IpMulticastDiscovery
+ * @see LocalNetworkDiscovery
  */
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })

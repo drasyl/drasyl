@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
@@ -64,41 +63,46 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * so that other nodes become aware of this node.
  *
  * @see UdpMulticastServer
+ * @see UdpBroadcastServer
  */
 @SuppressWarnings("java:S110")
-public class IpMulticastDiscovery extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(IpMulticastDiscovery.class);
-    private static final Object path = IpMulticastDiscovery.class;
+public class LocalNetworkDiscovery extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
+    private static final Object path = LocalNetworkDiscovery.class;
     private final Map<DrasylAddress, Peer> peers;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
     private final long pingIntervalMillis;
     private final long pingTimeoutMillis;
     private final int networkId;
+    private final InetSocketAddress recipient;
     private Future<?> scheduledPingFuture;
 
-    IpMulticastDiscovery(final Map<DrasylAddress, Peer> peers,
-                         final IdentityPublicKey myPublicKey,
-                         final ProofOfWork myProofOfWork,
-                         final long pingIntervalMillis,
-                         final long pingTimeoutMillis,
-                         final int networkId,
-                         final Future<?> scheduledPingFuture) {
+    LocalNetworkDiscovery(final Map<DrasylAddress, Peer> peers,
+                          final IdentityPublicKey myPublicKey,
+                          final ProofOfWork myProofOfWork,
+                          final long pingIntervalMillis,
+                          final long pingTimeoutMillis,
+                          final int networkId,
+                          final InetSocketAddress recipient,
+                          final Future<?> scheduledPingFuture) {
         this.peers = requireNonNull(peers);
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.pingIntervalMillis = requirePositive(pingIntervalMillis);
         this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.networkId = networkId;
+        this.recipient = requireNonNull(recipient);
         this.scheduledPingFuture = scheduledPingFuture;
     }
 
-    public IpMulticastDiscovery(final int networkId,
-                                final long pingIntervalMillis,
-                                final long pingTimeoutMillis,
-                                final IdentityPublicKey myPublicKey,
-                                final ProofOfWork myProofOfWork) {
-        this(new ConcurrentHashMap<>(), myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, networkId, null);
+    public LocalNetworkDiscovery(final int networkId,
+                                 final long pingIntervalMillis,
+                                 final long pingTimeoutMillis,
+                                 final IdentityPublicKey myPublicKey,
+                                 final ProofOfWork myProofOfWork,
+                                 final InetSocketAddress recipient) {
+        this(new ConcurrentHashMap<>(), myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, networkId, recipient, null);
     }
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
@@ -162,7 +166,7 @@ public class IpMulticastDiscovery extends ChannelDuplexHandler {
                             final CompletableFuture<Void> future) {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
-            LOG.debug("Got multicast discovery message for `{}` from address `{}`", msgSender, sender);
+            LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
             final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeoutMillis));
             peer.inboundPingOccurred();
             ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
@@ -210,10 +214,10 @@ public class IpMulticastDiscovery extends ChannelDuplexHandler {
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
         final HelloMessage messageEnvelope = HelloMessage.of(networkId, myPublicKey, myProofOfWork);
-        LOG.debug("Send {} to {}", messageEnvelope, MULTICAST_ADDRESS);
-        ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, MULTICAST_ADDRESS)).addListener(future -> {
+        LOG.debug("Send {} to {}", messageEnvelope, recipient);
+        ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, recipient)).addListener(future -> {
             if (!future.isSuccess()) {
-                LOG.warn("Unable to send discovery message to multicast group `{}`", () -> MULTICAST_ADDRESS, future::cause);
+                LOG.warn("Unable to send local network discovery message to `{}`", () -> recipient, future::cause);
             }
         });
     }

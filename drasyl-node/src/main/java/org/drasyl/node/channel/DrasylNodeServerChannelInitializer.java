@@ -34,8 +34,8 @@ import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
-import org.drasyl.handler.remote.IpMulticastDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
+import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
@@ -77,6 +77,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.drasyl.util.RandomUtil.randomLong;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -239,12 +240,13 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             // discover nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addLast(new IpMulticastDiscovery(
+                ch.pipeline().addLast(new LocalNetworkDiscovery(
                         config.getNetworkId(),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
                         identity.getIdentityPublicKey(),
-                        identity.getProofOfWork()
+                        identity.getProofOfWork(),
+                        MULTICAST_ADDRESS
                 ));
             }
 
