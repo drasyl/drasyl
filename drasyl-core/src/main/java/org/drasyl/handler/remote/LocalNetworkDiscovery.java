@@ -51,16 +51,16 @@ import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
- * This handler, along with the {@link UdpMulticastServer}, is used to discover other nodes on the
- * local network via IP multicast.
+ * This handler, along with the {@link UdpMulticastServer} or {@link UdpBroadcastServer}, is used to
+ * discover other nodes on the local network via IP multicast or broadcast.
  * <p>
- * For this purpose, the {@link UdpMulticastServer} joins a multicast group and forwards received
- * {@link HelloMessage}s to this handler, which thus becomes aware of other nodes in the local
- * network. In case no {@link HelloMessage} has been received for a longer period of time, the other
- * node is considered stale.
+ * For this purpose, the above-mentioned server forwards received multicast/broadcast {@link
+ * HelloMessage}s to this handler, which thus becomes aware of other nodes in the local network. In
+ * case no {@link HelloMessage} has been received for a longer period of time, the other node is
+ * considered stale.
  * <p>
- * In addition, this handler periodically sends a {@link HelloMessage} messages to a multicast group
- * so that other nodes become aware of this node.
+ * In addition, this handler periodically sends a {@link HelloMessage} messages to a given
+ * multicast/broadcast address so that other nodes become aware of this node.
  *
  * @see UdpMulticastServer
  * @see UdpBroadcastServer
