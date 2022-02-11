@@ -23,24 +23,182 @@ package org.drasyl.util;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Boolean.TRUE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ExpiringSetTest {
     @Nested
-    class MaximumSize {
+    class Size {
         @Test
-        void shouldEvictFirstEntriesBasedOnExpirationPolicyWhenSizeIsExceeding() throws InterruptedException {
-            final Set<Object> set = new ExpiringSet<>(2, 10);
-            set.add("Hallo");
-            set.add("Hello");
-            set.add("Bonjour");
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map) {
+            when(map.size()).thenReturn(123);
 
-            assertEquals(2, set.size());
-            assertFalse(set.contains("Hallo"));
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertEquals(123, set.size());
+
+            verify(map).size();
+        }
+    }
+
+    @Nested
+    class IsEmpty {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map) {
+            when(map.isEmpty()).thenReturn(true);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertTrue(set.isEmpty());
+
+            verify(map).isEmpty();
+        }
+    }
+
+    @Nested
+    class Contains {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map,
+                                                 @Mock final Object object) {
+            when(map.containsKey(object)).thenReturn(true);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertTrue(set.contains(object));
+
+            verify(map).containsKey(object);
+        }
+    }
+
+    @Nested
+    class IteratorTest {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock(answer = RETURNS_DEEP_STUBS) final Map<Object, Boolean> map,
+                                                 @Mock final Iterator iterator) {
+            when(map.keySet().iterator()).thenReturn(iterator);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertEquals(iterator, set.iterator());
+
+            verify(map.keySet()).iterator();
+        }
+    }
+
+    @Nested
+    class ToArray {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock(answer = RETURNS_DEEP_STUBS) final Map<Object, Boolean> map) {
+            final Object[] array = new Object[0];
+
+            when(map.keySet().toArray(array)).thenReturn(array);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertEquals(array, set.toArray(array));
+
+            verify(map.keySet()).toArray(array);
+        }
+    }
+
+    @Nested
+    class Add {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map,
+                                                 @Mock final Object element) {
+            when(map.put(element, TRUE)).thenReturn(null);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertTrue(set.add(element));
+
+            verify(map).put(element, TRUE);
+        }
+    }
+
+    @Nested
+    class Remove {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map,
+                                                 @Mock final Object element) {
+            when(map.remove(element)).thenReturn(true);
+
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertTrue(set.remove(element));
+
+            verify(map).remove(element);
+        }
+    }
+
+    @Nested
+    class ContainsAll {
+        @Test
+        void shouldThrowException(@Mock final Map<Object, Boolean> map,
+                                  @Mock final Collection collection) {
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertThrows(UnsupportedOperationException.class, () -> set.containsAll(collection));
+        }
+    }
+
+    @Nested
+    class AddAll {
+        @Test
+        void shouldThrowException(@Mock final Map<Object, Boolean> map,
+                                  @Mock final Collection collection) {
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertThrows(UnsupportedOperationException.class, () -> set.addAll(collection));
+        }
+    }
+
+    @Nested
+    class RetainAll {
+        @Test
+        void shouldThrowException(@Mock final Map<Object, Boolean> map,
+                                  @Mock final Collection collection) {
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertThrows(UnsupportedOperationException.class, () -> set.retainAll(collection));
+        }
+    }
+
+    @Nested
+    class RemoveAll {
+        @Test
+        void shouldThrowException(@Mock final Map<Object, Boolean> map,
+                                  @Mock final Collection collection) {
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            assertThrows(UnsupportedOperationException.class, () -> set.removeAll(collection));
+        }
+    }
+
+    @Nested
+    class Clear {
+        @Test
+        void shouldPerformCorrectCallToInternMap(@Mock final Map<Object, Boolean> map) {
+            final Set<Object> set = new ExpiringSet<>(map);
+
+            set.clear();
+
+            verify(map).clear();
         }
     }
 }
