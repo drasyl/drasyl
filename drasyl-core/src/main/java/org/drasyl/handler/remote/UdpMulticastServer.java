@@ -171,7 +171,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                     final DatagramPacket packet) {
             final InetSocketAddress sender = packet.sender();
-            final ByteBuf content = packet.content();
+            final ByteBuf content = packet.content().asReadOnly();
             nodes.forEach(nodeCtx -> {
                 LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
                 final ByteBuf byteBuf = content.retainedDuplicate();
