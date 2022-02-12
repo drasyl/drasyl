@@ -149,6 +149,7 @@ public class DrasylChannel extends AbstractChannel {
                 break;
         }
 
+        boolean wroteToParent = false;
         pendingWrites = false;
         while (true) {
             final Object msg = in.current();
@@ -168,8 +169,13 @@ public class DrasylChannel extends AbstractChannel {
                 }
             });
             in.remove();
+            wroteToParent = true;
         }
-        parent().flush();
+
+        if (wroteToParent) {
+            // only pass flush event to parent channel if we actually have wrote something
+            parent().flush();
+        }
     }
 
     @Override
