@@ -54,8 +54,9 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
                                  final PrintStream err,
                                  final Worm<Integer> exitCode,
                                  final Channel tun,
-                                 final Set<DrasylAddress> peers) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                 final Set<DrasylAddress> peers,
+                                 final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.tun = requireNonNull(tun);

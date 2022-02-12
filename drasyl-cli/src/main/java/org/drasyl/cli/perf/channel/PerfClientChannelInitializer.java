@@ -49,8 +49,9 @@ public class PerfClientChannelInitializer extends AbstractChannelInitializer {
                                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                         final PrintStream err,
                                         final Worm<Integer> exitCode,
-                                        final IdentityPublicKey server) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                        final IdentityPublicKey server,
+                                        final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.server = requireNonNull(server);

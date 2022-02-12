@@ -295,7 +295,7 @@ public class TunCommand extends ChannelOptions {
             // create drasyl channel
             peersMap = routes.stream().collect(Collectors.toMap(TunRoute::inetAddress, TunRoute::overlayAddress));
             final Set<DrasylAddress> peersKeys = Set.copyOf(peersMap.values());
-            final ChannelHandler handler = new TunChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), peersKeys);
+            final ChannelHandler handler = new TunChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), peersKeys, !protocolArmDisabled);
             final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), peersKeys, channels);
 
             final ServerBootstrap b = new ServerBootstrap()

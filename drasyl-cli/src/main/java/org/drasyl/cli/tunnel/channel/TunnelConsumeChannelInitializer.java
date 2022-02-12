@@ -49,8 +49,9 @@ public class TunnelConsumeChannelInitializer extends AbstractChannelInitializer 
                                            final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                            final PrintStream err,
                                            final Worm<Integer> exitCode,
-                                           final IdentityPublicKey exposer) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                           final IdentityPublicKey exposer,
+                                           final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.exposer = requireNonNull(exposer);

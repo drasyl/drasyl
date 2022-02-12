@@ -57,7 +57,7 @@ class PerfClientChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
 
-            final ChannelInboundHandler handler = new PerfClientChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, server);
+            final ChannelInboundHandler handler = new PerfClientChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, server, true);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(10)).addLast(any());

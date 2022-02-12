@@ -57,7 +57,7 @@ class WormholeReceiveChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey sender) throws Exception {
             when(ctx.channel()).thenReturn(channel);
 
-            final ChannelInboundHandler handler = new WormholeReceiveChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, sender);
+            final ChannelInboundHandler handler = new WormholeReceiveChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, sender, true);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(10)).addLast(any());
