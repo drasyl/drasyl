@@ -171,31 +171,44 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     private class UdpServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        private final ChannelHandlerContext ctx;
+        private final ChannelHandlerContext drasylServerChannelCtx;
 
-        public UdpServerHandler(final ChannelHandlerContext ctx) {
+        public UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
             super(false);
-            this.ctx = ctx;
+            this.drasylServerChannelCtx = drasylServerChannelCtx;
         }
 
         @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext channelCtx) {
-            channelCtx.fireChannelWritabilityChanged();
+        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+            ctx.fireChannelWritabilityChanged();
 
-            if (channelCtx.channel().isWritable()) {
+            if (ctx.channel().isWritable()) {
                 // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                ctx.executor().submit(UdpServer.this::writePendingWrites);
+                if (drasylServerChannelCtx.executor().inEventLoop()) {
+                    writePendingWrites();
+                }
+                else {
+                    drasylServerChannelCtx.executor().execute(UdpServer.this::writePendingWrites);
+                }
             }
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext channelCtx,
+        protected void channelRead0(final ChannelHandlerContext ctx,
                                     final DatagramPacket packet) {
             LOG.trace("Datagram received {}", packet);
-            ctx.executor().execute(() -> {
-                ctx.fireChannelRead(new InetAddressedMessage<>(packet.content(), null, packet.sender()));
-                ctx.fireChannelReadComplete();
-            });
+
+            final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(packet.content(), null, packet.sender());
+            if (drasylServerChannelCtx.executor().inEventLoop()) {
+                drasylServerChannelCtx.fireChannelRead(msg);
+                drasylServerChannelCtx.fireChannelReadComplete();
+            }
+            else {
+                drasylServerChannelCtx.executor().execute(() -> {
+                    drasylServerChannelCtx.fireChannelRead(msg);
+                    drasylServerChannelCtx.fireChannelReadComplete();
+                });
+            }
         }
     }
 
