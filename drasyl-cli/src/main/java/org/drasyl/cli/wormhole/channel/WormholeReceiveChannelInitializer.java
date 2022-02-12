@@ -49,8 +49,9 @@ public class WormholeReceiveChannelInitializer extends AbstractChannelInitialize
                                              final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode,
-                                             final IdentityPublicKey sender) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                             final IdentityPublicKey sender,
+                                             final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.sender = requireNonNull(sender);

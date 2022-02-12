@@ -55,8 +55,9 @@ public class TunnelExposeChannelInitializer extends AbstractChannelInitializer {
                                           final PrintStream out,
                                           final PrintStream err,
                                           final Worm<Integer> exitCode,
-                                          final Identity identity) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                          final Identity identity,
+                                          final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

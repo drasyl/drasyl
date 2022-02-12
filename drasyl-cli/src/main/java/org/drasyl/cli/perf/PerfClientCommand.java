@@ -126,7 +126,7 @@ public class PerfClientCommand extends ChannelOptions {
 
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new PerfClientChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server);
+        return new PerfClientChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
     }
 
     @Override

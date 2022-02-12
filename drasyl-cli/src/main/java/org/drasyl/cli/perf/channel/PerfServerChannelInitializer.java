@@ -50,8 +50,9 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
                                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                         final PrintStream out,
                                         final PrintStream err,
-                                        final Worm<Integer> exitCode) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                        final Worm<Integer> exitCode,
+                                        final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

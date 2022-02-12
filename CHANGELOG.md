@@ -38,6 +38,7 @@ ProofOfWork = -2144920491
 - CLI: `generate-pow` sub-command added.
 - CLI: `tun` sub-command added.
 - CLI: `generate-completion` sub-command added.
+- CLI: `--no-protocol-arming` option added.
 - Broadcast-based LAN Discovery added. Can be used programatically. More
   information: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/merge_requests/680
 -

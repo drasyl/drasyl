@@ -31,6 +31,7 @@ import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
+import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,18 +53,21 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     private final int networkId;
     private final long onlineTimeoutMillis;
     private final Map<IdentityPublicKey, InetSocketAddress> superPeers;
+    private final boolean protocolArmEnabled;
 
     @SuppressWarnings("java:S107")
     protected AbstractChannelInitializer(final Identity identity,
                                          final InetSocketAddress bindAddress,
                                          final int networkId,
                                          final long onlineTimeoutMillis,
-                                         final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
+                                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                                         final boolean protocolArmEnabled) {
         this.identity = requireNonNull(identity);
         this.bindAddress = requireNonNull(bindAddress);
         this.networkId = networkId;
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
         this.superPeers = requireNonNull(superPeers);
+        this.protocolArmEnabled = protocolArmEnabled;
     }
 
     @Override
@@ -74,7 +78,12 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new OtherNetworkFilter(networkId));
         p.addLast(new InvalidProofOfWorkFilter());
-        p.addLast(new ProtocolArmHandler(identity, MAX_PEERS));
+        if (protocolArmEnabled) {
+            p.addLast(new ProtocolArmHandler(identity, MAX_PEERS));
+        }
+        else {
+            p.addLast(new UnarmedMessageDecoder());
+        }
         p.addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
         p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));

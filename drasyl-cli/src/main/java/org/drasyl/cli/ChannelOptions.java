@@ -85,6 +85,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             split = ","
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;
+    @Option(
+            names = { "--no-protocol-arming" },
+            description = "Disables arming (authenticating/encrypting) of all protocol messages. Ensure other nodes have arming disabled as well."
+    )
+    protected boolean protocolArmDisabled;
 
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,

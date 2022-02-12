@@ -53,8 +53,9 @@ public class WormholeSendChannelInitializer extends AbstractChannelInitializer {
                                           final PrintStream out,
                                           final PrintStream err,
                                           final Worm<Integer> exitCode,
-                                          final String password) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers);
+                                          final String password,
+                                          final boolean protocolArmEnabled) {
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
