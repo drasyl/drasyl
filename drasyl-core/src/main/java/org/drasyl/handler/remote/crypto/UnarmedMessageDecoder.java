@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.remote.crypto;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.channel.InetAddressedMessage;
@@ -28,6 +29,10 @@ import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 
 import java.util.List;
 
+/**
+ * Decodes {@link UnarmedProtocolMessage}s to {@link FullReadMessage}s.
+ */
+@Sharable
 public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
     @Override
     public boolean acceptInboundMessage(final Object msg) {

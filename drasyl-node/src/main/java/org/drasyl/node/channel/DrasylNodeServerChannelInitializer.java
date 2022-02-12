@@ -88,6 +88,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     public static final short MIN_DERIVED_PORT = 22528;
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer();
     private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
+    private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
     private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
     private static final int TELEMETRY_INTERVAL_SECONDS = SystemPropertyUtil.getInt("org.drasyl.telemetry.interval", 60);
@@ -202,7 +203,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
 
         // fully read unarmed messages (local network discovery)
-        ch.pipeline().addLast(new UnarmedMessageDecoder());
+        ch.pipeline().addLast(UNARMED_MESSAGE_DECODER);
 
         ch.pipeline().addLast(new RateLimiter());
     }
