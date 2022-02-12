@@ -29,6 +29,7 @@ import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;
 import org.drasyl.cli.wormhole.WormholeCommand;
 import org.drasyl.identity.IdentityPublicKey;
+import picocli.AutoComplete.GenerateCompletion;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -46,6 +47,7 @@ import static java.util.Objects.requireNonNull;
 @Command(
         name = "drasyl",
         subcommands = {
+                GenerateCompletion.class,
                 GenerateIdentityCommand.class,
                 GenerateProofOfWorkCommand.class,
                 HelpCommand.class,
