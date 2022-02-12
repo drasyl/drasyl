@@ -287,7 +287,7 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
         }
         else {
             // pass through
-            ctx.write(msg);
+            ctx.write(msg, promise);
         }
     }
 
