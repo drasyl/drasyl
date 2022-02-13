@@ -32,7 +32,6 @@ import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.cli.perf.message.SessionRejection;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.drasyl.cli.perf.message.TestResults;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -45,6 +44,7 @@ import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.perf.message.TestResults.MICROSECONDS;
+import static org.drasyl.util.RandomUtil.randomBytes;
 
 public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMessage> {
     public static final Duration SESSION_PROGRESS_INTERVAL = ofSeconds(1);
@@ -94,9 +94,8 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
             // do not run this blocking code in the channel's event loop as once the (underlying) channels become unwritable, there is no change to receive a channelWritabilityChanged
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
-            final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
-            final ByteBuf probePayloadNew = ctx.alloc().buffer(session.getSize());
-            probePayloadNew.writeBytes(probePayload);
+            final ByteBuf probePayload = ctx.alloc().buffer(session.getSize())
+                    .writeBytes(randomBytes(session.getSize()));
             final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
             final long startTime = currentTimeSupplier.getAsLong();
             final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
@@ -129,7 +128,7 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
                 if (shouldSendNextMessage) {
                     if (channelWritable) {
                         final TestResults finalIntervalResults = intervalResults;
-                        channel.writeAndFlush(new Probe(probePayloadNew.retain(), sentMessages)).addListener(future -> {
+                        channel.writeAndFlush(new Probe(probePayload.retainedDuplicate(), sentMessages)).addListener(future -> {
                             if (!future.isSuccess()) {
                                 LOG.trace("Unable to send message", future::cause);
                                 finalIntervalResults.incrementLostMessages();
@@ -144,6 +143,8 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
                     intervalResults.incrementTotalMessages();
                 }
             }
+
+            probePayload.release();
 
             // final interim results
             intervalResults.stop(currentTime);
