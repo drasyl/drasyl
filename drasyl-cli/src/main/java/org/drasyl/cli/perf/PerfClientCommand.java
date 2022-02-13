@@ -74,9 +74,9 @@ public class PerfClientCommand extends ChannelOptions {
     private int testDuration;
     @Option(
             names = { "--mps" },
-            description = "Messages to send per second.",
+            description = "Messages to send per second. If this value is 0, the client will send as many messages as possible.",
             paramLabel = "<count>",
-            defaultValue = "100"
+            defaultValue = "0"
     )
     private int messagesPerSecond;
     @Option(

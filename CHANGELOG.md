@@ -48,6 +48,8 @@ ProofOfWork = -2144920491
 - Dependencies have been updated.
 - Speed up direct connection establishment when traversing symmetrics NATs.
 - Switch to more compact (INI-formatted) identity file format.
+- CLI: `perf client`'s `--mps` option default value has changed to `0`. This causes the client to
+  send messages as quickly as possible. to send messages as fast as possible.
 -
 
 ### Fixed

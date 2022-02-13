@@ -24,6 +24,9 @@ package org.drasyl.cli.perf.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static org.drasyl.util.Preconditions.requireNonNegative;
+import static org.drasyl.util.Preconditions.requirePositive;
+
 /**
  * Sent from the {@link PerfClientNode} to the {@link PerfServerNode} to request a new session.
  */
@@ -34,26 +37,17 @@ public class SessionRequest implements PerfMessage {
     private final boolean reverse;
 
     /**
-     * @throws IllegalArgumentException if {@code testDuration}, {@code totalMessages} or {@code
-     *                                  messageSize} is less than 1
+     * @throws IllegalArgumentException if {@code time} or {@code size} is less than 1 or {@code
+     *                                  mps} is negative
      */
     @JsonCreator
     public SessionRequest(@JsonProperty("time") final int time,
                           @JsonProperty("mps") final int mps,
                           @JsonProperty("size") final int size,
                           @JsonProperty("reverse") final boolean reverse) {
-        this.time = time;
-        if (time < 1) {
-            throw new IllegalArgumentException("time must be greater than 0");
-        }
-        this.mps = mps;
-        if (mps < 1) {
-            throw new IllegalArgumentException("mps must be greater than 0");
-        }
-        this.size = size;
-        if (size < 1) {
-            throw new IllegalArgumentException("size must be greater than 0");
-        }
+        this.time = requirePositive(time);
+        this.mps = requireNonNegative(mps);
+        this.size = requirePositive(size);
         this.reverse = reverse;
     }
 
