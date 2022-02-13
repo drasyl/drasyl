@@ -23,7 +23,9 @@ package org.drasyl.cli.perf.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.cli.perf.message.SessionRejection;
@@ -49,19 +51,22 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
     private final SessionRequest session;
     private final PrintStream printStream;
     private final LongSupplier currentTimeSupplier;
+    private final EventLoop eventLoop;
 
     @SuppressWarnings("java:S107")
     PerfSessionSenderHandler(final SessionRequest session,
                              final PrintStream printStream,
-                             final LongSupplier currentTimeSupplier) {
+                             final LongSupplier currentTimeSupplier,
+                             final EventLoop eventLoop) {
         this.session = requireNonNull(session);
         this.printStream = requireNonNull(printStream);
         this.currentTimeSupplier = requireNonNull(currentTimeSupplier);
+        this.eventLoop = requireNonNull(eventLoop);
     }
 
     public PerfSessionSenderHandler(final SessionRequest session,
                                     final PrintStream printStream) {
-        this(session, printStream, System::nanoTime);
+        this(session, printStream, System::nanoTime, new NioEventLoopGroup(1).next());
     }
 
     @Override
@@ -73,66 +78,84 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        performTest(ctx);
         ctx.fireChannelActive();
+        performTest(ctx);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelInactive();
+        eventLoop.shutdownGracefully();
     }
 
     private void performTest(final ChannelHandlerContext ctx) {
-        printStream.println("Test parameters: " + session);
-        printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
-        final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
-        final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
-        final long startTime = currentTimeSupplier.getAsLong();
-        final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
-        TestResults intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
+        eventLoop.execute(() -> {
+            // do not run this blocking code in the channel's event loop as once the (underlying) channels become unwritable, there is no change to receive a channelWritabilityChanged
+            printStream.println("Test parameters: " + session);
+            printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
+            final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
+            final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
+            final long startTime = currentTimeSupplier.getAsLong();
+            final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
+            TestResults intervalResults = new TestResults(messageSize, totalResults.getTestStartTime(), totalResults.getTestStartTime());
 
-        final Channel channel = ctx.channel();
-        long currentTime;
-        long sentMessages = 0;
-        final long endTime = startTime + 1_000_000_000L * session.getTime();
-        while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
-            // print interim results?
-            if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
-                intervalResults.stop(currentTime);
-                printStream.println(intervalResults.print());
-                totalResults.add(intervalResults);
-                intervalResults = new TestResults(messageSize, startTime, currentTime);
-            }
+            final Channel channel = ctx.channel();
+            long currentTime;
+            long sentMessages = 0;
+            final long endTime = startTime + 1_000_000_000L * session.getTime();
+            while (endTime > (currentTime = currentTimeSupplier.getAsLong())) {
+                // print interim results?
+                if (intervalResults.getStartTime() + SESSION_PROGRESS_INTERVAL.toNanos() <= currentTime) {
+                    intervalResults.stop(currentTime);
+                    printStream.println(intervalResults.print());
+                    totalResults.add(intervalResults);
+                    intervalResults = new TestResults(messageSize, startTime, currentTime);
+                }
 
-            // send message?
-            final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
-            if (desiredSentMessages >= sentMessages) {
-                if (channel.isWritable()) {
-                    final TestResults finalIntervalResults = intervalResults;
-                    channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
-                        if (!future.isSuccess()) {
-                            LOG.trace("Unable to send message", future::cause);
-                            finalIntervalResults.incrementLostMessages();
-                        }
-                    });
+                // send message?
+                final boolean channelWritable = channel.isWritable();
+                final boolean shouldSendNextMessage;
+                if (session.getMps() == 0) {
+                    shouldSendNextMessage = channelWritable;
                 }
                 else {
-                    LOG.trace("Unable to send message: Channel is not writable ({} bytes before writable).", channel::bytesBeforeWritable);
-                    intervalResults.incrementLostMessages();
+                    final double desiredSentMessages = ((double) currentTime - startTime) / MICROSECONDS * session.getMps();
+                    shouldSendNextMessage = desiredSentMessages >= sentMessages;
                 }
-                sentMessages++;
-                intervalResults.incrementTotalMessages();
+
+                if (shouldSendNextMessage) {
+                    if (channelWritable) {
+                        final TestResults finalIntervalResults = intervalResults;
+                        channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
+                            if (!future.isSuccess()) {
+                                LOG.trace("Unable to send message", future::cause);
+                                finalIntervalResults.incrementLostMessages();
+                            }
+                        });
+                    }
+                    else {
+                        LOG.trace("Unable to send message: Channel is not writable ({} bytes before writable).", channel::bytesBeforeWritable);
+                        intervalResults.incrementLostMessages();
+                    }
+                    sentMessages++;
+                    intervalResults.incrementTotalMessages();
+                }
             }
-        }
 
-        // final interim results
-        intervalResults.stop(currentTime);
-        printStream.println(intervalResults.print());
-        totalResults.add(intervalResults);
+            // final interim results
+            intervalResults.stop(currentTime);
+            printStream.println(intervalResults.print());
+            totalResults.add(intervalResults);
 
-        printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
-        totalResults.stop(currentTime);
-        printStream.println("Sender:");
-        printStream.println(totalResults.print());
+            printStream.println("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
+            totalResults.stop(currentTime);
+            printStream.println("Sender:");
+            printStream.println(totalResults.print());
 
-        // complete session
-        LOG.debug("All probe messages sent. Complete test at {} and wait for confirmation...", channel::remoteAddress);
-        ctx.writeAndFlush(totalResults).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            // complete session
+            LOG.debug("All probe messages sent. Complete test at {} and wait for confirmation...", channel::remoteAddress);
+            ctx.writeAndFlush(totalResults).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        });
     }
 
     @Override
