@@ -41,7 +41,7 @@ class SessionRequestTest {
 
         @Test
         void shouldRejectInvalidMessagesPerSecond() {
-            assertThrows(IllegalArgumentException.class, () -> new SessionRequest(1, 0, 1, false));
+            assertThrows(IllegalArgumentException.class, () -> new SessionRequest(1, -1, 1, false));
         }
 
         @Test
