@@ -21,6 +21,7 @@
  */
 package org.drasyl.cli.perf.handler;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
@@ -94,6 +95,8 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
             printStream.println("Test parameters: " + session);
             printStream.println("Interval                 Transfer     Bitrate          Lost/Total Messages");
             final byte[] probePayload = RandomUtil.randomBytes(session.getSize());
+            final ByteBuf probePayloadNew = ctx.alloc().buffer(session.getSize());
+            probePayloadNew.writeBytes(probePayload);
             final int messageSize = session.getSize() + Long.BYTES + Long.BYTES;
             final long startTime = currentTimeSupplier.getAsLong();
             final TestResults totalResults = new TestResults(messageSize, startTime, startTime);
@@ -126,7 +129,7 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
                 if (shouldSendNextMessage) {
                     if (channelWritable) {
                         final TestResults finalIntervalResults = intervalResults;
-                        channel.writeAndFlush(new Probe(probePayload, sentMessages)).addListener(future -> {
+                        channel.writeAndFlush(new Probe(probePayloadNew.retain(), sentMessages)).addListener(future -> {
                             if (!future.isSuccess()) {
                                 LOG.trace("Unable to send message", future::cause);
                                 finalIntervalResults.incrementLostMessages();

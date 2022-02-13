@@ -21,18 +21,23 @@
  */
 package org.drasyl.cli.perf.message;
 
+import io.netty.buffer.ByteBuf;
+
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
+
 public class Probe {
-    private final byte[] payload;
+    private final ByteBuf payload;
     private final long messageNo;
 
     @SuppressWarnings("java:S2384")
-    public Probe(final byte[] payload, final long messageNo) {
-        this.payload = payload;
-        this.messageNo = messageNo;
+    public Probe(final ByteBuf payload, final long messageNo) {
+        this.payload = requireNonNull(payload);
+        this.messageNo = requireNonNegative(messageNo);
     }
 
     @SuppressWarnings("java:S2384")
-    public byte[] getPayload() {
+    public ByteBuf getPayload() {
         return payload;
     }
 
