@@ -29,7 +29,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Starts a node which replies the time in seconds since midnight on January first 1900, when
@@ -57,13 +56,13 @@ public class TimeServer extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws DrasylException, ExecutionException, InterruptedException {
+    public static void main(final String[] args) throws DrasylException {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
                 .build();
         final TimeServer node = new TimeServer(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         System.out.println("TimeServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }

@@ -31,7 +31,6 @@ import org.drasyl.node.event.NodeOnlineEvent;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.drasyl.util.RandomUtil.randomString;
 
@@ -64,7 +63,7 @@ public class EchoClient extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws ExecutionException, InterruptedException, DrasylException {
+    public static void main(final String[] args) throws DrasylException {
         if (args.length != 1) {
             System.err.println("Please provide EchoServer address as first argument.");
             System.exit(1);
@@ -76,7 +75,7 @@ public class EchoClient extends DrasylNode {
                 .build();
         final EchoClient node = new EchoClient(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         node.online.join();
         System.out.println("EchoClient started");
 

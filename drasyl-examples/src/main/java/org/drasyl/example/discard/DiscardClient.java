@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.drasyl.util.RandomUtil.randomString;
 
@@ -63,7 +62,7 @@ public class DiscardClient extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws ExecutionException, InterruptedException, DrasylException {
+    public static void main(final String[] args) throws DrasylException {
         if (args.length != 1) {
             System.err.println("Please provide DiscardServer address as first argument.");
             System.exit(1);
@@ -75,7 +74,7 @@ public class DiscardClient extends DrasylNode {
                 .build();
         final DiscardClient node = new DiscardClient(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         node.online.join();
         System.out.println("DiscardClient started");
 

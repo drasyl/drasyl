@@ -156,7 +156,7 @@ public class NodeCommand extends GlobalOptions implements Runnable {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (finalNode != null) {
                     LOG.info("Shutdown drasyl node.");
-                    finalNode.shutdown().join();
+                    finalNode.shutdown().toCompletableFuture().join();
                 }
             }));
 
@@ -165,7 +165,7 @@ public class NodeCommand extends GlobalOptions implements Runnable {
         }
         finally {
             if (node != null) {
-                node.shutdown().join();
+                node.shutdown().toCompletableFuture().join();
             }
         }
     }

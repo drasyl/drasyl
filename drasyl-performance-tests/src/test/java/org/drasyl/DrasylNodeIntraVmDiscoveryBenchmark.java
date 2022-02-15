@@ -73,8 +73,8 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
                 }
             };
 
-            node1.start().join();
-            node2.start().join();
+            node1.start().toCompletableFuture().join();
+            node2.start().toCompletableFuture().join();
             System.err.println("Benchmark started.");
         }
         catch (final Exception e) {
@@ -84,8 +84,8 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void tearDown() {
-        node1.shutdown().join();
-        node2.shutdown().join();
+        node1.shutdown().toCompletableFuture().join();
+        node2.shutdown().toCompletableFuture().join();
         DrasylNodeSharedEventLoopGroupHolder.shutdown();
         System.err.println("Benchmark stopped.");
     }

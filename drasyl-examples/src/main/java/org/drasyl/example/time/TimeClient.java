@@ -32,7 +32,6 @@ import org.drasyl.node.event.NodeOnlineEvent;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.drasyl.example.time.TimeServer.UNIX_TIME_OFFSET;
 
@@ -72,7 +71,7 @@ public class TimeClient extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws ExecutionException, InterruptedException, DrasylException {
+    public static void main(final String[] args) throws DrasylException {
         if (args.length != 1) {
             System.err.println("Please provide TimeServer address as first argument.");
             System.exit(1);
@@ -84,7 +83,7 @@ public class TimeClient extends DrasylNode {
                 .build();
         final TimeClient node = new TimeClient(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         node.online.join();
         System.out.println("TimeClient started");
 

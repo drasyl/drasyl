@@ -390,7 +390,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     @SuppressWarnings("java:S1905")
-    public synchronized CompletableFuture<Void> shutdown() {
+    public synchronized CompletionStage<Void> shutdown() {
         if (channelFuture != null) {
             try {
                 return FutureUtil.toFuture(channelFuture.channel().close());
@@ -420,7 +420,7 @@ public abstract class DrasylNode {
      */
     @NonNull
     @SuppressWarnings("java:S1905")
-    public synchronized CompletableFuture<Void> start() {
+    public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
             channelFuture = bootstrap.bind();
             return FutureUtil.toFuture(channelFuture);

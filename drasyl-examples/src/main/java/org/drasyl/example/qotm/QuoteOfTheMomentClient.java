@@ -79,7 +79,7 @@ public class QuoteOfTheMomentClient extends DrasylNode {
         final String recipient = args[0];
 
         final QuoteOfTheMomentClient node = new QuoteOfTheMomentClient();
-        node.start().join();
+        node.start().toCompletableFuture().join();
         node.online().join();
 
         // ask for next quote periodically every n seconds

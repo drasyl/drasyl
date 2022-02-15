@@ -179,7 +179,7 @@ public class ChatCli {
         System.out.println("****************************************************************************************");
         System.out.println();
 
-        node.start().join();
+        node.start().toCompletableFuture().join();
 
         String recipient = "";
         final AtomicBoolean keepRunning = new AtomicBoolean(true);
@@ -209,7 +209,7 @@ public class ChatCli {
             System.out.println("To " + recipient + ": " + message);
         }
 
-        node.shutdown().join();
+        node.shutdown().toCompletableFuture().join();
     }
 
     static void addBeforePrompt(final Object x) {

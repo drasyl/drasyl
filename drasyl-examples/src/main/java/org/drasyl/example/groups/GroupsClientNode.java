@@ -87,6 +87,6 @@ public class GroupsClientNode extends DrasylNode {
         final GroupUri group = GroupUri.of(args[0]);
 
         final DrasylNode node = new GroupsClientNode(group);
-        node.start().join();
+        node.start().toCompletableFuture().join();
     }
 }

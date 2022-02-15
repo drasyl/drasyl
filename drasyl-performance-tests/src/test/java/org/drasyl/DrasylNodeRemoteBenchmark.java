@@ -104,8 +104,8 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
                 }
             };
 
-            node1.start().join();
-            node2.start().join();
+            node1.start().toCompletableFuture().join();
+            node2.start().toCompletableFuture().join();
             node1Ready.join();
             node2Ready.join();
             System.err.println("Benchmark started.");
@@ -117,8 +117,8 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
 
     @TearDown
     public void teardown() {
-        node1.shutdown().join();
-        node2.shutdown().join();
+        node1.shutdown().toCompletableFuture().join();
+        node2.shutdown().toCompletableFuture().join();
     }
 
     @State(Scope.Thread)

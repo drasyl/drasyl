@@ -62,7 +62,7 @@ public class QuoteOfTheMomentServer extends DrasylNode {
 
     public static void main(final String[] args) throws DrasylException {
         final DrasylNode node = new QuoteOfTheMomentServer();
-        node.start().join();
+        node.start().toCompletableFuture().join();
         System.out.println("QuoteOfTheMomentServer address is: " + node.identity().getIdentityPublicKey());
     }
 

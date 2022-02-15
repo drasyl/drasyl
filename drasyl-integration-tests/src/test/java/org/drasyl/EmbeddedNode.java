@@ -112,7 +112,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
 
     @Override
     public void close() {
-        shutdown().join();
+        shutdown().toCompletableFuture().join();
         // shutdown() future is completed before channelInactive has passed the pipeline...
         await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
     }

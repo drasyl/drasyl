@@ -71,6 +71,6 @@ public class GroupsManagerNode extends DrasylNode {
     public static void main(final String[] args) throws DrasylException {
         final Group group = Group.of("my-fancy-group", "s3cr3t_passw0rd!");
         final GroupsManagerNode node = new GroupsManagerNode(group);
-        node.start().join();
+        node.start().toCompletableFuture().join();
     }
 }

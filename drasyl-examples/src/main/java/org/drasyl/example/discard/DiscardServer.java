@@ -29,7 +29,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Starts a node which discards all incoming messages. Based on the <a
@@ -53,13 +52,13 @@ public class DiscardServer extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws DrasylException, ExecutionException, InterruptedException {
+    public static void main(final String[] args) throws DrasylException {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
                 .build();
         final DiscardServer node = new DiscardServer(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         System.out.println("DiscardServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }

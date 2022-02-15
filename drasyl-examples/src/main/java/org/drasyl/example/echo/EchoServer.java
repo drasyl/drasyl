@@ -29,7 +29,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Starts a node that sends all received messages back to the receiver. Based on the <a
@@ -55,13 +54,13 @@ public class EchoServer extends DrasylNode {
         }
     }
 
-    public static void main(final String[] args) throws DrasylException, ExecutionException, InterruptedException {
+    public static void main(final String[] args) throws DrasylException {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
                 .build();
         final EchoServer node = new EchoServer(config);
 
-        node.start().get();
+        node.start().toCompletableFuture().join();
         System.out.println("EchoServer listening on address " + node.identity().getIdentityPublicKey());
     }
 }
