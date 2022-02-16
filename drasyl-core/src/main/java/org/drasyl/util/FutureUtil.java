@@ -93,7 +93,7 @@ public final class FutureUtil {
                 promise.setSuccess(result);
             }
             else {
-                promise.setFailure(e);
+                promise.tryFailure(e);
             }
         });
     }
