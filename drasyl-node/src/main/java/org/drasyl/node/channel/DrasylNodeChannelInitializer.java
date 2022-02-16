@@ -60,8 +60,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     // PublicHeader: 98 bytes + 4 bytes MagicNumber
     // PrivateHeader: 3 byte + 16 bytes MAC
     public static final int PROTOCOL_OVERHEAD = 127;
-    private static final MessageChunkEncoder MESSAGE_CHUNK_ENCODER = new MessageChunkEncoder();
-    private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder();
+    private static final int CHUNK_NO_LENGTH = 2;
+    private static final int MAX_CHUNKS = (int) Math.pow(256, CHUNK_NO_LENGTH) - 1;
+    private static final MessageChunkEncoder MESSAGE_CHUNK_ENCODER = new MessageChunkEncoder(CHUNK_NO_LENGTH);
+    private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder(CHUNK_NO_LENGTH);
     private static final ReassembledMessageDecoder REASSEMBLED_MESSAGE_DECODER = new ReassembledMessageDecoder();
     private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
     private final DrasylConfig config;
@@ -103,10 +105,10 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
         ch.pipeline().addLast(
                 MESSAGE_CHUNK_ENCODER,
                 new ChunkedWriteHandler(),
-                new LargeByteBufToChunkedMessageEncoder(this.config.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, this.config.getRemoteMessageMaxContentLength()),
+                new LargeByteBufToChunkedMessageEncoder(config.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, config.getRemoteMessageMaxContentLength()),
                 MESSAGE_CHUNK_DECODER,
-                new MessageChunksBuffer(this.config.getRemoteMessageMaxContentLength(), (int) this.config.getRemoteMessageComposedMessageTransferTimeout().toMillis()),
-                new ChunkedMessageAggregator(this.config.getRemoteMessageMaxContentLength()),
+                new MessageChunksBuffer(config.getRemoteMessageMaxContentLength(), (int) config.getRemoteMessageComposedMessageTransferTimeout().toMillis(), MAX_CHUNKS),
+                new ChunkedMessageAggregator(config.getRemoteMessageMaxContentLength()),
                 REASSEMBLED_MESSAGE_DECODER
         );
     }

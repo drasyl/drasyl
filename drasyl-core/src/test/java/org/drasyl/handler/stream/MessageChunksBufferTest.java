@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MessageChunksBufferTest {
     @Test
     void shouldCollectAllChunksAndThenPassThemInCorrectOrder() {
-        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
+        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000, 65535);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
@@ -64,7 +64,7 @@ class MessageChunksBufferTest {
 
     @Test
     void shouldCollectMaxNumberOfChunks() {
-        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
+        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000, 65535);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         for (int i = 0; i < 1_000; i++) {
@@ -78,7 +78,7 @@ class MessageChunksBufferTest {
 
     @Test
     void shouldRejectTooLargeContent() {
-        final ChannelHandler handler = new MessageChunksBuffer(10, 1000);
+        final ChannelHandler handler = new MessageChunksBuffer(10, 1000, 65535);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk chunk2 = new MessageChunk((byte) 42, 1, Unpooled.copiedBuffer("chunk2", UTF_8));
@@ -94,7 +94,7 @@ class MessageChunksBufferTest {
 
     @Test
     void shouldRejectInvalidChunks() {
-        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000);
+        final ChannelHandler handler = new MessageChunksBuffer(1024, 1000, 65535);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));
@@ -112,7 +112,7 @@ class MessageChunksBufferTest {
 
     @Test
     void shouldDiscardChunksOnTimeout() {
-        final ChannelHandler handler = new MessageChunksBuffer(1024, 10);
+        final ChannelHandler handler = new MessageChunksBuffer(1024, 10, 65535);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk chunk1 = new MessageChunk((byte) 42, 0, Unpooled.copiedBuffer("chunk1", UTF_8));

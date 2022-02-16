@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.util.UnsignedMediumInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -44,7 +43,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageChunksBuffer.class);
-    static final int MAX_CHUNKS = UnsignedMediumInteger.MAX_VALUE.getValue();
     private final int maxContentLength;
     private final int allChunksTimeout;
     private Byte id;
@@ -78,10 +76,13 @@ public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
      * @param allChunksTimeout time in milliseconds after receiving the first chunk to wait for
      *                         remaining chunks. Upon timeout, received chunks will be discarded. A
      *                         value of {@code 0} deactivates the timeout function.
+     * @param maxChunks        maximum number of chunks to collect. If the more chunks are required
+     *                         to aggregate the message, all chunks will be discarded.
      */
     public MessageChunksBuffer(final int maxContentLength,
-                               final int allChunksTimeout) {
-        this(maxContentLength, allChunksTimeout, new MessageChunksBufferInputList(MAX_CHUNKS), null, 0, null, null);
+                               final int allChunksTimeout,
+                               final int maxChunks) {
+        this(maxContentLength, allChunksTimeout, new MessageChunksBufferInputList(maxChunks), null, 0, null, null);
     }
 
     @SuppressWarnings("java:S3776")

@@ -54,10 +54,6 @@ public class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
         this.chunkNoFieldLength = chunkNoFieldLength;
     }
 
-    public MessageChunkEncoder() {
-        this(2);
-    }
-
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final MessageChunk msg,

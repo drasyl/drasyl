@@ -53,10 +53,6 @@ public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
         this.chunkNoFieldLength = chunkNoFieldLength;
     }
 
-    public MessageChunkDecoder() {
-        this(2);
-    }
-
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,

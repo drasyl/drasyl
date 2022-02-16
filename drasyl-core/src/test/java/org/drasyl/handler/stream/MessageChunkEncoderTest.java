@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class MessageChunkEncoderTest {
     @Test
     void shouldEncodeContentChunk() {
-        final ChannelHandler handler = new MessageChunkEncoder();
+        final ChannelHandler handler = new MessageChunkEncoder(2);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final MessageChunk msg = new MessageChunk((byte) 42, 13, Unpooled.wrappedBuffer(new byte[]{
@@ -62,7 +62,7 @@ class MessageChunkEncoderTest {
 
     @Test
     void shouldEncodeLastChunk() {
-        final ChannelHandler handler = new MessageChunkEncoder();
+        final ChannelHandler handler = new MessageChunkEncoder(2);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final LastMessageChunk msg = new LastMessageChunk((byte) 23, 2, Unpooled.wrappedBuffer(new byte[]{
@@ -86,7 +86,7 @@ class MessageChunkEncoderTest {
 
     @Test
     void shouldRejectAllOtherChunks(@Mock final MessageChunk msg) {
-        final ChannelHandler handler = new MessageChunkEncoder();
+        final ChannelHandler handler = new MessageChunkEncoder(2);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
