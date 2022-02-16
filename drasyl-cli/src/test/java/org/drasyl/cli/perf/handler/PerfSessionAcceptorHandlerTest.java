@@ -48,9 +48,14 @@ class PerfSessionAcceptorHandlerTest {
 
         channel.writeInbound(request);
 
-        assertThat(channel.readOutbound(), instanceOf(SessionConfirmation.class));
-        assertNull(channel.pipeline().get(PerfSessionAcceptorHandler.class));
-        assertNotNull(channel.pipeline().get(PerfSessionReceiverHandler.class));
+        try {
+            assertThat(channel.readOutbound(), instanceOf(SessionConfirmation.class));
+            assertNull(channel.pipeline().get(PerfSessionAcceptorHandler.class));
+            assertNotNull(channel.pipeline().get(PerfSessionReceiverHandler.class));
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -63,8 +68,13 @@ class PerfSessionAcceptorHandlerTest {
 
         channel.writeInbound(request);
 
-        assertThat(channel.readOutbound(), instanceOf(SessionConfirmation.class));
-        assertNull(channel.pipeline().get(PerfSessionAcceptorHandler.class));
-        assertNotNull(channel.pipeline().get(PerfSessionSenderHandler.class));
+        try {
+            assertThat(channel.readOutbound(), instanceOf(SessionConfirmation.class));
+            assertNull(channel.pipeline().get(PerfSessionAcceptorHandler.class));
+            assertNotNull(channel.pipeline().get(PerfSessionSenderHandler.class));
+        }
+        finally {
+            channel.close();
+        }
     }
 }

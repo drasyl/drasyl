@@ -56,7 +56,12 @@ class PerfSessionRequestorHandlerTest {
         final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, false);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertEquals(request, channel.readOutbound());
+        try {
+            assertEquals(request, channel.readOutbound());
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -66,10 +71,15 @@ class PerfSessionRequestorHandlerTest {
         final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertThat(channel.readOutbound(), instanceOf(Noop.class));
+        try {
+            assertThat(channel.readOutbound(), instanceOf(Noop.class));
 
-        channel.pipeline().fireUserEventTriggered(pathEvent);
-        assertEquals(request, channel.readOutbound());
+            channel.pipeline().fireUserEventTriggered(pathEvent);
+            assertEquals(request, channel.readOutbound());
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -78,10 +88,15 @@ class PerfSessionRequestorHandlerTest {
         final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, false);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        await().untilAsserted(() -> {
-            channel.runScheduledPendingTasks();
-            assertThrows(PerfSessionRequestTimeoutException.class, () -> channel.checkException());
-        });
+        try {
+            await().untilAsserted(() -> {
+                channel.runScheduledPendingTasks();
+                assertThrows(PerfSessionRequestTimeoutException.class, () -> channel.checkException());
+            });
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -94,9 +109,14 @@ class PerfSessionRequestorHandlerTest {
 
         channel.writeInbound(confirmation);
 
-        assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
-        assertNotNull(channel.pipeline().get(PerfSessionSenderHandler.class));
-        verify(timeoutTask).cancel(false);
+        try {
+            assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
+            assertNotNull(channel.pipeline().get(PerfSessionSenderHandler.class));
+            verify(timeoutTask).cancel(false);
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -111,9 +131,14 @@ class PerfSessionRequestorHandlerTest {
 
         channel.writeInbound(confirmation);
 
-        assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
-        assertNotNull(channel.pipeline().get(PerfSessionReceiverHandler.class));
-        verify(timeoutTask).cancel(false);
+        try {
+            assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
+            assertNotNull(channel.pipeline().get(PerfSessionReceiverHandler.class));
+            verify(timeoutTask).cancel(false);
+        }
+        finally {
+            channel.close();
+        }
     }
 
     @Test
@@ -124,7 +149,12 @@ class PerfSessionRequestorHandlerTest {
         final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true, timeoutTask, true, false, false);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertThrows(PerfSessionRequestRejectedException.class, () -> channel.writeInbound(rejection));
-        verify(timeoutTask).cancel(false);
+        try {
+            assertThrows(PerfSessionRequestRejectedException.class, () -> channel.writeInbound(rejection));
+            verify(timeoutTask).cancel(false);
+        }
+        finally {
+            channel.close();
+        }
     }
 }
