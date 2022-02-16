@@ -285,8 +285,13 @@ public abstract class DrasylNode {
                 LOG.trace("Outbound message `{}` is addressed to us. Convert to inbound message.", () -> payload);
                 channelFuture.channel().eventLoop().execute(() -> {
                     final MessageEvent event = MessageEvent.of(identity.getIdentityPublicKey(), payload);
-                    onEvent(event);
-                    future.complete(null);
+                    try {
+                        onEvent(event);
+                        future.complete(null);
+                    }
+                    catch (final Exception e) {
+                        future.completeExceptionally(e);
+                    }
                 });
             }
             else {
@@ -302,6 +307,7 @@ public abstract class DrasylNode {
                     final ChannelPromise promise = c.newPromise();
                     c.writeAndFlush(p, promise);
 
+                    LOG.debug("ok");
                     FutureUtil.synchronizeFutures(promise, future);
                 });
             }
