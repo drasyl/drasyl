@@ -9,9 +9,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Upgrade Notes
 
-This version is introduces a new identity file format, every node will recreate a new identity on first start.
-If you would like to reuse your pre-existing identity, you have to migrate the file format by yourself.
-Asume you have the current file `drasyl.identity.json`:
+1. We did it again: The overlay protocol has been changed with breaking changes making it impossible
+   to communicate with peers running older drasyl versions.
+1. This version is introduces a new identity file format, every node will recreate a new identity on
+   first start. If you would like to reuse your pre-existing identity, you have to migrate the file
+   format by yourself. Asume you have the current file `drasyl.identity.json`:
 ```json
 {
     "proofOfWork" : -2144920491,
