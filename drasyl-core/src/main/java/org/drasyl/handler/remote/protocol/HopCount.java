@@ -29,7 +29,7 @@ import java.util.Objects;
 @SuppressWarnings("java:S2974")
 public class HopCount implements Comparable<HopCount> {
     public static final byte MIN_HOP_COUNT = 0;
-    public static final byte MAX_HOP_COUNT = 127;
+    public static final byte MAX_HOP_COUNT = 7;
     private final byte value;
 
     private HopCount(final byte value) {
