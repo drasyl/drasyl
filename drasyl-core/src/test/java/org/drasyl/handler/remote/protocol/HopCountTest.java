@@ -38,7 +38,7 @@ class HopCountTest {
     class Increment {
         @Test
         void shouldIncrementIfNoOverflowOccur() {
-            assertEquals(HopCount.of((byte) 20), HopCount.of((byte) 19).increment());
+            assertEquals(HopCount.of((byte) 5), HopCount.of((byte) 4).increment());
         }
 
         @Test
@@ -55,8 +55,8 @@ class HopCountTest {
             assertEquals(0, HopCount.of(1).compareTo(HopCount.of(1)));
             assertThat(HopCount.of(1).compareTo(HopCount.of(2)), lessThan(0));
             assertThat(HopCount.of(2).compareTo(HopCount.of(1)), greaterThan(0));
-            assertThat(HopCount.of(127).compareTo(HopCount.of(1)), greaterThan(0));
-            assertThat(HopCount.of(1).compareTo(HopCount.of(127)), lessThan(0));
+            assertThat(HopCount.of(7).compareTo(HopCount.of(1)), greaterThan(0));
+            assertThat(HopCount.of(1).compareTo(HopCount.of(7)), lessThan(0));
         }
     }
 

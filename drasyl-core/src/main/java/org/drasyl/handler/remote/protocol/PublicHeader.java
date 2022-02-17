@@ -34,8 +34,7 @@ import org.drasyl.identity.ProofOfWork;
  * This class models the public header of a drasyl protocol message. The header is structured as
  * follows:
  * <ul>
- * <li><b>HopCount</b>: The 1 byte hop count value. Is incremented on each hop. Used to avoid loops.</li>
- * <li><b>Armed</b>: The 1 byte armed value. Indicates, if the message is armed or not.</li>
+ * <li><b>Flags</b>: Several packet flags (bits 1-3: hop count, bit 4: set if message is armed, bits 5-8: unused).</li>
  * <li><b>NetworkId</b>: The 4 bytes network id value. Is a unique network-wide value. Used to filter messages from other networks.</li>
  * <li><b>Nonce</b>: The 24 bytes nonce value. Is used for encryption and as message id.</li>
  * <li><b>Recipient</b>: The 32 bytes recipient address. This value is optional. If not set it MUST be sent as 0.</li>
@@ -47,7 +46,7 @@ import org.drasyl.identity.ProofOfWork;
 @SuppressWarnings({ "java:S118", "java:S2047", "java:S2301" })
 @AutoValue
 public abstract class PublicHeader {
-    public static final int LENGTH = 98;
+    public static final int LENGTH = 97;
 
     public static PublicHeader of(final HopCount hopCount,
                                   final boolean isArmed,
@@ -76,8 +75,12 @@ public abstract class PublicHeader {
         final IdentityPublicKey sender;
         final ProofOfWork proofOfWork;
 
-        hopCount = HopCount.of(byteBuf.readByte());
-        isArmed = byteBuf.readBoolean();
+        byte flags = byteBuf.readByte();
+        // 000. ....
+        hopCount = HopCount.of(flags >> 5);
+        // ...0 ....
+        isArmed = flags >> 4 > 0;
+
         networkId = byteBuf.readInt();
 
         final byte[] nonceBuffer = new byte[Nonce.NONCE_LENGTH];
@@ -142,10 +145,17 @@ public abstract class PublicHeader {
     public void writeTo(final ByteBuf byteBuf, final boolean withHopCount) {
         final byte[] recipientBuffer = getRecipient() == null ? IdentityPublicKey.ZERO_ID.toByteArray() : getRecipient().toByteArray();
 
+        byte flags = 0;
+        // 000. ....
         if (withHopCount) {
-            byteBuf.writeByte(getHopCount().getByte());          //  1 byte
+            flags |= getHopCount().getByte() << 5;
         }
-        byteBuf.writeBoolean(getArmed())                        //  1 byte
+        // ...0 ....
+        if (getArmed()) {
+            flags |= 1 << 4;
+        }
+
+        byteBuf.writeByte(flags)                                //  1 byte
                 .writeInt(getNetworkId())                       //  4 bytes
                 .writeBytes(getNonce().toByteArray())           // 24 bytes
                 .writeBytes(recipientBuffer)                    // 32 bytes
