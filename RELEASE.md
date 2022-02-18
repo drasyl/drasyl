@@ -4,9 +4,9 @@ This file describes how to make the various kinds of releases.
 
 ## Making a release
 
-* Update  version
+* Update version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
-  and [Chart.yaml](chart/Chart.yaml) and [getting-started.md](docs/content/getting-started.md).
+  and [getting-started.md](docs/content/getting-started.md).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Build software and push to maven repository:
 ```bash
