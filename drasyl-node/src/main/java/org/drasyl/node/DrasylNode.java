@@ -307,7 +307,6 @@ public abstract class DrasylNode {
                     final ChannelPromise promise = c.newPromise();
                     c.writeAndFlush(p, promise);
 
-                    LOG.debug("ok");
                     FutureUtil.synchronizeFutures(promise, future);
                 });
             }
