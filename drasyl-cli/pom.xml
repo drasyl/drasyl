@@ -199,6 +199,18 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <configuration>
+                            <!-- We don't want maven to destroy our binaries -->
+                            <nonFilteredFileExtensions>
+                                <nonFilteredFileExtension>so</nonFilteredFileExtension>
+                                <nonFilteredFileExtension>dll</nonFilteredFileExtension>
+                                <nonFilteredFileExtension>dylib</nonFilteredFileExtension>
+                            </nonFilteredFileExtensions>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-enforcer-plugin</artifactId>
                         <version>3.0.0</version>
                         <executions>
@@ -237,7 +249,7 @@
                             <imageName>drasyl</imageName>
                             <mainClass>org.drasyl.cli.Cli</mainClass>
                             <outputDirectory>${project.parent.basedir}</outputDirectory>
-                            <buildArgs>--no-fallback --allow-incomplete-classpath</buildArgs>
+                            <buildArgs>--no-fallback --allow-incomplete-classpath --trace-class-initialization=io.netty.buffer.UnpooledHeapByteBuf</buildArgs>
                         </configuration>
                     </plugin>
                     <plugin>
