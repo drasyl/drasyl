@@ -129,6 +129,18 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <configuration>
+                            <!-- We don't want maven to destroy our binaries -->
+                            <nonFilteredFileExtensions>
+                                <nonFilteredFileExtension>so</nonFilteredFileExtension>
+                                <nonFilteredFileExtension>dll</nonFilteredFileExtension>
+                                <nonFilteredFileExtension>dylib</nonFilteredFileExtension>
+                            </nonFilteredFileExtensions>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
                     </plugin>
                     <plugin>
