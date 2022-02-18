@@ -1,6 +1,6 @@
 # Welcome
 
-![drasyl architecture](assets/img/drasyl-architecture.png)
+![drasyl architecture](assets/img/drasyl-architecture.svg)
 
 drasyl [dʁazy:l] is an [open-source](https://github.com/drasyl-overlay/drasyl) general-purpose
 overlay network framework for rapid development of distributed P2P applications.
