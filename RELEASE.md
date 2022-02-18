@@ -8,6 +8,7 @@ This file describes how to make the various kinds of releases.
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
   and [getting-started.md](docs/content/getting-started.md).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
+* Commit changes.
 * Build software and push to maven repository:
 ```bash
 rm -f release.properties

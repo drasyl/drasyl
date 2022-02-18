@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.7.0] - 2022-XX-XX
+## [0.7.0] - 2022-02-18
 
 ### Upgrade Notes
 
@@ -43,7 +43,6 @@ ProofOfWork = -2144920491
 - CLI: `--no-protocol-arming` option added.
 - Broadcast-based LAN Discovery added. Can be used programatically. More
   information: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/merge_requests/680
--
 
 ### Changed
 
@@ -52,7 +51,6 @@ ProofOfWork = -2144920491
 - Switch to more compact (INI-formatted) identity file format.
 - CLI: `perf client`'s `--mps` option default value has changed to `0`. This causes the client to
   send messages as quickly as possible. to send messages as fast as possible.
--
 
 ### Fixed
 
@@ -61,7 +59,6 @@ ProofOfWork = -2144920491
 - Fix SSDP discovery for IPv6-only environments.
 - Stop sending IP multicast messages to super peers when node is running in TCP-fallback mode.
 - Fix problem with `null` message when using `BehavioralDrasylNode`.
--
 
 ## [0.6.0] - 2021-11-28
 

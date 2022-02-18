@@ -14,34 +14,19 @@ your [pom.xml](http://maven.apache.org/pom.html):
 Maven:
 
 ```xml
-<repositories>
-    <repository>
-        <id>oss.sonatype.org-snapshot</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        <releases>
-            <enabled>false</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-</repositories>
-```
-
-```xml
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-node</artifactId>
-    <version>0.7.0-SNAPSHOT</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
 Other dependency managers:
 
 ```java
-Gradle:compile"org.drasyl:drasyl-node:0.7.0-SNAPSHOT" // build.gradle 
-Ivy:<dependency org="org.drasyl"name="drasyl-node"rev="0.7.0-SNAPSHOT"conf="build"/> // ivy.xml
-SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0-SNAPSHOT" // build.sbt
+Gradle:compile"org.drasyl:drasyl-node:0.7.0" // build.gradle 
+Ivy:<dependency org="org.drasyl"name="drasyl-node"rev="0.7.0"conf="build"/> // ivy.xml
+SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0" // build.sbt
 ```
 
 ## Implementing `DrasylNode`
