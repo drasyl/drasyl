@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "0.7.0",
+    "version": "0.8.0-SNAPSHOT",
     "title": "drasyl Groups Manager"
   },
   "tags": [
