@@ -23,7 +23,7 @@ boundaries between IP-based networks will be eliminated and secure communication
 any peers will be provided. Zero-configuration is required to use drasyl. Developers can run a new
 drasyl node without having to write configuration files or provide IP addresses of peers.
 
-![drasyl architecture](https://docs.drasyl.org/master/assets/img/drasyl-architecture.png)
+<img src="https://docs.drasyl.org/master/assets/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
 
 # Features
 
