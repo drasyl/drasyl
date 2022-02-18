@@ -4,6 +4,7 @@ This file describes how to make the various kinds of releases.
 
 ## Making a release
 
+* Verify that all Github Action workflows succeed on master.
 * Update version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
   and [getting-started.md](docs/content/getting-started.md).
@@ -14,7 +15,9 @@ This file describes how to make the various kinds of releases.
 rm -f release.properties
 mvn clean release:prepare
 ```
-An additional call of `mvn release:perform` is not necessary! GitLab CI performs this tasks automatically.
+
+An additional call of `mvn release:perform` is not necessary! A GitHub Action workflow performs this
+tasks automatically.
 
 * Wait for the GitHub Action to deploy new version to Maven Central ("Deploy" workflow).
 * Deploy to our public super peers (this is a manual process).
