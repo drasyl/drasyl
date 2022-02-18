@@ -26,7 +26,7 @@
 
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-parent</artifactId>
-    <version>0.7.0</version>
+    <version>0.8.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
