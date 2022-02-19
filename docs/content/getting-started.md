@@ -24,9 +24,9 @@ Maven:
 Other dependency managers:
 
 ```java
-Gradle:compile"org.drasyl:drasyl-node:0.7.0" // build.gradle 
-Ivy:<dependency org="org.drasyl"name="drasyl-node"rev="0.7.0"conf="build"/> // ivy.xml
-SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0" // build.sbt
+Gradle : compile"org.drasyl:drasyl-node:0.7.0" // build.gradle 
+Ivy    : <dependency org="org.drasyl"name="drasyl-node"rev="0.7.0"conf="build"/> // ivy.xml
+SBT    : libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0" // build.sbt
 ```
 
 ## Implementing `DrasylNode`
