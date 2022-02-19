@@ -539,15 +539,29 @@ Network and communicate with other nodes and applications.</p>
 <p>Create a new maven project and add the dependency to
 your <a href="http://maven.apache.org/pom.html">pom.xml</a>:</p>
 <p>Maven:</p>
-<pre class="highlight"><code class="language-xml">&lt;dependency&gt;
+<pre class="highlight"><code class="language-xml">
+&lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;oss.sonatype.org-snapshot&lt;/id&gt;
+        &lt;url&gt;https://oss.sonatype.org/content/repositories/snapshots/&lt;/url&gt;
+        &lt;releases&gt;
+            &lt;enabled&gt;false&lt;/enabled&gt;
+        &lt;/releases&gt;
+        &lt;snapshots&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+        &lt;/snapshots&gt;
+    &lt;/repository&gt;
+&lt;/repositories&gt;</code></pre>
+<pre class="highlight"><code class="language-xml">
+&lt;dependency&gt;
     &lt;groupId&gt;org.drasyl&lt;/groupId&gt;
     &lt;artifactId&gt;drasyl-node&lt;/artifactId&gt;
-    &lt;version&gt;0.7.0&lt;/version&gt;
+    &lt;version&gt;0.8.0-SNAPSHOT&lt;/version&gt;
 &lt;/dependency&gt;</code></pre>
 <p>Other dependency managers:</p>
-<pre class="highlight"><code class="language-java">Gradle:compile"org.drasyl:drasyl-node:0.7.0" // build.gradle 
-Ivy:&lt;dependency org="org.drasyl"name="drasyl-node"rev="0.7.0"conf="build"/&gt; // ivy.xml
-SBT:libraryDependencies+="org.drasyl"%"drasyl-node"%"0.7.0" // build.sbt</code></pre>
+<pre class="highlight"><code class="language-java">Gradle : compile"org.drasyl:drasyl-node:0.8.0-SNAPSHOT" // build.gradle 
+Ivy    : &lt;dependency org="org.drasyl"name="drasyl-node"rev="0.8.0-SNAPSHOT"conf="build"/&gt; // ivy.xml
+SBT    : libraryDependencies+="org.drasyl"%"drasyl-node"%"0.8.0-SNAPSHOT" // build.sbt</code></pre>
 <h2 id="implementing-drasylnode">Implementing <code>DrasylNode</code><a class="headerlink" href="#implementing-drasylnode" title="Permanent link">&para;</a></h2>
 <p>Next, you can create your own drasyl node by
 implementing <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html"><code>DrasylNode</code></a>.</p>
@@ -643,7 +657,7 @@ to see how drasyl can be used for different scenarios.</p>
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 18, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">February 19, 2022</span>
     
   </small>
 </div>
