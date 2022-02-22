@@ -130,11 +130,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
             final byte[] signature;
             if (childrenTime > 0) {
                 // create signature that covers the recipient, sender, time, and children time
-                final byte[] message = ArrayUtil.concat(
-                        recipient.toByteArray(),
-                        sender.toByteArray(),
-                        ByteBuffer.allocate(Long.BYTES * 2).putLong(time).putLong(childrenTime).array()
-                );
+                final byte[] message = signedAttributes(recipient, sender, time, childrenTime);
                 signature = Crypto.INSTANCE.sign(message, secretKey);
             }
             else {
