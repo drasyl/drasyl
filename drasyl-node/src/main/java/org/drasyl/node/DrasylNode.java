@@ -152,7 +152,7 @@ public abstract class DrasylNode {
                 .handler(new DrasylNodeServerChannelInitializer(config, identity, this))
                 .childHandler(new DrasylNodeChannelInitializer(config, this));
 
-        LOG.debug("drasyl node with config `{}` and identity `{}` created", config, identity);
+        LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
     }
 
     /**

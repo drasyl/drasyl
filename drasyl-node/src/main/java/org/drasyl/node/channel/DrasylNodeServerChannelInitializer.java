@@ -314,7 +314,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         public void channelActive(final ChannelHandlerContext ctx) {
             ctx.fireChannelActive();
 
-            LOG.info("drasyl node with identity `{}` has started", ctx.channel().localAddress());
+            LOG.info("drasyl node with address `{}` has started", ctx.channel().localAddress());
         }
 
         @Override
@@ -323,7 +323,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
             if (!errorOccurred) {
                 userEventTriggered(ctx, NodeNormalTerminationEvent.of(Node.of(node.identity())));
-                LOG.info("drasyl node with identity `{}` has shut down", ctx.channel().localAddress());
+                LOG.info("drasyl node with address `{}` has shut down", ctx.channel().localAddress());
             }
         }
 
@@ -379,14 +379,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
-            LOG.info("Start drasyl node with identity `{}`...", ctx.channel().localAddress());
+            LOG.info("Start drasyl node with address `{}`...", ctx.channel().localAddress());
             ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(identity)));
             ctx.fireChannelActive();
         }
 
         @Override
         public void channelInactive(final ChannelHandlerContext ctx) {
-            LOG.info("Shutdown drasyl node with identity `{}`...", ctx.channel().localAddress());
+            LOG.info("Shutdown drasyl node with address `{}`...", ctx.channel().localAddress());
             ctx.fireUserEventTriggered(NodeDownEvent.of(Node.of(identity)));
             ctx.fireChannelInactive();
         }
