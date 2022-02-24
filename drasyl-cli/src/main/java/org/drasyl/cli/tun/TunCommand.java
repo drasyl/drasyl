@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static picocli.CommandLine.Command;
@@ -111,6 +112,14 @@ public class TunCommand extends ChannelOptions {
             defaultValue = "utun0"
     )
     private String name;
+    @Option(
+            names = { "--mtu" },
+            description = {
+                    "MTU of the tun device."
+            },
+            defaultValue = "1220"
+    )
+    private int mtu;
 
     protected TunCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -142,9 +151,10 @@ public class TunCommand extends ChannelOptions {
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
-                    .option(AUTO_READ, true)
-                    .group(new NioEventLoopGroup(1))
                     .channel(TunChannel.class)
+                    .option(AUTO_READ, true)
+                    .option(TUN_MTU, mtu)
+                    .group(new NioEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
@@ -263,6 +273,8 @@ public class TunCommand extends ChannelOptions {
                 final Pointer interfaceLuid = new Memory(8);
                 WintunGetAdapterLUID(adapter, interfaceLuid);
                 AddressAndNetmaskHelper.setIPv4AndNetmask(interfaceLuid, addressStr, subnet.netmaskLength());
+
+                exec("netsh", "interface", "ipv4", "set", "subinterface", name, "mtu=" + mtu, "store=active");
             }
             else {
                 // Linux
