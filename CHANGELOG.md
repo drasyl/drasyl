@@ -9,7 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- CLI: Option `--mtu` top sub-command `tun` added.
+- CLI: Option `--mtu` to sub-command `tun` added.
 -
 -
 
