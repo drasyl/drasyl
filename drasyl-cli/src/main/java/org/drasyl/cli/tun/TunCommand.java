@@ -115,7 +115,8 @@ public class TunCommand extends ChannelOptions {
     @Option(
             names = { "--mtu" },
             description = {
-                    "MTU of the tun device."
+                    "MTU of the tun device.",
+                    "Not supported on windows. You can manually adjust the MTU size by running command 'netsh interface ipv4 set subinterface <name> mtu=<mtu> store=active'."
             },
             defaultValue = "1220"
     )
