@@ -32,7 +32,7 @@ package org.drasyl.util;
 public final class Preconditions {
     public static final String MUST_BE_NON_NEGATIVE = "must be non-negative";
     public static final String MUST_BE_POSITIVE = "must be positive";
-    public static final String MUST_BE_POWER_OF_TWO = "must be power of two";
+    public static final String MUST_BE_IN_RANGE = "must be in range of [%d, %d]";
 
     private Preconditions() {
         // util class
@@ -392,6 +392,202 @@ public final class Preconditions {
      */
     public static short requirePositive(final short obj, final String message) {
         if (obj <= 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static byte requireInRange(final byte obj, final byte min, final byte max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static byte requireInRange(final byte obj,
+                                      final byte min,
+                                      final byte max,
+                                      final String message) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static int requireInRange(final int obj, final int min, final int max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static int requireInRange(final int obj,
+                                     final int min,
+                                     final int max,
+                                     final String message) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static long requireInRange(final long obj, final long min, final long max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static long requireInRange(final long obj,
+                                      final long min,
+                                      final long max,
+                                      final String message) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static short requireInRange(final short obj, final short min, final short max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static short requireInRange(final short obj,
+                                       final short min,
+                                       final short max,
+                                       final String message) {
+        if (obj < min || obj > max) {
             throw new IllegalArgumentException(message);
         }
 

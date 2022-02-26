@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -128,6 +129,55 @@ class PreconditionsTest {
             // short
             assertEquals((short) 1, requirePositive((short) 1));
             assertEquals((short) 1, requirePositive((short) 1, "invalid"));
+        }
+    }
+
+    @Nested
+    class RequireInRange {
+        @Test
+        void shouldRejectNonInRangeNumbers() {
+            // byte
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((byte) 0, (byte) 1, (byte) 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((byte) 0, (byte) 1, (byte) 2, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((byte) -1, (byte) 1, (byte) 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((byte) -1, (byte) 1, (byte) 2, "invalid"));
+
+            // int
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0, 1, 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0, 1, 2, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1, 1, 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1, 1, 2, "invalid"));
+
+            // long
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0L, 1L, 2L));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0L, 1L, 2L, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1L, 1L, 2L));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1L, 1L, 2L, "invalid"));
+
+            // short
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((short) 0, (short) 1, (short) 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((short) 0, (short) 1, (short) 2, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((short) -1, (short) 1, (short) 2));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange((short) -1, (short) 1, (short) 2, "invalid"));
+        }
+
+        @Test
+        void shouldAcceptInRangeNumbers() {
+            // byte
+            assertEquals(1, requireInRange((byte) 1, (byte) 1, (byte) 2));
+            assertEquals(1, requireInRange((byte) 1, (byte) 1, (byte) 2, "invalid"));
+
+            // int
+            assertEquals(1, requireInRange(1, 1, 2));
+            assertEquals(1, requireInRange(1, 1, 2, "invalid"));
+
+            // long
+            assertEquals(1L, requireInRange(1L, 1L, 2L));
+            assertEquals(1L, requireInRange(1L, 1L, 2L, "invalid"));
+
+            // short
+            assertEquals((short) 1, requireInRange((short) 1, (short) 1, (short) 2));
+            assertEquals((short) 1, requireInRange((short) 1, (short) 1, (short) 2, "invalid"));
         }
     }
 }
