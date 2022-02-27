@@ -22,23 +22,25 @@
 package org.drasyl.node.plugin.groups.client;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
+import org.drasyl.node.plugin.groups.client.message.MemberJoinedMessage;
+import org.drasyl.node.plugin.groups.client.message.MemberLeftMessage;
 
-import java.io.OutputStream;
 import java.util.List;
 
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
-
 /**
- * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s with magic number {@link
- * #MAGIC_NUMBER}.
+ * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s.
  */
 public class GroupsServerMessageEncoder extends MessageToMessageEncoder<OverlayAddressedMessage<GroupsServerMessage>> {
-    public static final int MAGIC_NUMBER = 578_611_197;
+    public static final int MAGIC_NUMBER_JOINED = -578_611_194;
+    public static final int MAGIC_NUMBER_LEFT = -578_611_195;
+    public static final int MAGIC_NUMBER_WELCOME = -578_611_196;
+    public static final int MAGIC_NUMBER_FAILED = -578_611_197;
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
@@ -48,12 +50,25 @@ public class GroupsServerMessageEncoder extends MessageToMessageEncoder<OverlayA
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<GroupsServerMessage> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         final ByteBuf byteBuf = ctx.alloc().ioBuffer();
-        byteBuf.writeInt(MAGIC_NUMBER);
-        try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            JACKSON_WRITER.writeValue(outputStream, msg.content());
+        if (msg.content() instanceof MemberJoinedMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_JOINED);
         }
+        else if (msg.content() instanceof MemberLeftMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_LEFT);
+        }
+        else if (msg.content() instanceof GroupWelcomeMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_WELCOME);
+        }
+        else if (msg.content() instanceof GroupJoinFailedMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_FAILED);
+        }
+        else {
+            throw new IllegalArgumentException("Unknown message");
+        }
+
+        msg.content().writeTo(byteBuf);
         out.add(msg.replace(byteBuf));
     }
 }

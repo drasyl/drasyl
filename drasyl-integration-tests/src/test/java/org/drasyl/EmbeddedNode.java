@@ -55,6 +55,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     private final Queue<Event> events;
     private int port;
     private int tcpFallbackPort;
+    private boolean started;
 
     private EmbeddedNode(final DrasylConfig config,
                          final Queue<Event> events) throws DrasylException {
@@ -105,16 +106,22 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     }
 
     public EmbeddedNode awaitStarted() {
-        start();
-        await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
+        if (!started) {
+            started = true;
+            start();
+            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
+        }
         return this;
     }
 
     @Override
     public void close() {
-        shutdown().toCompletableFuture().join();
-        // shutdown() future is completed before channelInactive has passed the pipeline...
-        await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
+        if (started) {
+            started = false;
+            shutdown().toCompletableFuture().join();
+            // shutdown() future is completed before channelInactive has passed the pipeline...
+            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
+        }
     }
 
     public int getPort() {

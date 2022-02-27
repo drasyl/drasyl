@@ -160,7 +160,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
+                final GroupJoinMessage msg = GroupJoinMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.addGroupMember(any())).thenReturn(true);
                 when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
@@ -170,8 +170,8 @@ class GroupsManagerHandlerTest {
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
-                assertEquals(new MemberJoinedMessage(publicKey, org.drasyl.node.plugin.groups.client.Group.of(group.getName())), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), Set.of(publicKey)), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(MemberJoinedMessage.of(publicKey, org.drasyl.node.plugin.groups.client.Group.of(group.getName())), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -183,14 +183,14 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
+                final GroupJoinMessage msg = GroupJoinMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -202,7 +202,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
+                final GroupJoinMessage msg = GroupJoinMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
                 when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
@@ -210,7 +210,7 @@ class GroupsManagerHandlerTest {
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -222,7 +222,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
+                final GroupJoinMessage msg = GroupJoinMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.addGroupMember(any())).thenThrow(DatabaseException.class);
                 when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
@@ -231,7 +231,7 @@ class GroupsManagerHandlerTest {
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -244,7 +244,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
+                final GroupJoinMessage msg = GroupJoinMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork, false);
 
                 when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
 
@@ -269,13 +269,13 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()));
+                final GroupLeaveMessage msg = GroupLeaveMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()));
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
 
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
-                assertEquals(new MemberLeftMessage(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(MemberLeftMessage.of(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                assertEquals(MemberLeftMessage.of(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
                 channel.close();
@@ -287,7 +287,7 @@ class GroupsManagerHandlerTest {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()));
+                final GroupLeaveMessage msg = GroupLeaveMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()));
 
                 doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
 

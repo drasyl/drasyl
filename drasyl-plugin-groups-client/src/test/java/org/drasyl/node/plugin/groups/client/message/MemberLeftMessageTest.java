@@ -43,13 +43,13 @@ class MemberLeftMessageTest {
         @Test
         void shouldRejectNullValues() {
             final Group group = Group.of("my-squad");
-            assertThrows(NullPointerException.class, () -> new MemberLeftMessage(publicKey, null));
-            assertThrows(NullPointerException.class, () -> new MemberLeftMessage(null, group));
+            assertThrows(NullPointerException.class, () -> MemberLeftMessage.of(publicKey, null));
+            assertThrows(NullPointerException.class, () -> MemberLeftMessage.of(null, group));
         }
 
         @Test
         void shouldReturnCorrectMember() {
-            final MemberLeftMessage msg = new MemberLeftMessage(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(publicKey, msg.getMember());
 
@@ -59,7 +59,7 @@ class MemberLeftMessageTest {
 
         @Test
         void shouldReturnCorrectGroupName() {
-            final MemberLeftMessage msg = new MemberLeftMessage(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(Group.of("my-squad"), msg.getGroup());
         }
@@ -69,16 +69,16 @@ class MemberLeftMessageTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final MemberLeftMessage msg1 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
-            final MemberLeftMessage msg2 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg1 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg2 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(msg1, msg2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final MemberLeftMessage msg1 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
-            final MemberLeftMessage msg2 = new MemberLeftMessage(publicKey, Group.of("your-squad"));
+            final MemberLeftMessage msg1 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg2 = MemberLeftMessage.of(publicKey, Group.of("your-squad"));
 
             assertNotEquals(msg1, msg2);
         }
@@ -88,16 +88,16 @@ class MemberLeftMessageTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final MemberLeftMessage msg1 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
-            final MemberLeftMessage msg2 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg1 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg2 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(msg1.hashCode(), msg2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final MemberLeftMessage msg1 = new MemberLeftMessage(publicKey, Group.of("my-squad"));
-            final MemberLeftMessage msg2 = new MemberLeftMessage(publicKey, Group.of("your-squad"));
+            final MemberLeftMessage msg1 = MemberLeftMessage.of(publicKey, Group.of("my-squad"));
+            final MemberLeftMessage msg2 = MemberLeftMessage.of(publicKey, Group.of("your-squad"));
 
             assertNotEquals(msg1.hashCode(), msg2.hashCode());
         }

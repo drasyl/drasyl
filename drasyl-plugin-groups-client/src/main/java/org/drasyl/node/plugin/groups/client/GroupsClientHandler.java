@@ -123,7 +123,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupLeaveMessage(group), groupURI.getManager())).addListener(future -> {
+            ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupLeaveMessage.of(group), groupURI.getManager())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                 }
@@ -221,7 +221,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupLeaveMessage(group), (DrasylAddress) sender)).addListener(future -> {
+                () -> ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupLeaveMessage.of(group), (DrasylAddress) sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                     }
@@ -241,7 +241,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)).addListener(future -> {
+        ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinMessage.of(group.getGroup(), group.getCredentials(), proofOfWork, renew), groupManager)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send GroupJoinMessage", future::cause);
             }

@@ -22,21 +22,20 @@
 package org.drasyl.node.plugin.groups.client;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
 
-import java.io.InputStream;
 import java.util.List;
 
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MAGIC_NUMBER;
+import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MAGIC_NUMBER_JOIN;
+import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MAGIC_NUMBER_LEAVE;
 
 /**
- * Decodes {@link ByteBuf}s with magic number {@link GroupsClientMessageEncoder#MAGIC_NUMBER} to
- * {@link GroupsClientMessage}s.
+ * Decodes {@link ByteBuf}s to {@link GroupsClientMessage}s.
  */
 public class GroupsClientMessageDecoder extends MessageToMessageDecoder<OverlayAddressedMessage<ByteBuf>> {
     @Override
@@ -47,18 +46,21 @@ public class GroupsClientMessageDecoder extends MessageToMessageDecoder<OverlayA
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<ByteBuf> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         final ByteBuf byteBuf = msg.content();
         byteBuf.markReaderIndex();
         final int magicNumber = byteBuf.readInt();
-        if (magicNumber == MAGIC_NUMBER) {
-            try (final InputStream inputStream = new ByteBufInputStream(byteBuf)) {
-                out.add(msg.replace(JACKSON_READER.readValue(inputStream, GroupsClientMessage.class)));
-            }
-        }
-        else {
-            byteBuf.resetReaderIndex();
-            out.add(msg.retain());
+
+        switch (magicNumber) {
+            case MAGIC_NUMBER_JOIN:
+                out.add(msg.replace(GroupJoinMessage.of(byteBuf)));
+                break;
+            case MAGIC_NUMBER_LEAVE:
+                out.add(msg.replace(GroupLeaveMessage.of(byteBuf)));
+                break;
+            default:
+                byteBuf.resetReaderIndex();
+                out.add(msg.retain());
         }
     }
 }

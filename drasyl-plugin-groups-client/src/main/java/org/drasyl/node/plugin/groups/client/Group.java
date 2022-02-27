@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,55 +21,28 @@
  */
 package org.drasyl.node.plugin.groups.client;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.auto.value.AutoValue;
+import org.drasyl.util.UnsignedShort;
 
-import java.util.Objects;
+import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * A simple POJO that models a group.
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings("java:S2974")
-public class Group {
-    private final String name;
-
-    private Group(final String name) {
-        this.name = name;
-    }
-
-    @JsonValue
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Group group = (Group) o;
-        return Objects.equals(name, group.name);
-    }
-
-    @Override
-    public String toString() {
-        return "Group{" +
-                "name='" + name +
-                '}';
-    }
-
-    @JsonCreator
+@AutoValue
+public abstract class Group {
+    /**
+     * Creates a new group with the given {@code name}.
+     *
+     * @param name the name of the group
+     * @return a group
+     */
     public static Group of(final String name) {
-        return new Group(name);
+        requireInRange(name.length(), UnsignedShort.MIN_VALUE.getValue(), UnsignedShort.MAX_VALUE.getValue());
+        return new AutoValue_Group(name);
     }
+
+    public abstract String getName();
 }

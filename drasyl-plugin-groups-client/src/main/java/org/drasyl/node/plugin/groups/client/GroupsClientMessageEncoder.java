@@ -22,23 +22,21 @@
 package org.drasyl.node.plugin.groups.client;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
 
-import java.io.OutputStream;
 import java.util.List;
 
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
-
 /**
- * Encodes {@link GroupsClientMessage}s to {@link ByteBuf}s with magic number {@link
- * #MAGIC_NUMBER}.
+ * Encodes {@link GroupsClientMessage}s to {@link ByteBuf}s.
  */
 public class GroupsClientMessageEncoder extends MessageToMessageEncoder<OverlayAddressedMessage<GroupsClientMessage>> {
-    public static final int MAGIC_NUMBER = 578_611_198;
+    public static final int MAGIC_NUMBER_JOIN = -578_611_198;
+    public static final int MAGIC_NUMBER_LEAVE = -578_611_199;
 
     @Override
     public boolean acceptOutboundMessage(final Object msg) {
@@ -48,12 +46,19 @@ public class GroupsClientMessageEncoder extends MessageToMessageEncoder<OverlayA
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<GroupsClientMessage> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         final ByteBuf byteBuf = ctx.alloc().ioBuffer();
-        byteBuf.writeInt(MAGIC_NUMBER);
-        try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-            JACKSON_WRITER.writeValue(outputStream, msg.content());
+        if (msg.content() instanceof GroupJoinMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_JOIN);
         }
+        else if (msg.content() instanceof GroupLeaveMessage) {
+            byteBuf.writeInt(MAGIC_NUMBER_LEAVE);
+        }
+        else {
+            throw new IllegalArgumentException("Unknown message");
+        }
+
+        msg.content().writeTo(byteBuf);
         out.add(msg.replace(byteBuf));
     }
 }

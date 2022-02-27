@@ -21,49 +21,42 @@
  */
 package org.drasyl.node.plugin.groups.client.event;
 
+import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.Group;
 
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * An event that signals that this node has successfully joined a group.
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings("java:S2974")
-public class GroupJoinedEvent implements GroupEvent {
-    private final Group group;
-    private final Set<IdentityPublicKey> members;
-    private final Runnable leaveRun;
-
+@AutoValue
+public abstract class GroupJoinedEvent implements GroupEvent {
     /**
      * @throws NullPointerException if {@code group}, {@code members} or {@code leaveRun} is {@code
      *                              null}
      */
-    private GroupJoinedEvent(final Group group,
-                             final Set<IdentityPublicKey> members,
-                             final Runnable leaveRun) {
-        this.group = requireNonNull(group);
-        this.members = Set.copyOf(members);
-        this.leaveRun = requireNonNull(leaveRun);
+    public static GroupJoinedEvent of(final Group group,
+                                      final Set<IdentityPublicKey> members,
+                                      final Runnable leaveRun) {
+        return new AutoValue_GroupJoinedEvent(group, members, leaveRun);
     }
 
-    @Override
-    public Group getGroup() {
-        return group;
-    }
+    public abstract Set<IdentityPublicKey> getMembers();
 
-    public Set<IdentityPublicKey> getMembers() {
-        return members;
-    }
+    /**
+     * If this runnable is invoked the group will be left.
+     *
+     * @return runnable to leave the group
+     */
+    public abstract Runnable getLeaveRun();
 
     @Override
     public int hashCode() {
-        return Objects.hash(group);
+        return Objects.hash(getGroup());
     }
 
     @Override
@@ -75,33 +68,6 @@ public class GroupJoinedEvent implements GroupEvent {
             return false;
         }
         final GroupJoinedEvent that = (GroupJoinedEvent) o;
-        return Objects.equals(group, that.group);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupJoinedEvent{" +
-                "group=" + group +
-                ", members=" + members +
-                '}';
-    }
-
-    /**
-     * If this runnable is invoked the {@link #group} will be left.
-     *
-     * @return runnable to left the {@link #group}
-     */
-    public Runnable getLeaveRun() {
-        return leaveRun;
-    }
-
-    /**
-     * @throws NullPointerException if {@code group}, {@code members} or {@code leaveRun} is {@code
-     *                              null}
-     */
-    public static GroupJoinedEvent of(final Group group,
-                                      final Set<IdentityPublicKey> members,
-                                      final Runnable leaveRun) {
-        return new GroupJoinedEvent(group, members, leaveRun);
+        return Objects.equals(getGroup(), that.getGroup());
     }
 }

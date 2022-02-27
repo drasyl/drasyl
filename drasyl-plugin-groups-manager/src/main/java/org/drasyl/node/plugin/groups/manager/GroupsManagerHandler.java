@@ -72,7 +72,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
     void staleTask(final ChannelHandlerContext ctx) {
         try {
             for (final Membership member : database.deleteStaleMemberships()) {
-                final MemberLeftMessage leftMessage = new MemberLeftMessage(
+                final MemberLeftMessage leftMessage = MemberLeftMessage.of(
                         member.getMember().getPublicKey(),
                         org.drasyl.node.plugin.groups.client.Group.of(member.getGroup().getName()));
 
@@ -151,7 +151,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                     doJoin(ctx, sender, group, msg.isRenew());
                 }
                 else {
-                    ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), sender)).addListener(future -> {
+                    ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), sender)).addListener(future -> {
                         if (!future.isSuccess()) {
                             LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                         }
@@ -160,7 +160,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                 }
             }
             else {
-                ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), sender)).addListener(future -> {
+                ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                     }
@@ -185,7 +185,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                                     final IdentityPublicKey sender,
                                     final GroupLeaveMessage msg) {
         try {
-            final MemberLeftMessage leftMessage = new MemberLeftMessage(sender, msg.getGroup());
+            final MemberLeftMessage leftMessage = MemberLeftMessage.of(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
             ctx.writeAndFlush(new OverlayAddressedMessage<>(leftMessage, sender)).addListener(future -> {
@@ -224,13 +224,13 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
-                ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupWelcomeMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships), sender)).addListener(future -> {
+                ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships), sender)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupWelcomeMessage.class::getSimpleName, future::cause);
                     }
                 });
 
-                notifyMembers(ctx, group.getName(), new MemberJoinedMessage(sender, org.drasyl.node.plugin.groups.client.Group.of(group.getName())));
+                notifyMembers(ctx, group.getName(), MemberJoinedMessage.of(sender, org.drasyl.node.plugin.groups.client.Group.of(group.getName())));
 
                 LOG.debug("Added member `{}` to group `{}`", () -> sender, group::getName);
             }
@@ -239,7 +239,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
             }
         }
         catch (final DatabaseException e) {
-            ctx.writeAndFlush(new OverlayAddressedMessage<>(new GroupJoinFailedMessage(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), sender)).addListener(future -> {
+            ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), sender)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                 }

@@ -21,78 +21,61 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.plugin.groups.client.Group;
+import org.drasyl.util.UnsignedShort;
 
-import java.util.Objects;
+import java.nio.charset.StandardCharsets;
 
-import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.SecretUtil.maskSecret;
+import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * This message is send by the groups client to the server to join a group.
  * <p>
  * This is an immutable object.
  */
-public class GroupJoinMessage extends GroupActionMessage implements GroupsClientMessage {
-    private final String credentials;
-    private final ProofOfWork proofOfWork;
-    private final boolean renew;
+@AutoValue
+public abstract class GroupJoinMessage extends GroupsClientMessage {
+    public static final int MIN_LENGTH = 11;
 
-    @JsonCreator
-    public GroupJoinMessage(@JsonProperty("group") final Group group,
-                            @JsonProperty("credentials") final String credentials,
-                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                            @JsonProperty("renew") final boolean renew) {
-        super(group);
-        this.credentials = requireNonNull(credentials);
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.renew = renew;
+    public static GroupJoinMessage of(final Group group,
+                                      final String credentials,
+                                      final ProofOfWork proofOfWork,
+                                      final boolean renew) {
+        requireInRange(credentials.length(), UnsignedShort.MIN_VALUE.getValue(), UnsignedShort.MAX_VALUE.getValue());
+        return new AutoValue_GroupJoinMessage(group, renew, credentials, proofOfWork);
     }
 
-    public boolean isRenew() {
-        return renew;
+    public static GroupJoinMessage of(final ByteBuf byteBuf) {
+        if (byteBuf.readableBytes() < MIN_LENGTH) {
+            throw new IllegalArgumentException("bytebuf is to short.");
+        }
+
+        final int lenGroup = byteBuf.readUnsignedShort();
+        final Group group = Group.of(byteBuf.readCharSequence(lenGroup, StandardCharsets.UTF_8).toString());
+        final boolean renew = byteBuf.readBoolean();
+        final int lenCred = byteBuf.readUnsignedShort();
+        final String cred = byteBuf.readCharSequence(lenCred, StandardCharsets.UTF_8).toString();
+        final ProofOfWork pow = ProofOfWork.of(byteBuf.readInt());
+
+        return of(group, cred, pow, renew);
     }
 
-    public String getCredentials() {
-        return credentials;
-    }
+    public abstract boolean isRenew();
 
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
-    }
+    public abstract String getCredentials();
+
+    public abstract ProofOfWork getProofOfWork();
 
     @Override
-    public String toString() {
-        return "GroupJoinMessage{" +
-                "credentials='" + maskSecret(credentials) + '\'' +
-                ", group='" + group + '\'' +
-                ", proofOfWork=" + proofOfWork + '\'' +
-                ", renew=" + renew +
-                '}';
-    }
+    public void writeTo(final ByteBuf out) {
+        super.writeTo(out);
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final GroupJoinMessage that = (GroupJoinMessage) o;
-        return Objects.equals(credentials, that.credentials) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
-                Objects.equals(renew, that.renew);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), credentials, proofOfWork, renew);
+        out.writeBoolean(isRenew());
+        out.writeBytes(UnsignedShort.of(getCredentials().length()).toBytes());
+        out.writeCharSequence(getCredentials(), StandardCharsets.UTF_8);
+        out.writeInt(getProofOfWork().getNonce());
     }
 }

@@ -21,8 +21,25 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
+import io.netty.buffer.ByteBuf;
+import org.drasyl.node.plugin.groups.client.Group;
+import org.drasyl.util.UnsignedShort;
+
+import java.nio.charset.StandardCharsets;
+
 /**
- * Default interface for all messages of the groups plugin.
+ * Default class for all messages of the groups plugin.
  */
-public interface GroupsPluginMessage {
+public abstract class GroupsPluginMessage {
+    public abstract Group getGroup();
+
+    /**
+     * Writes this message to the buffer {@code out}.
+     *
+     * @param out writes this envelope to this buffer
+     */
+    public void writeTo(final ByteBuf out) {
+        out.writeBytes(UnsignedShort.of(getGroup().getName().length()).toBytes());
+        out.writeCharSequence(getGroup().getName(), StandardCharsets.UTF_8);
+    }
 }
