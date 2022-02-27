@@ -21,11 +21,10 @@
  */
 package org.drasyl.node.plugin.groups.client.event;
 
+import com.google.auto.value.AutoValue;
 import org.drasyl.node.plugin.groups.client.Group;
 
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * An event that signals that this node has left a group. (Maybe got also kicked by the group
@@ -33,28 +32,11 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings("java:S2974")
-public class GroupLeftEvent implements GroupEvent {
-    private final Group group;
-    private final Runnable reJoin;
-
-    /**
-     * @throws NullPointerException if {@code group} or {@code reJoin} is {@code null}
-     */
-    private GroupLeftEvent(final Group group,
-                           final Runnable reJoin) {
-        this.group = requireNonNull(group);
-        this.reJoin = requireNonNull(reJoin);
-    }
-
-    @Override
-    public Group getGroup() {
-        return group;
-    }
-
+@AutoValue
+public abstract class GroupLeftEvent implements GroupEvent {
     @Override
     public int hashCode() {
-        return Objects.hash(group);
+        return Objects.hash(getGroup());
     }
 
     @Override
@@ -66,30 +48,21 @@ public class GroupLeftEvent implements GroupEvent {
             return false;
         }
         final GroupLeftEvent that = (GroupLeftEvent) o;
-        return Objects.equals(group, that.group);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupLeftEvent{" +
-                "group=" + group +
-                '}';
+        return Objects.equals(getGroup(), that.getGroup());
     }
 
     /**
-     * If this runnable is invoked the plugin tries to re-join the {@link #group}.
+     * If this runnable is invoked the plugin tries to re-join the group.
      *
      * @return runnable to re-join group
      */
-    public Runnable getReJoin() {
-        return reJoin;
-    }
+    public abstract Runnable getReJoin();
 
     /**
      * @throws NullPointerException if {@code group} or{@code reJoin} is {@code null}
      */
     public static GroupLeftEvent of(final Group group,
                                     final Runnable reJoin) {
-        return new GroupLeftEvent(group, reJoin);
+        return new AutoValue_GroupLeftEvent(group, reJoin);
     }
 }

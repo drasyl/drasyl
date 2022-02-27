@@ -21,6 +21,7 @@
  */
 package org.drasyl.node.plugin.groups.client.event;
 
+import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.Group;
 
@@ -29,29 +30,13 @@ import org.drasyl.node.plugin.groups.client.Group;
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings("java:S2974")
-public class GroupMemberJoinedEvent extends GroupMemberActionEvent {
-    /**
-     * @throws NullPointerException if {@code member} or {@code group} is {@code null}
-     */
-    private GroupMemberJoinedEvent(final IdentityPublicKey member,
-                                   final Group group) {
-        super(member, group);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupMemberJoinedEvent{" +
-                "member=" + member +
-                ", group=" + group +
-                '}';
-    }
-
+@AutoValue
+public abstract class GroupMemberJoinedEvent extends GroupMemberActionEvent {
     /**
      * @throws NullPointerException if {@code member} or {@code group} is {@code null}
      */
     public static GroupMemberJoinedEvent of(final IdentityPublicKey member,
                                             final Group group) {
-        return new GroupMemberJoinedEvent(member, group);
+        return new AutoValue_GroupMemberJoinedEvent(group, member);
     }
 }

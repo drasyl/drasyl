@@ -21,36 +21,31 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.node.plugin.groups.client.Group;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * This message is send by the groups client to the server to leave a group.
  * <p>
  * This is an immutable object.
  */
-public class GroupLeaveMessage extends GroupActionMessage implements GroupsClientMessage {
-    @JsonCreator
-    public GroupLeaveMessage(@JsonProperty("group") final Group group) {
-        super(group);
+@AutoValue
+public abstract class GroupLeaveMessage extends GroupsClientMessage {
+    public static GroupLeaveMessage of(final Group group) {
+        return new AutoValue_GroupLeaveMessage(group);
     }
 
-    @SuppressWarnings("EmptyMethod")
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
+    public static GroupLeaveMessage of(final ByteBuf byteBuf) {
+        if (byteBuf.readableBytes() < 3) {
+            throw new IllegalArgumentException("bytebuf is to short.");
+        }
 
-    @Override
-    public boolean equals(final Object o) {
-        return super.equals(o);
-    }
+        final int lenGroup = byteBuf.readUnsignedShort();
+        final Group group = Group.of(byteBuf.readCharSequence(lenGroup, StandardCharsets.UTF_8).toString());
 
-    @Override
-    public String toString() {
-        return "GroupLeaveMessage{" +
-                "group='" + group + '\'' +
-                '}';
+        return of(group);
     }
 }

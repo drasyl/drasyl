@@ -37,12 +37,12 @@ class GroupLeaveMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new GroupLeaveMessage(null));
+            assertThrows(NullPointerException.class, () -> GroupLeaveMessage.of((Group) null));
         }
 
         @Test
         void shouldReturnCorrectGroupName() {
-            final GroupLeaveMessage msg = new GroupLeaveMessage(Group.of("my-squad"));
+            final GroupLeaveMessage msg = GroupLeaveMessage.of(Group.of("my-squad"));
 
             assertEquals(Group.of("my-squad"), msg.getGroup());
         }
@@ -52,16 +52,16 @@ class GroupLeaveMessageTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupLeaveMessage msg1 = new GroupLeaveMessage(Group.of("my-squad"));
-            final GroupLeaveMessage msg2 = new GroupLeaveMessage(Group.of("my-squad"));
+            final GroupLeaveMessage msg1 = GroupLeaveMessage.of(Group.of("my-squad"));
+            final GroupLeaveMessage msg2 = GroupLeaveMessage.of(Group.of("my-squad"));
 
             assertEquals(msg1, msg2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupLeaveMessage msg1 = new GroupLeaveMessage(Group.of("my-squad"));
-            final GroupLeaveMessage msg2 = new GroupLeaveMessage(Group.of("your-squad"));
+            final GroupLeaveMessage msg1 = GroupLeaveMessage.of(Group.of("my-squad"));
+            final GroupLeaveMessage msg2 = GroupLeaveMessage.of(Group.of("your-squad"));
 
             assertNotEquals(msg1, msg2);
         }
@@ -71,16 +71,16 @@ class GroupLeaveMessageTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupLeaveMessage msg1 = new GroupLeaveMessage(Group.of("my-squad"));
-            final GroupLeaveMessage msg2 = new GroupLeaveMessage(Group.of("my-squad"));
+            final GroupLeaveMessage msg1 = GroupLeaveMessage.of(Group.of("my-squad"));
+            final GroupLeaveMessage msg2 = GroupLeaveMessage.of(Group.of("my-squad"));
 
             assertEquals(msg1.hashCode(), msg2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupLeaveMessage msg1 = new GroupLeaveMessage(Group.of("my-squad"));
-            final GroupLeaveMessage msg2 = new GroupLeaveMessage(Group.of("your-squad"));
+            final GroupLeaveMessage msg1 = GroupLeaveMessage.of(Group.of("my-squad"));
+            final GroupLeaveMessage msg2 = GroupLeaveMessage.of(Group.of("your-squad"));
 
             assertNotEquals(msg1.hashCode(), msg2.hashCode());
         }

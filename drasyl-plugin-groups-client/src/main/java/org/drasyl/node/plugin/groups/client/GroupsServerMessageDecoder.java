@@ -22,21 +22,24 @@
 package org.drasyl.node.plugin.groups.client;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
+import org.drasyl.node.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
+import org.drasyl.node.plugin.groups.client.message.MemberJoinedMessage;
+import org.drasyl.node.plugin.groups.client.message.MemberLeftMessage;
 
-import java.io.InputStream;
 import java.util.List;
 
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MAGIC_NUMBER;
+import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MAGIC_NUMBER_FAILED;
+import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MAGIC_NUMBER_JOINED;
+import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MAGIC_NUMBER_LEFT;
+import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MAGIC_NUMBER_WELCOME;
 
 /**
- * Decodes {@link ByteBuf}s with magic number {@link GroupsServerMessageEncoder#MAGIC_NUMBER} to
- * {@link GroupsServerMessage}s.
+ * Decodes {@link ByteBuf}s  to {@link GroupsServerMessage}s.
  */
 class GroupsServerMessageDecoder extends MessageToMessageDecoder<OverlayAddressedMessage<ByteBuf>> {
     @Override
@@ -47,18 +50,27 @@ class GroupsServerMessageDecoder extends MessageToMessageDecoder<OverlayAddresse
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<ByteBuf> msg,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         final ByteBuf byteBuf = msg.content();
         byteBuf.markReaderIndex();
         final int magicNumber = byteBuf.readInt();
-        if (magicNumber == MAGIC_NUMBER) {
-            try (final InputStream inputStream = new ByteBufInputStream(byteBuf)) {
-                out.add(msg.replace(JACKSON_READER.readValue(inputStream, GroupsServerMessage.class)));
-            }
-        }
-        else {
-            byteBuf.resetReaderIndex();
-            out.add(msg.retain());
+
+        switch (magicNumber) {
+            case MAGIC_NUMBER_JOINED:
+                out.add(msg.replace(MemberJoinedMessage.of(byteBuf)));
+                break;
+            case MAGIC_NUMBER_LEFT:
+                out.add(msg.replace(MemberLeftMessage.of(byteBuf)));
+                break;
+            case MAGIC_NUMBER_WELCOME:
+                out.add(msg.replace(GroupWelcomeMessage.of(byteBuf)));
+                break;
+            case MAGIC_NUMBER_FAILED:
+                out.add(msg.replace(GroupJoinFailedMessage.of(byteBuf)));
+                break;
+            default:
+                byteBuf.resetReaderIndex();
+                out.add(msg.retain());
         }
     }
 }

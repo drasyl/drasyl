@@ -21,18 +21,8 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 /**
  * This message is send by the groups server to the client.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = GroupJoinFailedMessage.class),
-        @JsonSubTypes.Type(value = GroupWelcomeMessage.class),
-        @JsonSubTypes.Type(value = MemberJoinedMessage.class),
-        @JsonSubTypes.Type(value = MemberLeftMessage.class),
-})
-public interface GroupsServerMessage {
+public abstract class GroupsServerMessage extends GroupsPluginMessage {
 }

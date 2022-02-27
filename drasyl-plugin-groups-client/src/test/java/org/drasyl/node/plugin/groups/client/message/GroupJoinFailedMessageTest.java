@@ -39,13 +39,13 @@ class GroupJoinFailedMessageTest {
         @Test
         void shouldRejectNullValues() {
             final Group group = Group.of("my-squad");
-            assertThrows(NullPointerException.class, () -> new GroupJoinFailedMessage(group, null));
-            assertThrows(NullPointerException.class, () -> new GroupJoinFailedMessage(null, ERROR_GROUP_NOT_FOUND));
+            assertThrows(NullPointerException.class, () -> GroupJoinFailedMessage.of(group, null));
+            assertThrows(NullPointerException.class, () -> GroupJoinFailedMessage.of(null, ERROR_GROUP_NOT_FOUND));
         }
 
         @Test
         void shouldReturnCorrectReason() {
-            final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertEquals(ERROR_GROUP_NOT_FOUND, msg.getReason());
             assertEquals(ERROR_GROUP_NOT_FOUND.getDescription(), msg.getReason().getDescription());
@@ -53,7 +53,7 @@ class GroupJoinFailedMessageTest {
 
         @Test
         void shouldReturnCorrectGroupName() {
-            final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertEquals(Group.of("my-squad"), msg.getGroup());
         }
@@ -62,7 +62,7 @@ class GroupJoinFailedMessageTest {
         void shouldGenerateCorrectErrorEnum() {
             final GroupJoinFailedMessage.Error error = ERROR_GROUP_NOT_FOUND;
 
-            assertEquals(error, GroupJoinFailedMessage.Error.from(error.getDescription()));
+            assertEquals(error, GroupJoinFailedMessage.Error.from(error.ordinal()));
         }
     }
 
@@ -70,16 +70,16 @@ class GroupJoinFailedMessageTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupJoinFailedMessage msg1 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
-            final GroupJoinFailedMessage msg2 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg1 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg2 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertEquals(msg1, msg2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupJoinFailedMessage msg1 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
-            final GroupJoinFailedMessage msg2 = new GroupJoinFailedMessage(Group.of("your-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg1 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg2 = GroupJoinFailedMessage.of(Group.of("your-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertNotEquals(msg1, msg2);
         }
@@ -89,16 +89,16 @@ class GroupJoinFailedMessageTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupJoinFailedMessage msg1 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
-            final GroupJoinFailedMessage msg2 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg1 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg2 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertEquals(msg1.hashCode(), msg2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupJoinFailedMessage msg1 = new GroupJoinFailedMessage(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
-            final GroupJoinFailedMessage msg2 = new GroupJoinFailedMessage(Group.of("your-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg1 = GroupJoinFailedMessage.of(Group.of("my-squad"), ERROR_GROUP_NOT_FOUND);
+            final GroupJoinFailedMessage msg2 = GroupJoinFailedMessage.of(Group.of("your-squad"), ERROR_GROUP_NOT_FOUND);
 
             assertNotEquals(msg1.hashCode(), msg2.hashCode());
         }

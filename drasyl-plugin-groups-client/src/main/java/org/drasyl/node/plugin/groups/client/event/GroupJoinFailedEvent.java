@@ -21,57 +21,41 @@
  */
 package org.drasyl.node.plugin.groups.client.event;
 
+import com.google.auto.value.AutoValue;
 import org.drasyl.node.plugin.groups.client.Group;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
 
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * An event that signals, that a joining a specific group has failed.
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings("java:S2974")
-public class GroupJoinFailedEvent implements GroupEvent {
-    private final Group group;
-    private final GroupJoinFailedMessage.Error reason;
-    private final Runnable reJoin;
+@AutoValue
+public abstract class GroupJoinFailedEvent implements GroupEvent {
+    public abstract GroupJoinFailedMessage.Error getReason();
+
+    /**
+     * If this runnable is invoked the plugin tries to re-join the group.
+     *
+     * @return runnable to re-join group
+     */
+    public abstract Runnable getReJoin();
 
     /**
      * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
      *                              null}
      */
-    private GroupJoinFailedEvent(final Group group,
-                                 final GroupJoinFailedMessage.Error reason,
-                                 final Runnable reJoin) {
-        this.group = requireNonNull(group);
-        this.reason = requireNonNull(reason);
-        this.reJoin = requireNonNull(reJoin);
-    }
-
-    public GroupJoinFailedMessage.Error getReason() {
-        return reason;
-    }
-
-    @Override
-    public Group getGroup() {
-        return group;
-    }
-
-    /**
-     * If this runnable is invoked the plugin tries to re-join the {@link #group}.
-     *
-     * @return runnable to re-join group
-     */
-    public Runnable getReJoin() {
-        return reJoin;
+    public static GroupJoinFailedEvent of(final Group group,
+                                          final GroupJoinFailedMessage.Error reason,
+                                          final Runnable reJoin) {
+        return new AutoValue_GroupJoinFailedEvent(group, reason, reJoin);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(group, reason);
+        return Objects.hash(getGroup(), getReason());
     }
 
     @Override
@@ -83,25 +67,6 @@ public class GroupJoinFailedEvent implements GroupEvent {
             return false;
         }
         final GroupJoinFailedEvent that = (GroupJoinFailedEvent) o;
-        return Objects.equals(group, that.group) &&
-                Objects.equals(reason, that.reason);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupJoinFailedEvent{" +
-                "group=" + group +
-                ", reason='" + reason + '\'' +
-                '}';
-    }
-
-    /**
-     * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
-     *                              null}
-     */
-    public static GroupJoinFailedEvent of(final Group group,
-                                          final GroupJoinFailedMessage.Error reason,
-                                          final Runnable reJoin) {
-        return new GroupJoinFailedEvent(group, reason, reJoin);
+        return Objects.equals(getGroup(), that.getGroup()) & Objects.equals(getReason(), that.getReason());
     }
 }

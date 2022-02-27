@@ -21,16 +21,13 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.node.plugin.groups.client.Group;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This message is sent by the groups server to the client when the join to a group was not
@@ -38,46 +35,31 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class GroupJoinFailedMessage extends GroupActionMessage implements GroupsServerMessage {
-    private final Error reason;
-
-    @JsonCreator
-    public GroupJoinFailedMessage(@JsonProperty("group") final Group group,
-                                  @JsonProperty("reason") final Error reason) {
-        super(group);
-        this.reason = requireNonNull(reason);
+@AutoValue
+public abstract class GroupJoinFailedMessage extends GroupsServerMessage {
+    public static GroupJoinFailedMessage of(final Group group,
+                                            final Error reason) {
+        return new AutoValue_GroupJoinFailedMessage(group, reason);
     }
 
-    public Error getReason() {
-        return reason;
+    public static GroupJoinFailedMessage of(final ByteBuf byteBuf) {
+        if (byteBuf.readableBytes() < 4) {
+            throw new IllegalArgumentException("bytebuf is to short.");
+        }
+
+        final int lenGroup = byteBuf.readUnsignedShort();
+        final Group group = Group.of(byteBuf.readCharSequence(lenGroup, StandardCharsets.UTF_8).toString());
+        final Error error = Error.from(byteBuf.readByte());
+
+        return of(group, error);
     }
+
+    public abstract Error getReason();
 
     @Override
-    public String toString() {
-        return "GroupJoinFailedMessage{" +
-                "group='" + group + '\'' +
-                ", reason=" + reason +
-                '}';
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final GroupJoinFailedMessage that = (GroupJoinFailedMessage) o;
-        return reason == that.reason;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), reason);
+    public void writeTo(final ByteBuf out) {
+        super.writeTo(out);
+        out.writeByte(getReason().ordinal());
     }
 
     /**
@@ -87,11 +69,11 @@ public class GroupJoinFailedMessage extends GroupActionMessage implements Groups
         ERROR_PROOF_TO_WEAK("The given proof of work is to weak for this group."),
         ERROR_UNKNOWN("An unknown error is occurred during join."),
         ERROR_GROUP_NOT_FOUND("The given group was not found.");
-        private static final Map<String, Error> errors = new HashMap<>();
+        private static final Map<Integer, Error> errors = new HashMap<>();
 
         static {
             for (final Error description : values()) {
-                errors.put(description.getDescription(), description);
+                errors.put(description.ordinal(), description);
             }
         }
 
@@ -104,13 +86,11 @@ public class GroupJoinFailedMessage extends GroupActionMessage implements Groups
         /**
          * @return a human readable representation of the reason.
          */
-        @JsonValue
         public String getDescription() {
             return description;
         }
 
-        @JsonCreator
-        public static Error from(final String description) {
+        public static Error from(final int description) {
             return errors.get(description);
         }
     }

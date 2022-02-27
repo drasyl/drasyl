@@ -43,20 +43,20 @@ class MemberJoinedMessageTest {
         @Test
         void shouldRejectNullValues() {
             final Group group = Group.of("my-squad");
-            assertThrows(NullPointerException.class, () -> new MemberJoinedMessage(publicKey, null));
-            assertThrows(NullPointerException.class, () -> new MemberJoinedMessage(null, group));
+            assertThrows(NullPointerException.class, () -> MemberJoinedMessage.of(publicKey, null));
+            assertThrows(NullPointerException.class, () -> MemberJoinedMessage.of(null, group));
         }
 
         @Test
         void shouldReturnCorrectMember() {
-            final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(publicKey, msg.getMember());
         }
 
         @Test
         void shouldReturnCorrectGroupName() {
-            final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(Group.of("my-squad"), msg.getGroup());
         }
@@ -66,16 +66,16 @@ class MemberJoinedMessageTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final MemberJoinedMessage msg1 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
-            final MemberJoinedMessage msg2 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg1 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg2 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(msg1, msg2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final MemberJoinedMessage msg1 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
-            final MemberJoinedMessage msg2 = new MemberJoinedMessage(publicKey, Group.of("your-squad"));
+            final MemberJoinedMessage msg1 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg2 = MemberJoinedMessage.of(publicKey, Group.of("your-squad"));
 
             assertNotEquals(msg1, msg2);
         }
@@ -85,16 +85,16 @@ class MemberJoinedMessageTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final MemberJoinedMessage msg1 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
-            final MemberJoinedMessage msg2 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg1 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg2 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
 
             assertEquals(msg1.hashCode(), msg2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final MemberJoinedMessage msg1 = new MemberJoinedMessage(publicKey, Group.of("my-squad"));
-            final MemberJoinedMessage msg2 = new MemberJoinedMessage(publicKey, Group.of("your-squad"));
+            final MemberJoinedMessage msg1 = MemberJoinedMessage.of(publicKey, Group.of("my-squad"));
+            final MemberJoinedMessage msg2 = MemberJoinedMessage.of(publicKey, Group.of("your-squad"));
 
             assertNotEquals(msg1.hashCode(), msg2.hashCode());
         }

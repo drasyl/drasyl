@@ -21,28 +21,42 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.Group;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * This message is sent by the groups server to the client when a member has left a group.
  * <p>
  * This is an immutable object.
  */
-public class MemberLeftMessage extends MemberActionMessage implements GroupsServerMessage {
-    @JsonCreator
-    public MemberLeftMessage(@JsonProperty("member") final IdentityPublicKey member,
-                             @JsonProperty("group") final Group group) {
-        super(member, group);
+@AutoValue
+public abstract class MemberLeftMessage extends GroupsServerMessage {
+    public static MemberLeftMessage of(final IdentityPublicKey member,
+                                       final Group group) {
+        return new AutoValue_MemberLeftMessage(group, member);
     }
 
+    public static MemberLeftMessage of(final ByteBuf byteBuf) {
+        if (byteBuf.readableBytes() < 3 + IdentityPublicKey.KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("not enough bytes.");
+        }
+        final int lenGroup = byteBuf.readUnsignedShort();
+        final Group group = Group.of(byteBuf.readCharSequence(lenGroup, StandardCharsets.UTF_8).toString());
+        final byte[] id = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+        byteBuf.readBytes(id);
+
+        return of(IdentityPublicKey.of(id), group);
+    }
+
+    public abstract IdentityPublicKey getMember();
+
     @Override
-    public String toString() {
-        return "MemberLeftMessage{" +
-                "member=" + member +
-                ", group='" + group + '\'' +
-                '}';
+    public void writeTo(final ByteBuf out) {
+        super.writeTo(out);
+        out.writeBytes(getMember().toByteArray());
     }
 }

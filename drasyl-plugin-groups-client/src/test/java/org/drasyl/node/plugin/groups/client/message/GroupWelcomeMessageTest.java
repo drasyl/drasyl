@@ -42,20 +42,20 @@ class GroupWelcomeMessageTest {
         void shouldRejectNullValues() {
             final Set<IdentityPublicKey> set = Set.of();
             final Group group = Group.of("my-squad");
-            assertThrows(NullPointerException.class, () -> new GroupWelcomeMessage(group, null));
-            assertThrows(NullPointerException.class, () -> new GroupWelcomeMessage(null, set));
+            assertThrows(NullPointerException.class, () -> GroupWelcomeMessage.of(group, null));
+            assertThrows(NullPointerException.class, () -> GroupWelcomeMessage.of(null, set));
         }
 
         @Test
         void shouldReturnCorrectGroupName() {
-            final GroupWelcomeMessage msg = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
 
             assertEquals(Group.of("my-squad"), msg.getGroup());
         }
 
         @Test
         void shouldReturnCorrectMemberSet() {
-            final GroupWelcomeMessage msg = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
 
             assertEquals(Set.of(), msg.getMembers());
         }
@@ -65,16 +65,16 @@ class GroupWelcomeMessageTest {
     class Equals {
         @Test
         void shouldBeEquals() {
-            final GroupWelcomeMessage msg1 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
-            final GroupWelcomeMessage msg2 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg1 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg2 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
 
             assertEquals(msg1, msg2);
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupWelcomeMessage msg1 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
-            final GroupWelcomeMessage msg2 = new GroupWelcomeMessage(Group.of("your-squad"), Set.of());
+            final GroupWelcomeMessage msg1 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg2 = GroupWelcomeMessage.of(Group.of("your-squad"), Set.of());
 
             assertNotEquals(msg1, msg2);
         }
@@ -84,16 +84,16 @@ class GroupWelcomeMessageTest {
     class HashCode {
         @Test
         void shouldBeEquals() {
-            final GroupWelcomeMessage msg1 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
-            final GroupWelcomeMessage msg2 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg1 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg2 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
 
             assertEquals(msg1.hashCode(), msg2.hashCode());
         }
 
         @Test
         void shouldNotBeEquals() {
-            final GroupWelcomeMessage msg1 = new GroupWelcomeMessage(Group.of("my-squad"), Set.of());
-            final GroupWelcomeMessage msg2 = new GroupWelcomeMessage(Group.of("your-squad"), Set.of());
+            final GroupWelcomeMessage msg1 = GroupWelcomeMessage.of(Group.of("my-squad"), Set.of());
+            final GroupWelcomeMessage msg2 = GroupWelcomeMessage.of(Group.of("your-squad"), Set.of());
 
             assertNotEquals(msg1.hashCode(), msg2.hashCode());
         }

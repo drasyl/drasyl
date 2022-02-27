@@ -21,12 +21,13 @@
  */
 package org.drasyl.node.plugin.groups.client.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.Group;
 
-import java.util.Objects;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -34,45 +35,36 @@ import java.util.Set;
  * <p>
  * This is an immutable object.
  */
-public class GroupWelcomeMessage extends GroupActionMessage implements GroupsServerMessage {
-    private final Set<IdentityPublicKey> members;
-
-    @JsonCreator
-    public GroupWelcomeMessage(@JsonProperty("group") final Group group,
-                               @JsonProperty("members") final Set<IdentityPublicKey> members) {
-        super(group);
-        this.members = Set.copyOf(members);
+@AutoValue
+public abstract class GroupWelcomeMessage extends GroupsServerMessage {
+    public static GroupWelcomeMessage of(final Group group,
+                                         final Set<IdentityPublicKey> members) {
+        return new AutoValue_GroupWelcomeMessage(group, members);
     }
 
-    public Set<IdentityPublicKey> getMembers() {
-        return members;
+    public static GroupWelcomeMessage of(final ByteBuf byteBuf) {
+        if (byteBuf.readableBytes() < 3 + IdentityPublicKey.KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("not enough bytes.");
+        }
+        final int lenGroup = byteBuf.readUnsignedShort();
+        final Group group = Group.of(byteBuf.readCharSequence(lenGroup, StandardCharsets.UTF_8).toString());
+        final Set<IdentityPublicKey> members = new HashSet<>();
+        while (byteBuf.readableBytes() != 0 && byteBuf.readableBytes() % 32 == 0) {
+            final byte[] id = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+            byteBuf.readBytes(id);
+            members.add(IdentityPublicKey.of(id));
+        }
+
+        return of(group, members);
     }
+
+    public abstract Set<IdentityPublicKey> getMembers();
 
     @Override
-    public String toString() {
-        return "GroupWelcomeMessage{" +
-                "group='" + group + '\'' +
-                ", members=" + members +
-                '}';
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+    public void writeTo(final ByteBuf out) {
+        super.writeTo(out);
+        for (final IdentityPublicKey id : getMembers()) {
+            out.writeBytes(id.toByteArray());
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final GroupWelcomeMessage that = (GroupWelcomeMessage) o;
-        return Objects.equals(members, that.members);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), members);
     }
 }

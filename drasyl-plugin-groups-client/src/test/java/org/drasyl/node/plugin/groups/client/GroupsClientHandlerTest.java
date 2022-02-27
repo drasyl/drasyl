@@ -105,7 +105,7 @@ class GroupsClientHandlerTest {
                 channel.pipeline().addLast("handler", handler);
                 channel.pipeline().remove("handler");
 
-                Assertions.assertEquals(new GroupLeaveMessage(group), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                Assertions.assertEquals(GroupLeaveMessage.of(group), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
 
                 verify(renewTasks).clear();
             }
@@ -144,7 +144,7 @@ class GroupsClientHandlerTest {
             try {
                 await().untilAsserted(() -> {
                     channel.runPendingTasks();
-                    assertEquals(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
+                    assertEquals(GroupJoinMessage.of(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
                 });
             }
             finally {
@@ -160,7 +160,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final MemberJoinedMessage msg = new MemberJoinedMessage(publicKey, group);
+                final MemberJoinedMessage msg = MemberJoinedMessage.of(publicKey, group);
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
@@ -176,7 +176,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final MemberLeftMessage msg = new MemberLeftMessage(publicKey, group);
+                final MemberLeftMessage msg = MemberLeftMessage.of(publicKey, group);
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
@@ -194,7 +194,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final MemberLeftMessage msg = new MemberLeftMessage(identity.getIdentityPublicKey(), group);
+                final MemberLeftMessage msg = MemberLeftMessage.of(identity.getIdentityPublicKey(), group);
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
@@ -212,7 +212,7 @@ class GroupsClientHandlerTest {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new HashMap<>(), firstStartDelay, identity);
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                final GroupWelcomeMessage msg = new GroupWelcomeMessage(group, Set.of(publicKey));
+                final GroupWelcomeMessage msg = GroupWelcomeMessage.of(group, Set.of(publicKey));
 
                 when(groups.get(any())).thenReturn(uri);
                 when(uri.getTimeout()).thenReturn(Duration.ofMinutes(10));
@@ -233,7 +233,7 @@ class GroupsClientHandlerTest {
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
                 final GroupJoinFailedMessage.Error error = GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
-                final GroupJoinFailedMessage msg = new GroupJoinFailedMessage(group, error);
+                final GroupJoinFailedMessage msg = GroupJoinFailedMessage.of(group, error);
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
 
