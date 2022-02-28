@@ -53,6 +53,14 @@ class PreconditionsTest {
             // short
             assertThrows(IllegalArgumentException.class, () -> requireNonNegative((short) -1));
             assertThrows(IllegalArgumentException.class, () -> requireNonNegative((short) -1, "invalid"));
+
+            // float
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(-1f));
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(-1f, "invalid"));
+
+            // double
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(-1d));
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(-1d, "invalid"));
         }
 
         @Test
@@ -80,6 +88,18 @@ class PreconditionsTest {
             assertEquals((short) 0, requireNonNegative((short) 0, "invalid"));
             assertEquals((short) 1, requireNonNegative((short) 1));
             assertEquals((short) 1, requireNonNegative((short) 1, "invalid"));
+
+            // float
+            assertEquals((short) 0, requireNonNegative(0f));
+            assertEquals((short) 0, requireNonNegative(0f, "invalid"));
+            assertEquals((short) 1, requireNonNegative(1f));
+            assertEquals((short) 1, requireNonNegative(1f, "invalid"));
+
+            // double
+            assertEquals((short) 0, requireNonNegative(0d));
+            assertEquals((short) 0, requireNonNegative(0d, "invalid"));
+            assertEquals((short) 1, requireNonNegative(1d));
+            assertEquals((short) 1, requireNonNegative(1d, "invalid"));
         }
     }
 
@@ -110,6 +130,18 @@ class PreconditionsTest {
             assertThrows(IllegalArgumentException.class, () -> requirePositive((short) 0, "invalid"));
             assertThrows(IllegalArgumentException.class, () -> requirePositive((short) -1));
             assertThrows(IllegalArgumentException.class, () -> requirePositive((short) -1, "invalid"));
+
+            // float
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(0f));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(0f, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(-1f));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(-1f, "invalid"));
+
+            // double
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(0d));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(0d, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(-1d));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(-1d, "invalid"));
         }
 
         @Test
@@ -129,6 +161,14 @@ class PreconditionsTest {
             // short
             assertEquals((short) 1, requirePositive((short) 1));
             assertEquals((short) 1, requirePositive((short) 1, "invalid"));
+
+            // float
+            assertEquals((short) 1, requirePositive(1f));
+            assertEquals((short) 1, requirePositive(1f, "invalid"));
+
+            // double
+            assertEquals((short) 1, requirePositive(1d));
+            assertEquals((short) 1, requirePositive(1d, "invalid"));
         }
     }
 
@@ -159,6 +199,18 @@ class PreconditionsTest {
             assertThrows(IllegalArgumentException.class, () -> requireInRange((short) 0, (short) 1, (short) 2, "invalid"));
             assertThrows(IllegalArgumentException.class, () -> requireInRange((short) -1, (short) 1, (short) 2));
             assertThrows(IllegalArgumentException.class, () -> requireInRange((short) -1, (short) 1, (short) 2, "invalid"));
+
+            // float
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0f, 1f, 2f));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0f, 1f, 2f, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1f, 1f, 2f));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1f, 1f, 2f, "invalid"));
+
+            // double
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0d, 1d, 2d));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(0d, 1d, 2d, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1d, 1d, 2d));
+            assertThrows(IllegalArgumentException.class, () -> requireInRange(-1d, 1d, 2d, "invalid"));
         }
 
         @Test
@@ -178,6 +230,14 @@ class PreconditionsTest {
             // short
             assertEquals((short) 1, requireInRange((short) 1, (short) 1, (short) 2));
             assertEquals((short) 1, requireInRange((short) 1, (short) 1, (short) 2, "invalid"));
+
+            // float
+            assertEquals(1L, requireInRange(1f, 1f, 2f));
+            assertEquals(1L, requireInRange(1f, 1f, 2f, "invalid"));
+
+            // double
+            assertEquals(1L, requireInRange(1d, 1d, 2d));
+            assertEquals(1L, requireInRange(1d, 1d, 2d, "invalid"));
         }
     }
 }

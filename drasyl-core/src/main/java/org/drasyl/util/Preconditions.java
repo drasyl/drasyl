@@ -219,6 +219,96 @@ public final class Preconditions {
     }
 
     /**
+     * Checks that the specified number is non-negative. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for negativity
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static float requireNonNegative(final float obj) {
+        if (obj < 0) {
+            throw new IllegalArgumentException(MUST_BE_NON_NEGATIVE);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is non-negative and throws a customized {@link
+     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
+     * validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for negativity
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static float requireNonNegative(final float obj, final String message) {
+        if (obj < 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is non-negative. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for negativity
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static double requireNonNegative(final double obj) {
+        if (obj < 0) {
+            throw new IllegalArgumentException(MUST_BE_NON_NEGATIVE);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is non-negative and throws a customized {@link
+     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
+     * validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for negativity
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static double requireNonNegative(final double obj, final String message) {
+        if (obj < 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
      * Checks that the specified number is positive. This method is designed primarily for doing
      * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
@@ -391,6 +481,96 @@ public final class Preconditions {
      * @throws IllegalArgumentException if {@code obj} is not positive
      */
     public static short requirePositive(final short obj, final String message) {
+        if (obj <= 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is positive. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requirePositive(bar);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for negativity
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static float requirePositive(final float obj) {
+        if (obj <= 0) {
+            throw new IllegalArgumentException(MUST_BE_POSITIVE);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is positive and throws a customized {@link
+     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
+     * validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for positivity
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if positive
+     * @throws IllegalArgumentException if {@code obj} is not positive
+     */
+    public static float requirePositive(final float obj, final String message) {
+        if (obj <= 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is positive. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requirePositive(bar);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for negativity
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     */
+    public static double requirePositive(final double obj) {
+        if (obj <= 0) {
+            throw new IllegalArgumentException(MUST_BE_POSITIVE);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is positive and throws a customized {@link
+     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
+     * validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for positivity
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if positive
+     * @throws IllegalArgumentException if {@code obj} is not positive
+     */
+    public static double requirePositive(final double obj, final String message) {
         if (obj <= 0) {
             throw new IllegalArgumentException(message);
         }
@@ -587,6 +767,104 @@ public final class Preconditions {
                                        final short min,
                                        final short max,
                                        final String message) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static float requireInRange(final float obj, final float min, final float max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static float requireInRange(final float obj,
+                                       final float min,
+                                       final float max,
+                                       final String message) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}]. This
+     * method is designed primarily for doing parameter validation in methods and constructors, as
+     * demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for range
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static double requireInRange(final double obj, final double min, final double max) {
+        if (obj < min || obj > max) {
+            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is in the given range [{@code min}, {@code max}] and throws
+     * a customized {@link IllegalArgumentException} if it is not. This method is designed primarily
+     * for doing parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireInRange(bar, min, max, "bar must be positive");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for range
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if in range
+     * @throws IllegalArgumentException if {@code obj} is not in range
+     */
+    public static double requireInRange(final double obj,
+                                        final double min,
+                                        final double max,
+                                        final String message) {
         if (obj < min || obj > max) {
             throw new IllegalArgumentException(message);
         }
