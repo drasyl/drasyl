@@ -63,13 +63,13 @@ public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {
 
             node1 = new DrasylNode(config1) {
                 @Override
-                public void onEvent(final @NonNull Event event) {
+                public void onEvent(@NonNull final Event event) {
                 }
             };
 
             node2 = new DrasylNode(config2) {
                 @Override
-                public void onEvent(final @NonNull Event event) {
+                public void onEvent(@NonNull final Event event) {
                 }
             };
 

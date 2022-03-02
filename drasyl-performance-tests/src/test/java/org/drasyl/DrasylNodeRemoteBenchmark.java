@@ -48,10 +48,10 @@ import static test.util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
+    private static final AtomicInteger THREAD_INDEX = new AtomicInteger(0);
+    private static CompletableFuture<Void>[] futures;
     private DrasylNode node1;
     private DrasylNode node2;
-    private static CompletableFuture<Void>[] futures;
-    private final static AtomicInteger THREAD_INDEX = new AtomicInteger(0);
 
     @SuppressWarnings("unchecked")
     @Setup
@@ -83,7 +83,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             final CompletableFuture<Void> node1Ready = new CompletableFuture<>();
             node1 = new DrasylNode(config1) {
                 @Override
-                public void onEvent(final @NonNull Event event) {
+                public void onEvent(@NonNull final Event event) {
                     if (event instanceof PeerDirectEvent && ((PeerDirectEvent) event).getPeer().getAddress().equals(ID_2.getIdentityPublicKey()) && !node1Ready.isDone()) {
                         node1Ready.complete(null);
                     }
@@ -93,7 +93,7 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
             final CompletableFuture<Void> node2Ready = new CompletableFuture<>();
             node2 = new DrasylNode(config2) {
                 @Override
-                public void onEvent(final @NonNull Event event) {
+                public void onEvent(@NonNull final Event event) {
                     if (event instanceof MessageEvent && Objects.equals(((MessageEvent) event).getSender(), node1.identity().getIdentityPublicKey()) && ((MessageEvent) event).getPayload() instanceof Integer) {
                         final int index = (int) ((MessageEvent) event).getPayload();
                         futures[index].complete(null);
@@ -121,20 +121,6 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
         node2.shutdown().toCompletableFuture().join();
     }
 
-    @State(Scope.Thread)
-    public static class ThreadState {
-        private int index;
-
-        public ThreadState() {
-            try {
-                index = THREAD_INDEX.getAndIncrement();
-            }
-            catch (final Exception e) {
-                handleUnexpectedException(e);
-            }
-        }
-    }
-
     @Benchmark
     @Threads(Threads.MAX)
     @BenchmarkMode(Mode.Throughput)
@@ -147,5 +133,19 @@ public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {
     @Override
     protected int getForks() {
         return 1;
+    }
+
+    @State(Scope.Thread)
+    public static class ThreadState {
+        private int index;
+
+        public ThreadState() {
+            try {
+                index = THREAD_INDEX.getAndIncrement();
+            }
+            catch (final Exception e) {
+                handleUnexpectedException(e);
+            }
+        }
     }
 }

@@ -31,6 +31,8 @@ import java.net.InetSocketAddress;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 public class InetSocketAddressUtilTest {
@@ -50,11 +52,11 @@ public class InetSocketAddressUtilTest {
 
             final String host = "example.com";
             address = socketAddressFromString(host);
-            assertEquals(host, address.getHostName());
+            assertEquals(host, address.getHostString());
 
             final String hostAndPort = host + ":80";
             address = socketAddressFromString(hostAndPort);
-            assertEquals(host, address.getHostName());
+            assertEquals(host, address.getHostString());
             assertEquals(80, address.getPort());
         }
     }
@@ -66,6 +68,47 @@ public class InetSocketAddressUtilTest {
             assertEquals("127.0.0.1:8080", socketAddressToString(new InetSocketAddress("127.0.0.1", 8080)));
             assertEquals("example.com:6667", socketAddressToString(new InetSocketAddress("example.com", 6667)));
             assertEquals("[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443", socketAddressToString(new InetSocketAddress("2001:db8:85a3:8d3:1319:8a2e:370:7348", 443)));
+        }
+    }
+
+    @Nested
+    class EqualSocketAddress {
+        @Test
+        void shouldDetectEqualUnresolvedAddresses() {
+            final InetSocketAddress a = InetSocketAddress.createUnresolved("127.0.0.1", 80);
+            final InetSocketAddress b = InetSocketAddress.createUnresolved("127.0.0.1", 80);
+            final InetSocketAddress c = InetSocketAddress.createUnresolved("127.0.0.1", 81);
+            final InetSocketAddress d = InetSocketAddress.createUnresolved("127.0.0.2", 81);
+
+            assertTrue(InetSocketAddressUtil.equalSocketAddress(a, b));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, c));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, d));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(c, d));
+        }
+
+        @Test
+        void shouldDetectEqualResolvedAddresses() {
+            final InetSocketAddress a = new InetSocketAddress("127.0.0.1", 80);
+            final InetSocketAddress b = new InetSocketAddress("127.0.0.1", 80);
+            final InetSocketAddress c = new InetSocketAddress("127.0.0.1", 81);
+            final InetSocketAddress d = new InetSocketAddress("127.0.0.2", 81);
+
+            assertTrue(InetSocketAddressUtil.equalSocketAddress(a, b));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, c));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, d));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(c, d));
+        }
+
+        @Test
+        void shouldDetectEqualUnresolvedAndResolvedAddresses() {
+            final InetSocketAddress a = InetSocketAddress.createUnresolved("127.0.0.1", 80);
+            final InetSocketAddress b = new InetSocketAddress("127.0.0.1", 80);
+            final InetSocketAddress c = new InetSocketAddress("127.0.0.1", 81);
+            final InetSocketAddress d = new InetSocketAddress("127.0.0.2", 81);
+
+            assertTrue(InetSocketAddressUtil.equalSocketAddress(a, b));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, c));
+            assertFalse(InetSocketAddressUtil.equalSocketAddress(a, d));
         }
     }
 }

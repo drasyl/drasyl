@@ -176,7 +176,7 @@ public class PcpPortMapping implements PortMapping {
         defaultGateway = new InetSocketAddress(defaultGatewayAddress, PCP_PORT);
 
         for (final InetAddress clientAddress : interfaces) {
-            LOG.debug("Send MAP opcode request to gateway `{}` with client address `{}`.", defaultGateway::getHostName, clientAddress::getHostAddress);
+            LOG.debug("Send MAP opcode request to gateway `{}` with client address `{}`.", defaultGateway::getHostString, clientAddress::getHostAddress);
             requestMapping(ctx, MAPPING_LIFETIME, clientAddress, nonce, PROTO_UDP, port, ZERO_IPV4);
         }
     }
@@ -218,7 +218,7 @@ public class PcpPortMapping implements PortMapping {
                                 final int port,
                                 final InetAddress externalAddress) {
         //noinspection unchecked
-        LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostName);
+        LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostString);
 
         final byte[] content = PcpPortUtil.buildMappingRequestMessage(lifetime, clientAddress, nonce, protocol, port, externalAddress);
         final ByteBuf msg = Unpooled.wrappedBuffer(content);
@@ -240,7 +240,7 @@ public class PcpPortMapping implements PortMapping {
                 if (message.getExternalSuggestedPort() == port) {
                     mappingRequested.set(0);
                     //noinspection unchecked
-                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
+                    LOG.info("Got port mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostString);
                     if (message.getLifetime() > 0) {
                         final long delay = message.getLifetime() / 2;
                         LOG.debug("Schedule refresh of mapping for in {}s.", delay);
@@ -253,7 +253,7 @@ public class PcpPortMapping implements PortMapping {
                 }
                 else {
                     //noinspection unchecked
-                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostName);
+                    LOG.info("Got port mapping for wrong port `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", message.getExternalSuggestedAddress()::getHostAddress, message::getExternalSuggestedPort, message::getInternalPort, message::getLifetime, defaultGateway::getHostString);
                 }
             }
             else {

@@ -62,7 +62,7 @@ public class TcpClientTest {
     private Map<SocketAddress, Channel> clientChannels;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel serverChannel;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Set<SocketAddress> superPeerAddresses;
     @Mock
     private AtomicLong noResponseFromSuperPeerSince;
@@ -161,7 +161,7 @@ public class TcpClientTest {
                                                                   @Mock final ChannelFuture channelFuture) {
             when(superPeerChannel.isSuccess()).thenReturn(true);
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
-            when(superPeerAddresses.contains(any())).thenReturn(true);
+            when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
 
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -181,7 +181,7 @@ public class TcpClientTest {
         void shouldStartClientOnOutboundMessageToSuperPeer(@Mock final InetSocketAddress recipient,
                                                            @Mock final ByteBuf msg,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(superPeerAddresses.contains(any())).thenReturn(true);
+            when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
             when(bootstrap.connect(any(InetSocketAddress.class))).thenReturn(superPeerChannel);
             when(superPeerChannel.addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
