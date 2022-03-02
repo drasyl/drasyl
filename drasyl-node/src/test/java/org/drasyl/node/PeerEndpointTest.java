@@ -33,6 +33,7 @@ import java.net.URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static test.util.IdentityTestUtil.ID_1;
 
 @ExtendWith(MockitoExtension.class)
 class PeerEndpointTest {
@@ -40,9 +41,9 @@ class PeerEndpointTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentURI() {
-            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.org:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey());
 
             assertEquals(endpoint1, endpoint2);
             assertNotEquals(endpoint2, endpoint3);
@@ -50,8 +51,8 @@ class PeerEndpointTest {
 
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
             final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_2.getIdentityPublicKey());
 
             assertEquals(endpoint1, endpoint2);
@@ -63,9 +64,9 @@ class PeerEndpointTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentURI() {
-            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.org:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.org:22527?publicKey=" + ID_1.getIdentityPublicKey());
 
             assertEquals(endpoint1.hashCode(), endpoint2.hashCode());
             assertNotEquals(endpoint2.hashCode(), endpoint3.hashCode());
@@ -73,8 +74,8 @@ class PeerEndpointTest {
 
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
-            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint1 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint2 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey());
             final PeerEndpoint endpoint3 = PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_2.getIdentityPublicKey());
 
             assertEquals(endpoint1.hashCode(), endpoint2.hashCode());
@@ -86,7 +87,7 @@ class PeerEndpointTest {
     class ToString {
         @Test
         void shouldReturnCorrectStringForEndpointWithPublicKey() {
-            assertEquals("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey(), PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).toString());
+            assertEquals("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey(), PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey()).toString());
         }
     }
 
@@ -95,8 +96,8 @@ class PeerEndpointTest {
         @Test
         void shouldReturnCorrectURI() {
             assertEquals(
-                    URI.create("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()),
-                    PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).getURI()
+                    URI.create("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey()),
+                    PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey()).getURI()
             );
         }
     }
@@ -106,8 +107,8 @@ class PeerEndpointTest {
         @Test
         void shouldReturnHostOfURI() {
             assertEquals(
-                    URI.create("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).getHost(),
-                    PeerEndpoint.of("udp://example.com:22527?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).getHost()
+                    URI.create("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey()).getHost(),
+                    PeerEndpoint.of("udp://example.com:22527?publicKey=" + ID_1.getIdentityPublicKey()).getHost()
             );
         }
     }
@@ -116,7 +117,7 @@ class PeerEndpointTest {
     class GetPort {
         @Test
         void shouldReturnPortContainedInEndpoint() {
-            assertEquals(123, PeerEndpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).getPort());
+            assertEquals(123, PeerEndpoint.of("udp://localhost:123?publicKey=" + ID_1.getIdentityPublicKey()).getPort());
         }
     }
 
@@ -124,7 +125,7 @@ class PeerEndpointTest {
     class ToInetSocketAddress {
         @Test
         void shouldReturnCorrectAddress() {
-            assertEquals(new InetSocketAddress("localhost", 123), PeerEndpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey()).toInetSocketAddress());
+            assertEquals(InetSocketAddress.createUnresolved("localhost", 123), PeerEndpoint.of("udp://localhost:123?publicKey=" + ID_1.getIdentityPublicKey()).toInetSocketAddress());
         }
     }
 
@@ -139,13 +140,13 @@ class PeerEndpointTest {
 
         @Test
         void shouldThrowIllegalArgumentExceptionForNonWebSocketURI() {
-            final String pk = IdentityTestUtil.ID_1.getIdentityPublicKey().toString();
+            final String pk = ID_1.getIdentityPublicKey().toString();
             assertThrows(IllegalArgumentException.class, () -> PeerEndpoint.of("http://example.com?publicKey=" + pk));
         }
 
         @Test
         void shouldThrowIllegalArgumentExceptionForOldEndpointFormat() {
-            final String pk = IdentityTestUtil.ID_1.getIdentityPublicKey().toString();
+            final String pk = ID_1.getIdentityPublicKey().toString();
             assertThrows(IllegalArgumentException.class, () -> PeerEndpoint.of("udp://example.com:22527#" + pk));
         }
 
@@ -161,22 +162,22 @@ class PeerEndpointTest {
 
         @Test
         void shouldThrowIllegalArgumentExceptionIfPortIsMissing() {
-            final String pk = IdentityTestUtil.ID_1.getIdentityPublicKey().toString();
+            final String pk = ID_1.getIdentityPublicKey().toString();
             assertThrows(IllegalArgumentException.class, () -> PeerEndpoint.of("udp://example.com?publicKey=" + pk));
         }
 
         @Test
         void shouldCreateCorrectEndpointWithoutNetworkIdFromString() {
-            final PeerEndpoint endpoint = PeerEndpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey());
+            final PeerEndpoint endpoint = PeerEndpoint.of("udp://localhost:123?publicKey=" + ID_1.getIdentityPublicKey());
 
-            assertEquals(PeerEndpoint.of("localhost", 123, IdentityTestUtil.ID_1.getIdentityPublicKey()), endpoint);
+            assertEquals(PeerEndpoint.of("localhost", 123, ID_1.getIdentityPublicKey()), endpoint);
         }
 
         @Test
         void shouldCreateCorrectEndpointFromString() {
-            final PeerEndpoint endpoint = PeerEndpoint.of("udp://localhost:123?publicKey=" + IdentityTestUtil.ID_1.getIdentityPublicKey() + "&networkId=1337");
+            final PeerEndpoint endpoint = PeerEndpoint.of("udp://localhost:123?publicKey=" + ID_1.getIdentityPublicKey() + "&networkId=1337");
 
-            assertEquals(PeerEndpoint.of("localhost", 123, IdentityTestUtil.ID_1.getIdentityPublicKey(), 1337), endpoint);
+            assertEquals(PeerEndpoint.of("localhost", 123, ID_1.getIdentityPublicKey(), 1337), endpoint);
         }
     }
 }

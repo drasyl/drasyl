@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
 
 /**
  * This handler monitors how long the node has not received a response from any super peer. If the
@@ -134,7 +135,9 @@ public class TcpClient extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof InetAddressedMessage && superPeerAddresses.contains(((InetAddressedMessage<?>) msg).recipient()) && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+        if (msg instanceof InetAddressedMessage &&
+                superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress((InetSocketAddress) socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
+                ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
             final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
 
             // check if we can route the message via a tcp connection
@@ -212,24 +215,6 @@ public class TcpClient extends ChannelDuplexHandler {
         stopClient();
     }
 
-    private class TcpClientFutureListener implements ChannelFutureListener {
-        @Override
-        public void operationComplete(final ChannelFuture future) {
-            if (future.isSuccess()) {
-                final Channel channel = future.channel();
-                LOG.debug("TCP connection to `{}` established.", address);
-                channel.closeFuture().addListener(future1 -> {
-                    LOG.debug("TCP connection to `{}` closed.", address);
-                    superPeerChannel = null;
-                });
-            }
-            else {
-                LOG.debug("Unable to establish TCP connection to `{}`:", () -> address, future::cause);
-                superPeerChannel = null;
-            }
-        }
-    }
-
     /**
      * This handler passes all receiving messages to the pipeline.
      */
@@ -258,6 +243,24 @@ public class TcpClient extends ChannelDuplexHandler {
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
             LOG.debug("Close TCP connection to `{}` due to an exception: ", ctx.channel()::remoteAddress, () -> cause);
             ctx.close();
+        }
+    }
+
+    private class TcpClientFutureListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            if (future.isSuccess()) {
+                final Channel channel = future.channel();
+                LOG.debug("TCP connection to `{}` established.", address);
+                channel.closeFuture().addListener(future1 -> {
+                    LOG.debug("TCP connection to `{}` closed.", address);
+                    superPeerChannel = null;
+                });
+            }
+            else {
+                LOG.debug("Unable to establish TCP connection to `{}`:", () -> address, future::cause);
+                superPeerChannel = null;
+            }
         }
     }
 }

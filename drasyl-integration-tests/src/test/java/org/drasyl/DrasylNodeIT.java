@@ -68,14 +68,8 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
-import static test.util.IdentityTestUtil.ID_3;
-import static test.util.IdentityTestUtil.ID_4;
+import static org.junit.jupiter.api.Assertions.*;
+import static test.util.IdentityTestUtil.*;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -458,7 +452,6 @@ class DrasylNodeIT {
             private EmbeddedNode superPeer;
             private EmbeddedNode client;
 
-            @SuppressWarnings("ConstantConditions")
             @BeforeEach
             void setUp() throws DrasylException {
                 //
@@ -675,6 +668,7 @@ class DrasylNodeIT {
         class FourNodesWithOnlyLocalHostDiscoveryEnabled {
             private EmbeddedNode node1;
             private EmbeddedNode node2;
+            @SuppressWarnings("FieldCanBeLocal")
             private Path localHostDiscoveryPath;
 
             @BeforeEach

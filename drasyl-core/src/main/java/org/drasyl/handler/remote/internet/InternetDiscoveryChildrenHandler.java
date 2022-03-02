@@ -67,13 +67,13 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
     protected final int myNetworkId;
     protected final IdentityPublicKey myPublicKey;
-    private final IdentitySecretKey mySecretKey;
     protected final ProofOfWork myProofOfWork;
     protected final LongSupplier currentTime;
     protected final long pingTimeoutMillis;
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
     protected final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
+    private final IdentitySecretKey mySecretKey;
     private final long initialPingDelayMillis;
     private final long pingIntervalMillis;
     Future<?> heartbeatDisposable;
@@ -228,8 +228,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {
+            // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
+            final InetSocketAddress resolvedAddress = superPeer.resolveInetAddress();
+
             superPeer.helloSent();
-            writeHelloMessage(ctx, publicKey, superPeer.inetAddress(), true);
+
+            writeHelloMessage(ctx, publicKey, resolvedAddress, true);
         }));
         ctx.flush();
     }
@@ -384,10 +388,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     static class SuperPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
-        private final InetSocketAddress inetAddress;
         long firstHelloTime;
         long lastAcknowledgementTime;
         long latency;
+        private InetSocketAddress inetAddress;
 
         SuperPeer(final LongSupplier currentTime,
                   final long pingTimeoutMillis,
@@ -426,6 +430,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
         public boolean isStale() {
             return firstHelloTime != 0 && Math.max(firstHelloTime, lastAcknowledgementTime) < currentTime.getAsLong() - pingTimeoutMillis;
+        }
+
+        /**
+         * Triggers a new resolve of the hostname into an {@link java.net.InetAddress}.
+         */
+        public InetSocketAddress resolveInetAddress() {
+            inetAddress = new InetSocketAddress(inetAddress.getHostString(), inetAddress.getPort());
+            return inetAddress;
         }
     }
 }

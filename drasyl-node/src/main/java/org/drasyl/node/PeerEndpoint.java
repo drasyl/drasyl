@@ -86,11 +86,13 @@ public abstract class PeerEndpoint {
     public abstract Integer getNetworkId();
 
     /**
+     * Creates an unresolved socket address from {@link #getHost()} and {@link #getPort()}.
+     *
      * @throws IllegalArgumentException if the port parameter is outside the range of valid port
      *                                  values, or if the hostname parameter is {@code null}.
      */
     public InetSocketAddress toInetSocketAddress() {
-        return new InetSocketAddress(getHost(), getPort());
+        return InetSocketAddress.createUnresolved(getHost(), getPort());
     }
 
     @Override

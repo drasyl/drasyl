@@ -93,4 +93,21 @@ public final class InetSocketAddressUtil {
 
         return str + ":" + s.getPort();
     }
+
+    /**
+     * Checks equality of {@code a} and {@code b}. In comparison to {@link
+     * InetSocketAddress#equals(Object)}, this method can also compare resolved with unresolved
+     * addresses.
+     *
+     * @param a first address to check
+     * @param b second address to check
+     * @return {@code true} if both addresses are equal
+     */
+    public static boolean equalSocketAddress(@NonNull final InetSocketAddress a,
+                                             @NonNull final InetSocketAddress b) {
+        if (a.isUnresolved() == b.isUnresolved()) {
+            return a.equals(b);
+        }
+        return a.getPort() == b.getPort() && a.getHostString().equals(b.getHostString());
+    }
 }
