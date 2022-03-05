@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
@@ -51,20 +52,23 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 public class ExpiringMap<K, V> implements Map<K, V> {
     private final LongSupplier currentTimeProvider;
-    private final Map<K, ExpiringEntry<K, V>> map;
-    private final SortedSet<ExpiringEntry<K, V>> sortedEntries;
     private final long maximumSize;
     private final long expireAfterWrite;
     private final long expireAfterAccess;
+    private final BiConsumer<K, V> removalListener;
+    private final Map<K, ExpiringEntry<K, V>> map;
+    private final SortedSet<ExpiringEntry<K, V>> sortedEntries;
     private long lastExpirationExecution;
 
     ExpiringMap(final LongSupplier currentTimeProvider,
                 final long maximumSize,
                 final long expireAfterWrite,
                 final long expireAfterAccess,
+                final BiConsumer<K, V> removalListener,
                 final Map<K, ExpiringEntry<K, V>> map,
                 final SortedSet<ExpiringEntry<K, V>> sortedEntries) {
         this.currentTimeProvider = requireNonNull(currentTimeProvider);
+        this.removalListener = removalListener;
         if (maximumSize == 0) {
             throw new IllegalArgumentException("maximumSize must be -1 or positive.");
         }
@@ -90,6 +94,30 @@ public class ExpiringMap<K, V> implements Map<K, V> {
      *                          from the map after last access. {@code -1} deactivates this
      *                          expiration  policy. Keep in mind, that only {@link #get(Object)} is
      *                          treated as an element access.
+     * @param removalListener   called every time an entry is removed from the map. First passed
+     *                          argument is the entry key, second argument the value.
+     * @throws IllegalArgumentException if {@code maximumSize} is {@code 0}, or {@code
+     *                                  expireAfterWrite} and {@code expireAfterAccess} are both
+     *                                  {@code -1}.
+     */
+    public ExpiringMap(final long maximumSize,
+                       final long expireAfterWrite,
+                       final long expireAfterAccess,
+                       final BiConsumer<K, V> removalListener) {
+        this(System::currentTimeMillis, maximumSize, expireAfterWrite, expireAfterAccess, removalListener, new HashMap<>(), new TreeSet<>());
+    }
+
+    /**
+     * @param maximumSize       maximum number of entries that the map should contain. On overflow,
+     *                          first elements based on expiration policy are removed. {@code -1}
+     *                          deactivates a size limitation.
+     * @param expireAfterWrite  time in milliseconds after which elements are automatically removed
+     *                          from the map after being added. {@code -1} deactivates this
+     *                          expiration policy.
+     * @param expireAfterAccess time in milliseconds after which elements are automatically removed
+     *                          from the map after last access. {@code -1} deactivates this
+     *                          expiration  policy. Keep in mind, that only {@link #get(Object)} is
+     *                          treated as an element access.
      * @throws IllegalArgumentException if {@code maximumSize} is {@code 0}, or {@code
      *                                  expireAfterWrite} and {@code expireAfterAccess} are both
      *                                  {@code -1}.
@@ -97,7 +125,8 @@ public class ExpiringMap<K, V> implements Map<K, V> {
     public ExpiringMap(final long maximumSize,
                        final long expireAfterWrite,
                        final long expireAfterAccess) {
-        this(System::currentTimeMillis, maximumSize, expireAfterWrite, expireAfterAccess, new HashMap<>(), new TreeSet<>());
+        this(maximumSize, expireAfterWrite, expireAfterAccess, (k, v) -> {
+        });
     }
 
     @Override
@@ -141,7 +170,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
             map.remove(key);
             sortedEntries.remove(existingEntry);
 
-            final ExpiringEntry<K, V> newEntry = new ExpiringEntry<>(currentTimeProvider, existingEntry.key(), existingEntry.value());
+            final ExpiringEntry<K, V> newEntry = new ExpiringEntry<>(currentTimeProvider, existingEntry.key, existingEntry.value);
             map.put((K) key, newEntry);
             sortedEntries.add(newEntry);
         }
@@ -149,7 +178,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return existingEntry != null ? existingEntry.value() : null;
+        return existingEntry != null ? existingEntry.value : null;
     }
 
     @Override
@@ -163,7 +192,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         }
 
         final ExpiringEntry<K, V> newEntry = new ExpiringEntry<>(currentTimeProvider, key, value);
-        map.put((K) key, newEntry);
+        map.put(key, newEntry);
         sortedEntries.add(newEntry);
 
         if (existingEntry == null) {
@@ -174,7 +203,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return existingEntry != null ? existingEntry.value() : null;
+        return existingEntry != null ? existingEntry.value : null;
     }
 
     @Override
@@ -183,7 +212,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         removeExpiredEntries();
 
         final ExpiringEntry<K, V> removedEntry = map.remove(key);
-        return removedEntry != null ? removedEntry.value() : null;
+        return removedEntry != null ? removedEntry.value : null;
     }
 
     @Override
@@ -210,7 +239,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         // we return something, check for expired entries
         removeExpiredEntries();
 
-        return map.values().stream().map(ExpiringEntry::value).collect(Collectors.toList());
+        return map.values().stream().map(e -> e.value).collect(Collectors.toList());
     }
 
     @Override
@@ -221,8 +250,9 @@ public class ExpiringMap<K, V> implements Map<K, V> {
     private void evictExceedingEntries() {
         if (maximumSize != -1 && sortedEntries.size() > maximumSize) {
             final ExpiringEntry<K, V> first = sortedEntries.first();
-            map.remove(first.key());
+            map.remove(first.key);
             sortedEntries.remove(first);
+            removalListener.accept(first.key, first.value);
         }
     }
 
@@ -240,8 +270,9 @@ public class ExpiringMap<K, V> implements Map<K, V> {
         while (!sortedEntries.isEmpty()) {
             final ExpiringEntry<K, V> first = sortedEntries.first();
             if (first.isExpired(currentTime, expireAfterWrite, expireAfterAccess)) {
-                map.remove(first.key());
+                map.remove(first.key);
                 sortedEntries.remove(first);
+                removalListener.accept(first.key, first.value);
             }
             else {
                 break;
@@ -257,7 +288,7 @@ public class ExpiringMap<K, V> implements Map<K, V> {
      * @param <K> the key type maintained by the corresponding {@link ExpiringMap}
      * @param <V> the value type mainted by the corresponding {@link ExpiringMap}
      */
-    static class ExpiringEntry<K, V> implements Comparable<ExpiringEntry<K, V>> {
+    private static class ExpiringEntry<K, V> implements Comparable<ExpiringEntry<K, V>> {
         private final long timestamp;
         private final K key;
         private final V value;
@@ -309,14 +340,6 @@ public class ExpiringMap<K, V> implements Map<K, V> {
             else {
                 return Integer.compare(hashCode(), o.hashCode());
             }
-        }
-
-        K key() {
-            return key;
-        }
-
-        V value() {
-            return value;
         }
 
         boolean isExpired(final long currentTime,

@@ -30,11 +30,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.LongSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +47,8 @@ class ExpiringMapTest {
         void shouldEvictFirstEntriesBasedOnWriteExpirationPolicyWhenSizeIsExceeding(@Mock final LongSupplier currentTimeProvider) {
             when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 106L);
 
-            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, 10, -1, new HashMap<>(), new TreeSet<>()); // t=100
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, 10, -1, (k, v) -> {
+            }, new HashMap<>(), new TreeSet<>()); // t=100
             map.put("Hallo", 1); // t=101,102
             map.put("Hello", 1); // t=103,104
             map.put("Bonjour", 1); // t=105,106
@@ -58,7 +61,8 @@ class ExpiringMapTest {
         void shouldEvictFirstEntriesBasedOnReadExpirationPolicyWhenSizeIsExceeding(@Mock final LongSupplier currentTimeProvider) {
             when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 106L, 107L, 108L);
 
-            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, -1, 10, new HashMap<>(), new TreeSet<>()); // t=100
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, -1, 10, (k, v) -> {
+            }, new HashMap<>(), new TreeSet<>()); // t=100
             map.put("Hallo", 1); // t=101,102
             map.put("Hello", 1); // t=103,104
             assertEquals(1, map.get("Hallo")); // t=105,106
@@ -75,7 +79,8 @@ class ExpiringMapTest {
         void shouldExpireEntriesBasedOnExpirationPolicy(@Mock final LongSupplier currentTimeProvider) {
             when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 111L, 200L, 201L, 205L, 206L, 214L);
 
-            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, 10, -1, new HashMap<>(), new TreeSet<>()); // t=100
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, 10, -1, (k, v) -> {
+            }, new HashMap<>(), new TreeSet<>()); // t=100
 
             // accessing the entry should not affect expiration
             map.put("Foo", "Bar"); // t=101,102
@@ -96,7 +101,8 @@ class ExpiringMapTest {
         void shouldExpireEntriesBasedOnExpirationPolicy(@Mock final LongSupplier currentTimeProvider) {
             when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 113L, 200L, 201L, 202L, 203L, 211L);
 
-            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, -1, 10, new HashMap<>(), new TreeSet<>()); // t=100
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, -1, 10, (k, v) -> {
+            }, new HashMap<>(), new TreeSet<>()); // t=100
 
             // accessing the entry should affect expiration
             map.put("Foo", "Bar"); // t=101,102
@@ -108,6 +114,37 @@ class ExpiringMapTest {
             map.put("Baz", "Bar"); // t=200,201
             map.put("Baz", "Bar"); // t=202,203
             assertFalse(map.containsKey("Baz")); // t=211
+        }
+    }
+
+    @Nested
+    class RemovalListener {
+        @Test
+        void shouldCallRemovalListenerWhenSizeIsExceeding(@Mock final LongSupplier currentTimeProvider,
+                                                          @Mock final BiConsumer<Object, Object> removalListener) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 103L, 104L, 105L, 106L);
+
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, 2, 10, -1, removalListener, new HashMap<>(), new TreeSet<>()); // t=100 // t=100
+            map.put("Hallo", 1); // t=101,102
+            map.put("Hello", 1); // t=103,104
+            map.put("Bonjour", 1); // t=105,106
+
+            verify(removalListener).accept("Hallo", 1);
+        }
+
+        @Test
+        void shouldCallRemovalListenerOnExpiration(@Mock final LongSupplier currentTimeProvider,
+                                                   @Mock final BiConsumer<Object, Object> removalListener) {
+            when(currentTimeProvider.getAsLong()).thenReturn(100L, 101L, 102L, 104L, 105L, 200L, 201L, 202L, 203L);
+
+            final Map<Object, Object> map = new ExpiringMap<>(currentTimeProvider, -1, -1, 10, removalListener, new HashMap<>(), new TreeSet<>()); // t=100
+
+            map.put("Foo", "Bar"); // t=101,102
+            map.get("Foo"); // t=104,105
+            map.put("Baz", "Bar"); // t=200,201
+            map.put("Baz", "Bar"); // t=202,203
+
+            verify(removalListener).accept("Foo", "Bar");
         }
     }
 }
