@@ -132,7 +132,6 @@
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
         <netty.version>4.1.74.Final</netty.version>
-        <guava.version>31.0.1-jre</guava.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.36</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
@@ -239,13 +238,6 @@
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
-            </dependency>
-
-            <!-- Guava -->
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
             </dependency>
 
             <dependency>

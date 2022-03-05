@@ -21,34 +21,29 @@
  */
 package org.drasyl;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
 import org.drasyl.annotation.NonNull;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.PeerEndpoint;
 import org.drasyl.node.event.Event;
+import org.drasyl.util.ExpiringMap;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 
 @SuppressWarnings("InfiniteLoopStatement")
 public class SuperPeerStressTesting extends AbstractBenchmark {
-    private final Cache<IdentityPublicKey, DrasylNode> clients;
+    private final Map<DrasylAddress, DrasylNode> clients;
 
     public SuperPeerStressTesting(final long maxClients, final Duration shutdownAfter) {
-        clients = CacheBuilder.newBuilder()
-                .maximumSize(maxClients)
-                .expireAfterWrite(shutdownAfter)
-                .removalListener((RemovalListener<IdentityPublicKey, DrasylNode>) notification -> notification.getValue().shutdown())
-                .build();
+        clients = new ExpiringMap<>(maxClients, shutdownAfter.toMillis(), -1, (k, v) -> v.shutdown());
     }
 
     public static void main(final String[] args) throws DrasylException, IOException {
