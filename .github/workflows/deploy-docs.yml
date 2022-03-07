@@ -28,7 +28,7 @@ jobs:
             --menu.js-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --force-edit-url --debug
       - name: Upload Docs Artifacts
-        uses: actions/upload-artifact@v2.3.1
+        uses: actions/upload-artifact@v3
         with:
           name: docs-artifact
           path: docs/site
