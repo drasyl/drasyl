@@ -4,66 +4,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "org.drasyl.node.identity.serialization.KeyMixin$BytesToHexStringSerializer",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.KeyMixin$BytesToHexStringDeserializer",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.IdentityMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.IdentityPublicKeyMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.IdentitySecretKeyMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.KeyAgreementPublicKeyMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.KeyAgreementSecretKeyMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.KeyMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.KeyPairMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
-    "name": "org.drasyl.node.identity.serialization.ProofOfWorkMixin",
-    "allDeclaredFields": true,
-    "allDeclaredMethods": true,
-    "allDeclaredConstructors": true
-  },
-  {
     "name": "org.drasyl.node.handler.serialization.BooleanSerializer",
     "methods": [
       {
