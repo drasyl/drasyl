@@ -15,13 +15,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
--
+- Dependencies have been updated.
+- CLI: Improve `tun` sub-command performance by tweaking default MTU size.
 -
 -
 
 ### Fixed
 
--
+- DrasylNode: Groups plugin is working again.
+- Internet discovery now regularly checks if the super peer DNS records have changed.
 -
 -
 
