@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -68,7 +68,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Get actual patch version
         id: actual_patch_version
         run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
@@ -183,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl-overlay/homebrew-tap
@@ -214,7 +214,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/drasyl-choco
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl-overlay/drasyl-choco
