@@ -24,6 +24,7 @@ package org.drasyl.cli;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.NodeCommand;
+import org.drasyl.cli.noderc.NodeRcCommand;
 import org.drasyl.cli.perf.PerfCommand;
 import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;
@@ -52,6 +53,7 @@ import static java.util.Objects.requireNonNull;
                 GenerateProofOfWorkCommand.class,
                 HelpCommand.class,
                 NodeCommand.class,
+                NodeRcCommand.class,
                 PerfCommand.class,
                 PublicKeyCommand.class,
                 TunCommand.class,

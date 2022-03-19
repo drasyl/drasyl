@@ -10,6 +10,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - CLI: Option `--mtu` to sub-command `tun` added.
+- CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
+- CLI: `node-rc` sub-command added.
 -
 -
 

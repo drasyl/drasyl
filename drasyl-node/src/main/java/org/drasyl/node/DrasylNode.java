@@ -314,7 +314,7 @@ public abstract class DrasylNode {
             return future;
         }
         else {
-            return failedFuture(new Exception("You have to call DrasylNode#start() first!"));
+            return failedFuture(new Exception("You have to start the node first!"));
         }
     }
 
