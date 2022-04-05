@@ -37,6 +37,9 @@
     <logger name="io.netty.util.ResourceLeakDetector" level="debug">
     </logger>
 
+    <logger name="org.drasyl.handler.connection" level="trace">
+    </logger>
+
     <!-- available levels: off, error, warn, info, debug, trace -->
 
     <root level="warn">

@@ -165,20 +165,32 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    final Channel channel = getOrCreateChildChannel(ctx, peer);
-
-                    // pass message to channel
-                    channel.eventLoop().execute(() -> {
-                        if (channel.isActive()) {
-                            channel.pipeline().fireChannelRead(o);
-                            channel.pipeline().fireChannelReadComplete();
-                        }
-                    });
+                    extracted(ctx, o, peer);
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of message `{}`: ", msg, e);
                 }
             }
+        }
+
+        private void extracted(final ChannelHandlerContext ctx,
+                               final Object o,
+                               final IdentityPublicKey peer) {
+            final Channel channel = getOrCreateChildChannel(ctx, peer);
+
+            // pass message to channel
+            channel.eventLoop().execute(() -> {
+                LOG.error("{} {} {}", channel, o, channel.isActive());
+                if (channel.isActive()) {
+                    channel.pipeline().fireChannelRead(o);
+                    channel.pipeline().fireChannelReadComplete();
+                }
+                else {
+                    ctx.executor().execute(() -> {
+                        extracted(ctx, o, peer);
+                    });
+                }
+            });
         }
 
         @Override
@@ -206,7 +218,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
 
             Channel channel = parent.channels.get(remoteAddress);
-            if (channel == null) {
+            if (channel == null || !channel.isActive()) {
                 channel = new DrasylChannel(parent, remoteAddress);
                 ctx.fireChannelRead(channel);
             }
@@ -221,7 +233,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                     final DrasylChannel msg) {
             final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
-            if (oldValue != null) {
+            if (oldValue != null && oldValue.isActive()) {
                 oldValue.close();
             }
 

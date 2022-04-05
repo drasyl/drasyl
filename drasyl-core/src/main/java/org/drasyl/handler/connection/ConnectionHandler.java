@@ -21,9 +21,9 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.util.ReferenceCountUtil;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -36,8 +36,9 @@ import static org.drasyl.handler.connection.ConnectionHandler.State.SYN_RECEIVED
 import static org.drasyl.handler.connection.ConnectionHandler.State.SYN_SENT;
 import static org.drasyl.util.RandomUtil.randomInt;
 
-public class ConnectionHandler extends SimpleChannelInboundHandler<ConnectionMessage> {
+public class ConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
+    private ChannelPromise openPromise;
 
     static enum State {
         // connection does not exist
@@ -55,23 +56,35 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<ConnectionMes
         TIME_WAIT
     }
 
-    private final Supplier<Integer> seqProvider;
-    State state;
-    int seq;
-    int ack;
+    public static enum UserCall {
+        OPEN,
+        CLOSE
+    }
 
-    public ConnectionHandler(final Supplier<Integer> seqProvider,
+    private final Supplier<Integer> issProvider;
+    State state;
+    // Send Sequence Variables
+    int snd_una; // oldest unacknowledged sequence number
+    int snd_nxt; // next sequence number to be sent
+    int iss; // initial send sequence number
+    // Receive Sequence Variables
+    int rcv_nxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
+    int irs; // initial receive sequence number
+
+    public ConnectionHandler(final Supplier<Integer> issProvider,
                              final State state,
-                             final int seq,
-                             final int ack) {
-        this.seqProvider = requireNonNull(seqProvider);
+                             final int snd_una,
+                             final int snd_nxt,
+                             final int rcv_nxt) {
+        this.issProvider = requireNonNull(issProvider);
         this.state = requireNonNull(state);
-        this.seq = seq;
-        this.ack = ack;
+        this.snd_una = snd_una;
+        this.snd_nxt = snd_nxt;
+        this.rcv_nxt = rcv_nxt;
     }
 
     public ConnectionHandler() {
-        this(() -> randomInt(Integer.MIN_VALUE, Integer.MAX_VALUE), CLOSED, 0, 0);
+        this(() -> randomInt(Integer.MAX_VALUE - 1), CLOSED, 0, 0, 0);
     }
 
     @Override
@@ -79,69 +92,281 @@ public class ConnectionHandler extends SimpleChannelInboundHandler<ConnectionMes
         ctx.fireChannelActive();
 
         if (state == CLOSED) {
-            // initiate synchronization
-            seq = seqProvider.get();
-            ctx.writeAndFlush(new Syn(seq));
-            state = SYN_SENT;
+            connectionOpen(ctx, ctx.newPromise());
         }
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final ConnectionMessage msg) throws Exception {
-        switch (state) {
-            case SYN_SENT:
-                if (msg instanceof Syn) {
-                    state = SYN_RECEIVED;
-                    ack = ((Syn) msg).seq() + 1;
-                    ctx.writeAndFlush(new SynAck(seq, ack));
-                }
-                else if (msg instanceof Ack) {
-                    // peer is already in a synchronized state, reset him...
-                    ctx.writeAndFlush(new Rst(((Ack) msg).seq()));
-                    // and try a new synchronization attempt
-                    ctx.writeAndFlush(new Syn(seq));
-                }
-                else {
-                    LOG.warn("Received unexpected message `{}` while beeing in `{}` state.", () -> msg.getClass().getSimpleName(), () -> state);
-                    ctx.close();
-                }
-                break;
-
-            case SYN_RECEIVED:
-                if (msg instanceof SynAck && ((SynAck) msg).ack() == seq + 1) {
-                    seq++;
-                    state = ESTABLISHED;
-                }
-                else {
-                    LOG.warn("Received unexpected message `{}` while beeing in `{}` state.", () -> msg.getClass().getSimpleName(), () -> state);
-                    ctx.close();
-                }
-                break;
-
-            case ESTABLISHED:
-                if (msg instanceof Syn) {
-                    // peer is not in a synchronized state, sent him what we exspect
-                    ctx.writeAndFlush(new Ack(ack));
-                }
-                else if (msg instanceof Rst) {
-                    // peer wants to reset connection
-                    state = CLOSED;
-                    ctx.close();
-                }
-                else {
-                    LOG.warn("Received unexpected message `{}` while beeing in `{}` state.", () -> msg.getClass().getSimpleName(), () -> state);
-                    ctx.close();
-                }
-                break;
-
-            case CLOSED:
-                // discard incoming message
-                ReferenceCountUtil.release(msg);
-
-            default:
-                LOG.warn("Received unexpected message `{}` while beeing in `{}` state.", () -> msg.getClass().getSimpleName(), () -> state);
-                ctx.close();
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg == UserCall.OPEN) {
+            connectionOpen(ctx, promise);
         }
+        else if (msg == UserCall.CLOSE) {
+            // FIXME: implement here?
+        }
+        else {
+            ctx.write(msg, promise);
+        }
+    }
+
+    private void connectionOpen(final ChannelHandlerContext ctx,
+                                final ChannelPromise promise) {
+        if (state == CLOSED) {
+            state = SYN_SENT;
+            openPromise = promise;
+
+            // update send state
+            iss = issProvider.get();
+            snd_una = iss;
+            snd_nxt = iss + 1;
+
+            // send SYN
+            final int seq = iss;
+            final Segment seg = Segment.syn(seq);
+            LOG.trace("1 Initiate handshake by sending `{}`", seg);
+            ctx.write(seg);
+        }
+        else {
+            openPromise.setFailure(new IllegalStateException("Connection is already open."));
+        }
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof Segment) {
+            channelReadSegment(ctx, (Segment) msg);
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    private void channelReadSegment(final ChannelHandlerContext ctx, final Segment seg) {
+        if (state == CLOSED) {
+            // SYN
+            if (seg.ctl() == 2) {
+                state = SYN_RECEIVED;
+
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
+                // update send state
+                iss = issProvider.get();
+                snd_una = iss;
+                snd_nxt = iss + 1;
+
+                // send SYN/ACK
+                final int seq = iss;
+                final Segment response = Segment.synAck(seq, rcv_nxt);
+                LOG.trace("Response to handshake initiation `{}` with `{}`", seg, response);
+                ctx.writeAndFlush(response);
+            }
+            // ACK
+            else if (seg.ctl() == 16) {
+                // we dont expect ACKs here
+                final int seq = seg.ack();
+                final Segment response = Segment.rst(seq);
+                LOG.trace("2 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                ctx.writeAndFlush(response);
+            }
+            // ACK/SYN
+            else if (seg.ctl() == 18) {
+                // as we are in a closed state, ignore the ACK-part of this segment
+                state = SYN_RECEIVED;
+
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
+                // update send state
+                iss = issProvider.get();
+                snd_una = iss;
+                snd_nxt = iss + 1;
+
+                // send SYN/ACK
+                final int seq = iss;
+                final Segment response = Segment.synAck(seq, rcv_nxt);
+                LOG.trace("Response to handshake initiation `{}` with `{}`", seg, response);
+                ctx.writeAndFlush(response);
+            }
+            else {
+                unexpectedSegment(seg);
+            }
+        }
+        else if (state == SYN_SENT) {
+            // SYN/ACK
+            if (seg.ctl() == 18) {
+                // verify ACK
+                if (seg.ack() != snd_nxt) {
+                    throw new UnsupportedOperationException();
+                }
+
+                // our SYN has been ACKed
+                snd_una = seg.ack();
+
+                // verify SYN
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
+                state = ESTABLISHED;
+
+                // ACK the SYN
+                final int seq = snd_nxt;
+                final int ack = rcv_nxt;
+                final Segment response = Segment.ack(seq, ack);
+                ctx.writeAndFlush(response);
+
+                LOG.trace("Handshake done on our side after receiving `{}` and sending `{}`. Connection established.", seg, response);
+            }
+            // SYN
+            else if (seg.ctl() == 2) {
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
+                state = SYN_RECEIVED;
+
+                // ACK the SYN and "re-send" our SYN
+                final int seq = iss;
+                final int ack = rcv_nxt;
+                final Segment response = Segment.synAck(seq, ack);
+                ctx.writeAndFlush(response);
+
+                LOG.trace("Other side synchronizes his state with us. Now synchronize our state with other side.");
+            }
+            // ACK
+            else if (seg.ctl() == 16) {
+                // we dont expect ACKs here
+                final int seq = seg.ack();
+                final Segment response = Segment.rst(seq);
+                LOG.trace("1 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                ctx.writeAndFlush(response);
+
+                // FIXME: remove when we have retransmission
+                final int seq2 = iss;
+                final Segment seg2 = Segment.syn(seq2);
+                LOG.trace("2 Initiate handshake by sending `{}`", seg2);
+                ctx.writeAndFlush(seg2);
+            }
+            else {
+                unexpectedSegment(seg);
+            }
+        }
+        else if (state == SYN_RECEIVED) {
+            // ACK
+            if (seg.ctl() == 16) {
+                // verify ACK
+                if (seg.ack() != snd_nxt) {
+                    throw new UnsupportedOperationException();
+                }
+
+                // our SYN has been ACKed
+                snd_una = seg.ack();
+
+                state = ESTABLISHED;
+
+                LOG.trace("Handshake done on our side after receiving `{}`. Connection established.", seg);
+            }
+            // SYN/ACK
+            else if (seg.ctl() == 18) {
+                // verify ACK
+                if (seg.ack() != snd_nxt) {
+                    // unexpected ACK
+                    final int seq = snd_nxt;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.ack(seq, ack);
+                    LOG.trace("5 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                    ctx.writeAndFlush(response);
+                    return;
+                }
+
+                // our SYN has been ACKed
+                snd_una = seg.ack();
+
+                state = ESTABLISHED;
+
+                LOG.trace("Handshake done on our side after receiving `{}`. Connection established.", seg);
+            }
+            // RST
+            else if (seg.ctl() == 4) {
+                // handshake has been refused by the other site
+                LOG.trace("Close channel as we got `{}`", seg);
+                state = CLOSED;
+                ctx.close();
+            }
+            // SYN
+            else if (seg.ctl() == 2) {
+                // we have already been synced. nevermind...sync again
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
+                state = SYN_RECEIVED;
+
+                // ACK the SYN
+                final int seq = iss;
+                final int ack = rcv_nxt;
+                final Segment response = Segment.ack(seq, ack);
+                ctx.writeAndFlush(response);
+            }
+            else {
+                unexpectedSegment(seg);
+            }
+        }
+        else if (state == ESTABLISHED) {
+            // SYN
+            if (seg.ctl() == 2) {
+                // we dont expect SYNs here
+                final int seq = snd_nxt;
+                final int ack = rcv_nxt;
+                final Segment response = Segment.ack(seq, ack);
+                LOG.trace("3 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                ctx.writeAndFlush(response);
+            }
+            // RST
+            else if (seg.ctl() == 4) {
+                LOG.trace("Close channel as we got `{}`", seg);
+                state = CLOSED;
+                ctx.close();
+            }
+            // SYN/ACK
+            else if (seg.ctl() == 18) {
+                // we dont expect SYNs here
+                final int seq = snd_nxt;
+                final int ack = rcv_nxt;
+                final Segment response = Segment.ack(seq, ack);
+                LOG.trace("4 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                ctx.writeAndFlush(response);
+            }
+            // ACK
+            else if (seg.ctl() == 16) {
+                // verify ACK
+                if (seg.ack() != snd_nxt) {
+                    // unexpected ACK
+                    final int seq = snd_nxt;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.ack(seq, ack);
+                    LOG.trace("6 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                    ctx.writeAndFlush(response);
+                    return;
+                }
+
+                // valid ack, ignore
+            }
+            else {
+                unexpectedSegment(seg);
+            }
+        }
+        else {
+            unexpectedSegment(seg);
+        }
+    }
+
+    private UnsupportedOperationException unexpectedSegment(final Segment seg) {
+        throw new UnsupportedOperationException("Got unexpected segment `" + seg + "` in state `" + state + "`");
     }
 }
