@@ -24,14 +24,15 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
+import io.netty.handler.codec.CodecException;
 
 import java.util.List;
 
-public class ConnectionCodec extends ByteToMessageCodec<Segment> {
+public class ConnectionSynchronizationCodec extends ByteToMessageCodec<Segment> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
-                          final ByteBuf out) throws Exception {
+                          final ByteBuf out) {
         out.writeInt(seg.seq());
         out.writeInt(seg.ack());
         out.writeByte(seg.ctl());
@@ -42,11 +43,16 @@ public class ConnectionCodec extends ByteToMessageCodec<Segment> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
-                          final List<Object> out) throws Exception {
-        final int seq = in.readInt();
-        final int ack = in.readInt();
-        final byte ctl = in.readByte();
-        final Segment seg = new Segment(seq, ack, ctl, in.discardSomeReadBytes().retain());
-        out.add(seg);
+                          final List<Object> out) {
+        if (in.readableBytes() == 9) {
+            final int seq = in.readInt();
+            final int ack = in.readInt();
+            final byte ctl = in.readByte();
+            final Segment seg = new Segment(seq, ack, ctl, in.discardSomeReadBytes().retain());
+            out.add(seg);
+        }
+        else {
+            throw new CodecException("Message must be 9 bytes long (was " + in.readableBytes() + " bytes long).");
+        }
     }
 }

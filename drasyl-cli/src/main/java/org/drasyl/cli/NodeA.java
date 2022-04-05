@@ -21,9 +21,11 @@
  */
 package org.drasyl.cli;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.handler.connection.ConnectionCodec;
+import org.drasyl.handler.connection.ConnectionSynchronizationCodec;
 import org.drasyl.handler.connection.ConnectionSynchronizationHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
@@ -44,8 +46,16 @@ public class NodeA extends DrasylNode {
                 final DrasylAddress nodeB = IdentityManager.readIdentityFile(Path.of("nodeB.identity")).getAddress();
                 if (ch.remoteAddress().equals(nodeB)) {
                     final ChannelPipeline p = ch.pipeline();
-                    p.addLast(new ConnectionCodec());
+                    p.addLast(new ConnectionSynchronizationCodec());
                     p.addLast(new ConnectionSynchronizationHandler());
+                    p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                       final Object evt) throws Exception {
+                            System.err.println(evt);
+                            super.userEventTriggered(ctx, evt);
+                        }
+                    });
                 }
             }
         });

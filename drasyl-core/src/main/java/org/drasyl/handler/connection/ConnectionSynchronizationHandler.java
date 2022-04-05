@@ -68,6 +68,32 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
         CLOSE
     }
 
+    public static class ConnectionSynchronized {
+        private final int snd_nxt;
+        private final int rcv_nxt;
+
+        public ConnectionSynchronized(final int snd_nxt, final int rcv_nxt) {
+            this.snd_nxt = snd_nxt;
+            this.rcv_nxt = rcv_nxt;
+        }
+
+        public int snd_nxt() {
+            return snd_nxt;
+        }
+
+        public int rcv_nxt() {
+            return rcv_nxt;
+        }
+
+        @Override
+        public String toString() {
+            return "ConnectionSynchronized{" +
+                    "snd_nxt=" + snd_nxt +
+                    ", rcv_nxt=" + rcv_nxt +
+                    '}';
+        }
+    }
+
     private final Supplier<Integer> issProvider;
     private final boolean autoOpen;
     State state;
@@ -102,8 +128,12 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
         this.autoOpen = autoOpen;
     }
 
+    public ConnectionSynchronizationHandler(final boolean autoOpen) {
+        this(() -> randomInt(Integer.MAX_VALUE - 1), autoOpen, CLOSED, 0, 0, 0);
+    }
+
     public ConnectionSynchronizationHandler() {
-        this(() -> randomInt(Integer.MAX_VALUE - 1), false, CLOSED, 0, 0, 0);
+        this(false);
     }
 
     @Override
@@ -141,7 +171,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
             // send SYN
             final int seq = iss;
             final Segment seg = Segment.syn(seq);
-            LOG.trace("1 Initiate handshake by sending `{}`", seg);
+            LOG.trace("{} 1 Initiate handshake by sending `{}`", ctx.channel(), seg);
             ctx.write(seg);
         }
         else {
@@ -151,6 +181,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        LOG.info("channelRead {}", msg);
         if (msg instanceof Segment) {
             channelReadSegment(ctx, (Segment) msg);
         }
@@ -176,8 +207,9 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 // send SYN/ACK
                 final int seq = iss;
-                final Segment response = Segment.synAck(seq, rcv_nxt);
-                LOG.trace("Response to handshake initiation `{}` with `{}`", seg, response);
+                final int ack = rcv_nxt;
+                final Segment response = Segment.synAck(seq, ack);
+                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
                 ctx.writeAndFlush(response);
             }
             // ACK
@@ -185,12 +217,13 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 // we dont expect ACKs here
                 final int seq = seg.ack();
                 final Segment response = Segment.rst(seq);
-                LOG.trace("2 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                LOG.trace("Got unexpected `{}`. Reset remote peer by replying with `{}`.", seg, response);
                 ctx.writeAndFlush(response);
             }
             // ACK/SYN
             else if (seg.ctl() == 18) {
-                // as we are in a closed state, ignore the ACK-part of this segment
+                // as we are in a CLOSED state, ignore the ACK-part of this segment and just respect
+                // the SYN-part
                 state = SYN_RECEIVED;
 
                 // synchronize receive state
@@ -204,8 +237,9 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 // send SYN/ACK
                 final int seq = iss;
-                final Segment response = Segment.synAck(seq, rcv_nxt);
-                LOG.trace("Response to handshake initiation `{}` with `{}`", seg, response);
+                final int ack = rcv_nxt;
+                final Segment response = Segment.synAck(seq, ack);
+                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
                 ctx.writeAndFlush(response);
             }
             else {
@@ -236,7 +270,10 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 final Segment response = Segment.ack(seq, ack);
                 ctx.writeAndFlush(response);
 
-                LOG.trace("Handshake done on our side after receiving `{}` and sending `{}`. Connection established.", seg, response);
+                LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`). All states has been synchronized. Now acknowledge the receival by replying with `{}`.", seg, response);
+
+                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                ctx.fireUserEventTriggered(evt);
             }
             // SYN
             else if (seg.ctl() == 2) {
@@ -250,9 +287,8 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 final int seq = iss;
                 final int ack = rcv_nxt;
                 final Segment response = Segment.synAck(seq, ack);
+                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
                 ctx.writeAndFlush(response);
-
-                LOG.trace("Other side synchronizes his state with us. Now synchronize our state with other side.");
             }
             // ACK
             else if (seg.ctl() == 16) {
@@ -285,7 +321,10 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 state = ESTABLISHED;
 
-                LOG.trace("Handshake done on our side after receiving `{}`. Connection established.", seg);
+                LOG.trace("Connection synchronized! Remote peer has acknowledged the receival of our state replying with `{}`.", seg);
+
+                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                ctx.fireUserEventTriggered(evt);
             }
             // SYN/ACK
             else if (seg.ctl() == 18) {
@@ -303,9 +342,17 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 // our SYN has been ACKed
                 snd_una = seg.ack();
 
+                // verify SYN
+                // synchronize receive state
+                rcv_nxt = seg.seq() + 1;
+                irs = seg.seq();
+
                 state = ESTABLISHED;
 
-                LOG.trace("Handshake done on our side after receiving `{}`. Connection established.", seg);
+                LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`) and acknowledged our state.", seg);
+
+                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                ctx.fireUserEventTriggered(evt);
             }
             // RST
             else if (seg.ctl() == 4) {

@@ -21,9 +21,11 @@
  */
 package org.drasyl.cli;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.handler.connection.ConnectionCodec;
+import org.drasyl.handler.connection.ConnectionSynchronizationCodec;
 import org.drasyl.handler.connection.ConnectionSynchronizationHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
@@ -46,8 +48,16 @@ public class NodeB extends DrasylNode {
                 final DrasylAddress nodeA = IdentityManager.readIdentityFile(Path.of("nodeA.identity")).getAddress();
                 if (ch.remoteAddress().equals(nodeA)) {
                     final ChannelPipeline p = ch.pipeline();
-                    p.addLast(new ConnectionCodec());
-                    p.addLast(new ConnectionSynchronizationHandler());
+                    p.addLast(new ConnectionSynchronizationCodec());
+                    p.addLast(new ConnectionSynchronizationHandler(true));
+                    p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                       final Object evt) throws Exception {
+                            System.err.println(evt);
+                            super.userEventTriggered(ctx, evt);
+                        }
+                    });
                 }
             }
         });
@@ -60,8 +70,10 @@ public class NodeB extends DrasylNode {
             System.out.println("geht los");
             try {
                 final DrasylAddress nodeA = IdentityManager.readIdentityFile(Path.of("nodeA.identity")).getAddress();
-//                send(nodeA, Unpooled.copiedBuffer("Huhu", UTF_8));
                 send(nodeA, ConnectionSynchronizationHandler.UserCall.OPEN);
+//                DrasylNodeSharedEventLoopGroupHolder.getChildGroup().scheduleAtFixedRate(() -> {
+//                    send(nodeA, Unpooled.copiedBuffer("Huhu", UTF_8));
+//                }, 0L, 5L, SECONDS);
             }
             catch (final IOException e) {
                 throw new RuntimeException(e);
