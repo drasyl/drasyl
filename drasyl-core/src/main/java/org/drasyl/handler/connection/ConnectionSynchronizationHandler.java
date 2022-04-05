@@ -30,14 +30,20 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.connection.ConnectionHandler.State.CLOSED;
-import static org.drasyl.handler.connection.ConnectionHandler.State.ESTABLISHED;
-import static org.drasyl.handler.connection.ConnectionHandler.State.SYN_RECEIVED;
-import static org.drasyl.handler.connection.ConnectionHandler.State.SYN_SENT;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.CLOSED;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.ESTABLISHED;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_RECEIVED;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_SENT;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.UserCall.OPEN;
 import static org.drasyl.util.RandomUtil.randomInt;
 
-public class ConnectionHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
+/**
+ * This handler performs a synchronization with the remote peer. The synchronization has been
+ * heavily inspired by the three-way handshake of TCP (<a href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC
+ * 793</a>).
+ */
+public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionSynchronizationHandler.class);
     private ChannelPromise openPromise;
 
     static enum State {
@@ -57,11 +63,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     }
 
     public static enum UserCall {
+        // initiate synchronization process
         OPEN,
         CLOSE
     }
 
     private final Supplier<Integer> issProvider;
+    private final boolean autoOpen;
     State state;
     // Send Sequence Variables
     int snd_una; // oldest unacknowledged sequence number
@@ -71,27 +79,38 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     int rcv_nxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     int irs; // initial receive sequence number
 
-    public ConnectionHandler(final Supplier<Integer> issProvider,
-                             final State state,
-                             final int snd_una,
-                             final int snd_nxt,
-                             final int rcv_nxt) {
+    /**
+     * @param issProvider Provider to generate the initial send sequence number
+     * @param autoOpen    Initiate synchronization process automatically on {@link
+     *                    #channelActive(ChannelHandlerContext)}
+     * @param state       Current synchronization state
+     * @param snd_una     Oldest unacknowledged sequence number
+     * @param snd_nxt     Next sequence number to be sent
+     * @param rcv_nxt     Next expected sequence number
+     */
+    ConnectionSynchronizationHandler(final Supplier<Integer> issProvider,
+                                     final boolean autoOpen,
+                                     final State state,
+                                     final int snd_una,
+                                     final int snd_nxt,
+                                     final int rcv_nxt) {
         this.issProvider = requireNonNull(issProvider);
         this.state = requireNonNull(state);
         this.snd_una = snd_una;
         this.snd_nxt = snd_nxt;
         this.rcv_nxt = rcv_nxt;
+        this.autoOpen = autoOpen;
     }
 
-    public ConnectionHandler() {
-        this(() -> randomInt(Integer.MAX_VALUE - 1), CLOSED, 0, 0, 0);
+    public ConnectionSynchronizationHandler() {
+        this(() -> randomInt(Integer.MAX_VALUE - 1), false, CLOSED, 0, 0, 0);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
 
-        if (state == CLOSED) {
+        if (autoOpen) {
             connectionOpen(ctx, ctx.newPromise());
         }
     }
@@ -100,11 +119,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg == UserCall.OPEN) {
+        if (msg == OPEN) {
             connectionOpen(ctx, promise);
-        }
-        else if (msg == UserCall.CLOSE) {
-            // FIXME: implement here?
         }
         else {
             ctx.write(msg, promise);
@@ -354,8 +370,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     ctx.writeAndFlush(response);
                     return;
                 }
-
-                // valid ack, ignore
             }
             else {
                 unexpectedSegment(seg);

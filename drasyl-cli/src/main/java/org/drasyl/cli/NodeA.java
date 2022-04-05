@@ -24,7 +24,7 @@ package org.drasyl.cli;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.connection.ConnectionCodec;
-import org.drasyl.handler.connection.ConnectionHandler;
+import org.drasyl.handler.connection.ConnectionSynchronizationHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -45,7 +45,7 @@ public class NodeA extends DrasylNode {
                 if (ch.remoteAddress().equals(nodeB)) {
                     final ChannelPipeline p = ch.pipeline();
                     p.addLast(new ConnectionCodec());
-                    p.addLast(new ConnectionHandler());
+                    p.addLast(new ConnectionSynchronizationHandler());
                 }
             }
         });
