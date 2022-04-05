@@ -160,19 +160,11 @@ public class Segment extends DefaultByteBufHolder {
         return new Segment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment pshAck(final int seq, final int ack, final ByteBuf data) {
-        return new Segment(seq, ack, (byte) (PSH | ACK), data);
-    }
-
     public static Segment rstAck(final int seq, final int ack) {
         return new Segment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
     }
 
     public static Segment synAck(final int seq, final int ack) {
         return new Segment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment finAck(final int seq, final int ack) {
-        return new Segment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
     }
 }

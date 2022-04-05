@@ -52,7 +52,9 @@ public class NodeA extends DrasylNode {
                         @Override
                         public void userEventTriggered(final ChannelHandlerContext ctx,
                                                        final Object evt) throws Exception {
-                            System.err.println(evt);
+                            if (evt instanceof ConnectionSynchronizationHandler.ConnectionSynchronized) {
+                                System.err.println(evt);
+                            }
                             super.userEventTriggered(ctx, evt);
                         }
                     });
