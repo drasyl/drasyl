@@ -22,20 +22,22 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.CLOSED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.ESTABLISHED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_SENT;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.UserCall.OPEN;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
@@ -49,6 +51,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
 public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionSynchronizationHandler.class);
     private ChannelPromise openPromise;
+    private final int synchronizationTimeout;
     private final Supplier<Integer> issProvider;
     private final boolean autoOpen;
     State state;
@@ -60,22 +63,27 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
     int rcv_nxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     int irs; // initial receive sequence number
     Segment retransmissionSegment;
+    private ScheduledFuture<?> synchronizationTimeoutFuture;
+    private ScheduledFuture<?> retransmissionTimeoutFuture;
 
     /**
-     * @param issProvider Provider to generate the initial send sequence number
-     * @param autoOpen    Initiate synchronization process automatically on {@link
-     *                    #channelActive(ChannelHandlerContext)}
-     * @param state       Current synchronization state
-     * @param snd_una     Oldest unacknowledged sequence number
-     * @param snd_nxt     Next sequence number to be sent
-     * @param rcv_nxt     Next expected sequence number
+     * @param synchronizationTimeout
+     * @param issProvider            Provider to generate the initial send sequence number
+     * @param autoOpen               Initiate synchronization process automatically on {@link
+     *                               #channelActive(ChannelHandlerContext)}
+     * @param state                  Current synchronization state
+     * @param snd_una                Oldest unacknowledged sequence number
+     * @param snd_nxt                Next sequence number to be sent
+     * @param rcv_nxt                Next expected sequence number
      */
-    ConnectionSynchronizationHandler(final Supplier<Integer> issProvider,
+    ConnectionSynchronizationHandler(final int synchronizationTimeout,
+                                     final Supplier<Integer> issProvider,
                                      final boolean autoOpen,
                                      final State state,
                                      final int snd_una,
                                      final int snd_nxt,
                                      final int rcv_nxt) {
+        this.synchronizationTimeout = requireNonNegative(synchronizationTimeout);
         this.issProvider = requireNonNull(issProvider);
         this.state = requireNonNull(state);
         this.snd_una = snd_una;
@@ -85,7 +93,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
     }
 
     public ConnectionSynchronizationHandler(final boolean autoOpen) {
-        this(() -> randomInt(Integer.MAX_VALUE - 1), autoOpen, CLOSED, 0, 0, 0);
+        this(20000, () -> randomInt(Integer.MAX_VALUE - 1), autoOpen, CLOSED, 0, 0, 0);
     }
 
     public ConnectionSynchronizationHandler() {
@@ -129,14 +137,41 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
             final Segment seg = Segment.syn(seq);
             LOG.trace("{} 1 Initiate handshake by sending `{}`", ctx.channel(), seg);
             writeSegment(ctx, seg);
+
+            if (synchronizationTimeout > 0) {
+                synchronizationTimeoutFuture = ctx.executor().schedule(() -> {
+                    if (retransmissionTimeoutFuture != null) {
+                        retransmissionTimeoutFuture.cancel(false);
+                        retransmissionTimeoutFuture = null;
+                    }
+                    ctx.fireExceptionCaught(new Exception("handshake timed out"));
+                    ctx.close();
+                }, synchronizationTimeout, MILLISECONDS);
+            }
         }
         else {
             openPromise.setFailure(new IllegalStateException("Connection is already open."));
         }
     }
 
-    private ChannelFuture writeSegment(final ChannelHandlerContext ctx, final Segment seg) {
-        return ctx.writeAndFlush(seg);
+    private void writeSegment(final ChannelHandlerContext ctx, final Segment seg) {
+        ctx.writeAndFlush(seg);
+
+        if (seg.ctl() != 16) {
+            retransmissionTimeoutFuture = ctx.executor().schedule(() -> retransmissionTimeout(ctx, seg), 1000L, MILLISECONDS);
+        }
+    }
+
+    private void retransmissionTimeout(final ChannelHandlerContext ctx, final Segment seg) {
+        if (retransmissionTimeoutFuture != null) {
+            LOG.error("write {}", seg);
+            writeSegment(ctx, seg);
+        }
+    }
+
+    private void segmentAcknowledged() {
+        retransmissionTimeoutFuture.cancel(false);
+        retransmissionTimeoutFuture = null;
     }
 
     @Override
@@ -212,6 +247,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 if (seg.ack() != snd_nxt) {
                     throw new UnsupportedOperationException();
                 }
+                segmentAcknowledged();
 
                 // our SYN has been ACKed
                 snd_una = seg.ack();
@@ -233,6 +269,10 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
                 ctx.fireUserEventTriggered(evt);
+
+                if (synchronizationTimeoutFuture != null) {
+                    synchronizationTimeoutFuture.cancel(false);
+                }
             }
             // SYN
             else if (seg.ctl() == 2) {
@@ -274,6 +314,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 if (seg.ack() != snd_nxt) {
                     throw new UnsupportedOperationException();
                 }
+                segmentAcknowledged();
 
                 // our SYN has been ACKed
                 snd_una = seg.ack();
@@ -284,6 +325,10 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
                 ctx.fireUserEventTriggered(evt);
+
+                if (synchronizationTimeoutFuture != null) {
+                    synchronizationTimeoutFuture.cancel(false);
+                }
             }
             // SYN/ACK
             else if (seg.ctl() == 18) {
@@ -297,6 +342,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                     writeSegment(ctx, response);
                     return;
                 }
+                segmentAcknowledged();
 
                 // our SYN has been ACKed
                 snd_una = seg.ack();
@@ -312,6 +358,10 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
                 ctx.fireUserEventTriggered(evt);
+
+                if (synchronizationTimeoutFuture != null) {
+                    synchronizationTimeoutFuture.cancel(false);
+                }
             }
             // RST
             else if (seg.ctl() == 4) {
@@ -376,6 +426,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                     writeSegment(ctx, response);
                     return;
                 }
+                segmentAcknowledged();
             }
             else {
                 unexpectedSegment(seg);

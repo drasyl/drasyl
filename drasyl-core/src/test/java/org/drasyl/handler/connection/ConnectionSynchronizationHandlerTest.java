@@ -43,7 +43,7 @@ public class ConnectionSynchronizationHandlerTest {
     class ThreeWayHandshakeConnectionSynchronization {
         @Test
         void asClient() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(() -> 100, false, CLOSED, 0, 0, 0);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // SYNchronize our SEG with peer
@@ -66,7 +66,7 @@ public class ConnectionSynchronizationHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(() -> 300, false, CLOSED, 0, 0, 0);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 300, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
@@ -91,7 +91,7 @@ public class ConnectionSynchronizationHandlerTest {
     // Both peers initiate handshake simultaneous
     @Test
     void simultaneousConnectionSynchronization() {
-        final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(() -> 100, false, CLOSED, 0, 0, 0);
+        final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, CLOSED, 0, 0, 0);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         // SYNchronize our SEG with peer
@@ -122,7 +122,7 @@ public class ConnectionSynchronizationHandlerTest {
     class HalfOpenConnectionDiscovery {
         @Test
         void weCrashed() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(() -> 400, false, CLOSED, 0, 0, 0);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 400, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // we want to SYNchronize with an already synchronized peer
@@ -141,7 +141,7 @@ public class ConnectionSynchronizationHandlerTest {
 
         @Test
         void otherCrashed() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(() -> 100, false, ESTABLISHED, 300, 300, 100);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, ESTABLISHED, 300, 300, 100);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // other wants to SYNchronize with us, ACK with our expected seq
