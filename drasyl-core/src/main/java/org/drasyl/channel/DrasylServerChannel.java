@@ -165,7 +165,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    extracted(ctx, o, peer);
+                    passMessageToChannel(ctx, o, peer, true);
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of message `{}`: ", msg, e);
@@ -173,22 +173,27 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
         }
 
-        private void extracted(final ChannelHandlerContext ctx,
-                               final Object o,
-                               final IdentityPublicKey peer) {
+        private void passMessageToChannel(final ChannelHandlerContext ctx,
+                                          final Object o,
+                                          final IdentityPublicKey peer,
+                                          final boolean recreateClosedChannel) {
             final Channel channel = getOrCreateChildChannel(ctx, peer);
 
             // pass message to channel
             channel.eventLoop().execute(() -> {
-                LOG.error("{} {} {}", channel, o, channel.isActive());
                 if (channel.isActive()) {
                     channel.pipeline().fireChannelRead(o);
                     channel.pipeline().fireChannelReadComplete();
                 }
-                else {
+                else if (recreateClosedChannel) {
+                    // channel we want message pass to has been closed in the meantime.
+                    // give message chance to be consumend by recreate a new channcel once
                     ctx.executor().execute(() -> {
-                        extracted(ctx, o, peer);
+                        passMessageToChannel(ctx, o, peer, false);
                     });
+                }
+                else {
+                    // drop message
                 }
             });
         }
