@@ -61,7 +61,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Map<SocketAddress, DrasylChannel> channels;
+    public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
 
     @SuppressWarnings("java:S2384")
@@ -223,7 +223,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
 
             Channel channel = parent.channels.get(remoteAddress);
-            if (channel == null || !channel.isActive()) {
+            if (channel == null) {
                 channel = new DrasylChannel(parent, remoteAddress);
                 ctx.fireChannelRead(channel);
             }
@@ -238,7 +238,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                     final DrasylChannel msg) {
             final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
-            if (oldValue != null && oldValue.isActive()) {
+            if (oldValue != null) {
                 oldValue.close();
             }
 

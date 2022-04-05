@@ -24,7 +24,6 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
@@ -120,7 +119,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     @SuppressWarnings("java:S1188")
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        node.channels = new DefaultChannelGroup(ch.eventLoop());
         ch.pipeline().addLast(new NodeLifecycleHeadHandler(identity));
 
         if (config.isRemoteEnabled()) {
