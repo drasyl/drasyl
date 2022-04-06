@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.CLOSED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.ESTABLISHED;
+import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.LISTEN;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_SENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -66,7 +67,7 @@ class ConnectionSynchronizationHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 300, false, CLOSED, 0, 0, 0);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 300, false, LISTEN, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
@@ -99,10 +100,18 @@ class ConnectionSynchronizationHandlerTest {
         assertEquals(Segment.syn(100), channel.readOutbound());
         assertEquals(SYN_SENT, handler.state);
 
+        assertEquals(100, handler.snd_una);
+        assertEquals(101, handler.snd_nxt);
+        assertEquals(0, handler.rcv_nxt);
+
         // peer SYNchronizes his SEG before our SYN has been received
         channel.writeInbound(Segment.syn(300));
         assertEquals(SYN_RECEIVED, handler.state);
         assertEquals(Segment.synAck(100, 301), channel.readOutbound());
+
+        assertEquals(100, handler.snd_una);
+        assertEquals(101, handler.snd_nxt);
+        assertEquals(301, handler.rcv_nxt);
 
         // peer respont to our SYN with ACK (and another SYN)
         channel.writeInbound(Segment.synAck(300, 101));

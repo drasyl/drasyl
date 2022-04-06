@@ -175,46 +175,212 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
     private void channelReadSegment(final ChannelHandlerContext ctx, final Segment seg) {
         LOG.trace("Read {}", seg);
 
-        switch (state) {
-            case CLOSED:
-                if (seg.isRst()) {
-                    // as we are already/still in CLOSED state, we can ignore the RST
+        if (true) {
+            switch (state) {
+                case CLOSED:
+                    if (seg.isRst()) {
+                        // as we are already/still in CLOSED state, we can ignore the RST
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    // at this point we're not (longer) willing to synchronize.
+                    // reset the peer
+                    final Segment response;
+                    if (seg.isAck()) {
+                        // sent normal RST as we don't want to ACK an ACK
+                        response = Segment.rst(seg.ack());
+                    }
+                    else {
+                        response = Segment.rstAck(0, seg.seq());
+                    }
+                    ctx.writeAndFlush(response);
                     ReferenceCountUtil.release(seg);
-                    return;
-                }
 
-                // at this point we're not (longer) willing to synchronize.
-                // reset the peer
-                final Segment response;
-                if (seg.isAck()) {
-                    // sent normal RST as we don't want to ACK an ACK
-                    response = Segment.rst(seg.ack());
-                }
-                else {
-                    response = Segment.rstAck(0, seg.seq());
-                }
-                ctx.writeAndFlush(response);
-                ReferenceCountUtil.release(seg);
+                    break;
 
-                break;
+                case LISTEN:
+                    if (seg.isRst()) {
+                        // as we are already/still in CLOSED state, we can ignore the RST
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
 
-            case LISTEN:
-                if (seg.isRst()) {
-                    // as we are already/still in CLOSED state, we can ignore the RST
+                    if (seg.isAck()) {
+                        // we are on a state were we have never sent anything that must be ACKed
+                        final Segment response2 = Segment.rst(seg.ack());
+                        ctx.writeAndFlush(response2);
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    if (seg.isSyn()) {
+                        // yay, peer SYNced with us
+                        state = SYN_RECEIVED;
+
+                        // synchronize receive state
+                        rcv_nxt = seg.seq() + 1;
+                        irs = seg.seq();
+
+                        // update send state
+                        iss = issProvider.get();
+                        snd_una = iss;
+                        snd_nxt = iss + 1;
+
+                        // send SYN/ACK
+                        final int seq = iss;
+                        final int ack = rcv_nxt;
+                        final Segment response3 = Segment.synAck(seq, ack);
+                        ctx.writeAndFlush(response3);
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    // we should not reach this point. However, if it does happen, just drop the segment
+                    unexpectedSegment(seg);
+                    break;
+
+                case SYN_SENT:
+                    if (seg.isAck()) {
+                        if (seg.ack() <= iss || seg.ack() > snd_nxt) {
+                            // segment ACKed something we never sent
+                            if (!seg.isRst()) {
+                                final Segment response2 = Segment.rst(seg.ack());
+                                ctx.writeAndFlush(response2);
+                            }
+                            ReferenceCountUtil.release(seg);
+                            return;
+                        }
+                    }
+
+                    if (seg.isRst()) {
+                        final boolean acceptableAck = seg.isAck() && seg.ack() == snd_nxt;
+                        if (acceptableAck) {
+                            ctx.fireUserEventTriggered(new ConnectionSynchronizationException("error: connection reset"));
+                            ReferenceCountUtil.release(seg);
+                            state = CLOSED;
+                            return;
+                        }
+                        else {
+                            ReferenceCountUtil.release(seg);
+                            return;
+                        }
+                    }
+
+                    if (seg.isSyn()) {
+                        rcv_nxt = seg.seq() + 1;
+                        irs = seg.seq();
+                        if (seg.isAck()) {
+                            snd_una = seg.ack();
+                        }
+
+                        final boolean ourSynHasBeenAcked = snd_una > iss;
+                        if (ourSynHasBeenAcked) {
+                            state = ESTABLISHED;
+                            // ACK
+                            final int seq = snd_nxt;
+                            final int ack = rcv_nxt;
+                            final Segment response3 = Segment.ack(seq, ack);
+                            ctx.writeAndFlush(response3);
+                            ReferenceCountUtil.release(seg);
+                        }
+                        else {
+                            state = SYN_RECEIVED;
+                            // SYN/ACK
+                            final int seq = iss;
+                            final int ack = rcv_nxt;
+                            final Segment response3 = Segment.synAck(seq, ack);
+                            ctx.writeAndFlush(response3);
+                            ReferenceCountUtil.release(seg);
+                        }
+                    }
+
+                    break;
+
+                case SYN_RECEIVED:
+                    // check SEQ
+                    if (seg.seq() != rcv_nxt) {
+                        // not expected seq
+                        if (!seg.isRst()) {
+                            final int seq = snd_nxt;
+                            final int ack = rcv_nxt;
+                            final Segment response3 = Segment.ack(seq, ack);
+                            ctx.writeAndFlush(response3);
+                        }
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    // check RST
+                    if (seg.isRst()) {
+                        if (activeOpen) {
+                            // connection has been refused by remote
+                            ctx.fireExceptionCaught(new ConnectionSynchronizationException("connection refused"));
+                            state = CLOSED;
+                            ReferenceCountUtil.release(seg);
+                            return;
+                        }
+                        else {
+                            // peer will nicht mehr...gehe zurück zum alten zustand
+                            state = LISTEN;
+                            ReferenceCountUtil.release(seg);
+                            return;
+                        }
+                    }
+
+                    // check SYN
+                    if (seg.isSyn()) {
+                        ctx.fireExceptionCaught(new ConnectionSynchronizationException("connection reset"));
+                        state = CLOSED;
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    if (seg.isAck()) {
+                        if (snd_una <= seg.ack() && seg.ack() <= snd_nxt) {
+                            state = ESTABLISHED;
+
+                            if (snd_una < seg.ack() && seg.ack() <= snd_nxt) {
+                                snd_una = seg.ack();
+                            }
+                            else if (seg.ack() < snd_una) {
+                                // ACK is duplicate, ignore
+                                ReferenceCountUtil.release(seg);
+                            }
+                            else if (seg.ack() > snd_nxt) {
+                                // ACK acks something not yet sent
+                                System.out.println();
+                            }
+                        }
+                        else {
+                            final int seq = seg.ack();
+                            final Segment response3 = Segment.rst(seq);
+                            ctx.writeAndFlush(response3);
+                            return;
+                        }
+                    }
+
+                    break;
+            }
+        }
+        else {
+
+            if (state == CLOSED) {
+                // ACK
+                if (seg.ctl() == 16) {
+                    // we dont expect ACKs here
+                    final int seq = seg.ack();
+                    final Segment response = Segment.rst(seq);
+                    LOG.trace("Got unexpected `{}`. Reset remote peer by replying with `{}`.", seg, response);
+                    writeSegment(ctx, response);
+                }
+                // RST
+                else if (seg.ctl() == 4) {
+                    // remote instructions us to reset connection. as we are still in the CLOSED state, we can just ignore the segment
                     ReferenceCountUtil.release(seg);
-                    return;
                 }
-
-                if (seg.isAck()) {
-                    // we are on a state were we have never sent anything that must be ACKed
-                    final Segment response2 = Segment.rst(seg.ack());
-                    ctx.writeAndFlush(response2);
-                    ReferenceCountUtil.release(seg);
-                    return;
-                }
-
-                if (seg.isSyn()) {
-                    // yay, peer SYNced with us
+                // SYN
+                else if (seg.ctl() == 2) {
                     state = SYN_RECEIVED;
 
                     // synchronize receive state
@@ -229,313 +395,229 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                     // send SYN/ACK
                     final int seq = iss;
                     final int ack = rcv_nxt;
-                    final Segment response3 = Segment.synAck(seq, ack);
-                    ctx.writeAndFlush(response3);
-                    ReferenceCountUtil.release(seg);
-                    return;
+                    final Segment response = Segment.synAck(seq, ack);
+                    LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
+                    writeSegment(ctx, response);
                 }
+                // ACK/SYN
+                else if (seg.ctl() == 18) {
+                    // as we are in a CLOSED state, ignore the ACK-part of this segment and just respect
+                    // the SYN-part
+                    state = SYN_RECEIVED;
 
-                // we should not reach this point. However, if it does happen, just drop the segment
-                unexpectedSegment(seg);
-
-            case SYN_SENT:
-                if (seg.isAck()) {
-                    if (seg.ack() <= iss || seg.ack() > snd_nxt) {
-                        // segment ACKed something we never sent
-                        if (!seg.isRst()) {
-                            final Segment response2 = Segment.rst(seg.ack());
-                            ctx.writeAndFlush(response2);
-                        }
-                        ReferenceCountUtil.release(seg);
-                        return;
-                    }
-                }
-
-                if (seg.isRst()) {
-                    final boolean acceptableAck = seg.isAck() && seg.ack() == snd_nxt;
-                    if (acceptableAck) {
-                        ctx.fireUserEventTriggered(new ConnectionSynchronizationException("error: connection reset"));
-                        ReferenceCountUtil.release(seg);
-                        state = CLOSED;
-                        return;
-                    }
-                    else {
-                        ReferenceCountUtil.release(seg);
-                        return;
-                    }
-                }
-
-                if (seg.isSyn()) {
+                    // synchronize receive state
                     rcv_nxt = seg.seq() + 1;
                     irs = seg.seq();
 
-                    boolean ourSynHasBeenAcked = snd_una > snd_nxt;
-                    if (ourSynHasBeenAcked) {
-                        state = ESTABLISHED;
-                        // ACK
+                    // update send state
+                    iss = issProvider.get();
+                    snd_una = iss;
+                    snd_nxt = iss + 1;
+
+                    // send SYN/ACK
+                    final int seq = iss;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.synAck(seq, ack);
+                    LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
+                    writeSegment(ctx, response);
+                }
+            }
+            else if (state == SYN_SENT) {
+                // SYN/ACK
+                if (seg.ctl() == 18) {
+                    // verify ACK
+                    if (seg.ack() != snd_nxt) {
+                        throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
                     }
-                    else {
-                        state = SYN_RECEIVED;
-                        // SYN/ACK
+                    segmentAcknowledged();
+
+                    // our SYN has been ACKed
+                    snd_una = seg.ack();
+
+                    // verify SYN
+                    // synchronize receive state
+                    rcv_nxt = seg.seq() + 1;
+                    irs = seg.seq();
+
+                    state = ESTABLISHED;
+
+                    // ACK the SYN
+                    final int seq = snd_nxt;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.ack(seq, ack);
+                    writeSegment(ctx, response);
+
+                    LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`). All states has been synchronized. Now acknowledge the receival by replying with `{}`.", seg, response);
+
+                    final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                    ctx.fireUserEventTriggered(evt);
+
+                    if (synchronizationTimeoutFuture != null) {
+                        synchronizationTimeoutFuture.cancel(false);
                     }
                 }
+                // SYN
+                else if (seg.ctl() == 2) {
+                    // synchronize receive state
+                    rcv_nxt = seg.seq() + 1;
+                    irs = seg.seq();
 
-                System.out.println();
-                break;
+                    state = SYN_RECEIVED;
+
+                    // ACK the SYN and "re-send" our SYN
+                    final int seq = iss;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.synAck(seq, ack);
+                    LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
+                    writeSegment(ctx, response);
+                }
+                // ACK
+                else if (seg.ctl() == 16) {
+                    // we dont expect ACKs here
+                    final int seq = seg.ack();
+                    final Segment response = Segment.rst(seq);
+                    LOG.trace("1 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                    writeSegment(ctx, response);
+
+                    // FIXME: remove when we have retransmission
+//                final int seq2 = iss;
+//                final Segment seg2 = Segment.syn(seq2);
+//                LOG.trace("2 Initiate handshake by sending `{}`", seg2);
+//                writeSegment(ctx, seg2);
+                }
+                else {
+                    unexpectedSegment(seg);
+                }
+            }
+            else if (state == SYN_RECEIVED) {
+                // ACK
+                if (seg.ctl() == 16) {
+                    // verify ACK
+                    if (seg.ack() != snd_nxt) {
+                        throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
+                    }
+                    segmentAcknowledged();
+
+                    // our SYN has been ACKed
+                    snd_una = seg.ack();
+
+                    state = ESTABLISHED;
+
+                    LOG.trace("Connection synchronized! Remote peer has acknowledged the receival of our state replying with `{}`.", seg);
+
+                    final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                    ctx.fireUserEventTriggered(evt);
+
+                    if (synchronizationTimeoutFuture != null) {
+                        synchronizationTimeoutFuture.cancel(false);
+                    }
+                }
+                // SYN/ACK
+                else if (seg.ctl() == 18) {
+                    // verify ACK
+                    if (seg.ack() != snd_nxt) {
+                        // unexpected ACK
+                        final int seq = snd_nxt;
+                        final int ack = rcv_nxt;
+                        final Segment response = Segment.ack(seq, ack);
+                        LOG.trace("5 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                        writeSegment(ctx, response);
+                        return;
+                    }
+                    segmentAcknowledged();
+
+                    // our SYN has been ACKed
+                    snd_una = seg.ack();
+
+                    // verify SYN
+                    // synchronize receive state
+                    rcv_nxt = seg.seq() + 1;
+                    irs = seg.seq();
+
+                    state = ESTABLISHED;
+
+                    LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`) and acknowledged our state.", seg);
+
+                    final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
+                    ctx.fireUserEventTriggered(evt);
+
+                    if (synchronizationTimeoutFuture != null) {
+                        synchronizationTimeoutFuture.cancel(false);
+                    }
+                }
+                // RST
+                else if (seg.ctl() == 4) {
+                    // handshake has been refused by the other site
+                    LOG.trace("Close channel as we got `{}`", seg);
+                    state = CLOSED;
+                    ctx.close();
+                }
+                // SYN
+                else if (seg.ctl() == 2) {
+                    // we have already been synced. nevermind...sync again
+                    // synchronize receive state
+                    rcv_nxt = seg.seq() + 1;
+                    irs = seg.seq();
+
+                    state = SYN_RECEIVED;
+
+                    // ACK the SYN
+                    final int seq = iss;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.synAck(seq, ack);
+                    writeSegment(ctx, response);
+                }
+                else {
+                    unexpectedSegment(seg);
+                }
+            }
+            else if (state == ESTABLISHED) {
+                // SYN
+                if (seg.ctl() == 2) {
+                    // we dont expect SYNs here
+                    final int seq = snd_nxt;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.ack(seq, ack);
+                    LOG.trace("3 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                    writeSegment(ctx, response);
+                }
+                // RST
+                else if (seg.ctl() == 4) {
+                    LOG.trace("Close channel as we got `{}`", seg);
+                    state = CLOSED;
+                    ctx.close();
+                }
+                // SYN/ACK
+                else if (seg.ctl() == 18) {
+                    // we dont expect SYNs here
+                    final int seq = snd_nxt;
+                    final int ack = rcv_nxt;
+                    final Segment response = Segment.ack(seq, ack);
+                    LOG.trace("4 Got unexpected `{}`. Reply with `{}`.", seg, response);
+                    writeSegment(ctx, response);
+                }
+                // ACK
+                else if (seg.ctl() == 16) {
+                    // verify ACK
+                    if (seg.ack() != snd_nxt) {
+                        // unexpected ACK
+                        final int seq = snd_nxt;
+                        final int ack = rcv_nxt;
+                        final Segment response = Segment.ack(seq, ack);
+                        LOG.trace("6 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
+                        writeSegment(ctx, response);
+                        return;
+                    }
+                    segmentAcknowledged();
+                }
+                else {
+                    unexpectedSegment(seg);
+                }
+            }
+            else {
+                unexpectedSegment(seg);
+            }
         }
-//
-//        if (state == CLOSED) {
-//            // ACK
-//            if (seg.ctl() == 16) {
-//                // we dont expect ACKs here
-//                final int seq = seg.ack();
-//                final Segment response = Segment.rst(seq);
-//                LOG.trace("Got unexpected `{}`. Reset remote peer by replying with `{}`.", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//            // RST
-//            else if (seg.ctl() == 4) {
-//                // remote instructions us to reset connection. as we are still in the CLOSED state, we can just ignore the segment
-//                ReferenceCountUtil.release(seg);
-//            }
-//            // SYN
-//            else if (seg.ctl() == 2) {
-//                state = SYN_RECEIVED;
-//
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                // update send state
-//                iss = issProvider.get();
-//                snd_una = iss;
-//                snd_nxt = iss + 1;
-//
-//                // send SYN/ACK
-//                final int seq = iss;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.synAck(seq, ack);
-//                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//            // ACK/SYN
-//            else if (seg.ctl() == 18) {
-//                // as we are in a CLOSED state, ignore the ACK-part of this segment and just respect
-//                // the SYN-part
-//                state = SYN_RECEIVED;
-//
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                // update send state
-//                iss = issProvider.get();
-//                snd_una = iss;
-//                snd_nxt = iss + 1;
-//
-//                // send SYN/ACK
-//                final int seq = iss;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.synAck(seq, ack);
-//                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//        }
-//        else if (state == SYN_SENT) {
-//            // SYN/ACK
-//            if (seg.ctl() == 18) {
-//                // verify ACK
-//                if (seg.ack() != snd_nxt) {
-//                    throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
-//                }
-//                segmentAcknowledged();
-//
-//                // our SYN has been ACKed
-//                snd_una = seg.ack();
-//
-//                // verify SYN
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                state = ESTABLISHED;
-//
-//                // ACK the SYN
-//                final int seq = snd_nxt;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.ack(seq, ack);
-//                writeSegment(ctx, response);
-//
-//                LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`). All states has been synchronized. Now acknowledge the receival by replying with `{}`.", seg, response);
-//
-//                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
-//                ctx.fireUserEventTriggered(evt);
-//
-//                if (synchronizationTimeoutFuture != null) {
-//                    synchronizationTimeoutFuture.cancel(false);
-//                }
-//            }
-//            // SYN
-//            else if (seg.ctl() == 2) {
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                state = SYN_RECEIVED;
-//
-//                // ACK the SYN and "re-send" our SYN
-//                final int seq = iss;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.synAck(seq, ack);
-//                LOG.trace("Remote peer sent us his state (`{}`). Now acknowledge the receival and sent our state (`{}`).", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//            // ACK
-//            else if (seg.ctl() == 16) {
-//                // we dont expect ACKs here
-//                final int seq = seg.ack();
-//                final Segment response = Segment.rst(seq);
-//                LOG.trace("1 Got unexpected `{}`. Reply with `{}`.", seg, response);
-//                writeSegment(ctx, response);
-//
-//                // FIXME: remove when we have retransmission
-////                final int seq2 = iss;
-////                final Segment seg2 = Segment.syn(seq2);
-////                LOG.trace("2 Initiate handshake by sending `{}`", seg2);
-////                writeSegment(ctx, seg2);
-//            }
-//            else {
-//                unexpectedSegment(seg);
-//            }
-//        }
-//        else if (state == SYN_RECEIVED) {
-//            // ACK
-//            if (seg.ctl() == 16) {
-//                // verify ACK
-//                if (seg.ack() != snd_nxt) {
-//                    throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
-//                }
-//                segmentAcknowledged();
-//
-//                // our SYN has been ACKed
-//                snd_una = seg.ack();
-//
-//                state = ESTABLISHED;
-//
-//                LOG.trace("Connection synchronized! Remote peer has acknowledged the receival of our state replying with `{}`.", seg);
-//
-//                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
-//                ctx.fireUserEventTriggered(evt);
-//
-//                if (synchronizationTimeoutFuture != null) {
-//                    synchronizationTimeoutFuture.cancel(false);
-//                }
-//            }
-//            // SYN/ACK
-//            else if (seg.ctl() == 18) {
-//                // verify ACK
-//                if (seg.ack() != snd_nxt) {
-//                    // unexpected ACK
-//                    final int seq = snd_nxt;
-//                    final int ack = rcv_nxt;
-//                    final Segment response = Segment.ack(seq, ack);
-//                    LOG.trace("5 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
-//                    writeSegment(ctx, response);
-//                    return;
-//                }
-//                segmentAcknowledged();
-//
-//                // our SYN has been ACKed
-//                snd_una = seg.ack();
-//
-//                // verify SYN
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                state = ESTABLISHED;
-//
-//                LOG.trace("Connection synchronized! Remote peer sent us his state (`{}`) and acknowledged our state.", seg);
-//
-//                final ConnectionSynchronized evt = new ConnectionSynchronized(snd_nxt, rcv_nxt);
-//                ctx.fireUserEventTriggered(evt);
-//
-//                if (synchronizationTimeoutFuture != null) {
-//                    synchronizationTimeoutFuture.cancel(false);
-//                }
-//            }
-//            // RST
-//            else if (seg.ctl() == 4) {
-//                // handshake has been refused by the other site
-//                LOG.trace("Close channel as we got `{}`", seg);
-//                state = CLOSED;
-//                ctx.close();
-//            }
-//            // SYN
-//            else if (seg.ctl() == 2) {
-//                // we have already been synced. nevermind...sync again
-//                // synchronize receive state
-//                rcv_nxt = seg.seq() + 1;
-//                irs = seg.seq();
-//
-//                state = SYN_RECEIVED;
-//
-//                // ACK the SYN
-//                final int seq = iss;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.synAck(seq, ack);
-//                writeSegment(ctx, response);
-//            }
-//            else {
-//                unexpectedSegment(seg);
-//            }
-//        }
-//        else if (state == ESTABLISHED) {
-//            // SYN
-//            if (seg.ctl() == 2) {
-//                // we dont expect SYNs here
-//                final int seq = snd_nxt;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.ack(seq, ack);
-//                LOG.trace("3 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//            // RST
-//            else if (seg.ctl() == 4) {
-//                LOG.trace("Close channel as we got `{}`", seg);
-//                state = CLOSED;
-//                ctx.close();
-//            }
-//            // SYN/ACK
-//            else if (seg.ctl() == 18) {
-//                // we dont expect SYNs here
-//                final int seq = snd_nxt;
-//                final int ack = rcv_nxt;
-//                final Segment response = Segment.ack(seq, ack);
-//                LOG.trace("4 Got unexpected `{}`. Reply with `{}`.", seg, response);
-//                writeSegment(ctx, response);
-//            }
-//            // ACK
-//            else if (seg.ctl() == 16) {
-//                // verify ACK
-//                if (seg.ack() != snd_nxt) {
-//                    // unexpected ACK
-//                    final int seq = snd_nxt;
-//                    final int ack = rcv_nxt;
-//                    final Segment response = Segment.ack(seq, ack);
-//                    LOG.trace("6 Got unexpected `{}`. Reply with expected SEG `{}`.", seg, response);
-//                    writeSegment(ctx, response);
-//                    return;
-//                }
-//                segmentAcknowledged();
-//            }
-//            else {
-//                unexpectedSegment(seg);
-//            }
-//        }
-//        else {
-//            unexpectedSegment(seg);
-//        }
     }
 
     private void unexpectedSegment(final Segment seg) {
