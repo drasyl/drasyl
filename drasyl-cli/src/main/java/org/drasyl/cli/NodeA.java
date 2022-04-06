@@ -47,7 +47,7 @@ public class NodeA extends DrasylNode {
                 if (ch.remoteAddress().equals(nodeB)) {
                     final ChannelPipeline p = ch.pipeline();
                     p.addLast(new ConnectionSynchronizationCodec());
-                    p.addLast(new ConnectionSynchronizationHandler(true));
+                    p.addLast(new ConnectionSynchronizationHandler(false));
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -62,7 +62,10 @@ public class NodeA extends DrasylNode {
                         public void exceptionCaught(final ChannelHandlerContext ctx,
                                                     final Throwable cause) throws Exception {
                             cause.printStackTrace();
-                            shutdown();
+                            ctx.close();
+                            System.out.println();
+                            System.out.println();
+                            System.out.println();
                         }
                     });
                 }
@@ -77,8 +80,8 @@ public class NodeA extends DrasylNode {
 
     public static void main(final String[] args) throws DrasylException, InterruptedException {
         final NodeA node = new NodeA(DrasylConfig.newBuilder(DrasylConfig.of()).identityPath(Path.of("nodeA.identity"))
-//                .remoteLocalHostDiscoveryEnabled(false)
-//                .remoteLocalNetworkDiscoveryEnabled(false)
+                .remoteLocalHostDiscoveryEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .build());
         node.start();
     }

@@ -59,6 +59,16 @@ public class NodeB extends DrasylNode {
                             }
                             super.userEventTriggered(ctx, evt);
                         }
+
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) throws Exception {
+                            cause.printStackTrace();
+                            ctx.close();
+                            System.out.println();
+                            System.out.println();
+                            System.out.println();
+                        }
                     });
                 }
             }
@@ -72,7 +82,8 @@ public class NodeB extends DrasylNode {
             System.out.println("geht los");
             try {
                 final DrasylAddress nodeA = IdentityManager.readIdentityFile(Path.of("nodeA.identity")).getAddress();
-                send(nodeA, ConnectionSynchronizationHandler.UserCall.OPEN);
+//                send(nodeA, ConnectionSynchronizationHandler.UserCall.OPEN);
+                send(nodeA, "Hallo");
 //                DrasylNodeSharedEventLoopGroupHolder.getChildGroup().scheduleAtFixedRate(() -> {
 //                    send(nodeA, Unpooled.copiedBuffer("Huhu", UTF_8));
 //                }, 0L, 5L, SECONDS);
@@ -85,8 +96,8 @@ public class NodeB extends DrasylNode {
 
     public static void main(final String[] args) throws DrasylException, InterruptedException {
         final NodeB node = new NodeB(DrasylConfig.newBuilder(DrasylConfig.of()).identityPath(Path.of("nodeB.identity"))
-//                .remoteLocalHostDiscoveryEnabled(false)
-//                .remoteLocalNetworkDiscoveryEnabled(false)
+                .remoteLocalHostDiscoveryEnabled(false)
+                .remoteLocalNetworkDiscoveryEnabled(false)
                 .build());
         node.start();
     }
