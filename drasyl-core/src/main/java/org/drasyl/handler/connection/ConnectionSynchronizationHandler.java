@@ -154,36 +154,6 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
         }
     }
 
-    private void writeSegment(final ChannelHandlerContext ctx, final Segment seg) {
-        ctx.writeAndFlush(seg);
-
-        if (seg.ctl() != 16) {
-            retransmissionTimeoutFuture = ctx.executor().schedule(() -> retransmissionTimeout(ctx, seg), 1000L, MILLISECONDS);
-        }
-    }
-
-    private void retransmissionTimeout(final ChannelHandlerContext ctx, final Segment seg) {
-        if (retransmissionTimeoutFuture != null) {
-            LOG.error("write {}", seg);
-            writeSegment(ctx, seg);
-        }
-    }
-
-    private void segmentAcknowledged() {
-        retransmissionTimeoutFuture.cancel(false);
-        retransmissionTimeoutFuture = null;
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof Segment) {
-            channelReadSegment(ctx, (Segment) msg);
-        }
-        else {
-            ctx.fireChannelRead(msg);
-        }
-    }
-
     private void channelReadSegment(final ChannelHandlerContext ctx, final Segment seg) {
         if (state == CLOSED) {
             // SYN
@@ -245,7 +215,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
             if (seg.ctl() == 18) {
                 // verify ACK
                 if (seg.ack() != snd_nxt) {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
                 }
                 segmentAcknowledged();
 
@@ -312,7 +282,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
             if (seg.ctl() == 16) {
                 // verify ACK
                 if (seg.ack() != snd_nxt) {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException("Expected SEG " + snd_nxt + " got " + seg.ack());
                 }
                 segmentAcknowledged();
 
@@ -437,14 +407,49 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
         }
     }
 
-    private UnsupportedOperationException unexpectedSegment(final Segment seg) {
+    private void retransmissionTimeout(final ChannelHandlerContext ctx, final Segment seg) {
+        if (retransmissionTimeoutFuture != null) {
+            LOG.error("write {}", seg);
+            writeSegment(ctx, seg);
+        }
+    }
+
+    private void writeSegment(final ChannelHandlerContext ctx, final Segment seg) {
+        ctx.writeAndFlush(seg);
+
+        if (seg.ctl() != 16) {
+            if (retransmissionTimeoutFuture != null) {
+                retransmissionTimeoutFuture.cancel(false);
+            }
+            retransmissionTimeoutFuture = ctx.executor().schedule(() -> retransmissionTimeout(ctx, seg), 1000L, MILLISECONDS);
+        }
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof Segment) {
+            channelReadSegment(ctx, (Segment) msg);
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    private void segmentAcknowledged() {
+        if (retransmissionTimeoutFuture != null) {
+            retransmissionTimeoutFuture.cancel(false);
+            retransmissionTimeoutFuture = null;
+        }
+    }
+
+    private void unexpectedSegment(final Segment seg) {
         throw new UnsupportedOperationException("Got unexpected segment `" + seg + "` in state `" + state + "`");
     }
 
     /**
      * States of the synchronization progress
      */
-    static enum State {
+    enum State {
         // connection does not exist
         CLOSED,
         // connection non-synchronized
@@ -457,7 +462,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
     /**
      * Signals to control the synchronization progress.
      */
-    public static enum UserCall {
+    public enum UserCall {
         // initiate synchronization process
         OPEN
     }
