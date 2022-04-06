@@ -86,6 +86,22 @@ public class Segment extends DefaultByteBufHolder {
         return (ctl & FIN) != 0;
     }
 
+    public boolean isJustAck() {
+        return ctl == ACK;
+    }
+
+    public boolean isJustRst() {
+        return ctl == RST;
+    }
+
+    public boolean isJustSyn() {
+        return ctl == SYN;
+    }
+
+    public boolean isJustAckSyn() {
+        return ctl == ACK + SYN;
+    }
+
     public int len() {
         return content().readableBytes();
     }
@@ -160,11 +176,11 @@ public class Segment extends DefaultByteBufHolder {
         return new Segment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment rstAck(final int seq, final int ack) {
-        return new Segment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
     public static Segment synAck(final int seq, final int ack) {
         return new Segment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static Segment rstAck(final int seq, final int ack) {
+        return new Segment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
     }
 }

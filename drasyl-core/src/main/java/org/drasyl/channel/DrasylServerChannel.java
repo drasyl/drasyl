@@ -31,6 +31,7 @@ import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoop;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -188,12 +189,11 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 else if (recreateClosedChannel) {
                     // channel we want message pass to has been closed in the meantime.
                     // give message chance to be consumend by recreate a new channcel once
-                    ctx.executor().execute(() -> {
-                        passMessageToChannel(ctx, o, peer, false);
-                    });
+                    ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
                 }
                 else {
                     // drop message
+                    ReferenceCountUtil.release(o);
                 }
             });
         }

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-public class ConnectionSynchronizationHandlerTest {
+class ConnectionSynchronizationHandlerTest {
     // "Server" is in CLOSED state
     // "Client" initiate handshake
     @Nested

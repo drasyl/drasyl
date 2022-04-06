@@ -57,6 +57,13 @@ public class NodeA extends DrasylNode {
                             }
                             super.userEventTriggered(ctx, evt);
                         }
+
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) throws Exception {
+                            cause.printStackTrace();
+                            shutdown();
+                        }
                     });
                 }
             }
