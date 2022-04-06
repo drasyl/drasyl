@@ -44,7 +44,7 @@ public class ConnectionSynchronizationCodec extends ByteToMessageCodec<Segment> 
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() == 9) {
+        if (in.readableBytes() >= 9) {
             final int seq = in.readInt();
             final int ack = in.readInt();
             final byte ctl = in.readByte();
