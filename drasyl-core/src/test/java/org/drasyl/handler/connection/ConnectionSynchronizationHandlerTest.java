@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.handler.connection.ConnectionSynchronizationHandler.ConnectionSynchronizationException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,7 @@ import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.Sta
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_SENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
@@ -150,7 +151,7 @@ class ConnectionSynchronizationHandlerTest {
 
         @Test
         void otherCrashed() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, ESTABLISHED, 300, 300, 100);
+            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, true, ESTABLISHED, 300, 300, 100);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // other wants to SYNchronize with us, ACK with our expected seq
@@ -159,9 +160,8 @@ class ConnectionSynchronizationHandlerTest {
             assertEquals(Segment.ack(300, 100), channel.readOutbound());
 
             // as we sent an ACK for an unexpected seq, peer will reset us
-            channel.writeInbound(Segment.rst(100));
+            assertThrows(ConnectionSynchronizationException.class, () -> channel.writeInbound(Segment.rst(100)));
             assertEquals(CLOSED, handler.state);
-            assertFalse(channel.isOpen());
         }
     }
 }

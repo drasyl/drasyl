@@ -299,7 +299,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
 
                 case SYN_RECEIVED:
                     // check SEQ
-                    if (seg.seq() != rcv_nxt) {
+                    if (seg.seq() != rcv_nxt && !seg.isAck()) {
                         // not expected seq
                         if (!seg.isRst()) {
                             final int seq = snd_nxt;
@@ -329,12 +329,12 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                     }
 
                     // check SYN
-                    if (seg.isSyn()) {
-                        ctx.fireExceptionCaught(new ConnectionSynchronizationException("connection reset"));
-                        state = CLOSED;
-                        ReferenceCountUtil.release(seg);
-                        return;
-                    }
+//                    if (seg.isSyn()) {
+//                        ctx.fireExceptionCaught(new ConnectionSynchronizationException("connection reset"));
+//                        state = CLOSED;
+//                        ReferenceCountUtil.release(seg);
+//                        return;
+//                    }
 
                     if (seg.isAck()) {
                         if (snd_una <= seg.ack() && seg.ack() <= snd_nxt) {
@@ -361,10 +361,32 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                     }
 
                     break;
+
+                case ESTABLISHED:
+                    // check SEQ
+                    if (seg.seq() != rcv_nxt && !seg.isAck()) {
+                        // not expected seq
+                        if (!seg.isRst()) {
+                            final int seq = snd_nxt;
+                            final int ack = rcv_nxt;
+                            final Segment response3 = Segment.ack(seq, ack);
+                            ctx.writeAndFlush(response3);
+                        }
+                        ReferenceCountUtil.release(seg);
+                        return;
+                    }
+
+                    // check RST
+                    if (seg.isRst()) {
+                        ctx.fireExceptionCaught(new ConnectionSynchronizationException("connection reset"));
+                        state = CLOSED;
+                        ReferenceCountUtil.release(seg);
+                    }
+
+                    break;
             }
         }
         else {
-
             if (state == CLOSED) {
                 // ACK
                 if (seg.ctl() == 16) {
