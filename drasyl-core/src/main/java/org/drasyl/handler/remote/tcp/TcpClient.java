@@ -38,8 +38,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -63,14 +63,16 @@ import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
 @SuppressWarnings({ "java:S110" })
 public class TcpClient extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClient.class);
-    private final Set<SocketAddress> superPeerAddresses;
+    private static final long RESOLVE_SUPER_PEER_ADDRESSES_INTERVAL = 60_000L;
+    private final Set<InetSocketAddress> superPeerAddresses;
     private final Bootstrap bootstrap;
     private final AtomicLong noResponseFromSuperPeerSince;
     private final Duration timeout;
     private final InetSocketAddress address;
     private ChannelFuture superPeerChannel;
+    private long lastSuperPeersResolveTime;
 
-    TcpClient(final Set<SocketAddress> superPeerAddresses,
+    TcpClient(final Set<InetSocketAddress> superPeerAddresses,
               final Bootstrap bootstrap,
               final AtomicLong noResponseFromSuperPeerSince,
               final Duration timeout,
@@ -84,7 +86,7 @@ public class TcpClient extends ChannelDuplexHandler {
         this.superPeerChannel = superPeerChannel;
     }
 
-    public TcpClient(final Set<SocketAddress> superPeerAddresses,
+    public TcpClient(final Set<InetSocketAddress> superPeerAddresses,
                      final Duration timeout,
                      final InetSocketAddress address) {
         this(
@@ -121,7 +123,7 @@ public class TcpClient extends ChannelDuplexHandler {
      * This method is called whenever a message is received. It checks whether a message has been
      * received from a super peer and closes the fallback TCP connection if necessary.
      */
-    private void checkForReachableSuperPeer(final SocketAddress sender) {
+    private void checkForReachableSuperPeer(final InetSocketAddress sender) {
         // message from super peer?
         if (superPeerAddresses.contains(sender)) {
             // super peer(s) reachable via udp -> close fallback connection!
@@ -135,6 +137,8 @@ public class TcpClient extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
+        resolveSuperPeers();
+
         if (msg instanceof InetAddressedMessage &&
                 superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress((InetSocketAddress) socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
@@ -167,6 +171,19 @@ public class TcpClient extends ChannelDuplexHandler {
         }
 
         super.flush(ctx);
+    }
+
+    private void resolveSuperPeers() {
+        final long currentTimeMillis = System.currentTimeMillis();
+        if (lastSuperPeersResolveTime < currentTimeMillis - RESOLVE_SUPER_PEER_ADDRESSES_INTERVAL) {
+            lastSuperPeersResolveTime = currentTimeMillis;
+            final Set<InetSocketAddress> newAddresses = new HashSet<>();
+            for (final InetSocketAddress address : superPeerAddresses) {
+                newAddresses.add(new InetSocketAddress(address.getHostString(), address.getPort()));
+            }
+            superPeerAddresses.clear();
+            superPeerAddresses.addAll(newAddresses);
+        }
     }
 
     /**

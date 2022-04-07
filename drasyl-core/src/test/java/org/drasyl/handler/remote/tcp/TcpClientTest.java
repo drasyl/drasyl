@@ -63,7 +63,7 @@ public class TcpClientTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel serverChannel;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Set<SocketAddress> superPeerAddresses;
+    private Set<InetSocketAddress> superPeerAddresses;
     @Mock
     private AtomicLong noResponseFromSuperPeerSince;
     @Mock(answer = RETURNS_DEEP_STUBS)
