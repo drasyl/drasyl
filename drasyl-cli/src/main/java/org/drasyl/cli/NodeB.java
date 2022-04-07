@@ -49,7 +49,7 @@ public class NodeB extends DrasylNode {
                 if (ch.remoteAddress().equals(nodeA)) {
                     final ChannelPipeline p = ch.pipeline();
                     p.addLast(new ConnectionSynchronizationCodec());
-                    p.addLast(new ConnectionSynchronizationHandler(true));
+                    p.addLast(new ConnectionSynchronizationHandler(20_000, true));
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -64,6 +64,7 @@ public class NodeB extends DrasylNode {
                         public void exceptionCaught(final ChannelHandlerContext ctx,
                                                     final Throwable cause) throws Exception {
                             cause.printStackTrace();
+                            System.err.println("Close channel.");
                             ctx.close();
                             System.out.println();
                             System.out.println();

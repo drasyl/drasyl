@@ -23,28 +23,30 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageCodec;
 import io.netty.handler.codec.CodecException;
+import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class ConnectionSynchronizationCodec extends ByteToMessageCodec<Segment> {
+public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
-                          final ByteBuf out) {
-        out.writeInt(seg.seq());
-        out.writeInt(seg.ack());
-        out.writeByte(seg.ctl());
-        out.writeBytes(seg.content());
+                          final List<Object> out) throws Exception {
+        final ByteBuf buf = ctx.alloc().buffer();
+        buf.writeInt(seg.seq());
+        buf.writeInt(seg.ack());
+        buf.writeByte(seg.ctl());
+        buf.writeBytes(seg.content());
         seg.release();
+        out.add(buf);
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= 9) {
+        if (in.readableBytes() == 9) {
             final int seq = in.readInt();
             final int ack = in.readInt();
             final byte ctl = in.readByte();
