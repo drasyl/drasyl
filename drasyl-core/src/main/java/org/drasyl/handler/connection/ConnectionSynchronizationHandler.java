@@ -167,9 +167,11 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                 }, handshakeTimeout, MILLISECONDS);
             }
 
-            retransmissionTimeoutFuture = ctx.executor().scheduleAtFixedRate(() -> {
+            retransmissionTimeoutFuture = ctx.executor().scheduleWithFixedDelay(() -> {
+                LOG.trace("timeout");
                 writeSegment(ctx, seg);
             }, 1000L, 1000L, MILLISECONDS);
+            LOG.trace("{}", retransmissionTimeoutFuture);
         }
         else {
             promise.setFailure(new IllegalStateException("Connection is already open."));
@@ -256,9 +258,9 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
                             final Segment response2 = Segment.rst(seg.ack());
                             writeSegment(ctx, response2);
 
-                            // FIXME: test
-                            final Segment response3 = Segment.syn(iss);
-                            writeSegment(ctx, response3);
+//                            // FIXME: test
+//                            final Segment response3 = Segment.syn(iss);
+//                            writeSegment(ctx, response3);
                         }
                         ReferenceCountUtil.release(seg);
                         return;
