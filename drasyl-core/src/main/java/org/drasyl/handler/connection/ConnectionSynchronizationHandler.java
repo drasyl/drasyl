@@ -170,7 +170,7 @@ public class ConnectionSynchronizationHandler extends ChannelDuplexHandler {
             retransmissionTimeoutFuture = ctx.executor().scheduleWithFixedDelay(() -> {
                 LOG.trace("timeout");
                 writeSegment(ctx, seg);
-            }, 1000L, 1000L, MILLISECONDS);
+            }, 100L, 100L, MILLISECONDS);
             LOG.trace("{}", retransmissionTimeoutFuture);
         }
         else {
