@@ -30,6 +30,12 @@ import java.util.Queue;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 
+/**
+ * A {@link Queue} that evicts head elements to ensure that the queue will not exceed its capacity
+ * when new elements are enqueued.
+ *
+ * @param <E> the type of elements held in this queue
+ */
 public class EvictingQueue<E> implements Queue<E> {
     private final Queue<E> delegate;
     private final int capacity;
