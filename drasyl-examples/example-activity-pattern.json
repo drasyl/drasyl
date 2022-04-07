@@ -5,9 +5,39 @@
     "duration": 10000
   },
   {
-    "_comment": "Send given payload to given recipient",
+    "_comment": "Sydney",
     "type": "send",
-    "recipient": "b65aaf2a3517f807b62940815510a15c80ddf29b7cafdeea123737fc3362bff3",
+    "recipient": "affb5ceb4e5db59cc2bc9b649b8f0d38825309426a5e5f8100e77d6456f7b228",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "Singapur",
+    "type": "send",
+    "recipient": "077c5d96efe61eb29164e75b009de16b40b8169b8b61143c8fa7c6324200797e",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "Seattle",
+    "type": "send",
+    "recipient": "fe2c73c70d3bf5dac768fac029bc8a53ae5fd1cb0cefa5254b6f52a99f7cef03",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "Los Angeles",
+    "type": "send",
+    "recipient": "f776438e0d31d1ee7656e268d81c7385383d6f312fabe9cc7e254484342c9d70",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "Dallas",
+    "type": "send",
+    "recipient": "faf669bd4f37b051044f8d1ccb4e9d9c369b0b26c23b26ae7bf927bc5610a227",
+    "payload": "Hello World"
+  },
+  {
+    "_comment": "New York",
+    "type": "send",
+    "recipient": "f2c6b319ed7d5ea07fe2fedf9d055ea575e110890e3dfbf56d8b6f8299040461",
     "payload": "Hello World"
   },
   {

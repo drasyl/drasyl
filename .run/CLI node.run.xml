@@ -24,8 +24,7 @@
   <configuration default="false" name="CLI: node" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
     <module name="drasyl-cli" />
-    <option name="PROGRAM_PARAMETERS" value="node --verbose debug" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="PROGRAM_PARAMETERS" value="node --verbose debug --activity-pattern drasyl-examples/example-activity-pattern.json"/>
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.*" />

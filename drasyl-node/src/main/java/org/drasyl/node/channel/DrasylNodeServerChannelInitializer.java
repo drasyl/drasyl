@@ -29,6 +29,7 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.handler.PeersRttHandler;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -130,6 +131,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
         discoveryStage(ch);
 
+        ch.pipeline().addLast(new PeersRttHandler());
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginsHandler(config, identity));
         ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
