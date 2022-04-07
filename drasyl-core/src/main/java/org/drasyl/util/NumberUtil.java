@@ -24,6 +24,7 @@ package org.drasyl.util;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.util.Locale;
+import java.util.stream.DoubleStream;
 
 /**
  * Utility class for number-related operations.
@@ -183,5 +184,19 @@ public final class NumberUtil {
      */
     public static String numberToHumanDataRate(final Number number) {
         return numberToHumanDataRate(number, (short) -1);
+    }
+
+    public static double sampleVariance(final double... values) {
+        if (values.length > 1) {
+            final double mean = DoubleStream.of(values).average().getAsDouble();
+            return DoubleStream.of(values).map(d -> Math.pow(d - mean, 2)).sum() / (values.length - 1);
+        }
+        else {
+            return 0;
+        }
+    }
+
+    public static double sampleStandardDeviation(final double... values) {
+        return Math.sqrt(sampleVariance(values));
     }
 }

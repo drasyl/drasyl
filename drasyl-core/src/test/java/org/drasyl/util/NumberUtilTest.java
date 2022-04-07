@@ -27,10 +27,31 @@ import org.junit.jupiter.api.Test;
 import static java.util.Locale.GERMAN;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
+import static org.drasyl.util.NumberUtil.sampleStandardDeviation;
+import static org.drasyl.util.NumberUtil.sampleVariance;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NumberUtilTest {
+    final double ALLOWED_ERROR = 1e-10;
+    final double[] TWO_VALUES = new double[]{ 12.34, -56.78 };
+    final double TWO_VALUES_MEAN = (12.34 - 56.78) / 2;
+    final double TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS =
+            (12.34 - TWO_VALUES_MEAN) * (12.34 - TWO_VALUES_MEAN)
+                    + (-56.78 - TWO_VALUES_MEAN) * (-56.78 - TWO_VALUES_MEAN);
+    final double[] MANY_VALUES = new double[]{ 1.1, -44.44, 33.33, 555.555, -2.2 };
+    final int MANY_VALUES_COUNT = 5;
+    final double MANY_VALUES_MEAN = (1.1 - 44.44 + 33.33 + 555.555 - 2.2) / 5;
+    final double MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS =
+            (1.1 - MANY_VALUES_MEAN) * (1.1 - MANY_VALUES_MEAN)
+                    + (-44.44 - MANY_VALUES_MEAN) * (-44.44 - MANY_VALUES_MEAN)
+                    + (33.33 - MANY_VALUES_MEAN) * (33.33 - MANY_VALUES_MEAN)
+                    + (555.555 - MANY_VALUES_MEAN) * (555.555 - MANY_VALUES_MEAN)
+                    + (-2.2 - MANY_VALUES_MEAN) * (-2.2 - MANY_VALUES_MEAN);
+
     @Nested
     class NumberToHumanData {
         @Test
@@ -99,5 +120,17 @@ class NumberUtilTest {
         void shouldThrowExceptionForInvalidArguments() {
             assertThrows(IllegalArgumentException.class, () -> numberToHumanData(0, (short) -2));
         }
+    }
+
+    @Test
+    void testSampleVariance() {
+        assertThat(sampleVariance(TWO_VALUES), is(closeTo(TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS, ALLOWED_ERROR)));
+        assertThat(sampleVariance(MANY_VALUES), is(closeTo(MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS / (MANY_VALUES_COUNT - 1), ALLOWED_ERROR)));
+    }
+
+    @Test
+    void testSampleStandardDeviation() {
+        assertThat(sampleStandardDeviation(TWO_VALUES), is(closeTo(Math.sqrt(TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS), ALLOWED_ERROR)));
+        assertThat(sampleStandardDeviation(MANY_VALUES), is(closeTo(Math.sqrt(MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS / (MANY_VALUES_COUNT - 1)), ALLOWED_ERROR)));
     }
 }
