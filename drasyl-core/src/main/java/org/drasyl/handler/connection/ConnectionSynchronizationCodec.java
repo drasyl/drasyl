@@ -23,17 +23,24 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.CodecException;
 import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
 public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBuf, Segment> {
+    public static final int MAGIC_NUMBER = 852_550_535;
+    // magic number: 4 bytes
+    // SEQ: 4 bytes
+    // ACK: 4 bytes
+    // CTL: 1 byte
+    public static final int MESSAGE_LENGTH = 13;
+
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buf = ctx.alloc().buffer();
+        final ByteBuf buf = ctx.alloc().buffer(13);
+        buf.writeInt(MAGIC_NUMBER);
         buf.writeInt(seg.seq());
         buf.writeInt(seg.ack());
         buf.writeByte(seg.ctl());
@@ -46,15 +53,24 @@ public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBu
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() == 9) {
-            final int seq = in.readInt();
-            final int ack = in.readInt();
-            final byte ctl = in.readByte();
-            final Segment seg = new Segment(seq, ack, ctl, in.discardSomeReadBytes().retain());
-            out.add(seg);
+        if (in.readableBytes() == MESSAGE_LENGTH) {
+            in.markReaderIndex();
+            if (MAGIC_NUMBER == in.readInt()) {
+                final int seq = in.readInt();
+                final int ack = in.readInt();
+                final byte ctl = in.readByte();
+                final Segment seg = new Segment(seq, ack, ctl, in.discardSomeReadBytes().retain());
+                out.add(seg);
+            }
+            else {
+                // wrong magic number -> pass through message
+                in.resetReaderIndex();
+                out.add(in.retain());
+            }
         }
         else {
-            throw new CodecException("Message must be 9 bytes long (was " + in.readableBytes() + " bytes long).");
+            // wrong length -> pass through message
+            out.add(in.retain());
         }
     }
 }
