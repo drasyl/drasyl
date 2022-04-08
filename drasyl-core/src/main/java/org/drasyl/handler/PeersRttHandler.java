@@ -33,34 +33,53 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.EvictingQueue;
 import org.drasyl.util.NumberUtil;
 
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
+/**
+ * A {@link io.netty.channel.ChannelHandler} that tracks all {@link PathEvent}s containing RTT
+ * information and generates some statistics that are periodically written to {@link System#out}.
+ */
 public class PeersRttHandler extends ChannelInboundHandlerAdapter {
-    private final Map<DrasylAddress, PeerRtt> rtts = new HashMap<>();
+    private final PrintStream printStream;
+    private final long printInterval;
+    private final Map<DrasylAddress, PeerRtt> rtts;
+
+    PeersRttHandler(final PrintStream printStream,
+                    final long printInterval,
+                    final Map<DrasylAddress, PeerRtt> rtts) {
+        this.printStream = requireNonNull(printStream);
+        this.printInterval = requirePositive(printInterval);
+        this.rtts = requireNonNull(rtts);
+    }
+
+    public PeersRttHandler(final PrintStream printStream, final long printInterval) {
+        this(printStream, printInterval, new HashMap<>());
+    }
+
+    public PeersRttHandler() {
+        this(System.err, 5_000L);
+    }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.executor().scheduleWithFixedDelay(() -> {
-            System.err.printf("%-64s  %-4s  %-45s  %-4s  %-4s  %-4s  %-4s  %-4s  %-4s%n", "Address", "Role", "Inet Address", " Snt", "Last", " Avg", "Best", "Wrst", "StDev");
-            for (final Map.Entry<DrasylAddress, PeerRtt> entry : rtts.entrySet().stream().sorted(new Comparator<Map.Entry<DrasylAddress, PeerRtt>>() {
-                @Override
-                public int compare(final Map.Entry<DrasylAddress, PeerRtt> o1,
-                                   final Map.Entry<DrasylAddress, PeerRtt> o2) {
-                    return o1.getKey().toString().compareTo(o2.getKey().toString());
-                }
-            }).collect(Collectors.toList())) {
+            printStream.printf("%-64s  %-4s  %-45s  %-4s  %-4s  %-4s  %-4s  %-4s  %-4s%n", "Address", "Role", "Inet Address", " Snt", "Last", " Avg", "Best", "Wrst", "StDev");
+            for (final Entry<DrasylAddress, PeerRtt> entry : rtts.entrySet().stream().sorted(new EntryComparator()).collect(Collectors.toList())) {
                 final DrasylAddress address = entry.getKey();
                 final PeerRtt peerRtt = entry.getValue();
 
-                System.err.printf(
+                printStream.printf(
                         "%-64s  %-4s  %-45s   %4d  %4d  %,4.0f  %4d  %4d  %,4.0f%n",
                         address,
                         peerRtt.role(),
@@ -73,8 +92,8 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
                         peerRtt.stDev()
                 );
             }
-            System.err.println();
-        }, 0L, 5_000L, MILLISECONDS);
+            printStream.println();
+        }, 0L, printInterval, MILLISECONDS);
 
         ctx.fireChannelActive();
     }
@@ -194,6 +213,14 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
 
         public double stDev() {
             return NumberUtil.sampleStandardDeviation(pings.stream().mapToDouble(d -> d).toArray());
+        }
+    }
+
+    private static class EntryComparator implements Comparator<Entry<DrasylAddress, PeerRtt>> {
+        @Override
+        public int compare(final Entry<DrasylAddress, PeerRtt> o1,
+                           final Entry<DrasylAddress, PeerRtt> o2) {
+            return o1.getKey().toString().compareTo(o2.getKey().toString());
         }
     }
 }
