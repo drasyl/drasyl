@@ -212,6 +212,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
         LOG.debug("Start Heartbeat job.");
+        // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
+        for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
+            final IdentityPublicKey publicKey = entry.getKey();
+            final RemoveSuperPeerAndPathEvent event = RemoveSuperPeerAndPathEvent.of(publicKey, PATH);
+            pathEventFilter.add(event);
+        }
         heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, pingIntervalMillis, MILLISECONDS);
     }
 
@@ -230,8 +236,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         superPeers.forEach(((publicKey, superPeer) -> {
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
             final InetSocketAddress resolvedAddress = superPeer.resolveInetAddress();
-
-            superPeer.helloSent();
 
             writeHelloMessage(ctx, publicKey, resolvedAddress, true);
         }));
@@ -388,7 +392,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     static class SuperPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
-        long firstHelloTime;
         long lastAcknowledgementTime;
         long latency;
         private InetSocketAddress inetAddress;
@@ -396,13 +399,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         SuperPeer(final LongSupplier currentTime,
                   final long pingTimeoutMillis,
                   final InetSocketAddress inetAddress,
-                  final long firstHelloTime,
                   final long lastAcknowledgementTime,
                   final long latency) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
-            this.firstHelloTime = firstHelloTime;
             this.lastAcknowledgementTime = lastAcknowledgementTime;
             this.latency = latency;
         }
@@ -410,17 +411,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         public SuperPeer(final LongSupplier currentTime,
                          final long pingTimeoutMillis,
                          final InetSocketAddress inetAddress) {
-            this(currentTime, pingTimeoutMillis, inetAddress, 0L, 0L, 0L);
+            this(currentTime, pingTimeoutMillis, inetAddress, 0L, 0L);
         }
 
         public InetSocketAddress inetAddress() {
             return inetAddress;
-        }
-
-        public void helloSent() {
-            if (this.firstHelloTime == 0) {
-                this.firstHelloTime = currentTime.getAsLong();
-            }
         }
 
         public void acknowledgementReceived(final long latency) {

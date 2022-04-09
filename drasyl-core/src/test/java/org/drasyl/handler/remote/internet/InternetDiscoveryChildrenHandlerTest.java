@@ -158,20 +158,6 @@ class InternetDiscoveryChildrenHandlerTest {
         private InetSocketAddress inetAddress;
 
         @Nested
-        class DiscoverySent {
-            @Test
-            void shouldRecordFirstDiscoveryTime() {
-                when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
-
-                final SuperPeer superPeer = new SuperPeer(currentTime, 0L, inetAddress);
-                superPeer.helloSent();
-                superPeer.helloSent();
-
-                assertEquals(1L, superPeer.firstHelloTime);
-            }
-        }
-
-        @Nested
         class AcknowledgementReceived {
             @Test
             void shouldRecordLastAcknowledgementTimeAndLatency() {
@@ -191,7 +177,7 @@ class InternetDiscoveryChildrenHandlerTest {
             void shouldReturnFalseIfDiscoveryHasJustBeenSent() {
                 when(currentTime.getAsLong()).thenReturn(10L);
 
-                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 5L, 0L, 0L);
+                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 0L, 0L);
 
                 assertFalse(superPeer.isStale());
             }
@@ -200,7 +186,7 @@ class InternetDiscoveryChildrenHandlerTest {
             void shouldReturnFalseIfDiscoveryHasNotTimedOut() {
                 when(currentTime.getAsLong()).thenReturn(55L);
 
-                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 5L, 50L, 0L);
+                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 50L, 0L);
 
                 assertFalse(superPeer.isStale());
             }
@@ -209,7 +195,7 @@ class InternetDiscoveryChildrenHandlerTest {
             void shouldReturnTrueIfDiscoveryHasBeenTimedOut() {
                 when(currentTime.getAsLong()).thenReturn(55L);
 
-                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 5L, 10L, 0L);
+                final SuperPeer superPeer = new SuperPeer(currentTime, 10L, inetAddress, 10L, 0L);
 
                 assertTrue(superPeer.isStale());
             }
