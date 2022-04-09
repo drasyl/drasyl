@@ -71,7 +71,6 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -138,8 +137,8 @@ public class ChatGui {
                     messageField.setText("");
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
-                        if (e != null && !(e instanceof ClosedChannelException)) {
-                            appendTextToMessageArea("Unable to send message: " + ThrowableUtil.stackTraceToString(e) + "\n");
+                        if (e != null) {
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + ThrowableUtil.stackTraceToString(e) + "\n");
                         }
                     });
                 }
