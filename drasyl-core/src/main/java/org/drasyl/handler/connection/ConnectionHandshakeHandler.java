@@ -31,6 +31,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.function.Supplier;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSED;
@@ -77,7 +78,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private ScheduledFuture<?> handshakeTimeoutFuture;
     private ScheduledFuture<?> retransmissionTimeoutFuture;
 
-    public ConnectionHandshakeHandler(final int handshakeTimeout,
+    public ConnectionHandshakeHandler(final long handshakeTimeout,
                                       final boolean activeOpen) {
         this(handshakeTimeout, 100L, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
     }
@@ -137,14 +138,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         // cancel all timeout guards
+        cancelTimeoutGuards();
+
+        ctx.fireChannelInactive();
+    }
+
+    private void cancelTimeoutGuards() {
         if (handshakeTimeoutFuture != null) {
             handshakeTimeoutFuture.cancel(false);
         }
         if (retransmissionTimeoutFuture != null) {
             retransmissionTimeoutFuture.cancel(false);
         }
-
-        ctx.fireChannelInactive();
     }
 
     @Override
@@ -173,6 +178,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             connectionAbort(ctx, promise);
         }
         else {
+            if (state != ESTABLISHED) {
+                promise.setFailure(new IllegalStateException("Attempting to write to channel with handshake in progress"));
+                return;
+            }
+
             ctx.write(msg, promise);
         }
     }
@@ -205,7 +215,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // start handshake timeout guard
                 if (handshakeTimeout > 0) {
                     handshakeTimeoutFuture = ctx.executor().schedule(() -> {
-                        LOG.trace("[{}] Handshake timed out after `{}`ms!", state, handshakeTimeout);
+                        cancelTimeoutGuards();
+                        LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
                         promise.setFailure(new ConnectionHandshakeException("Error: Handshake timeout"));
                         ctx.fireUserEventTriggered(new ConnectionHandshakeTimeout());
                         state = CLOSED;
@@ -214,7 +225,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 // start retransmission timeout guard
                 retransmissionTimeoutFuture = ctx.executor().scheduleWithFixedDelay(() -> {
-                    LOG.trace("[{}] Retransmission timeout after `{}`ms for `{}`.", state, retransmissionTimeout, seg);
+                    LOG.trace("[{}] Retransmission timeout after {}ms for `{}`.", state, retransmissionTimeout, seg);
                     writeSegment(ctx, seg);
                 }, retransmissionTimeout, retransmissionTimeout, MILLISECONDS);
                 break;
@@ -251,7 +262,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void writeSegment(final ChannelHandlerContext ctx,
                               final ConnectionHandshakeSegment seg) {
         LOG.trace("[{}] Write `{}`.", state, seg);
-        ctx.writeAndFlush(seg);
+        ctx.writeAndFlush(seg).addListener(FIRE_EXCEPTION_ON_FAILURE);
     }
 
     private void channelReadSegment(final ChannelHandlerContext ctx,
@@ -384,12 +395,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             final boolean ourSynHasBeenAcked = snd_una > iss;
             if (ourSynHasBeenAcked) {
-                if (handshakeTimeoutFuture != null) {
-                    handshakeTimeoutFuture.cancel(false);
-                }
-                if (retransmissionTimeoutFuture != null) {
-                    retransmissionTimeoutFuture.cancel(false);
-                }
+                cancelTimeoutGuards();
                 state = ESTABLISHED;
                 // ACK
                 final int seq = snd_nxt;
@@ -449,12 +455,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         if (seg.isAck()) {
             if (snd_una <= seg.ack() && seg.ack() <= snd_nxt) {
-                if (handshakeTimeoutFuture != null) {
-                    handshakeTimeoutFuture.cancel(false);
-                }
-                if (retransmissionTimeoutFuture != null) {
-                    retransmissionTimeoutFuture.cancel(false);
-                }
+                cancelTimeoutGuards();
                 state = ESTABLISHED;
 
                 if (snd_una < seg.ack() && seg.ack() <= snd_nxt) {

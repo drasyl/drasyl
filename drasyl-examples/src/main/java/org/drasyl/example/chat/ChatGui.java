@@ -24,14 +24,12 @@ package org.drasyl.example.chat;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.timeout.WriteTimeoutException;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.ThrowableUtil;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeEvent;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -132,7 +130,6 @@ public class ChatGui {
                 if (!recipient.isBlank()) {
                     final String text = messageField.getText();
                     messageField.setText("");
-                    node.send(recipient, null);
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
                         if (e != null && !(e instanceof ClosedChannelException)) {
@@ -219,22 +216,44 @@ public class ChatGui {
 
                     final ChannelPipeline p = ch.pipeline();
 
-                    p.addLast(new StopAndWaitArqCodec());
-                    p.addLast(new StopAndWaitArqHandler(RETRY_MILLIS));
-                    p.addLast(new ByteToStopAndWaitArqDataCodec());
-                    p.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
+                    p.addLast(new ConnectionHandshakeCodec());
+                    p.addLast(new ConnectionHandshakeHandler(10_000L, true));
                     p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                       final Object evt) {
+                            if (evt instanceof ConnectionHandshakeEvent) {
+                                System.err.println(ctx.channel() + " " + evt);
+                            }
+                            else {
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        }
+
                         @Override
                         public void exceptionCaught(final ChannelHandlerContext ctx,
                                                     final Throwable cause) {
-                            if (cause instanceof WriteTimeoutException) {
-                                appendTextToMessageArea("Message to " + ctx.channel().remoteAddress() + " was not acknowledged. Maybe recipient is offline/unreachable?\n");
-                            }
-                            else {
-                                ctx.fireExceptionCaught(cause);
-                            }
+                            cause.printStackTrace();
+                            ctx.close();
                         }
                     });
+
+//                    p.addLast(new StopAndWaitArqCodec());
+//                    p.addLast(new StopAndWaitArqHandler(RETRY_MILLIS));
+//                    p.addLast(new ByteToStopAndWaitArqDataCodec());
+//                    p.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
+//                    p.addLast(new ChannelInboundHandlerAdapter() {
+//                        @Override
+//                        public void exceptionCaught(final ChannelHandlerContext ctx,
+//                                                    final Throwable cause) {
+//                            if (cause instanceof WriteTimeoutException) {
+//                                appendTextToMessageArea("Message to " + ctx.channel().remoteAddress() + " was not acknowledged. Maybe recipient is offline/unreachable?\n");
+//                            }
+//                            else {
+//                                ctx.fireExceptionCaught(cause);
+//                            }
+//                        }
+//                    });
                 }
             });
         }

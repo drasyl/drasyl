@@ -36,6 +36,8 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
+    <!--    <logger name="org.drasyl.handler.connection" level="trace"></logger>-->
+
     <root level="warn">
         <appender-ref ref="Console"/>
     </root>
