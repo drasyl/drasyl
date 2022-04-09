@@ -22,40 +22,39 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.handler.connection.ConnectionSynchronizationHandler.ConnectionSynchronizationException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.CLOSED;
-import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.ESTABLISHED;
-import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.LISTEN;
-import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_RECEIVED;
-import static org.drasyl.handler.connection.ConnectionSynchronizationHandler.State.SYN_SENT;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSED;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.ESTABLISHED;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LISTEN;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_RECEIVED;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_SENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class ConnectionSynchronizationHandlerTest {
+class ConnectionHandshakeHandlerTest {
     // "Server" is in CLOSED state
     // "Client" initiate handshake
     @Nested
     class ThreeWayHandshakeConnectionSynchronization {
         @Test
         void asClient() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // SYNchronize our SEG with peer
-            channel.writeOutbound(ConnectionSynchronizationHandler.UserCall.OPEN);
-            assertEquals(Segment.syn(100), channel.readOutbound());
+            channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+            assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
             assertEquals(SYN_SENT, handler.state);
 
             // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
-            channel.writeInbound(Segment.synAck(300, 101));
-            assertEquals(Segment.ack(101, 301), channel.readOutbound());
+            channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
+            assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
             assertEquals(ESTABLISHED, handler.state);
 
             assertEquals(101, handler.snd_una);
@@ -68,16 +67,16 @@ class ConnectionSynchronizationHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 300, false, LISTEN, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 300, false, LISTEN, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-            channel.writeInbound(Segment.syn(100));
-            assertEquals(Segment.synAck(300, 101), channel.readOutbound());
+            channel.writeInbound(ConnectionHandshakeSegment.syn(100));
+            assertEquals(ConnectionHandshakeSegment.synAck(300, 101), channel.readOutbound());
             assertEquals(SYN_RECEIVED, handler.state);
 
             // peer ACKed our SYN
-            channel.writeInbound(Segment.ack(101, 301));
+            channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
             assertEquals(ESTABLISHED, handler.state);
 
             assertEquals(301, handler.snd_una);
@@ -93,12 +92,12 @@ class ConnectionSynchronizationHandlerTest {
     // Both peers initiate handshake simultaneous
     @Test
     void simultaneousConnectionSynchronization() {
-        final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, false, CLOSED, 0, 0, 0);
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, CLOSED, 0, 0, 0);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         // SYNchronize our SEG with peer
-        channel.writeOutbound(ConnectionSynchronizationHandler.UserCall.OPEN);
-        assertEquals(Segment.syn(100), channel.readOutbound());
+        channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+        assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
         assertEquals(SYN_SENT, handler.state);
 
         assertEquals(100, handler.snd_una);
@@ -106,16 +105,16 @@ class ConnectionSynchronizationHandlerTest {
         assertEquals(0, handler.rcv_nxt);
 
         // peer SYNchronizes his SEG before our SYN has been received
-        channel.writeInbound(Segment.syn(300));
+        channel.writeInbound(ConnectionHandshakeSegment.syn(300));
         assertEquals(SYN_RECEIVED, handler.state);
-        assertEquals(Segment.synAck(100, 301), channel.readOutbound());
+        assertEquals(ConnectionHandshakeSegment.synAck(100, 301), channel.readOutbound());
 
         assertEquals(100, handler.snd_una);
         assertEquals(101, handler.snd_nxt);
         assertEquals(301, handler.rcv_nxt);
 
         // peer respont to our SYN with ACK (and another SYN)
-        channel.writeInbound(Segment.synAck(300, 101));
+        channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
         assertEquals(ESTABLISHED, handler.state);
 
         assertEquals(101, handler.snd_una);
@@ -132,17 +131,17 @@ class ConnectionSynchronizationHandlerTest {
     class HalfOpenConnectionDiscovery {
         @Test
         void weCrashed() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 400, false, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 400, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // we want to SYNchronize with an already synchronized peer
-            channel.writeOutbound(ConnectionSynchronizationHandler.UserCall.OPEN);
-            assertEquals(Segment.syn(400), channel.readOutbound());
+            channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+            assertEquals(ConnectionHandshakeSegment.syn(400), channel.readOutbound());
             assertEquals(SYN_SENT, handler.state);
 
             // as we got an ACK for an unexpected seq, reset the peer
-            channel.writeInbound(Segment.ack(300, 100));
-            assertEquals(Segment.rst(100), channel.readOutbound());
+            channel.writeInbound(ConnectionHandshakeSegment.ack(300, 100));
+            assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
             assertEquals(SYN_SENT, handler.state);
 
             assertTrue(channel.isOpen());
@@ -151,16 +150,16 @@ class ConnectionSynchronizationHandlerTest {
 
         @Test
         void otherCrashed() {
-            final ConnectionSynchronizationHandler handler = new ConnectionSynchronizationHandler(0, () -> 100, true, ESTABLISHED, 300, 300, 100);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, true, ESTABLISHED, 300, 300, 100);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // other wants to SYNchronize with us, ACK with our expected seq
-            channel.writeInbound(Segment.syn(400));
+            channel.writeInbound(ConnectionHandshakeSegment.syn(400));
             assertEquals(ESTABLISHED, handler.state);
-            assertEquals(Segment.ack(300, 100), channel.readOutbound());
+            assertEquals(ConnectionHandshakeSegment.ack(300, 100), channel.readOutbound());
 
             // as we sent an ACK for an unexpected seq, peer will reset us
-            assertThrows(ConnectionSynchronizationException.class, () -> channel.writeInbound(Segment.rst(100)));
+            assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(ConnectionHandshakeSegment.rst(100)));
             assertEquals(CLOSED, handler.state);
         }
     }

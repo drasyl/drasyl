@@ -25,8 +25,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.handler.connection.ConnectionSynchronizationCodec;
-import org.drasyl.handler.connection.ConnectionSynchronizationHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeEvent;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -46,21 +47,23 @@ public class NodeA extends DrasylNode {
                 final DrasylAddress nodeB = IdentityManager.readIdentityFile(Path.of("nodeB.identity")).getAddress();
                 if (ch.remoteAddress().equals(nodeB)) {
                     final ChannelPipeline p = ch.pipeline();
-                    p.addLast(new ConnectionSynchronizationCodec());
-                    p.addLast(new ConnectionSynchronizationHandler(20_000, false));
+                    p.addLast(new ConnectionHandshakeCodec());
+                    p.addLast(new ConnectionHandshakeHandler(20_000, false));
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                       final Object evt) throws Exception {
-                            if (evt instanceof ConnectionSynchronizationHandler.ConnectionSynchronized) {
+                                                       final Object evt) {
+                            if (evt instanceof ConnectionHandshakeEvent) {
                                 System.err.println(evt);
                             }
-                            super.userEventTriggered(ctx, evt);
+                            else {
+                                ctx.fireUserEventTriggered(evt);
+                            }
                         }
 
                         @Override
                         public void exceptionCaught(final ChannelHandlerContext ctx,
-                                                    final Throwable cause) throws Exception {
+                                                    final Throwable cause) {
                             cause.printStackTrace();
                             ctx.close();
                             System.out.println();

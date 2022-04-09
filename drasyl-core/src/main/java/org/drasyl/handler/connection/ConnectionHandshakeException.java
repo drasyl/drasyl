@@ -21,40 +21,12 @@
  */
 package org.drasyl.handler.connection;
 
-import java.util.Objects;
-
-public class Ack implements ConnectionMessage {
-    private final int seq;
-
-    public Ack(final int seq) {
-        this.seq = seq;
+public class ConnectionHandshakeException extends RuntimeException {
+    public ConnectionHandshakeException(final String message) {
+        super(message);
     }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Ack ack = (Ack) o;
-        return seq == ack.seq;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(seq);
-    }
-
-    @Override
-    public String toString() {
-        return "Ack{" +
-                "seq=" + seq +
-                '}';
-    }
-
-    public int seq() {
-        return seq;
+    public ConnectionHandshakeException(final Throwable cause) {
+        super(cause);
     }
 }

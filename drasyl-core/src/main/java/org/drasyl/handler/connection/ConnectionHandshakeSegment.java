@@ -29,21 +29,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class Segment extends DefaultByteBufHolder {
+public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private static final byte URG = 1 << 5;
     private static final byte ACK = 1 << 4;
     private static final byte PSH = 1 << 3;
     private static final byte RST = 1 << 2;
-    private static final byte SYN = 1 << 1; // Synchronize sequence numbers
+    private static final byte SYN = 1 << 1;
     private static final byte FIN = 1 << 0;
     private final int seq;
     private final int ack;
     private final byte ctl;
 
-    public Segment(final int seq,
-                   final int ack,
-                   final byte ctl,
-                   final ByteBuf data) {
+    public ConnectionHandshakeSegment(final int seq,
+                                      final int ack,
+                                      final byte ctl,
+                                      final ByteBuf data) {
         super(data);
         this.seq = seq;
         this.ack = ack;
@@ -86,35 +86,6 @@ public class Segment extends DefaultByteBufHolder {
         return (ctl & FIN) != 0;
     }
 
-    public boolean isJustAck() {
-        return ctl == ACK;
-    }
-
-    public boolean isJustRst() {
-        return ctl == RST;
-    }
-
-    public boolean isJustSyn() {
-        return ctl == SYN;
-    }
-
-    public boolean isJustAckSyn() {
-        return ctl == ACK + SYN;
-    }
-
-    public int len() {
-        return content().readableBytes();
-    }
-
-    public int nxt() {
-        if (ctl == ACK) {
-            return seq + len();
-        }
-        else {
-            return seq + 1 + len();
-        }
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -126,7 +97,7 @@ public class Segment extends DefaultByteBufHolder {
         if (!super.equals(o)) {
             return false;
         }
-        final Segment segment = (Segment) o;
+        final ConnectionHandshakeSegment segment = (ConnectionHandshakeSegment) o;
         return seq == segment.seq && ack == segment.ack && ctl == segment.ctl;
     }
 
@@ -138,6 +109,9 @@ public class Segment extends DefaultByteBufHolder {
     @Override
     public String toString() {
         final List<String> controlBitLabels = new ArrayList<>();
+        if (isSyn()) {
+            controlBitLabels.add("SYN");
+        }
         if (isUrg()) {
             controlBitLabels.add("URG");
         }
@@ -150,9 +124,6 @@ public class Segment extends DefaultByteBufHolder {
         if (isRst()) {
             controlBitLabels.add("RST");
         }
-        if (isSyn()) {
-            controlBitLabels.add("SYN");
-        }
         if (isFin()) {
             controlBitLabels.add("FIN");
         }
@@ -160,27 +131,23 @@ public class Segment extends DefaultByteBufHolder {
         return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + ">";
     }
 
-    public int wnd() {
-        return 65535;
+    public static ConnectionHandshakeSegment ack(final int seq, final int ack) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment ack(final int seq, final int ack) {
-        return new Segment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
+    public static ConnectionHandshakeSegment rst(final int seq) {
+        return new ConnectionHandshakeSegment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment rst(final int seq) {
-        return new Segment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
+    public static ConnectionHandshakeSegment syn(final int seq) {
+        return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment syn(final int seq) {
-        return new Segment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
+    public static ConnectionHandshakeSegment synAck(final int seq, final int ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment synAck(final int seq, final int ack) {
-        return new Segment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment rstAck(final int seq, final int ack) {
-        return new Segment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
+    public static ConnectionHandshakeSegment rstAck(final int seq, final int ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
     }
 }

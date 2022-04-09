@@ -21,47 +21,41 @@
  */
 package org.drasyl.handler.connection;
 
-import java.util.Objects;
+/**
+ * Signals that the handshake was complete succesful.
+ */
+public class ConnectionHandshakeComplete implements ConnectionHandshakeEvent {
+    private final int snd_nxt;
+    private final int rcv_nxt;
 
-public class FinAck implements ConnectionMessage {
-    private final int seq;
-    private final int ack;
-
-    public FinAck(final int seq, final int ack) {
-        this.seq = seq;
-        this.ack = ack;
+    public ConnectionHandshakeComplete(final int snd_nxt, final int rcv_nxt) {
+        this.snd_nxt = snd_nxt;
+        this.rcv_nxt = rcv_nxt;
     }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final FinAck synAck = (FinAck) o;
-        return seq == synAck.seq && ack == synAck.ack;
+    /**
+     * Returns the state that has been shared with the remote peer.
+     *
+     * @return state that has been shared with the remote peer
+     */
+    public int snd_nxt() {
+        return snd_nxt;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(seq, ack);
+    /**
+     * Returns the state that has been received from the remote peer.
+     *
+     * @return state that has been received from the remote peer
+     */
+    public int rcv_nxt() {
+        return rcv_nxt;
     }
 
     @Override
     public String toString() {
-        return "FinAck{" +
-                "seq=" + seq +
-                ", ack=" + ack +
+        return "ConnectionHandshakeComplete{" +
+                "snd_nxt=" + snd_nxt +
+                ", rcv_nxt=" + rcv_nxt +
                 '}';
-    }
-
-    public int seq() {
-        return seq;
-    }
-
-    public int ack() {
-        return ack;
     }
 }

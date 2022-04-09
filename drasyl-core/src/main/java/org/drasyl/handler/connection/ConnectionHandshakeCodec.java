@@ -27,7 +27,7 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
-public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBuf, Segment> {
+public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, ConnectionHandshakeSegment> {
     public static final int MAGIC_NUMBER = 852_550_535;
     // magic number: 4 bytes
     // SEQ: 4 bytes
@@ -37,7 +37,7 @@ public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBu
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final Segment seg,
+                          final ConnectionHandshakeSegment seg,
                           final List<Object> out) throws Exception {
         final ByteBuf buf = ctx.alloc().buffer(13);
         buf.writeInt(MAGIC_NUMBER);
@@ -59,7 +59,7 @@ public class ConnectionSynchronizationCodec extends MessageToMessageCodec<ByteBu
                 final int seq = in.readInt();
                 final int ack = in.readInt();
                 final byte ctl = in.readByte();
-                final Segment seg = new Segment(seq, ack, ctl, in.discardSomeReadBytes().retain());
+                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, in.discardSomeReadBytes().retain());
                 out.add(seg);
             }
             else {

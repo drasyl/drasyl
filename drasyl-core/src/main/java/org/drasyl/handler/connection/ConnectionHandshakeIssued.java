@@ -21,5 +21,12 @@
  */
 package org.drasyl.handler.connection;
 
-public interface ConnectionMessage {
+/**
+ * Signals that the handshake was started but the remote peer dis not response yet to the request.
+ */
+public class ConnectionHandshakeIssued implements ConnectionHandshakeEvent {
+    @Override
+    public String toString() {
+        return "ConnectionHandshakeIssued{}";
+    }
 }

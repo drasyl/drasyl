@@ -21,40 +21,12 @@
  */
 package org.drasyl.handler.connection;
 
-import java.util.Objects;
-
-public class Rst implements ConnectionMessage {
-    private final int seq;
-
-    public Rst(final int seq) {
-        this.seq = seq;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final Rst ack = (Rst) o;
-        return seq == ack.seq;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(seq);
-    }
-
+/**
+ * Signals that the handshake was timed out
+ */
+public class ConnectionHandshakeTimeout implements ConnectionHandshakeEvent {
     @Override
     public String toString() {
-        return "Rst{" +
-                "seq=" + seq +
-                '}';
-    }
-
-    public int seq() {
-        return seq;
+        return "ConnectionHandshakeTimeout{}";
     }
 }

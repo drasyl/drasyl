@@ -29,8 +29,9 @@ import io.netty.util.ReferenceCountUtil;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.connection.ConnectionSynchronizationCodec;
-import org.drasyl.handler.connection.ConnectionSynchronizationHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeComplete;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.tcp.TcpServer;
 import org.drasyl.node.DrasylConfig;
@@ -100,13 +101,13 @@ public class EmbeddedNode2 extends DrasylNode implements Closeable {
             protected void initChannel(final DrasylChannel ch) throws Exception {
 
                 final ChannelPipeline p = ch.pipeline();
-                p.addLast(new ConnectionSynchronizationCodec());
-                p.addLast(new ConnectionSynchronizationHandler(20_000, true));
+                p.addLast(new ConnectionHandshakeCodec());
+                p.addLast(new ConnectionHandshakeHandler(20_000, true));
                 p.addLast(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
                                                    final Object evt) throws Exception {
-                        if (evt instanceof ConnectionSynchronizationHandler.ConnectionSynchronized) {
+                        if (evt instanceof ConnectionHandshakeComplete) {
                             System.err.println(evt);
                             done.complete(null);
                         }

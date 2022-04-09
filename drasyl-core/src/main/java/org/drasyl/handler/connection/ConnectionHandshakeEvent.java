@@ -21,47 +21,5 @@
  */
 package org.drasyl.handler.connection;
 
-import java.util.Objects;
-
-public class SynAck implements ConnectionMessage {
-    private final int seq;
-    private final int ack;
-
-    public SynAck(final int seq, final int ack) {
-        this.seq = seq;
-        this.ack = ack;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final SynAck synAck = (SynAck) o;
-        return seq == synAck.seq && ack == synAck.ack;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(seq, ack);
-    }
-
-    @Override
-    public String toString() {
-        return "SynAck{" +
-                "seq=" + seq +
-                ", ack=" + ack +
-                '}';
-    }
-
-    public int seq() {
-        return seq;
-    }
-
-    public int ack() {
-        return ack;
-    }
+public interface ConnectionHandshakeEvent {
 }
