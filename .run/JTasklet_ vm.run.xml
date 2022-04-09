@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="JTasklet: vm" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="org.drasyl.jtasklet.cli.Cli" />
+    <module name="drasyl-jtasklet" />
+    <option name="PROGRAM_PARAMETERS" value="vm --verbose info --identity vm.identity --bind 0.0.0.0:22501 --broker c10afe61710cd5bd5a809c2296d56579ced42fbcd7c56450f1b64086045668a5" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.drasyl.cli.converter.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
