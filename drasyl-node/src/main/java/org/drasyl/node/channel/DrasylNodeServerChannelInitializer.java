@@ -41,6 +41,7 @@ import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
@@ -209,6 +210,8 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     private void discoveryStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
+
         if (config.isRemoteEnabled()) {
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
