@@ -89,8 +89,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!-- downgraded to 3.0.0-M4 because in 3.0.0-M5 STDOUT will only be printed after test is finished. This is annoying for long running tests (benchmarks) -->
-                <version>3.0.0-M4</version>
+                <!-- downgraded to 3.0.0-M6 because in 3.0.0-M5 STDOUT will only be printed after test is finished. This is annoying for long running tests (benchmarks) -->
+                <version>3.0.0-M6</version>
                 <configuration>
                     <includes>
                         <include>**/*Benchmark.java</include>
