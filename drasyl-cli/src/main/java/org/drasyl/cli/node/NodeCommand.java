@@ -164,7 +164,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
             final DrasylNode finalNode = node;
             final Channel finalRcChannel = rcChannel;
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (finalRcChannel != null) {
+                if (finalRcChannel != null && finalRcChannel.isOpen()) {
                     LOG.info("Shutdown remote control server.");
                     finalRcChannel.close().syncUninterruptibly();
                 }
