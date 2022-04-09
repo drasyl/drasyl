@@ -40,7 +40,7 @@ public class UnresolvedOverlayMessageHandler extends ChannelOutboundHandlerAdapt
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage) {
             // unresolved message -> fail and drop
-            promise.setFailure(new Exception("Unable to resolve overlay address `" + ((OverlayAddressedMessage<?>) msg).recipient() + "` found. Drop message."));
+            promise.setFailure(new Exception("Unable to resolve overlay address `" + ((OverlayAddressedMessage<?>) msg).recipient() + "`. Drop message."));
             ReferenceCountUtil.release(msg);
         }
         else {
