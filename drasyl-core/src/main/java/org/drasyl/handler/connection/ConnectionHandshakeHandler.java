@@ -50,11 +50,11 @@ import static org.drasyl.util.RandomUtil.randomInt;
  * <p>
  * Depending on configuration, the synchronization will be automaticall initiated on {@link
  * #channelActive(ChannelHandlerContext)} or manually after writing {@link UserCall#OPEN} to the
- * channel. Once the synchronization is done, a {@link ConnectionHandshakeComplete} event will be
+ * channel. Once the synchronization is done, a {@link ConnectionHandshakeCompleted} event will be
  * passed to channel.
  * <p>
  * {@link ConnectionHandshakeIssued} event is passed to channel once a handshake is started. A
- * handshake will result in a {@link ConnectionHandshakeComplete} or {@link
+ * handshake will result in a {@link ConnectionHandshakeCompleted} or {@link
  * ConnectionHandshakeTimeout} event, or {@link ConnectionHandshakeException} error.
  * <p>
  * The synchronization has been heavily inspired by the three-way handshake of TCP (<a
@@ -404,7 +404,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 writeSegment(ctx, response);
                 ReferenceCountUtil.release(seg);
 
-                final ConnectionHandshakeComplete evt = new ConnectionHandshakeComplete(snd_nxt, rcv_nxt);
+                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt);
                 ctx.fireUserEventTriggered(evt);
 
                 openPromise.setSuccess();
@@ -471,7 +471,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 }
 
                 ReferenceCountUtil.release(seg);
-                final ConnectionHandshakeComplete evt = new ConnectionHandshakeComplete(snd_nxt, rcv_nxt);
+                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt);
                 ctx.fireUserEventTriggered(evt);
 
                 openPromise.setSuccess();

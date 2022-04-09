@@ -30,7 +30,7 @@ import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeComplete;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeEvent;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.remote.UdpServer;
@@ -111,7 +111,7 @@ public class EmbeddedNode2 extends DrasylNode implements Closeable {
                         if (evt instanceof ConnectionHandshakeEvent) {
                             System.err.println(evt);
                         }
-                        if (evt instanceof ConnectionHandshakeComplete) {
+                        if (evt instanceof ConnectionHandshakeCompleted) {
                             done.complete(null);
                         }
                         super.userEventTriggered(ctx, evt);

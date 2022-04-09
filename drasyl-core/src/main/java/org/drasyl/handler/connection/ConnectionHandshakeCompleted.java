@@ -24,11 +24,11 @@ package org.drasyl.handler.connection;
 /**
  * Signals that the handshake was complete succesful.
  */
-public class ConnectionHandshakeComplete implements ConnectionHandshakeEvent {
+public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
     private final int snd_nxt;
     private final int rcv_nxt;
 
-    public ConnectionHandshakeComplete(final int snd_nxt, final int rcv_nxt) {
+    public ConnectionHandshakeCompleted(final int snd_nxt, final int rcv_nxt) {
         this.snd_nxt = snd_nxt;
         this.rcv_nxt = rcv_nxt;
     }
@@ -53,7 +53,7 @@ public class ConnectionHandshakeComplete implements ConnectionHandshakeEvent {
 
     @Override
     public String toString() {
-        return "ConnectionHandshakeComplete{" +
+        return "ConnectionHandshakeCompleted{" +
                 "snd_nxt=" + snd_nxt +
                 ", rcv_nxt=" + rcv_nxt +
                 '}';
