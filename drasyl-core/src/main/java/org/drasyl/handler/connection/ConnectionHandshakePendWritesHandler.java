@@ -69,4 +69,3 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
         ctx.fireUserEventTriggered(evt);
     }
 }
-}
