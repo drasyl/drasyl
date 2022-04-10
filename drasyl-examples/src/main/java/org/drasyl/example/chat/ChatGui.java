@@ -33,9 +33,9 @@ import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeGuard;
+import org.drasyl.handler.connection.ConnectionHandshakeExceptionGuard;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
-import org.drasyl.handler.connection.ConnectionHandshakeWriteEnqueuer;
+import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -224,8 +224,8 @@ public class ChatGui {
                     // perform handshake to ensure both connections are synchronized
                     p.addLast(new ConnectionHandshakeCodec());
                     p.addLast(new ConnectionHandshakeHandler(10_000L, true));
-                    p.addLast(new ConnectionHandshakeGuard());
-                    p.addLast(new ConnectionHandshakeWriteEnqueuer());
+                    p.addLast(new ConnectionHandshakeExceptionGuard());
+                    p.addLast(new ConnectionHandshakePendWritesHandler());
 
                     // ensure that messages are delivered
                     p.addLast(new StopAndWaitArqCodec());

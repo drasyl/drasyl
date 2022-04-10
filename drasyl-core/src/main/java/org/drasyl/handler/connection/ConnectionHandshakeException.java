@@ -22,8 +22,8 @@
 package org.drasyl.handler.connection;
 
 /**
- * Is thrown when an connection handshake failed. {@link io.netty.channel.Channel} should be closed
- * after receiving such exception.
+ * Is thrown when a connection handshake failed or an established connection is beeing reset by the
+ * remote peer. {@link io.netty.channel.Channel} should be closed after receiving such exception.
  */
 public class ConnectionHandshakeException extends RuntimeException {
     public ConnectionHandshakeException(final String message) {

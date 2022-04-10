@@ -62,6 +62,8 @@ import static org.drasyl.util.RandomUtil.randomInt;
  */
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
+    private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
+    private static final ConnectionHandshakeReset HANDSHAKE_RESET_EVENT = new ConnectionHandshakeReset();
     private final long retransmissionTimeout;
     private final long handshakeTimeout;
     private final Supplier<Integer> issProvider;
@@ -143,15 +145,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ctx.fireChannelInactive();
     }
 
-    private void cancelTimeoutGuards() {
-        if (handshakeTimeoutFuture != null) {
-            handshakeTimeoutFuture.cancel(false);
-        }
-        if (retransmissionTimeoutFuture != null) {
-            retransmissionTimeoutFuture.cancel(false);
-        }
-    }
-
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof ConnectionHandshakeSegment) {
@@ -195,9 +188,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                 final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
+            case LISTEN:
                 // channel was closed. Perform active OPEN handshake
                 openPromise = promise;
-                ctx.fireUserEventTriggered(new ConnectionHandshakeIssued());
+                ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
 
                 state = SYN_SENT;
 
@@ -217,8 +211,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     handshakeTimeoutFuture = ctx.executor().schedule(() -> {
                         cancelTimeoutGuards();
                         LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
-                        promise.setFailure(new ConnectionHandshakeException("Error: Handshake timeout"));
-                        ctx.fireUserEventTriggered(new ConnectionHandshakeTimeout());
+                        final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
+                        promise.setFailure(e);
+                        ctx.fireExceptionCaught(e);
                         state = CLOSED;
                     }, handshakeTimeout, MILLISECONDS);
                 }
@@ -231,14 +226,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             default:
-                promise.setFailure(new ConnectionHandshakeException("Connection is already open."));
+                promise.setFailure(new Exception("Connection is already open."));
         }
     }
 
     private void connectionAbort(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
-                promise.setFailure(new ConnectionHandshakeException("Connection is already closed."));
+                promise.setFailure(new Exception("Connection is already closed."));
                 break;
 
             case LISTEN:
@@ -256,6 +251,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 state = CLOSED;
                 promise.setSuccess();
                 break;
+        }
+    }
+
+    private void cancelTimeoutGuards() {
+        if (handshakeTimeoutFuture != null) {
+            handshakeTimeoutFuture.cancel(false);
+        }
+        if (retransmissionTimeoutFuture != null) {
+            retransmissionTimeoutFuture.cancel(false);
         }
     }
 
@@ -334,7 +338,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // yay, peer SYNced with us
             state = SYN_RECEIVED;
 
-            ctx.fireUserEventTriggered(new ConnectionHandshakeIssued());
+            ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
 
             // synchronize receive state
             rcv_nxt = seg.seq() + 1;
@@ -375,7 +379,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isRst()) {
             final boolean acceptableAck = seg.isAck() && seg.ack() == snd_nxt;
             if (acceptableAck) {
-                ctx.fireUserEventTriggered(new ConnectionHandshakeException("Error: Connection reset"));
+                ctx.fireUserEventTriggered(HANDSHAKE_RESET_EVENT);
                 ReferenceCountUtil.release(seg);
                 state = CLOSED;
                 return;
@@ -404,8 +408,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 writeSegment(ctx, response);
                 ReferenceCountUtil.release(seg);
 
-                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt);
-                ctx.fireUserEventTriggered(evt);
+                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt));
 
                 openPromise.setSuccess();
             }
@@ -471,10 +474,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 }
 
                 ReferenceCountUtil.release(seg);
-                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt);
-                ctx.fireUserEventTriggered(evt);
+                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(snd_nxt, rcv_nxt));
 
-                openPromise.setSuccess();
+                if (openPromise != null) {
+                    openPromise.setSuccess();
+                }
             }
             else {
                 ReferenceCountUtil.release(seg);

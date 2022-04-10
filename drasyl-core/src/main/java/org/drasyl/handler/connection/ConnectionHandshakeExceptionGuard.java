@@ -27,21 +27,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * Closes the {@link java.nio.channels.Channel} when a {@link ConnectionHandshakeException} is
- * caught or a {@link ConnectionHandshakeTimeout} is triggered.
+ * caught.
  */
 @Sharable
-public class ConnectionHandshakeGuard extends ChannelInboundHandlerAdapter {
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof ConnectionHandshakeTimeout) {
-            ctx.close();
-        }
-        else {
-            ctx.fireUserEventTriggered(evt);
-        }
-    }
-
+public class ConnectionHandshakeExceptionGuard extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {

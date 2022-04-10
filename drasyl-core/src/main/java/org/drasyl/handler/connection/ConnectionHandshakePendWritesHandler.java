@@ -29,10 +29,11 @@ import io.netty.channel.PendingWriteQueue;
 import java.nio.channels.ClosedChannelException;
 
 /**
- * This handler enqueues all writes in a {@link PendingWriteQueue} until a
+ * This handler pends all channel writes in a {@link PendingWriteQueue} until a connection handshake
+ * has been signaled by receiving a {@link ConnectionHandshakeCompleted} event. Once the handshake
+ * is completed, this handler will removes itself from the channel pipeline.
  */
-public class ConnectionHandshakeWriteEnqueuer extends ChannelDuplexHandler {
-    private boolean handshakeCompleted = false;
+public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     private PendingWriteQueue pendingWrites;
 
     @Override
@@ -44,18 +45,14 @@ public class ConnectionHandshakeWriteEnqueuer extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (handshakeCompleted) {
-            ctx.write(msg, promise);
-        }
-        else {
-            pendingWrites.add(msg, promise);
-        }
+        // handshake not completed yet, pend write
+        pendingWrites.add(msg, promise);
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
+        // channel is closing, discard all pending writes
         pendingWrites.removeAndFailAll(new ClosedChannelException());
-
         ctx.fireChannelInactive();
     }
 
@@ -63,10 +60,12 @@ public class ConnectionHandshakeWriteEnqueuer extends ChannelDuplexHandler {
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
         if (evt instanceof ConnectionHandshakeCompleted) {
-            handshakeCompleted = true;
+            // handshake completed! perform all pending writes and remove itself from pipeline
             pendingWrites.removeAndWriteAll();
+            ctx.pipeline().remove(this);
         }
         else {
+            // pass through all other events
             ctx.fireUserEventTriggered(evt);
         }
     }

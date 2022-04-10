@@ -22,11 +22,14 @@
 package org.drasyl.handler.connection;
 
 /**
- * Signals that the handshake was timed out
+ * Signals that the handshake failed due to an connection reset.
  */
-public class ConnectionHandshakeTimeout implements ConnectionHandshakeEvent {
+public class ConnectionHandshakeReset implements ConnectionHandshakeEvent {
+    public ConnectionHandshakeReset() {
+    }
+
     @Override
     public String toString() {
-        return "ConnectionHandshakeTimeout{}";
+        return "ConnectionHandshakeReset{}";
     }
 }
