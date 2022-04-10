@@ -1,11 +1,14 @@
 package org.drasyl.jtasklet.broker.channel;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeEvent;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.IdentityPublicKey;
@@ -41,12 +44,27 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
     protected void initChannel(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
+        // handshake
         p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(5_000, false));
+        p.addLast(new ConnectionHandshakeHandler(10_000, false));
         p.addLast(new ConnectionHandshakePendWritesHandler());
+        p.addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                           final Object evt) {
+                if (evt instanceof ConnectionHandshakeEvent) {
+                    System.err.println(evt);
+                }
+                else {
+                    ctx.fireUserEventTriggered(evt);
+                }
+            }
+        });
 
+        // codec
         p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
+        // broker
         p.addLast(new BrokerVmHeartbeatHandler(vms));
         p.addLast(new BrokerResourceRequestHandler(vms));
 

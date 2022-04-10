@@ -30,9 +30,11 @@ import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -74,8 +76,13 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected void initChannel(final DrasylServerChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
+        // ip
         p.addLast(new UdpServer(bindAddress));
+
+        // serialization
         p.addLast(new ByteToRemoteMessageCodec());
+
+        // gatekeeper
         p.addLast(new OtherNetworkFilter(networkId));
         p.addLast(new InvalidProofOfWorkFilter());
         if (protocolArmEnabled) {
@@ -84,8 +91,13 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         else {
             p.addLast(new UnarmedMessageDecoder());
         }
+
+        // discovery
+        p.addLast(new UnresolvedOverlayMessageHandler());
+        p.addLast(new UnconfirmedAddressResolveHandler());
         p.addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
+
         p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
     }
 }

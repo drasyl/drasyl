@@ -1,10 +1,16 @@
 package org.drasyl.jtasklet.provider.channel;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeEvent;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.message.TaskletMessage;
 import org.drasyl.jtasklet.provider.handler.ProcessTaskHandler;
@@ -40,14 +46,32 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
     protected void initChannel(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
-
         if (ch.remoteAddress().equals(broker)) {
+            // handshake
+            p.addLast(new ConnectionHandshakeCodec());
+            p.addLast(new ConnectionHandshakeHandler(10_000, true));
+            p.addLast(new ConnectionHandshakePendWritesHandler());
+            p.addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx,
+                                               final Object evt) {
+                    if (evt instanceof ConnectionHandshakeEvent) {
+                        System.err.println(evt);
+                    }
+                    else {
+                        ctx.fireUserEventTriggered(evt);
+                    }
+                }
+            });
+
+            // codec
+            p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+
+            // vm
             p.addLast(new VmHeartbeatHandler());
+            p.addLast(new ProcessTaskHandler(runtimeEnvironment));
+
+            p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
         }
-
-        p.addLast(new ProcessTaskHandler(runtimeEnvironment));
-
-        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }
