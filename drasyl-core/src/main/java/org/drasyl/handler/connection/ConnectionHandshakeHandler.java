@@ -46,16 +46,13 @@ import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
  * This handler performs a handshake with the remote peer. This can be used to create a
- * connection-oriented communication with remote peer.
+ * connection-oriented communication with the remote peer.
  * <p>
- * Depending on configuration, the synchronization will be automaticall initiated on {@link
- * #channelActive(ChannelHandlerContext)} or manually after writing {@link UserCall#OPEN} to the
- * channel. Once the synchronization is done, a {@link ConnectionHandshakeCompleted} event will be
- * passed to channel.
- * <p>
- * {@link ConnectionHandshakeIssued} event is passed to channel once a handshake is started. A
- * handshake will result in a {@link ConnectionHandshakeCompleted} or {@link
- * ConnectionHandshakeTimeout} event, or {@link ConnectionHandshakeException} error.
+ * Depending of the configuration, the synchronization will be automatically issued on {@link
+ * #channelActive(ChannelHandlerContext)} or must be manually issued by writing a {@link
+ * UserCall#OPEN} message to the channel. Once the synchronization is done, a {@link
+ * ConnectionHandshakeCompleted} event will be passed to channel, on failure a {@link
+ * ConnectionHandshakeException} exception is passed to channel.
  * <p>
  * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
  * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
@@ -63,11 +60,13 @@ import static org.drasyl.util.RandomUtil.randomInt;
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
-    private static final ConnectionHandshakeReset HANDSHAKE_RESET_EVENT = new ConnectionHandshakeReset();
     private final long retransmissionTimeout;
     private final long handshakeTimeout;
     private final Supplier<Integer> issProvider;
     private final boolean activeOpen;
+    private ChannelPromise openPromise;
+    private ScheduledFuture<?> handshakeTimeoutFuture;
+    private ScheduledFuture<?> retransmissionTimeoutFuture;
     State state;
     // Send Sequence Variables
     int snd_una; // oldest unacknowledged sequence number
@@ -76,10 +75,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     // Receive Sequence Variables
     int rcv_nxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     int irs; // initial receive sequence number
-    private ChannelPromise openPromise;
-    private ScheduledFuture<?> handshakeTimeoutFuture;
-    private ScheduledFuture<?> retransmissionTimeoutFuture;
 
+    /**
+     * @param handshakeTimeout time in ms in which a a handshake must taken place after issued
+     * @param activeOpen       if {@code true} a handshake will be issued on {@link
+     *                         #channelActive(ChannelHandlerContext)}. Otherwise the handshake needs
+     *                         to be issued by writine a {@link UserCall#OPEN} message to the
+     *                         channel
+     */
     public ConnectionHandshakeHandler(final long handshakeTimeout,
                                       final boolean activeOpen) {
         this(handshakeTimeout, 100L, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
@@ -379,7 +382,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isRst()) {
             final boolean acceptableAck = seg.isAck() && seg.ack() == snd_nxt;
             if (acceptableAck) {
-                ctx.fireUserEventTriggered(HANDSHAKE_RESET_EVENT);
+                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
                 ReferenceCountUtil.release(seg);
                 state = CLOSED;
                 return;
