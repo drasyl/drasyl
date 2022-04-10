@@ -292,6 +292,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final SuperPeer superPeer = superPeers.get(publicKey);
         superPeer.acknowledgementReceived(latency);
 
+        // we don't have a super peer yet, so this is now our best one
+        if (bestSuperPeer == null) {
+            bestSuperPeer = (IdentityPublicKey) publicKey;
+        }
+
         final AddPathAndSuperPeerEvent event = AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
