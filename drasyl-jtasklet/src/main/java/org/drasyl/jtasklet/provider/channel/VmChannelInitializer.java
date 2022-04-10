@@ -6,9 +6,11 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
+import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
+import org.drasyl.jtasklet.handler.PathEventsFilter;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -49,19 +51,29 @@ public class VmChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
+
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
-            public void channelActive(final ChannelHandlerContext ctx) {
-                out.println("----------------------------------------------------------------------------------------------");
-                out.println("VM listening on address " + ch.localAddress());
-                out.println("----------------------------------------------------------------------------------------------");
-                ctx.fireChannelActive();
+            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                if (evt instanceof AddPathAndSuperPeerEvent) {
+                    // node is now online
+                    out.println("----------------------------------------------------------------------------------------------");
+                    out.println("VM listening on address " + ch.localAddress());
+                    out.println("----------------------------------------------------------------------------------------------");
+
+                    if (broker != null) {
+                        LOG.info("This VM will register at broker `{}`", broker);
+                        ctx.pipeline().addFirst(new SpawnChildChannelToPeer(ch, broker));
+                    }
+
+                    ctx.pipeline().remove(this);
+                }
+                else {
+                    ctx.fireUserEventTriggered(evt);
+                }
             }
         });
-        if (broker != null) {
-            LOG.info("This VM will register at broker `{}`", broker);
-            p.addLast(new SpawnChildChannelToPeer(ch, broker));
-        }
+        p.addLast(new PathEventsFilter());
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

@@ -8,6 +8,7 @@ import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
+import org.drasyl.jtasklet.handler.PathEventsFilter;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
@@ -42,6 +43,8 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new PathEventsFilter());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelActive(final ChannelHandlerContext ctx) {
