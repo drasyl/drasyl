@@ -45,6 +45,7 @@ import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -211,6 +212,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
 
         if (config.isRemoteEnabled()) {
+            ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
                 final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));

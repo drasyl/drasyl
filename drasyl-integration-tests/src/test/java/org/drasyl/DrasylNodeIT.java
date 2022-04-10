@@ -68,8 +68,14 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.*;
-import static test.util.IdentityTestUtil.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
+import static test.util.IdentityTestUtil.ID_3;
+import static test.util.IdentityTestUtil.ID_4;
 
 class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
@@ -337,6 +343,103 @@ class DrasylNodeIT {
                 });
                 assertBidirectionalMessageDelivery(node1, node2, "String");
                 assertBidirectionalMessageDelivery(node1, node2, null);
+            }
+        }
+
+        /**
+         * This will test {@link org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler}.
+         * <p>
+         * Network Layout:
+         * <pre>
+         * +--------+   +--------+
+         * | Node 1 |-->| Node 2 |
+         * +--------+   +--------+
+         * </pre>
+         */
+        @Nested
+        class TwoNodesWithJustOneHavingAStaticRouteWhenOnlyRemoteIsEnabled {
+            private EmbeddedNode node1;
+            private EmbeddedNode node2;
+
+            @BeforeEach
+            void setUp() throws DrasylException {
+                //
+                // create nodes
+                //
+                DrasylConfig config;
+
+                // node1
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identity(ID_1)
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(22528)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
+                        .build();
+                node1 = new EmbeddedNode(config).awaitStarted();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
+
+                // node2
+                config = DrasylConfig.newBuilder()
+                        .networkId(0)
+                        .identity(ID_2)
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(22529)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEnabled(false)
+                        .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
+                        .intraVmDiscoveryEnabled(false)
+                        .remoteLocalHostDiscoveryEnabled(false)
+                        .remoteLocalNetworkDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
+                        .remoteTcpFallbackEnabled(false)
+                        .build();
+                node2 = new EmbeddedNode(config).awaitStarted();
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
+
+                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+            }
+
+            @AfterEach
+            void tearDown() {
+                node1.close();
+                node2.close();
+            }
+
+            /**
+             * This test ensures that sent application messages are delivered to the recipient.
+             */
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void test() throws InterruptedException {
+                // 1
+                // as node1 has no route to node2 this message should not be delivered
+                // sadly the send future will still be completed successfully, because this error is
+                // first discovered on the server channel. Because the netty interface does not
+                // allow to pass that error to the child channel, this error is just written to the
+                // log
+                node1.send(node2.identity().getAddress(), "Hello").toCompletableFuture().join();
+                // but we can check if node1 has received something!
+                Thread.sleep(100L);
+                assertNull(node2.readEvent());
+
+                // 2
+                // now let node2 write to node1. This cause node1 to discover an unconfirmed inet
+                // address for node2. Allowing node2 to route to node2
+                assertMessageDelivery(node2, node1, "You ok?");
+
+                // 3
+                assertMessageDelivery(node1, node2, "Yeah");
             }
         }
 
