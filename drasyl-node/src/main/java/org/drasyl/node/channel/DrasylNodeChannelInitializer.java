@@ -77,16 +77,11 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
-        addToChannelGroup(ch);
         firstStage(ch);
         chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);
         lastStage(ch);
-    }
-
-    protected void addToChannelGroup(final DrasylChannel ch) {
-        node.channels.add(ch);
     }
 
     protected void firstStage(final DrasylChannel ch) {

@@ -24,7 +24,6 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
@@ -41,10 +40,12 @@ import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -120,7 +121,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     @SuppressWarnings("java:S1188")
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        node.channels = new DefaultChannelGroup(ch.eventLoop());
         ch.pipeline().addLast(new NodeLifecycleHeadHandler(identity));
 
         if (config.isRemoteEnabled()) {
@@ -209,7 +209,10 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     private void discoveryStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
+
         if (config.isRemoteEnabled()) {
+            ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
                 final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));
