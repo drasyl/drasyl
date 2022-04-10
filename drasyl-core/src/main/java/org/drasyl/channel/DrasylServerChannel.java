@@ -187,8 +187,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     channel.pipeline().fireChannelReadComplete();
                 }
                 else if (recreateClosedChannel) {
-                    // channel we want message pass to has been closed in the meantime.
-                    // give message chance to be consumend by recreate a new channcel once
+                    // channel to which the message is to be passed to has been closed in the
+                    // meantime. give message chance to be consumed by recreate a new channel once
                     ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
                 }
                 else {
