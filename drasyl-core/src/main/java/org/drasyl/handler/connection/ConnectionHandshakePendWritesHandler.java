@@ -64,9 +64,9 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
             pendingWrites.removeAndWriteAll();
             ctx.pipeline().remove(this);
         }
-        else {
-            // pass through all other events
-            ctx.fireUserEventTriggered(evt);
-        }
+
+        // pass through events
+        ctx.fireUserEventTriggered(evt);
     }
+}
 }
