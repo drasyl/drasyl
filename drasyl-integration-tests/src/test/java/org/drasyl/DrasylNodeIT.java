@@ -57,7 +57,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
@@ -973,96 +972,6 @@ class DrasylNodeIT {
                 await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
                 await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
                 assertNull(node.readEvent());
-            }
-        }
-    }
-
-    @Nested
-    class X {
-        private EmbeddedNode2 node1;
-        private EmbeddedNode2 node2;
-
-        @BeforeEach
-        void setUp() throws DrasylException {
-            //
-            // create nodes
-            //
-            DrasylConfig config;
-
-            // node1
-            config = DrasylConfig.newBuilder()
-                    .networkId(0)
-                    .identity(ID_1)
-                    .remoteExposeEnabled(false)
-                    .remoteBindHost(createInetAddress("127.0.0.1"))
-                    .remoteBindPort(22528)
-                    .remotePingInterval(ofSeconds(1))
-                    .remotePingTimeout(ofSeconds(2))
-                    .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(ID_2.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22529)))
-                    .intraVmDiscoveryEnabled(false)
-                    .remoteLocalHostDiscoveryEnabled(false)
-                    .remoteLocalNetworkDiscoveryEnabled(false)
-                    .remoteMessageMtu(MESSAGE_MTU)
-                    .remoteTcpFallbackEnabled(false)
-                    .build();
-            node1 = new EmbeddedNode2(config);
-            node1.done = new CompletableFuture<>();
-            node1.awaitStarted();
-            LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node1"));
-
-            // node2
-            config = DrasylConfig.newBuilder()
-                    .networkId(0)
-                    .identity(ID_2)
-                    .remoteExposeEnabled(false)
-                    .remoteBindHost(createInetAddress("127.0.0.1"))
-                    .remoteBindPort(22529)
-                    .remotePingInterval(ofSeconds(1))
-                    .remotePingTimeout(ofSeconds(2))
-                    .remoteSuperPeerEnabled(false)
-                    .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
-                    .intraVmDiscoveryEnabled(false)
-                    .remoteLocalHostDiscoveryEnabled(false)
-                    .remoteLocalNetworkDiscoveryEnabled(false)
-                    .remoteMessageMtu(MESSAGE_MTU)
-                    .remoteTcpFallbackEnabled(false)
-                    .build();
-            node2 = new EmbeddedNode2(config);
-            node2.done = new CompletableFuture<>();
-            node2.awaitStarted();
-            LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
-
-            await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-            await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
-        }
-
-        @AfterEach
-        void tearDown() {
-            node1.close();
-            node2.close();
-        }
-
-        @Test
-        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void test() {
-            node1.send(node2.identity().getAddress(), "Hallo");
-            node1.done.join();
-            node2.done.join();
-        }
-
-        @Test
-        void test2() throws InterruptedException {
-            while (true) {
-                node1.done = new CompletableFuture<>();
-                node2.done = new CompletableFuture<>();
-                System.out.println("x " + node1);
-                node1.start().toCompletableFuture().join();
-                node1.send(node2.identity().getAddress(), "Hallo");
-                node1.done.join();
-                node2.done.join();
-                node1.shutdown().toCompletableFuture().join();
-                Thread.sleep(1000);
             }
         }
     }
