@@ -205,10 +205,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 try {
                     final PathEvent e = (PathEvent) evt;
                     final IdentityPublicKey peer = (IdentityPublicKey) e.getAddress();
-                    final Channel channel = getOrCreateChildChannel(ctx, peer);
-
-                    // pass message to channel
-                    channel.pipeline().fireUserEventTriggered(e);
+                    passEventToChannel(ctx, e, peer, true);
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of event `{}`: ", evt, e);
@@ -216,6 +213,29 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
 
             ctx.fireUserEventTriggered(evt);
+        }
+
+        private void passEventToChannel(final ChannelHandlerContext ctx,
+                                        final PathEvent e,
+                                        final IdentityPublicKey peer,
+                                        final boolean recreateClosedChannel) {
+            final Channel channel = getOrCreateChildChannel(ctx, peer);
+
+            // pass event to channel
+            channel.eventLoop().execute(() -> {
+                if (channel.isActive()) {
+                    channel.pipeline().fireUserEventTriggered(e);
+                    channel.pipeline().fireChannelReadComplete();
+                }
+                else if (recreateClosedChannel) {
+                    // channel to which the event is to be passed to has been closed in the
+                    // meantime. give event chance to be consumed by recreate a new channel once
+                    ctx.executor().execute(() -> passEventToChannel(ctx, e, peer, false));
+                }
+                else {
+                    // drop event
+                }
+            });
         }
 
         private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
