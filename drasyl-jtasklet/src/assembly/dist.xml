@@ -20,20 +20,31 @@
   ~ OR OTHER DEALINGS IN THE SOFTWARE.
   -->
 
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="CLI: node" type="Application" factoryName="Application">
-    <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
-    <module name="drasyl-cli" />
-    <option name="PROGRAM_PARAMETERS" value="node --verbose debug" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <extension name="coverage">
-      <pattern>
-        <option name="PATTERN" value="org.drasyl.cli.*" />
-        <option name="ENABLED" value="true" />
-      </pattern>
-    </extension>
-    <method v="2">
-      <option name="Make" enabled="true" />
-    </method>
-  </configuration>
-</component>
+<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns="http://maven.apache.org/ASSEMBLY/2.0.0"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>./bin/</directory>
+            <outputDirectory>./bin/</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>./lib/</outputDirectory>
+            <includes>
+                <include>drasyl-jtasklet-${project.version}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/lib/</directory>
+            <outputDirectory>./lib/</outputDirectory>
+            <includes>
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

@@ -5,6 +5,9 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
 import org.drasyl.jtasklet.broker.handler.BrokerResourceRequestHandler;
@@ -37,6 +40,10 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
     @Override
     protected void initChannel(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new ConnectionHandshakeCodec());
+        p.addLast(new ConnectionHandshakeHandler(5_000, false));
+        p.addLast(new ConnectionHandshakePendWritesHandler());
 
         p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
