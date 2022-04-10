@@ -27,7 +27,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
-import io.netty.util.internal.ThrowableUtil;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
@@ -138,7 +137,7 @@ public class ChatGui {
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
                         if (e != null) {
-                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + ThrowableUtil.stackTraceToString(e) + "\n");
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getClass().getName() + ": " + e.getMessage() + "\n");
                         }
                     });
                 }
