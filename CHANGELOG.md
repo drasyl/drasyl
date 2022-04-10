@@ -12,7 +12,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: Option `--mtu` to sub-command `tun` added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
 - CLI: `node-rc` sub-command added.
--
+- Node: Added `UnconfirmedAddressResolveHandler` that does send messages to unconfirmed (sender) addresses as last-resort (before the messages were simply dropped).
 -
 
 ### Changed

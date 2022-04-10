@@ -36,7 +36,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 
 /**
- * Re-uses address from messages with unconfirmed peers as last resort.
+ * Re-uses address from messages with unconfirmed peers as last-resort.
  */
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
