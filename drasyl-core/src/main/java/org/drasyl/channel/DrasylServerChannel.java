@@ -31,6 +31,7 @@ import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoop;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -61,7 +62,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Map<SocketAddress, DrasylChannel> channels;
+    public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
 
     @SuppressWarnings("java:S2384")
@@ -165,20 +166,36 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    final Channel channel = getOrCreateChildChannel(ctx, peer);
-
-                    // pass message to channel
-                    channel.eventLoop().execute(() -> {
-                        if (channel.isActive()) {
-                            channel.pipeline().fireChannelRead(o);
-                            channel.pipeline().fireChannelReadComplete();
-                        }
-                    });
+                    passMessageToChannel(ctx, o, peer, true);
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of message `{}`: ", msg, e);
                 }
             }
+        }
+
+        private void passMessageToChannel(final ChannelHandlerContext ctx,
+                                          final Object o,
+                                          final IdentityPublicKey peer,
+                                          final boolean recreateClosedChannel) {
+            final Channel channel = getOrCreateChildChannel(ctx, peer);
+
+            // pass message to channel
+            channel.eventLoop().execute(() -> {
+                if (channel.isActive()) {
+                    channel.pipeline().fireChannelRead(o);
+                    channel.pipeline().fireChannelReadComplete();
+                }
+                else if (recreateClosedChannel) {
+                    // channel we want message pass to has been closed in the meantime.
+                    // give message chance to be consumend by recreate a new channcel once
+                    ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
+                }
+                else {
+                    // drop message
+                    ReferenceCountUtil.release(o);
+                }
+            });
         }
 
         @Override
