@@ -70,7 +70,6 @@ public class DrasylChannel extends AbstractChannel {
                          final DrasylAddress localAddress,
                          final DrasylAddress remoteAddress) {
         super(parent);
-        LOG.error("Neuer channel für {}", remoteAddress);
         this.state = state;
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;

@@ -22,7 +22,7 @@
 package org.drasyl.handler.connection;
 
 /**
- * Signals that the handshake was complete succesful.
+ * Signals that the handshake was completed succesfully.
  */
 public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
     private final int snd_nxt;

@@ -21,12 +21,12 @@
  */
 package org.drasyl.handler.connection;
 
+/**
+ * Is thrown when an connection handshake failed. {@link io.netty.channel.Channel} should be closed
+ * after receiving such exception.
+ */
 public class ConnectionHandshakeException extends RuntimeException {
     public ConnectionHandshakeException(final String message) {
         super(message);
-    }
-
-    public ConnectionHandshakeException(final Throwable cause) {
-        super(cause);
     }
 }

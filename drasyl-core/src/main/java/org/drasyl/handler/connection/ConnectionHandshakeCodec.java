@@ -27,6 +27,9 @@ import io.netty.handler.codec.MessageToMessageCodec;
 
 import java.util.List;
 
+/**
+ * Encodes {@link ByteBuf}s to {@link ConnectionHandshakeSegment}s and vice versa.
+ */
 public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, ConnectionHandshakeSegment> {
     public static final int MAGIC_NUMBER = 852_550_535;
     // magic number: 4 bytes

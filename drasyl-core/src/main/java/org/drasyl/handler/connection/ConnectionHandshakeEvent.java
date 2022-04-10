@@ -21,5 +21,8 @@
  */
 package org.drasyl.handler.connection;
 
+/**
+ * Signals handshake states.
+ */
 public interface ConnectionHandshakeEvent {
 }

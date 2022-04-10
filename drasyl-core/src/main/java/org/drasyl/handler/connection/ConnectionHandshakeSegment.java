@@ -29,6 +29,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A message used by {@link ConnectionHandshakeHandler} to perform a handshake.
+ * <p>
+ * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
+ * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
+ */
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private static final byte URG = 1 << 5;
     private static final byte ACK = 1 << 4;

@@ -57,7 +57,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
  * handshake will result in a {@link ConnectionHandshakeCompleted} or {@link
  * ConnectionHandshakeTimeout} event, or {@link ConnectionHandshakeException} error.
  * <p>
- * The synchronization has been heavily inspired by the three-way handshake of TCP (<a
+ * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
  * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
  */
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
