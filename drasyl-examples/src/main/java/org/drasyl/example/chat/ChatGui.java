@@ -32,7 +32,7 @@ import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeExceptionGuard;
+import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.DrasylAddress;
@@ -223,7 +223,18 @@ public class ChatGui {
                     // perform handshake to ensure both connections are synchronized
                     p.addLast(new ConnectionHandshakeCodec());
                     p.addLast(new ConnectionHandshakeHandler(10_000L, true));
-                    p.addLast(new ConnectionHandshakeExceptionGuard());
+                    p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) {
+                            if (cause instanceof ConnectionHandshakeException) {
+                                ctx.close();
+                            }
+                            else {
+                                ctx.fireExceptionCaught(cause);
+                            }
+                        }
+                    });
                     p.addLast(new ConnectionHandshakePendWritesHandler());
 
                     // ensure that messages are delivered
