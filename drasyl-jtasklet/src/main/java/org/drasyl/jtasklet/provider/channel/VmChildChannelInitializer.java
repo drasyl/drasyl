@@ -52,10 +52,9 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         final ChannelPipeline p = ch.pipeline();
         final boolean isBroker = ch.remoteAddress().equals(broker);
 
-        if (isBroker) {
-            // handshake
-            p.addLast(new ConnectionHandshakeCodec());
-            p.addLast(new ConnectionHandshakeHandler(10_000, true));
+        // handshake
+        p.addLast(new ConnectionHandshakeCodec());
+        p.addLast(new ConnectionHandshakeHandler(10_000, true));
 //            p.addLast(new ChannelInboundHandlerAdapter() {
 //                @Override
 //                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
@@ -70,28 +69,29 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
 //                    ctx.fireUserEventTriggered(evt);
 //                }
 //            });
-            p.addLast(new ConnectionHandshakePendWritesHandler());
-            p.addLast(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable cause) {
-                    if (cause instanceof ConnectionHandshakeException) {
-                        ctx.close();
-                    }
-                    else {
-                        ctx.fireExceptionCaught(cause);
-                    }
+        p.addLast(new ConnectionHandshakePendWritesHandler());
+        p.addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                        final Throwable cause) {
+                if (cause instanceof ConnectionHandshakeException) {
+                    ctx.close();
                 }
-            });
+                else {
+                    ctx.fireExceptionCaught(cause);
+                }
+            }
+        });
 
-            // codec
-            p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+        // codec
+        p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
-            // vm
+        // vm
+        if (isBroker) {
             p.addLast(new VmHeartbeatHandler());
-            p.addLast(new ProcessTaskHandler(runtimeEnvironment));
-
-            p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
         }
+        p.addLast(new ProcessTaskHandler(runtimeEnvironment));
+
+        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }
