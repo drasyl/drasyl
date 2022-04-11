@@ -35,6 +35,7 @@ import java.nio.channels.ClosedChannelException;
  */
 public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     private PendingWriteQueue pendingWrites;
+    private boolean doFlush;
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
@@ -50,6 +51,12 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     }
 
     @Override
+    public void flush(ChannelHandlerContext ctx) {
+        doFlush = true;
+        ctx.flush();
+    }
+
+    @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         // channel is closing, discard all pending writes
         pendingWrites.removeAndFailAll(new ClosedChannelException());
@@ -62,6 +69,9 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
         if (evt instanceof ConnectionHandshakeCompleted) {
             // handshake completed! perform all pending writes and remove itself from pipeline
             pendingWrites.removeAndWriteAll();
+            if (doFlush) {
+                ctx.flush();
+            }
             ctx.pipeline().remove(this);
         }
 
