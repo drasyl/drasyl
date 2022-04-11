@@ -211,10 +211,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     handshakeTimeoutFuture = ctx.executor().schedule(() -> {
                         cancelTimeoutGuards();
                         LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
-                        final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
-                        promise.setFailure(e);
-                        ctx.fireExceptionCaught(e);
                         state = CLOSED;
+                        final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
+                        ctx.fireExceptionCaught(e);
+                        promise.setFailure(e);
                     }, handshakeTimeout, MILLISECONDS);
                 }
 
@@ -380,9 +380,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isRst()) {
             final boolean acceptableAck = seg.isAck() && seg.ack() == sndNxt;
             if (acceptableAck) {
-                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
                 ReferenceCountUtil.release(seg);
                 state = CLOSED;
+                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
                 return;
             }
             else {
@@ -446,9 +446,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isRst()) {
             if (activeOpen) {
                 // connection has been refused by remote
-                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection refused"));
                 state = CLOSED;
                 ReferenceCountUtil.release(seg);
+                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection refused"));
                 return;
             }
             else {
@@ -509,9 +509,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // check RST
         if (seg.isRst()) {
-            ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
             state = CLOSED;
             ReferenceCountUtil.release(seg);
+            ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
         }
     }
 
