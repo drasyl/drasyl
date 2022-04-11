@@ -5,6 +5,7 @@ import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.IdentityPublicKeyMixin;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand;
+import org.drasyl.jtasklet.consumer.GreyFilterCommand;
 import org.drasyl.jtasklet.consumer.OffloadCommand;
 import org.drasyl.jtasklet.provider.VmCommand;
 import picocli.CommandLine;
@@ -19,6 +20,7 @@ import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
         name = "jtasklet",
         subcommands = {
                 BrokerCommand.class,
+                GreyFilterCommand.class,
                 OffloadCommand.class,
                 HelpCommand.class,
                 VmCommand.class
