@@ -77,7 +77,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     int irs; // initial receive sequence number
 
     /**
-     * @param handshakeTimeout time in ms in which a a handshake must taken place after issued
+     * @param handshakeTimeout time in ms in which a handshake must taken place after issued
      * @param activeOpen       if {@code true} a handshake will be issued on {@link
      *                         #channelActive(ChannelHandlerContext)}. Otherwise the handshake needs
      *                         to be issued by writine a {@link UserCall#OPEN} message to the
@@ -89,18 +89,16 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * @param handshakeTimeout      Time in ms after issuing a handshake until it is considered as
-     *                              timed out (on timeout a {@link ConnectionHandshakeTimeout} event
-     *                              will passed to channel)
-     * @param retransmissionTimeout
-     * @param issProvider           Provider to generate the initial send sequence number
-     * @param activeOpen            Initiate active OPEN handshake process automatically on {@link
-     *                              #channelActive(ChannelHandlerContext)}
-     * @param state                 Current synchronization state
-     * @param snd_una               Oldest unacknowledged sequence number
-     * @param snd_nxt               Next sequence number to be sent
-     * @param rcv_nxt               Next expected sequence number
+     * @param handshakeTimeout time in ms in which a handshake must taken place after issued
+     * @param issProvider      Provider to generate the initial send sequence number
+     * @param activeOpen       Initiate active OPEN handshake process automatically on {@link
+     *                         #channelActive(ChannelHandlerContext)}
+     * @param state            Current synchronization state
+     * @param snd_una          Oldest unacknowledged sequence number
+     * @param snd_nxt          Next sequence number to be sent
+     * @param rcv_nxt          Next expected sequence number
      */
+    @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final long handshakeTimeout,
                                final long retransmissionTimeout,
                                final Supplier<Integer> issProvider,
