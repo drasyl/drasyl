@@ -23,8 +23,6 @@ package org.drasyl.jtasklet.consumer.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.IdentityPublicKey;
@@ -55,7 +53,11 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
         final ResourceRequest msg = new ResourceRequest();
         LOG.info("Send resource request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.println("Request resource from broker...");
-        ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
+            if (f.isSuccess()) {
+                LOG.trace("ACKed");
+            }
+        });
 
         ctx.fireChannelActive();
     }

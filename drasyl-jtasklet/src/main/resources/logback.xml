@@ -36,7 +36,13 @@
     <logger name="io.netty" level="WARN">
     </logger>
 
-    <!--    <logger name="org.drasyl.jtasklet" level="info">-->
+    <!--    <logger name="org.drasyl.jtasklet" level="trace">-->
+    <!--    </logger>-->
+
+    <!--    <logger name="org.drasyl.handler.arq" level="trace">-->
+    <!--    </logger>-->
+
+    <!--    <logger name="org.drasyl.handler.connection" level="trace">-->
     <!--    </logger>-->
 
     <root level="warn">

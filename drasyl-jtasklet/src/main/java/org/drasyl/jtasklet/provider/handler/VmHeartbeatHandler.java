@@ -53,7 +53,11 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
         if (ctx.channel().isActive()) {
             final VmHeartbeat msg = new VmHeartbeat();
             LOG.debug("Send heartbeat `{}` to `{}`", msg, ctx.channel().remoteAddress());
-            ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
+                if (f.isSuccess()) {
+                    LOG.trace("ACKed");
+                }
+            });
         }
     }
 }

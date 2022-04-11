@@ -1,7 +1,5 @@
 package org.drasyl.jtasklet.consumer.channel;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -12,11 +10,10 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.jtasklet.broker.handler.CloseOnConnectionHandshakeError;
 import org.drasyl.jtasklet.consumer.handler.OffloadTaskHandler;
 import org.drasyl.jtasklet.consumer.handler.ResourceRequestHandler;
 import org.drasyl.jtasklet.message.TaskletMessage;
@@ -63,58 +60,14 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
             // handshake
             p.addLast(new ConnectionHandshakeCodec());
             p.addLast(new ConnectionHandshakeHandler(10_000, true));
-//            p.addLast(new ChannelInboundHandlerAdapter() {
-//                @Override
-//                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-//                    if (evt instanceof ConnectionHandshakeCompleted) {
-//                        final ChannelPipeline p = ctx.pipeline();
-//                        // arq
-//                        p.addFirst(new WriteTimeoutHandler(10));
-//                        p.addFirst(new ByteToStopAndWaitArqDataCodec());
-//                        p.addFirst(new StopAndWaitArqHandler(100));
-//                        p.addFirst(new StopAndWaitArqCodec());
-//                    }
-//                    ctx.fireUserEventTriggered(evt);
-//                }
-//            });
             p.addLast(new ConnectionHandshakePendWritesHandler());
-            p.addLast(new ChannelInboundHandlerAdapter() {
-//                @Override
-//                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-//                    if (evt instanceof ConnectionHandshakeCompleted) {
-//                        final ChannelPipeline p = ctx.pipeline();
-//                        // arq
-//                        p.addLast(new StopAndWaitArqCodec());
-//                        p.addLast(new StopAndWaitArqHandler(100));
-//                        p.addLast(new ByteToStopAndWaitArqDataCodec());
-//                        p.addLast(new WriteTimeoutHandler(10));
-//                        p.addLast(new ChannelInboundHandlerAdapter() {
-//                            @Override
-//                            public void exceptionCaught(final ChannelHandlerContext ctx,
-//                                                        final Throwable cause) {
-//                                if (cause instanceof WriteTimeoutException) {
-//                                    ctx.close();
-//                                }
-//                                else {
-//                                    ctx.fireExceptionCaught(cause);
-//                                }
-//                            }
-//                        });
-//                    }
-//                    ctx.fireUserEventTriggered(evt);
-//                }
+            p.addLast(new CloseOnConnectionHandshakeError());
 
-                @Override
-                public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable cause) {
-                    if (cause instanceof ConnectionHandshakeException) {
-                        ctx.close();
-                    }
-                    else {
-                        ctx.fireExceptionCaught(cause);
-                    }
-                }
-            });
+            // arq
+            p.addLast(new StopAndWaitArqCodec());
+            p.addLast(new StopAndWaitArqHandler(100));
+            p.addLast(new ByteToStopAndWaitArqDataCodec());
+            p.addLast(new WriteTimeoutHandler(10));
 
             // codec
             p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));

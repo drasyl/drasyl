@@ -2,7 +2,8 @@
   <configuration default="false" name="JTasklet: offload (primes)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.jtasklet.cli.Cli" />
     <module name="drasyl-jtasklet" />
-    <option name="PROGRAM_PARAMETERS" value="offload --verbose warn  --identity consumer.identity --bind 0.0.0.0:22502 --broker fb36cd22e2cefdcbfe6f6ccf8d9c8d067aa698ada63baa30712ffc91fd7b504d --task tasks/primes.js 1 2" />
+    <option name="PROGRAM_PARAMETERS"
+            value="offload --verbose warn  --identity consumer.identity --bind 0.0.0.0:22502 --broker ad635bb0f6839967770d35939ddb02ac3113940fc7df1b3d2422d20288a76bb9 --task tasks/primes.js 1 2"/>
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.converter.*" />
