@@ -7,13 +7,12 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeEvent;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
@@ -50,27 +49,23 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
     protected void initChannel(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        // arq
-        p.addLast(new StopAndWaitArqCodec());
-        p.addLast(new StopAndWaitArqHandler(100));
-        p.addLast(new ByteToStopAndWaitArqDataCodec());
-        p.addLast(new WriteTimeoutHandler(10));
-        p.addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void exceptionCaught(final ChannelHandlerContext ctx,
-                                        final Throwable cause) {
-                if (cause instanceof WriteTimeoutException) {
-                    ctx.close();
-                }
-                else {
-                    ctx.fireExceptionCaught(cause);
-                }
-            }
-        });
-
         // handshake
         p.addLast(new ConnectionHandshakeCodec());
         p.addLast(new ConnectionHandshakeHandler(10_000, false));
+//        p.addLast(new ChannelInboundHandlerAdapter() {
+//            @Override
+//            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+//                if (evt instanceof ConnectionHandshakeCompleted) {
+//                    final ChannelPipeline p = ctx.pipeline();
+//                    // arq
+//                    p.addFirst(new WriteTimeoutHandler(10));
+//                    p.addFirst(new ByteToStopAndWaitArqDataCodec());
+//                    p.addFirst(new StopAndWaitArqHandler(100));
+//                    p.addFirst(new StopAndWaitArqCodec());
+//                }
+//                ctx.fireUserEventTriggered(evt);
+//            }
+//        });
         p.addLast(new ConnectionHandshakePendWritesHandler());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
@@ -96,9 +91,7 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
             @Override
             public void exceptionCaught(final ChannelHandlerContext ctx,
                                         final Throwable cause) {
-                if (ctx.channel().isOpen()) {
-                    cause.printStackTrace(System.err);
-                }
+                cause.printStackTrace(System.err);
                 ctx.fireExceptionCaught(cause);
             }
         });

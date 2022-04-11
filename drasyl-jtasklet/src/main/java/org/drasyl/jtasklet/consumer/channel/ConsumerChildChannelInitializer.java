@@ -12,7 +12,7 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeEvent;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
@@ -60,17 +60,50 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
         final boolean isProvider = ch.remoteAddress().equals(provider.get());
 
         if (isBroker || isProvider) {
-            // arq
-            p.addLast(new StopAndWaitArqCodec());
-            p.addLast(new StopAndWaitArqHandler(100));
-            p.addLast(new ByteToStopAndWaitArqDataCodec());
-            p.addLast(new WriteTimeoutHandler(10));
-
             // handshake
             p.addLast(new ConnectionHandshakeCodec());
             p.addLast(new ConnectionHandshakeHandler(10_000, true));
+//            p.addLast(new ChannelInboundHandlerAdapter() {
+//                @Override
+//                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+//                    if (evt instanceof ConnectionHandshakeCompleted) {
+//                        final ChannelPipeline p = ctx.pipeline();
+//                        // arq
+//                        p.addFirst(new WriteTimeoutHandler(10));
+//                        p.addFirst(new ByteToStopAndWaitArqDataCodec());
+//                        p.addFirst(new StopAndWaitArqHandler(100));
+//                        p.addFirst(new StopAndWaitArqCodec());
+//                    }
+//                    ctx.fireUserEventTriggered(evt);
+//                }
+//            });
             p.addLast(new ConnectionHandshakePendWritesHandler());
             p.addLast(new ChannelInboundHandlerAdapter() {
+//                @Override
+//                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+//                    if (evt instanceof ConnectionHandshakeCompleted) {
+//                        final ChannelPipeline p = ctx.pipeline();
+//                        // arq
+//                        p.addLast(new StopAndWaitArqCodec());
+//                        p.addLast(new StopAndWaitArqHandler(100));
+//                        p.addLast(new ByteToStopAndWaitArqDataCodec());
+//                        p.addLast(new WriteTimeoutHandler(10));
+//                        p.addLast(new ChannelInboundHandlerAdapter() {
+//                            @Override
+//                            public void exceptionCaught(final ChannelHandlerContext ctx,
+//                                                        final Throwable cause) {
+//                                if (cause instanceof WriteTimeoutException) {
+//                                    ctx.close();
+//                                }
+//                                else {
+//                                    ctx.fireExceptionCaught(cause);
+//                                }
+//                            }
+//                        });
+//                    }
+//                    ctx.fireUserEventTriggered(evt);
+//                }
+
                 @Override
                 public void exceptionCaught(final ChannelHandlerContext ctx,
                                             final Throwable cause) {

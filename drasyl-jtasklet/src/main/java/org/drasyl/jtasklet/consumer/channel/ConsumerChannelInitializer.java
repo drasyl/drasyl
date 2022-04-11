@@ -6,6 +6,7 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
+import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
@@ -48,17 +49,24 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
 
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new PathEventsFilter());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
-            public void channelActive(final ChannelHandlerContext ctx) {
-                out.println("----------------------------------------------------------------------------------------------");
-                out.println("Consumer listening on address " + ch.localAddress());
-                out.println("----------------------------------------------------------------------------------------------");
-                ctx.fireChannelActive();
+            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                if (evt instanceof AddPathAndSuperPeerEvent) {
+                    // node is now online
+                    out.println("----------------------------------------------------------------------------------------------");
+                    out.println("Consumer listening on address " + ch.localAddress());
+                    out.println("----------------------------------------------------------------------------------------------");
+
+                    p.addFirst(new SpawnChildChannelToPeer(ch, broker));
+
+                    ctx.pipeline().remove(this);
+                }
+                else {
+                    ctx.fireUserEventTriggered(evt);
+                }
             }
         });
-        p.addLast(new SpawnChildChannelToPeer(ch, broker));
-        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+        p.addLast(new PathEventsFilter());
     }
 }
