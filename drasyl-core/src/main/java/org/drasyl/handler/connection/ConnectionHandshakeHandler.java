@@ -233,6 +233,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void connectionAbort(final ChannelHandlerContext ctx, final ChannelPromise promise) {
+        if (openPromise != null) {
+            openPromise.setFailure(new Exception("handshake aborted."));
+        }
+
         switch (state) {
             case CLOSED:
                 promise.setFailure(new Exception("Connection is already closed."));
