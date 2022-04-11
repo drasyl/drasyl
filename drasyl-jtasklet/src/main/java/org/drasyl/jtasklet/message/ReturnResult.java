@@ -35,7 +35,7 @@ public class ReturnResult implements TaskletMessage {
     @Override
     public String toString() {
         return "ReturnResult{" +
-                "output=Object[" + output.length + "]}";
+                "output=Object[" + (output != null ? output.length : 0) + "]}";
     }
 
     public Object[] getOutput() {

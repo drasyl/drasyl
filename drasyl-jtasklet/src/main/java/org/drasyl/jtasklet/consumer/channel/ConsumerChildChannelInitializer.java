@@ -84,10 +84,10 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
             ch.pipeline().addLast(
                     new MessageChunkEncoder(2),
                     new ChunkedWriteHandler(),
-                    new LargeByteBufToChunkedMessageEncoder(1300, 1024 * 1024 * 10),
+                    new LargeByteBufToChunkedMessageEncoder(1300, 1024 * 1024 * 20),
                     new MessageChunkDecoder(2),
-                    new MessageChunksBuffer(1024 * 1024 * 10, 30_000, 10_000),
-                    new ChunkedMessageAggregator(1024 * 1024 * 10),
+                    new MessageChunksBuffer(1024 * 1024 * 20, 30_000, 15_000),
+                    new ChunkedMessageAggregator(1024 * 1024 * 20),
                     new ReassembledMessageDecoder()
             );
 

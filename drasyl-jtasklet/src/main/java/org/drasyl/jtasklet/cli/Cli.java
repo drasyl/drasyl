@@ -20,6 +20,7 @@ import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
         name = "jtasklet",
         subcommands = {
                 BrokerCommand.class,
+                ComputeCommand.class,
                 GreyFilterCommand.class,
                 OffloadCommand.class,
                 HelpCommand.class,

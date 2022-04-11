@@ -23,9 +23,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Command(
-        name = "greyfilter",
+        name = "grey-filter",
         description = {
-                "Offloads a Greyfilter Tasklet",
+                "Offloads a Grey Filter Tasklet",
         },
         showDefaultValues = true
 )
@@ -38,11 +38,13 @@ public class GreyFilterCommand extends ChannelOptions {
     private IdentityPublicKey broker;
     @Option(
             names = { "--image" },
-            defaultValue = "images/3phases.jpg"
+            defaultValue = "images/Risoni-Bowl.jpg"
     )
     private File image;
     private String source;
     private Object[] input;
+    private int height;
+    private int width;
 
     public GreyFilterCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -51,9 +53,11 @@ public class GreyFilterCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
-            source = Files.readString(Path.of("tasks", "greyfilter.js"), UTF_8);
+            source = Files.readString(Path.of("tasks", "greyFilter.js"), UTF_8);
             final GreyFilter greyFilter = new GreyFilter(image);
             input = greyFilter.getInput();
+            height = greyFilter.getHeight();
+            width = greyFilter.getWidth();
 
             return super.call();
         }
@@ -75,7 +79,7 @@ public class GreyFilterCommand extends ChannelOptions {
             try {
                 final File file = new File("out.png");
                 out.println("Output written to " + file.getPath());
-                GreyFilter.of(720, 1280, output).writeTo(file);
+                GreyFilter.of(height, width, output).writeTo(file);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

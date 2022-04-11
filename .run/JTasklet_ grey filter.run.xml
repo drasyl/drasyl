@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="JTasklet: vm" type="Application" factoryName="Application">
+  <configuration default="false" name="JTasklet: grey filter" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.jtasklet.cli.Cli" />
     <module name="drasyl-jtasklet" />
-    <option name="PROGRAM_PARAMETERS" value="vm --identity vm.identity --bind 0.0.0.0:22501 --broker fb36cd22e2cefdcbfe6f6ccf8d9c8d067aa698ada63baa30712ffc91fd7b504d" />
+    <option name="PROGRAM_PARAMETERS" value="grey-filter --identity consumer.identity --bind 0.0.0.0:22502 --broker fb36cd22e2cefdcbfe6f6ccf8d9c8d067aa698ada63baa30712ffc91fd7b504d" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.converter.*" />

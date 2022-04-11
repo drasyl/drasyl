@@ -42,6 +42,14 @@ public class GreyFilter {
         ImageIO.write(canvas, "png", output);
     }
 
+    public int getHeight() {
+        return canvas.getHeight();
+    }
+
+    public int getWidth() {
+        return canvas.getWidth();
+    }
+
     public static GreyFilter of(final int height, final int width, final Object[] points) {
         final BufferedImage canvas = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 
