@@ -24,8 +24,6 @@ package org.drasyl.jtasklet.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-
 public class ReturnResult implements TaskletMessage {
     private final Object[] output;
 
@@ -37,8 +35,7 @@ public class ReturnResult implements TaskletMessage {
     @Override
     public String toString() {
         return "ReturnResult{" +
-                "output=" + Arrays.toString(output) +
-                '}';
+                "output=Object[" + output.length + "]}";
     }
 
     public Object[] getOutput() {

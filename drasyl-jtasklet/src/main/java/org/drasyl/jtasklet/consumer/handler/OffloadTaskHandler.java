@@ -30,6 +30,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -39,11 +40,16 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     private final PrintStream out;
     private final String source;
     private final Object[] input;
+    private final Consumer<Object[]> outputConsumer;
 
-    public OffloadTaskHandler(final PrintStream out, final String source, final Object[] input) {
+    public OffloadTaskHandler(final PrintStream out,
+                              final String source,
+                              final Object[] input,
+                              Consumer<Object[]> outputConsumer) {
         this.out = requireNonNull(out);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
+        this.outputConsumer = requireNonNull(outputConsumer);
     }
 
     @Override
@@ -51,16 +57,20 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
         final OffloadTask msg = new OffloadTask(source, input);
         LOG.info("Send offload task request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.println("Offload task to " + ctx.channel().remoteAddress() + " with input: " + Arrays.toString(input));
-        ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
+            if (future.isSuccess()) {
+                LOG.debug("Sent!");
+            }
+        });
 
         ctx.fireChannelActive();
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final ReturnResult msg) throws Exception {
+                                final ReturnResult msg) {
         LOG.info("Got result `{}` from `{}`", msg, ctx.channel().remoteAddress());
-        out.println("Got output: " + Arrays.toString(msg.getOutput()));
+        outputConsumer.accept(msg.getOutput());
         ctx.close();
     }
 }

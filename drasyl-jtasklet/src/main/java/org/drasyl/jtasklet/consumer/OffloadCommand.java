@@ -17,6 +17,7 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,7 +70,7 @@ public class OffloadCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input.toArray(), provider);
+        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input.toArray(), provider, output -> out.println("Got output: " + Arrays.toString(output)));
     }
 
     @Override

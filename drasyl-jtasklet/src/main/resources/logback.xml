@@ -33,11 +33,12 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <logger name="io.netty" level="WARN">
-    </logger>
+    <logger name="io.netty" level="WARN"></logger>
 
-        <logger name="org.drasyl.jtasklet" level="trace">
-        </logger>
+    <logger name="org.drasyl.jtasklet" level="trace"></logger>
+
+<!--    <logger name="org.drasyl.handler.stream" level="trace">-->
+<!--    </logger>-->
 
     <!--    <logger name="org.drasyl.handler.arq" level="trace">-->
     <!--    </logger>-->

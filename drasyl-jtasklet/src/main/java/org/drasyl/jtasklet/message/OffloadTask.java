@@ -24,8 +24,6 @@ package org.drasyl.jtasklet.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Arrays;
-
 import static java.util.Objects.requireNonNull;
 
 public class OffloadTask implements TaskletMessage {
@@ -43,8 +41,7 @@ public class OffloadTask implements TaskletMessage {
     public String toString() {
         return "OffloadTask{" +
                 "source='" + source + '\'' +
-                ", input=" + Arrays.toString(input) +
-                '}';
+                ", input=Object[" + input.length + "]}";
     }
 
     public String getSource() {
