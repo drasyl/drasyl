@@ -91,7 +91,7 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
                             // table header
                             final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now(), Clock.systemDefaultZone().getZone());
                             builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(zonedDateTime)));
-                            builder.append(String.format("%-64s  %9s  %5s%n", "Tasklet VM", "Heartbeat", "State"));
+                            builder.append(String.format("%-64s  %9s  %5s  %6s%n", "Tasklet VM", "Heartbeat", "State", "Tasks#"));
 
                             // table body
                             for (final Map.Entry<IdentityPublicKey, TaskletVm> entry : vms.entrySet()) {
@@ -100,10 +100,11 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
 
                                 // table row
                                 builder.append(String.format(
-                                        "%-64s  %7dms  %5s%n",
+                                        "%-64s  %7dms  %5s  %6d%n",
                                         address,
                                         vm.timeSinceLastHeartbeat(),
-                                        vm.isStale() ? "Stale" : (vm.isBusy() ? "Busy" : "Idle")
+                                        vm.isStale() ? "Stale" : (vm.isBusy() ? "Busy" : "Idle"),
+                                        vm.getComputations()
                                 ));
                             }
 

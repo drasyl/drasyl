@@ -66,6 +66,7 @@ public class BrokerCommand extends ChannelOptions {
         private long lastHeartbeatTime;
         private PeersRttReport rttReport;
         private boolean busy;
+        private int computations = 0;
 
         public TaskletVm(final long benchmark) {
             this.benchmark = benchmark;
@@ -102,8 +103,13 @@ public class BrokerCommand extends ChannelOptions {
             this.busy = true;
         }
 
+        public int getComputations() {
+            return computations;
+        }
+
         public void markIdle() {
             this.busy = false;
+            this.computations++;
         }
     }
 }
