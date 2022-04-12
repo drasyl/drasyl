@@ -41,7 +41,7 @@ public class OffloadTask implements TaskletMessage {
     public String toString() {
         return "OffloadTask{" +
                 "source='" + source + '\'' +
-                ", input=Object[" + (input != null ? input.length : 0) + "]}";
+                ", input=Object[" + input.length + "]}";
     }
 
     public String getSource() {

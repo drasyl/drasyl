@@ -7,6 +7,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.provider.channel.VmChannelInitializer;
 import org.drasyl.jtasklet.provider.channel.VmChildChannelInitializer;
+import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.GraalVmJsRuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.util.Worm;
@@ -44,11 +45,8 @@ public class VmCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
-            final long startTime = System.currentTimeMillis();
-            runtimeEnvironment.execute(Paths.get("tasks", "prime.js"), 1, 1000);
-            final long endTime = System.currentTimeMillis();
-            benchmarkTime = endTime - startTime;
-            LOG.info("Benchmark Time: {}ms", benchmarkTime);
+            final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), 1, 1000);
+            LOG.info("Benchmark Time: {}ms", result.getExecutionTime());
 
             return super.call();
         }

@@ -22,10 +22,13 @@
 package org.drasyl.jtasklet.provider.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 
 public interface RuntimeEnvironment {
-    Object[] execute(CharSequence source, Object... input);
+    ExecutionResult execute(CharSequence source, Object... input);
 
-    Object[] execute(Path source, Object... input) throws IOException;
+    ExecutionResult execute(Path source, Object... input) throws IOException;
+
+    ExecutionResult execute(InputStream source, Object... input) throws IOException;
 }

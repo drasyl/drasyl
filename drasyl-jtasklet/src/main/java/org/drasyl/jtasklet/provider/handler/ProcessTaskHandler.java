@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReturnResult;
+import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,9 +45,9 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OffloadTask msg) {
         LOG.info("Got offloading task request `{}` from `{}`", msg, ctx.channel().remoteAddress());
-        final Object[] output = runtimeEnvironment.execute(msg.getSource(), msg.getInput());
+        final ExecutionResult result = runtimeEnvironment.execute(msg.getSource(), msg.getInput());
 
-        final ReturnResult response = new ReturnResult(output);
+        final ReturnResult response = new ReturnResult(result.getOutput());
         LOG.info("Send result `{}` to `{}`", response, ctx.channel().remoteAddress());
         ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
     }

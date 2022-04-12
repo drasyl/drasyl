@@ -22,6 +22,8 @@
 package org.drasyl.jtasklet.provider.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,8 +32,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 abstract class AbstractRuntimeEnvironment implements RuntimeEnvironment {
     @Override
-    public Object[] execute(final Path path, final Object... input) throws IOException {
+    public ExecutionResult execute(final Path path, final Object... input) throws IOException {
         final String source = Files.readString(Paths.get("tasks", "primes.js"), UTF_8);
+        return execute(source, input);
+    }
+
+    @Override
+    public ExecutionResult execute(InputStream stream, Object... input) throws IOException {
+        final String source = new String(stream.readAllBytes(), UTF_8);
         return execute(source, input);
     }
 }
