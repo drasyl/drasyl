@@ -23,6 +23,7 @@ package org.drasyl.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
@@ -35,27 +36,31 @@ import org.drasyl.util.NumberUtil;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.stream.Collectors;
 
+import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * A {@link io.netty.channel.ChannelHandler} that tracks all {@link PathEvent}s containing RTT
- * information and generates some statistics that are periodically written to {@link System#out}
- * and/or passed to the channel as an {@link PeersRttReport} event.
+ * information and generates some statistics that are periodically passed to the channel as an
+ * {@link PeersRttReport} event and optionally written to {@link System#out}.
  */
 public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream printStream;
     private final long printInterval;
     private final Map<DrasylAddress, PeerRtt> rtts;
+    private ScheduledFuture<?> scheduledFuture;
 
     PeersRttHandler(final PrintStream printStream,
                     final long printInterval,
@@ -79,41 +84,24 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.executor().scheduleWithFixedDelay(() -> {
-            ctx.fireUserEventTriggered(new PeersRttReport(rtts));
-            printReport();
-        }, 0L, printInterval, MILLISECONDS);
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            scheduleTask(ctx);
+        }
+    }
 
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        scheduleTask(ctx);
         ctx.fireChannelActive();
     }
 
-    private void printReport() {
-        // table header
-        printStream.printf("%-64s  %-4s  %-45s  %-4s  %-4s  %-4s  %-4s  %-4s  %-4s%n", "Address", "Role", "Inet Address", " Snt", "Last", " Avg", "Best", "Wrst", "StDev");
-
-        // table body
-        for (final Entry<DrasylAddress, PeerRtt> entry : rtts.entrySet().stream().sorted(new EntryComparator()).collect(Collectors.toList())) {
-            final DrasylAddress address = entry.getKey();
-            final PeerRtt peerRtt = entry.getValue();
-
-            // table row
-            printStream.printf(
-                    "%-64s  %-4s  %-45s   %4d  %4d  %,4.0f  %4d  %4d  %,4.0f%n",
-                    address,
-                    peerRtt.role(),
-                    peerRtt.inetAddress().getHostString() + ":" + peerRtt.inetAddress().getPort(),
-                    peerRtt.sent(),
-                    peerRtt.last(),
-                    peerRtt.average(),
-                    peerRtt.best(),
-                    peerRtt.worst(),
-                    peerRtt.stDev()
-            );
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(false);
         }
-
-        // table footer
-        printStream.println();
+        ctx.fireChannelInactive();
     }
 
     @Override
@@ -151,15 +139,63 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         ctx.fireUserEventTriggered(evt);
     }
 
+    private void scheduleTask(final ChannelHandlerContext ctx) {
+        scheduledFuture = ctx.executor().scheduleWithFixedDelay(() -> {
+            final PeersRttReport report = new PeersRttReport(rtts);
+            ctx.fireUserEventTriggered(report);
+            if (printStream != null) {
+                printStream.println(report);
+            }
+        }, 0L, printInterval, MILLISECONDS);
+    }
+
     public static class PeersRttReport {
+        private final long time;
         private final Map<DrasylAddress, PeerRtt> peers;
 
-        public PeersRttReport(final Map<DrasylAddress, PeerRtt> peers) {
+        PeersRttReport(final long time, final Map<DrasylAddress, PeerRtt> peers) {
+            this.time = requirePositive(time);
             this.peers = requireNonNull(peers);
+        }
+
+        public PeersRttReport(final Map<DrasylAddress, PeerRtt> peers) {
+            this(System.currentTimeMillis(), peers);
         }
 
         public Map<DrasylAddress, PeerRtt> peers() {
             return peers;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder builder = new StringBuilder();
+
+            // table header
+            final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), Clock.systemDefaultZone().getZone());
+            builder.append(String.format("Time: %-35s%98s%n", RFC_1123_DATE_TIME.format(zonedDateTime), "RTTs"));
+            builder.append(String.format("%-64s  %4s  %-45s  %4s  %4s  %4s  %4s  %4s  %5s%n", "Peer", "Role", "Inet Address", "Snt", "Last", " Avg", "Best", "Wrst", "StDev"));
+
+            // table body
+            for (final Entry<DrasylAddress, PeerRtt> entry : peers.entrySet().stream().sorted(new EntryComparator()).collect(Collectors.toList())) {
+                final DrasylAddress address = entry.getKey();
+                final PeerRtt peerRtt = entry.getValue();
+
+                // table row
+                builder.append(String.format(
+                        "%-64s  %-4s  %-45s  %4d  %4d  %,4.0f  %4d  %4d  %,5.1f%n",
+                        address,
+                        peerRtt.role(),
+                        peerRtt.inetAddress().getHostString() + ":" + peerRtt.inetAddress().getPort(),
+                        peerRtt.sent(),
+                        peerRtt.last(),
+                        peerRtt.average(),
+                        peerRtt.best(),
+                        peerRtt.worst(),
+                        peerRtt.stDev()
+                ));
+            }
+
+            return builder.toString();
         }
     }
 
@@ -209,10 +245,16 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             return inetAddress;
         }
 
+        /**
+         * @return number of pings sent
+         */
         public long sent() {
             return sent;
         }
 
+        /**
+         * @return RTT of last ping
+         */
         public long last() {
             return last;
         }
@@ -229,18 +271,31 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
+        /**
+         * @return average RTT
+         */
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
         public double average() {
             return pings.stream().mapToLong(l -> l).average().getAsDouble();
         }
 
+        /**
+         * @return best RTT
+         */
         public long best() {
             return best;
         }
 
+        /**
+         * @return worst RTT
+         */
         public long worst() {
             return worst;
         }
 
+        /**
+         * @return worst RTT
+         */
         public double stDev() {
             return NumberUtil.sampleStandardDeviation(pings.stream().mapToDouble(d -> d).toArray());
         }
