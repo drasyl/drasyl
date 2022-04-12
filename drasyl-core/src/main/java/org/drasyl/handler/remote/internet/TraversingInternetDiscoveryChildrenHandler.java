@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -192,7 +193,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
-        boolean inetAddressHasChanged = traversingPeer.setInetAddress(inetAddress);
+        final boolean inetAddressHasChanged = traversingPeer.setInetAddress(inetAddress);
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
@@ -221,14 +222,18 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                                 final AcknowledgementMessage msg,
                                                                 final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
-        LOG.trace("Got Acknowledgement ({}ms latency) from traversing peer `{}`.", () -> System.currentTimeMillis() - msg.getTime(), () -> publicKey);
+        final long rtt = currentTime.getAsLong() - msg.getTime();
+        LOG.trace("Got Acknowledgement ({}ms RTT) from traversing peer `{}`.", () -> rtt, () -> publicKey);
 
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH);
+        final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH, rtt);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
+        }
+        else {
+            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
         }
     }
 

@@ -26,6 +26,7 @@ import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.DrasylAddress;
 
 import java.net.InetSocketAddress;
+import java.util.Objects;
 
 /**
  * Signals that a direct routing path has been discovered to {@link AddPathAndSuperPeerEvent#getAddress()}
@@ -37,9 +38,31 @@ public abstract class AddPathAndSuperPeerEvent implements PathEvent {
     @Nullable
     public abstract InetSocketAddress getInetAddress();
 
+    public abstract long getRtt();
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getAddress(), getPath(), getInetAddress());
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final AddPathAndSuperPeerEvent that = (AddPathAndSuperPeerEvent) o;
+        return Objects.equals(getAddress(), that.getAddress()) &&
+                Objects.equals(getPath(), that.getPath()) &&
+                Objects.equals(getInetAddress(), that.getInetAddress());
+    }
+
     public static AddPathAndSuperPeerEvent of(final DrasylAddress publicKey,
                                               final InetSocketAddress inetAddress,
-                                              final Object path) {
-        return new AutoValue_AddPathAndSuperPeerEvent(publicKey, path, inetAddress);
+                                              final Object path,
+                                              final long rtt) {
+        return new AutoValue_AddPathAndSuperPeerEvent(publicKey, path, inetAddress, rtt);
     }
 }
