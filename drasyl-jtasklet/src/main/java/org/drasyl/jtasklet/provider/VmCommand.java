@@ -30,12 +30,12 @@ import java.nio.file.Paths;
 )
 public class VmCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(VmCommand.class);
+    private static final Object[] BENCHMARK_INPUT = new Object[]{ 1, 25_000 };
     private final RuntimeEnvironment runtimeEnvironment;
     @Option(
             names = { "--broker" }
     )
     private IdentityPublicKey broker;
-    private long benchmarkTime;
 
     public VmCommand() {
         super(new NioEventLoopGroup(1));
@@ -45,7 +45,7 @@ public class VmCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
-            final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), 1, 1000);
+            final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), BENCHMARK_INPUT);
             LOG.info("Benchmark Time: {}ms", result.getExecutionTime());
 
             return super.call();
