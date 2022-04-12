@@ -26,7 +26,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.group.ChannelGroup;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
@@ -90,7 +89,6 @@ public abstract class DrasylNode {
     protected final Identity identity;
     protected final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
-    public ChannelGroup channels; // FIXME: make non-public!
 
     static {
         // https://github.com/netty/netty/issues/7817
@@ -121,12 +119,10 @@ public abstract class DrasylNode {
     @SuppressWarnings("java:S2384")
     protected DrasylNode(final Identity identity,
                          final ServerBootstrap bootstrap,
-                         final ChannelFuture channelFuture,
-                         final ChannelGroup channels) {
+                         final ChannelFuture channelFuture) {
         this.identity = requireNonNull(identity);
         this.bootstrap = requireNonNull(bootstrap);
         this.channelFuture = channelFuture;
-        this.channels = channels;
     }
 
     /**
@@ -334,22 +330,15 @@ public abstract class DrasylNode {
             final CompletableFuture<Channel> future = new CompletableFuture<>();
             // synchronize resolve by placing it in the ServerChannels's EventLoop
             channelFuture.channel().eventLoop().execute(() -> {
-                // look for existing channel
-                for (final Channel channel : channels) {
-                    if (address.equals(channel.remoteAddress())) {
-                        // delay future completion to make sure Channel's childHandler is done
-                        channel.eventLoop().execute(() -> future.complete(channel));
-                        return;
-                    }
+                Channel channel = ((DrasylServerChannel) channelFuture.channel()).channels.get(address);
+                if (channel == null) {
+                    channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), (IdentityPublicKey) address);
+                    channelFuture.channel().pipeline().fireChannelRead(channel);
                 }
 
-                // no channel present, create new one
-                final DrasylChannel channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), (IdentityPublicKey) address);
-                channels.add(channel);
-                channelFuture.channel().pipeline().fireChannelRead(channel);
-
                 // delay future completion to make sure Channel's childHandler is done
-                channel.eventLoop().execute(() -> future.complete(channel));
+                final Channel finalChannel = channel;
+                channel.eventLoop().execute(() -> future.complete(finalChannel));
             });
 
             return future;

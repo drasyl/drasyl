@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.group.DefaultChannelGroup;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.channel.DrasylNodeChannelInitializer;
@@ -36,7 +35,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static java.time.Duration.ofSeconds;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,7 +50,6 @@ class DrasylNodeChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
-            node.channels = mock(DefaultChannelGroup.class);
             when(node.identity()).thenReturn(ID_1);
             when(config.getRemoteMessageMtu()).thenReturn(1_000);
             when(config.getRemoteMessageMaxContentLength()).thenReturn(2_000);

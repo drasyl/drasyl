@@ -153,7 +153,9 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 log().info("Shutdown.");
-                ch.close().syncUninterruptibly();
+                if (ch.isOpen()) {
+                    ch.close().syncUninterruptibly();
+                }
                 parentGroup.shutdownGracefully();
                 childGroup.shutdownGracefully();
             }));

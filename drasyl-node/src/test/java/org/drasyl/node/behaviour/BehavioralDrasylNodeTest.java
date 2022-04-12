@@ -24,7 +24,6 @@ package org.drasyl.node.behaviour;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.group.ChannelGroup;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.event.Event;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,8 +52,6 @@ class BehavioralDrasylNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private ChannelGroup channels;
-    @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel channel;
     @Mock
     private Behavior behavior;
@@ -65,7 +62,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(identity, bootstrap, channelFuture, channels, channel, behavior) {
+            node = spy(new BehavioralDrasylNode(identity, bootstrap, channelFuture, channel, behavior) {
                 @Override
                 protected Behavior created() {
                     return null;
