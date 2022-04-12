@@ -52,10 +52,10 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     public void channelActive(final ChannelHandlerContext ctx) {
         final ResourceRequest msg = new ResourceRequest();
         LOG.info("Send resource request `{}` to `{}`", msg, ctx.channel().remoteAddress());
-        out.println("Request resource from broker...");
+        out.print("Request resource from broker " + ctx.channel().remoteAddress() + "...");
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
             if (f.isSuccess()) {
-                LOG.trace("ACKed");
+                out.println("done!");
             }
         });
 
@@ -64,15 +64,16 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final ResourceResponse msg) throws Exception {
+                                final ResourceResponse msg) {
         LOG.info("Got resource response `{}` from `{}`", msg, ctx.channel().remoteAddress());
         final IdentityPublicKey publicKey = msg.getPublicKey();
         if (publicKey == null) {
-            out.println("No resources available.");
-            throw new Exception("no resource provider available");
+            out.println("No resources available. Please try again later.");
+            ctx.close();
+            return;
         }
 
-        out.println("Broker sent resource " + publicKey);
+        out.println("Broker provides us resources at VM " + publicKey);
         provider.set(publicKey);
         final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) ctx.channel().parent(), publicKey);
         ctx.channel().parent().pipeline().fireChannelRead(childChannel);

@@ -56,10 +56,10 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     public void channelActive(final ChannelHandlerContext ctx) {
         final OffloadTask msg = new OffloadTask(source, input);
         LOG.info("Send offload task request `{}` to `{}`", msg, ctx.channel().remoteAddress());
-        out.println("Offload task to " + ctx.channel().remoteAddress() + " with input: " + Arrays.toString(input));
+        out.print("Offload task to " + ctx.channel().remoteAddress() + " with input " + Arrays.toString(input) + "...");
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
             if (future.isSuccess()) {
-                LOG.debug("Sent!");
+                out.println("done!");
             }
         });
 

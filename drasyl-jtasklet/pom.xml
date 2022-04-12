@@ -44,6 +44,11 @@
             <artifactId>drasyl-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>io.netty</groupId>-->
+<!--            <artifactId>netty-codec</artifactId>-->
+<!--            <version>${netty.version}</version>-->
+<!--        </dependency>-->
     </dependencies>
 
     <build>

@@ -3,10 +3,12 @@ package org.drasyl.jtasklet.broker;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.channel.BrokerChannelInitializer;
 import org.drasyl.jtasklet.broker.channel.BrokerChildChannelInitializer;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -14,6 +16,8 @@ import picocli.CommandLine.Command;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Command(
         name = "broker",
@@ -43,7 +47,7 @@ public class BrokerCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, vms);
     }
 
     @Override
@@ -58,21 +62,48 @@ public class BrokerCommand extends ChannelOptions {
     }
 
     public static class TaskletVm {
+        private final long benchmark;
         private long lastHeartbeatTime;
+        private PeersRttReport rttReport;
+        private boolean busy;
 
-        public void heartbeatReceived() {
+        public TaskletVm(final long benchmark) {
+            this.benchmark = benchmark;
+        }
+
+        public void heartbeatReceived(PeersRttReport rttReport) {
+            this.rttReport = rttReport;
             lastHeartbeatTime = System.currentTimeMillis();
         }
 
         @Override
         public String toString() {
             return "TaskletVm{" +
-                    "stale=" + isStale() +
+                    "benchmark=" + benchmark +
+                    "rttReport=" + rttReport +
+                    ", stale=" + isStale() +
+                    ", busy=" + isBusy() +
                     '}';
         }
 
         public boolean isStale() {
-            return System.currentTimeMillis() - lastHeartbeatTime >= 5_000L;
+            return timeSinceLastHeartbeat() >= 5_000L;
+        }
+
+        public long timeSinceLastHeartbeat() {
+            return System.currentTimeMillis() - lastHeartbeatTime;
+        }
+
+        public boolean isBusy() {
+            return busy;
+        }
+
+        public void markBusy() {
+            this.busy = true;
+        }
+
+        public void markIdle() {
+            this.busy = false;
         }
     }
 }

@@ -25,47 +25,38 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
-import org.drasyl.jtasklet.message.ResourceRequest;
-import org.drasyl.jtasklet.message.ResourceResponse;
+import org.drasyl.jtasklet.message.VmHeartbeat;
+import org.drasyl.jtasklet.message.VmUp;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.PrintStream;
 import java.util.Map;
-import java.util.Random;
 
-import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 
-public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<ResourceRequest> {
-    private static final Logger LOG = LoggerFactory.getLogger(BrokerResourceRequestHandler.class);
-    public static final Random RANDOM = new Random();
+public class BrokerVmUpHandler extends SimpleChannelInboundHandler<VmUp> {
+    private static final Logger LOG = LoggerFactory.getLogger(BrokerVmUpHandler.class);
+    private final PrintStream out;
     private final Map<IdentityPublicKey, TaskletVm> vms;
 
-    public BrokerResourceRequestHandler(final Map<IdentityPublicKey, TaskletVm> vms) {
+    public BrokerVmUpHandler(final PrintStream out,
+                             final Map<IdentityPublicKey, TaskletVm> vms) {
+        this.out = requireNonNull(out);
         this.vms = requireNonNull(vms);
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final ResourceRequest msg) {
-        LOG.info("Got resource request `{}` from `{}`", msg, ctx.channel().remoteAddress());
+                                final VmUp msg) {
+        final IdentityPublicKey sender = (IdentityPublicKey) ctx.channel().remoteAddress();
+        LOG.debug("Got VM up `{}` from `{}`", msg, sender);
 
-        // pick vm
-        IdentityPublicKey publicKey = null;
         synchronized (vms) {
-            if (!vms.isEmpty()) {
-                final IdentityPublicKey[] publicKeys = vms.keySet().toArray(new IdentityPublicKey[vms.size()]);
-                final int rnd = RANDOM.nextInt(vms.size());
-                publicKey = publicKeys[rnd];
-            }
-
-            if (publicKey != null) {
-                vms.get(publicKey).markBusy();
+            TaskletVm vm = vms.get(sender);
+            if (vm != null) {
+                vm.markIdle();
             }
         }
-
-        final ResourceResponse response = new ResourceResponse(publicKey);
-        LOG.info("Send resource response `{}` to `{}`", response, ctx.channel().remoteAddress());
-        ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
     }
 }

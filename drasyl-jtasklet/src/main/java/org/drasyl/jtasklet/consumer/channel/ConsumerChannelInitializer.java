@@ -2,10 +2,10 @@ package org.drasyl.jtasklet.consumer.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
+import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -47,26 +47,34 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
-        final ChannelPipeline p = ch.pipeline();
+        ch.pipeline().addLast(
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelActive(final ChannelHandlerContext ctx) {
+                        out.print("Start consumer...");
+                        ctx.fireChannelActive();
+                    }
 
-        p.addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-                if (evt instanceof AddPathAndSuperPeerEvent) {
-                    // node is now online
-                    out.println("----------------------------------------------------------------------------------------------");
-                    out.println("Consumer listening on address " + ch.localAddress());
-                    out.println("----------------------------------------------------------------------------------------------");
-
-                    p.addFirst(new SpawnChildChannelToPeer(ch, broker));
-
-                    ctx.pipeline().remove(this);
-                }
-                else {
-                    ctx.fireUserEventTriggered(evt);
-                }
-            }
-        });
-        p.addLast(new PathEventsFilter());
+                    @Override
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) {
+                        if (evt instanceof AddPathAndSuperPeerEvent) {
+                            // node is now online
+                            out.println("online!");
+                            out.println("----------------------------------------------------------------------------------------------");
+                            out.println("Consumer listening on address " + ch.localAddress());
+                            out.println("----------------------------------------------------------------------------------------------");
+                            ch.pipeline().addFirst(new SpawnChildChannelToPeer(ch, broker));
+                            ctx.pipeline().remove(this);
+                        }
+                        else {
+                            ctx.fireUserEventTriggered(evt);
+                        }
+                    }
+                },
+                new SuperPeerTimeoutHandler(onlineTimeoutMillis),
+                new PathEventsFilter(),
+                new PrintAndExitOnExceptionHandler(err, exitCode)
+        );
     }
 }

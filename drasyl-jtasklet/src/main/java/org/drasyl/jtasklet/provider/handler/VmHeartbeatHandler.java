@@ -24,16 +24,28 @@ package org.drasyl.jtasklet.provider.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.Future;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.jtasklet.message.VmHeartbeat;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(VmHeartbeatHandler.class);
+    private final AtomicReference<PeersRttReport> lastRttReport;
+    private final long benchmark;
     private Future<?> heartbeat;
+
+    public VmHeartbeatHandler(final AtomicReference<PeersRttReport> lastRttReport,
+                              final long benchmark) {
+        this.lastRttReport = requireNonNull(lastRttReport);
+        this.benchmark = benchmark;
+    }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
@@ -51,7 +63,8 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     private void sendHeartbeat(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
-            final VmHeartbeat msg = new VmHeartbeat();
+            final PeersRttReport report = lastRttReport.get();
+            final VmHeartbeat msg = new VmHeartbeat(benchmark, report);
             LOG.debug("Send heartbeat `{}` to `{}`", msg, ctx.channel().remoteAddress());
             ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
                 if (f.isSuccess()) {

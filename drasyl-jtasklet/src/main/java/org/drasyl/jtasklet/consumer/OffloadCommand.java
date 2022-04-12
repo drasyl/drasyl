@@ -70,7 +70,7 @@ public class OffloadCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input.toArray(), provider, output -> out.println("Got output: " + Arrays.toString(output)));
+        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input.toArray(), provider, output -> out.println("Got result: " + Arrays.toString(output)));
     }
 
     @Override

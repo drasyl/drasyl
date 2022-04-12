@@ -10,6 +10,7 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
 @JsonTypeInfo(use = NAME)
 @JsonSubTypes({
         @Type(value = VmHeartbeat.class),
+        @Type(value = VmUp.class),
         @Type(value = OffloadTask.class),
         @Type(value = ResourceRequest.class),
         @Type(value = ResourceResponse.class),

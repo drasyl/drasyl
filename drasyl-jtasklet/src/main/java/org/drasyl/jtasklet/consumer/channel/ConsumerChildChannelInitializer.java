@@ -1,7 +1,6 @@
 package org.drasyl.jtasklet.consumer.channel;
 
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
@@ -41,8 +40,9 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
     private final String source;
     private final Object[] input;
     private final AtomicReference<IdentityPublicKey> provider;
-    private Consumer<Object[]> outputConsumer;
+    private final Consumer<Object[]> outputConsumer;
 
+    @SuppressWarnings("java:S107")
     public ConsumerChildChannelInitializer(final PrintStream out,
                                            final PrintStream err,
                                            final Worm<Integer> exitCode,
@@ -63,22 +63,25 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
         final boolean isBroker = ch.remoteAddress().equals(broker);
         final boolean isProvider = ch.remoteAddress().equals(provider.get());
 
         if (isBroker || isProvider) {
             // handshake
-            p.addLast(new ConnectionHandshakeCodec());
-            p.addLast(new ConnectionHandshakeHandler(10_000, true));
-            p.addLast(new ConnectionHandshakePendWritesHandler());
-            p.addLast(new CloseOnConnectionHandshakeError());
+            ch.pipeline().addLast(
+                    new ConnectionHandshakeCodec(),
+                    new ConnectionHandshakeHandler(10_000, true),
+                    new ConnectionHandshakePendWritesHandler(),
+                    new CloseOnConnectionHandshakeError()
+            );
 
             // arq
-            p.addLast(new StopAndWaitArqCodec());
-            p.addLast(new StopAndWaitArqHandler(100));
-            p.addLast(new ByteToStopAndWaitArqDataCodec());
-            p.addLast(new WriteTimeoutHandler(10));
+            ch.pipeline().addLast(
+                    new StopAndWaitArqCodec(),
+                    new StopAndWaitArqHandler(100),
+                    new ByteToStopAndWaitArqDataCodec(),
+                    new WriteTimeoutHandler(10)
+            );
 
             // chunking
             ch.pipeline().addLast(
@@ -92,17 +95,17 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
             );
 
             // codec
-            p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+            ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
             // consumer
             if (isBroker) {
-                p.addLast(new ResourceRequestHandler(out, provider));
+                ch.pipeline().addLast(new ResourceRequestHandler(out, provider));
             }
             else if (isProvider) {
-                p.addLast(new OffloadTaskHandler(out, source, input, outputConsumer));
+                ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer));
             }
 
-            p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+            ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
 
             // close parent as well
             ch.closeFuture().addListener(f -> ch.parent().close());

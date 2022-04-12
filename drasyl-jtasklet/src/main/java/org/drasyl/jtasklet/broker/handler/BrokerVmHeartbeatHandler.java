@@ -23,21 +23,38 @@ package org.drasyl.jtasklet.broker.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.handler.PeersRttHandler;
+import org.drasyl.handler.PeersRttReport;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
 import org.drasyl.jtasklet.message.VmHeartbeat;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.PrintStream;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class BrokerVmHeartbeatHandler extends SimpleChannelInboundHandler<VmHeartbeat> {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerVmHeartbeatHandler.class);
+    private final PrintStream out;
     private final Map<IdentityPublicKey, TaskletVm> vms;
 
-    public BrokerVmHeartbeatHandler(final Map<IdentityPublicKey, TaskletVm> vms) {
-        this.vms = Objects.requireNonNull(vms);
+    public BrokerVmHeartbeatHandler(final PrintStream out,
+                                    final Map<IdentityPublicKey, TaskletVm> vms) {
+        this.out = requireNonNull(out);
+        this.vms = requireNonNull(vms);
     }
 
     @Override
@@ -49,12 +66,12 @@ public class BrokerVmHeartbeatHandler extends SimpleChannelInboundHandler<VmHear
         synchronized (vms) {
             TaskletVm vm = vms.get(sender);
             if (vm == null) {
-                vm = new TaskletVm();
+                vm = new TaskletVm(msg.getBenchmark());
                 LOG.info("New VM `{}` discovered!", sender);
                 vms.put(sender, vm);
             }
 
-            vm.heartbeatReceived();
+            vm.heartbeatReceived(msg.getRttReport());
         }
     }
 }

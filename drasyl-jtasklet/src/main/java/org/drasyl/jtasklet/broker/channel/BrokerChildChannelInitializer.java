@@ -4,8 +4,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
@@ -13,10 +15,17 @@ import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
+import org.drasyl.handler.stream.ChunkedMessageAggregator;
+import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
+import org.drasyl.handler.stream.MessageChunkDecoder;
+import org.drasyl.handler.stream.MessageChunkEncoder;
+import org.drasyl.handler.stream.MessageChunksBuffer;
+import org.drasyl.handler.stream.ReassembledMessageDecoder;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
 import org.drasyl.jtasklet.broker.handler.BrokerResourceRequestHandler;
 import org.drasyl.jtasklet.broker.handler.BrokerVmHeartbeatHandler;
+import org.drasyl.jtasklet.broker.handler.BrokerVmUpHandler;
 import org.drasyl.jtasklet.broker.handler.CloseOnConnectionHandshakeError;
 import org.drasyl.jtasklet.message.TaskletMessage;
 import org.drasyl.util.Worm;
@@ -45,34 +54,42 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-
         // handshake
-        p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(10_000, false));
-        p.addLast(new ConnectionHandshakePendWritesHandler());
-        p.addLast(new CloseOnConnectionHandshakeError());
+        ch.pipeline().addLast(
+                new ConnectionHandshakeCodec(),
+                new ConnectionHandshakeHandler(10_000, false),
+                new ConnectionHandshakePendWritesHandler(),
+                new CloseOnConnectionHandshakeError()
+        );
 
         // arq
-        p.addLast(new StopAndWaitArqCodec());
-        p.addLast(new StopAndWaitArqHandler(100));
-        p.addLast(new ByteToStopAndWaitArqDataCodec());
-        p.addLast(new WriteTimeoutHandler(10));
+        ch.pipeline().addLast(
+                new StopAndWaitArqCodec(),
+                new StopAndWaitArqHandler(100),
+                new ByteToStopAndWaitArqDataCodec(),
+                new WriteTimeoutHandler(10)
+        );
+
+        // chunking
+        ch.pipeline().addLast(
+                new MessageChunkEncoder(2),
+                new ChunkedWriteHandler(),
+                new LargeByteBufToChunkedMessageEncoder(1300, 1024 * 1024 * 20),
+                new MessageChunkDecoder(2),
+                new MessageChunksBuffer(1024 * 1024 * 20, 30_000, 15_000),
+                new ChunkedMessageAggregator(1024 * 1024 * 20),
+                new ReassembledMessageDecoder()
+        );
 
         // codec
-        p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+        ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
         // broker
-        p.addLast(new BrokerVmHeartbeatHandler(vms));
-        p.addLast(new BrokerResourceRequestHandler(vms));
-
-        p.addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void exceptionCaught(final ChannelHandlerContext ctx,
-                                        final Throwable cause) {
-                cause.printStackTrace(System.err);
-                ctx.fireExceptionCaught(cause);
-            }
-        });
+        ch.pipeline().addLast(
+                new BrokerVmHeartbeatHandler(out, vms),
+                new BrokerVmUpHandler(out, vms),
+                new BrokerResourceRequestHandler(vms),
+                new PrintAndCloseOnExceptionHandler(err)
+        );
     }
 }

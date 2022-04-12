@@ -1,8 +1,10 @@
 package org.drasyl.jtasklet.provider;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.provider.channel.VmChannelInitializer;
@@ -17,7 +19,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Command(
         name = "vm",
@@ -36,6 +38,9 @@ public class VmCommand extends ChannelOptions {
             names = { "--broker" }
     )
     private IdentityPublicKey broker;
+    private final AtomicReference<PeersRttReport> lastRttReport = new AtomicReference<>();
+    private long benchmark;
+    private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
 
     public VmCommand() {
         super(new NioEventLoopGroup(1));
@@ -46,7 +51,8 @@ public class VmCommand extends ChannelOptions {
     public Integer call() {
         try {
             final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), BENCHMARK_INPUT);
-            LOG.info("Benchmark Time: {}ms", result.getExecutionTime());
+            benchmark = result.getExecutionTime();
+            LOG.info("Benchmark: {}ms", benchmark);
 
             return super.call();
         }
@@ -58,13 +64,13 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new VmChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker);
+        return new VmChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new VmChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker);
+        return new VmChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel);
     }
 
     @Override

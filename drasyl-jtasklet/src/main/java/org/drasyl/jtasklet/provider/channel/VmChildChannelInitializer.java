@@ -1,11 +1,13 @@
 package org.drasyl.jtasklet.provider.channel;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
@@ -28,9 +30,11 @@ import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private final PrintStream out;
@@ -38,17 +42,26 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
     private final Worm<Integer> exitCode;
     private final RuntimeEnvironment runtimeEnvironment;
     private final IdentityPublicKey broker;
+    private final AtomicReference<PeersRttReport> lastRttReport;
+    private final long benchmark;
+    private final AtomicReference<Channel> brokerChannel;
 
     public VmChildChannelInitializer(final PrintStream out,
                                      final PrintStream err,
                                      final Worm<Integer> exitCode,
                                      final RuntimeEnvironment runtimeEnvironment,
-                                     final IdentityPublicKey broker) {
+                                     final IdentityPublicKey broker,
+                                     final AtomicReference<PeersRttReport> lastRttReport,
+                                     final long benchmark,
+                                     AtomicReference<Channel> brokerChannel) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);
         this.broker = broker;
+        this.lastRttReport = requireNonNull(lastRttReport);
+        this.benchmark = requirePositive(benchmark);
+        this.brokerChannel = requireNonNull(brokerChannel);
     }
 
     @Override
@@ -84,9 +97,10 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
 
         // vm
         if (isBroker) {
-            p.addLast(new VmHeartbeatHandler());
+            brokerChannel.set(ch);
+            p.addLast(new VmHeartbeatHandler(lastRttReport, benchmark));
         }
-        p.addLast(new ProcessTaskHandler(runtimeEnvironment));
+        p.addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }

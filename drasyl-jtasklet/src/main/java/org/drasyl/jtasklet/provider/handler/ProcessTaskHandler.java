@@ -21,14 +21,21 @@
  */
 package org.drasyl.jtasklet.provider.handler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReturnResult;
+import org.drasyl.jtasklet.message.VmUp;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.io.PrintStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -36,19 +43,44 @@ import static java.util.Objects.requireNonNull;
 public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask> {
     private static final Logger LOG = LoggerFactory.getLogger(ProcessTaskHandler.class);
     private final RuntimeEnvironment runtimeEnvironment;
+    private final PrintStream out;
+    private final AtomicReference<Channel> brokerChannel;
 
-    public ProcessTaskHandler(final RuntimeEnvironment runtimeEnvironment) {
+    public ProcessTaskHandler(final RuntimeEnvironment runtimeEnvironment,
+                              final PrintStream out,
+                              final AtomicReference<Channel> brokerChannel) {
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);
+        this.out = requireNonNull(out);
+        this.brokerChannel = requireNonNull(brokerChannel);
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        out.println("Send me tasks! I'm hungry!");
+        ctx.fireChannelActive();
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OffloadTask msg) {
+        out.print("Got task from " + ctx.channel().remoteAddress() + ". Compute...");
         LOG.info("Got offloading task request `{}` from `{}`", msg, ctx.channel().remoteAddress());
         final ExecutionResult result = runtimeEnvironment.execute(msg.getSource(), msg.getInput());
+        out.println("done after " + result.getExecutionTime() + "ms!");
 
         final ReturnResult response = new ReturnResult(result.getOutput());
         LOG.info("Send result `{}` to `{}`", response, ctx.channel().remoteAddress());
-        ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        out.print("Send result back to " + ctx.channel().remoteAddress() + "...");
+        ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
+            if (future.isSuccess()) {
+                out.println("done!");
+                final Channel channel = brokerChannel.get();
+                if (channel != null) {
+                    channel.writeAndFlush(new VmUp()).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> {
+                        out.println("Send me tasks! I'm hungry!");
+                    });
+                }
+            }
+        });
     }
 }

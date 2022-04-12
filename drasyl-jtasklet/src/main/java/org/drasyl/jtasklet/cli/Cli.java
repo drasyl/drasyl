@@ -1,8 +1,11 @@
 package org.drasyl.jtasklet.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.IdentityPublicKeyMixin;
+import org.drasyl.handler.PeersRttHandler.PeerRtt;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand;
 import org.drasyl.jtasklet.consumer.GreyFilterCommand;
@@ -30,6 +33,8 @@ import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
 public class Cli {
     public static void main(final String[] args) {
         JACKSON_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        JACKSON_MAPPER.addMixIn(PeersRttReport.class, PeersRttReportMixin.class);
+        JACKSON_MAPPER.addMixIn(PeerRtt.class, PeerRttMixin.class);
 
         final CommandLine commandLine = new CommandLine(new Cli());
         commandLine.registerConverter(IdentityPublicKey.class, new IdentityPublicKeyConverter());

@@ -35,7 +35,7 @@
 
     <logger name="io.netty" level="WARN"></logger>
 
-    <logger name="org.drasyl.jtasklet" level="trace"></logger>
+<!--    <logger name="org.drasyl.jtasklet" level="trace"></logger>-->
 
 <!--    <logger name="org.drasyl.handler.stream" level="trace">-->
 <!--    </logger>-->
