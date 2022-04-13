@@ -6,26 +6,27 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 public class CsvLogger {
     private static final Map<String, Writer> writers = new HashMap<>();
 
     public static synchronized void log(final String filename,
-                                        Map<String, Object> columns,
+                                        Object[] titles,
+                                        Object[] values,
                                         boolean append) {
         Writer writer = writers.get(filename);
         if (writer == null) {
             try {
-                final boolean exists = new File("./" + filename + ".csv").exists();
-                writer = new FileWriter("./" + filename + ".csv", append);
+                final String pathname = "./" + filename + ".csv";
+                final boolean exists = new File(pathname).exists();
+                writer = new FileWriter(pathname, append);
                 if (!exists) {
                     boolean first = true;
-                    for (Entry<String, Object> entry : columns.entrySet()) {
+                    for (Object title : titles) {
                         if (!first) {
                             writer.append(',');
                         }
-                        writer.append('"' + entry.getKey() + '"');
+                        writer.append('"' + title.toString() + '"');
                         first = false;
                     }
                     writer.append('\n');
@@ -39,11 +40,11 @@ public class CsvLogger {
 
         try {
             boolean first = true;
-            for (Entry<String, Object> entry : columns.entrySet()) {
+            for (Object value : values) {
                 if (!first) {
                     writer.append(',');
                 }
-                writer.append('"' + entry.getValue().toString() + '"');
+                writer.append('"' + value.toString() + '"');
                 first = false;
             }
             writer.append('\n');

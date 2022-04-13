@@ -96,14 +96,24 @@ public class OffloadCommand extends ChannelOptions {
                     out.println("Total time        : +" + Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis());
                     out.println("Got result        : " + Arrays.toString(output));
 
-                    CsvLogger.log(identityFile.getName(), Map.of(
-                            "Public key", identity.getAddress(),
-                            "Task", task,
-                            "Input", Arrays.toString(input.toArray()),
-                            "Token", token.get(),
-                            "Total time", Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis(),
-                            "Output", Arrays.toString(output)
-                    ), true);
+                    CsvLogger.log(
+                            identityFile.getName(),
+                            new String[]{
+                                    "Public key",
+                                    "Task",
+                                    "Input",
+                                    "Token",
+                                    "Total time",
+                                    "Output"
+                            },
+                            new Object[]{
+                                    identity.getAddress(),
+                                    task,
+                                    Arrays.toString(input.toArray()),
+                                    token.get(),
+                                    Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis(),
+                                    Arrays.toString(output)
+                            }, true);
                 },
                 requestResourceTime,
                 resourceResponseTime,
