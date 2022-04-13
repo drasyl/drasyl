@@ -7,8 +7,8 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.provider.channel.VmChannelInitializer;
-import org.drasyl.jtasklet.provider.channel.VmChildChannelInitializer;
+import org.drasyl.jtasklet.provider.channel.ProviderChannelInitializer;
+import org.drasyl.jtasklet.provider.channel.ProviderChildChannelInitializer;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.GraalVmJsRuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
@@ -65,13 +65,13 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new VmChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport, token);
+        return new ProviderChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport, token);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new VmChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel, token);
+        return new ProviderChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel, token);
     }
 
     @Override

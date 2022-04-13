@@ -22,8 +22,8 @@
 package org.drasyl.jtasklet.channel;
 
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
@@ -37,7 +37,10 @@ import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHan
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.jtasklet.handler.PathEventsFilter;
+import org.drasyl.util.Worm;
 
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
@@ -56,6 +59,8 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected final long onlineTimeoutMillis;
     private final Map<IdentityPublicKey, InetSocketAddress> superPeers;
     protected final boolean protocolArmEnabled;
+    private final PrintStream err;
+    private final Worm<Integer> exitCode;
 
     @SuppressWarnings("java:S107")
     protected AbstractChannelInitializer(final Identity identity,
@@ -63,42 +68,64 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
                                          final int networkId,
                                          final long onlineTimeoutMillis,
                                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                         final boolean protocolArmEnabled) {
+                                         final boolean protocolArmEnabled,
+                                         final PrintStream err,
+                                         final Worm<Integer> exitCode) {
         this.identity = requireNonNull(identity);
         this.bindAddress = requireNonNull(bindAddress);
         this.networkId = networkId;
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
         this.superPeers = requireNonNull(superPeers);
         this.protocolArmEnabled = protocolArmEnabled;
+        this.err = requireNonNull(err);
+        this.exitCode = requireNonNull(exitCode);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+        firstStage(ch);
+        ipStage(ch);
+        serializationStage(ch);
+        gatekeeperStage(ch);
+        discoveryStage(ch);
+        lastStage(ch);
+    }
 
-        // ip
-        p.addLast(new UdpServer(bindAddress));
+    @SuppressWarnings("java:S1172")
+    protected void firstStage(final DrasylServerChannel ch) {
+        // NOOP
+    }
 
-        // serialization
-        p.addLast(new ByteToRemoteMessageCodec());
+    protected void ipStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new UdpServer(bindAddress));
+    }
 
-        // gatekeeper
-        p.addLast(new OtherNetworkFilter(networkId));
-        p.addLast(new InvalidProofOfWorkFilter());
+    protected void serializationStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new ByteToRemoteMessageCodec());
+    }
+
+    protected void gatekeeperStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new OtherNetworkFilter(networkId));
+        ch.pipeline().addLast(new InvalidProofOfWorkFilter());
         if (protocolArmEnabled) {
-            p.addLast(new ProtocolArmHandler(identity, MAX_PEERS));
+            ch.pipeline().addLast(new ProtocolArmHandler(identity, MAX_PEERS));
         }
         else {
-            p.addLast(new UnarmedMessageDecoder());
+            ch.pipeline().addLast(new UnarmedMessageDecoder());
         }
+    }
 
-        // discovery
-        p.addLast(new UnresolvedOverlayMessageHandler());
-        p.addLast(new UnconfirmedAddressResolveHandler());
-        p.addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
-        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
+    protected void discoveryStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
+        ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
+        ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
+        ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
+    }
 
-        p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
+    protected void lastStage(final DrasylServerChannel ch) {
+        ch.pipeline().addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
+        ch.pipeline().addLast(new PathEventsFilter());
+        ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }
 

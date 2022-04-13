@@ -24,7 +24,7 @@ package org.drasyl.jtasklet.broker.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
+import org.drasyl.jtasklet.broker.TaskletVm;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
 import org.drasyl.util.logging.Logger;
