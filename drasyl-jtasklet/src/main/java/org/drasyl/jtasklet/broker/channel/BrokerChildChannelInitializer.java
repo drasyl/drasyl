@@ -3,6 +3,7 @@ package org.drasyl.jtasklet.broker.channel;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.TaskletVm;
+import org.drasyl.jtasklet.broker.handler.BrokerReleaseTokenHandler;
 import org.drasyl.jtasklet.broker.handler.BrokerResourceRequestHandler;
 import org.drasyl.jtasklet.broker.handler.BrokerVmHeartbeatHandler;
 import org.drasyl.jtasklet.broker.handler.BrokerVmUpHandler;
@@ -39,7 +40,8 @@ public class BrokerChildChannelInitializer extends AbstractChildChannelInitializ
         ch.pipeline().addLast(
                 new BrokerVmHeartbeatHandler(out, vms),
                 new BrokerVmUpHandler(out, vms),
-                new BrokerResourceRequestHandler(vms)
+                new BrokerResourceRequestHandler(vms),
+                new BrokerReleaseTokenHandler(out, vms)
         );
 
         super.lastStage(ch);
