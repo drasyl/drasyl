@@ -5,6 +5,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
@@ -13,7 +14,10 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
+import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeIssued;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
 import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
@@ -59,7 +63,35 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
                 new ConnectionHandshakeCodec(),
                 new ConnectionHandshakeHandler(10_000, false),
                 new ConnectionHandshakePendWritesHandler(),
-                new CloseOnConnectionHandshakeError()
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) {
+                        if (evt instanceof ConnectionHandshakeIssued) {
+                            out.println("Connect to peer...");
+                        }
+                        else if (evt instanceof ConnectionHandshakeCompleted) {
+                            out.println("Connection to peer established!");
+                        }
+                        else if (evt instanceof ConnectionHandshakeException) {
+                            out.println("Connection failed: " + ((ConnectionHandshakeException) evt).getMessage());
+                        }
+
+                        ctx.fireUserEventTriggered(evt);
+                    }
+
+                    @Override
+                    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                final Throwable cause) {
+                        if (cause instanceof ConnectionHandshakeException) {
+                            out.println("Connection failed: " + cause.getMessage());
+                            ctx.close();
+                        }
+                        else {
+                            ctx.fireExceptionCaught(cause);
+                        }
+                    }
+                }
         );
 
         // arq
@@ -67,7 +99,7 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
                 new StopAndWaitArqCodec(),
                 new StopAndWaitArqHandler(100),
                 new ByteToStopAndWaitArqDataCodec(),
-                new WriteTimeoutHandler(10)
+                new WriteTimeoutHandler(15)
         );
 
         // chunking
@@ -89,7 +121,19 @@ public class BrokerChildChannelInitializer extends ChannelInitializer<DrasylChan
                 new BrokerVmHeartbeatHandler(out, vms),
                 new BrokerVmUpHandler(out, vms),
                 new BrokerResourceRequestHandler(vms),
-                new PrintAndCloseOnExceptionHandler(err)
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                final Throwable cause) {
+                        if (cause instanceof WriteTimeoutException) {
+                            out.println("Connection lost: " + cause);
+                            ctx.close();
+                        }
+                        else {
+                            ctx.fireExceptionCaught(cause);
+                        }
+                    }
+                }
         );
     }
 }

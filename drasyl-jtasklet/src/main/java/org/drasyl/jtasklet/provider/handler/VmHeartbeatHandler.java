@@ -30,6 +30,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -62,13 +63,16 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
             final PeersRttReport report = lastRttReport.get();
             final VmHeartbeat msg = new VmHeartbeat(benchmark, report);
             LOG.debug("Send heartbeat `{}` to `{}`", msg, ctx.channel().remoteAddress());
-            ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
+            ctx.writeAndFlush(msg).addListener(f -> {
                 if (f.isSuccess()) {
                     LOG.trace("ACKed");
                     ctx.executor().schedule(() -> sendHeartbeat(ctx), 1_000L, MILLISECONDS);
                 }
+                else if (f.cause() instanceof ClosedChannelException) {
+                    // ignore
+                }
                 else {
-                    err.println("Broker unreachable!");
+                    ctx.fireExceptionCaught(f.cause());
                 }
             });
         }

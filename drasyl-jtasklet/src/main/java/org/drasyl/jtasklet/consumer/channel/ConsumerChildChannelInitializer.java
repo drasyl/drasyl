@@ -75,20 +75,7 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
                     new ConnectionHandshakeCodec(),
                     new ConnectionHandshakeHandler(10_000, true),
                     new ConnectionHandshakePendWritesHandler(),
-                    new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void exceptionCaught(final ChannelHandlerContext ctx,
-                                                    final Throwable cause) {
-                            if (cause instanceof ConnectionHandshakeException) {
-                                cause.printStackTrace(err);
-                                ctx.close();
-                                exitCode.trySet(1);
-                            }
-                            else {
-                                ctx.fireExceptionCaught(cause);
-                            }
-                        }
-                    }
+                    new CloseOnConnectionHandshakeError()
             );
 
             // arq
@@ -96,7 +83,7 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
                     new StopAndWaitArqCodec(),
                     new StopAndWaitArqHandler(100),
                     new ByteToStopAndWaitArqDataCodec(),
-                    new WriteTimeoutHandler(10)
+                    new WriteTimeoutHandler(15)
             );
 
             // chunking
