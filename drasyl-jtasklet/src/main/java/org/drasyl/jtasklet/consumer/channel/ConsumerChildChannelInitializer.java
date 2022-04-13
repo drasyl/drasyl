@@ -1,5 +1,6 @@
 package org.drasyl.jtasklet.consumer.channel;
 
+import io.netty.channel.Channel;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
@@ -29,6 +30,7 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
     private final AtomicReference<Instant> offloadTaskTime;
     private final AtomicReference<Instant> returnResultTime;
     private final AtomicReference<String> token;
+    private final AtomicReference<Channel> brokerChannel;
 
     @SuppressWarnings("java:S107")
     public ConsumerChildChannelInitializer(final PrintStream out,
@@ -43,7 +45,8 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
                                            final AtomicReference<Instant> resourceResponseTime,
                                            final AtomicReference<Instant> offloadTaskTime,
                                            final AtomicReference<Instant> returnResultTime,
-                                           final AtomicReference<String> token) {
+                                           final AtomicReference<String> token,
+                                           final AtomicReference<Channel> brokerChannel) {
         super(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -57,6 +60,7 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
         this.offloadTaskTime = requireNonNull(offloadTaskTime);
         this.returnResultTime = requireNonNull(returnResultTime);
         this.token = requireNonNull(token);
+        this.brokerChannel = requireNonNull(brokerChannel);
     }
 
     @Override
@@ -76,6 +80,8 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
     }
 
     private void brokerStage(final DrasylChannel ch) {
+        brokerChannel.set(ch);
+
         ch.pipeline().addLast(new ResourceRequestHandler(out, provider, requestResourceTime, resourceResponseTime, token));
 
         // always create a new channel to the broker
@@ -83,6 +89,6 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
     }
 
     private void providerStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer, offloadTaskTime, returnResultTime, token));
+        ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer, offloadTaskTime, returnResultTime, token, brokerChannel));
     }
 }

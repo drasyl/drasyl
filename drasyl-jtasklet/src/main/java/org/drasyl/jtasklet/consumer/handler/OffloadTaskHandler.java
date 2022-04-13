@@ -21,9 +21,11 @@
  */
 package org.drasyl.jtasklet.consumer.handler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.jtasklet.message.OffloadTask;
+import org.drasyl.jtasklet.message.ReleaseToken;
 import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -46,6 +48,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     private final AtomicReference<Instant> offloadTaskTime;
     private final AtomicReference<Instant> returnResultTime;
     private final AtomicReference<String> token;
+    private final AtomicReference<Channel> brokerChannel;
 
     public OffloadTaskHandler(final PrintStream out,
                               final String source,
@@ -53,7 +56,8 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
                               final Consumer<Object[]> outputConsumer,
                               final AtomicReference<Instant> offloadTaskTime,
                               final AtomicReference<Instant> returnResultTime,
-                              final AtomicReference<String> token) {
+                              final AtomicReference<String> token,
+                              final AtomicReference<Channel> brokerChannel) {
         this.out = requireNonNull(out);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
@@ -61,6 +65,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
         this.offloadTaskTime = requireNonNull(offloadTaskTime);
         this.returnResultTime = requireNonNull(returnResultTime);
         this.token = requireNonNull(token);
+        this.brokerChannel = requireNonNull(brokerChannel);
     }
 
     @Override
@@ -72,6 +77,10 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
             if (future.isSuccess()) {
                 out.println("done!");
+            }
+            else {
+                out.println("failed!");
+                brokerChannel.get().writeAndFlush(new ReleaseToken(token.get()));
             }
         });
 

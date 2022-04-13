@@ -16,7 +16,9 @@ public class TaskletVm {
         this.benchmark = benchmark;
     }
 
-    public void heartbeatReceived(final PeersRttReport rttReport, final String token, final long benchmark) {
+    public void heartbeatReceived(final PeersRttReport rttReport,
+                                  final String token,
+                                  final long benchmark) {
         this.rttReport = rttReport;
         lastHeartbeatTime = System.currentTimeMillis();
         if (!Objects.equals(this.token, token)) {
@@ -69,5 +71,9 @@ public class TaskletVm {
         this.busy = false;
         this.computations++;
         this.token = token;
+    }
+
+    public void releaseToken() {
+        this.busy = false;
     }
 }

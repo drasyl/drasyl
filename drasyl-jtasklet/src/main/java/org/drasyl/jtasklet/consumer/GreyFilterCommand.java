@@ -1,5 +1,6 @@
 package org.drasyl.jtasklet.consumer;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
@@ -51,6 +52,7 @@ public class GreyFilterCommand extends ChannelOptions {
     private final AtomicReference<Instant> offloadTaskTime = new AtomicReference<>();
     private final AtomicReference<Instant> returnResultTime = new AtomicReference<>();
     private final AtomicReference<String> token = new AtomicReference<>();
+    private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
 
     public GreyFilterCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -90,7 +92,7 @@ public class GreyFilterCommand extends ChannelOptions {
             catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime, token);
+        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime, token, brokerChannel);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.drasyl.jtasklet.consumer;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
@@ -56,6 +57,7 @@ public class OffloadCommand extends ChannelOptions {
     private final AtomicReference<Instant> resourceResponseTime = new AtomicReference<>();
     private final AtomicReference<Instant> offloadTaskTime = new AtomicReference<>();
     private final AtomicReference<Instant> returnResultTime = new AtomicReference<>();
+    private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
 
     public OffloadCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -125,7 +127,8 @@ public class OffloadCommand extends ChannelOptions {
                 resourceResponseTime,
                 offloadTaskTime,
                 returnResultTime,
-                token
+                token,
+                brokerChannel
         );
     }
 

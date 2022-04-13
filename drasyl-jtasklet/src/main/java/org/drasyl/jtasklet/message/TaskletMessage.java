@@ -14,7 +14,8 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
         @Type(value = OffloadTask.class),
         @Type(value = ResourceRequest.class),
         @Type(value = ResourceResponse.class),
-        @Type(value = ReturnResult.class)
+        @Type(value = ReturnResult.class),
+        @Type(value = ReleaseToken.class)
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface TaskletMessage {
