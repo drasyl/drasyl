@@ -8,7 +8,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.channel.BrokerChannelInitializer;
 import org.drasyl.jtasklet.broker.channel.BrokerChildChannelInitializer;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -16,8 +15,6 @@ import picocli.CommandLine.Command;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Command(
         name = "broker",
@@ -72,7 +69,7 @@ public class BrokerCommand extends ChannelOptions {
             this.benchmark = benchmark;
         }
 
-        public void heartbeatReceived(PeersRttReport rttReport) {
+        public void heartbeatReceived(final PeersRttReport rttReport) {
             this.rttReport = rttReport;
             lastHeartbeatTime = System.currentTimeMillis();
         }
@@ -105,6 +102,10 @@ public class BrokerCommand extends ChannelOptions {
 
         public int getComputations() {
             return computations;
+        }
+
+        public long getBenchmark() {
+            return benchmark;
         }
 
         public void markIdle() {

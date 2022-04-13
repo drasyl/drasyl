@@ -8,7 +8,6 @@ import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.broker.BrokerCommand;
 import org.drasyl.jtasklet.broker.BrokerCommand.TaskletVm;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
 import org.drasyl.jtasklet.handler.PathEventsFilter;
@@ -91,7 +90,7 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
                             // table header
                             final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now(), Clock.systemDefaultZone().getZone());
                             builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(zonedDateTime)));
-                            builder.append(String.format("%-64s  %9s  %5s  %6s%n", "Tasklet VM", "Heartbeat", "State", "Tasks#"));
+                            builder.append(String.format("%-64s  %9s  %5s  %6s  %9s%n", "Tasklet VM", "Heartbeat", "State", "Tasks#", "Benchmark"));
 
                             // table body
                             for (final Map.Entry<IdentityPublicKey, TaskletVm> entry : vms.entrySet()) {
@@ -100,11 +99,12 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
 
                                 // table row
                                 builder.append(String.format(
-                                        "%-64s  %7dms  %5s  %6d%n",
+                                        "%-64s  %7dms  %5s  %6d  %9d%n",
                                         address,
                                         vm.timeSinceLastHeartbeat(),
                                         vm.isStale() ? "Stale" : (vm.isBusy() ? "Busy" : "Idle"),
-                                        vm.getComputations()
+                                        vm.getComputations(),
+                                        vm.getBenchmark()
                                 ));
                             }
 
