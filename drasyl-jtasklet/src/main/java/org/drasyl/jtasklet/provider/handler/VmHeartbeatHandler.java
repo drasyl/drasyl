@@ -43,13 +43,16 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     private final AtomicReference<PeersRttReport> lastRttReport;
     private final long benchmark;
     private final PrintStream err;
+    private final AtomicReference<String> token;
 
     public VmHeartbeatHandler(final AtomicReference<PeersRttReport> lastRttReport,
                               final long benchmark,
-                              final PrintStream err) {
+                              final PrintStream err,
+                              final AtomicReference<String> token) {
         this.lastRttReport = requireNonNull(lastRttReport);
         this.benchmark = benchmark;
         this.err = requireNonNull(err);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -61,7 +64,7 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     private void sendHeartbeat(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
             final PeersRttReport report = lastRttReport.get();
-            final VmHeartbeat msg = new VmHeartbeat(benchmark, report);
+            final VmHeartbeat msg = new VmHeartbeat(benchmark, report, token.get());
             LOG.debug("Send heartbeat `{}` to `{}`", msg, ctx.channel().remoteAddress());
             ctx.writeAndFlush(msg).addListener(f -> {
                 if (f.isSuccess()) {

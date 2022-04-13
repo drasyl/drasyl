@@ -7,12 +7,15 @@ import org.drasyl.handler.PeersRttReport;
 public class VmHeartbeat implements TaskletMessage {
     private final long benchmark;
     private final PeersRttReport rttReport;
+    private final String token;
 
     @JsonCreator
     public VmHeartbeat(@JsonProperty("benchmark") final long benchmark,
-                       @JsonProperty("report") final PeersRttReport rttReport) {
+                       @JsonProperty("report") final PeersRttReport rttReport,
+                       @JsonProperty("token") final String token) {
         this.benchmark = benchmark;
         this.rttReport = rttReport;
+        this.token = token;
     }
 
     public long getBenchmark() {
@@ -23,11 +26,16 @@ public class VmHeartbeat implements TaskletMessage {
         return rttReport;
     }
 
+    public String getToken() {
+        return token;
+    }
+
     @Override
     public String toString() {
         return "VmHeartbeat{" +
                 "benchmark=" + benchmark +
                 ", rttReport=" + rttReport +
+                ", token=" + token +
                 '}';
     }
 }

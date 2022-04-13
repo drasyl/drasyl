@@ -41,6 +41,7 @@ public class VmCommand extends ChannelOptions {
     private final AtomicReference<PeersRttReport> lastRttReport = new AtomicReference<>();
     private long benchmark;
     private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
+    private final AtomicReference<String> token = new AtomicReference<>();
 
     public VmCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup(1));
@@ -52,7 +53,7 @@ public class VmCommand extends ChannelOptions {
         try {
             final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), BENCHMARK_INPUT);
             benchmark = result.getExecutionTime();
-            LOG.info("Benchmark: {}ms", benchmark);
+            out.println("Benchmark: " + benchmark + "ms");
 
             return super.call();
         }
@@ -64,13 +65,13 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new VmChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport);
+        return new VmChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport, token);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new VmChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel);
+        return new VmChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel, token);
     }
 
     @Override

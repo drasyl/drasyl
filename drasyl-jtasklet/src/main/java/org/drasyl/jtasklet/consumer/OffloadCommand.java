@@ -49,6 +49,7 @@ public class OffloadCommand extends ChannelOptions {
     @Parameters
     List<Object> input;
     private final AtomicReference<IdentityPublicKey> provider = new AtomicReference<>();
+    private final AtomicReference<String> token = new AtomicReference<>();
     private String source;
     private final AtomicReference<Instant> requestResourceTime = new AtomicReference<>();
     private final AtomicReference<Instant> resourceResponseTime = new AtomicReference<>();
@@ -88,6 +89,7 @@ public class OffloadCommand extends ChannelOptions {
                 input.toArray(),
                 provider,
                 output -> {
+                    out.println("Token             : " + token.get());
                     out.println("Resource request  :  0");
                     out.println("Resource response : +" + Duration.between(requestResourceTime.get(), resourceResponseTime.get()).toMillis());
                     out.println("Offload task      : +" + Duration.between(resourceResponseTime.get(), offloadTaskTime.get()).toMillis());
@@ -97,7 +99,8 @@ public class OffloadCommand extends ChannelOptions {
                 requestResourceTime,
                 resourceResponseTime,
                 offloadTaskTime,
-                returnResultTime
+                returnResultTime,
+                token
         );
     }
 

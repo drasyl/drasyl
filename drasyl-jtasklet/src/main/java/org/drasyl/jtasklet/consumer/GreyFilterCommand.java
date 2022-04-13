@@ -50,6 +50,7 @@ public class GreyFilterCommand extends ChannelOptions {
     private final AtomicReference<Instant> resourceResponseTime = new AtomicReference<>();
     private final AtomicReference<Instant> offloadTaskTime = new AtomicReference<>();
     private final AtomicReference<Instant> returnResultTime = new AtomicReference<>();
+    private final AtomicReference<String> token = new AtomicReference<>();
 
     public GreyFilterCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -89,7 +90,7 @@ public class GreyFilterCommand extends ChannelOptions {
             catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime);
+        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime, token);
     }
 
     @Override

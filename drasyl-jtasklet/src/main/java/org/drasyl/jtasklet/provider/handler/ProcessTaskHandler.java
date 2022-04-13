@@ -31,6 +31,7 @@ import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.VmUp;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -45,14 +46,17 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     private final RuntimeEnvironment runtimeEnvironment;
     private final PrintStream out;
     private final AtomicReference<Channel> brokerChannel;
+    private final AtomicReference<String> token;
     private static final EventLoopGroup eventLoop = new NioEventLoopGroup(1);
 
     public ProcessTaskHandler(final RuntimeEnvironment runtimeEnvironment,
                               final PrintStream out,
-                              final AtomicReference<Channel> brokerChannel) {
+                              final AtomicReference<Channel> brokerChannel,
+                              final AtomicReference<String> token) {
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);
         this.out = requireNonNull(out);
         this.brokerChannel = requireNonNull(brokerChannel);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -72,6 +76,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
                     out.println("done!");
                     final Channel channel = brokerChannel.get();
                     if (channel != null) {
+                        token.set(RandomUtil.randomString(6));
                         channel.writeAndFlush(new VmUp(result.getExecutionTime())).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
                     }
                 }

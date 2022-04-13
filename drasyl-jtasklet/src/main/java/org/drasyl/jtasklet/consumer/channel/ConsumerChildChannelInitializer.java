@@ -44,8 +44,9 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
     private final Consumer<Object[]> outputConsumer;
     private final AtomicReference<Instant> requestResourceTime;
     private final AtomicReference<Instant> resourceResponseTime;
-    private AtomicReference<Instant> offloadTaskTime;
-    private AtomicReference<Instant> returnResultTime;
+    private final AtomicReference<Instant> offloadTaskTime;
+    private final AtomicReference<Instant> returnResultTime;
+    private final AtomicReference<String> token;
 
     @SuppressWarnings("java:S107")
     public ConsumerChildChannelInitializer(final PrintStream out,
@@ -59,7 +60,8 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
                                            final AtomicReference<Instant> requestResourceTime,
                                            final AtomicReference<Instant> resourceResponseTime,
                                            final AtomicReference<Instant> offloadTaskTime,
-                                           final AtomicReference<Instant> returnResultTime) {
+                                           final AtomicReference<Instant> returnResultTime,
+                                           final AtomicReference<String> token) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -72,6 +74,7 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
         this.resourceResponseTime = requireNonNull(resourceResponseTime);
         this.offloadTaskTime = requireNonNull(offloadTaskTime);
         this.returnResultTime = requireNonNull(returnResultTime);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -112,10 +115,10 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
 
             // consumer
             if (isBroker) {
-                ch.pipeline().addLast(new ResourceRequestHandler(out, provider, requestResourceTime, resourceResponseTime));
+                ch.pipeline().addLast(new ResourceRequestHandler(out, provider, requestResourceTime, resourceResponseTime, token));
             }
             else if (isProvider) {
-                ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer, offloadTaskTime, returnResultTime));
+                ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer, offloadTaskTime, returnResultTime, token));
             }
 
             ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));

@@ -45,15 +45,18 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     private final AtomicReference<IdentityPublicKey> provider;
     private final AtomicReference<Instant> requestResourceTime;
     private final AtomicReference<Instant> resourceResponseTime;
+    private final AtomicReference<String> token;
 
     public ResourceRequestHandler(final PrintStream out,
                                   final AtomicReference<IdentityPublicKey> provider,
                                   final AtomicReference<Instant> requestResourceTime,
-                                  final AtomicReference<Instant> resourceResponseTime) {
+                                  final AtomicReference<Instant> resourceResponseTime,
+                                  final AtomicReference<String> token) {
         this.out = requireNonNull(out);
         this.provider = requireNonNull(provider);
         this.requestResourceTime = requireNonNull(requestResourceTime);
         this.resourceResponseTime = requireNonNull(resourceResponseTime);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -75,6 +78,7 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ResourceResponse msg) {
         LOG.info("Got resource response `{}` from `{}`", msg, ctx.channel().remoteAddress());
+        token.set(msg.getToken());
         resourceResponseTime.set(Instant.now());
         final IdentityPublicKey publicKey = msg.getPublicKey();
         if (publicKey == null) {

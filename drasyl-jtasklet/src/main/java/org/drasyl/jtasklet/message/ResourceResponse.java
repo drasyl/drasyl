@@ -27,20 +27,28 @@ import org.drasyl.identity.IdentityPublicKey;
 
 public class ResourceResponse implements TaskletMessage {
     private final IdentityPublicKey publicKey;
+    private final String token;
 
     @JsonCreator
-    public ResourceResponse(@JsonProperty("publicKey") final IdentityPublicKey publicKey) {
+    public ResourceResponse(@JsonProperty("publicKey") final IdentityPublicKey publicKey,
+                            @JsonProperty("token") final String token) {
         this.publicKey = publicKey;
+        this.token = token;
     }
 
     @Override
     public String toString() {
         return "ResourceResponse{" +
                 "publicKey=" + publicKey +
+                ", token=" + token +
                 '}';
     }
 
     public IdentityPublicKey getPublicKey() {
         return publicKey;
+    }
+
+    public String getToken() {
+        return token;
     }
 }

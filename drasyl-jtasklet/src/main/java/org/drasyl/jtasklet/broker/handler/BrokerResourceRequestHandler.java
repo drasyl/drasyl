@@ -54,6 +54,7 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
 
         // pick vm
         IdentityPublicKey publicKey = null;
+        String token = null;
         synchronized (vms) {
             final Set<IdentityPublicKey> availableVms = new HashSet<>(vms.keySet());
             availableVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
@@ -65,10 +66,11 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
 
             if (publicKey != null) {
                 vms.get(publicKey).markBusy();
+                token = vms.get(publicKey).getToken();
             }
         }
 
-        final ResourceResponse response = new ResourceResponse(publicKey);
+        final ResourceResponse response = new ResourceResponse(publicKey, token);
         LOG.info("Send resource response `{}` to `{}`", response, ctx.channel().remoteAddress());
         ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
     }

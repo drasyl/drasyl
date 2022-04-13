@@ -45,24 +45,27 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     private final Consumer<Object[]> outputConsumer;
     private final AtomicReference<Instant> offloadTaskTime;
     private final AtomicReference<Instant> returnResultTime;
+    private final AtomicReference<String> token;
 
     public OffloadTaskHandler(final PrintStream out,
                               final String source,
                               final Object[] input,
                               final Consumer<Object[]> outputConsumer,
                               final AtomicReference<Instant> offloadTaskTime,
-                              final AtomicReference<Instant> returnResultTime) {
+                              final AtomicReference<Instant> returnResultTime,
+                              final AtomicReference<String> token) {
         this.out = requireNonNull(out);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
         this.outputConsumer = requireNonNull(outputConsumer);
         this.offloadTaskTime = requireNonNull(offloadTaskTime);
         this.returnResultTime = requireNonNull(returnResultTime);
+        this.token = requireNonNull(token);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        final OffloadTask msg = new OffloadTask(source, input);
+        final OffloadTask msg = new OffloadTask(token.get(), source, input);
         LOG.info("Send offload task request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.print("Offload task to " + ctx.channel().remoteAddress() + " with input " + Arrays.toString(input) + "...");
         offloadTaskTime.set(Instant.now());

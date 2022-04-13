@@ -15,6 +15,7 @@ import picocli.CommandLine.Command;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Command(
         name = "broker",
@@ -64,14 +65,19 @@ public class BrokerCommand extends ChannelOptions {
         private PeersRttReport rttReport;
         private boolean busy;
         private int computations = 0;
+        private String token;
 
         public TaskletVm(final long benchmark) {
             this.benchmark = benchmark;
         }
 
-        public void heartbeatReceived(final PeersRttReport rttReport) {
+        public void heartbeatReceived(final PeersRttReport rttReport, final String token) {
             this.rttReport = rttReport;
             lastHeartbeatTime = System.currentTimeMillis();
+            if (!Objects.equals(this.token, token)) {
+                busy = false;
+            }
+            this.token = token;
         }
 
         @Override
@@ -81,6 +87,7 @@ public class BrokerCommand extends ChannelOptions {
                     "rttReport=" + rttReport +
                     ", stale=" + isStale() +
                     ", busy=" + isBusy() +
+                    ", token=" + token +
                     '}';
         }
 
@@ -106,6 +113,10 @@ public class BrokerCommand extends ChannelOptions {
 
         public long getBenchmark() {
             return benchmark;
+        }
+
+        public String getToken() {
+            return token;
         }
 
         public void markIdle() {

@@ -71,7 +71,7 @@ public class BrokerVmHeartbeatHandler extends SimpleChannelInboundHandler<VmHear
                 vms.put(sender, vm);
             }
 
-            vm.heartbeatReceived(msg.getRttReport());
+            vm.heartbeatReceived(msg.getRttReport(), msg.getToken());
         }
     }
 }

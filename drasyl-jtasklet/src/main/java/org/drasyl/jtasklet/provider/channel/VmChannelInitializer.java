@@ -13,6 +13,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
 import org.drasyl.jtasklet.handler.PathEventsFilter;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -31,6 +32,7 @@ public class VmChannelInitializer extends AbstractChannelInitializer {
     private final Worm<Integer> exitCode;
     private final IdentityPublicKey broker;
     private final AtomicReference<PeersRttReport> lastRttReport;
+    private final AtomicReference<String> token;
 
     @SuppressWarnings("java:S107")
     public VmChannelInitializer(final Identity identity,
@@ -43,13 +45,15 @@ public class VmChannelInitializer extends AbstractChannelInitializer {
                                 final Worm<Integer> exitCode,
                                 final boolean protocolArmEnabled,
                                 final IdentityPublicKey broker,
-                                final AtomicReference<PeersRttReport> lastRttReport) {
+                                final AtomicReference<PeersRttReport> lastRttReport,
+                                final AtomicReference<String> token) {
         super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.broker = broker;
         this.lastRttReport = requireNonNull(lastRttReport);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -89,6 +93,7 @@ public class VmChannelInitializer extends AbstractChannelInitializer {
                                 out.println("This VM will register at broker " + broker);
                             }
                             out.println("----------------------------------------------------------------------------------------------");
+                            token.set(RandomUtil.randomString(6));
                             if (broker != null) {
                                 ctx.pipeline().addFirst(new SpawnChildChannelToPeer(ch, broker));
                             }

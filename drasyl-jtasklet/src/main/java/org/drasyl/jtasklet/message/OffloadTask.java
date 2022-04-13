@@ -27,12 +27,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static java.util.Objects.requireNonNull;
 
 public class OffloadTask implements TaskletMessage {
+    private final String token;
     private final String source;
     private final Object[] input;
 
     @JsonCreator
-    public OffloadTask(@JsonProperty("source") final String source,
+    public OffloadTask(@JsonProperty("token") final String token,
+                       @JsonProperty("source") final String source,
                        @JsonProperty("input") final Object[] input) {
+        this.token = requireNonNull(token);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
     }
@@ -40,8 +43,13 @@ public class OffloadTask implements TaskletMessage {
     @Override
     public String toString() {
         return "OffloadTask{" +
-                "source='" + source + '\'' +
+                "token='" + token + '\'' +
+                ", source='" + source + '\'' +
                 ", input=Object[" + input.length + "]}";
+    }
+
+    public String getToken() {
+        return token;
     }
 
     public String getSource() {

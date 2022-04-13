@@ -53,6 +53,7 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
     private final AtomicReference<PeersRttReport> lastRttReport;
     private final long benchmark;
     private final AtomicReference<Channel> brokerChannel;
+    private final AtomicReference<String> token;
 
     public VmChildChannelInitializer(final PrintStream out,
                                      final PrintStream err,
@@ -61,7 +62,8 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
                                      final IdentityPublicKey broker,
                                      final AtomicReference<PeersRttReport> lastRttReport,
                                      final long benchmark,
-                                     final AtomicReference<Channel> brokerChannel) {
+                                     final AtomicReference<Channel> brokerChannel,
+                                     final AtomicReference<String> token) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -70,6 +72,7 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         this.lastRttReport = requireNonNull(lastRttReport);
         this.benchmark = requirePositive(benchmark);
         this.brokerChannel = requireNonNull(brokerChannel);
+        this.token = requireNonNull(token);
     }
 
     @Override
@@ -138,7 +141,7 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         if (isBroker) {
             // peer is broker
             brokerChannel.set(ch);
-            ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark, err));
+            ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark, err, token));
 
             // close parent as well
             ch.closeFuture().addListener(f -> {
@@ -148,7 +151,7 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         }
         else {
             // peer is resource consumer
-            ch.pipeline().addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel));
+            ch.pipeline().addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel, token));
         }
 
         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
