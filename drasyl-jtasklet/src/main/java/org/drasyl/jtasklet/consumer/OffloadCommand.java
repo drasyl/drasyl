@@ -94,6 +94,7 @@ public class OffloadCommand extends ChannelOptions {
                     out.println("Resource response : +" + Duration.between(requestResourceTime.get(), resourceResponseTime.get()).toMillis());
                     out.println("Offload task      : +" + Duration.between(resourceResponseTime.get(), offloadTaskTime.get()).toMillis());
                     out.println("Return result     : +" + Duration.between(offloadTaskTime.get(), returnResultTime.get()).toMillis());
+                    out.println("Total time        : +" + Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis());
                     out.println("Got result        : " + Arrays.toString(output));
                 },
                 requestResourceTime,
