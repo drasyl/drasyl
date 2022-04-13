@@ -52,11 +52,9 @@ public class BrokerVmUpHandler extends SimpleChannelInboundHandler<VmUp> {
         out.println(sender + " performed task within " + msg.getExecutionTime() + "ms.");
         LOG.debug("Got VM up `{}` from `{}`", msg, sender);
 
-        synchronized (vms) {
-            TaskletVm vm = vms.get(sender);
-            if (vm != null) {
-                vm.markIdle();
-            }
+        TaskletVm vm = vms.get(sender);
+        if (vm != null) {
+            vm.markIdle(msg.getToken());
         }
     }
 }

@@ -32,32 +32,30 @@ public class TaskletVmsStatusHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void printVms() {
-        synchronized (vms) {
-            final StringBuilder builder = new StringBuilder();
+        final StringBuilder builder = new StringBuilder();
 
-            // table header
-            final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now(), Clock.systemDefaultZone().getZone());
-            builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(zonedDateTime)));
-            builder.append(String.format("%-64s  %9s  %5s  %6s  %9s  %6s%n", "Tasklet VM", "Heartbeat", "State", "Tasks#", "Benchmark", "Token"));
+        // table header
+        final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now(), Clock.systemDefaultZone().getZone());
+        builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(zonedDateTime)));
+        builder.append(String.format("%-64s  %9s  %5s  %6s  %9s  %6s%n", "Tasklet VM", "Heartbeat", "State", "Tasks#", "Benchmark", "Token"));
 
-            // table body
-            for (final Map.Entry<IdentityPublicKey, TaskletVm> entry : vms.entrySet()) {
-                final IdentityPublicKey address = entry.getKey();
-                final TaskletVm vm = entry.getValue();
+        // table body
+        for (final Map.Entry<IdentityPublicKey, TaskletVm> entry : vms.entrySet()) {
+            final IdentityPublicKey address = entry.getKey();
+            final TaskletVm vm = entry.getValue();
 
-                // table row
-                builder.append(String.format(
-                        "%-64s  %7dms  %5s  %6d  %9d  %6s%n",
-                        address,
-                        vm.timeSinceLastHeartbeat(),
-                        vm.isStale() ? "Stale" : (vm.isBusy() ? "Busy" : "Idle"),
-                        vm.getComputations(),
-                        vm.getBenchmark(),
-                        vm.getToken()
-                ));
-            }
-
-            out.println(builder);
+            // table row
+            builder.append(String.format(
+                    "%-64s  %7dms  %5s  %6d  %9d  %6s%n",
+                    address,
+                    vm.timeSinceLastHeartbeat(),
+                    vm.isStale() ? "Stale" : (vm.isBusy() ? "Busy" : "Idle"),
+                    vm.getComputations(),
+                    vm.getBenchmark(),
+                    vm.getToken()
+            ));
         }
+
+        out.println(builder);
     }
 }

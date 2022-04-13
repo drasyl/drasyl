@@ -27,13 +27,14 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.TaskletVm;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
+import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -53,25 +54,32 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
         LOG.info("Got resource request `{}` from `{}`", msg, ctx.channel().remoteAddress());
 
         // pick vm
-        IdentityPublicKey publicKey = null;
-        String token = null;
-        synchronized (vms) {
-            final Set<IdentityPublicKey> availableVms = new HashSet<>(vms.keySet());
-            availableVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
-            if (!availableVms.isEmpty()) {
-                final IdentityPublicKey[] publicKeys = availableVms.toArray(new IdentityPublicKey[availableVms.size()]);
-                final int rnd = RANDOM.nextInt(availableVms.size());
-                publicKey = publicKeys[rnd];
-            }
-
-            if (publicKey != null) {
-                vms.get(publicKey).markBusy();
-                token = vms.get(publicKey).getToken();
-            }
+        final Pair<IdentityPublicKey, TaskletVm> pair = randomScheduler();
+        final IdentityPublicKey publicKey = pair.first();
+        final String token;
+        if (pair.second() != null) {
+            token = pair.second().getToken();
+            pair.second().markBusy();
+        }
+        else {
+            token = null;
         }
 
         final ResourceResponse response = new ResourceResponse(publicKey, token);
         LOG.info("Send resource response `{}` to `{}`", response, ctx.channel().remoteAddress());
         ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+    }
+
+    protected Pair<IdentityPublicKey, TaskletVm> randomScheduler() {
+        final Map<IdentityPublicKey, TaskletVm> availableVms = vms.entrySet().stream().filter(e -> !e.getValue().isStale() && !e.getValue().isBusy()).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        if (!availableVms.isEmpty()) {
+            final IdentityPublicKey[] publicKeys = availableVms.keySet().toArray(new IdentityPublicKey[0]);
+            final int rnd = RANDOM.nextInt(availableVms.size());
+            final IdentityPublicKey publicKey = publicKeys[rnd];
+            return Pair.of(publicKey, availableVms.get(publicKey));
+        }
+        else {
+            return Pair.of(null, null);
+        }
     }
 }

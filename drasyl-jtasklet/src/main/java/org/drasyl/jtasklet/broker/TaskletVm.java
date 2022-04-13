@@ -64,8 +64,9 @@ public class TaskletVm {
         return token;
     }
 
-    public void markIdle() {
+    public void markIdle(final String token) {
         this.busy = false;
         this.computations++;
+        this.token = token;
     }
 }

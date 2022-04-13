@@ -14,6 +14,7 @@ import picocli.CommandLine.Command;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Command(
         name = "broker",
@@ -27,18 +28,10 @@ import java.util.Map;
 )
 public class BrokerCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerCommand.class);
-    private final Map<IdentityPublicKey, TaskletVm> vms = new HashMap<>();
+    private final Map<IdentityPublicKey, TaskletVm> vms = new ConcurrentHashMap<>();
 
     public BrokerCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
-    }
-
-    @Override
-    public Integer call() {
-//        parentGroup.scheduleWithFixedDelay(() -> {
-//            LOG.info("VMs = {}", vms);
-//        }, 0L, 5_000L, MILLISECONDS);
-        return super.call();
     }
 
     @Override

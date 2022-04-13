@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 )
 public class VmCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(VmCommand.class);
-    private static final Object[] BENCHMARK_INPUT = new Object[]{ 1, 25_000 };
+    private static final Object[] BENCHMARK_PRIMES_INPUT = new Object[]{ 1, 25_000 };
+    private static final Object[] BENCHMARK_EUROPEAN_OPTION_MC_INPUT = new Object[]{ 20_000, 100 };
     private final RuntimeEnvironment runtimeEnvironment;
     @Option(
             names = { "--broker" }
@@ -51,8 +52,14 @@ public class VmCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
-            final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark.js"), BENCHMARK_INPUT);
-            benchmark = result.getExecutionTime();
+            out.println("Perform benchmark...");
+            benchmark = Long.MAX_VALUE;
+            for (int i = 0; i < 25; i++) {
+                final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark_primes.js"), BENCHMARK_PRIMES_INPUT);
+                if (result.getExecutionTime() < benchmark) {
+                    benchmark = result.getExecutionTime();
+                }
+            }
             out.println("Benchmark: " + benchmark + "ms");
 
             return super.call();

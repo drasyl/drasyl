@@ -65,6 +65,7 @@ public class ProviderChildChannelInitializer extends AbstractChildChannelInitial
 
     private void brokerStage(final DrasylChannel ch) {
         brokerChannel.set(ch);
+
         ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark, err, token));
 
         // always create a new channel to the broker
