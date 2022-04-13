@@ -30,6 +30,7 @@ import org.drasyl.jtasklet.message.ResourceResponse;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -54,7 +55,7 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
         // pick vm
         IdentityPublicKey publicKey = null;
         synchronized (vms) {
-            final Set<IdentityPublicKey> availableVms = vms.keySet();
+            final Set<IdentityPublicKey> availableVms = new HashSet<>(vms.keySet());
             availableVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
             if (!availableVms.isEmpty()) {
                 final IdentityPublicKey[] publicKeys = availableVms.toArray(new IdentityPublicKey[availableVms.size()]);

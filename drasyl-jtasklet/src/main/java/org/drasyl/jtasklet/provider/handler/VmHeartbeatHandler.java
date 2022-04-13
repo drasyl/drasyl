@@ -50,16 +50,7 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         sendHeartbeat(ctx);
-//        heartbeat = ctx.executor().scheduleWithFixedDelay(() -> sendHeartbeat(ctx), 0L, 1_000L, MILLISECONDS);
         ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        if (heartbeat != null) {
-            heartbeat.cancel(false);
-        }
-        ctx.fireChannelInactive();
     }
 
     private void sendHeartbeat(final ChannelHandlerContext ctx) {
@@ -70,6 +61,7 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
             ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
                 if (f.isSuccess()) {
                     LOG.trace("ACKed");
+                    ctx.executor().schedule(() -> sendHeartbeat(ctx), 1_000L, MILLISECONDS);
                 }
             });
         }
