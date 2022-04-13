@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class CsvLogger {
     private static final Map<String, Writer> writers = new HashMap<>();
@@ -16,14 +17,15 @@ public class CsvLogger {
         Writer writer = writers.get(filename);
         if (writer == null) {
             try {
+                final boolean exists = new File("./" + filename + ".csv").exists();
                 writer = new FileWriter("./" + filename + ".csv", append);
-                if (!new File("./" + filename + ".csv").exists()) {
+                if (!exists) {
                     boolean first = true;
-                    for (String column : columns.keySet()) {
+                    for (Entry<String, Object> entry : columns.entrySet()) {
                         if (!first) {
                             writer.append(',');
                         }
-                        writer.append('"' + column + '"');
+                        writer.append('"' + entry.getKey() + '"');
                         first = false;
                     }
                     writer.append('\n');
@@ -37,11 +39,11 @@ public class CsvLogger {
 
         try {
             boolean first = true;
-            for (Object column : columns.values()) {
+            for (Entry<String, Object> entry : columns.entrySet()) {
                 if (!first) {
                     writer.append(',');
                 }
-                writer.append('"' + column.toString() + '"');
+                writer.append('"' + entry.getValue().toString() + '"');
                 first = false;
             }
             writer.append('\n');
