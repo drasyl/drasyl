@@ -26,7 +26,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.TaskletVm;
 import org.drasyl.jtasklet.message.ReleaseToken;
-import org.drasyl.jtasklet.message.VmUp;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -50,9 +49,9 @@ public class BrokerReleaseTokenHandler extends SimpleChannelInboundHandler<Relea
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ReleaseToken msg) {
         final IdentityPublicKey sender = (IdentityPublicKey) ctx.channel().remoteAddress();
-        out.println(sender + " releases token " + msg.getToken() + ".");
+        out.println(sender + " releases token of VM " + msg.getVm() + ".");
 
-        TaskletVm vm = vms.get(sender);
+        TaskletVm vm = vms.get(msg.getVm());
         if (vm != null) {
             vm.releaseToken();
         }
