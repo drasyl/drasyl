@@ -81,6 +81,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
             else {
                 out.println("failed!");
                 brokerChannel.get().writeAndFlush(new ReleaseToken(token.get()));
+                ctx.channel().close();
             }
         });
 
