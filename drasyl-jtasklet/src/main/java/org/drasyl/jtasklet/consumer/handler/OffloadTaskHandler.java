@@ -24,6 +24,8 @@ package org.drasyl.jtasklet.consumer.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReleaseToken;
 import org.drasyl.jtasklet.message.ReturnResult;
@@ -80,9 +82,10 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
             }
             else {
                 out.println("failed!");
-                brokerChannel.get().writeAndFlush(new ReleaseToken(token.get()));
-                ctx.channel().close();
-                ctx.channel().parent().pipeline().fireExceptionCaught(new Exception("Resource provider unreachable"));
+                brokerChannel.get().writeAndFlush(new ReleaseToken(token.get())).addListener(future1 -> {
+                    ctx.channel().close();
+                    ctx.channel().parent().pipeline().fireExceptionCaught(new Exception("Resource provider unreachable"));
+                });
             }
         });
 
