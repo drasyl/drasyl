@@ -25,10 +25,10 @@ public class JTaskletConnectionHandshakeHandler extends ChannelInboundHandlerAda
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
         if (evt instanceof ConnectionHandshakeIssued) {
-            LOG.debug("Connect to peer " + ctx.channel().remoteAddress() + " ...");
+            out.println("Connect to peer " + ctx.channel().remoteAddress() + " ...");
         }
         else if (evt instanceof ConnectionHandshakeCompleted) {
-            LOG.debug("Connection to peer " + ctx.channel().remoteAddress() + " established!");
+            out.println("Connection to peer " + ctx.channel().remoteAddress() + " established!");
         }
 
         ctx.fireUserEventTriggered(evt);
@@ -38,7 +38,7 @@ public class JTaskletConnectionHandshakeHandler extends ChannelInboundHandlerAda
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
         if (cause instanceof ConnectionHandshakeException) {
-            LOG.debug("Connection to peer " + ctx.channel().remoteAddress() + " failed: " + cause.getMessage());
+            out.println("Connection to peer " + ctx.channel().remoteAddress() + " failed: " + cause.getMessage());
             ctx.close();
         }
         else {
