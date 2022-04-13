@@ -32,6 +32,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -54,7 +55,9 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
         IdentityPublicKey publicKey = null;
         synchronized (vms) {
             if (!vms.isEmpty()) {
-                final IdentityPublicKey[] publicKeys = vms.keySet().toArray(new IdentityPublicKey[vms.size()]);
+                final Set<IdentityPublicKey> allVms = vms.keySet();
+                allVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
+                final IdentityPublicKey[] publicKeys = allVms.toArray(new IdentityPublicKey[vms.size()]);
                 final int rnd = RANDOM.nextInt(vms.size());
                 publicKey = publicKeys[rnd];
             }
