@@ -47,7 +47,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     private final PrintStream out;
     private final String source;
     private final Object[] input;
-    private final Consumer<Object[]> outputConsumer;
+    private final Consumer<ReturnResult> outputConsumer;
     private final AtomicReference<Instant> offloadTaskTime;
     private final AtomicReference<Instant> returnResultTime;
     private final AtomicReference<String> token;
@@ -56,7 +56,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     public OffloadTaskHandler(final PrintStream out,
                               final String source,
                               final Object[] input,
-                              final Consumer<Object[]> outputConsumer,
+                              final Consumer<ReturnResult> outputConsumer,
                               final AtomicReference<Instant> offloadTaskTime,
                               final AtomicReference<Instant> returnResultTime,
                               final AtomicReference<String> token,
@@ -98,7 +98,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
                                 final ReturnResult msg) {
         LOG.info("Got result `{}` from `{}`", msg, ctx.channel().remoteAddress());
         returnResultTime.set(Instant.now());
-        outputConsumer.accept(msg.getOutput());
+        outputConsumer.accept(msg);
         ctx.channel().parent().close();
     }
 }

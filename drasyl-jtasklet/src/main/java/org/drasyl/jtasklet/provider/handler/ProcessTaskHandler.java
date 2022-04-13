@@ -68,7 +68,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
             final ExecutionResult result = runtimeEnvironment.execute(msg.getSource(), msg.getInput());
             out.println("done after " + result.getExecutionTime() + "ms!");
 
-            final ReturnResult response = new ReturnResult(result.getOutput());
+            final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
             LOG.info("Send result `{}` to `{}`", response, ctx.channel().remoteAddress());
             out.print("Send result back to " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {

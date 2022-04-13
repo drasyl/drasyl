@@ -91,14 +91,15 @@ public class OffloadCommand extends ChannelOptions {
                 source,
                 input.toArray(),
                 provider,
-                output -> {
+                result -> {
                     out.println("Token             : " + token.get());
                     out.println("Resource request  :  0");
                     out.println("Resource response : +" + Duration.between(requestResourceTime.get(), resourceResponseTime.get()).toMillis());
                     out.println("Offload task      : +" + Duration.between(resourceResponseTime.get(), offloadTaskTime.get()).toMillis());
                     out.println("Return result     : +" + Duration.between(offloadTaskTime.get(), returnResultTime.get()).toMillis());
                     out.println("Total time        : +" + Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis());
-                    out.println("Got result        : " + Arrays.toString(output));
+                    out.println("Execution time    : +" + result.getExecutionTime());
+                    out.println("Got result        : " + Arrays.toString(result.getOutput()));
 
                     CsvLogger.log(
                             identityFile.getName(),
@@ -110,6 +111,7 @@ public class OffloadCommand extends ChannelOptions {
                                     "Consumer",
                                     "Token",
                                     "Total time",
+                                    "Execution time",
                                     "Output"
                             },
                             new Object[]{
@@ -120,7 +122,8 @@ public class OffloadCommand extends ChannelOptions {
                                     provider.get(),
                                     token.get(),
                                     Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis(),
-                                    Arrays.toString(output)
+                                    result.getExecutionTime(),
+                                    Arrays.toString(result.getOutput())
                             }, true);
                 },
                 requestResourceTime,

@@ -63,7 +63,7 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     public void channelActive(final ChannelHandlerContext ctx) {
         final ResourceRequest msg = new ResourceRequest();
         LOG.info("Send resource request `{}` to `{}`", msg, ctx.channel().remoteAddress());
-        out.print("Request resource from broker " + ctx.channel().remoteAddress() + "...");
+        out.print("Request resource from broker " + ctx.channel().remoteAddress() + " ...");
         requestResourceTime.set(Instant.now());
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
             if (f.isSuccess()) {

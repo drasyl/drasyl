@@ -83,11 +83,11 @@ public class GreyFilterCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input, provider, output -> {
+        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input, provider, result -> {
             try {
                 final File file = new File("out.png");
                 out.println("Output written to " + file.getPath());
-                GreyFilter.of(height, width, output).writeTo(file);
+                GreyFilter.of(height, width, result.getOutput()).writeTo(file);
             }
             catch (IOException e) {
                 throw new RuntimeException(e);

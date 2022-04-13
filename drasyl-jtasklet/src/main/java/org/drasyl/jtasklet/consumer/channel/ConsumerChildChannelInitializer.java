@@ -8,6 +8,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChildChannelInitializer;
 import org.drasyl.jtasklet.consumer.handler.OffloadTaskHandler;
 import org.drasyl.jtasklet.consumer.handler.ResourceRequestHandler;
+import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
@@ -24,7 +25,7 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
     private final String source;
     private final Object[] input;
     private final AtomicReference<IdentityPublicKey> provider;
-    private final Consumer<Object[]> outputConsumer;
+    private final Consumer<ReturnResult> outputConsumer;
     private final AtomicReference<Instant> requestResourceTime;
     private final AtomicReference<Instant> resourceResponseTime;
     private final AtomicReference<Instant> offloadTaskTime;
@@ -40,7 +41,7 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
                                            final String source,
                                            final Object[] input,
                                            final AtomicReference<IdentityPublicKey> provider,
-                                           final Consumer<Object[]> outputConsumer,
+                                           final Consumer<ReturnResult> outputConsumer,
                                            final AtomicReference<Instant> requestResourceTime,
                                            final AtomicReference<Instant> resourceResponseTime,
                                            final AtomicReference<Instant> offloadTaskTime,

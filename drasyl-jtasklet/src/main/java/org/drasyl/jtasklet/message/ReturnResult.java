@@ -23,24 +23,37 @@ package org.drasyl.jtasklet.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.util.Preconditions;
+
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 public class ReturnResult implements TaskletMessage {
     private final Object[] output;
+    private final long executionTime;
 
     @JsonCreator
-    public ReturnResult(@JsonProperty("output") final Object[] output) {
+    public ReturnResult(@JsonProperty("output") final Object[] output,
+                        @JsonProperty("executionTime") final long executionTime) {
         this.output = requireNonNull(output);
+        this.executionTime = requireNonNegative(executionTime);
     }
 
     @Override
     public String toString() {
         return "ReturnResult{" +
-                "output=Object[" + output.length + "]}";
+                "output=Object[" + output.length + "]" +
+                ", executionTime=" + executionTime +
+                '}';
     }
 
     public Object[] getOutput() {
         return output;
+    }
+
+    public long getExecutionTime() {
+        return executionTime;
     }
 }
