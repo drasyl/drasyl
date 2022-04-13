@@ -53,7 +53,7 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
                                      final IdentityPublicKey broker,
                                      final AtomicReference<PeersRttReport> lastRttReport,
                                      final long benchmark,
-                                     AtomicReference<Channel> brokerChannel) {
+                                     final AtomicReference<Channel> brokerChannel) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

@@ -43,7 +43,7 @@ public class VmCommand extends ChannelOptions {
     private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
 
     public VmCommand() {
-        super(new NioEventLoopGroup(1));
+        super(new NioEventLoopGroup(1), new NioEventLoopGroup(1));
         runtimeEnvironment = new GraalVmJsRuntimeEnvironment();
     }
 

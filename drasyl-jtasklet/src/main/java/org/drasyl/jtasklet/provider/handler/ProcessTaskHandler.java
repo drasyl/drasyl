@@ -23,7 +23,9 @@ package org.drasyl.jtasklet.provider.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.VmUp;
@@ -43,6 +45,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     private final RuntimeEnvironment runtimeEnvironment;
     private final PrintStream out;
     private final AtomicReference<Channel> brokerChannel;
+    private static final EventLoopGroup eventLoop = new NioEventLoopGroup(1);
 
     public ProcessTaskHandler(final RuntimeEnvironment runtimeEnvironment,
                               final PrintStream out,
@@ -61,9 +64,9 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OffloadTask msg) {
-        out.print("Got task from " + ctx.channel().remoteAddress() + ". Compute...");
         LOG.info("Got offloading task request `{}` from `{}`", msg, ctx.channel().remoteAddress());
-        new Thread(() -> {
+        eventLoop.execute(() -> {
+            out.print("Got task from " + ctx.channel().remoteAddress() + ". Compute...");
             final ExecutionResult result = runtimeEnvironment.execute(msg.getSource(), msg.getInput());
             out.println("done after " + result.getExecutionTime() + "ms!");
 
@@ -79,6 +82,6 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
                     }
                 }
             });
-        }).start();
+        });
     }
 }
