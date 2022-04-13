@@ -54,11 +54,11 @@ public class BrokerResourceRequestHandler extends SimpleChannelInboundHandler<Re
         // pick vm
         IdentityPublicKey publicKey = null;
         synchronized (vms) {
-            if (!vms.isEmpty()) {
-                final Set<IdentityPublicKey> allVms = vms.keySet();
-                allVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
-                final IdentityPublicKey[] publicKeys = allVms.toArray(new IdentityPublicKey[vms.size()]);
-                final int rnd = RANDOM.nextInt(vms.size());
+            final Set<IdentityPublicKey> availableVms = vms.keySet();
+            availableVms.removeIf(vm -> vms.get(vm).isStale() || vms.get(vm).isBusy());
+            if (!availableVms.isEmpty()) {
+                final IdentityPublicKey[] publicKeys = availableVms.toArray(new IdentityPublicKey[availableVms.size()]);
+                final int rnd = RANDOM.nextInt(availableVms.size());
                 publicKey = publicKeys[rnd];
             }
 

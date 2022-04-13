@@ -249,13 +249,14 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> currentWrite);
             ctx.writeAndFlush(currentWrite.retainedDuplicate()).addListener(future -> {
                 if (!future.isSuccess()) {
-                    //noinspection unchecked
-                    LOG.warn("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
+                    LOG.trace("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
+                    promise.tryFailure(future.cause());
                 }
+
+                // schedule next write operation
+                ctx.executor().schedule(() -> writeNextPending(ctx), retryTimeout, MILLISECONDS);
             });
 
-            // schedule next write operation
-            ctx.executor().schedule(() -> writeNextPending(ctx), retryTimeout, MILLISECONDS);
 
             break;
         }

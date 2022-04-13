@@ -56,12 +56,6 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        out.println("Send me tasks! I'm hungry!");
-        ctx.fireChannelActive();
-    }
-
-    @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OffloadTask msg) {
         LOG.info("Got offloading task request `{}` from `{}`", msg, ctx.channel().remoteAddress());

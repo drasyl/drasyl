@@ -93,6 +93,7 @@ public class VmChannelInitializer extends AbstractChannelInitializer {
                                 ctx.pipeline().addFirst(new SpawnChildChannelToPeer(ch, broker));
                             }
                             ctx.pipeline().remove(this);
+                            out.println("Send me tasks! I'm hungry!");
                         }
                         else {
                             ctx.fireUserEventTriggered(evt);

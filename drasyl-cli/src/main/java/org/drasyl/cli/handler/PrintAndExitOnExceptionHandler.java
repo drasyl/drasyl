@@ -46,7 +46,7 @@ public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
-        if (ctx.channel().isOpen()) {
+        if (!exitCode.isPresent()) {
             cause.printStackTrace(printStream);
             ctx.channel().close();
             exitCode.trySet(1);

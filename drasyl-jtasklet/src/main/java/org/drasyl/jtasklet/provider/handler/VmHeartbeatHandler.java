@@ -49,7 +49,8 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        heartbeat = ctx.executor().scheduleWithFixedDelay(() -> sendHeartbeat(ctx), 0L, 1_000L, MILLISECONDS);
+        sendHeartbeat(ctx);
+//        heartbeat = ctx.executor().scheduleWithFixedDelay(() -> sendHeartbeat(ctx), 0L, 1_000L, MILLISECONDS);
         ctx.fireChannelActive();
     }
 

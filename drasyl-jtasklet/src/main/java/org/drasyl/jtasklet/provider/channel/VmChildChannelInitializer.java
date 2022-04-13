@@ -1,6 +1,8 @@
 package org.drasyl.jtasklet.provider.channel;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.stream.ChunkedWriteHandler;
@@ -13,6 +15,7 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
@@ -66,20 +69,35 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
         final boolean isBroker = ch.remoteAddress().equals(broker);
 
         // handshake
-        p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(10_000, true));
-        p.addLast(new ConnectionHandshakePendWritesHandler());
-        p.addLast(new CloseOnConnectionHandshakeError());
+        ch.pipeline().addLast(
+                new ConnectionHandshakeCodec(),
+                new ConnectionHandshakeHandler(10_000, true),
+                new ConnectionHandshakePendWritesHandler(), new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                final Throwable cause) {
+                        if (cause instanceof ConnectionHandshakeException) {
+                            cause.printStackTrace(err);
+                            ctx.close();
+                            exitCode.trySet(1);
+                        }
+                        else {
+                            ctx.fireExceptionCaught(cause);
+                        }
+                    }
+                }
+        );
 
         // arq
-        p.addLast(new StopAndWaitArqCodec());
-        p.addLast(new StopAndWaitArqHandler(100));
-        p.addLast(new ByteToStopAndWaitArqDataCodec());
-        p.addLast(new WriteTimeoutHandler(10));
+        ch.pipeline().addLast(
+                new StopAndWaitArqCodec(),
+                new StopAndWaitArqHandler(100),
+                new ByteToStopAndWaitArqDataCodec(),
+                new WriteTimeoutHandler(10)
+        );
 
         // chunking
         ch.pipeline().addLast(
@@ -93,15 +111,15 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         );
 
         // codec
-        p.addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+        ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
 
         // vm
         if (isBroker) {
             brokerChannel.set(ch);
-            p.addLast(new VmHeartbeatHandler(lastRttReport, benchmark));
+            ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark));
         }
-        p.addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel));
+        ch.pipeline().addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel));
 
-        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+        ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

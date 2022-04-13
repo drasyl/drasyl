@@ -1,5 +1,7 @@
 package org.drasyl.jtasklet.consumer.channel;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -10,6 +12,7 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
@@ -72,7 +75,20 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
                     new ConnectionHandshakeCodec(),
                     new ConnectionHandshakeHandler(10_000, true),
                     new ConnectionHandshakePendWritesHandler(),
-                    new CloseOnConnectionHandshakeError()
+                    new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) {
+                            if (cause instanceof ConnectionHandshakeException) {
+                                cause.printStackTrace(err);
+                                ctx.close();
+                                exitCode.trySet(1);
+                            }
+                            else {
+                                ctx.fireExceptionCaught(cause);
+                            }
+                        }
+                    }
             );
 
             // arq
