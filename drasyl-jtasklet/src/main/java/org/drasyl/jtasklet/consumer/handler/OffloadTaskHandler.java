@@ -82,6 +82,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
                 out.println("failed!");
                 brokerChannel.get().writeAndFlush(new ReleaseToken(token.get()));
                 ctx.channel().close();
+                ctx.channel().parent().pipeline().fireExceptionCaught(new Exception("Resource provider unreachable"));
             }
         });
 
