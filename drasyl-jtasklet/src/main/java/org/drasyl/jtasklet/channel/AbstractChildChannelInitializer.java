@@ -22,6 +22,8 @@ import org.drasyl.handler.stream.MessageChunksBuffer;
 import org.drasyl.handler.stream.ReassembledMessageDecoder;
 import org.drasyl.jtasklet.broker.handler.JTaskletConnectionHandshakeHandler;
 import org.drasyl.jtasklet.message.TaskletMessage;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 
@@ -29,6 +31,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
 
 public abstract class AbstractChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractChildChannelInitializer.class);
     protected final PrintStream out;
 
     protected AbstractChildChannelInitializer(PrintStream out) {
@@ -92,11 +95,12 @@ public abstract class AbstractChildChannelInitializer extends ChannelInitializer
             public void exceptionCaught(final ChannelHandlerContext ctx,
                                         final Throwable cause) {
                 if (cause instanceof WriteTimeoutException) {
-                    out.println("Connection lost: " + cause);
+                    LOG.debug("Connection lost: " + cause);
                     ctx.close();
                 }
                 else {
-                    ctx.fireExceptionCaught(cause);
+                    cause.printStackTrace();
+                    ctx.close();
                 }
             }
         });

@@ -5,7 +5,7 @@ import org.drasyl.handler.PeersRttReport;
 import java.util.Objects;
 
 public class TaskletVm {
-    private final long benchmark;
+    private long benchmark;
     private long lastHeartbeatTime;
     private PeersRttReport rttReport;
     private boolean busy;
@@ -16,13 +16,14 @@ public class TaskletVm {
         this.benchmark = benchmark;
     }
 
-    public void heartbeatReceived(final PeersRttReport rttReport, final String token) {
+    public void heartbeatReceived(final PeersRttReport rttReport, final String token, final long benchmark) {
         this.rttReport = rttReport;
         lastHeartbeatTime = System.currentTimeMillis();
         if (!Objects.equals(this.token, token)) {
             busy = false;
         }
         this.token = token;
+        this.benchmark = benchmark;
     }
 
     @Override

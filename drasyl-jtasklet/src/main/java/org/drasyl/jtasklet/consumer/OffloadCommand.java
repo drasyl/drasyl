@@ -5,6 +5,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.jtasklet.CsvLogger;
 import org.drasyl.jtasklet.consumer.channel.ConsumerChannelInitializer;
 import org.drasyl.jtasklet.consumer.channel.ConsumerChildChannelInitializer;
 import org.drasyl.util.Worm;
@@ -17,16 +18,14 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 @Command(
         name = "offload",
@@ -96,6 +95,15 @@ public class OffloadCommand extends ChannelOptions {
                     out.println("Return result     : +" + Duration.between(offloadTaskTime.get(), returnResultTime.get()).toMillis());
                     out.println("Total time        : +" + Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis());
                     out.println("Got result        : " + Arrays.toString(output));
+
+                    CsvLogger.log(identityFile.getName(), Map.of(
+                            "Public key", identity.getAddress(),
+                            "Task", task,
+                            "Input", Arrays.toString(input.toArray()),
+                            "Token", token.get(),
+                            "Total time", Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis(),
+                            "Output", Arrays.toString(output)
+                    ), true);
                 },
                 requestResourceTime,
                 resourceResponseTime,
