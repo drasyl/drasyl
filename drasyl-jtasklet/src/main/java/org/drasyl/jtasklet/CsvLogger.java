@@ -17,16 +17,18 @@ public class CsvLogger {
         if (writer == null) {
             try {
                 writer = new FileWriter("./" + filename + ".csv", append);
-                boolean first = true;
-                for (String column : columns.keySet()) {
-                    if (!first) {
-                        writer.append(',');
+                if (!new File("./" + filename + ".csv").exists()) {
+                    boolean first = true;
+                    for (String column : columns.keySet()) {
+                        if (!first) {
+                            writer.append(',');
+                        }
+                        writer.append('"' + column + '"');
+                        first = false;
                     }
-                    writer.append('"' + column + '"');
-                    first = false;
+                    writer.append('\n');
+                    writers.put(filename, writer);
                 }
-                writer.append('\n');
-                writers.put(filename, writer);
             }
             catch (final IOException e) {
                 throw new RuntimeException(e);
