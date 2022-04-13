@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.stream.MessageChunksBufferInputList;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
@@ -32,6 +33,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -41,11 +43,17 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     private static final Logger LOG = LoggerFactory.getLogger(ResourceRequestHandler.class);
     private final PrintStream out;
     private final AtomicReference<IdentityPublicKey> provider;
+    private final AtomicReference<Instant> requestResourceTime;
+    private final AtomicReference<Instant> resourceResponseTime;
 
     public ResourceRequestHandler(final PrintStream out,
-                                  final AtomicReference<IdentityPublicKey> provider) {
+                                  final AtomicReference<IdentityPublicKey> provider,
+                                  final AtomicReference<Instant> requestResourceTime,
+                                  final AtomicReference<Instant> resourceResponseTime) {
         this.out = requireNonNull(out);
         this.provider = requireNonNull(provider);
+        this.requestResourceTime = requireNonNull(requestResourceTime);
+        this.resourceResponseTime = requireNonNull(resourceResponseTime);
     }
 
     @Override
@@ -53,6 +61,7 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
         final ResourceRequest msg = new ResourceRequest();
         LOG.info("Send resource request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.print("Request resource from broker " + ctx.channel().remoteAddress() + "...");
+        requestResourceTime.set(Instant.now());
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(f -> {
             if (f.isSuccess()) {
                 out.println("done!");
@@ -66,6 +75,7 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ResourceResponse msg) {
         LOG.info("Got resource response `{}` from `{}`", msg, ctx.channel().remoteAddress());
+        resourceResponseTime.set(Instant.now());
         final IdentityPublicKey publicKey = msg.getPublicKey();
         if (publicKey == null) {
             out.println("No resources available. Please try again later.");

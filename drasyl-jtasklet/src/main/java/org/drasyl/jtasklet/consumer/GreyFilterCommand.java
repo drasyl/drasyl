@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -45,6 +46,10 @@ public class GreyFilterCommand extends ChannelOptions {
     private Object[] input;
     private int height;
     private int width;
+    private final AtomicReference<Instant> requestResourceTime = new AtomicReference<>();
+    private final AtomicReference<Instant> resourceResponseTime = new AtomicReference<>();
+    private final AtomicReference<Instant> offloadTaskTime = new AtomicReference<>();
+    private final AtomicReference<Instant> returnResultTime = new AtomicReference<>();
 
     public GreyFilterCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -84,7 +89,7 @@ public class GreyFilterCommand extends ChannelOptions {
             catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        });
+        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime);
     }
 
     @Override

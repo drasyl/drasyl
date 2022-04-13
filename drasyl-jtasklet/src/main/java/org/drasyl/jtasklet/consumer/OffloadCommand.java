@@ -17,11 +17,16 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 @Command(
         name = "offload",
@@ -45,6 +50,10 @@ public class OffloadCommand extends ChannelOptions {
     List<Object> input;
     private final AtomicReference<IdentityPublicKey> provider = new AtomicReference<>();
     private String source;
+    private final AtomicReference<Instant> requestResourceTime = new AtomicReference<>();
+    private final AtomicReference<Instant> resourceResponseTime = new AtomicReference<>();
+    private final AtomicReference<Instant> offloadTaskTime = new AtomicReference<>();
+    private final AtomicReference<Instant> returnResultTime = new AtomicReference<>();
 
     public OffloadCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -70,7 +79,26 @@ public class OffloadCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input.toArray(), provider, output -> out.println("Got result: " + Arrays.toString(output)));
+        return new ConsumerChildChannelInitializer(
+                out,
+                err,
+                exitCode,
+                broker,
+                source,
+                input.toArray(),
+                provider,
+                output -> {
+                    out.println("Resource request  :  0");
+                    out.println("Resource response : +" + Duration.between(requestResourceTime.get(), resourceResponseTime.get()).toMillis());
+                    out.println("Offload task      : +" + Duration.between(resourceResponseTime.get(), offloadTaskTime.get()).toMillis());
+                    out.println("Return result     : +" + Duration.between(offloadTaskTime.get(), returnResultTime.get()).toMillis());
+                    out.println("Got result        : " + Arrays.toString(output));
+                },
+                requestResourceTime,
+                resourceResponseTime,
+                offloadTaskTime,
+                returnResultTime
+        );
     }
 
     @Override

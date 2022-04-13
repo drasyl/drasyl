@@ -1,7 +1,5 @@
 package org.drasyl.jtasklet.consumer.channel;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
@@ -12,7 +10,6 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
@@ -29,6 +26,7 @@ import org.drasyl.jtasklet.message.TaskletMessage;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -44,6 +42,10 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
     private final Object[] input;
     private final AtomicReference<IdentityPublicKey> provider;
     private final Consumer<Object[]> outputConsumer;
+    private final AtomicReference<Instant> requestResourceTime;
+    private final AtomicReference<Instant> resourceResponseTime;
+    private AtomicReference<Instant> offloadTaskTime;
+    private AtomicReference<Instant> returnResultTime;
 
     @SuppressWarnings("java:S107")
     public ConsumerChildChannelInitializer(final PrintStream out,
@@ -53,7 +55,11 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
                                            final String source,
                                            final Object[] input,
                                            final AtomicReference<IdentityPublicKey> provider,
-                                           final Consumer<Object[]> outputConsumer) {
+                                           final Consumer<Object[]> outputConsumer,
+                                           final AtomicReference<Instant> requestResourceTime,
+                                           final AtomicReference<Instant> resourceResponseTime,
+                                           final AtomicReference<Instant> offloadTaskTime,
+                                           final AtomicReference<Instant> returnResultTime) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -62,6 +68,10 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
         this.input = requireNonNull(input);
         this.provider = requireNonNull(provider);
         this.outputConsumer = requireNonNull(outputConsumer);
+        this.requestResourceTime = requireNonNull(requestResourceTime);
+        this.resourceResponseTime = requireNonNull(resourceResponseTime);
+        this.offloadTaskTime = requireNonNull(offloadTaskTime);
+        this.returnResultTime = requireNonNull(returnResultTime);
     }
 
     @Override
@@ -102,10 +112,10 @@ public class ConsumerChildChannelInitializer extends ChannelInitializer<DrasylCh
 
             // consumer
             if (isBroker) {
-                ch.pipeline().addLast(new ResourceRequestHandler(out, provider));
+                ch.pipeline().addLast(new ResourceRequestHandler(out, provider, requestResourceTime, resourceResponseTime));
             }
             else if (isProvider) {
-                ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer));
+                ch.pipeline().addLast(new OffloadTaskHandler(out, source, input, outputConsumer, offloadTaskTime, returnResultTime));
             }
 
             ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));

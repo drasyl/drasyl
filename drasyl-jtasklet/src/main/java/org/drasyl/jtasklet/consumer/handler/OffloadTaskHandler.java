@@ -29,7 +29,9 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -41,15 +43,21 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     private final String source;
     private final Object[] input;
     private final Consumer<Object[]> outputConsumer;
+    private final AtomicReference<Instant> offloadTaskTime;
+    private final AtomicReference<Instant> returnResultTime;
 
     public OffloadTaskHandler(final PrintStream out,
                               final String source,
                               final Object[] input,
-                              Consumer<Object[]> outputConsumer) {
+                              final Consumer<Object[]> outputConsumer,
+                              final AtomicReference<Instant> offloadTaskTime,
+                              final AtomicReference<Instant> returnResultTime) {
         this.out = requireNonNull(out);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
         this.outputConsumer = requireNonNull(outputConsumer);
+        this.offloadTaskTime = requireNonNull(offloadTaskTime);
+        this.returnResultTime = requireNonNull(returnResultTime);
     }
 
     @Override
@@ -57,6 +65,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
         final OffloadTask msg = new OffloadTask(source, input);
         LOG.info("Send offload task request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.print("Offload task to " + ctx.channel().remoteAddress() + " with input " + Arrays.toString(input) + "...");
+        offloadTaskTime.set(Instant.now());
         ctx.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
             if (future.isSuccess()) {
                 out.println("done!");
@@ -70,6 +79,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ReturnResult msg) {
         LOG.info("Got result `{}` from `{}`", msg, ctx.channel().remoteAddress());
+        returnResultTime.set(Instant.now());
         outputConsumer.accept(msg.getOutput());
         ctx.close();
     }
