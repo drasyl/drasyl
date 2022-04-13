@@ -20,6 +20,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -99,17 +101,21 @@ public class OffloadCommand extends ChannelOptions {
                     CsvLogger.log(
                             identityFile.getName(),
                             new String[]{
-                                    "Public key",
+                                    "Time",
+                                    "Provider",
                                     "Task",
                                     "Input",
+                                    "Consumer",
                                     "Token",
                                     "Total time",
                                     "Output"
                             },
                             new Object[]{
+                                    DateTimeFormatter.RFC_1123_DATE_TIME.format(ZonedDateTime.now()),
                                     identity.getAddress(),
                                     task,
                                     Arrays.toString(input.toArray()),
+                                    provider.get(),
                                     token.get(),
                                     Duration.between(requestResourceTime.get(), returnResultTime.get()).toMillis(),
                                     Arrays.toString(output)
