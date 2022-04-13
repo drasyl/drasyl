@@ -24,8 +24,6 @@ package org.drasyl.jtasklet.provider.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.VmUp;
@@ -55,7 +53,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void channelActive(final ChannelHandlerContext ctx) {
         out.println("Send me tasks! I'm hungry!");
         ctx.fireChannelActive();
     }
@@ -77,9 +75,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
                     out.println("done!");
                     final Channel channel = brokerChannel.get();
                     if (channel != null) {
-                        channel.writeAndFlush(new VmUp()).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> {
-                            out.println("Send me tasks! I'm hungry!");
-                        });
+                        channel.writeAndFlush(new VmUp()).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
                     }
                 }
             });
