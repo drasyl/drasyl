@@ -50,6 +50,7 @@ public class BrokerVmUpHandler extends SimpleChannelInboundHandler<VmUp> {
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final VmUp msg) {
         final IdentityPublicKey sender = (IdentityPublicKey) ctx.channel().remoteAddress();
+        out.println(sender + " performed task within " + msg.getExecutionTime() + "ms.");
         LOG.debug("Got VM up `{}` from `{}`", msg, sender);
 
         synchronized (vms) {

@@ -116,7 +116,10 @@ public class VmChildChannelInitializer extends ChannelInitializer<DrasylChannel>
         // vm
         if (isBroker) {
             brokerChannel.set(ch);
-            ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark));
+            ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark, err));
+
+            // close parent as well
+            ch.closeFuture().addListener(f -> ch.parent().close());
         }
         ch.pipeline().addLast(new ProcessTaskHandler(runtimeEnvironment, out, brokerChannel));
 

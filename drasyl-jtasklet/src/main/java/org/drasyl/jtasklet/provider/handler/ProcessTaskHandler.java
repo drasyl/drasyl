@@ -72,7 +72,7 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
                     out.println("done!");
                     final Channel channel = brokerChannel.get();
                     if (channel != null) {
-                        channel.writeAndFlush(new VmUp()).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
+                        channel.writeAndFlush(new VmUp(result.getExecutionTime())).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
                     }
                 }
             });

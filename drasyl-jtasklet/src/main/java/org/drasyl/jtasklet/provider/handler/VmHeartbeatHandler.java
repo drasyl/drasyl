@@ -29,6 +29,8 @@ import org.drasyl.jtasklet.message.VmHeartbeat;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.PrintStream;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -39,12 +41,14 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(VmHeartbeatHandler.class);
     private final AtomicReference<PeersRttReport> lastRttReport;
     private final long benchmark;
-    private Future<?> heartbeat;
+    private final PrintStream err;
 
     public VmHeartbeatHandler(final AtomicReference<PeersRttReport> lastRttReport,
-                              final long benchmark) {
+                              final long benchmark,
+                              final PrintStream err) {
         this.lastRttReport = requireNonNull(lastRttReport);
         this.benchmark = benchmark;
+        this.err = requireNonNull(err);
     }
 
     @Override
@@ -62,6 +66,9 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
                 if (f.isSuccess()) {
                     LOG.trace("ACKed");
                     ctx.executor().schedule(() -> sendHeartbeat(ctx), 1_000L, MILLISECONDS);
+                }
+                else {
+                    err.println("Broker unreachable!");
                 }
             });
         }
