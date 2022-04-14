@@ -34,7 +34,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.function.Supplier;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
-import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSED;
@@ -44,7 +43,6 @@ import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_SENT;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall.ABORT;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall.OPEN;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
@@ -130,7 +128,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (activeOpen) {
             // active OPEN
             LOG.trace("[{}] Perform active OPEN.", state);
-            connectionOpen(ctx, ctx.newPromise());
+            userCallOpen(ctx, ctx.newPromise());
         }
         else {
             // passive OPEN
@@ -152,7 +150,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         if (msg instanceof ConnectionHandshakeSegment) {
-            channelReadSegment(ctx, (ConnectionHandshakeSegment) msg);
+            segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
         }
         else {
             ctx.fireChannelRead(msg);
@@ -169,27 +167,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg == OPEN) {
             // user issues handshake
-            connectionOpen(ctx, promise);
+            userCallOpen(ctx, promise);
         }
         else if (msg == ABORT) {
-            connectionAbort(ctx, promise);
+            userCallAbort(ctx, promise);
         }
         else {
-            if (state != ESTABLISHED) {
-                promise.setFailure(new IllegalStateException("Attempting to write to channel with handshake in progress"));
-                return;
-            }
-
-            ctx.write(msg, promise);
+            // user call WRITE
+            userCallSend(ctx, msg, promise);
         }
     }
 
     /*
-     * Handshake
+     * User Calls
      */
 
-    private void connectionOpen(final ChannelHandlerContext ctx,
-                                final ChannelPromise promise) {
+    private void userCallOpen(final ChannelHandlerContext ctx,
+                              final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
             case LISTEN:
@@ -220,20 +214,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
-    private void applyHandshakeTimeout(final ChannelHandlerContext ctx,
-                                       final ChannelPromise promise) {
-        if (handshakeTimeout > 0) {
-            handshakeTimeoutFuture = ctx.executor().schedule(() -> {
-                LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
-                state = CLOSED;
-                final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
-                ctx.fireExceptionCaught(e);
-                promise.setFailure(e);
-            }, handshakeTimeout, MILLISECONDS);
+    private void userCallSend(final ChannelHandlerContext ctx,
+                              final Object msg,
+                              final ChannelPromise promise) {
+        if (state != ESTABLISHED) {
+            promise.setFailure(new IllegalStateException("Attempting to write to channel with handshake in progress"));
+            return;
         }
+
+        ctx.write(msg, promise);
     }
 
-    private void connectionAbort(final ChannelHandlerContext ctx, final ChannelPromise promise) {
+    private void userCallAbort(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         if (openPromise != null) {
             openPromise.setFailure(new Exception("handshake aborted."));
         }
@@ -262,41 +254,53 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
+    private void applyHandshakeTimeout(final ChannelHandlerContext ctx,
+                                       final ChannelPromise promise) {
+        if (handshakeTimeout > 0) {
+            handshakeTimeoutFuture = ctx.executor().schedule(() -> {
+                LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
+                state = CLOSED;
+                final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
+                ctx.fireExceptionCaught(e);
+                promise.setFailure(e);
+            }, handshakeTimeout, MILLISECONDS);
+        }
+    }
+
     private void cancelTimeoutGuards() {
         if (handshakeTimeoutFuture != null) {
             handshakeTimeoutFuture.cancel(false);
         }
     }
 
-    private void channelReadSegment(final ChannelHandlerContext ctx,
-                                    final ConnectionHandshakeSegment seg) {
+    /*
+     * Arriving Segments
+     */
+
+    private void segmentArrives(final ChannelHandlerContext ctx,
+                                final ConnectionHandshakeSegment seg) {
         LOG.trace("[{}] Read `{}`.", state, seg);
 
         switch (state) {
             case CLOSED:
-                channelReadSegmentClosedState(ctx, seg);
+                segmentArrivesOnClosedState(ctx, seg);
                 break;
 
             case LISTEN:
-                channelReadSegmentListenState(ctx, seg);
+                segmentArrivesOnListenState(ctx, seg);
                 break;
 
             case SYN_SENT:
-                channelReadSegmentSynSentState(ctx, seg);
+                segmentArrivesOnSynSentState(ctx, seg);
                 break;
 
-            case SYN_RECEIVED:
-                channelReadSegmentSynReceivedState(ctx, seg);
-                break;
-
-            case ESTABLISHED:
-                channelReadSegmentEstablishedState(ctx, seg);
-                break;
+            default:
+                segmentArrivesOnOtherStates(ctx, seg);
         }
     }
 
-    private void channelReadSegmentClosedState(final ChannelHandlerContext ctx,
-                                               final ConnectionHandshakeSegment seg) {
+    private void segmentArrivesOnClosedState(final ChannelHandlerContext ctx,
+                                             final ConnectionHandshakeSegment seg) {
         if (seg.isRst()) {
             // as we are already/still in CLOSED state, we can ignore the RST
             ReferenceCountUtil.release(seg);
@@ -318,8 +322,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.release(seg);
     }
 
-    private void channelReadSegmentListenState(final ChannelHandlerContext ctx,
-                                               final ConnectionHandshakeSegment seg) {
+    private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
+                                             final ConnectionHandshakeSegment seg) {
         if (seg.isRst()) {
             // as we are already/still in CLOSED state, we can ignore the RST
             ReferenceCountUtil.release(seg);
@@ -365,8 +369,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings("java:S3776")
-    private void channelReadSegmentSynSentState(final ChannelHandlerContext ctx,
-                                                final ConnectionHandshakeSegment seg) {
+    private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
+                                              final ConnectionHandshakeSegment seg) {
         if (seg.isAck() && (seg.ack() <= iss || seg.ack() > sndNxt)) {
             // segment ACKed something we never sent
             if (!seg.isRst()) {
@@ -429,95 +433,90 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
-    @SuppressWarnings("java:S3776")
-    private void channelReadSegmentSynReceivedState(final ChannelHandlerContext ctx,
-                                                    final ConnectionHandshakeSegment seg) {
+    @SuppressWarnings({
+            "java:S131",
+            "java:S1301",
+            "java:S3776",
+            "SwitchStatementWithTooFewBranches"
+    })
+    private void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
+                                             final ConnectionHandshakeSegment seg) {
         // check SEQ
-        if (seg.seq() != rcvNxt && !seg.isAck()) {
-            // not expected seq
-            if (!seg.isRst()) {
-                final int seq = sndNxt;
-                final int ack = rcvNxt;
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                LOG.trace("[{}] Write `{}`.", state, response);
-                ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-            }
-            ReferenceCountUtil.release(seg);
-            return;
-        }
-
-        // check RST
-        if (seg.isRst()) {
-            if (activeOpen) {
-                // connection has been refused by remote
-                state = CLOSED;
-                ReferenceCountUtil.release(seg);
-                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection refused"));
-                return;
-            }
-            else {
-                // peer is not longer interested in a connection. Go back to previous state
-                state = LISTEN;
-                ReferenceCountUtil.release(seg);
-                return;
-            }
-        }
-
-        if (seg.isAck()) {
-            if (sndUna <= seg.ack() && seg.ack() <= sndNxt) {
-                cancelTimeoutGuards();
-                state = ESTABLISHED;
-
-                if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
-                    sndUna = seg.ack();
-                }
-                else if (seg.ack() < sndUna) {
-                    // ACK is duplicate, ignore
+        switch (state) {
+            case SYN_RECEIVED:
+            case ESTABLISHED:
+                if (seg.seq() != rcvNxt && !seg.isOnlyAck()) {
+                    // not expected seq
+                    if (!seg.isRst()) {
+                        final int seq = sndNxt;
+                        final int ack = rcvNxt;
+                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+                        LOG.trace("[{}] Write `{}`.", state, response);
+                        ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
+                    }
                     ReferenceCountUtil.release(seg);
+                    return;
                 }
-                else if (seg.ack() > sndNxt) {
-                    // ACK acks something not yet sent
-                    System.out.println();
-                }
-
-                ReferenceCountUtil.release(seg);
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
-
-                if (openPromise != null) {
-                    openPromise.setSuccess();
-                }
-            }
-            else {
-                ReferenceCountUtil.release(seg);
-                final int seq = seg.ack();
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seq);
-                LOG.trace("[{}] Write `{}`.", state, response);
-                ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
-            }
-        }
-    }
-
-    private void channelReadSegmentEstablishedState(final ChannelHandlerContext ctx,
-                                                    final ConnectionHandshakeSegment seg) {
-        // check SEQ
-        if (seg.seq() != rcvNxt && !seg.isOnlyAck()) {
-            // not expected seq
-            if (!seg.isRst()) {
-                final int seq = sndNxt;
-                final int ack = rcvNxt;
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                LOG.trace("[{}] Write `{}`.", state, response);
-                ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-            }
-            ReferenceCountUtil.release(seg);
-            return;
+                break;
         }
 
         // check RST
         if (seg.isRst()) {
-            state = CLOSED;
-            ReferenceCountUtil.release(seg);
-            ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
+            switch (state) {
+                case SYN_RECEIVED:
+                    if (activeOpen) {
+                        // connection has been refused by remote
+                        state = CLOSED;
+                        ReferenceCountUtil.release(seg);
+                        ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection refused"));
+                    }
+                    else {
+                        // peer is no longer interested in a connection. Go back to previous state
+                        state = LISTEN;
+                        ReferenceCountUtil.release(seg);
+                    }
+                    return;
+
+                case ESTABLISHED:
+                    state = CLOSED;
+                    ReferenceCountUtil.release(seg);
+                    ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
+                    return;
+            }
+        }
+
+        // check ACK
+        if (seg.isAck()) {
+            switch (state) {
+                case SYN_RECEIVED:
+                    if (sndUna <= seg.ack() && seg.ack() <= sndNxt) {
+                        cancelTimeoutGuards();
+                        state = ESTABLISHED;
+
+                        if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
+                            sndUna = seg.ack();
+                        }
+                        else if (seg.ack() < sndUna) {
+                            // ACK is duplicate, ignore
+                            ReferenceCountUtil.release(seg);
+                        }
+
+                        ReferenceCountUtil.release(seg);
+                        ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
+
+                        if (openPromise != null) {
+                            openPromise.setSuccess();
+                        }
+                    }
+                    else {
+                        ReferenceCountUtil.release(seg);
+                        final int seq = seg.ack();
+                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seq);
+                        LOG.trace("[{}] Write `{}`.", state, response);
+                        ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
+                    }
+                    break;
+            }
         }
     }
 
