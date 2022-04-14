@@ -23,6 +23,7 @@ package org.drasyl.handler.arq.stopandwait;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
@@ -247,15 +248,16 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
             }
 
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> currentWrite);
-            ctx.writeAndFlush(currentWrite.retainedDuplicate()).addListener(future -> {
+            ctx.writeAndFlush(currentWrite.retainedDuplicate()).addListener((ChannelFutureListener) future -> {
                 if (!future.isSuccess()) {
+                    promise.tryFailure(future.cause());
                     //noinspection unchecked
-                    LOG.warn("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
+                    LOG.trace("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
                 }
-            });
 
-            // schedule next write operation
-            ctx.executor().schedule(() -> writeNextPending(ctx), retryTimeout, MILLISECONDS);
+                // schedule next write operation
+                ctx.executor().schedule(() -> StopAndWaitArqHandler.this.writeNextPending(ctx), retryTimeout, MILLISECONDS);
+            });
 
             break;
         }
@@ -275,18 +277,22 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
 
     private void discardPendingWrites(final ChannelHandlerContext ctx,
                                       final Throwable cause) {
+        //noinspection unchecked
         LOG.trace("[{}] Discard {} pending writes:", ctx.channel().id()::asShortText, pendingWrites::size, () -> cause);
         pendingWrites.removeAndFailAll(cause);
     }
 
     private void writeAck(final ChannelHandlerContext ctx) {
-        final StopAndWaitArqAck ack = expectedInboundSequenceNo ? STOP_AND_WAIT_ACK_1 : STOP_AND_WAIT_ACK_0;
-        LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> ack);
-        ctx.writeAndFlush(ack).addListener(future -> {
-            if (!future.isSuccess()) {
-                //noinspection unchecked
-                LOG.warn("[{}] Unable to send {}:", ctx.channel().id()::asShortText, () -> ack, future::cause);
-            }
-        });
+        if (ctx.channel().isOpen()) {
+            final StopAndWaitArqAck ack = expectedInboundSequenceNo ? STOP_AND_WAIT_ACK_1 : STOP_AND_WAIT_ACK_0;
+            LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> ack);
+            ctx.writeAndFlush(ack).addListener((ChannelFutureListener) future -> {
+                if (!future.isSuccess()) {
+                    //noinspection unchecked
+                    LOG.trace("[{}] Unable to send {}:", future.channel().id()::asShortText, () -> ack, future::cause);
+                    future.channel().close();
+                }
+            });
+        }
     }
 }
