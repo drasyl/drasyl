@@ -57,9 +57,9 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
             assertEquals(ESTABLISHED, handler.state);
 
-            assertEquals(101, handler.snd_una);
-            assertEquals(101, handler.snd_nxt);
-            assertEquals(301, handler.rcv_nxt);
+            assertEquals(101, handler.sndUna);
+            assertEquals(101, handler.sndNxt);
+            assertEquals(301, handler.rcvNxt);
 
             assertTrue(channel.isOpen());
             channel.close();
@@ -79,9 +79,9 @@ class ConnectionHandshakeHandlerTest {
             channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
             assertEquals(ESTABLISHED, handler.state);
 
-            assertEquals(301, handler.snd_una);
-            assertEquals(301, handler.snd_nxt);
-            assertEquals(101, handler.rcv_nxt);
+            assertEquals(301, handler.sndUna);
+            assertEquals(301, handler.sndNxt);
+            assertEquals(101, handler.rcvNxt);
 
             assertTrue(channel.isOpen());
             channel.close();
@@ -100,26 +100,26 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
         assertEquals(SYN_SENT, handler.state);
 
-        assertEquals(100, handler.snd_una);
-        assertEquals(101, handler.snd_nxt);
-        assertEquals(0, handler.rcv_nxt);
+        assertEquals(100, handler.sndUna);
+        assertEquals(101, handler.sndNxt);
+        assertEquals(0, handler.rcvNxt);
 
         // peer SYNchronizes his SEG before our SYN has been received
         channel.writeInbound(ConnectionHandshakeSegment.syn(300));
         assertEquals(SYN_RECEIVED, handler.state);
         assertEquals(ConnectionHandshakeSegment.synAck(100, 301), channel.readOutbound());
 
-        assertEquals(100, handler.snd_una);
-        assertEquals(101, handler.snd_nxt);
-        assertEquals(301, handler.rcv_nxt);
+        assertEquals(100, handler.sndUna);
+        assertEquals(101, handler.sndNxt);
+        assertEquals(301, handler.rcvNxt);
 
         // peer respont to our SYN with ACK (and another SYN)
         channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
         assertEquals(ESTABLISHED, handler.state);
 
-        assertEquals(101, handler.snd_una);
-        assertEquals(101, handler.snd_nxt);
-        assertEquals(301, handler.rcv_nxt);
+        assertEquals(101, handler.sndUna);
+        assertEquals(101, handler.sndNxt);
+        assertEquals(301, handler.rcvNxt);
 
         assertTrue(channel.isOpen());
         channel.close();

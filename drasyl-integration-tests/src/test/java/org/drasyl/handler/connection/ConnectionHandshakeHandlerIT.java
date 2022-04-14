@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ConnectionHandshakeHandlerIT {
+class ConnectionHandshakeHandlerIT {
     @Test
     void passiveOpenCompleted() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -52,9 +52,9 @@ public class ConnectionHandshakeHandlerIT {
         final Channel serverChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
-                .childHandler(new ChannelInitializer() {
+                .childHandler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, false));
@@ -78,7 +78,7 @@ public class ConnectionHandshakeHandlerIT {
                 .group(group)
                 .handler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, false));
@@ -120,9 +120,9 @@ public class ConnectionHandshakeHandlerIT {
         final Channel serverChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
-                .childHandler(new ChannelInitializer() {
+                .childHandler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
@@ -146,7 +146,7 @@ public class ConnectionHandshakeHandlerIT {
                 .group(group)
                 .handler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
@@ -185,9 +185,9 @@ public class ConnectionHandshakeHandlerIT {
         final Channel serverChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
-                .childHandler(new ChannelInitializer() {
+                .childHandler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                     }
                 })
@@ -199,7 +199,7 @@ public class ConnectionHandshakeHandlerIT {
                 .group(group)
                 .handler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(1_000, true));
