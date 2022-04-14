@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.stream.MessageChunksBufferInputList;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
@@ -60,7 +59,7 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         final ResourceRequest msg = new ResourceRequest();
         LOG.info("Send resource request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.print("Request resource from broker " + ctx.channel().remoteAddress() + " ...");
@@ -70,8 +69,6 @@ public class ResourceRequestHandler extends SimpleChannelInboundHandler<Resource
                 out.println("done!");
             }
         });
-
-        ctx.fireChannelActive();
     }
 
     @Override

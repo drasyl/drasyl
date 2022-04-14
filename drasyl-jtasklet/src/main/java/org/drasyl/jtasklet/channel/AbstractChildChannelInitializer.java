@@ -12,8 +12,8 @@ import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
-import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
 import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
 import org.drasyl.handler.stream.MessageChunkDecoder;
@@ -32,55 +32,67 @@ import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
 
 public abstract class AbstractChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractChildChannelInitializer.class);
+    protected static final int ARQ_RETRY_TIMEOUT = 100;
+    protected static final int ARQ_WRITE_TIMEOUT = 5;
+    protected static final int MSG_CHUNK_SIZE = 1300;
+    protected static final int MSG_MAX_SIZE = 1024 * 1024 * 20;
+    protected static final int MAX_CHUNKS = 15_000;
+    protected static final int CHUNK_FIELD_LENGTH = (int) (Math.log(MAX_CHUNKS) / Math.log(2) / 8) + 1;
     protected final PrintStream out;
+    protected final boolean activeOpen;
 
-    protected AbstractChildChannelInitializer(PrintStream out) {
+    protected AbstractChildChannelInitializer(final PrintStream out, final boolean activeOpen) {
         this.out = requireNonNull(out);
+        this.activeOpen = activeOpen;
     }
 
     @Override
     protected void initChannel(final DrasylChannel ch) {
-        firstStage(ch);
-        handshakeStage(ch);
-        arqStage(ch);
-        chunkingStage(ch);
-        codecStage(ch);
-        lastStage(ch);
+        ch.pipeline().addLast(
+                new ConnectionHandshakeCodec(),
+                new ConnectionHandshakeHandler(10_000, activeOpen),
+                new JTaskletConnectionHandshakeHandler(out),
+                new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void userEventTriggered(ChannelHandlerContext ctx,
+                                                   Object evt) {
+                        if (evt instanceof ConnectionHandshakeCompleted) {
+                            firstStage(ch);
+                            arqStage(ch);
+                            chunkingStage(ch);
+                            codecStage(ch);
+                            lastStage(ch);
+                            ctx.pipeline().remove(this);
+                        }
+                        else {
+                            ctx.fireUserEventTriggered(evt);
+                        }
+                    }
+                }
+        );
     }
 
     protected void firstStage(final DrasylChannel ch) {
         // NOOP
     }
 
-    protected void handshakeStage(final DrasylChannel ch, final boolean activeOpen) {
-        ch.pipeline().addLast(
-                new ConnectionHandshakeCodec(),
-                new ConnectionHandshakeHandler(10_000, activeOpen),
-                new ConnectionHandshakePendWritesHandler(),
-                new JTaskletConnectionHandshakeHandler(out));
-    }
-
-    protected void handshakeStage(DrasylChannel ch) {
-        handshakeStage(ch, true);
-    }
-
     protected void arqStage(final DrasylChannel ch) {
         ch.pipeline().addLast(
                 new StopAndWaitArqCodec(),
-                new StopAndWaitArqHandler(100),
+                new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT),
                 new ByteToStopAndWaitArqDataCodec(),
-                new WriteTimeoutHandler(15)
+                new WriteTimeoutHandler(ARQ_WRITE_TIMEOUT)
         );
     }
 
     protected void chunkingStage(final DrasylChannel ch) {
         ch.pipeline().addLast(
-                new MessageChunkEncoder(2),
+                new MessageChunkEncoder(CHUNK_FIELD_LENGTH),
                 new ChunkedWriteHandler(),
-                new LargeByteBufToChunkedMessageEncoder(1300, 1024 * 1024 * 20),
-                new MessageChunkDecoder(2),
-                new MessageChunksBuffer(1024 * 1024 * 20, 30_000, 15_000),
-                new ChunkedMessageAggregator(1024 * 1024 * 20),
+                new LargeByteBufToChunkedMessageEncoder(MSG_CHUNK_SIZE, MSG_MAX_SIZE),
+                new MessageChunkDecoder(CHUNK_FIELD_LENGTH),
+                new MessageChunksBuffer(MSG_MAX_SIZE, 30_000, MAX_CHUNKS),
+                new ChunkedMessageAggregator(MSG_MAX_SIZE),
                 new ReassembledMessageDecoder()
         );
     }

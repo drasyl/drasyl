@@ -38,7 +38,7 @@ public class ProviderChildChannelInitializer extends AbstractChildChannelInitial
                                            final long benchmark,
                                            final AtomicReference<Channel> brokerChannel,
                                            final AtomicReference<String> token) {
-        super(out);
+        super(out, true);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);

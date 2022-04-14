@@ -24,8 +24,6 @@ package org.drasyl.jtasklet.consumer.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ReleaseToken;
@@ -72,7 +70,7 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         final OffloadTask msg = new OffloadTask(token.get(), source, input);
         LOG.info("Send offload task request `{}` to `{}`", msg, ctx.channel().remoteAddress());
         out.print("Offload task to " + ctx.channel().remoteAddress() + " with input " + Arrays.toString(input) + "...");
@@ -89,8 +87,6 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
                 });
             }
         });
-
-        ctx.fireChannelActive();
     }
 
     @Override

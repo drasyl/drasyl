@@ -48,7 +48,7 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
                                            final AtomicReference<Instant> returnResultTime,
                                            final AtomicReference<String> token,
                                            final AtomicReference<Channel> brokerChannel) {
-        super(out);
+        super(out, true);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.broker = requireNonNull(broker);

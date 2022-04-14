@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 )
 public class VmCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(VmCommand.class);
-    private static final Object[] BENCHMARK_PRIMES_INPUT = new Object[]{ 1, 250_000 };
+    private static final Object[] BENCHMARK_PRIMES_INPUT = new Object[]{ 1, 250 };
     private static final Object[] BENCHMARK_EUROPEAN_OPTION_MC_INPUT = new Object[]{ 20_000, 100 };
     private final RuntimeEnvironment runtimeEnvironment;
     @Option(

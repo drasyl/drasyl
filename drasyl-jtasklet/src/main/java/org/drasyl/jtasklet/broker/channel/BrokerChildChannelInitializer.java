@@ -24,15 +24,10 @@ public class BrokerChildChannelInitializer extends AbstractChildChannelInitializ
                                          final PrintStream err,
                                          final Worm<Integer> exitCode,
                                          final Map<IdentityPublicKey, TaskletVm> vms) {
-        super(out);
+        super(out, false);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.vms = requireNonNull(vms);
-    }
-
-    @Override
-    protected void handshakeStage(DrasylChannel ch) {
-        super.handshakeStage(ch, false);
     }
 
     @Override
