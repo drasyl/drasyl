@@ -22,6 +22,8 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
@@ -31,6 +33,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.function.Supplier;
 
+import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -41,6 +44,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_SENT;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall.ABORT;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall.OPEN;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
@@ -204,7 +208,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final int seq = iss;
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(seq);
                 LOG.trace("[{}] Initiate active OPEN handshake by sending `{}`.", state, seg);
-                writeSegment(ctx, seg);
+                ctx.writeAndFlush(seg).addListener(new RetransmissionOnTimeout(ctx, seg));
 
                 // start handshake timeout guard
                 if (handshakeTimeout > 0) {
@@ -217,12 +221,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         promise.setFailure(e);
                     }, handshakeTimeout, MILLISECONDS);
                 }
-
-                // start retransmission timeout guard
-                retransmissionTimeoutFuture = ctx.executor().scheduleWithFixedDelay(() -> {
-                    LOG.trace("[{}] Retransmission timeout after {}ms for `{}`.", state, retransmissionTimeout, seg);
-                    writeSegment(ctx, seg);
-                }, retransmissionTimeout, retransmissionTimeout, MILLISECONDS);
 
                 ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
                 break;
@@ -253,7 +251,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             case ESTABLISHED:
                 LOG.trace("[{}] Reset connection.", state);
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(sndNxt);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
                 state = CLOSED;
                 promise.setSuccess();
                 break;
@@ -267,12 +266,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (retransmissionTimeoutFuture != null) {
             retransmissionTimeoutFuture.cancel(false);
         }
-    }
-
-    private void writeSegment(final ChannelHandlerContext ctx,
-                              final ConnectionHandshakeSegment seg) {
-        LOG.trace("[{}] Write `{}`.", state, seg);
-        ctx.writeAndFlush(seg).addListener(FIRE_EXCEPTION_ON_FAILURE);
     }
 
     private void channelReadSegment(final ChannelHandlerContext ctx,
@@ -320,7 +313,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         else {
             response = ConnectionHandshakeSegment.rstAck(0, seg.seq());
         }
-        writeSegment(ctx, response);
+        LOG.trace("[{}] Write `{}`.", state, response);
+        ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
         ReferenceCountUtil.release(seg);
     }
 
@@ -335,7 +329,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isAck()) {
             // we are on a state were we have never sent anything that must be ACKed
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-            writeSegment(ctx, response);
+            LOG.trace("[{}] Write `{}`.", state, response);
+            ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
             ReferenceCountUtil.release(seg);
             return;
         }
@@ -357,7 +352,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             final int seq = iss;
             final int ack = rcvNxt;
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(seq, ack);
-            writeSegment(ctx, response);
+            LOG.trace("[{}] Write `{}`.", state, response);
+            ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
             ReferenceCountUtil.release(seg);
 
             ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
@@ -375,7 +371,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // segment ACKed something we never sent
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
             }
             ReferenceCountUtil.release(seg);
             return;
@@ -411,7 +408,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final int seq = sndNxt;
                 final int ack = rcvNxt;
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
                 ReferenceCountUtil.release(seg);
 
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
@@ -424,7 +422,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final int seq = iss;
                 final int ack = rcvNxt;
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(seq, ack);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
                 ReferenceCountUtil.release(seg);
             }
         }
@@ -440,7 +439,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final int seq = sndNxt;
                 final int ack = rcvNxt;
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             }
             ReferenceCountUtil.release(seg);
             return;
@@ -491,7 +491,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ReferenceCountUtil.release(seg);
                 final int seq = seg.ack();
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seq);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(new RetransmissionOnTimeout(ctx, response));
             }
         }
     }
@@ -499,13 +500,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void channelReadSegmentEstablishedState(final ChannelHandlerContext ctx,
                                                     final ConnectionHandshakeSegment seg) {
         // check SEQ
-        if (seg.seq() != rcvNxt && !seg.isAck()) {
+        if (seg.seq() != rcvNxt && !seg.isOnlyAck()) {
             // not expected seq
             if (!seg.isRst()) {
                 final int seq = sndNxt;
                 final int ack = rcvNxt;
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                writeSegment(ctx, response);
+                LOG.trace("[{}] Write `{}`.", state, response);
+                ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             }
             ReferenceCountUtil.release(seg);
             return;
@@ -546,5 +548,35 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         OPEN,
         // abort handshake process
         ABORT
+    }
+
+    private class RetransmissionOnTimeout implements ChannelFutureListener {
+        private final ChannelHandlerContext ctx;
+        private final ConnectionHandshakeSegment seg;
+
+        public RetransmissionOnTimeout(final ChannelHandlerContext ctx,
+                                       final ConnectionHandshakeSegment seg) {
+            this.ctx = requireNonNull(ctx);
+            this.seg = requireNonNull(seg);
+        }
+
+        @Override
+        public void operationComplete(ChannelFuture future) {
+            if (future.isSuccess()) {
+                if (!seg.isOnlyAck()) {
+                    // schedule retransmission
+                    ctx.executor().schedule(() -> {
+                        if (future.channel().isOpen() && sndUna <= seg.seq()) {
+                            LOG.trace("[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", state, seg, retransmissionTimeout);
+                            ctx.writeAndFlush(seg).addListener(this);
+                        }
+                    }, retransmissionTimeout, MILLISECONDS);
+                }
+            }
+            else {
+                LOG.trace("Unable to send `{}`:", () -> seg, future::cause);
+                future.channel().close();
+            }
+        }
     }
 }

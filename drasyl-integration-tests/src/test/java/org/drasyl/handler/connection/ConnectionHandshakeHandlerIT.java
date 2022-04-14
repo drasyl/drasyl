@@ -27,17 +27,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall;
-import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
+import test.DropRandomOutboundMessagesHandler;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +43,9 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionHandshakeHandlerIT {
+    private static final float LOSS_RATE = 0.5f;
+    private static final int MAX_DROP = 10;
+
     @Test
     void passiveOpenCompleted() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -60,7 +61,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new UnreliableOutboundHandler(0.1f));
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -85,7 +86,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new UnreliableOutboundHandler(0.1f));
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -129,8 +130,8 @@ class ConnectionHandshakeHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new UnreliableOutboundHandler(0.1f));
                         p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -154,8 +155,8 @@ class ConnectionHandshakeHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new UnreliableOutboundHandler(0.1f));
                         p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -195,7 +196,6 @@ class ConnectionHandshakeHandlerIT {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(final Channel ch) {
-                        final ChannelPipeline p = ch.pipeline();
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -232,32 +232,6 @@ class ConnectionHandshakeHandlerIT {
             clientChannel.close().sync();
             serverChannel.close().sync();
             group.shutdownGracefully().sync();
-        }
-    }
-
-    private static class UnreliableOutboundHandler extends ChannelOutboundHandlerAdapter {
-        private final float lossRate;
-
-        public UnreliableOutboundHandler(final float lossRate) {
-            this.lossRate = lossRate;
-        }
-
-        @Override
-        public void write(ChannelHandlerContext ctx,
-                          Object msg,
-                          ChannelPromise promise) {
-            // randomly drop messages
-            final int i = RandomUtil.randomInt(1, 100);
-            final float v = lossRate * 100;
-            System.out.println(i + " > " + v + " = " + (i > v));
-            if (i > v) {
-                System.out.println("Pass: " + msg);
-                ctx.write(msg, promise);
-            }
-            else {
-                System.out.println("Drop: " + msg);
-                promise.setSuccess();
-            }
         }
     }
 }
