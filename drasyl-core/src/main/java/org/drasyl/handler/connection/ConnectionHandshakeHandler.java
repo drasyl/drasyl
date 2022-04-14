@@ -70,7 +70,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final boolean activeOpen;
     private ChannelPromise openPromise;
     private ScheduledFuture<?> handshakeTimeoutFuture;
-    private ScheduledFuture<?> retransmissionTimeoutFuture;
     State state;
     // Send Sequence Variables
     int sndUna; // oldest unacknowledged sequence number
@@ -211,22 +210,26 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ctx.writeAndFlush(seg).addListener(new RetransmissionOnTimeout(ctx, seg));
 
                 // start handshake timeout guard
-                if (handshakeTimeout > 0) {
-                    handshakeTimeoutFuture = ctx.executor().schedule(() -> {
-                        cancelTimeoutGuards();
-                        LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
-                        state = CLOSED;
-                        final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
-                        ctx.fireExceptionCaught(e);
-                        promise.setFailure(e);
-                    }, handshakeTimeout, MILLISECONDS);
-                }
+                applyHandshakeTimeout(ctx, promise);
 
                 ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
                 break;
 
             default:
                 promise.setFailure(new Exception("Connection is already open."));
+        }
+    }
+
+    private void applyHandshakeTimeout(final ChannelHandlerContext ctx,
+                                       final ChannelPromise promise) {
+        if (handshakeTimeout > 0) {
+            handshakeTimeoutFuture = ctx.executor().schedule(() -> {
+                LOG.trace("[{}] Handshake timed out after {}ms!", state, handshakeTimeout);
+                state = CLOSED;
+                final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: Handshake timeout");
+                ctx.fireExceptionCaught(e);
+                promise.setFailure(e);
+            }, handshakeTimeout, MILLISECONDS);
         }
     }
 
@@ -262,9 +265,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void cancelTimeoutGuards() {
         if (handshakeTimeoutFuture != null) {
             handshakeTimeoutFuture.cancel(false);
-        }
-        if (retransmissionTimeoutFuture != null) {
-            retransmissionTimeoutFuture.cancel(false);
         }
     }
 
