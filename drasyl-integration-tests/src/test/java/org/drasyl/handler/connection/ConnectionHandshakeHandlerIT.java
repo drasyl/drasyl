@@ -35,6 +35,7 @@ import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall;
 import org.junit.jupiter.api.Test;
+import test.DropRandomOutboundMessagesHandler;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,9 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionHandshakeHandlerIT {
+    private static final float LOSS_RATE = 0.5f;
+    private static final int MAX_DROP = 10;
+
     @Test
     void passiveOpenCompleted() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
@@ -57,7 +61,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(20_000, false));
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -81,7 +86,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(20_000, false));
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -125,6 +131,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -149,6 +156,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -188,7 +196,6 @@ class ConnectionHandshakeHandlerIT {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(final Channel ch) {
-                        final ChannelPipeline p = ch.pipeline();
                     }
                 })
                 .bind(serverAddress).sync().channel();

@@ -37,7 +37,7 @@ import java.util.Objects;
  */
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private static final byte URG = 1 << 5;
-    private static final byte ACK = 1 << 4;
+    static final byte ACK = 1 << 4;
     private static final byte PSH = 1 << 3;
     private static final byte RST = 1 << 2;
     private static final byte SYN = 1 << 1;
@@ -74,6 +74,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public boolean isAck() {
         return (ctl & ACK) != 0;
+    }
+
+    public boolean isOnlyAck() {
+        return ctl == ACK;
     }
 
     public boolean isPsh() {
