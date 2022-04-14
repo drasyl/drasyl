@@ -16,6 +16,7 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import org.junit.jupiter.api.Test;
+import test.DropEveryNthInboundMessageHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StopAndWaitArqIT {
     @Test
-    void shouldHandleUnreliableLink() throws Exception {
+    void shouldWorkOnUnreliableLink() throws Exception {
         final CountDownLatch latch = new CountDownLatch(5);
         final List<Object> received = new ArrayList<>(5);
 
@@ -42,31 +43,20 @@ class StopAndWaitArqIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ChannelInboundHandlerAdapter() {
-                            private int i = 0;
-
-                            @Override
-                            public void channelRead(ChannelHandlerContext ctx,
-                                                    Object msg) throws Exception {
-                                if (!(i++ % 2 == 0)) {
-                                    // drop every 2nd message
-                                    super.channelRead(ctx, msg);
-                                }
-                            }
-                        });
+                        p.addLast(new DropEveryNthInboundMessageHandler(3));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             private Object prevMsg;
 
                             @Override
-                            public void channelRead(ChannelHandlerContext ctx,
-                                                    Object msg) throws Exception {
+                            public void channelRead(final ChannelHandlerContext ctx,
+                                                    final Object msg) {
                                 if (prevMsg == null) {
                                     prevMsg = msg;
-                                    super.channelRead(ctx, msg);
+                                    ctx.fireChannelRead(prevMsg);
                                 }
                                 else {
                                     // replay previous message
-                                    super.channelRead(ctx, prevMsg);
+                                    ctx.fireChannelRead(prevMsg);
                                     ctx.pipeline().remove(this);
                                 }
                             }
@@ -95,6 +85,7 @@ class StopAndWaitArqIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
+                        p.addLast(new DropEveryNthInboundMessageHandler(3));
                         p.addLast(new StopAndWaitArqCodec());
                         p.addLast(new StopAndWaitArqHandler(10));
                         p.addLast(new ByteToStopAndWaitArqDataCodec());

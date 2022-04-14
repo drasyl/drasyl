@@ -253,7 +253,6 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
                     promise.tryFailure(future.cause());
                     //noinspection unchecked
                     LOG.trace("[{}] Unable to write {}:", ctx.channel().id()::asShortText, () -> currentWrite, future::cause);
-                    pendingWrites.remove().tryFailure(future.cause());
                 }
 
                 // schedule next write operation
