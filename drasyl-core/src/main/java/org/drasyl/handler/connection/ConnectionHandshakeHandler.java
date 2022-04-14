@@ -118,22 +118,42 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         this.rcvNxt = rcvNxt;
     }
 
-    /*
-     * Channel Events
-     */
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        userCallClose(ctx, promise);
+    }
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg == OPEN) {
+            // user issues handshake
+            userCallOpen(ctx, promise);
+        }
+        else if (msg == ABORT) {
+            userCallAbort(ctx, promise);
+        }
+        else {
+            // user call WRITE
+            userCallSend(ctx, msg, promise);
+        }
+    }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        // check if active OPEN mode is enabled
-        if (activeOpen) {
-            // active OPEN
-            LOG.trace("[{}] Perform active OPEN.", state);
-            userCallOpen(ctx, ctx.newPromise());
-        }
-        else {
-            // passive OPEN
-            LOG.trace("[{}] Perform passive OPEN.", state);
-            state = LISTEN;
+        if (state == CLOSED) {
+            // check if active OPEN mode is enabled
+            if (activeOpen) {
+                // active OPEN
+                LOG.trace("[{}] Perform active OPEN.", state);
+                userCallOpen(ctx, ctx.newPromise());
+            }
+            else {
+                // passive OPEN
+                LOG.trace("[{}] Perform passive OPEN.", state);
+                state = LISTEN;
+            }
         }
 
         ctx.fireChannelActive();
@@ -154,27 +174,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
         else {
             ctx.fireChannelRead(msg);
-        }
-    }
-
-    /*
-     * User Events
-     */
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg == OPEN) {
-            // user issues handshake
-            userCallOpen(ctx, promise);
-        }
-        else if (msg == ABORT) {
-            userCallAbort(ctx, promise);
-        }
-        else {
-            // user call WRITE
-            userCallSend(ctx, msg, promise);
         }
     }
 
@@ -223,6 +222,19 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
 
         ctx.write(msg, promise);
+    }
+
+    @SuppressWarnings("java:S131")
+    private void userCallClose(final ChannelHandlerContext ctx, final ChannelPromise promise) {
+        switch (state) {
+            case ESTABLISHED:
+                final int seq = sndNxt;
+                final int ack = rcvNxt;
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(seq, ack);
+                LOG.trace("[{}] Write `{}`.", state, seg);
+                ctx.writeAndFlush(seg).addListener(new RetransmissionOnTimeout(ctx, seg));
+                state = State.FIN_WAIT_1;
+        }
     }
 
     private void userCallAbort(final ChannelHandlerContext ctx, final ChannelPromise promise) {
@@ -536,7 +548,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         SYN_SENT,
         SYN_RECEIVED,
         // connection synchronized
-        ESTABLISHED
+        ESTABLISHED,
+        FIN_WAIT_1,
+        FIN_WAIT_2,
+        CLOSING,
+        TIMED_WAIT,
+        CLOSE_WAIT,
+        LAST_ACK
     }
 
     /**

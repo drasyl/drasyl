@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSED;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.ESTABLISHED;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.FIN_WAIT_1;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LISTEN;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_SENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -113,7 +116,7 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(101, handler.sndNxt);
         assertEquals(301, handler.rcvNxt);
 
-        // peer respont to our SYN with ACK (and another SYN)
+        // peer respond to our SYN with ACK (and another SYN)
         channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
         assertEquals(ESTABLISHED, handler.state);
 
@@ -161,6 +164,21 @@ class ConnectionHandshakeHandlerTest {
             // as we sent an ACK for an unexpected seq, peer will reset us
             assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(ConnectionHandshakeSegment.rst(100)));
             assertEquals(CLOSED, handler.state);
+        }
+    }
+
+    // Both peers are in ESTABLISHED state
+    @Nested
+    class NormalCloseSequence {
+        @Test
+        void asClient() {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ChannelFuture future = channel.close();
+            assertEquals(FIN_WAIT_1, handler.state);
+            assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
+            assertFalse(future.isDone());
         }
     }
 }
