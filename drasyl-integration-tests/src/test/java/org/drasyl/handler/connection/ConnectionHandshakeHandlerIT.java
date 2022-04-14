@@ -27,13 +27,16 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall;
+import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -57,7 +60,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(20_000, false));
+                        p.addLast(new UnreliableOutboundHandler(0.1f));
+                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -81,7 +85,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(20_000, false));
+                        p.addLast(new UnreliableOutboundHandler(0.1f));
+                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -124,6 +129,7 @@ class ConnectionHandshakeHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new UnreliableOutboundHandler(0.1f));
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -148,6 +154,7 @@ class ConnectionHandshakeHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new UnreliableOutboundHandler(0.1f));
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new ConnectionHandshakeHandler(20_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -225,6 +232,32 @@ class ConnectionHandshakeHandlerIT {
             clientChannel.close().sync();
             serverChannel.close().sync();
             group.shutdownGracefully().sync();
+        }
+    }
+
+    private static class UnreliableOutboundHandler extends ChannelOutboundHandlerAdapter {
+        private final float lossRate;
+
+        public UnreliableOutboundHandler(final float lossRate) {
+            this.lossRate = lossRate;
+        }
+
+        @Override
+        public void write(ChannelHandlerContext ctx,
+                          Object msg,
+                          ChannelPromise promise) {
+            // randomly drop messages
+            final int i = RandomUtil.randomInt(1, 100);
+            final float v = lossRate * 100;
+            System.out.println(i + " > " + v + " = " + (i > v));
+            if (i > v) {
+                System.out.println("Pass: " + msg);
+                ctx.write(msg, promise);
+            }
+            else {
+                System.out.println("Drop: " + msg);
+                promise.setSuccess();
+            }
         }
     }
 }
