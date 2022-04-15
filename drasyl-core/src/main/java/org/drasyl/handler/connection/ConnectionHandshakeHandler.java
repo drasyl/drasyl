@@ -656,7 +656,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // our FIN has been ACKed
                     state = CLOSED;
                     LOG.trace("[{}] Switched to new state.", state);
-                    ctx.close(closePromise != null ? closePromise : ctx.newPromise());
+                    if (closePromise != null) {
+                        // close has been triggered by us. pass the event to the remaining pipeline
+                        ctx.close(closePromise);
+                    }
+                    else {
+                        // close has been triggered by remote peer. pass event the whole pipeline
+                        ctx.pipeline().close();
+                    }
                     return;
 
                 default:
@@ -753,7 +760,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         timeWaitTimerFuture = ctx.executor().schedule(() -> {
             state = CLOSED;
             LOG.trace("[{}] Switched to new state.", state);
-            ctx.close(closePromise != null ? closePromise : ctx.newPromise());
+            if (closePromise != null) {
+                // close has been triggered by us. pass the event to the remaining pipeline
+                ctx.close(closePromise);
+            }
+            else {
+                // close has been triggered by remote peer. pass event the whole pipeline
+                ctx.pipeline().close();
+            }
         }, retransmissionTimeout, MILLISECONDS);
     }
 

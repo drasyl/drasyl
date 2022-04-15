@@ -1,6 +1,7 @@
 package org.drasyl.jtasklet.provider;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
@@ -19,6 +20,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Command(
@@ -61,6 +63,11 @@ public class VmCommand extends ChannelOptions {
                 }
             }
             out.println("Benchmark: " + benchmark + "ms");
+
+//            new NioEventLoopGroup(1).schedule(() -> {
+//                final ChannelFuture close = VmCommand.this.ch.close();
+//                close.syncUninterruptibly();
+//            }, 5000, TimeUnit.MILLISECONDS);
 
             return super.call();
         }

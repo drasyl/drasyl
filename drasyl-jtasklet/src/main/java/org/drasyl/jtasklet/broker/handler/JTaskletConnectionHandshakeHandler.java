@@ -1,11 +1,13 @@
 package org.drasyl.jtasklet.broker.handler;
 
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeIssued;
-import org.drasyl.jtasklet.consumer.handler.ResourceRequestHandler;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -13,12 +15,25 @@ import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 
-public class JTaskletConnectionHandshakeHandler extends ChannelInboundHandlerAdapter {
+public class JTaskletConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(JTaskletConnectionHandshakeHandler.class);
     private final PrintStream out;
 
     public JTaskletConnectionHandshakeHandler(final PrintStream out) {
         this.out = requireNonNull(out);
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+        promise.addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed!");
+            }
+            else {
+                out.println("Connection to peer " + ctx.channel().remoteAddress() + " cloused with error: " + future.cause());
+            }
+        });
+        ctx.close(promise);
     }
 
     @Override

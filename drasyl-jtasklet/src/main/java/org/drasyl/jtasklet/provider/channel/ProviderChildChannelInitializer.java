@@ -73,8 +73,8 @@ public class ProviderChildChannelInitializer extends AbstractChildChannelInitial
 
         ch.pipeline().addLast(new VmHeartbeatHandler(lastRttReport, benchmark, err, token));
 
-        // always create a new channel to the broker
-        ch.closeFuture().addListener(future -> ch.parent().pipeline().addFirst(new SpawnChildChannelToPeer((DrasylServerChannel) ch.parent(), (IdentityPublicKey) ch.remoteAddress())));
+        // close parent channel as well
+        ch.closeFuture().addListener(future -> ch.parent().close());
 
     }
 
