@@ -37,7 +37,7 @@ import java.util.Objects;
  */
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private static final byte URG = 1 << 5;
-    static final byte ACK = 1 << 4;
+    private static final byte ACK = 1 << 4;
     private static final byte PSH = 1 << 3;
     private static final byte RST = 1 << 2;
     private static final byte SYN = 1 << 1;
@@ -119,14 +119,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     @Override
     public String toString() {
         final List<String> controlBitLabels = new ArrayList<>();
-        if (isSyn()) {
-            controlBitLabels.add("SYN");
-        }
         if (isUrg()) {
             controlBitLabels.add("URG");
-        }
-        if (isAck()) {
-            controlBitLabels.add("ACK");
         }
         if (isPsh()) {
             controlBitLabels.add("PSH");
@@ -136,6 +130,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         }
         if (isFin()) {
             controlBitLabels.add("FIN");
+        }
+        if (isSyn()) {
+            controlBitLabels.add("SYN");
+        }
+        if (isAck()) {
+            controlBitLabels.add("ACK");
         }
 
         return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + ">";
@@ -153,11 +153,15 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment rstAck(final int seq, final int ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment synAck(final int seq, final int ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment rstAck(final int seq, final int ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
+    public static ConnectionHandshakeSegment finAck(final int seq, final int ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
     }
 }
