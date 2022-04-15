@@ -52,11 +52,10 @@ class ConnectionHandshakeHandlerTest {
     class ThreeWayHandshakeConnectionSynchronization {
         @Test
         void asClient() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, true, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            // SYNchronize our SEG with peer
-            channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+            // channelActive should trigger SYNchronize of our SEG with peer
             assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
             assertEquals(SYN_SENT, handler.state);
 
@@ -108,11 +107,10 @@ class ConnectionHandshakeHandlerTest {
     // Both peers initiate handshake simultaneous
     @Test
     void simultaneousConnectionSynchronization() {
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, CLOSED, 0, 0, 0);
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, true, CLOSED, 0, 0, 0);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        // SYNchronize our SEG with peer
-        channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+        // channelActive should trigger SYNchronize of our SEG with peer
         assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
         assertEquals(SYN_SENT, handler.state);
 
@@ -147,11 +145,10 @@ class ConnectionHandshakeHandlerTest {
     class HalfOpenConnectionDiscovery {
         @Test
         void weCrashed() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 400, false, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 400, true, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            // we want to SYNchronize with an already synchronized peer
-            channel.writeOutbound(ConnectionHandshakeHandler.UserCall.OPEN);
+            // channelActive should trigger SYNchronize of our SEG with peer
             assertEquals(ConnectionHandshakeSegment.syn(400), channel.readOutbound());
             assertEquals(SYN_SENT, handler.state);
 

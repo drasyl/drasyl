@@ -35,14 +35,14 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall;
 import org.junit.jupiter.api.Test;
 import test.DropRandomOutboundMessagesHandler;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -52,6 +52,8 @@ class ConnectionHandshakeHandlerIT {
 
     @Test
     void passiveOpenCompleted() throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+
         // server
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
@@ -79,14 +81,23 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                if (evt instanceof ConnectionHandshakeCompleted) {
+                                    latch.countDown();
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
                     }
                 })
                 .connect(serverAddress).sync().channel();
 
         try {
-            // wait for completion
-            assertNotNull(clientChannel.writeAndFlush(UserCall.OPEN).sync());
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
         finally {
             clientChannel.close().sync();
@@ -164,6 +175,8 @@ class ConnectionHandshakeHandlerIT {
 
     @Test
     void openTimeout() throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+
         // server
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
@@ -195,14 +208,26 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                        final Throwable cause) {
+                                if (cause instanceof ConnectionHandshakeException) {
+                                    latch.countDown();
+                                }
+
+                                ctx.fireExceptionCaught(cause);
+                            }
+                        });
                     }
                 })
                 .connect(serverAddress).sync().channel();
 
         try {
-            // wait for timeout
-            assertThrows(ConnectionHandshakeException.class, clientChannel.writeAndFlush(UserCall.OPEN)::sync);
+            // wait for channel close due to handshake timeout
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            await().untilAsserted(() -> assertFalse(clientChannel.isOpen()));
         }
         finally {
             clientChannel.close().sync();
@@ -213,6 +238,8 @@ class ConnectionHandshakeHandlerIT {
 
     @Test
     void closeTimeout() throws Exception {
+        final CountDownLatch latch = new CountDownLatch(1);
+
         // server
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
@@ -252,14 +279,24 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                if (evt instanceof ConnectionHandshakeCompleted) {
+                                    latch.countDown();
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
                     }
                 })
                 .connect(serverAddress).sync().channel();
 
         try {
             // wait for handshake
-            clientChannel.writeAndFlush(UserCall.OPEN).sync();
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             // wait for timeout
             assertThrows(ConnectionHandshakeException.class, clientChannel.close()::sync);
