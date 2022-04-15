@@ -74,6 +74,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final boolean activeOpen;
     private ChannelPromise openPromise;
     private ScheduledFuture<?> userTimeoutFuture;
+    private ScheduledFuture<?> timeWaitTimerFuture;
     private ChannelPromise closePromise;
     State state;
     // Send Sequence Variables
@@ -203,7 +204,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             default:
-                promise.setFailure(new Exception("Error: Connection is already exists"));
+                promise.setFailure(new ConnectionHandshakeException("Connection is already exists"));
         }
     }
 
@@ -212,41 +213,39 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                               final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
-                promise.setFailure(new ConnectionHandshakeException("Error: Connection does not exist"));
+                promise.setFailure(new ConnectionHandshakeException("Connection does not exist"));
                 break;
 
             case LISTEN:
                 // channel was in passive OPEN mode. Now switch to active OPEN handshake
                 ReferenceCountUtil.release(msg);
-                promise.setFailure(new ConnectionHandshakeException("Error: Connection does not exist. Handshake is now issued. Please try again later"));
+                promise.setFailure(new ConnectionHandshakeException("Connection does not exist. Handshake is now issued. Please try again later"));
                 performActiveOpen(ctx, ctx.newPromise());
                 break;
 
             case SYN_SENT:
             case SYN_RECEIVED:
                 ReferenceCountUtil.release(msg);
-                promise.setFailure(new ConnectionHandshakeException("Error: Handshake in progress"));
+                promise.setFailure(new ConnectionHandshakeException("Handshake in progress"));
                 break;
 
             case ESTABLISHED:
             case CLOSE_WAIT:
-                // TODO: send PSH/ACK?
                 ctx.write(msg, promise);
                 break;
 
             default:
                 ReferenceCountUtil.release(msg);
-                promise.setFailure(new ConnectionHandshakeException("Error: Connection closing"));
+                promise.setFailure(new ConnectionHandshakeException("Connection closing"));
                 break;
         }
     }
 
-    @SuppressWarnings("java:S131")
     private void userCallClose(final ChannelHandlerContext ctx,
                                final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
-                promise.setFailure(new Exception("Error: Connection does not exist"));
+                promise.setFailure(new ConnectionHandshakeException("Connection does not exist"));
                 break;
 
             case LISTEN:
@@ -276,11 +275,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("[{}] Write `{}`.", state, seg2);
                 ctx.writeAndFlush(seg2).addListener(new RetransmissionOnTimeout(ctx, seg2));
                 state = LAST_ACK;
-                // FIXME: eigentlich muss hier auf CLOSING gewechselt werden...
                 break;
 
             default:
-                promise.setFailure(new Exception("Error: Connection closing"));
+                promise.setFailure(new ConnectionHandshakeException("Connection closing"));
                 break;
         }
     }
@@ -295,7 +293,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("[{}] User timeout for {} user call expired after {}ms. Close channel.", state, call, userTimeout);
                 state = CLOSED;
-                final ConnectionHandshakeException e = new ConnectionHandshakeException("Error: User timeout for " + call + " user call");
+                final ConnectionHandshakeException e = new ConnectionHandshakeException("User timeout for " + call + " user call");
                 ctx.fireExceptionCaught(e);
                 promise.setFailure(e);
                 ctx.close();
@@ -306,6 +304,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void cancelTimeoutGuards() {
         if (userTimeoutFuture != null) {
             userTimeoutFuture.cancel(false);
+        }
+        if (timeWaitTimerFuture != null) {
+            timeWaitTimerFuture.cancel(false);
         }
     }
 
@@ -450,7 +451,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (acceptableAck) {
                 ReferenceCountUtil.release(seg);
                 state = CLOSED;
-                ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
+                ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection reset"));
                 return;
             }
             else {
@@ -504,12 +505,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.release(seg);
     }
 
-    @SuppressWarnings({
-            "java:S131",
-            "java:S1301",
-            "java:S3776",
-            "SwitchStatementWithTooFewBranches"
-    })
+    @SuppressWarnings("java:S3776")
     private void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
                                              final ConnectionHandshakeSegment seg) {
         // check SEQ
@@ -537,7 +533,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         // connection has been refused by remote
                         state = CLOSED;
                         ReferenceCountUtil.release(seg);
-                        ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection refused"));
+                        ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection refused"));
                     }
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
@@ -552,7 +548,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case CLOSE_WAIT:
                     state = CLOSED;
                     ReferenceCountUtil.release(seg);
-                    ctx.fireExceptionCaught(new ConnectionHandshakeException("Error: Connection reset"));
+                    ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection reset"));
                     break;
 
                 default:
@@ -602,25 +598,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_1:
                     final boolean finAcked = sndUna < seg.ack() && seg.ack() <= sndNxt;
 
-                    // ESTABLISHED processing
-                    if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
-                        // advance send state
-                        sndUna = seg.ack();
-                    }
-                    if (seg.ack() < sndUna) {
-                        // ACK is duplicate. ignore
+                    if (establishedProcessing(ctx, seg)) {
                         return;
                     }
-                    if (seg.ack() > sndUna) {
-                        // something not yet sent has been ACKed
-                        final int seq = sndNxt;
-                        final int ack = rcvNxt;
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                        LOG.trace("[{}] Write `{}`.", state, response);
-                        ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-                        return;
-                    }
-                    // ESTABLISHED processing
 
                     if (finAcked) {
                         // our FIN has been acknowledged
@@ -629,25 +609,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_2:
-                    // ESTABLISHED processing
-                    if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
-                        // advance send state
-                        sndUna = seg.ack();
-                    }
-                    if (seg.ack() < sndUna) {
-                        // ACK is duplicate. ignore
+                    if (establishedProcessing(ctx, seg)) {
                         return;
                     }
-                    if (seg.ack() > sndUna) {
-                        // something not yet sent has been ACKed
-                        final int seq = sndNxt;
-                        final int ack = rcvNxt;
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                        LOG.trace("[{}] Write `{}`.", state, response);
-                        ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-                        return;
-                    }
-                    // ESTABLISHED processing
 
                     // TODO: the user's close can be acked
 
@@ -656,38 +620,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case CLOSING:
                     final boolean finAcked2 = sndUna < seg.ack() && seg.ack() <= sndNxt;
 
-                    // ESTABLISHED processing
-                    if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
-                        // advance send state
-                        sndUna = seg.ack();
-                    }
-                    if (seg.ack() < sndUna) {
-                        // ACK is duplicate. ignore
+                    if (establishedProcessing(ctx, seg)) {
                         return;
                     }
-                    if (seg.ack() > sndUna) {
-                        // something not yet sent has been ACKed
-                        final int seq = sndNxt;
-                        final int ack = rcvNxt;
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
-                        LOG.trace("[{}] Write `{}`.", state, response);
-                        ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-                        return;
-                    }
-                    // ESTABLISHED processing
 
                     if (finAcked2) {
                         state = TIME_WAIT;
 
-                        // TODO: Start the time-wait timer, turn off the other timers.
-                        ctx.executor().schedule(() -> {
-                            state = CLOSED;
-                            ctx.close(closePromise != null ? closePromise : ctx.newPromise());
-                        }, retransmissionTimeout, MILLISECONDS);
+                        // Start the time-wait timer, turn off the other timers.
+                        applyTimeWaitTimer(ctx);
                     }
                     else {
                         ReferenceCountUtil.release(seg);
-                        return;
                     }
                     break;
 
@@ -706,7 +650,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("[{}] Write `{}`.", state, response);
                     ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
 
-                    // FIXME: restart 2 MSL timeout
+                    // restart 2 MSL timeout
+                    if (timeWaitTimerFuture != null) {
+                        timeWaitTimerFuture.cancel(false);
+                    }
+                    applyTimeWaitTimer(ctx);
             }
         }
 
@@ -747,11 +695,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         // our FIN has been acknowledged
                         state = TIME_WAIT;
 
-                        // TODO: Start the time-wait timer, turn off the other timers.
-                        ctx.executor().schedule(() -> {
-                            state = CLOSED;
-                            ctx.close(closePromise != null ? closePromise : ctx.newPromise());
-                        }, retransmissionTimeout, MILLISECONDS);
+                        // Start the time-wait timer, turn off the other timers.
+                        applyTimeWaitTimer(ctx);
                     }
                     else {
                         state = CLOSING;
@@ -760,21 +705,55 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 case FIN_WAIT_2:
                     state = TIME_WAIT;
-                    // TODO: Start the time-wait timer, turn off the other timers.
-                    ctx.executor().schedule(() -> {
-                        state = CLOSED;
-                        ctx.close(closePromise != null ? closePromise : ctx.newPromise());
-                    }, retransmissionTimeout, MILLISECONDS);
+                    // Start the time-wait timer, turn off the other timers.
+                    applyTimeWaitTimer(ctx);
                     break;
 
                 case TIME_WAIT:
-                    // FIXME: restart 2 MSL time-wait timeout
+                    // restart 2 MSL time-wait timeout
+                    if (timeWaitTimerFuture != null) {
+                        timeWaitTimerFuture.cancel(false);
+                    }
+                    applyTimeWaitTimer(ctx);
                     break;
 
                 default:
                     // remain in state
             }
         }
+    }
+
+    private void applyTimeWaitTimer(final ChannelHandlerContext ctx) {
+        if (userTimeoutFuture != null) {
+            userTimeoutFuture.cancel(false);
+        }
+
+        timeWaitTimerFuture = ctx.executor().schedule(() -> {
+            state = CLOSED;
+            ctx.close(closePromise != null ? closePromise : ctx.newPromise());
+        }, retransmissionTimeout, MILLISECONDS);
+    }
+
+    private boolean establishedProcessing(final ChannelHandlerContext ctx,
+                                          final ConnectionHandshakeSegment seg) {
+        if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
+            // advance send state
+            sndUna = seg.ack();
+        }
+        if (seg.ack() < sndUna) {
+            // ACK is duplicate. ignore
+            return true;
+        }
+        if (seg.ack() > sndUna) {
+            // something not yet sent has been ACKed
+            final int seq = sndNxt;
+            final int ack = rcvNxt;
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+            LOG.trace("[{}] Write `{}`.", state, response);
+            ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
+            return true;
+        }
+        return false;
     }
 
     private void unexpectedSegment(final ConnectionHandshakeSegment seg) {
