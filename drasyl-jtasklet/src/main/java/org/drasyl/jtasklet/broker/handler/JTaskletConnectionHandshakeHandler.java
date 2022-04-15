@@ -25,6 +25,8 @@ public class JTaskletConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+        out.println("Close connection to peer " + ctx.channel().remoteAddress() + " ...");
+
         promise.addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed!");
