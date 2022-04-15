@@ -299,7 +299,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 state = CLOSED;
                 LOG.trace("[{}] Switched to new state.", state);
                 final ConnectionHandshakeException e = new ConnectionHandshakeException("User timeout for " + call + " user call");
-                ctx.fireExceptionCaught(e);
                 promise.setFailure(e);
                 ctx.close();
             }, userTimeout, MILLISECONDS);
