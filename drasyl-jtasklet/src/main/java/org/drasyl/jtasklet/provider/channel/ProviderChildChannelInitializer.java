@@ -1,6 +1,10 @@
 package org.drasyl.jtasklet.provider.channel;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
@@ -13,6 +17,7 @@ import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
@@ -70,6 +75,7 @@ public class ProviderChildChannelInitializer extends AbstractChildChannelInitial
 
         // always create a new channel to the broker
         ch.closeFuture().addListener(future -> ch.parent().pipeline().addFirst(new SpawnChildChannelToPeer((DrasylServerChannel) ch.parent(), (IdentityPublicKey) ch.remoteAddress())));
+
     }
 
     private void consumerStage(final DrasylChannel ch) {

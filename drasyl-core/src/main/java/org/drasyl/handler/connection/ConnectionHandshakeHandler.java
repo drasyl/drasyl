@@ -40,6 +40,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLO
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSE_WAIT;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSING;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.ESTABLISHED;
+import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.FIN_WAIT_1;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.FIN_WAIT_2;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LAST_ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LISTEN;
@@ -166,6 +167,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // passive OPEN
                 LOG.trace("[{}] Perform passive OPEN.", state);
                 state = LISTEN;
+                LOG.trace("[{}] Switched to new state.", state);
             }
         }
 
@@ -261,7 +263,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(seq, ack);
                 LOG.trace("[{}] Write `{}`.", state, seg);
                 ctx.writeAndFlush(seg).addListener(new RetransmissionOnTimeout(ctx, seg));
-                state = State.FIN_WAIT_1;
+                state = FIN_WAIT_1;
+                LOG.trace("[{}] Switched to new state.", state);
 
                 closePromise = promise;
                 applyUserTimeout(ctx, CLOSE, promise);
@@ -275,6 +278,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("[{}] Write `{}`.", state, seg2);
                 ctx.writeAndFlush(seg2).addListener(new RetransmissionOnTimeout(ctx, seg2));
                 state = LAST_ACK;
+                LOG.trace("[{}] Switched to new state.", state);
                 break;
 
             default:
@@ -293,6 +297,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("[{}] User timeout for {} user call expired after {}ms. Close channel.", state, call, userTimeout);
                 state = CLOSED;
+                LOG.trace("[{}] Switched to new state.", state);
                 final ConnectionHandshakeException e = new ConnectionHandshakeException("User timeout for " + call + " user call");
                 ctx.fireExceptionCaught(e);
                 promise.setFailure(e);
@@ -314,6 +319,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         openPromise = promise;
 
         state = SYN_SENT;
+        LOG.trace("[{}] Switched to new state.", state);
 
         // update send state
         iss = issProvider.get();
@@ -404,6 +410,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isSyn()) {
             // yay, peer SYNced with us
             state = SYN_RECEIVED;
+            LOG.trace("[{}] Switched to new state.", state);
 
             // synchronize receive state
             rcvNxt = seg.seq() + 1;
@@ -451,6 +458,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (acceptableAck) {
                 ReferenceCountUtil.release(seg);
                 state = CLOSED;
+                LOG.trace("[{}] Switched to new state.", state);
                 ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection reset"));
                 return;
             }
@@ -474,6 +482,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (ourSynHasBeenAcked) {
                 cancelTimeoutGuards();
                 state = ESTABLISHED;
+                LOG.trace("[{}] Switched to new state.", state);
 
                 // ACK
                 final int seq = sndNxt;
@@ -489,6 +498,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
             else {
                 state = SYN_RECEIVED;
+                LOG.trace("[{}] Switched to new state.", state);
                 // SYN/ACK
                 final int seq = iss;
                 final int ack = rcvNxt;
@@ -532,12 +542,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (activeOpen) {
                         // connection has been refused by remote
                         state = CLOSED;
+                        LOG.trace("[{}] Switched to new state.", state);
                         ReferenceCountUtil.release(seg);
                         ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection refused"));
                     }
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
                         state = LISTEN;
+                        LOG.trace("[{}] Switched to new state.", state);
                         ReferenceCountUtil.release(seg);
                     }
                     break;
@@ -547,12 +559,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                 case CLOSE_WAIT:
                     state = CLOSED;
+                    LOG.trace("[{}] Switched to new state.", state);
                     ReferenceCountUtil.release(seg);
                     ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection reset"));
                     break;
 
                 default:
                     state = CLOSED;
+                    LOG.trace("[{}] Switched to new state.", state);
                     ReferenceCountUtil.release(seg);
             }
         }
@@ -564,6 +578,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (sndUna <= seg.ack() && seg.ack() <= sndNxt) {
                         cancelTimeoutGuards();
                         state = ESTABLISHED;
+                        LOG.trace("[{}] Switched to new state.", state);
 
                         if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
                             // advance send state
@@ -605,6 +620,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (finAcked) {
                         // our FIN has been acknowledged
                         state = FIN_WAIT_2;
+                        LOG.trace("[{}] Switched to new state.", state);
                     }
                     break;
 
@@ -626,6 +642,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     if (finAcked2) {
                         state = TIME_WAIT;
+                        LOG.trace("[{}] Switched to new state.", state);
 
                         // Start the time-wait timer, turn off the other timers.
                         applyTimeWaitTimer(ctx);
@@ -638,6 +655,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case LAST_ACK:
                     // our FIN has been ACKed
                     state = CLOSED;
+                    LOG.trace("[{}] Switched to new state.", state);
                     ctx.close(closePromise != null ? closePromise : ctx.newPromise());
                     return;
 
@@ -687,6 +705,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case SYN_RECEIVED:
                 case ESTABLISHED:
                     state = CLOSE_WAIT;
+                    LOG.trace("[{}] Switched to new state.", state);
                     ctx.pipeline().close();
                     break;
 
@@ -694,17 +713,20 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
                         // our FIN has been acknowledged
                         state = TIME_WAIT;
+                        LOG.trace("[{}] Switched to new state.", state);
 
                         // Start the time-wait timer, turn off the other timers.
                         applyTimeWaitTimer(ctx);
                     }
                     else {
                         state = CLOSING;
+                        LOG.trace("[{}] Switched to new state.", state);
                     }
                     break;
 
                 case FIN_WAIT_2:
                     state = TIME_WAIT;
+                    LOG.trace("[{}] Switched to new state.", state);
                     // Start the time-wait timer, turn off the other timers.
                     applyTimeWaitTimer(ctx);
                     break;
@@ -730,6 +752,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         timeWaitTimerFuture = ctx.executor().schedule(() -> {
             state = CLOSED;
+            LOG.trace("[{}] Switched to new state.", state);
             ctx.close(closePromise != null ? closePromise : ctx.newPromise());
         }, retransmissionTimeout, MILLISECONDS);
     }
@@ -808,7 +831,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         @Override
         public void operationComplete(ChannelFuture future) {
             if (future.isSuccess()) {
-                if (!seg.isOnlyAck()) {
+                if (!seg.isOnlyAck() && !seg.isRst()) {
                     // schedule retransmission
                     ctx.executor().schedule(() -> {
                         if (future.channel().isOpen() && state != CLOSED && sndUna <= seg.seq()) {

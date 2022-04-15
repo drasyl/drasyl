@@ -21,8 +21,9 @@
  */
 package org.drasyl.jtasklet.provider.handler;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.handler.PeersRttReport;
 import org.drasyl.jtasklet.message.VmHeartbeat;
 import org.drasyl.util.logging.Logger;
@@ -35,12 +36,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
+public class VmHeartbeatHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(VmHeartbeatHandler.class);
     private final AtomicReference<PeersRttReport> lastRttReport;
     private final long benchmark;
     private final PrintStream err;
     private final AtomicReference<String> token;
+    private boolean isClosing;
 
     public VmHeartbeatHandler(final AtomicReference<PeersRttReport> lastRttReport,
                               final long benchmark,
@@ -60,13 +62,19 @@ public class VmHeartbeatHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+        isClosing = true;
+        ctx.close(promise);
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         sendHeartbeat(ctx);
         ctx.fireChannelActive();
     }
 
     private void sendHeartbeat(final ChannelHandlerContext ctx) {
-        if (ctx.channel().isActive()) {
+        if (!isClosing && ctx.channel().isActive()) {
             final PeersRttReport report = lastRttReport.get();
             final VmHeartbeat msg = new VmHeartbeat(benchmark, report, token.get());
             LOG.debug("Send heartbeat `{}` to `{}`", msg, ctx.channel().remoteAddress());
