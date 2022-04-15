@@ -95,6 +95,6 @@ public class OffloadTaskHandler extends SimpleChannelInboundHandler<ReturnResult
         LOG.info("Got result `{}` from `{}`", msg, ctx.channel().remoteAddress());
         returnResultTime.set(Instant.now());
         outputConsumer.accept(msg);
-        ctx.channel().parent().close();
+        ctx.channel().close();
     }
 }

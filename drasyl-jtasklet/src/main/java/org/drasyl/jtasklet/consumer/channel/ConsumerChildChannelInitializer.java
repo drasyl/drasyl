@@ -77,6 +77,9 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
             providerStage(ch);
         }
 
+        // close parent channel as well
+        ch.closeFuture().addListener(future -> ch.parent().close());
+
         super.lastStage(ch);
     }
 
@@ -84,9 +87,6 @@ public class ConsumerChildChannelInitializer extends AbstractChildChannelInitial
         brokerChannel.set(ch);
 
         ch.pipeline().addLast(new ResourceRequestHandler(out, provider, requestResourceTime, resourceResponseTime, token));
-
-        // close parent channel as well
-        ch.closeFuture().addListener(future -> ch.parent().close());
     }
 
     private void providerStage(final DrasylChannel ch) {
