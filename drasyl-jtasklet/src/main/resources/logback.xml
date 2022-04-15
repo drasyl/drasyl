@@ -43,8 +43,8 @@
     <!--    <logger name="org.drasyl.handler.arq" level="trace">-->
     <!--    </logger>-->
 
-    <!--    <logger name="org.drasyl.handler.connection" level="trace">-->
-    <!--    </logger>-->
+        <logger name="org.drasyl.handler.connection" level="trace">
+        </logger>
 
     <root level="warn">
         <appender-ref ref="Console"/>
