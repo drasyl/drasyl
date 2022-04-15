@@ -35,6 +35,7 @@ public class ConsumerStartupHandler extends ChannelInboundHandlerAdapter {
             out.println("online!");
             out.println("----------------------------------------------------------------------------------------------");
             out.println("Consumer listening on address " + ctx.channel().localAddress());
+            out.println("This Consumer will contact broker " + broker);
             out.println("----------------------------------------------------------------------------------------------");
             ctx.channel().pipeline().addFirst(new SpawnChildChannelToPeer((DrasylServerChannel) ctx.channel(), broker));
             ctx.pipeline().remove(this);

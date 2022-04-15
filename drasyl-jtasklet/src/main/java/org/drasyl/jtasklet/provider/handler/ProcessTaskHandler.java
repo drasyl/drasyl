@@ -74,11 +74,16 @@ public class ProcessTaskHandler extends SimpleChannelInboundHandler<OffloadTask>
             ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future -> {
                 if (future.isSuccess()) {
                     out.println("done!");
-                    final Channel channel = brokerChannel.get();
-                    if (channel != null) {
-                        token.set(RandomUtil.randomString(6));
-                        channel.writeAndFlush(new VmUp(result.getExecutionTime(), token.get())).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
-                    }
+                }
+                else {
+                    out.println("failed: " + future.cause());
+                }
+
+                // inform broker that we're ready for the next task
+                final Channel channel = brokerChannel.get();
+                if (channel != null) {
+                    token.set(RandomUtil.randomString(6));
+                    channel.writeAndFlush(new VmUp(result.getExecutionTime(), token.get())).addListener(FIRE_EXCEPTION_ON_FAILURE).addListener(future1 -> out.println("Send me tasks! I'm hungry!"));
                 }
             });
         });
