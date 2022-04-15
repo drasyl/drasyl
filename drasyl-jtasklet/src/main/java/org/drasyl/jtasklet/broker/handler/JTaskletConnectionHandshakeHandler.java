@@ -30,7 +30,7 @@ public class JTaskletConnectionHandshakeHandler extends ChannelDuplexHandler {
                 out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed!");
             }
             else {
-                out.println("Connection to peer " + ctx.channel().remoteAddress() + " cloused with error: " + future.cause());
+                out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed with error: " + future.cause());
             }
         });
         ctx.close(promise);
