@@ -30,9 +30,11 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler.UserCall;
 import org.junit.jupiter.api.Test;
 import test.DropRandomOutboundMessagesHandler;
@@ -40,6 +42,8 @@ import test.DropRandomOutboundMessagesHandler;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionHandshakeHandlerIT {
@@ -48,8 +52,6 @@ class ConnectionHandshakeHandlerIT {
 
     @Test
     void passiveOpenCompleted() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(2);
-
         // server
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
@@ -62,17 +64,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
-                        p.addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                           final Object evt) {
-                                if (evt instanceof ConnectionHandshakeCompleted) {
-                                    latch.countDown();
-                                }
-                                ctx.fireUserEventTriggered(evt);
-                            }
-                        });
+                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -87,27 +79,14 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(5_000, false));
-                        p.addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                           final Object evt) {
-                                if (evt instanceof ConnectionHandshakeCompleted) {
-                                    latch.countDown();
-                                }
-                                ctx.fireUserEventTriggered(evt);
-                            }
-                        });
+                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
                     }
                 })
                 .connect(serverAddress).sync().channel();
 
         try {
-            // initiate handshake
-            clientChannel.writeAndFlush(UserCall.OPEN).sync();
-
             // wait for completion
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertNotNull(clientChannel.writeAndFlush(UserCall.OPEN).sync());
         }
         finally {
             clientChannel.close().sync();
@@ -132,7 +111,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(20_000, true));
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -157,7 +136,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(20_000, true));
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -184,9 +163,7 @@ class ConnectionHandshakeHandlerIT {
     }
 
     @Test
-    void activeOpenTimeout() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-
+    void openTimeout() throws Exception {
         // server
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
@@ -196,6 +173,15 @@ class ConnectionHandshakeHandlerIT {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(final Channel ch) {
+                        // Do nothing. Your job not care about you. Your boss not care about you.
+                        // Nobody giving a f*ck. Tomorrow you are getting hit by bus and dying,
+                        // your job forgetting you and putting someone else to do for your job.
+                        // Do nothing at every possible moment, but if you have to do something, do
+                        // absolute minimum. But it is most preferable to do f*ck all. Sleep in.
+                        // Take as many sick days as legally possible, give no f*cks. There is no
+                        // greater purpose. No greater meaning. Nothing to be rushing for. We will
+                        // all soon be dead. So just f*cking chill. When you learn to do nothing,
+                        // then you'll find the real purpose of life: Do nothing.
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -209,24 +195,74 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
-                        p.addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void exceptionCaught(final ChannelHandlerContext ctx,
-                                                        final Throwable cause) {
-                                if (cause instanceof ConnectionHandshakeException) {
-                                    latch.countDown();
-                                }
-                                ctx.fireExceptionCaught(cause);
-                            }
-                        });
+                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
                     }
                 })
                 .connect(serverAddress).sync().channel();
 
         try {
-            // wait for completion
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            // wait for timeout
+            assertThrows(ConnectionHandshakeException.class, clientChannel.writeAndFlush(UserCall.OPEN)::sync);
+        }
+        finally {
+            clientChannel.close().sync();
+            serverChannel.close().sync();
+            group.shutdownGracefully().sync();
+        }
+    }
+
+    @Test
+    void closeTimeout() throws Exception {
+        // server
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
+        final Channel serverChannel = new ServerBootstrap()
+                .channel(LocalServerChannel.class)
+                .group(group)
+                .childHandler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SimpleChannelInboundHandler<ConnectionHandshakeSegment>() {
+                            @Override
+                            protected void channelRead0(final ChannelHandlerContext ctx,
+                                                        final ConnectionHandshakeSegment msg) {
+                                if (msg.isFin()) {
+                                    // drop
+                                    ReferenceCountUtil.release(msg);
+                                }
+                                else {
+                                    // pass through
+                                    ctx.fireChannelRead(msg);
+                                }
+                            }
+                        });
+                        p.addLast(new ConnectionHandshakeHandler(1_000, true));
+                    }
+                })
+                .bind(serverAddress).sync().channel();
+
+        // client
+        final Channel clientChannel = new Bootstrap()
+                .channel(LocalChannel.class)
+                .group(group)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new ConnectionHandshakeHandler(1_000, false));
+                    }
+                })
+                .connect(serverAddress).sync().channel();
+
+        try {
+            // wait for handshake
+            clientChannel.writeAndFlush(UserCall.OPEN).sync();
+
+            // wait for timeout
+            assertThrows(ConnectionHandshakeException.class, clientChannel.close()::sync);
         }
         finally {
             clientChannel.close().sync();
