@@ -33,6 +33,10 @@ import static java.util.Objects.requireNonNull;
  * Consumes all exceptions, prints them to given {@link PrintStream}, closes the channel, and will
  * then exit with error code {@code 1}. channel.
  */
+/**
+ * Consumes all exceptions, prints them to given {@link PrintStream}, closes the channel, and will
+ * then exit with error code {@code 1}. channel.
+ */
 public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream printStream;
     private final Worm<Integer> exitCode;
@@ -46,10 +50,11 @@ public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
-        if (!exitCode.isPresent()) {
+        if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
             ctx.channel().close();
             exitCode.trySet(1);
         }
     }
 }
+
