@@ -22,6 +22,8 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,16 +31,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSED;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.CLOSING;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.ESTABLISHED;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.FIN_WAIT_1;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.FIN_WAIT_2;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LAST_ACK;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.LISTEN;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_RECEIVED;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.SYN_SENT;
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.State.TIME_WAIT;
+import static org.drasyl.handler.connection.State.CLOSED;
+import static org.drasyl.handler.connection.State.CLOSING;
+import static org.drasyl.handler.connection.State.ESTABLISHED;
+import static org.drasyl.handler.connection.State.FIN_WAIT_1;
+import static org.drasyl.handler.connection.State.FIN_WAIT_2;
+import static org.drasyl.handler.connection.State.LAST_ACK;
+import static org.drasyl.handler.connection.State.LISTEN;
+import static org.drasyl.handler.connection.State.SYN_RECEIVED;
+import static org.drasyl.handler.connection.State.SYN_SENT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -78,8 +81,11 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 300, false, LISTEN, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 300, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            // channelActive should change state to LISTEN
+            assertEquals(LISTEN, handler.state);
 
             // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
             channel.writeInbound(ConnectionHandshakeSegment.syn(100));
@@ -136,6 +142,27 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(301, handler.rcvNxt);
 
         assertTrue(channel.isOpen());
+        channel.close();
+    }
+
+    @Test
+    void passiveServerSwitchToActiveOpenOnWrite() {
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, 100L, () -> 100, false, CLOSED, 0, 0, 0);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        // channelActive should change state to LISTEN
+        assertEquals(LISTEN, handler.state);
+
+        // write should perform an active OPEN handshake
+        final ChannelFuture writeFuture = channel.writeOneOutbound("Hello");
+        assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
+        assertFalse(writeFuture.isDone());
+
+        // after handshake the write should be formed
+        channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
+        assertEquals("Hello", channel.readOutbound());
+        assertTrue(writeFuture.isDone());
+
         channel.close();
     }
 
@@ -223,18 +250,15 @@ class ConnectionHandshakeHandlerTest {
             // peer now triggers close as well
             channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 101));
             assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
-            assertEquals(TIME_WAIT, handler.state);
-            assertFalse(future.isDone());
-
-            assertEquals(101, handler.sndUna);
-            assertEquals(101, handler.sndNxt);
-            assertEquals(301, handler.rcvNxt);
 
             await().untilAsserted(() -> {
                 channel.runScheduledPendingTasks();
                 assertEquals(CLOSED, handler.state);
             });
             assertTrue(future.isDone());
+            assertEquals(101, handler.sndUna);
+            assertEquals(101, handler.sndNxt);
+            assertEquals(301, handler.rcvNxt);
         }
 
         @Test
@@ -293,17 +317,42 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(301, handler.rcvNxt);
 
         channel.writeInbound(ConnectionHandshakeSegment.ack(301, 101));
-        assertEquals(TIME_WAIT, handler.state);
-        assertFalse(future.isDone());
-
-        assertEquals(101, handler.sndUna);
-        assertEquals(101, handler.sndNxt);
-        assertEquals(301, handler.rcvNxt);
 
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
             assertEquals(CLOSED, handler.state);
         });
         assertTrue(future.isDone());
+        assertEquals(101, handler.sndUna);
+        assertEquals(101, handler.sndNxt);
+        assertEquals(301, handler.rcvNxt);
+    }
+
+    @Nested
+    class UserCallClose {
+        @Test
+        void shouldFailOnClosedChannel() throws Exception {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, 100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final ChannelHandlerContext ctx = channel.pipeline().firstContext();
+            final ChannelPromise closeFuture = ctx.newPromise();
+            handler.close(ctx, closeFuture);
+
+            await().untilAsserted(() -> {
+                channel.runScheduledPendingTasks();
+                assertTrue(closeFuture.isDone());
+                // should fail as the remote peer does not respond to the FIN/ACK
+                assertFalse(closeFuture.isSuccess());
+            });
+
+            final ChannelPromise writeFuture = ctx.newPromise();
+            handler.write(ctx, "Hello", writeFuture);
+
+            assertTrue(writeFuture.isDone());
+            assertFalse(writeFuture.isSuccess());
+            assertThat(writeFuture.cause(), instanceOf(ConnectionHandshakeException.class));
+
+            channel.close();
+        }
     }
 }

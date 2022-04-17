@@ -24,8 +24,6 @@ package org.drasyl.cli;
 import ch.qos.logback.classic.Level;
 import org.drasyl.cli.converter.LevelConverter;
 import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.logging.Slf4JLogger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -61,10 +59,10 @@ public abstract class GlobalOptions {
      */
     @SuppressWarnings("java:S1312")
     protected void setLogLevel() {
-        final Logger logger = LoggerFactory.getLogger("org.drasyl");
-        if (logger instanceof Slf4JLogger && ((Slf4JLogger) logger).delegate() instanceof ch.qos.logback.classic.Logger) {
-            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger).delegate()).setLevel(logLevel);
-        }
+//        final Logger logger = LoggerFactory.getLogger("org.drasyl");
+//        if (logger instanceof Slf4JLogger && ((Slf4JLogger) logger).delegate() instanceof ch.qos.logback.classic.Logger) {
+//            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger).delegate()).setLevel(logLevel);
+//        }
     }
 
     protected abstract Logger log();

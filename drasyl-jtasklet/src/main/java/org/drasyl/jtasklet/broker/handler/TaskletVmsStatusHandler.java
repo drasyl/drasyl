@@ -46,7 +46,7 @@ public class TaskletVmsStatusHandler extends ChannelInboundHandlerAdapter {
 
             // table row
             builder.append(String.format(
-                    "%-64s  %s%7dms  %5s  %6d  %9d  %6s%n",
+                    "%-64s  %s%6dms  %5s  %6d  %9d  %6s%n",
                     address,
                     vm.timeSinceLastHeartbeat() > 999_999 ? ">" : "",
                     Math.min(vm.timeSinceLastHeartbeat(), 999_999),
