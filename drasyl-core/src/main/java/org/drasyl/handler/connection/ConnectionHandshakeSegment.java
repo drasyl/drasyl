@@ -24,10 +24,13 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
+import org.drasyl.util.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * A message used by {@link ConnectionHandshakeHandler} to perform a handshake.
@@ -36,31 +39,33 @@ import java.util.Objects;
  * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
  */
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
+    public static long MIN_SEQ_NO = 0L;
+    public static long MAX_SEQ_NO = 4_294_967_295L;
     private static final byte URG = 1 << 5;
     private static final byte ACK = 1 << 4;
     private static final byte PSH = 1 << 3;
     private static final byte RST = 1 << 2;
     private static final byte SYN = 1 << 1;
     private static final byte FIN = 1 << 0;
-    private final int seq;
-    private final int ack;
+    private final long seq;
+    private final long ack;
     private final byte ctl;
 
-    public ConnectionHandshakeSegment(final int seq,
-                                      final int ack,
+    public ConnectionHandshakeSegment(final long seq,
+                                      final long ack,
                                       final byte ctl,
                                       final ByteBuf data) {
         super(data);
-        this.seq = seq;
-        this.ack = ack;
+        this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
     }
 
-    public int seq() {
+    public long seq() {
         return seq;
     }
 
-    public int ack() {
+    public long ack() {
         return ack;
     }
 
@@ -141,27 +146,27 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + ">";
     }
 
-    public static ConnectionHandshakeSegment ack(final int seq, final int ack) {
+    public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment rst(final int seq) {
+    public static ConnectionHandshakeSegment rst(final long seq) {
         return new ConnectionHandshakeSegment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment syn(final int seq) {
+    public static ConnectionHandshakeSegment syn(final long seq) {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment rstAck(final int seq, final int ack) {
+    public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment synAck(final int seq, final int ack) {
+    public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment finAck(final int seq, final int ack) {
+    public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
     }
 }

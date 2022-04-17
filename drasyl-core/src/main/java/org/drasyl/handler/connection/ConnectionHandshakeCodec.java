@@ -44,8 +44,8 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                           final List<Object> out) throws Exception {
         final ByteBuf buf = ctx.alloc().buffer(13);
         buf.writeInt(MAGIC_NUMBER);
-        buf.writeInt(seg.seq());
-        buf.writeInt(seg.ack());
+        buf.writeInt((int) seg.seq());
+        buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
         buf.writeBytes(seg.content());
         seg.release();
@@ -59,8 +59,8 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         if (in.readableBytes() == MESSAGE_LENGTH) {
             in.markReaderIndex();
             if (MAGIC_NUMBER == in.readInt()) {
-                final int seq = in.readInt();
-                final int ack = in.readInt();
+                final long seq = in.readUnsignedInt();
+                final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
                 final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, in.discardSomeReadBytes().retain());
                 out.add(seg);

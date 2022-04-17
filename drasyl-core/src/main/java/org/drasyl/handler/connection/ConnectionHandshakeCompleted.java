@@ -25,12 +25,12 @@ package org.drasyl.handler.connection;
  * Signals that the handshake was completed succesfully.
  */
 public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
-    private final int snd_nxt;
-    private final int rcv_nxt;
+    private final long sndNxt;
+    private final long rcvNxt;
 
-    public ConnectionHandshakeCompleted(final int snd_nxt, final int rcv_nxt) {
-        this.snd_nxt = snd_nxt;
-        this.rcv_nxt = rcv_nxt;
+    public ConnectionHandshakeCompleted(final long sndNxt, final long rcvNxt) {
+        this.sndNxt = sndNxt;
+        this.rcvNxt = rcvNxt;
     }
 
     /**
@@ -38,8 +38,8 @@ public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
      *
      * @return state that has been shared with the remote peer
      */
-    public int snd_nxt() {
-        return snd_nxt;
+    public long sndNxt() {
+        return sndNxt;
     }
 
     /**
@@ -47,15 +47,15 @@ public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
      *
      * @return state that has been received from the remote peer
      */
-    public int rcv_nxt() {
-        return rcv_nxt;
+    public long rcvNxt() {
+        return rcvNxt;
     }
 
     @Override
     public String toString() {
         return "ConnectionHandshakeCompleted{" +
-                "snd_nxt=" + snd_nxt +
-                ", rcv_nxt=" + rcv_nxt +
+                "sndNxt=" + sndNxt +
+                ", rcvNxt=" + rcvNxt +
                 '}';
     }
 }

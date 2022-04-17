@@ -32,6 +32,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
@@ -57,10 +58,9 @@ import static org.drasyl.util.RandomUtil.randomInt;
  * connection-oriented communication with the remote peer.
  * <p>
  * Depending of the configuration, the synchronization will be automatically issued on {@link
- * #channelActive(ChannelHandlerContext)} or must be manually issued by writing a {@link
- * UserCall#OPEN} message to the channel. Once the synchronization is done, a {@link
- * ConnectionHandshakeCompleted} event will be passed to channel, on failure a {@link
- * ConnectionHandshakeException} exception is passed to channel.
+ * #channelActive(ChannelHandlerContext)} or must be manually initiated by the remote peer. Once the
+ * synchronization is done, a {@link ConnectionHandshakeCompleted} event will be passed to channel,
+ * on failure a {@link ConnectionHandshakeException} exception is passed to channel.
  * <p>
  * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
  * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
@@ -73,25 +73,25 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private final long retransmissionTimeout;
     private final long userTimeout;
-    private final Supplier<Integer> issProvider;
+    private final LongSupplier issProvider;
     private final boolean activeOpen;
     protected ScheduledFuture<?> userTimeoutFuture;
     private ScheduledFuture<?> timeWaitTimerFuture;
     private ChannelPromise userCallFuture;
     State state;
     // Send Sequence Variables
-    int sndUna; // oldest unacknowledged sequence number
-    int sndNxt; // next sequence number to be sent
-    int iss; // initial send sequence number
+    long sndUna; // oldest unacknowledged sequence number
+    long sndNxt; // next sequence number to be sent
+    long iss; // initial send sequence number
     // Receive Sequence Variables
-    int rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    int irs; // initial receive sequence number
+    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
+    long irs; // initial receive sequence number
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
      * @param activeOpen  if {@code true} a handshake will be issued on {@link
-     *                    #channelActive(ChannelHandlerContext)}. Otherwise the handshake needs to
-     *                    be issued by writing a {@link UserCall#OPEN} message to the channel
+     *                    #channelActive(ChannelHandlerContext)}. Otherwise the remote peer must
+     *                    initiate the handshake
      */
     public ConnectionHandshakeHandler(final long userTimeout,
                                       final boolean activeOpen) {
@@ -111,7 +111,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final long userTimeout,
                                final long retransmissionTimeout,
-                               final Supplier<Integer> issProvider,
+                               final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
                                final int sndUna,
@@ -271,14 +271,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 }
 
             case ESTABLISHED:
-
                 // save promise for later, as it we need ACKnowledgment from remote peer
                 userCallFuture = promise;
 
-                final int seq = sndNxt;
-                final int ack = rcvNxt;
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                 sndNxt++;
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(seq, ack);
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                 ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg));
                 switchToNewState(ctx, FIN_WAIT_1);
@@ -290,10 +287,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // save promise for later, as it we need ACKnowledgment from remote peer
                 userCallFuture = promise;
 
-                final int seq2 = sndNxt;
-                final int ack2 = rcvNxt;
+                final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                 sndNxt++;
-                final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(seq2, ack2);
                 LOG.trace("{}[{}] As we're already waiting for this. We're sending our last seg `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
                 ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
                 switchToNewState(ctx, LAST_ACK);
@@ -339,13 +334,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     private void performActiveOpen(final ChannelHandlerContext ctx) {
         // update send state
-        iss = issProvider.get();
+        iss = issProvider.getAsLong();
         sndUna = iss;
-        sndNxt = iss + 1;
+        sndNxt = (iss + 1) % (ConnectionHandshakeSegment.MAX_SEQ_NO + 1);
 
         // send SYN
-        final int seq = iss;
-        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(seq);
+        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(iss);
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg));
 
@@ -448,14 +442,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             irs = seg.seq();
 
             // update send state
-            iss = issProvider.get();
+            iss = issProvider.getAsLong();
             sndUna = iss;
-            sndNxt = iss + 1;
+            sndNxt = (iss + 1) % (ConnectionHandshakeSegment.MAX_SEQ_NO + 1);
 
             // send SYN/ACK
-            final int seq = iss;
-            final int ack = rcvNxt;
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(seq, ack);
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(iss, rcvNxt);
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             ReferenceCountUtil.release(seg);
@@ -474,9 +466,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check ACK
         if (seg.isAck() && (seg.ack() <= iss || seg.ack() > sndNxt)) {
             // segment ACKed something we never sent
-            if (!seg.isRst()) {
+            LOG.trace("{}[{}] Get got an ACKnowledgement `{}` for an Segment we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
+            if (seg.isRst()) {
+                LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
+            }
+            else {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound Segment.", ctx.channel(), state, response);
                 ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             }
             ReferenceCountUtil.release(seg);
@@ -518,9 +514,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 userCallFuture = null;
 
                 // ACK
-                final int seq = sndNxt;
-                final int ack = rcvNxt;
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
                 LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
                 ReferenceCountUtil.release(seg);
@@ -530,9 +524,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             else {
                 switchToNewState(ctx, SYN_RECEIVED);
                 // SYN/ACK
-                final int seq = iss;
-                final int ack = rcvNxt;
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(seq, ack);
+                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(iss, rcvNxt);
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
                 ReferenceCountUtil.release(seg);
@@ -555,9 +547,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (!validSeg && !validAck) {
             // not expected seq
             if (!seg.isRst()) {
-                final int seq = sndNxt;
-                final int ack = rcvNxt;
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
                 LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement for the Segment we actually expect.", ctx.channel(), state, seg, response);
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             }
@@ -621,8 +611,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     }
                     else {
                         ReferenceCountUtil.release(seg);
-                        final int seq = seg.ack();
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seq);
+                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
                         LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                         ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
                     }
@@ -684,9 +673,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 default:
                     // we got a retransmission of a FIN
                     // Ack it
-                    final int seq = sndNxt;
-                    final int ack = rcvNxt;
-                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
 
@@ -714,9 +701,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             rcvNxt = seg.seq() + 1;
 
             // send ACK for the FIN
-            final int seq = sndNxt;
-            final int ack = rcvNxt;
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
             final ChannelFuture ackFuture = ctx.writeAndFlush(response);
             ackFuture.addListener(CLOSE_ON_FAILURE);
@@ -807,9 +792,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
         if (seg.ack() > sndUna) {
             // something not yet sent has been ACKed
-            final int seq = sndNxt;
-            final int ack = rcvNxt;
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(seq, ack);
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             return true;
