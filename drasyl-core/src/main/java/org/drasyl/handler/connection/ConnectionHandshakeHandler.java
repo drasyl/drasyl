@@ -33,7 +33,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -52,6 +51,10 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomInt;
+import static org.drasyl.util.SerialNumberArithmetic.add;
+import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * This handler performs a handshake with the remote peer. This can be used to create a
@@ -71,6 +74,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
+    private static final int SEQ_NO_SPACE = 32;
     private final long retransmissionTimeout;
     private final long userTimeout;
     private final LongSupplier issProvider;
@@ -336,7 +340,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // update send state
         iss = issProvider.getAsLong();
         sndUna = iss;
-        sndNxt = (iss + 1) % (ConnectionHandshakeSegment.MAX_SEQ_NO + 1);
+        sndNxt = add(iss, 1, SEQ_NO_SPACE);
 
         // send SYN
         final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(iss);
@@ -438,13 +442,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             switchToNewState(ctx, SYN_RECEIVED);
 
             // synchronize receive state
-            rcvNxt = seg.seq() + 1;
+            rcvNxt = add(seg.seq(), 1, SEQ_NO_SPACE);
             irs = seg.seq();
 
             // update send state
             iss = issProvider.getAsLong();
             sndUna = iss;
-            sndNxt = (iss + 1) % (ConnectionHandshakeSegment.MAX_SEQ_NO + 1);
+            sndNxt = add(iss, 1, SEQ_NO_SPACE);
 
             // send SYN/ACK
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(iss, rcvNxt);
@@ -464,7 +468,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
                                               final ConnectionHandshakeSegment seg) {
         // check ACK
-        if (seg.isAck() && (seg.ack() <= iss || seg.ack() > sndNxt)) {
+        if (seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE))) {
             // segment ACKed something we never sent
             LOG.trace("{}[{}] Get got an ACKnowledgement `{}` for an Segment we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
             if (seg.isRst()) {
@@ -480,8 +484,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
 
         // check ACK
+        final boolean acceptableAck = isAcceptableAck(seg);
         if (seg.isRst()) {
-            final boolean acceptableAck = seg.isAck() && seg.ack() == sndNxt;
             if (acceptableAck) {
                 ReferenceCountUtil.release(seg);
                 switchToNewState(ctx, CLOSED);
@@ -497,14 +501,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check SYN
         if (seg.isSyn()) {
             // synchronize receive state
-            rcvNxt = seg.seq() + 1;
+            rcvNxt = add(seg.seq(), 1, SEQ_NO_SPACE);
             irs = seg.seq();
             if (seg.isAck()) {
                 // advance send state
                 sndUna = seg.ack();
             }
 
-            final boolean ourSynHasBeenAcked = sndUna > iss;
+            final boolean ourSynHasBeenAcked = greaterThan(sndUna, iss, SEQ_NO_SPACE);
             if (ourSynHasBeenAcked) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
@@ -542,9 +546,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                              final ConnectionHandshakeSegment seg) {
         // check SEQ
         final boolean validSeg = seg.seq() == rcvNxt;
-        final boolean validAck = seg.isAck() && sndUna < seg.ack() && seg.ack() <= sndNxt;
+        final boolean acceptableAck = isAcceptableAck(seg);
 
-        if (!validSeg && !validAck) {
+        if (!validSeg && !acceptableAck) {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
@@ -591,17 +595,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isAck()) {
             switch (state) {
                 case SYN_RECEIVED:
-                    if (sndUna <= seg.ack() && seg.ack() <= sndNxt) {
+                    if (lessThanOrEqualTo(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE)) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
                         cancelTimeoutGuards();
                         switchToNewState(ctx, ESTABLISHED);
 
-                        if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
+                        if (acceptableAck) {
                             // advance send state
                             sndUna = seg.ack();
                         }
-                        else if (seg.ack() < sndUna) {
+                        else if (lessThan(seg.ack(), sndUna, SEQ_NO_SPACE)) {
                             // ACK is duplicate, ignore
                             ReferenceCountUtil.release(seg);
                         }
@@ -623,20 +627,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    final boolean finAcked = sndUna < seg.ack() && seg.ack() <= sndNxt;
-
-                    if (establishedProcessing(ctx, seg)) {
+                    if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
 
-                    if (finAcked) {
+                    if (acceptableAck) {
                         // our FIN has been acknowledged
                         switchToNewState(ctx, FIN_WAIT_2);
                     }
                     break;
 
                 case FIN_WAIT_2:
-                    if (establishedProcessing(ctx, seg)) {
+                    if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
 
@@ -645,13 +647,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSING:
-                    final boolean finAcked2 = sndUna < seg.ack() && seg.ack() <= sndNxt;
-
-                    if (establishedProcessing(ctx, seg)) {
+                    if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
 
-                    if (finAcked2) {
+                    if (acceptableAck) {
                         LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
                         ctx.close(userCallFuture);
@@ -698,7 +698,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
 
             // advance receive state
-            rcvNxt = seg.seq() + 1;
+            rcvNxt = add(seg.seq(), 1, SEQ_NO_SPACE);
 
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
@@ -718,7 +718,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
+                    if (acceptableAck) {
                         // our FIN has been acknowledged
                         switchToNewState(ctx, TIME_WAIT);
 
@@ -781,16 +781,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
-                                          final ConnectionHandshakeSegment seg) {
-        if (sndUna < seg.ack() && seg.ack() <= sndNxt) {
+                                          final ConnectionHandshakeSegment seg,
+                                          final boolean acceptableAck) {
+        if (acceptableAck) {
             // advance send state
             sndUna = seg.ack();
         }
-        if (seg.ack() < sndUna) {
+        if (lessThan(seg.ack(), sndUna, SEQ_NO_SPACE)) {
             // ACK is duplicate. ignore
             return true;
         }
-        if (seg.ack() > sndUna) {
+        if (greaterThan(seg.ack(), sndUna, SEQ_NO_SPACE)) {
             // something not yet sent has been ACKed
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
@@ -798,6 +799,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return true;
         }
         return false;
+    }
+
+    private boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
     private void unexpectedSegment(final ChannelHandlerContext ctx,
@@ -840,7 +845,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     long newSrtt = (long) (ALPHA * srtt + (1 - ALPHA) * RTT);
                     final long rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * newSrtt)));
                     ctx.executor().schedule(() -> {
-                        if (future.channel().isOpen() && state != CLOSED && sndUna <= seg.seq()) {
+                        if (future.channel().isOpen() && state != CLOSED && lessThanOrEqualTo(sndUna, seg.seq(), SEQ_NO_SPACE)) {
                             LOG.trace("{}[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), state, seg, rto);
                             ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg, rto));
                         }

@@ -48,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-// TODO: Überlauf von SEG.NO behandeln
 class ConnectionHandshakeHandlerIT {
     private static final float LOSS_RATE = 0.5f;
     private static final int MAX_DROP = 10;
