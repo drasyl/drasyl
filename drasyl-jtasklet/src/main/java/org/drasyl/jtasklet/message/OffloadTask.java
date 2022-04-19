@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.jtasklet.util.SourceUtil.minifySource;
 
 public class OffloadTask implements TaskletMessage {
     private final String token;
@@ -43,8 +44,8 @@ public class OffloadTask implements TaskletMessage {
     @Override
     public String toString() {
         return "OffloadTask{" +
-                "token='" + token + '\'' +
-                ", source='" + source + '\'' +
+                "token=" + token +
+                ", source='" + minifySource(source) + '\'' +
                 ", input=Object[" + input.length + "]}";
     }
 

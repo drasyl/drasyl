@@ -19,41 +19,20 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.jtasklet.broker.handler;
+package org.drasyl.jtasklet.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.broker.TaskletVm;
-import org.drasyl.jtasklet.message.ReleaseToken;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
-
-import java.io.PrintStream;
-import java.util.Map;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.jtasklet.event.MessageReceived;
+import org.drasyl.jtasklet.message.TaskletMessage;
 
 import static java.util.Objects.requireNonNull;
 
-public class BrokerReleaseTokenHandler extends SimpleChannelInboundHandler<ReleaseToken> {
-    private static final Logger LOG = LoggerFactory.getLogger(BrokerReleaseTokenHandler.class);
-    private final PrintStream out;
-    private final Map<IdentityPublicKey, TaskletVm> vms;
-
-    public BrokerReleaseTokenHandler(final PrintStream out,
-                                     final Map<IdentityPublicKey, TaskletVm> vms) {
-        this.out = requireNonNull(out);
-        this.vms = requireNonNull(vms);
-    }
-
+public class PassInboundMessagesToParentHandler extends SimpleChannelInboundHandler<TaskletMessage> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final ReleaseToken msg) {
-        final IdentityPublicKey sender = (IdentityPublicKey) ctx.channel().remoteAddress();
-        out.println(sender + " releases token of VM " + msg.getVm() + ".");
-
-        TaskletVm vm = vms.get(msg.getVm());
-        if (vm != null) {
-            vm.releaseToken();
-        }
+                                final TaskletMessage msg) {
+        ctx.channel().parent().pipeline().fireUserEventTriggered(new MessageReceived<>((DrasylChannel) ctx.channel(), msg));
     }
 }

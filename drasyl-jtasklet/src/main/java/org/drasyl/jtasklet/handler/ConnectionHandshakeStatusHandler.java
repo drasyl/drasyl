@@ -1,7 +1,6 @@
-package org.drasyl.jtasklet.broker.handler;
+package org.drasyl.jtasklet.handler;
 
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -15,26 +14,31 @@ import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 
-public class JTaskletConnectionHandshakeHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(JTaskletConnectionHandshakeHandler.class);
+public class ConnectionHandshakeStatusHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeStatusHandler.class);
     private final PrintStream out;
+    private final PrintStream err;
+    private boolean handshakeFailed;
 
-    public JTaskletConnectionHandshakeHandler(final PrintStream out) {
+    public ConnectionHandshakeStatusHandler(final PrintStream out, final PrintStream err) {
         this.out = requireNonNull(out);
+        this.err = requireNonNull(err);
     }
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-        out.println("Close connection to peer " + ctx.channel().remoteAddress() + " ...");
+        if (!handshakeFailed) {
+            out.println("Close connection to peer " + ctx.channel().remoteAddress() + " ...");
 
-        promise.addListener((ChannelFutureListener) future -> {
-            if (future.isSuccess()) {
-                out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed!");
-            }
-            else {
-                out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed with error: " + future.cause());
-            }
-        });
+            promise.addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    out.println("Connection to peer " + ctx.channel().remoteAddress() + " closed!");
+                }
+                else {
+                    err.println("Connection to peer " + ctx.channel().remoteAddress() + " closed with error: " + future.cause());
+                }
+            });
+        }
         ctx.close(promise);
     }
 
@@ -55,11 +59,9 @@ public class JTaskletConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
         if (cause instanceof ConnectionHandshakeException) {
-            out.println("Connection to peer " + ctx.channel().remoteAddress() + " failed: " + cause.getMessage());
-            ctx.close();
+            err.println("Connection to peer " + ctx.channel().remoteAddress() + " failed: " + cause.getMessage());
+            handshakeFailed = true;
         }
-        else {
-            ctx.fireExceptionCaught(cause);
-        }
+        ctx.fireExceptionCaught(cause);
     }
 }

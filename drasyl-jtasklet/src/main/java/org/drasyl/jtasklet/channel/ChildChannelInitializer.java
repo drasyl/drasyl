@@ -4,7 +4,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
@@ -20,48 +19,48 @@ import org.drasyl.handler.stream.MessageChunkDecoder;
 import org.drasyl.handler.stream.MessageChunkEncoder;
 import org.drasyl.handler.stream.MessageChunksBuffer;
 import org.drasyl.handler.stream.ReassembledMessageDecoder;
-import org.drasyl.jtasklet.broker.handler.JTaskletConnectionHandshakeHandler;
+import org.drasyl.jtasklet.event.ConnectionEstablished;
+import org.drasyl.jtasklet.handler.ConnectionEventHandler;
+import org.drasyl.jtasklet.handler.PassInboundMessagesToParentHandler;
 import org.drasyl.jtasklet.message.TaskletMessage;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
 
-public abstract class AbstractChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractChildChannelInitializer.class);
+public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     protected static final int ARQ_RETRY_TIMEOUT = 100;
     protected static final int ARQ_WRITE_TIMEOUT = 5;
     protected static final int MSG_CHUNK_SIZE = 1300;
     protected static final int MSG_MAX_SIZE = 1024 * 1024 * 20;
     protected static final int MAX_CHUNKS = 15_000;
     protected static final int CHUNK_FIELD_LENGTH = (int) (Math.log(MAX_CHUNKS) / Math.log(2) / 8) + 1;
+    protected static final int HANDSHAKE_TIMEOUT = 10_000;
     protected final PrintStream out;
     protected final boolean activeOpen;
 
-    protected AbstractChildChannelInitializer(final PrintStream out, final boolean activeOpen) {
+    public ChildChannelInitializer(final PrintStream out, final boolean activeOpen) {
         this.out = requireNonNull(out);
         this.activeOpen = activeOpen;
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) {
+    protected void initChannel(DrasylChannel ch) {
+        // handshake
         ch.pipeline().addLast(
                 new ConnectionHandshakeCodec(),
-                new ConnectionHandshakeHandler(10_000, activeOpen),
-                new JTaskletConnectionHandshakeHandler(out),
+                new ConnectionHandshakeHandler(HANDSHAKE_TIMEOUT, activeOpen),
+//                new ConnectionHandshakeStatusHandler(out, err),
                 new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(ChannelHandlerContext ctx,
                                                    Object evt) {
                         if (evt instanceof ConnectionHandshakeCompleted) {
-                            firstStage(ch);
-                            arqStage(ch);
-                            chunkingStage(ch);
-                            codecStage(ch);
-                            lastStage(ch);
+                            ChildChannelInitializer.this.arqStage(ch);
+                            ChildChannelInitializer.this.chunkingStage(ch);
+                            ChildChannelInitializer.this.codecStage(ch);
+                            ChildChannelInitializer.this.handshakeCompletedStage(ch);
                             ctx.pipeline().remove(this);
                         }
                         else {
@@ -70,13 +69,19 @@ public abstract class AbstractChildChannelInitializer extends ChannelInitializer
                     }
                 }
         );
+        beforeHandshakePhase(ch);
     }
 
-    protected void firstStage(final DrasylChannel ch) {
-        // NOOP
+    private void beforeHandshakePhase(final DrasylChannel ch) {
+        ch.pipeline().addLast(new ConnectionEventHandler());
     }
 
-    protected void arqStage(final DrasylChannel ch) {
+    protected void handshakeCompletedStage(DrasylChannel ch) {
+        ch.parent().pipeline().fireUserEventTriggered(new ConnectionEstablished(ch));
+        ch.pipeline().addLast(new PassInboundMessagesToParentHandler());
+    }
+
+    private void arqStage(final DrasylChannel ch) {
         ch.pipeline().addLast(
                 new StopAndWaitArqCodec(),
                 new StopAndWaitArqHandler(ARQ_RETRY_TIMEOUT),
@@ -85,7 +90,7 @@ public abstract class AbstractChildChannelInitializer extends ChannelInitializer
         );
     }
 
-    protected void chunkingStage(final DrasylChannel ch) {
+    private void chunkingStage(final DrasylChannel ch) {
         ch.pipeline().addLast(
                 new MessageChunkEncoder(CHUNK_FIELD_LENGTH),
                 new ChunkedWriteHandler(),
@@ -97,24 +102,7 @@ public abstract class AbstractChildChannelInitializer extends ChannelInitializer
         );
     }
 
-    protected void codecStage(final DrasylChannel ch) {
+    private void codecStage(final DrasylChannel ch) {
         ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
-    }
-
-    protected void lastStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void exceptionCaught(final ChannelHandlerContext ctx,
-                                        final Throwable cause) {
-                if (cause instanceof WriteTimeoutException) {
-                    LOG.debug("Connection lost: " + cause);
-                    ctx.close();
-                }
-                else {
-                    cause.printStackTrace();
-                    ctx.close();
-                }
-            }
-        });
     }
 }

@@ -152,8 +152,8 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                log().info("Shutdown.");
                 if (ch.isOpen()) {
+                    log().info("Shutdown.");
                     ch.close().syncUninterruptibly();
                 }
                 parentGroup.shutdownGracefully();

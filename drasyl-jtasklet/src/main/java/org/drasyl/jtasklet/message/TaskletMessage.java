@@ -9,13 +9,19 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
 
 @JsonTypeInfo(use = NAME)
 @JsonSubTypes({
-        @Type(value = VmHeartbeat.class),
-        @Type(value = VmUp.class),
-        @Type(value = OffloadTask.class),
+        // Provider registration process
+        @Type(value = RegisterProvider.class),
+        // Actual offloading process
         @Type(value = ResourceRequest.class),
         @Type(value = ResourceResponse.class),
+        @Type(value = OffloadTask.class),
         @Type(value = ReturnResult.class),
-        @Type(value = ReleaseToken.class)
+        // Provider status updates
+        @Type(value = TaskOffloaded.class),
+        @Type(value = TaskExecuting.class),
+        @Type(value = TaskExecuted.class),
+        @Type(value = TaskResultReceived.class),
+        @Type(value = TaskReset.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface TaskletMessage {

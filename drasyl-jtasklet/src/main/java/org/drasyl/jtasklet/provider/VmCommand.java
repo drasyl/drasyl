@@ -1,14 +1,12 @@
 package org.drasyl.jtasklet.provider;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
-import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.jtasklet.provider.channel.ProviderChannelInitializer;
-import org.drasyl.jtasklet.provider.channel.ProviderChildChannelInitializer;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.GraalVmJsRuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
@@ -19,7 +17,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Command(
         name = "vm",
@@ -39,10 +36,7 @@ public class VmCommand extends ChannelOptions {
             names = { "--broker" }
     )
     private IdentityPublicKey broker;
-    private final AtomicReference<PeersRttReport> lastRttReport = new AtomicReference<>();
     private long benchmark;
-    private final AtomicReference<Channel> brokerChannel = new AtomicReference<>();
-    private final AtomicReference<String> token = new AtomicReference<>();
 
     public VmCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup(1));
@@ -52,20 +46,15 @@ public class VmCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
-            out.println("Perform benchmark...");
+            LOG.info("Perform benchmark...");
             benchmark = Long.MAX_VALUE;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 1; i++) {
                 final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark_primes.js"), BENCHMARK_PRIMES_INPUT);
                 if (result.getExecutionTime() < benchmark) {
                     benchmark = result.getExecutionTime();
                 }
             }
-            out.println("Benchmark: " + benchmark + "ms");
-
-//            new NioEventLoopGroup(1).schedule(() -> {
-//                final ChannelFuture close = VmCommand.this.ch.close();
-//                close.syncUninterruptibly();
-//            }, 5000, TimeUnit.MILLISECONDS);
+            LOG.info("Benchmark performed in {}ms.", benchmark);
 
             return super.call();
         }
@@ -77,13 +66,13 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ProviderChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, lastRttReport, token);
+        return new ProviderChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, benchmark, runtimeEnvironment);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ProviderChildChannelInitializer(out, err, exitCode, runtimeEnvironment, broker, lastRttReport, benchmark, brokerChannel, token);
+        return new ChildChannelInitializer(out, true);
     }
 
     @Override

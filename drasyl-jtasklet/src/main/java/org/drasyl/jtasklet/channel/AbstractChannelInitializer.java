@@ -59,7 +59,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected final long onlineTimeoutMillis;
     private final Map<IdentityPublicKey, InetSocketAddress> superPeers;
     protected final boolean protocolArmEnabled;
-    private final PrintStream err;
+    protected final PrintStream err;
     private final Worm<Integer> exitCode;
 
     @SuppressWarnings("java:S107")

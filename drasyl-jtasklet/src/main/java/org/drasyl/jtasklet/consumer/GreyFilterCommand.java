@@ -7,8 +7,8 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.GreyFilter;
+import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.jtasklet.consumer.channel.ConsumerChannelInitializer;
-import org.drasyl.jtasklet.consumer.channel.ConsumerChildChannelInitializer;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -77,22 +77,13 @@ public class GreyFilterCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker);
+        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, source, input);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new ConsumerChildChannelInitializer(out, err, exitCode, broker, source, input, provider, result -> {
-            try {
-                final File file = new File("out.png");
-                out.println("Output written to " + file.getPath());
-                GreyFilter.of(height, width, result.getOutput()).writeTo(file);
-            }
-            catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }, requestResourceTime, resourceResponseTime, offloadTaskTime, returnResultTime, token, brokerChannel);
+        return new ChildChannelInitializer(out, true);
     }
 
     @Override
