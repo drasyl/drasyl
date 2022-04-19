@@ -157,19 +157,13 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 state = CLOSED;
                 ctx.pipeline().close();
             }
-            else if (evt instanceof ConnectionClosed) {
+            else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
                 LOG.info("Provider {} closed connection. Shutdown Consumer.", broker);
-                if (state == TASK_OFFLOADED) {
-                    // inform broker
-                    brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future2 -> {
-                        state = CLOSED;
-                        ctx.pipeline().close();
-                    });
-                }
-                else {
+                // inform broker
+                brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future2 -> {
                     state = CLOSED;
                     ctx.pipeline().close();
-                }
+                });
             }
         }
     }

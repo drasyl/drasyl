@@ -145,7 +145,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
         else if (state == ONLINE && msg instanceof ResourceRequest) {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
 
-            LOG.info("Schedule request using {}.", schedulingStrategy);
+            LOG.info("Schedule request using {} strategy.", schedulingStrategy);
             final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers);
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();

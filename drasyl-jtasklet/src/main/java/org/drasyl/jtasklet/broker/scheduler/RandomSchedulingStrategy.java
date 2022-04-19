@@ -14,6 +14,11 @@ public class RandomSchedulingStrategy implements SchedulingStrategy {
     private static final Random RANDOM = new Random();
 
     @Override
+    public String toString() {
+        return "RandomSchedulingStrategy{}";
+    }
+
+    @Override
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> vms) {
         final Map<DrasylAddress, ResourceProvider> availableVms = vms.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!availableVms.isEmpty()) {
