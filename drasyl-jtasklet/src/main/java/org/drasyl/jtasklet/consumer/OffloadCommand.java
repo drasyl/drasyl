@@ -50,6 +50,10 @@ public class OffloadCommand extends ChannelOptions {
 
     @Override
     public Integer call() {
+        if (input == null) {
+            input = List.of();
+        }
+
         try {
             out.println("Task   : " + task);
             out.println("Input  : " + Arrays.toString(input.toArray()));
