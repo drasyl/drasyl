@@ -50,6 +50,8 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     public Integer call() {
+        setLogLevel();
+
         try {
             LOG.info("Perform benchmark...");
             benchmark = Long.MAX_VALUE;
