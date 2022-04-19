@@ -151,10 +151,19 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             // msg from consumer
             LOG.info("Got {} from Consumer {}.", msg, sender);
 
-            final Optional<ResourceProvider> provider = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskOffloaded) msg).getToken())).findFirst();
-            if (provider.isPresent() && provider.get().state() == ProviderState.ASSIGNED) {
-                provider.get().offloaded();
-                printResourceProviders();
+            final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskOffloaded) msg).getToken())).findFirst();
+            if (optional.isPresent()) {
+                final ResourceProvider provider = optional.get();
+                if (provider.offloaded()) {
+                    LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                    printResourceProviders();
+                }
+                else {
+                    LOG.info("Reject message {} as state change from {} to {} is illegal.", msg, provider.state(), ProviderState.OFFLOADED);
+                }
+            }
+            else {
+                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskOffloaded) msg).getToken(), ProviderState.OFFLOADED);
             }
         }
         else if (msg instanceof TaskExecuting) {
@@ -162,9 +171,22 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             LOG.info("Got {} from Provider {}.", msg, sender);
 
             final ResourceProvider provider = providers.get(sender);
-            if (provider != null && (provider.state() == ProviderState.ASSIGNED || provider.state() == ProviderState.OFFLOADED) && provider.token() != null && Objects.equals(((TaskExecuting) msg).getToken(), provider.token())) {
-                provider.executing();
-                printResourceProviders();
+            if (provider != null) {
+                if (provider.token() != null && Objects.equals(((TaskExecuting) msg).getToken(), provider.token())) {
+                    if (provider.executing()) {
+                        LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                        printResourceProviders();
+                    }
+                    else {
+                        LOG.info("Reject message {} as state change from {} to {} is illegal.", msg, provider.state(), ProviderState.EXECUTING);
+                    }
+                }
+                else {
+                    LOG.info("Reject message {} as actual token {} does not match expected token {}.", msg, ((TaskExecuting) msg).getToken(), provider.token());
+                }
+            }
+            else {
+                LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
         }
         else if (msg instanceof TaskExecuted) {
@@ -172,29 +194,60 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             LOG.info("Got {} from Provider {}.", msg, sender);
 
             final ResourceProvider provider = providers.get(sender);
-            if (provider != null && provider.state() == ProviderState.EXECUTING && provider.token() != null && Objects.equals(((TaskExecuted) msg).getToken(), provider.token())) {
-                provider.executed();
-                printResourceProviders();
+            if (provider != null) {
+                if (provider.token() != null && Objects.equals(((TaskExecuted) msg).getToken(), provider.token())) {
+                    if (provider.executed()) {
+                        LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                        printResourceProviders();
+                    }
+                    else {
+                        LOG.info("Reject message {} as state change from {} to {} is illegal.", msg, provider.state(), ProviderState.EXECUTING);
+                    }
+                }
+                else {
+                    LOG.info("Reject message {} as actual token {} does not match expected token {}.", msg, ((TaskExecuted) msg).getToken(), provider.token());
+                }
+            }
+            else {
+                LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
         }
         else if (msg instanceof TaskResultReceived) {
             // msg from consumer
             LOG.info("Got {} from Consumer {}.", msg, sender);
 
-            final Optional<ResourceProvider> provider = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskResultReceived) msg).getToken())).findFirst();
-            if (provider.isPresent()) {
-                provider.get().done();
-                printResourceProviders();
+            final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskResultReceived) msg).getToken())).findFirst();
+            if (optional.isPresent()) {
+                final ResourceProvider provider = optional.get();
+                if (provider.done()) {
+                    LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                    printResourceProviders();
+                }
+                else {
+                    LOG.info("Reject message {} as state change from {} to {} is illegal.", msg, provider.state(), ProviderState.READY);
+                }
+            }
+            else {
+                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskResultReceived) msg).getToken(), ProviderState.READY);
             }
         }
         else if (msg instanceof TaskReset) {
             // msg from provider OR consumer
             LOG.info("Got {} from Provider OR Consumer {}.", msg, sender);
 
-            final Optional<ResourceProvider> provider = providers.values().stream().filter(p -> p.token() != null && Objects.equals(p.token(), ((TaskReset) msg).getToken())).findFirst();
-            if (provider.isPresent() && provider.get().state() == ProviderState.READY) {
-                provider.get().reset();
-                printResourceProviders();
+            final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.token() != null && Objects.equals(p.token(), ((TaskReset) msg).getToken())).findFirst();
+            if (optional.isPresent()) {
+                final ResourceProvider provider = optional.get();
+                if (provider.reset()) {
+                    LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                    printResourceProviders();
+                }
+                else {
+                    LOG.info("Reject message {} as state change from {} to {} is illegal.", msg, provider.state(), ProviderState.READY);
+                }
+            }
+            else {
+                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskReset) msg).getToken(), ProviderState.READY);
             }
         }
     }
@@ -226,7 +279,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             ));
         }
 
-        LOG.info("%n{}", builder.toString());
+        LOG.info("\n{}", builder.toString());
     }
 
     enum State {

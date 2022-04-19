@@ -4,7 +4,7 @@
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <option name="MAIN_CLASS_NAME" value="org.drasyl.jtasklet.cli.Cli" />
     <module name="drasyl-jtasklet" />
-    <option name="PROGRAM_PARAMETERS" value="broker --identity broker.identity --bind 0.0.0.0:22500" />
+    <option name="PROGRAM_PARAMETERS" value="broker --verbose info --identity broker.identity --bind 0.0.0.0:22500"/>
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.converter.*" />

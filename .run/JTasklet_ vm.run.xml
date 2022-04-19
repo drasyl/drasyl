@@ -2,7 +2,8 @@
   <configuration default="false" name="JTasklet: vm" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.jtasklet.cli.Cli" />
     <module name="drasyl-jtasklet" />
-    <option name="PROGRAM_PARAMETERS" value="vm --identity vm.identity --bind 0.0.0.0:22501 --broker fb36cd22e2cefdcbfe6f6ccf8d9c8d067aa698ada63baa30712ffc91fd7b504d" />
+    <option name="PROGRAM_PARAMETERS"
+            value="vm --verbose info --identity vm.identity --bind 0.0.0.0:22501 --broker fb36cd22e2cefdcbfe6f6ccf8d9c8d067aa698ada63baa30712ffc91fd7b504d --benchmark-runs 1"/>
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.converter.*" />

@@ -8,9 +8,9 @@ import java.util.Objects;
 
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.ASSIGNED;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTED;
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTING;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.OFFLOADED;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTING;
 
 public class ResourceProvider {
     private final long benchmark;
@@ -36,60 +36,73 @@ public class ResourceProvider {
         return token;
     }
 
-    public void offloaded() {
+    public boolean offloaded() {
         switch (providerState) {
             case ASSIGNED:
                 this.providerState = OFFLOADED;
                 this.stateTime = System.currentTimeMillis();
-                break;
+                return true;
 
             default:
-                // do nothing
+                return false;
         }
     }
 
-    public void executing() {
+    public boolean executing() {
         switch (providerState) {
             case ASSIGNED:
             case OFFLOADED:
                 this.providerState = EXECUTING;
                 this.stateTime = System.currentTimeMillis();
-
-                break;
+                return true;
 
             default:
-                // do nothing
+                return false;
         }
     }
 
-    public void executed() {
+    public boolean executed() {
         switch (providerState) {
             case ASSIGNED:
             case OFFLOADED:
             case EXECUTING:
                 this.providerState = EXECUTED;
                 this.stateTime = System.currentTimeMillis();
-                break;
+                return true;
 
             default:
-                // do nothing
+                return false;
         }
     }
 
-    public void done() {
-        this.providerState = READY;
-        this.stateTime = System.currentTimeMillis();
-        this.succeededTasks++;
-        this.token = null;
-        this.assignedTo = null;
+    public boolean done() {
+        switch (providerState) {
+            case READY:
+                return false;
+
+            default:
+                this.providerState = READY;
+                this.stateTime = System.currentTimeMillis();
+                this.succeededTasks++;
+                this.token = null;
+                this.assignedTo = null;
+                return true;
+        }
     }
 
-    public void reset() {
-        this.providerState = READY;
-        this.stateTime = System.currentTimeMillis();
-        this.failedTasks++;
-        this.token = null;
-        this.assignedTo = null;
+    public boolean reset() {
+        switch (providerState) {
+            case READY:
+                return false;
+
+            default:
+                this.providerState = READY;
+                this.stateTime = System.currentTimeMillis();
+                this.failedTasks++;
+                this.token = null;
+                this.assignedTo = null;
+                return true;
+        }
     }
 
     @Override
