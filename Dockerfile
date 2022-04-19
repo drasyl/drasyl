@@ -20,6 +20,8 @@ RUN mkdir /usr/local/share/jtasklet && \
 
 COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
 
+ADD ./tasks/ /tasks/
+
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>\n\
