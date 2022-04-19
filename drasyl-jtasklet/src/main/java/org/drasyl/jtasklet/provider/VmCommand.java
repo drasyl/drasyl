@@ -36,6 +36,11 @@ public class VmCommand extends ChannelOptions {
             names = { "--broker" }
     )
     private IdentityPublicKey broker;
+    @Option(
+            names = { "--benchmark-runs" },
+            defaultValue = "5"
+    )
+    private int benchmarkRuns;
     private long benchmark;
 
     public VmCommand() {
@@ -48,7 +53,7 @@ public class VmCommand extends ChannelOptions {
         try {
             LOG.info("Perform benchmark...");
             benchmark = Long.MAX_VALUE;
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < benchmarkRuns; i++) {
                 final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark_primes.js"), BENCHMARK_PRIMES_INPUT);
                 if (result.getExecutionTime() < benchmark) {
                     benchmark = result.getExecutionTime();
