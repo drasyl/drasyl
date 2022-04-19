@@ -1,9 +1,14 @@
 version: '3.4'
 
 services:
-  drasyl:
-    image: drasyl/drasyl:latest
-    command: node --verbose DEBUG
-    restart: always
-    ports:
-      - 22527:22527
+  broker:
+    image: git.informatik.uni-hamburg.de:4567/sane-public/drasyl/jtasklet
+    command: broker --verbose info --bind 0.0.0.0:22527
+    volumes:
+      - ${PWD}/broker:/jtasklet
+
+  provider:
+    image: git.informatik.uni-hamburg.de:4567/sane-public/drasyl/jtasklet
+    command: vm --verbose info --bind 0.0.0.0:22527 --broker ${BROKER}
+    volumes:
+      - ${PWD}/provider:/jtasklet

@@ -13,7 +13,7 @@ RUN cd /build && \
     ./mvnw --quiet --projects drasyl-jtasklet --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./jtasklet-*.zip -d /
 
-FROM ghcr.io/graalvm/jdk:java11
+FROM ghcr.io/graalvm/graalvm-ce:java11
 
 RUN mkdir /usr/local/share/jtasklet && \
     ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
