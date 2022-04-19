@@ -552,7 +552,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
-                LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement for the Segment we actually expect.", ctx.channel(), state, seg, response);
+                LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement `{}` for the Segment we actually expect.", ctx.channel(), state, seg, response);
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             }
             ReferenceCountUtil.release(seg);
@@ -565,12 +565,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case SYN_RECEIVED:
                     if (activeOpen) {
                         // connection has been refused by remote
+                        LOG.trace("{}[{}] We got `{}`. Connection has been refused by remote peer.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
                         ReferenceCountUtil.release(seg);
                         ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection refused"));
                     }
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
+                        LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. We're going back to the LISTEN state.", ctx.channel(), state, seg);
+                        // FIXME: irgendein event muss doch kommen nach xxxIssued? sollten wir den User hier nicht informieren? Sonst hängt er ewig im "ISSUED" modus
                         switchToNewState(ctx, LISTEN);
                         ReferenceCountUtil.release(seg);
                     }
@@ -580,13 +583,19 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
                 case CLOSE_WAIT:
+                    LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. We're going back to the LISTEN state.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
                     ReferenceCountUtil.release(seg);
                     ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                     break;
 
                 default:
+                    // CLOSING
+                    // LAST-ACK
+                    // TIME-WAIT
+                    LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
+                    ctx.pipeline().close();
                     ReferenceCountUtil.release(seg);
             }
         }
@@ -720,10 +729,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_1:
                     if (acceptableAck) {
                         // our FIN has been acknowledged
-                        switchToNewState(ctx, TIME_WAIT);
-
-                        // Start the time-wait timer, turn off the other timers.
-                        applyTimeWaitTimeout(ctx);
+                        LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
+                        switchToNewState(ctx, CLOSED);
                     }
                     else {
                         switchToNewState(ctx, CLOSING);
