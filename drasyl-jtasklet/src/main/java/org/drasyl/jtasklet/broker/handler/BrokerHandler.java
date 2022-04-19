@@ -307,7 +307,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
             // table row
             builder.append(String.format(
-                    "%-64s  %6d  %,6.2f%%  %7d  %-9s  %s%2ds ago  %-64s%n",
+                    "%-64s  %6d  %,6.2f%%  %7d  %-9s  %s%3ds ago  %-64s%n",
                     address,
                     vm.succeededTasks() + vm.failedTasks(),
                     vm.errorRate() * 100,
