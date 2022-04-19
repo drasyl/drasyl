@@ -6,9 +6,12 @@ import org.drasyl.util.RandomUtil;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.ASSIGNED;
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.DONE;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTED;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTING;
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.FAILED;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.OFFLOADED;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
@@ -21,22 +24,29 @@ public class ResourceProvider {
     private String token;
     private int succeededTasks;
     private int failedTasks;
+    private String nextToken;
 
-    public ResourceProvider(final long benchmark) {
+    public ResourceProvider(final long benchmark, final String token) {
         this.benchmark = benchmark;
+        this.token = requireNonNull(token);
         this.providerState = READY;
         this.stateTime = System.currentTimeMillis();
     }
 
-    public String assigned(final DrasylAddress assignedTo) {
-        this.providerState = ASSIGNED;
-        this.stateTime = System.currentTimeMillis();
-        this.assignedTo = Objects.requireNonNull(assignedTo);
-        this.token = RandomUtil.randomString(6);
-        return token;
+    public boolean taskAssigned(final DrasylAddress assignedTo) {
+        switch (providerState) {
+            case READY:
+                this.providerState = ASSIGNED;
+                this.stateTime = System.currentTimeMillis();
+                this.assignedTo = requireNonNull(assignedTo);
+                return true;
+
+            default:
+                return false;
+        }
     }
 
-    public boolean offloaded() {
+    public boolean taskOffloaded() {
         switch (providerState) {
             case ASSIGNED:
                 this.providerState = OFFLOADED;
@@ -48,7 +58,7 @@ public class ResourceProvider {
         }
     }
 
-    public boolean executing() {
+    public boolean taskExecuting() {
         switch (providerState) {
             case ASSIGNED:
             case OFFLOADED:
@@ -61,53 +71,71 @@ public class ResourceProvider {
         }
     }
 
-    public boolean executed() {
+    public boolean taskExecuted(final String nextToken) {
         switch (providerState) {
             case ASSIGNED:
             case OFFLOADED:
             case EXECUTING:
                 this.providerState = EXECUTED;
                 this.stateTime = System.currentTimeMillis();
+                this.nextToken = nextToken;
                 return true;
+
+            case DONE:
+                this.providerState = READY;
+                this.token = nextToken;
+                this.nextToken = null;
+                this.stateTime = System.currentTimeMillis();
+                return false;
 
             default:
                 return false;
         }
     }
 
-    public boolean done() {
+    public boolean taskDone() {
         switch (providerState) {
             case READY:
                 return false;
 
             default:
-                this.providerState = READY;
+                if (nextToken != null) {
+                    this.providerState = READY;
+                    this.token = nextToken;
+                    this.nextToken = null;
+                }
+                else {
+                    this.providerState = DONE;
+                }
                 this.stateTime = System.currentTimeMillis();
                 this.succeededTasks++;
-                this.token = null;
-                this.assignedTo = null;
                 return true;
         }
     }
 
-    public boolean reset() {
+    public boolean taskFailed() {
         switch (providerState) {
             case READY:
                 return false;
 
             default:
-                this.providerState = READY;
+                this.providerState = FAILED;
                 this.stateTime = System.currentTimeMillis();
                 this.failedTasks++;
-                this.token = null;
-                this.assignedTo = null;
                 return true;
         }
+    }
+
+    public void providerReset(final String newToken) {
+        this.providerState = READY;
+        this.stateTime = System.currentTimeMillis();
+        this.token = newToken;
+        this.assignedTo = null;
     }
 
     @Override
     public String toString() {
-        return "TaskletVm{" +
+        return "ResourceProvider{" +
                 "benchmark=" + benchmark +
                 "rttReport=" + rttReport +
                 ", token=" + token +
@@ -155,11 +183,17 @@ public class ResourceProvider {
         return Objects.equals(assignedTo, sender) && this.token != null && Objects.equals(this.token, token);
     }
 
+    public static String randomToken() {
+        return RandomUtil.randomString(6);
+    }
+
     public enum ProviderState {
         READY,
         ASSIGNED,
         OFFLOADED,
         EXECUTING,
-        EXECUTED
+        EXECUTED,
+        DONE,
+        FAILED
     }
 }

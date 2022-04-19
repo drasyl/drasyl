@@ -11,6 +11,7 @@ import org.drasyl.handler.PeersRttReport;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.event.ConnectionClosed;
 import org.drasyl.jtasklet.event.ConnectionEstablished;
 import org.drasyl.jtasklet.event.ConnectionEvent;
@@ -20,8 +21,8 @@ import org.drasyl.jtasklet.event.NodeOffline;
 import org.drasyl.jtasklet.event.NodeOnline;
 import org.drasyl.jtasklet.event.TaskletEvent;
 import org.drasyl.jtasklet.message.OffloadTask;
+import org.drasyl.jtasklet.message.ProviderReset;
 import org.drasyl.jtasklet.message.RegisterProvider;
-import org.drasyl.jtasklet.message.TaskReset;
 import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
@@ -167,7 +168,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // inform broker
-                        brokerChannel.writeAndFlush(new TaskExecuted(token));
+                        brokerChannel.writeAndFlush(new TaskExecuted(token, ResourceProvider.randomToken()));
 
                         LOG.info("Result arrived at Consumer {}! Close connection to Consumer.", sender);
                         future.channel().close();
@@ -175,7 +176,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                     }
                     else {
                         // inform broker
-                        brokerChannel.writeAndFlush(new TaskReset(token));
+                        brokerChannel.writeAndFlush(new ProviderReset(token));
 
                         future.channel().pipeline().fireExceptionCaught(future.cause());
                     }
@@ -188,7 +189,8 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void registerAtBroker() {
-        final RegisterProvider msg = new RegisterProvider(benchmark);
+        token = ResourceProvider.randomToken();
+        final RegisterProvider msg = new RegisterProvider(benchmark, token);
         LOG.info("Register {} at Broker {}.", msg, broker);
         brokerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {

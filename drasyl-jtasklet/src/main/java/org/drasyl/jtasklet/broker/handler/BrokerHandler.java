@@ -18,13 +18,14 @@ import org.drasyl.jtasklet.event.MessageReceived;
 import org.drasyl.jtasklet.event.NodeOffline;
 import org.drasyl.jtasklet.event.NodeOnline;
 import org.drasyl.jtasklet.event.TaskletEvent;
+import org.drasyl.jtasklet.message.ProviderReset;
 import org.drasyl.jtasklet.message.RegisterProvider;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
+import org.drasyl.jtasklet.message.TaskFailed;
 import org.drasyl.jtasklet.message.TaskOffloaded;
-import org.drasyl.jtasklet.message.TaskReset;
 import org.drasyl.jtasklet.message.TaskResultReceived;
 import org.drasyl.jtasklet.message.TaskletMessage;
 import org.drasyl.util.Pair;
@@ -114,7 +115,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         if (msg instanceof RegisterProvider) {
             LOG.info("Provider {} registered: {}", sender, msg);
-            ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark());
+            ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
             printResourceProviders();
         }
@@ -125,9 +126,9 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers);
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
-            String token = null;
+            final String token = vm != null ? vm.token() : null;
             if (vm != null) {
-                token = vm.assigned(sender);
+                vm.taskAssigned(sender);
                 printResourceProviders();
             }
             LOG.info("Request has been scheduled to Provider `{}`.", publicKey);
@@ -142,7 +143,10 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("Failed to sent response to Consumer {}.", sender, future.cause());
                     if (vm != null) {
                         LOG.info("Put Provider {} back to pool of idle Providers.", publicKey);
-                        vm.reset();
+                        // re-use old token. This may be a vulnerability as malicious Consumers can
+                        // retrieve token and then pretends to not retrieved it by not sending any
+                        // ACKs
+                        vm.providerReset(token);
                     }
                 }
             });
@@ -154,7 +158,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskOffloaded) msg).getToken())).findFirst();
             if (optional.isPresent()) {
                 final ResourceProvider provider = optional.get();
-                if (provider.offloaded()) {
+                if (provider.taskOffloaded()) {
                     LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
                     printResourceProviders();
                 }
@@ -173,7 +177,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final ResourceProvider provider = providers.get(sender);
             if (provider != null) {
                 if (provider.token() != null && Objects.equals(((TaskExecuting) msg).getToken(), provider.token())) {
-                    if (provider.executing()) {
+                    if (provider.taskExecuting()) {
                         LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
                         printResourceProviders();
                     }
@@ -196,7 +200,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final ResourceProvider provider = providers.get(sender);
             if (provider != null) {
                 if (provider.token() != null && Objects.equals(((TaskExecuted) msg).getToken(), provider.token())) {
-                    if (provider.executed()) {
+                    if (provider.taskExecuted(((TaskExecuted) msg).getNextToken())) {
                         LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
                         printResourceProviders();
                     }
@@ -219,7 +223,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.isAssignedTo(sender, ((TaskResultReceived) msg).getToken())).findFirst();
             if (optional.isPresent()) {
                 final ResourceProvider provider = optional.get();
-                if (provider.done()) {
+                if (provider.taskDone()) {
                     LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
                     printResourceProviders();
                 }
@@ -231,14 +235,14 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskResultReceived) msg).getToken(), ProviderState.READY);
             }
         }
-        else if (msg instanceof TaskReset) {
-            // msg from provider OR consumer
-            LOG.info("Got {} from Provider OR Consumer {}.", msg, sender);
+        else if (msg instanceof TaskFailed) {
+            // msg from consumer
+            LOG.info("Got {} from Consumer {}.", msg, sender);
 
-            final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.token() != null && Objects.equals(p.token(), ((TaskReset) msg).getToken())).findFirst();
+            final Optional<ResourceProvider> optional = providers.values().stream().filter(p -> p.token() != null && Objects.equals(p.token(), ((TaskFailed) msg).getToken())).findFirst();
             if (optional.isPresent()) {
                 final ResourceProvider provider = optional.get();
-                if (provider.reset()) {
+                if (provider.taskFailed()) {
                     LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
                     printResourceProviders();
                 }
@@ -247,7 +251,21 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 }
             }
             else {
-                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskReset) msg).getToken(), ProviderState.READY);
+                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskFailed) msg).getToken(), ProviderState.READY);
+            }
+        }
+        else if (msg instanceof ProviderReset) {
+            // msg from provider
+            LOG.info("Got {} from Provider {}.", msg, sender);
+
+            final ResourceProvider provider = providers.get(sender);
+            if (provider != null) {
+                provider.providerReset(((ProviderReset) msg).getNewToken());
+                LOG.info("Changed state of Provider {} to {}.", provider, provider.state());
+                printResourceProviders();
+            }
+            else {
+                LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
         }
     }

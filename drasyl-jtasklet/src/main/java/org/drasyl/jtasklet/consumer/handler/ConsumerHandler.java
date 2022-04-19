@@ -10,15 +10,15 @@ import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.event.ConnectionClosed;
-import org.drasyl.jtasklet.event.ConnectionEvent;
-import org.drasyl.jtasklet.event.MessageReceived;
 import org.drasyl.jtasklet.event.ConnectionEstablished;
+import org.drasyl.jtasklet.event.ConnectionEvent;
 import org.drasyl.jtasklet.event.ConnectionFailed;
+import org.drasyl.jtasklet.event.MessageReceived;
 import org.drasyl.jtasklet.event.NodeOffline;
 import org.drasyl.jtasklet.event.NodeOnline;
 import org.drasyl.jtasklet.event.TaskletEvent;
 import org.drasyl.jtasklet.message.OffloadTask;
-import org.drasyl.jtasklet.message.TaskReset;
+import org.drasyl.jtasklet.message.ProviderReset;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
 import org.drasyl.jtasklet.message.ReturnResult;
@@ -217,7 +217,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 future.channel().pipeline().fireExceptionCaught(future.cause());
 
                 // inform broker
-                brokerChannel.writeAndFlush(new TaskReset(token));
+                brokerChannel.writeAndFlush(new ProviderReset(token));
             }
         });
     }

@@ -5,17 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static java.util.Objects.requireNonNull;
 
-public class TaskReset implements TaskletMessage {
+public class TaskFailed implements TaskletMessage {
     private final String token;
 
     @JsonCreator
-    public TaskReset(@JsonProperty("token") final String token) {
+    public TaskFailed(@JsonProperty("token") final String token) {
         this.token = requireNonNull(token);
     }
 
     @Override
     public String toString() {
-        return "TaskReset{" +
+        return "TaskFailed{" +
                 "token='" + token + '\'' +
                 '}';
     }

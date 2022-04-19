@@ -21,7 +21,8 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
         @Type(value = TaskExecuting.class),
         @Type(value = TaskExecuted.class),
         @Type(value = TaskResultReceived.class),
-        @Type(value = TaskReset.class),
+        @Type(value = TaskFailed.class),
+        @Type(value = ProviderReset.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface TaskletMessage {
