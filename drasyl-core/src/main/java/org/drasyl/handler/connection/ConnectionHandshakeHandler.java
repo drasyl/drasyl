@@ -399,7 +399,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         else {
             response = ConnectionHandshakeSegment.rstAck(0, seg.seq());
         }
-        LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+        LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
         ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
         ReferenceCountUtil.release(seg);
     }
