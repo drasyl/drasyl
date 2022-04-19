@@ -17,6 +17,7 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -50,6 +51,8 @@ public class OffloadCommand extends ChannelOptions {
     @Override
     public Integer call() {
         try {
+            out.println("Task   : " + task);
+            out.println("Input  : " + Arrays.toString(input.toArray()));
             source = Files.readString(task, UTF_8);
             return super.call();
         }

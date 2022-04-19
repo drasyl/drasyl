@@ -30,6 +30,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -176,6 +177,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         else if (sender.equals(provider)) {
             if (msg instanceof ReturnResult) {
                 LOG.info("Got result {} from Provider {}.", msg, sender);
+                out.println("Output : " + Arrays.toString(((ReturnResult) msg).getOutput()));
 
                 // inform broker
                 brokerChannel.writeAndFlush(new TaskResultReceived(token)).addListener((ChannelFutureListener) future -> {
