@@ -3,15 +3,15 @@ FROM openjdk:11-jdk-buster AS build
 ADD . /build
 
 RUN cd /build && \
-    ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
-    unzip -qq ./drasyl-*.zip -d /
+    ./mvnw --quiet --projects drasyl-jtasklet --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
+    unzip -qq ./jtasklet-*.zip -d /
 
 FROM adoptopenjdk:11-jre-openj9
 
-RUN mkdir /usr/local/share/drasyl && \
-    ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
+RUN mkdir /usr/local/share/jtasklet && \
+    ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
 
-COPY --from=build /drasyl-* /usr/local/share/drasyl/
+COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -29,25 +29,25 @@ RUN echo '<configuration>\n\
     <root level="warn">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
-</configuration>' >> /usr/local/share/drasyl/logback.xml
+</configuration>' >> /usr/local/share/jtasklet/logback.xml
 
 # run as non-root user
-RUN groupadd --gid 22527 drasyl && \
-    useradd --system --uid 22527 --gid drasyl --home-dir /drasyl/ --no-log-init drasyl && \
-    mkdir /drasyl/ && \
-    chown drasyl:drasyl /drasyl/
+RUN groupadd --gid 22527 jtasklet && \
+    useradd --system --uid 22527 --gid jtasklet --home-dir /jtasklet/ --no-log-init jtasklet && \
+    mkdir /jtasklet/ && \
+    chown jtasklet:jtasklet /jtasklet/
 
-USER drasyl
+USER jtasklet
 
 # create share class folder for openj9
-RUN mkdir /drasyl/shareclasses
+RUN mkdir /jtasklet/shareclasses
 
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
-WORKDIR /drasyl/
+WORKDIR /jtasklet/
 
-ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=drasyl_scc,cacheDir=/drasyl/shareclasses -Xscmx50M"
-ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml ${JAVA_SCC_OPTS}"
+ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=jtasklet_scc,cacheDir=/jtasklet/shareclasses -Xscmx50M"
+ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
-ENTRYPOINT ["drasyl"]
+ENTRYPOINT ["jtasklet"]
