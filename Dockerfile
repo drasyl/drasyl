@@ -40,14 +40,6 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/jtasklet/logback.xml
 
-# run as non-root user
-RUN groupadd --gid 22527 jtasklet && \
-    useradd --system --uid 22527 --gid jtasklet --home-dir /jtasklet/ --no-log-init jtasklet && \
-    mkdir /jtasklet/ && \
-    chown jtasklet:jtasklet /jtasklet/
-
-USER jtasklet
-
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
