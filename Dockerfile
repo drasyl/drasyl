@@ -1,12 +1,19 @@
-FROM openjdk:11-jdk-buster AS build
+FROM container-registry.oracle.com/os/oraclelinux:7-slim AS build-dependencies
+
+RUN yum update -y \
+    && yum install -y unzip
+
+FROM ghcr.io/graalvm/jdk:java11 AS build
 
 ADD . /build
+
+COPY --from=build-dependencies /bin/unzip /bin/
 
 RUN cd /build && \
     ./mvnw --quiet --projects drasyl-jtasklet --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./jtasklet-*.zip -d /
 
-FROM adoptopenjdk:11-jre-openj9
+FROM ghcr.io/graalvm/jdk:java11
 
 RUN mkdir /usr/local/share/jtasklet && \
     ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
@@ -39,15 +46,12 @@ RUN groupadd --gid 22527 jtasklet && \
 
 USER jtasklet
 
-# create share class folder for openj9
-RUN mkdir /jtasklet/shareclasses
-
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
 WORKDIR /jtasklet/
 
-ENV JAVA_SCC_OPTS "-Xquickstart -XX:+IdleTuningGcOnIdle -Xtune:virtualized -Xshareclasses:name=jtasklet_scc,cacheDir=/jtasklet/shareclasses -Xscmx50M"
+ENV JAVA_SCC_OPTS ""
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["jtasklet"]
