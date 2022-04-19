@@ -1,5 +1,6 @@
 package org.drasyl.jtasklet.broker.handler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -33,8 +34,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.time.Clock;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,16 +46,20 @@ import java.util.Set;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.broker.handler.BrokerHandler.State.ONLINE;
 
+// FIXME: ResourceProvider kann in !READY verklemmen
 public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerHandler.class);
+    private static final int STUCK_PROVIDER_TIMEOUT = 60_000;
     private static final Random RANDOM = new Random();
     private State state = State.STARTED;
     private final PrintStream out;
     private final PrintStream err;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final Map<DrasylAddress, ResourceProvider> providers = new HashMap<>();
+    private final Map<DrasylAddress, Channel> providerChannels = new HashMap<>();
     private final SchedulingStrategy schedulingStrategy = new RandomSchedulingStrategy();
 
     public BrokerHandler(final PrintStream out,
@@ -69,6 +72,24 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
         LOG.info("Start Broker {}.", ctx.channel().localAddress());
+
+        ctx.executor().scheduleWithFixedDelay(() -> {
+            // kick provider that are (potentially?) stuck in a non-READY state
+            final Set<DrasylAddress> stuckProviders = new HashSet<>();
+            providers.forEach((address, provider) -> {
+                if (provider.state() != ProviderState.READY && provider.timeSinceLastStateChange() >= STUCK_PROVIDER_TIMEOUT) {
+                    stuckProviders.add(address);
+                }
+            });
+            if (!stuckProviders.isEmpty()) {
+                stuckProviders.forEach(address -> {
+                    LOG.info("Unregister Provider {} that is stuck in non-READY for more then {}ms.", address, STUCK_PROVIDER_TIMEOUT);
+                    providers.remove(address);
+                    providerChannels.remove(address).close();
+                });
+                printResourceProviders();
+            }
+        }, 5_000, 5_000, MILLISECONDS);
     }
 
     @Override
@@ -103,8 +124,9 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
         final DrasylAddress sender = evt.sender();
 
         if (evt instanceof ConnectionClosed && providers.containsKey(sender)) {
-            LOG.info("Connection to Provider {} closed. Unregister Provider.", sender);
+            LOG.info("Unregister Provider {} as connection has been closed.", sender);
             providers.remove(sender);
+            providerChannels.remove(sender);
             printResourceProviders();
         }
     }
@@ -113,13 +135,14 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                                  final TaskletMessage msg) {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
-        if (msg instanceof RegisterProvider) {
+        if (state == ONLINE && msg instanceof RegisterProvider) {
             LOG.info("Provider {} registered: {}", sender, msg);
             ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
+            providerChannels.put(sender, channel);
             printResourceProviders();
         }
-        else if (msg instanceof ResourceRequest) {
+        else if (state == ONLINE && msg instanceof ResourceRequest) {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
 
             LOG.info("Schedule request using {}.", schedulingStrategy);
@@ -151,7 +174,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 }
             });
         }
-        else if (msg instanceof TaskOffloaded) {
+        else if (state == ONLINE && msg instanceof TaskOffloaded) {
             // msg from consumer
             LOG.info("Got {} from Consumer {}.", msg, sender);
 
@@ -170,7 +193,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskOffloaded) msg).getToken(), ProviderState.OFFLOADED);
             }
         }
-        else if (msg instanceof TaskExecuting) {
+        else if (state == ONLINE && msg instanceof TaskExecuting) {
             // msg from provider
             LOG.info("Got {} from Provider {}.", msg, sender);
 
@@ -193,7 +216,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
         }
-        else if (msg instanceof TaskExecuted) {
+        else if (state == ONLINE && msg instanceof TaskExecuted) {
             // msg from provider
             LOG.info("Got {} from Provider {}.", msg, sender);
 
@@ -216,7 +239,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
         }
-        else if (msg instanceof TaskResultReceived) {
+        else if (state == ONLINE && msg instanceof TaskResultReceived) {
             // msg from consumer
             LOG.info("Got {} from Consumer {}.", msg, sender);
 
@@ -235,7 +258,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskResultReceived) msg).getToken(), ProviderState.READY);
             }
         }
-        else if (msg instanceof TaskFailed) {
+        else if (state == ONLINE && msg instanceof TaskFailed) {
             // msg from consumer
             LOG.info("Got {} from Consumer {}.", msg, sender);
 
@@ -254,7 +277,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("Reject message {} as Provider {} and token {} are currently not assigned to any Consumer.", msg, sender, ((TaskFailed) msg).getToken(), ProviderState.READY);
             }
         }
-        else if (msg instanceof ProviderReset) {
+        else if (state == ONLINE && msg instanceof ProviderReset) {
             // msg from provider
             LOG.info("Got {} from Provider {}.", msg, sender);
 
@@ -274,8 +297,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
         final StringBuilder builder = new StringBuilder();
 
         // table header
-        final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.now(), Clock.systemDefaultZone().getZone());
-        builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(zonedDateTime)));
+        builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(ZonedDateTime.now())));
         builder.append(String.format("%-64s  %-6s  %-7s  %7s  %-9s  %5s  %-64s%n", "Resource Provider", "Tasks", "ErrRt", "Bnchmrk", "State", "LstStChg", "Assigned to"));
 
         // table body
@@ -285,10 +307,10 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
             // table row
             builder.append(String.format(
-                    "%-64s  %6d  %,6.2f%%  %7d  %-9s  %s%3ds ago  %-64s%n",
+                    "%-64s  %6d  %,5.2f%%  %7d  %-9s  %s%3ds ago  %-64s%n",
                     address,
-                    vm.succeededTasks(),
-                    vm.errorRate(),
+                    vm.succeededTasks() + vm.failedTasks(),
+                    vm.errorRate() * 100,
                     vm.benchmark(),
                     vm.state(),
                     vm.timeSinceLastStateChange() > 99_999 ? ">" : "",

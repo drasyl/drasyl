@@ -16,8 +16,8 @@ import static java.util.Objects.requireNonNull;
 public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
     private final IdentityPublicKey broker;
-    private String source;
-    private Object[] input;
+    private final String source;
+    private final Object[] input;
 
     @SuppressWarnings("java:S107")
     public ConsumerChannelInitializer(final Identity identity,
@@ -40,8 +40,8 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     }
 
     @Override
-    protected void lastStage(DrasylServerChannel ch) {
-        ch.pipeline().addLast(new ConsumerHandler(out, err, broker, source, input));
+    protected void lastStage(DrasylServerChannel ch) throws Exception {
+        ch.pipeline().addLast(new ConsumerHandler(out, err, identity.getAddress(), broker, source, input));
         super.lastStage(ch);
     }
 }

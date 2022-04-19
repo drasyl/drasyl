@@ -27,8 +27,10 @@ import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
 import org.drasyl.jtasklet.message.TaskletMessage;
+import org.drasyl.jtasklet.provider.ProviderTaskRecord;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
+import org.drasyl.jtasklet.util.CsvLogger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -36,6 +38,7 @@ import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ESTABLISHED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ISSUED;
@@ -46,22 +49,24 @@ import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.ONLINE;
 
 public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProviderHandler.class);
+    private final CsvLogger logger;
     private State state = State.STARTED;
     private final PrintStream out;
     private final PrintStream err;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final DrasylAddress broker;
     private final long benchmark;
-    private DrasylChannel brokerChannel;
-    private PeersRttReport rttReport;
-    private String token;
     private final EventLoopGroup eventLoop = new NioEventLoopGroup(1);
     private final RuntimeEnvironment runtimeEnvironment;
+    private ProviderTaskRecord taskRecord;
+    private DrasylChannel brokerChannel;
+    private String token;
     private DrasylChannel consumerChannel;
     private DrasylAddress consumer;
 
     public ProviderHandler(final PrintStream out,
                            final PrintStream err,
+                           final DrasylAddress address,
                            final DrasylAddress broker,
                            final long benchmark,
                            RuntimeEnvironment runtimeEnvironment) {
@@ -70,6 +75,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         this.broker = requireNonNull(broker);
         this.benchmark = benchmark;
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);
+        logger = new CsvLogger("provider-" + address.toString().substring(0, 8) + ".csv");
     }
 
     @Override
@@ -97,7 +103,6 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if (evt instanceof PeersRttReport) {
-            rttReport = (PeersRttReport) evt;
         }
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {
@@ -112,7 +117,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 connectionChanged(ctx, (ConnectionEvent) evt);
             }
             else if (evt instanceof MessageReceived) {
-                messageReceived(((MessageReceived<?>) evt).channel(), ((MessageReceived<?>) evt).msg());
+                messageReceived(ctx, ((MessageReceived<?>) evt).channel(), ((MessageReceived<?>) evt).msg());
             }
         }
 
@@ -125,7 +130,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         if (evt instanceof ConnectionEstablished && sender.equals(broker)) {
             LOG.info("Connection to Broker {} established.", broker);
             state = BROKER_CONNECTION_ESTABLISHED;
-            registerAtBroker();
+            registerAtBroker(ctx);
         }
         else if (evt instanceof ConnectionFailed && sender.equals(broker)) {
             LOG.info("Failed to connect to Broker {}.", broker, ((ConnectionFailed) evt).cause());
@@ -141,26 +146,42 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         else if (evt instanceof ConnectionEstablished) {
             LOG.info("Connection to Consumer {} established.", sender);
         }
+        else if (evt instanceof ConnectionClosed && sender.equals(consumer)) {
+            if (state == EXECUTE_TASK) {
+                LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, broker);
+
+                // inform broker
+                brokerChannel.writeAndFlush(new ProviderReset(ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+
+                state = BROKER_REGISTERED;
+                consumer = null;
+                LOG.info("Send me tasks! I'm hungry!");
+            }
+        }
     }
 
-    private void messageReceived(final DrasylChannel channel,
+    private void messageReceived(final ChannelHandlerContext ctx,
+                                 final DrasylChannel channel,
                                  final TaskletMessage msg) {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
-        if (msg instanceof OffloadTask) {
+        if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
             LOG.info("Got task {} from Consumer {}. Schedule it.", msg, sender);
             consumer = sender;
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
+            taskRecord = new ProviderTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
 
             state = EXECUTE_TASK;
 
             // inform broker
-            brokerChannel.writeAndFlush(new TaskExecuting(token));
+            brokerChannel.writeAndFlush(new TaskExecuting(token)).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
             eventLoop.execute(() -> {
                 LOG.info("Start executing of task {} from Consumer {}.", msg, sender);
+                taskRecord.executing();
                 final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
+                taskRecord.executed(result.getOutput(), result.getExecutionTime());
                 LOG.info("Execution of task {} from Consumer {} finished in {}ms.", msg, sender, result.getExecutionTime());
 
                 final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
@@ -168,38 +189,41 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // inform broker
-                        brokerChannel.writeAndFlush(new TaskExecuted(token, ResourceProvider.randomToken()));
+                        brokerChannel.writeAndFlush(new TaskExecuted(token, ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
                         LOG.info("Result arrived at Consumer {}! Close connection to Consumer.", sender);
                         future.channel().close();
-
                     }
                     else {
-                        // inform broker
-                        brokerChannel.writeAndFlush(new ProviderReset(token));
+                        LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), broker);
 
-                        future.channel().pipeline().fireExceptionCaught(future.cause());
+                        // inform broker
+                        brokerChannel.writeAndFlush(new ProviderReset(ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
 
                     state = BROKER_REGISTERED;
+                    consumer = null;
+                    logger.log(taskRecord);
                     LOG.info("Send me tasks! I'm hungry!");
                 });
             });
         }
     }
 
-    private void registerAtBroker() {
+    private void registerAtBroker(ChannelHandlerContext ctx) {
         token = ResourceProvider.randomToken();
         final RegisterProvider msg = new RegisterProvider(benchmark, token);
         LOG.info("Register {} at Broker {}.", msg, broker);
         brokerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                LOG.info("Registration at Broker {} arrived!", broker);
+                LOG.info("Registration {} at Broker {} arrived!", msg, broker);
                 state = BROKER_REGISTERED;
                 LOG.info("Send me tasks! I'm hungry!");
             }
             else {
-                future.channel().pipeline().fireExceptionCaught(future.cause());
+                LOG.info("Failed to send registration {} to Broker {}. Shutdown Provider.", msg, broker, future.cause());
+                state = CLOSED;
+                ctx.pipeline().close();
             }
         });
     }

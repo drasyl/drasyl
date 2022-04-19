@@ -1,6 +1,5 @@
 package org.drasyl.jtasklet.broker;
 
-import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.RandomUtil;
 
@@ -20,7 +19,6 @@ public class ResourceProvider {
     private ProviderState providerState;
     private long stateTime;
     private DrasylAddress assignedTo;
-    private PeersRttReport rttReport;
     private String token;
     private int succeededTasks;
     private int failedTasks;
@@ -129,6 +127,7 @@ public class ResourceProvider {
     public void providerReset(final String newToken) {
         this.providerState = READY;
         this.stateTime = System.currentTimeMillis();
+        this.failedTasks++;
         this.token = newToken;
         this.assignedTo = null;
     }
@@ -137,7 +136,6 @@ public class ResourceProvider {
     public String toString() {
         return "ResourceProvider{" +
                 "benchmark=" + benchmark +
-                "rttReport=" + rttReport +
                 ", token=" + token +
                 '}';
     }
@@ -153,6 +151,9 @@ public class ResourceProvider {
     public float errorRate() {
         if (succeededTasks > 0) {
             return (float) failedTasks / succeededTasks;
+        }
+        else if (failedTasks > 0) {
+            return 1;
         }
         else {
             return 0;

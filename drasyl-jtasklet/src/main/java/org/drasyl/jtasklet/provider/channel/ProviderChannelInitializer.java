@@ -42,9 +42,9 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
     }
 
     @Override
-    protected void lastStage(DrasylServerChannel ch) {
+    protected void lastStage(DrasylServerChannel ch) throws Exception {
         ch.pipeline().addLast(new PeersRttHandler(null, 2_500L));
-        ch.pipeline().addLast(new ProviderHandler(out, err, broker, benchmark, runtimeEnvironment));
+        ch.pipeline().addLast(new ProviderHandler(out, err, identity.getAddress(), broker, benchmark, runtimeEnvironment));
         super.lastStage(ch);
     }
 }

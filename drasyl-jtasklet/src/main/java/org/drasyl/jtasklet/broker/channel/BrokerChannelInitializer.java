@@ -31,7 +31,7 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
     }
 
     @Override
-    protected void lastStage(DrasylServerChannel ch) {
+    protected void lastStage(DrasylServerChannel ch) throws Exception {
         ch.pipeline().addLast(new BrokerHandler(out, err));
         super.lastStage(ch);
     }

@@ -9,7 +9,7 @@ public class ProviderReset implements TaskletMessage {
     private final String newToken;
 
     @JsonCreator
-    public ProviderReset(@JsonProperty("token") final String newToken) {
+    public ProviderReset(@JsonProperty("newToken") final String newToken) {
         this.newToken = requireNonNull(newToken);
     }
 

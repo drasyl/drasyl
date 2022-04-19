@@ -82,7 +82,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     }
 
     @Override
-    protected void initChannel(final DrasylServerChannel ch) {
+    protected void initChannel(final DrasylServerChannel ch) throws Exception {
         firstStage(ch);
         ipStage(ch);
         serializationStage(ch);
@@ -122,7 +122,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
-    protected void lastStage(final DrasylServerChannel ch) {
+    protected void lastStage(final DrasylServerChannel ch) throws Exception {
         ch.pipeline().addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
         ch.pipeline().addLast(new PathEventsFilter());
         ch.pipeline().addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
