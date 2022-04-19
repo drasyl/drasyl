@@ -61,6 +61,8 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
                             ChildChannelInitializer.this.chunkingStage(ch);
                             ChildChannelInitializer.this.codecStage(ch);
                             ChildChannelInitializer.this.handshakeCompletedStage(ch);
+                            ch.pipeline().remove(ConnectionEventHandler.class);
+                            ch.pipeline().addLast(new ConnectionEventHandler());
                             ctx.pipeline().remove(this);
                         }
                         else {
