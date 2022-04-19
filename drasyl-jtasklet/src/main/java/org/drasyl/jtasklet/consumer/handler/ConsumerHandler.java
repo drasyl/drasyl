@@ -3,6 +3,7 @@ package org.drasyl.jtasklet.consumer.handler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -63,6 +64,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private DrasylChannel providerChannel;
     private final String source;
     private final Object[] input;
+    private ScheduledFuture<?> timeoutGuard;
 
     public ConsumerHandler(final PrintStream out,
                            final PrintStream err,
@@ -180,6 +182,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         if (sender.equals(broker)) {
             if (state == RESOURCE_REQUESTED && msg instanceof ResourceResponse) {
                 LOG.info("Got resource response {} from Broker {}.", msg, sender);
+                timeoutGuard.cancel(false);
                 token = ((ResourceResponse) msg).getToken();
                 provider = ((ResourceResponse) msg).getPublicKey();
                 taskRecord.resourceResponded(provider, token);
@@ -200,6 +203,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         else if (sender.equals(provider)) {
             if (state == TASK_OFFLOADED && msg instanceof ReturnResult) {
                 LOG.info("Got result {} from Provider {}.", msg, sender);
+                timeoutGuard.cancel(false);
                 taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
                 out.println("Output : " + Arrays.toString(((ReturnResult) msg).getOutput()));
@@ -229,12 +233,10 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         });
 
         // apply timeout guard
-        ctx.executor().schedule(() -> {
-            if (state == RESOURCE_REQUESTED) {
-                LOG.info("Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", broker, request, RESOURCE_REQUEST_TIMEOUT);
-                state = CLOSED;
-                ctx.pipeline().close();
-            }
+        timeoutGuard = ctx.executor().schedule(() -> {
+            LOG.info("Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", broker, request, RESOURCE_REQUEST_TIMEOUT);
+            state = CLOSED;
+            ctx.pipeline().close();
         }, RESOURCE_REQUEST_TIMEOUT, MILLISECONDS);
     }
 
@@ -263,16 +265,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         });
 
         // apply timeout guard
-        ctx.executor().schedule(() -> {
-            if (state == TASK_OFFLOADED) {
-                LOG.info("Provider {} has not provided results for our task {} within {}ms. Shutdown Consumer.", provider, msg, OFFLOAD_TASK_TIMEOUT);
+        timeoutGuard = ctx.executor().schedule(() -> {
+            LOG.info("Provider {} has not provided results for our task {} within {}ms. Shutdown Consumer.", provider, msg, OFFLOAD_TASK_TIMEOUT);
 
-                // inform broker
-                brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future -> {
-                    state = CLOSED;
-                    ctx.pipeline().close();
-                });
-            }
+            // inform broker
+            brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future -> {
+                state = CLOSED;
+                ctx.pipeline().close();
+            });
         }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
     }
 

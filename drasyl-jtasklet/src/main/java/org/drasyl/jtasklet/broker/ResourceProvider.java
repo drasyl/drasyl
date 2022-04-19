@@ -84,6 +84,7 @@ public class ResourceProvider {
                 this.token = nextToken;
                 this.nextToken = null;
                 this.stateTime = System.currentTimeMillis();
+                this.assignedTo = null;
                 return false;
 
             default:
@@ -101,6 +102,7 @@ public class ResourceProvider {
                     this.providerState = READY;
                     this.token = nextToken;
                     this.nextToken = null;
+                    this.assignedTo = null;
                 }
                 else {
                     this.providerState = DONE;
