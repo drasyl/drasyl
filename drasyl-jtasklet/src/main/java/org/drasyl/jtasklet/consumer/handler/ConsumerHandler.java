@@ -53,6 +53,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ConsumerHandler.class);
     private static final int RESOURCE_REQUEST_TIMEOUT = 10_000;
     private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
+    private static final int RETRY_INTERVAL = 5_000;
     private final CsvLogger logger;
     private State state = State.STARTED;
     private final PrintStream out;
@@ -182,9 +183,19 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 taskRecord.resourceResponded(provider, token);
                 if (provider == null) {
                     LOG.info("Broker has not found any resource for us. Shutdown Consumer.");
-                    err.println("No resource for offloading available. Please try again later.");
-                    state = CLOSED;
-                    ctx.pipeline().close();
+                    logger.log(taskRecord);
+
+                    if (remainingCycles > 0) {
+                        out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
+                        state = READY;
+                        ctx.executor().schedule(() -> requestResource(ctx), RETRY_INTERVAL, MILLISECONDS);
+                    }
+                    else {
+                        err.println("No resource for offloading available. Please try again later.");
+                        state = CLOSED;
+                        ctx.pipeline().close();
+                    }
+
                     return;
                 }
 
