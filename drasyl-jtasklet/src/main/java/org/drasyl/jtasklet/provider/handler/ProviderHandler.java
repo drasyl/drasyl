@@ -56,7 +56,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final DrasylAddress broker;
     private final long benchmark;
-    private final EventLoopGroup eventLoop = new NioEventLoopGroup(1);
+    private final EventLoopGroup taskEventLoop = new NioEventLoopGroup(1);
     private final RuntimeEnvironment runtimeEnvironment;
     private ProviderTaskRecord taskRecord;
     private DrasylChannel brokerChannel;
@@ -86,7 +86,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        eventLoop.shutdownGracefully();
+        taskEventLoop.shutdownGracefully();
         ctx.fireChannelInactive();
     }
 
@@ -148,6 +148,9 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         }
         else if (evt instanceof ConnectionClosed && sender.equals(consumer)) {
             if (state == EXECUTE_TASK) {
+                // FIXME: we need to ensure that our task EventLoop is freed up again. otherwise it
+                //  can be possible that an old task is still blocking it. new accepted tasks will
+                //  then be delayed
                 LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, broker);
 
                 // inform broker
@@ -177,7 +180,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             // inform broker
             brokerChannel.writeAndFlush(new TaskExecuting(token)).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
-            eventLoop.execute(() -> {
+            taskEventLoop.execute(() -> {
                 LOG.info("Start executing of task {} from Consumer {}.", msg, sender);
                 taskRecord.executing();
                 final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
@@ -210,7 +213,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void registerAtBroker(ChannelHandlerContext ctx) {
+    private void registerAtBroker(final ChannelHandlerContext ctx) {
         token = ResourceProvider.randomToken();
         final RegisterProvider msg = new RegisterProvider(benchmark, token);
         LOG.info("Register {} at Broker {}.", msg, broker);

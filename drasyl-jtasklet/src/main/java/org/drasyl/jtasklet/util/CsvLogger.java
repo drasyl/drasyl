@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 public class CsvLogger {
+    public static final long PID = ProcessHandle.current().pid();
     private final FileWriter writer;
     private boolean headerWritten;
 
@@ -28,6 +29,8 @@ public class CsvLogger {
             // header
             if (!headerWritten) {
                 headerWritten = true;
+                escapedWrite(writer, "pid");
+                writer.append(",");
                 escapedWrite(writer, "time");
                 for (final Object title : taskRecord.logTitles()) {
                     writer.append(",");
@@ -37,6 +40,8 @@ public class CsvLogger {
             }
 
             // row
+            escapedWrite(writer, PID);
+            writer.append(",");
             escapedWrite(writer, RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
             for (final Object title : taskRecord.logValues()) {
                 writer.append(",");
