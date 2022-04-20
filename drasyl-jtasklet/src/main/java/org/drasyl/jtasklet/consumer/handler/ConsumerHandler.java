@@ -41,6 +41,8 @@ import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.ONLINE;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_CLOSED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_FAILED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
@@ -108,7 +110,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if (evt instanceof TaskletEvent) {
-            if (evt instanceof NodeOnline) {
+            if (state != ONLINE && evt instanceof NodeOnline) {
                 state = ONLINE;
                 LOG.info("[{}] Consumer online!", state);
 
@@ -132,29 +134,30 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         final DrasylAddress sender = evt.sender();
 
         if (sender.equals(broker)) {
-            if (evt instanceof ConnectionEstablished) {
+            if (state == BROKER_CONNECTION_ISSUED && evt instanceof ConnectionEstablished) {
                 state = READY;
                 LOG.info("[{}] Connection to Broker {} established.", state, broker);
                 requestResource(ctx);
             }
-            else if (evt instanceof ConnectionFailed) {
+            else if (state == BROKER_CONNECTION_ISSUED && evt instanceof ConnectionFailed) {
                 state = CLOSED;
                 LOG.info("[{}] Failed to connect to Broker {}. Shutdown Consumer.", state, broker, ((ConnectionFailed) evt).cause());
                 ctx.channel().close();
             }
-            else if (evt instanceof ConnectionClosed) {
+            else if (state != CLOSED && evt instanceof ConnectionClosed) {
                 state = CLOSED;
                 LOG.info("[{}] Broker {} closed connection. Shutdown Consumer.", state, broker);
                 ctx.channel().close();
             }
         }
         else if (sender.equals(provider)) {
-            if (evt instanceof ConnectionEstablished) {
+            if (state == PROVIDER_CONNECTION_ISSUED && evt instanceof ConnectionEstablished) {
                 state = PROVIDER_CONNECTION_ESTABLISHED;
                 LOG.info("[{}] Connection to Provider {} established.", state, broker);
                 offloadTask(ctx);
             }
-            else if (evt instanceof ConnectionFailed) {
+            else if (state == PROVIDER_CONNECTION_ISSUED && evt instanceof ConnectionFailed) {
+                state = PROVIDER_CONNECTION_FAILED;
                 final TaskFailed taskFailed = new TaskFailed(token);
                 LOG.info("[{}] Failed to connect to Provider {}. Inform Broker.", state, provider, ((ConnectionFailed) evt).cause());
 
@@ -172,6 +175,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 });
             }
             else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
+                state = PROVIDER_CONNECTION_CLOSED;
                 final TaskFailed taskFailed = new TaskFailed(token);
                 LOG.info("[{}] Provider {} closed connection. Inform Broker {}.", state, provider, taskFailed);
 
@@ -228,9 +232,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         // apply timeout guard
         timeoutGuard = ctx.executor().schedule(() -> {
-            state = CLOSED;
-            LOG.info("[{}] Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", state, broker, request, RESOURCE_REQUEST_TIMEOUT);
-            ctx.channel().close();
+            if (state == RESOURCE_REQUESTING) {
+                state = CLOSED;
+                LOG.info("[{}] Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", state, broker, request, RESOURCE_REQUEST_TIMEOUT);
+                ctx.channel().close();
+            }
         }, RESOURCE_REQUEST_TIMEOUT, MILLISECONDS);
     }
 
@@ -253,8 +259,8 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        LOG.info("[{}] Connect to Provider {}.", state, provider);
         state = PROVIDER_CONNECTION_ISSUED;
+        LOG.info("[{}] Connect to Provider {}.", state, provider);
         providerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), provider);
         ctx.pipeline().fireChannelRead(providerChannel);
     }
@@ -343,6 +349,8 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         RESOURCE_REQUESTED,
         PROVIDER_CONNECTION_ISSUED,
         PROVIDER_CONNECTION_ESTABLISHED,
+        PROVIDER_CONNECTION_CLOSED,
+        PROVIDER_CONNECTION_FAILED,
         TASK_OFFLOADING,
         TASK_OFFLOADED,
         CLOSED
