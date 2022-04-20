@@ -436,8 +436,15 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
          * Triggers a new resolve of the hostname into an {@link java.net.InetAddress}.
          */
         public InetSocketAddress resolveInetAddress() {
-            inetAddress = new InetSocketAddress(inetAddress.getHostString(), inetAddress.getPort());
-            return inetAddress;
+            // Note: Java DNS resolution is not great at all, maybe we need to use a more
+            // sophisticated resolution like netty's dns resolver
+            // see also https://blog.bmarwell.de/2020/09/23/javas-dns-resolution-is-so-90ies.html
+            final InetSocketAddress newInetAddress = new InetSocketAddress(this.inetAddress.getHostString(), this.inetAddress.getPort());
+            if (!newInetAddress.isUnresolved()) {
+                // make sure we don't regress to an unresolved address
+                this.inetAddress = newInetAddress;
+            }
+            return this.inetAddress;
         }
     }
 }
