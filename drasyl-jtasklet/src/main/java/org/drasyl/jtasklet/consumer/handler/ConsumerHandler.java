@@ -156,9 +156,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().close();
             }
             else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
-                LOG.info("Provider {} closed connection. Shutdown Consumer.", broker);
+                final TaskFailed taskFailed = new TaskFailed(token);
+                LOG.info("Provider {} closed connection. Inform Broker {}. Shutdown Consumer.", broker, taskFailed);
+
                 // inform broker
-                brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future2 -> {
+                brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
                     state = CLOSED;
                     ctx.pipeline().close();
                 });
@@ -194,7 +196,8 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         }
         else if (sender.equals(provider)) {
             if (state == TASK_OFFLOADED && msg instanceof ReturnResult) {
-                LOG.info("Got result {} from Provider {}.", msg, sender);
+                final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
+                LOG.info("Got result {} from Provider {}. Inform Broker {}.", msg, sender, taskResultReceived);
                 timeoutGuard.cancel(false);
                 taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
@@ -202,7 +205,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 logger.log(taskRecord);
 
                 // inform broker
-                final ChannelFuture brokerFuture = brokerChannel.writeAndFlush(new TaskResultReceived(token));
+                final ChannelFuture brokerFuture = brokerChannel.writeAndFlush(taskResultReceived);
                 if (--remainingCycles > 0) {
                     out.println("Rem. Cycles : " + remainingCycles);
                     state = READY;
@@ -248,17 +251,19 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         taskRecord.offloadTask();
         providerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                LOG.info("Task arrived at Provider {}!", provider);
+                final TaskOffloaded taskOffloaded = new TaskOffloaded(token);
+                LOG.info("Task arrived at Provider {}! Inform Broker {}.", provider, taskOffloaded);
                 taskRecord.offloadedTask();
 
                 // inform broker
-                brokerChannel.writeAndFlush(new TaskOffloaded(token)).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                brokerChannel.writeAndFlush(taskOffloaded).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {
-                LOG.info("Failed to offload task {} to Provider {}. Shutdown Consumer.", msg, provider, future.cause());
+                final TaskFailed taskFailed = new TaskFailed(token);
+                LOG.info("Failed to offload task {} to Provider {}. Inform Broker {}. Shutdown Consumer.", msg, provider, taskFailed, future.cause());
 
                 // inform broker
-                brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future2 -> {
+                brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
                     state = CLOSED;
                     ctx.pipeline().close();
                 });
@@ -267,10 +272,10 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         // apply timeout guard
         timeoutGuard = ctx.executor().schedule(() -> {
-            LOG.info("Provider {} has not provided results for our task {} within {}ms. Shutdown Consumer.", provider, msg, OFFLOAD_TASK_TIMEOUT);
-
             // inform broker
-            brokerChannel.writeAndFlush(new TaskFailed(token)).addListener((ChannelFutureListener) future -> {
+            final TaskFailed taskFailed = new TaskFailed(token);
+            LOG.info("Provider {} has not provided results for our task {} within {}ms. Inform Broker {}. Shutdown Consumer.", provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
+            brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
                 state = CLOSED;
                 ctx.pipeline().close();
             });

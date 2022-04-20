@@ -591,7 +591,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 default:
                     // CLOSING
-                    // LAST-ACK
+                    // LAST-ACFailed to offload taskK
                     // TIME-WAIT
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);

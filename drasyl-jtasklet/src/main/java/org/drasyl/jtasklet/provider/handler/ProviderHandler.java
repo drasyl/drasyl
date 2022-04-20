@@ -151,10 +151,11 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 // FIXME: we need to ensure that our task EventLoop is freed up again. otherwise it
                 //  can be possible that an old task is still blocking it. new accepted tasks will
                 //  then be delayed
-                LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, broker);
+                final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
+                LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, providerReset);
 
                 // inform broker
-                brokerChannel.writeAndFlush(new ProviderReset(ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
                 state = BROKER_REGISTERED;
                 consumer = null;
@@ -169,7 +170,8 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
         if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
-            LOG.info("Got task {} from Consumer {}. Schedule it.", msg, sender);
+            final TaskExecuting taskExecuting = new TaskExecuting(token);
+            LOG.info("Got task {} from Consumer {}. Inform Broker {}. Schedule it.", msg, sender, taskExecuting);
             consumer = sender;
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
@@ -178,7 +180,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             state = EXECUTE_TASK;
 
             // inform broker
-            brokerChannel.writeAndFlush(new TaskExecuting(token)).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
             taskEventLoop.execute(() -> {
                 LOG.info("Start executing of task {} from Consumer {}.", msg, sender);
@@ -192,16 +194,18 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // inform broker
-                        brokerChannel.writeAndFlush(new TaskExecuted(token, ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
+                        brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
-                        LOG.info("Result arrived at Consumer {}! Close connection to Consumer.", sender);
+                        LOG.info("Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", sender, taskExecuted);
                         future.channel().close();
                     }
                     else {
-                        LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), broker);
+                        final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
+                        LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), providerReset);
 
                         // inform broker
-                        brokerChannel.writeAndFlush(new ProviderReset(ResourceProvider.randomToken())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
 
                     state = BROKER_REGISTERED;
