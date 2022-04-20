@@ -655,7 +655,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // our FIN has been ACKed
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    ctx.close();
+                    ctx.close(userCallFuture != null ? userCallFuture : ctx.newPromise());
                     return;
 
                 default:

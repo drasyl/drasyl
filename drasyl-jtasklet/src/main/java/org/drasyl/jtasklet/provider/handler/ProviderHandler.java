@@ -40,7 +40,7 @@ import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ESTABLISHED;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.READY;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_REGISTERED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CLOSED;
@@ -129,7 +129,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
         if (evt instanceof ConnectionEstablished && sender.equals(broker)) {
             LOG.info("Connection to Broker {} established.", broker);
-            state = BROKER_CONNECTION_ESTABLISHED;
+            state = READY;
             registerAtBroker(ctx);
         }
         else if (evt instanceof ConnectionFailed && sender.equals(broker)) {
@@ -251,7 +251,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         STARTED,
         ONLINE,
         BROKER_CONNECTION_ISSUED,
-        BROKER_CONNECTION_ESTABLISHED,
+        READY,
         BROKER_REGISTERED,
         EXECUTE_TASK,
         CLOSED

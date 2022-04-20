@@ -177,49 +177,12 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         if (sender.equals(broker)) {
             if (state == RESOURCE_REQUESTED && msg instanceof ResourceResponse) {
-                LOG.info("Got resource response {} from Broker {}.", msg, sender);
-                timeoutGuard.cancel(false);
-                token = ((ResourceResponse) msg).getToken();
-                provider = ((ResourceResponse) msg).getPublicKey();
-                taskRecord.resourceResponded(provider, token);
-                if (provider == null) {
-                    LOG.info("Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", RETRY_INTERVAL, remainingCycles);
-                    logger.log(taskRecord);
-
-                    out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
-                    state = READY;
-                    ctx.executor().schedule(() -> requestResource(ctx), RETRY_INTERVAL, MILLISECONDS);
-
-                    return;
-                }
-
-                LOG.info("Connect to Provider {}.", provider);
-                state = PROVIDER_CONNECTION_ISSUED;
-                providerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), provider);
-                ctx.pipeline().fireChannelRead(providerChannel);
+                gotResourceResponse(ctx, msg, sender);
             }
         }
         else if (sender.equals(provider)) {
             if (state == TASK_OFFLOADED && msg instanceof ReturnResult) {
-                final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
-                LOG.info("Got result {} from Provider {}. Inform Broker {}.", msg, sender, taskResultReceived);
-                timeoutGuard.cancel(false);
-                taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
-
-                out.println("Output      : " + Arrays.toString(((ReturnResult) msg).getOutput()));
-                logger.log(taskRecord);
-
-                // inform broker
-                final ChannelFuture brokerFuture = brokerChannel.writeAndFlush(taskResultReceived);
-                if (--remainingCycles > 0) {
-                    out.println("Rem. Cycles : " + remainingCycles);
-                    state = READY;
-                    requestResource(ctx);
-                }
-                else {
-                    state = CLOSED;
-                    brokerFuture.addListener((ChannelFutureListener) future -> ctx.pipeline().close());
-                }
+                gotTaskReturn(ctx, msg, sender);
             }
         }
     }
@@ -247,6 +210,31 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             state = CLOSED;
             ctx.pipeline().close();
         }, RESOURCE_REQUEST_TIMEOUT, MILLISECONDS);
+    }
+
+    private void gotResourceResponse(final ChannelHandlerContext ctx,
+                                     final TaskletMessage msg,
+                                     final DrasylAddress sender) {
+        LOG.info("Got resource response {} from Broker {}.", msg, sender);
+        timeoutGuard.cancel(false);
+        token = ((ResourceResponse) msg).getToken();
+        provider = ((ResourceResponse) msg).getPublicKey();
+        taskRecord.resourceResponded(provider, token);
+        if (provider == null) {
+            LOG.info("Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", RETRY_INTERVAL, remainingCycles);
+            logger.log(taskRecord);
+
+            out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
+            state = READY;
+            ctx.executor().schedule(() -> requestResource(ctx), RETRY_INTERVAL, MILLISECONDS);
+
+            return;
+        }
+
+        LOG.info("Connect to Provider {}.", provider);
+        state = PROVIDER_CONNECTION_ISSUED;
+        providerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), provider);
+        ctx.pipeline().fireChannelRead(providerChannel);
     }
 
     private void offloadTask(final ChannelHandlerContext ctx) {
@@ -285,6 +273,34 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().close();
             });
         }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
+    }
+
+    private void gotTaskReturn(final ChannelHandlerContext ctx,
+                               final TaskletMessage msg,
+                               final DrasylAddress sender) {
+        final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
+        LOG.info("Got result {} from Provider {}. Inform Broker {}.", msg, sender, taskResultReceived);
+        timeoutGuard.cancel(false);
+        taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
+
+        out.println("Output      : " + Arrays.toString(((ReturnResult) msg).getOutput()));
+        logger.log(taskRecord);
+
+        // inform broker
+        final ChannelFuture informBrokerFuture = brokerChannel.writeAndFlush(taskResultReceived);
+
+        if (--remainingCycles > 0) {
+            state = READY;
+            out.println("Rem. Cycles : " + remainingCycles);
+
+            // close channel to provider first
+            providerChannel.close().addListener((ChannelFutureListener) future -> requestResource(ctx));
+        }
+        else {
+            state = CLOSED;
+            // close consumer afterwards
+            informBrokerFuture.addListener((ChannelFutureListener) future -> ctx.pipeline().close());
+        }
     }
 
     enum State {
