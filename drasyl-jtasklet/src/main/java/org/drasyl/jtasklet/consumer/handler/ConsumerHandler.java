@@ -40,6 +40,7 @@ import java.util.Set;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.ONLINE;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
@@ -107,7 +108,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {
                 LOG.info("Consumer online!");
-                state = State.ONLINE;
+                state = ONLINE;
 
                 LOG.info("Connect to Broker {}.", broker);
                 state = BROKER_CONNECTION_ISSUED;
@@ -152,13 +153,13 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 offloadTask(ctx);
             }
             else if (evt instanceof ConnectionFailed) {
-                LOG.info("Failed to connect to Provider {}. Shutdown Consumer.", broker, ((ConnectionFailed) evt).cause());
+                LOG.info("Failed to connect to Provider {}. Shutdown Consumer.", provider, ((ConnectionFailed) evt).cause());
                 state = CLOSED;
                 ctx.pipeline().close();
             }
             else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
                 final TaskFailed taskFailed = new TaskFailed(token);
-                LOG.info("Provider {} closed connection. Inform Broker {}. Shutdown Consumer.", broker, taskFailed);
+                LOG.info("Provider {} closed connection. Inform Broker {}. Shutdown Consumer.", provider, taskFailed);
 
                 // inform broker
                 brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {

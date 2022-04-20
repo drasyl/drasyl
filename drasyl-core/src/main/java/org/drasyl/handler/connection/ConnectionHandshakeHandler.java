@@ -313,9 +313,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (userTimeoutFuture != null) {
             userTimeoutFuture.cancel(false);
         }
-        if (timeWaitTimerFuture != null) {
-            timeWaitTimerFuture.cancel(false);
-        }
     }
 
     private void performActiveOpen(final ChannelHandlerContext ctx) {
@@ -464,17 +461,19 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             ReferenceCountUtil.release(seg);
             return;
         }
-
-        // check ACK
         final boolean acceptableAck = isAcceptableAck(seg);
+
+        // check RST
         if (seg.isRst()) {
             if (acceptableAck) {
+                LOG.trace("{}[{}] Segment `{}` is an acceptable ACKnowledgement. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
                 ReferenceCountUtil.release(seg);
                 switchToNewState(ctx, CLOSED);
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                 return;
             }
             else {
+                LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Drop it.", ctx.channel(), state, seg);
                 ReferenceCountUtil.release(seg);
                 return;
             }
@@ -604,9 +603,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
                     }
                     else {
-                        ReferenceCountUtil.release(seg);
                         final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                        LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+                        LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
+                        ReferenceCountUtil.release(seg);
                         ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
                     }
                     break;
@@ -698,7 +697,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                     sndNxt++;
-                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last seg `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
+                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last Segment `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
                     ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
                     switchToNewState(ctx, LAST_ACK);
                     break;
