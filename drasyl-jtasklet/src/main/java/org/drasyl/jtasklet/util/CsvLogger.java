@@ -29,7 +29,7 @@ public class CsvLogger {
             if (!headerWritten) {
                 headerWritten = true;
                 escapedWrite(writer, "time");
-                for (Object title : taskRecord.logTitles()) {
+                for (final Object title : taskRecord.logTitles()) {
                     writer.append(",");
                     escapedWrite(writer, title);
                 }
@@ -38,7 +38,7 @@ public class CsvLogger {
 
             // row
             escapedWrite(writer, RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
-            for (Object title : taskRecord.logValues()) {
+            for (final Object title : taskRecord.logValues()) {
                 writer.append(",");
                 escapedWrite(writer, title);
             }
