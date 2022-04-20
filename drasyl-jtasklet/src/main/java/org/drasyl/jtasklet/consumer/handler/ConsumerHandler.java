@@ -155,19 +155,37 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 offloadTask(ctx);
             }
             else if (evt instanceof ConnectionFailed) {
-                state = CLOSED;
-                LOG.info("[{}] Failed to connect to Provider {}. Shutdown Consumer.", state, provider, ((ConnectionFailed) evt).cause());
-                ctx.channel().close();
+                final TaskFailed taskFailed = new TaskFailed(token);
+                LOG.info("[{}] Failed to connect to Provider {}. Inform Broker.", state, provider, ((ConnectionFailed) evt).cause());
+
+                provider = null;
+                providerChannel = null;
+                if (timeoutGuard != null) {
+                    timeoutGuard.cancel(false);
+                }
+
+                // inform broker & retry
+                brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
+                    LOG.info("[{}] Broker {} informed. Now retry.", state, broker, taskFailed);
+                    state = READY;
+                    requestResource(ctx);
+                });
             }
             else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
                 final TaskFailed taskFailed = new TaskFailed(token);
                 LOG.info("[{}] Provider {} closed connection. Inform Broker {}.", state, provider, taskFailed);
 
-                // inform broker
-                brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
-                    state = CLOSED;
-                    LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
-                    ctx.channel().close();
+                provider = null;
+                providerChannel = null;
+                if (timeoutGuard != null) {
+                    timeoutGuard.cancel(false);
+                }
+
+                // inform broker & retry
+                brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
+                    LOG.info("[{}] Broker {} informed. Now retry.", state, broker, taskFailed);
+                    state = READY;
+                    requestResource(ctx);
                 });
             }
         }
@@ -260,11 +278,17 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 final TaskFailed taskFailed = new TaskFailed(token);
                 LOG.info("[{}] Failed to offload task {} to Provider {}. Inform Broker {}.", state, msg, provider, taskFailed, future.cause());
 
+                provider = null;
+                providerChannel = null;
+                if (timeoutGuard != null) {
+                    timeoutGuard.cancel(false);
+                }
+
                 // inform broker
                 brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
-                    state = CLOSED;
-                    LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
-                    ctx.channel().close();
+                    LOG.info("[{}] Broker {} informed. Now retry.", state, broker, taskFailed);
+                    state = READY;
+                    requestResource(ctx);
                 });
             }
         });
@@ -276,7 +300,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Provider {} has not provided results for our task {} within {}ms. Inform Broker {}.", state, provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
             brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
                 state = CLOSED;
-                LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
+                LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, broker, taskFailed);
                 ctx.channel().close();
             });
         }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
