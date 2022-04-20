@@ -103,7 +103,7 @@ public class ProviderTaskRecord implements TaskRecord {
                 0,
                 executingTime != null ? executingTime.toEpochMilli() : -1,
                 executingTime != null ? Duration.between(offloadTaskTime, executingTime).toMillis() : -1,
-                Arrays.toString(output),
+                output != null ? Arrays.toString(output) : "",
                 executionTime,
                 executedTime != null ? executedTime.toEpochMilli() : -1,
                 executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1

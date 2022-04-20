@@ -128,7 +128,7 @@ public class ConsumerTaskRecord implements TaskRecord {
                 offloadTaskTime != null ? Duration.between(resourceRequestTime, offloadTaskTime).toMillis() : -1,
                 offloadedTaskTime != null ? offloadedTaskTime.toEpochMilli() : -1,
                 offloadedTaskTime != null ? Duration.between(resourceRequestTime, offloadedTaskTime).toMillis() : -1,
-                Arrays.toString(output),
+                output != null ? Arrays.toString(output) : "",
                 executionTime,
                 resultReturnedTime != null ? resultReturnedTime.toEpochMilli() : -1,
                 resultReturnedTime != null ? Duration.between(resourceRequestTime, resultReturnedTime).toMillis() : -1
