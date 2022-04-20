@@ -154,7 +154,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 vm.taskAssigned(sender);
                 printResourceProviders();
             }
-            LOG.info("Request has been scheduled to Provider `{}`.", publicKey);
+            LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
 
             final ResourceResponse response = new ResourceResponse(publicKey, token);
             LOG.info("Send Consumer {} the resource response {}.", sender, response);

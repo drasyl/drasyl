@@ -85,7 +85,7 @@ public class ResourceProvider {
                 this.nextToken = null;
                 this.stateTime = System.currentTimeMillis();
                 this.assignedTo = null;
-                return false;
+                return true;
 
             default:
                 return false;

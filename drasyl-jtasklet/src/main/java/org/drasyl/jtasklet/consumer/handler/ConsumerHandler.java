@@ -47,7 +47,9 @@ import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ESTABLISHED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTING;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADING;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class ConsumerHandler extends ChannelInboundHandlerAdapter {
@@ -190,11 +192,12 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private void requestResource(final ChannelHandlerContext ctx) {
         LOG.info("Request resource at Broker {}.", broker);
         this.taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
-        state = RESOURCE_REQUESTED;
+        state = RESOURCE_REQUESTING;
         final ResourceRequest request = new ResourceRequest();
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 LOG.info("Request {} at Broker {} arrived!", request, broker);
+                state = RESOURCE_REQUESTED;
                 taskRecord.resourceRequested();
             }
             else {
@@ -239,13 +242,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
     private void offloadTask(final ChannelHandlerContext ctx) {
         final OffloadTask msg = new OffloadTask(token, source, input);
-        state = TASK_OFFLOADED;
         LOG.info("Offload task {} to Provider {}.", msg, provider);
+        state = TASK_OFFLOADING;
         taskRecord.offloadTask();
         providerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 final TaskOffloaded taskOffloaded = new TaskOffloaded(token);
                 LOG.info("Task arrived at Provider {}! Inform Broker {}.", provider, taskOffloaded);
+                state = TASK_OFFLOADED;
                 taskRecord.offloadedTask();
 
                 // inform broker
@@ -308,9 +312,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         ONLINE,
         BROKER_CONNECTION_ISSUED,
         READY,
+        RESOURCE_REQUESTING,
         RESOURCE_REQUESTED,
         PROVIDER_CONNECTION_ISSUED,
         PROVIDER_CONNECTION_ESTABLISHED,
+        TASK_OFFLOADING,
         TASK_OFFLOADED,
         CLOSED
     }

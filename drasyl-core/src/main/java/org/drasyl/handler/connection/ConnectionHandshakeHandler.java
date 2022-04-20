@@ -238,6 +238,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             default:
+                // FIN-WAIT-1
+                // FIN-WAIT-2
+                // CLOSING
+                // LAST-ACK
+                LOG.trace("{}[{}] Channel is in process of being closed. Drop write `{}`.", ctx.channel(), state, msg);
                 ReferenceCountUtil.release(msg);
                 promise.setFailure(CONNECTION_CLOSING_ERROR);
                 break;
@@ -250,6 +255,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         switch (state) {
             case CLOSED:
+                LOG.trace("{}[{}] Channel is alsready closed. Pass close call further through the pipeline.", ctx.channel(), state);
                 ctx.close(promise);
                 break;
 
@@ -266,6 +272,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 if (userCallFuture != null) {
                     userCallFuture.setFailure(CONNECTION_CLOSING_ERROR);
                 }
+                // process with ESTABLISHED part
 
             case ESTABLISHED:
                 // save promise for later, as it we need ACKnowledgment from remote peer
