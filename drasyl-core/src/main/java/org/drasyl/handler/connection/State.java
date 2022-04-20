@@ -15,7 +15,5 @@ enum State {
     FIN_WAIT_1, // represents waiting for a connection termination request from the remote peer, or an acknowledgment of the connection termination request previously sent.
     FIN_WAIT_2, // represents waiting for a connection termination request from the remote peer.
     CLOSING, // represents waiting for a connection termination request acknowledgment from the remote peer.
-    TIME_WAIT, // represents waiting for enough time to pass to be sure the remote peer received the acknowledgment of its connection termination request.
-    CLOSE_WAIT, // represents waiting for a connection termination request from the local user.
     LAST_ACK // represents waiting for an acknowledgment of the connection termination request previously sent to the remote peer (which includes an acknowledgment of its connection termination request).
 }

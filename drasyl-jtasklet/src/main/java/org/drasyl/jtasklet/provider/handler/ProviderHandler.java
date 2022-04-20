@@ -216,7 +216,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 else {
                     // it seems that the consumer is no longer interested in the result...great...
                     final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                    LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, providerReset);
+                    LOG.info("Consumer {} is no longer connected to us. Reset our state at Broker {}.", sender, providerReset);
 
                     // inform broker
                     brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);

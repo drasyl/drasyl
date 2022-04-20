@@ -38,7 +38,6 @@ import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.State.CLOSED;
-import static org.drasyl.handler.connection.State.CLOSE_WAIT;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.handler.connection.State.FIN_WAIT_1;
@@ -47,7 +46,6 @@ import static org.drasyl.handler.connection.State.LAST_ACK;
 import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
-import static org.drasyl.handler.connection.State.TIME_WAIT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomInt;
@@ -75,12 +73,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final int SEQ_NO_SPACE = 32;
-    private final long retransmissionTimeout;
     private final long userTimeout;
     private final LongSupplier issProvider;
     private final boolean activeOpen;
     protected ScheduledFuture<?> userTimeoutFuture;
-    private ScheduledFuture<?> timeWaitTimerFuture;
     private ChannelPromise userCallFuture;
     State state;
     // Send Sequence Variables
@@ -99,7 +95,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final long userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, 100L, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
     }
 
     /**
@@ -114,7 +110,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final long userTimeout,
-                               final long retransmissionTimeout,
                                final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
@@ -122,7 +117,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                final int sndNxt,
                                final int rcvNxt) {
         this.userTimeout = requireNonNegative(userTimeout);
-        this.retransmissionTimeout = requireNonNegative(retransmissionTimeout);
         this.issProvider = requireNonNull(issProvider);
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
@@ -240,7 +234,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-            case CLOSE_WAIT:
                 ctx.write(msg, promise);
                 break;
 
@@ -285,17 +278,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, FIN_WAIT_1);
 
                 applyUserTimeout(ctx, "CLOSE", promise);
-                break;
-
-            case CLOSE_WAIT:
-                // save promise for later, as it we need ACKnowledgment from remote peer
-                userCallFuture = promise;
-
-                final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
-                sndNxt++;
-                LOG.trace("{}[{}] As we're already waiting for this. We're sending our last seg `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
-                ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
-                switchToNewState(ctx, LAST_ACK);
                 break;
 
             default:
@@ -582,7 +564,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                case CLOSE_WAIT:
                     LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. We're going back to the LISTEN state.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
                     ReferenceCountUtil.release(seg);
@@ -631,7 +612,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case ESTABLISHED:
-                case CLOSE_WAIT:
                     // FIXME : implement
                     break;
 
@@ -676,7 +656,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // our FIN has been ACKed
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    ctx.close(userCallFuture);
+                    ctx.close();
                     return;
 
                 default:
@@ -685,12 +665,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
-
-                    // restart 2 MSL timeout
-                    if (timeWaitTimerFuture != null) {
-                        timeWaitTimerFuture.cancel(false);
-                    }
-                    applyTimeWaitTimeout(ctx);
             }
         }
 
@@ -722,8 +696,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case SYN_RECEIVED:
                 case ESTABLISHED:
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
-                    switchToNewState(ctx, CLOSE_WAIT);
-                    ctx.pipeline().close();
+                    final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
+                    sndNxt++;
+                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last seg `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
+                    ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
+                    switchToNewState(ctx, LAST_ACK);
                     break;
 
                 case FIN_WAIT_1:
@@ -739,7 +716,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
-                    switchToNewState(ctx, TIME_WAIT);
+                    switchToNewState(ctx, CLOSED);
                     ackFuture.addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             LOG.trace("{}[{}] Our ACKnowledgment `{}` was written to the network. Close channel!", ctx.channel(), state, response);
@@ -750,41 +727,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                             userCallFuture.setFailure(future.cause());
                         }
                         userCallFuture = null;
-                        switchToNewState(ctx, CLOSED);
                         future.channel().pipeline().close();
                     });
-                    break;
-
-                case TIME_WAIT:
-                    // restart 2 MSL time-wait timeout
-                    if (timeWaitTimerFuture != null) {
-                        timeWaitTimerFuture.cancel(false);
-                    }
-                    applyTimeWaitTimeout(ctx);
                     break;
 
                 default:
                     // remain in state
             }
         }
-    }
-
-    private void applyTimeWaitTimeout(final ChannelHandlerContext ctx) {
-        if (userTimeoutFuture != null) {
-            userTimeoutFuture.cancel(false);
-        }
-
-        timeWaitTimerFuture = ctx.executor().schedule(() -> {
-            switchToNewState(ctx, CLOSED);
-//            if (closePromise != null) {
-//                // close has been triggered by us. pass the event to the remaining pipeline
-//                ctx.close(closePromise);
-//            }
-//            else {
-//                // close has been triggered by remote peer. pass event the whole pipeline
-//                ctx.pipeline().close();
-//            }
-        }, retransmissionTimeout, MILLISECONDS);
     }
 
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
