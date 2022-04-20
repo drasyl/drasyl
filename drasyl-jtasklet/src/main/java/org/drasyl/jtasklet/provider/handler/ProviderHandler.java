@@ -81,7 +81,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
-        LOG.info("Start Provider {}.", ctx.channel().localAddress());
+        LOG.info("[{}] Start Provider {}.", state, ctx.channel().localAddress());
     }
 
     @Override
@@ -106,10 +106,11 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         }
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {
-                LOG.info("Provider online!");
                 state = ONLINE;
-                LOG.info("Connect to Broker {}.", broker);
+                LOG.info("[{}] Provider online!", state);
+
                 state = BROKER_CONNECTION_ISSUED;
+                LOG.info("[{}] Connect to Broker {}.", state, broker);
                 brokerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), broker);
                 ctx.pipeline().fireChannelRead(brokerChannel);
             }
@@ -128,23 +129,23 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         final DrasylAddress sender = evt.sender();
 
         if (evt instanceof ConnectionEstablished && sender.equals(broker)) {
-            LOG.info("Connection to Broker {} established.", broker);
             state = READY;
+            LOG.info("[{}] Connection to Broker {} established.", state, broker);
             registerAtBroker(ctx);
         }
         else if (evt instanceof ConnectionFailed && sender.equals(broker)) {
-            LOG.info("Failed to connect to Broker {}.", broker, ((ConnectionFailed) evt).cause());
             state = CLOSED;
+            LOG.info("[{}] Failed to connect to Broker {}.", state, broker, ((ConnectionFailed) evt).cause());
             ctx.pipeline().close();
         }
         else if (evt instanceof ConnectionClosed && sender.equals(broker)) {
-            LOG.info("Broker {} closed connection. Shutdown Provider.", broker);
             state = CLOSED;
+            LOG.info("[{}] Broker {} closed connection. Shutdown Provider.", state, broker);
             ctx.pipeline().close();
         }
         // beside the broker, only consumers will contact us
         else if (evt instanceof ConnectionEstablished) {
-            LOG.info("Connection to Consumer {} established.", sender);
+            LOG.info("[{}] Connection to Consumer {} established.", state, sender);
         }
         else if (evt instanceof ConnectionClosed && sender.equals(consumer)) {
             if (state == EXECUTE_TASK) {
@@ -167,7 +168,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
         if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
             final TaskExecuting taskExecuting = new TaskExecuting(token);
-            LOG.info("Got task {} from Consumer {}. Inform Broker {}. Schedule it.", msg, sender, taskExecuting);
+            LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
             consumer = sender;
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
@@ -180,28 +181,28 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
             taskEventLoop.execute(() -> {
                 // execute
-                LOG.info("Start executing of task {} from Consumer {}.", msg, sender);
+                LOG.info("[{}] Start executing of task {} from Consumer {}.", state, msg, sender);
                 taskRecord.executing();
                 final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
                 taskRecord.executed(result.getOutput(), result.getExecutionTime());
-                LOG.info("Execution of task {} from Consumer {} finished in {}ms.", msg, sender, result.getExecutionTime());
+                LOG.info("[{}] Execution of task {} from Consumer {} finished in {}ms.", state, msg, sender, result.getExecutionTime());
 
                 if (consumerChannel != null) {
                     // return result
                     final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
-                    LOG.info("Send result {} back to Consumer {}.", response, sender);
+                    LOG.info("[{}] Send result {} back to Consumer {}.", state, response, sender);
                     consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             // inform broker
                             final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
                             brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
-                            LOG.info("Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", sender, taskExecuted);
+                            LOG.info("[{}] Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", state, sender, taskExecuted);
                             future.channel().close();
                         }
                         else {
                             final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                            LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), providerReset);
+                            LOG.info("[{}] Failed to send response {} to Consumer {}. Reset our state at Broker {}.", state, response, future.channel().remoteAddress(), providerReset);
 
                             // inform broker
                             brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
@@ -210,20 +211,20 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                         state = BROKER_REGISTERED;
                         consumer = null;
                         logger.log(taskRecord);
-                        LOG.info("Send me tasks! I'm hungry!");
+                        LOG.info("[{}] Send me tasks! I'm hungry!", state);
                     });
                 }
                 else {
                     // it seems that the consumer is no longer interested in the result...great...
                     final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                    LOG.info("Consumer {} is no longer connected to us. Reset our state at Broker {}.", sender, providerReset);
+                    LOG.info("[{}] Consumer {} is no longer connected to us. Reset our state at Broker {}.", state, sender, providerReset);
 
                     // inform broker
                     brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
                     state = BROKER_REGISTERED;
                     consumer = null;
-                    LOG.info("Send me tasks! I'm hungry!");
+                    LOG.info("[{}] Send me tasks! I'm hungry!", state);
                 }
             });
         }
@@ -235,13 +236,13 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         LOG.info("Register {} at Broker {}.", msg, broker);
         brokerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                LOG.info("Registration {} at Broker {} arrived!", msg, broker);
                 state = BROKER_REGISTERED;
-                LOG.info("Send me tasks! I'm hungry!");
+                LOG.info("[{}] Registration {} at Broker {} arrived!", state, msg, broker);
+                LOG.info("[{}] Send me tasks! I'm hungry!", state);
             }
             else {
-                LOG.info("Failed to send registration {} to Broker {}. Shutdown Provider.", msg, broker, future.cause());
                 state = CLOSED;
+                LOG.info("[{}] Failed to send registration {} to Broker {}. Shutdown Provider.", state, msg, broker, future.cause());
                 ctx.pipeline().close();
             }
         });

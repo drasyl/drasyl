@@ -92,7 +92,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
-        LOG.info("Start Consumer {}.", ctx.channel().localAddress());
+        LOG.info("[{}] Start Consumer {}.", state, ctx.channel().localAddress());
     }
 
     @Override
@@ -109,11 +109,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         }
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {
-                LOG.info("Consumer online!");
                 state = ONLINE;
+                LOG.info("[{}] Consumer online!", state);
 
-                LOG.info("Connect to Broker {}.", broker);
                 state = BROKER_CONNECTION_ISSUED;
+                LOG.info("[{}] Connect to Broker {}.", state, broker);
                 brokerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), broker);
                 ctx.pipeline().fireChannelRead(brokerChannel);
             }
@@ -133,40 +133,41 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         if (sender.equals(broker)) {
             if (evt instanceof ConnectionEstablished) {
-                LOG.info("Connection to Broker {} established.", broker);
                 state = READY;
+                LOG.info("[{}] Connection to Broker {} established.", state, broker);
                 requestResource(ctx);
             }
             else if (evt instanceof ConnectionFailed) {
-                LOG.info("Failed to connect to Broker {}. Shutdown Consumer.", broker, ((ConnectionFailed) evt).cause());
                 state = CLOSED;
-                ctx.pipeline().close();
+                LOG.info("[{}] Failed to connect to Broker {}. Shutdown Consumer.", state, broker, ((ConnectionFailed) evt).cause());
+                ctx.channel().close();
             }
             else if (evt instanceof ConnectionClosed) {
-                LOG.info("Broker {} closed connection. Shutdown Consumer.", broker);
                 state = CLOSED;
-                ctx.pipeline().close();
+                LOG.info("[{}] Broker {} closed connection. Shutdown Consumer.", state, broker);
+                ctx.channel().close();
             }
         }
         else if (sender.equals(provider)) {
             if (evt instanceof ConnectionEstablished) {
-                LOG.info("Connection to Provider {} established.", broker);
                 state = PROVIDER_CONNECTION_ESTABLISHED;
+                LOG.info("[{}] Connection to Provider {} established.", state, broker);
                 offloadTask(ctx);
             }
             else if (evt instanceof ConnectionFailed) {
-                LOG.info("Failed to connect to Provider {}. Shutdown Consumer.", provider, ((ConnectionFailed) evt).cause());
                 state = CLOSED;
-                ctx.pipeline().close();
+                LOG.info("[{}] Failed to connect to Provider {}. Shutdown Consumer.", state, provider, ((ConnectionFailed) evt).cause());
+                ctx.channel().close();
             }
             else if (state == TASK_OFFLOADED && evt instanceof ConnectionClosed) {
                 final TaskFailed taskFailed = new TaskFailed(token);
-                LOG.info("Provider {} closed connection. Inform Broker {}. Shutdown Consumer.", provider, taskFailed);
+                LOG.info("[{}] Provider {} closed connection. Inform Broker {}.", state, provider, taskFailed);
 
                 // inform broker
                 brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
                     state = CLOSED;
-                    ctx.pipeline().close();
+                    LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
+                    ctx.channel().close();
                 });
             }
         }
@@ -190,41 +191,41 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void requestResource(final ChannelHandlerContext ctx) {
-        LOG.info("Request resource at Broker {}.", broker);
-        this.taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
         state = RESOURCE_REQUESTING;
+        LOG.info("[{}] Request resource at Broker {}.", state, broker);
+        this.taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
         final ResourceRequest request = new ResourceRequest();
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                LOG.info("Request {} at Broker {} arrived!", request, broker);
                 state = RESOURCE_REQUESTED;
+                LOG.info("[{}] Request {} at Broker {} arrived!", state, request, broker);
                 taskRecord.resourceRequested();
             }
             else {
-                LOG.info("Failed to sent request {} to Broker {}. Shutdown Consumer.", request, broker, future.cause());
                 state = CLOSED;
-                ctx.pipeline().close();
+                LOG.info("[{}] Failed to sent request {} to Broker {}. Shutdown Consumer.", state, request, broker, future.cause());
+                ctx.channel().close();
             }
         });
 
         // apply timeout guard
         timeoutGuard = ctx.executor().schedule(() -> {
-            LOG.info("Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", broker, request, RESOURCE_REQUEST_TIMEOUT);
             state = CLOSED;
-            ctx.pipeline().close();
+            LOG.info("[{}] Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", state, broker, request, RESOURCE_REQUEST_TIMEOUT);
+            ctx.channel().close();
         }, RESOURCE_REQUEST_TIMEOUT, MILLISECONDS);
     }
 
     private void gotResourceResponse(final ChannelHandlerContext ctx,
                                      final TaskletMessage msg,
                                      final DrasylAddress sender) {
-        LOG.info("Got resource response {} from Broker {}.", msg, sender);
+        LOG.info("[{}] Got resource response {} from Broker {}.", state, msg, sender);
         timeoutGuard.cancel(false);
         token = ((ResourceResponse) msg).getToken();
         provider = ((ResourceResponse) msg).getPublicKey();
         taskRecord.resourceResponded(provider, token);
         if (provider == null) {
-            LOG.info("Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", RETRY_INTERVAL, remainingCycles);
+            LOG.info("[{}] Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", state, RETRY_INTERVAL, remainingCycles);
             logger.log(taskRecord);
 
             out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
@@ -234,7 +235,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        LOG.info("Connect to Provider {}.", provider);
+        LOG.info("[{}] Connect to Provider {}.", state, provider);
         state = PROVIDER_CONNECTION_ISSUED;
         providerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), provider);
         ctx.pipeline().fireChannelRead(providerChannel);
@@ -242,14 +243,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
     private void offloadTask(final ChannelHandlerContext ctx) {
         final OffloadTask msg = new OffloadTask(token, source, input);
-        LOG.info("Offload task {} to Provider {}.", msg, provider);
         state = TASK_OFFLOADING;
+        LOG.info("[{}] Offload task {} to Provider {}.", state, msg, provider);
         taskRecord.offloadTask();
         providerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 final TaskOffloaded taskOffloaded = new TaskOffloaded(token);
-                LOG.info("Task arrived at Provider {}! Inform Broker {}.", provider, taskOffloaded);
                 state = TASK_OFFLOADED;
+                LOG.info("[{}] Task arrived at Provider {}! Inform Broker {}.", state, provider, taskOffloaded);
                 taskRecord.offloadedTask();
 
                 // inform broker
@@ -257,12 +258,13 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             }
             else {
                 final TaskFailed taskFailed = new TaskFailed(token);
-                LOG.info("Failed to offload task {} to Provider {}. Inform Broker {}. Shutdown Consumer.", msg, provider, taskFailed, future.cause());
+                LOG.info("[{}] Failed to offload task {} to Provider {}. Inform Broker {}.", state, msg, provider, taskFailed, future.cause());
 
                 // inform broker
                 brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future2 -> {
                     state = CLOSED;
-                    ctx.pipeline().close();
+                    LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
+                    ctx.channel().close();
                 });
             }
         });
@@ -271,10 +273,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         timeoutGuard = ctx.executor().schedule(() -> {
             // inform broker
             final TaskFailed taskFailed = new TaskFailed(token);
-            LOG.info("Provider {} has not provided results for our task {} within {}ms. Inform Broker {}. Shutdown Consumer.", provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
+            LOG.info("[{}] Provider {} has not provided results for our task {} within {}ms. Inform Broker {}.", state, provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
             brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
                 state = CLOSED;
-                ctx.pipeline().close();
+                LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, provider, taskFailed);
+                ctx.channel().close();
             });
         }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
     }
@@ -283,7 +286,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                                final TaskletMessage msg,
                                final DrasylAddress sender) {
         final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
-        LOG.info("Got result {} from Provider {}. Inform Broker {}.", msg, sender, taskResultReceived);
+        LOG.info("[{}] Got result {} from Provider {}. Inform Broker {}.", state, msg, sender, taskResultReceived);
         timeoutGuard.cancel(false);
         taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
@@ -303,7 +306,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         else {
             state = CLOSED;
             // close consumer afterwards
-            informBrokerFuture.addListener((ChannelFutureListener) future -> ctx.pipeline().close());
+            informBrokerFuture.addListener((ChannelFutureListener) future -> ctx.channel().close());
         }
     }
 
