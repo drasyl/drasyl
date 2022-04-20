@@ -1,8 +1,13 @@
 package org.drasyl.jtasklet.consumer.handler;
 
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -11,6 +16,9 @@ import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.consumer.ConsumerTaskRecord;
+import org.drasyl.jtasklet.consumer.submit.SubmitJsonRpc2OverTcpServerInitializer;
+import org.drasyl.jtasklet.consumer.submit.SubmitTask;
+import org.drasyl.jtasklet.consumer.submit.TaskResult;
 import org.drasyl.jtasklet.event.ConnectionClosed;
 import org.drasyl.jtasklet.event.ConnectionEstablished;
 import org.drasyl.jtasklet.event.ConnectionEvent;
@@ -32,14 +40,15 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.util.Arrays;
+import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ESTABLISHED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.ONLINE;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ESTABLISHED;
@@ -47,37 +56,36 @@ import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDE
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
 
-public class ConsumerHandler extends ChannelInboundHandlerAdapter {
+public class ConsumerHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConsumerHandler.class);
     private static final int RESOURCE_REQUEST_TIMEOUT = 10_000;
     private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
     private final CsvLogger logger;
+    private final InetSocketAddress submitBindAddress;
     private State state = State.STARTED;
     private final PrintStream out;
     private final PrintStream err;
     private final IdentityPublicKey broker;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
-    private final ConsumerTaskRecord taskRecord;
     private String token;
     private DrasylChannel brokerChannel;
     private IdentityPublicKey provider;
     private DrasylChannel providerChannel;
-    private final String source;
-    private final Object[] input;
+    private String source;
+    private Object[] input;
+    private ConsumerTaskRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
+    private Channel submitChannel;
 
     public ConsumerHandler(final PrintStream out,
                            final PrintStream err,
                            final DrasylAddress address,
                            final IdentityPublicKey broker,
-                           final String source,
-                           final Object[] input) {
+                           final InetSocketAddress submitBindAddress) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.broker = requireNonNull(broker);
-        this.source = requireNonNull(source);
-        this.input = requireNonNull(input);
-        this.taskRecord = new ConsumerTaskRecord(address, broker, source, input);
+        this.submitBindAddress = requireNonNull(submitBindAddress);
         logger = new CsvLogger("consumer-" + address.toString().substring(0, 8) + ".csv");
     }
 
@@ -88,13 +96,38 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        logger.log(taskRecord);
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        if (submitChannel != null) {
+            submitChannel.close();
+        }
         ctx.fireChannelInactive();
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof SubmitTask) {
+            switch (state) {
+                case READY:
+                    source = ((SubmitTask) msg).source();
+                    input = ((SubmitTask) msg).input();
+                    taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
+                    requestResource(ctx);
+                    promise.setSuccess();
+                    break;
+
+                default:
+                    promise.setFailure(new Exception("Consumer busy (" + state + ")"));
+            }
+        }
+        else {
+            ctx.write(msg, promise);
+        }
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         if (evt instanceof AddPathAndSuperPeerEvent) {
             if (superPeers.add(((AddPathAndSuperPeerEvent) evt).getAddress()) && superPeers.size() == 1) {
                 ctx.pipeline().fireUserEventTriggered(new NodeOnline());
@@ -105,10 +138,23 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().fireUserEventTriggered(new NodeOffline());
             }
         }
+        else if (evt instanceof SubmitTask) {
+            switch (state) {
+                case READY:
+                    source = ((SubmitTask) evt).source();
+                    input = ((SubmitTask) evt).input();
+                    taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
+                    requestResource(ctx);
+                    break;
+
+                default:
+                    System.out.println("");
+            }
+        }
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {
                 LOG.info("Consumer online!");
-                state = State.ONLINE;
+                state = ONLINE;
 
                 LOG.info("Connect to Broker {}.", broker);
                 state = BROKER_CONNECTION_ISSUED;
@@ -132,8 +178,21 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         if (sender.equals(broker)) {
             if (evt instanceof ConnectionEstablished) {
                 LOG.info("Connection to Broker {} established.", broker);
-                state = BROKER_CONNECTION_ESTABLISHED;
-                requestResource(ctx);
+                state = READY;
+
+                final ServerBootstrap submitBootstrap = new ServerBootstrap()
+                        .group(new NioEventLoopGroup(1))
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(new SubmitJsonRpc2OverTcpServerInitializer(ctx.channel()));
+                submitBootstrap.bind(submitBindAddress).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        LOG.info("Started submit server listening on tcp:/{}", future.channel().localAddress());
+                        submitChannel = future.channel();
+                    }
+                    else {
+                        ctx.fireExceptionCaught(new Exception("Unable to start submit server.", future.cause()));
+                    }
+                });
             }
             else if (evt instanceof ConnectionFailed) {
                 LOG.info("Failed to connect to Broker {}. Shutdown Consumer.", broker, ((ConnectionFailed) evt).cause());
@@ -200,11 +259,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 timeoutGuard.cancel(false);
                 taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
-                out.println("Output : " + Arrays.toString(((ReturnResult) msg).getOutput()));
+                submitChannel.writeAndFlush(new TaskResult(((ReturnResult) msg).getOutput()));
 
                 // inform broker
-                state = CLOSED;
-                brokerChannel.writeAndFlush(new TaskResultReceived(token)).addListener((ChannelFutureListener) future -> ctx.pipeline().close());
+                state = READY;
+                brokerChannel.writeAndFlush(new TaskResultReceived(token));
             }
         }
     }
@@ -274,7 +333,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         STARTED,
         ONLINE,
         BROKER_CONNECTION_ISSUED,
-        BROKER_CONNECTION_ESTABLISHED,
+        READY,
         RESOURCE_REQUESTED,
         PROVIDER_CONNECTION_ISSUED,
         PROVIDER_CONNECTION_ESTABLISHED,

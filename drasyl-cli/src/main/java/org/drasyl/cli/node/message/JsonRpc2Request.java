@@ -102,9 +102,9 @@ public class JsonRpc2Request {
         return id;
     }
 
-    public <T> T getParam(final int position) {
+    public <T> T getParam(final int position, final T defaultValue) {
         if (!(params instanceof List)) {
-            return null;
+            return defaultValue;
         }
         try {
             return (T) ((List) params).get(position);
@@ -114,9 +114,13 @@ public class JsonRpc2Request {
         }
     }
 
-    public <T> T getParam(final String name) {
+    public <T> T getParam(final int position) {
+        return getParam(position, null);
+    }
+
+    public <T> T getParam(final String name, final T defaultValue) {
         if (!(params instanceof Map)) {
-            return null;
+            return defaultValue;
         }
         try {
             return (T) ((Map) params).get(name);
@@ -124,5 +128,9 @@ public class JsonRpc2Request {
         catch (final ClassCastException e) {
             return null;
         }
+    }
+
+    public <T> T getParam(final String name) {
+        return getParam(name, null);
     }
 }

@@ -1,6 +1,5 @@
 package org.drasyl.jtasklet.cli;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.IdentityPublicKeyMixin;
@@ -8,9 +7,9 @@ import org.drasyl.handler.PeersRttHandler.PeerRtt;
 import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand;
+import org.drasyl.jtasklet.consumer.ConsumerCommand;
 import org.drasyl.jtasklet.consumer.GreyFilterCommand;
-import org.drasyl.jtasklet.consumer.OffloadCommand;
-import org.drasyl.jtasklet.provider.VmCommand;
+import org.drasyl.jtasklet.provider.ProviderCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.HelpCommand;
@@ -24,10 +23,10 @@ import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
         subcommands = {
                 BrokerCommand.class,
                 ComputeCommand.class,
+                ConsumerCommand.class,
                 GreyFilterCommand.class,
-                OffloadCommand.class,
                 HelpCommand.class,
-                VmCommand.class
+                ProviderCommand.class
         }
 )
 public class Cli {

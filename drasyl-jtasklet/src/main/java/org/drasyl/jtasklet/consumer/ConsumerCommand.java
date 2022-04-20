@@ -15,6 +15,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -23,52 +24,34 @@ import java.util.List;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Command(
-        name = "offload",
+        name = "consumer",
         description = {
-                "Offloads a Tasklet",
+                "Start a Resource Consumer",
+                "The Consumer is capable to offload one Task per time."
         },
         showDefaultValues = true
 )
-public class OffloadCommand extends ChannelOptions {
-    private static final Logger LOG = LoggerFactory.getLogger(OffloadCommand.class);
+public class ConsumerCommand extends ChannelOptions {
+    private static final Logger LOG = LoggerFactory.getLogger(ConsumerCommand.class);
     @Option(
             names = { "--broker" }
     )
     private IdentityPublicKey broker;
     @Option(
-            names = { "--task" },
-            required = true
+            names = { "--submit-bind" },
+            description = "Binds submit server to given IP and port. If no port is specified, a random free port will be used.",
+            paramLabel = "<host>[:<port>]",
+            defaultValue = "0.0.0.0:25421"
     )
-    private Path task;
-    @Parameters
-    List<Object> input;
-    private String source;
+    protected InetSocketAddress submitBindAddress;
 
-    public OffloadCommand() {
+    public ConsumerCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
     }
 
     @Override
-    public Integer call() {
-        if (input == null) {
-            input = List.of();
-        }
-
-        try {
-            out.println("Task   : " + task);
-            out.println("Input  : " + Arrays.toString(input.toArray()));
-            source = Files.readString(task, UTF_8);
-            return super.call();
-        }
-        catch (final IOException e) {
-            e.printStackTrace();
-            return 1;
-        }
-    }
-
-    @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, source, input.toArray());
+        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, submitBindAddress);
     }
 
     @Override

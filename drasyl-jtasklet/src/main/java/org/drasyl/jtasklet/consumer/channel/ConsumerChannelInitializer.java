@@ -16,8 +16,7 @@ import static java.util.Objects.requireNonNull;
 public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
     private final IdentityPublicKey broker;
-    private final String source;
-    private final Object[] input;
+    private final InetSocketAddress submitBindAddress;
 
     @SuppressWarnings("java:S107")
     public ConsumerChannelInitializer(final Identity identity,
@@ -30,18 +29,16 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
                                       final Worm<Integer> exitCode,
                                       final boolean protocolArmEnabled,
                                       final IdentityPublicKey broker,
-                                      final String source,
-                                      final Object[] input) {
+                                      final InetSocketAddress submitBindAddress) {
         super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, err, exitCode);
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
-        this.source = requireNonNull(source);
-        this.input = requireNonNull(input);
+        this.submitBindAddress = requireNonNull(submitBindAddress);
     }
 
     @Override
-    protected void lastStage(DrasylServerChannel ch) throws Exception {
-        ch.pipeline().addLast(new ConsumerHandler(out, err, identity.getAddress(), broker, source, input));
+    protected void lastStage(final DrasylServerChannel ch) throws Exception {
+        ch.pipeline().addLast(new ConsumerHandler(out, err, identity.getAddress(), broker, submitBindAddress));
         super.lastStage(ch);
     }
 }

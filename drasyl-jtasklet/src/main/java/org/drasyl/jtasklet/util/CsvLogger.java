@@ -28,6 +28,7 @@ public class CsvLogger {
             // header
             if (!headerWritten) {
                 headerWritten = true;
+                // FIXME: process id
                 escapedWrite(writer, "time");
                 for (final Object title : taskRecord.logTitles()) {
                     writer.append(",");
@@ -37,6 +38,7 @@ public class CsvLogger {
             }
 
             // row
+            // FIXME: process id
             escapedWrite(writer, RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
             for (final Object title : taskRecord.logValues()) {
                 writer.append(",");

@@ -21,14 +21,13 @@ import java.io.IOException;
 @Command(
         name = "vm",
         description = {
-                "Starts a Tasklet VM",
-                "The VM provides a runtime environment for Tasklets.",
-                "If --broker is supplied, the VM will register to given Broker."
+                "Starts a Resource Provider",
+                "The Provider is capable to run one Task per time."
         },
         showDefaultValues = true
 )
-public class VmCommand extends ChannelOptions {
-    private static final Logger LOG = LoggerFactory.getLogger(VmCommand.class);
+public class ProviderCommand extends ChannelOptions {
+    private static final Logger LOG = LoggerFactory.getLogger(ProviderCommand.class);
     private static final Object[] BENCHMARK_PRIMES_INPUT = new Object[]{ 1, 250_000 };
     private static final Object[] BENCHMARK_EUROPEAN_OPTION_MC_INPUT = new Object[]{ 20_000, 100 };
     private final RuntimeEnvironment runtimeEnvironment;
@@ -43,7 +42,7 @@ public class VmCommand extends ChannelOptions {
     private int benchmarkRuns;
     private long benchmark;
 
-    public VmCommand() {
+    public ProviderCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup(1));
         runtimeEnvironment = new GraalVmJsRuntimeEnvironment();
     }

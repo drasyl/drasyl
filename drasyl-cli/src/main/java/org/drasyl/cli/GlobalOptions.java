@@ -65,10 +65,10 @@ public abstract class GlobalOptions {
         if (logger instanceof Slf4JLogger && ((Slf4JLogger) logger).delegate() instanceof ch.qos.logback.classic.Logger) {
             ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger).delegate()).setLevel(logLevel);
         }
-        final Logger logger2 = LoggerFactory.getLogger("org.drasyl.handler.connection");
-        if (logger2 instanceof Slf4JLogger && ((Slf4JLogger) logger2).delegate() instanceof ch.qos.logback.classic.Logger) {
-            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger2).delegate()).setLevel(Level.TRACE);
-        }
+//        final Logger logger2 = LoggerFactory.getLogger("org.drasyl.handler.connection");
+//        if (logger2 instanceof Slf4JLogger && ((Slf4JLogger) logger2).delegate() instanceof ch.qos.logback.classic.Logger) {
+//            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger2).delegate()).setLevel(Level.TRACE);
+//        }
     }
 
     protected abstract Logger log();
