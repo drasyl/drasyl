@@ -575,7 +575,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // TIME-WAIT
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    ctx.pipeline().close();
+                    ctx.channel().close();
                     ReferenceCountUtil.release(seg);
             }
         }
@@ -655,7 +655,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // our FIN has been ACKed
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    ctx.close(userCallFuture != null ? userCallFuture : ctx.newPromise());
+                    if (userCallFuture != null) {
+                        ctx.close(userCallFuture);
+                    }
+                    else {
+                        ctx.channel().close();
+                    }
                     return;
 
                 default:
@@ -726,7 +731,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                             userCallFuture.setFailure(future.cause());
                         }
                         userCallFuture = null;
-                        future.channel().pipeline().close();
+                        future.channel().close();
                     });
                     break;
 
