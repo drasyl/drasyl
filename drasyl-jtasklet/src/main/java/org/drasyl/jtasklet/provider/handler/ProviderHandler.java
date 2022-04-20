@@ -148,18 +148,14 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         }
         else if (evt instanceof ConnectionClosed && sender.equals(consumer)) {
             if (state == EXECUTE_TASK) {
-                // FIXME: we need to ensure that our task EventLoop is freed up again. otherwise it
-                //  can be possible that an old task is still blocking it. new accepted tasks will
-                //  then be delayed
-                final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, providerReset);
-
-                // inform broker
-                brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
-
-                state = BROKER_REGISTERED;
+                // Consumer has closed connection to us, while we're still processing the task.
+                // As we're not able to kill the task execution, we have to wait for completion
+                // (despite the fact that the Consumer no more interested in the result...).
+                // So we have to wait for the execution to finish to inform the broker that we're
+                // available again. Reset state here, so the after-execution code can detect this
+                // situtation
                 consumer = null;
-                LOG.info("Send me tasks! I'm hungry!");
+                consumerChannel = null;
             }
         }
     }
@@ -183,36 +179,52 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
             taskEventLoop.execute(() -> {
+                // execute
                 LOG.info("Start executing of task {} from Consumer {}.", msg, sender);
                 taskRecord.executing();
                 final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
                 taskRecord.executed(result.getOutput(), result.getExecutionTime());
                 LOG.info("Execution of task {} from Consumer {} finished in {}ms.", msg, sender, result.getExecutionTime());
 
-                final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
-                LOG.info("Send result {} back to Consumer {}.", response, sender);
-                consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        // inform broker
-                        final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
-                        brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                if (consumerChannel != null) {
+                    // return result
+                    final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
+                    LOG.info("Send result {} back to Consumer {}.", response, sender);
+                    consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            // inform broker
+                            final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
+                            brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
-                        LOG.info("Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", sender, taskExecuted);
-                        future.channel().close();
-                    }
-                    else {
-                        final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                        LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), providerReset);
+                            LOG.info("Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", sender, taskExecuted);
+                            future.channel().close();
+                        }
+                        else {
+                            final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
+                            LOG.info("Failed to send response {} to Consumer {}. Reset our state at Broker {}.", response, future.channel().remoteAddress(), providerReset);
 
-                        // inform broker
-                        brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                    }
+                            // inform broker
+                            brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        }
+
+                        state = BROKER_REGISTERED;
+                        consumer = null;
+                        logger.log(taskRecord);
+                        LOG.info("Send me tasks! I'm hungry!");
+                    });
+                }
+                else {
+                    // it seems that the consumer is no longer interested in the result...great...
+                    final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
+                    LOG.info("Consumer {} closed connection. Reset our state at Broker {}.", consumer, providerReset);
+
+                    // inform broker
+                    brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
                     state = BROKER_REGISTERED;
                     consumer = null;
-                    logger.log(taskRecord);
                     LOG.info("Send me tasks! I'm hungry!");
-                });
+                }
             });
         }
     }

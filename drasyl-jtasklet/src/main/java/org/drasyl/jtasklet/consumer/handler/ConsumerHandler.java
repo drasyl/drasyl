@@ -182,19 +182,12 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 provider = ((ResourceResponse) msg).getPublicKey();
                 taskRecord.resourceResponded(provider, token);
                 if (provider == null) {
-                    LOG.info("Broker has not found any resource for us. Shutdown Consumer.");
+                    LOG.info("Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", RETRY_INTERVAL, remainingCycles);
                     logger.log(taskRecord);
 
-                    if (remainingCycles > 0) {
-                        out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
-                        state = READY;
-                        ctx.executor().schedule(() -> requestResource(ctx), RETRY_INTERVAL, MILLISECONDS);
-                    }
-                    else {
-                        err.println("No resource for offloading available. Please try again later.");
-                        state = CLOSED;
-                        ctx.pipeline().close();
-                    }
+                    out.println("No resources for offloading available. Retry in " + RETRY_INTERVAL + "ms. " + remainingCycles + " cycles remaining.");
+                    state = READY;
+                    ctx.executor().schedule(() -> requestResource(ctx), RETRY_INTERVAL, MILLISECONDS);
 
                     return;
                 }
