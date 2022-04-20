@@ -33,6 +33,7 @@ public class ConsumerTaskRecord implements TaskRecord {
         this.broker = broker;
         this.source = source;
         this.input = input;
+        resourceRequestTime = Instant.now();
     }
 
     @Override
@@ -53,10 +54,6 @@ public class ConsumerTaskRecord implements TaskRecord {
                 ", executionTime=" + executionTime +
                 ", resultReturnedTime=" + resultReturnedTime +
                 '}';
-    }
-
-    public void resourceRequest() {
-        resourceRequestTime = Instant.now();
     }
 
     public void resourceRequested() {

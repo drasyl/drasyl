@@ -42,6 +42,11 @@ public class OffloadCommand extends ChannelOptions {
     private Path task;
     @Parameters
     List<Object> input;
+    @Option(
+            names = { "--cycles" },
+            defaultValue = "1"
+    )
+    private int cycles;
     private String source;
 
     public OffloadCommand() {
@@ -55,8 +60,8 @@ public class OffloadCommand extends ChannelOptions {
         }
 
         try {
-            out.println("Task   : " + task);
-            out.println("Input  : " + Arrays.toString(input.toArray()));
+            out.println("Task        : " + task);
+            out.println("Input       : " + Arrays.toString(input.toArray()));
             source = Files.readString(task, UTF_8);
             return super.call();
         }
@@ -68,7 +73,7 @@ public class OffloadCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, source, input.toArray());
+        return new ConsumerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, source, input.toArray(), cycles);
     }
 
     @Override

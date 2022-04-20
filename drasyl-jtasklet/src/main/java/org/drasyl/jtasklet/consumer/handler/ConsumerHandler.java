@@ -1,5 +1,6 @@
 package org.drasyl.jtasklet.consumer.handler;
 
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -39,13 +40,14 @@ import java.util.Set;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ESTABLISHED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ESTABLISHED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ConsumerHandler.class);
@@ -57,13 +59,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream err;
     private final IdentityPublicKey broker;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
-    private final ConsumerTaskRecord taskRecord;
     private String token;
     private DrasylChannel brokerChannel;
     private IdentityPublicKey provider;
     private DrasylChannel providerChannel;
     private final String source;
     private final Object[] input;
+    private int remainingCycles;
+    private ConsumerTaskRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
 
     public ConsumerHandler(final PrintStream out,
@@ -71,13 +74,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                            final DrasylAddress address,
                            final IdentityPublicKey broker,
                            final String source,
-                           final Object[] input) {
+                           final Object[] input,
+                           final int remainingCycles) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.broker = requireNonNull(broker);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
-        this.taskRecord = new ConsumerTaskRecord(address, broker, source, input);
+        this.remainingCycles = requirePositive(remainingCycles);
         logger = new CsvLogger("consumer-" + address.toString().substring(0, 8) + ".csv");
     }
 
@@ -88,13 +92,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
-        logger.log(taskRecord);
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         if (evt instanceof AddPathAndSuperPeerEvent) {
             if (superPeers.add(((AddPathAndSuperPeerEvent) evt).getAddress()) && superPeers.size() == 1) {
                 ctx.pipeline().fireUserEventTriggered(new NodeOnline());
@@ -132,7 +130,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         if (sender.equals(broker)) {
             if (evt instanceof ConnectionEstablished) {
                 LOG.info("Connection to Broker {} established.", broker);
-                state = BROKER_CONNECTION_ESTABLISHED;
+                state = READY;
                 requestResource(ctx);
             }
             else if (evt instanceof ConnectionFailed) {
@@ -200,20 +198,29 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 timeoutGuard.cancel(false);
                 taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
-                out.println("Output : " + Arrays.toString(((ReturnResult) msg).getOutput()));
+                out.println("Output      : " + Arrays.toString(((ReturnResult) msg).getOutput()));
+                logger.log(taskRecord);
 
                 // inform broker
-                state = CLOSED;
-                brokerChannel.writeAndFlush(new TaskResultReceived(token)).addListener((ChannelFutureListener) future -> ctx.pipeline().close());
+                final ChannelFuture brokerFuture = brokerChannel.writeAndFlush(new TaskResultReceived(token));
+                if (--remainingCycles > 0) {
+                    out.println("Rem. Cycles : " + remainingCycles);
+                    state = READY;
+                    requestResource(ctx);
+                }
+                else {
+                    state = CLOSED;
+                    brokerFuture.addListener((ChannelFutureListener) future -> ctx.pipeline().close());
+                }
             }
         }
     }
 
     private void requestResource(final ChannelHandlerContext ctx) {
         LOG.info("Request resource at Broker {}.", broker);
+        this.taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
         state = RESOURCE_REQUESTED;
         final ResourceRequest request = new ResourceRequest();
-        taskRecord.resourceRequest();
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 LOG.info("Request {} at Broker {} arrived!", request, broker);
@@ -274,7 +281,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         STARTED,
         ONLINE,
         BROKER_CONNECTION_ISSUED,
-        BROKER_CONNECTION_ESTABLISHED,
+        READY,
         RESOURCE_REQUESTED,
         PROVIDER_CONNECTION_ISSUED,
         PROVIDER_CONNECTION_ESTABLISHED,
