@@ -287,11 +287,12 @@ public class DrasylServerChannel extends AbstractServerChannel {
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
             if (oldValue != null) {
                 oldValue.close();
+                // wait for close to complete!?
             }
 
-            ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(msg);
+            }
         }
-    }
 
     /**
      * This handler is part of the backpressure mechanisms of the server channel. It informs all
