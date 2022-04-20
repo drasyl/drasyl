@@ -28,7 +28,7 @@ public class CsvLogger {
             // header
             if (!headerWritten) {
                 headerWritten = true;
-                escapedWrite(writer, "Time");
+                escapedWrite(writer, "time");
                 for (Object title : taskRecord.logTitles()) {
                     writer.append(",");
                     escapedWrite(writer, title);
@@ -58,6 +58,6 @@ public class CsvLogger {
     }
 
     private void escapedWrite(final FileWriter writer, final Object value) throws IOException {
-        escapedWrite(writer, value.toString());
+        escapedWrite(writer, value != null ? value.toString() : "");
     }
 }
