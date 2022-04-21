@@ -154,16 +154,17 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Connection to Consumer(?) {} established.", state, sender);
 
             // apply timeout guard
+            LOG.error("MUSS null sein: {}", timeoutGuard);
             timeoutGuard = ctx.executor().schedule(() -> {
                 // inform broker
                 final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                LOG.info("[{}] Consumer(?) {} has sent task to us within {}ms. Reset our state at Broker {}.", state, OFFLOAD_TASK_TIMEOUT, providerReset);
+                LOG.info("[{}] Consumer(?) {} has sent task to us within {}ms. Reset our state at Broker {}.", state, sender, OFFLOAD_TASK_TIMEOUT, providerReset);
                 brokerChannel.writeAndFlush(providerReset).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         state = BROKER_REGISTERED;
                         consumer = null;
                         consumerChannel = null;
-                        LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state);
+                        LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state, broker);
                     }
                     else {
                         future.channel().close();
@@ -178,6 +179,8 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             // So we have to wait for the execution to finish to inform the broker that we're
             // available again. Reset state here, so the after-execution code can detect this
             // situtation
+            timeoutGuard.cancel(false);
+            timeoutGuard = null;
             consumer = null;
             consumerChannel = null;
         }
@@ -190,6 +193,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
         if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
             timeoutGuard.cancel(false);
+            timeoutGuard = null;
             final TaskExecuting taskExecuting = new TaskExecuting(token);
             state = TASK_SCHEDULED;
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
@@ -249,7 +253,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                             state = BROKER_REGISTERED;
                             consumer = null;
                             consumerChannel = null;
-                            LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state);
+                            LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state, broker);
                         }
                         else {
                             future.channel().close();

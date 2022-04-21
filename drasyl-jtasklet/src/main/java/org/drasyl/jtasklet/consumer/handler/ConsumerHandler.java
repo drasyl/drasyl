@@ -40,14 +40,14 @@ import java.util.Set;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.ONLINE;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_CLOSED;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_FAILED;
-import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.CLOSED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.ONLINE;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_CLOSED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ESTABLISHED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_FAILED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDER_CONNECTION_ISSUED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTING;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
@@ -165,6 +165,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 providerChannel = null;
                 if (timeoutGuard != null) {
                     timeoutGuard.cancel(false);
+                    timeoutGuard = null;
                 }
 
                 // inform broker & retry
@@ -183,6 +184,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 providerChannel = null;
                 if (timeoutGuard != null) {
                     timeoutGuard.cancel(false);
+                    timeoutGuard = null;
                 }
 
                 // inform broker & retry
@@ -231,6 +233,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         });
 
         // apply timeout guard
+        LOG.error("MUSS null sein: {}", timeoutGuard);
         timeoutGuard = ctx.executor().schedule(() -> {
             if (state == RESOURCE_REQUESTING) {
                 state = CLOSED;
@@ -245,6 +248,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                                      final DrasylAddress sender) {
         LOG.info("[{}] Got resource response {} from Broker {}.", state, msg, sender);
         timeoutGuard.cancel(false);
+        timeoutGuard = null;
         token = ((ResourceResponse) msg).getToken();
         provider = ((ResourceResponse) msg).getPublicKey();
         taskRecord.resourceResponded(provider, token);
@@ -288,6 +292,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 providerChannel = null;
                 if (timeoutGuard != null) {
                     timeoutGuard.cancel(false);
+                    timeoutGuard = null;
                 }
 
                 // inform broker
@@ -300,6 +305,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         });
 
         // apply timeout guard
+        LOG.error("MUSS null sein: {}", timeoutGuard);
         timeoutGuard = ctx.executor().schedule(() -> {
             // inform broker
             final TaskFailed taskFailed = new TaskFailed(token);
@@ -318,6 +324,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
         LOG.info("[{}] Got result {} from Provider {}. Inform Broker {}.", state, msg, sender, taskResultReceived);
         timeoutGuard.cancel(false);
+        timeoutGuard = null;
         taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
         out.println("Output      : " + Arrays.toString(((ReturnResult) msg).getOutput()));
