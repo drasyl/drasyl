@@ -23,6 +23,8 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
         @Type(value = TaskResultReceived.class),
         @Type(value = TaskFailed.class),
         @Type(value = ProviderReset.class),
+        // Other
+        @Type(value = RttReport.class)
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface TaskletMessage {

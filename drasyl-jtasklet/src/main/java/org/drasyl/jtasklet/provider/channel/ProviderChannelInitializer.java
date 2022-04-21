@@ -33,7 +33,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
                                       final boolean protocolArmEnabled,
                                       final IdentityPublicKey broker,
                                       final long benchmark,
-                                      RuntimeEnvironment runtimeEnvironment) {
+                                      final RuntimeEnvironment runtimeEnvironment) {
         super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, err, exitCode);
         this.out = requireNonNull(out);
         this.broker = broker;
@@ -42,7 +42,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
     }
 
     @Override
-    protected void lastStage(DrasylServerChannel ch) throws Exception {
+    protected void lastStage(final DrasylServerChannel ch) throws Exception {
         ch.pipeline().addLast(new PeersRttHandler(null, 2_500L));
         ch.pipeline().addLast(new ProviderHandler(out, err, identity.getAddress(), broker, benchmark, runtimeEnvironment));
         super.lastStage(ch);

@@ -25,6 +25,7 @@ import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ProviderReset;
 import org.drasyl.jtasklet.message.RegisterProvider;
 import org.drasyl.jtasklet.message.ReturnResult;
+import org.drasyl.jtasklet.message.RttReport;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
 import org.drasyl.jtasklet.message.TaskletMessage;
@@ -109,7 +110,13 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().fireUserEventTriggered(new NodeOffline());
             }
         }
-        else if (evt instanceof PeersRttReport) {
+        else if (state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
+            LOG.info("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
+            brokerChannel.writeAndFlush(new RttReport((PeersRttReport) evt)).addListener((ChannelFutureListener) future -> {
+                if (!future.isSuccess()) {
+                    LOG.info("[{}] Unable to send RTT report {} to Broker {}:", state, evt, broker, future.cause());
+                }
+            });
         }
         else if (evt instanceof TaskletEvent) {
             if (evt instanceof NodeOnline) {

@@ -5,6 +5,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
@@ -24,6 +25,7 @@ import org.drasyl.jtasklet.message.ProviderReset;
 import org.drasyl.jtasklet.message.RegisterProvider;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
+import org.drasyl.jtasklet.message.RttReport;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
 import org.drasyl.jtasklet.message.TaskFailed;
@@ -51,7 +53,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.broker.handler.BrokerHandler.State.ONLINE;
 
-// FIXME: VM-Register und VM-Unregister loggen!
 public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerHandler.class);
     private static final int STUCK_PROVIDER_TIMEOUT = 60_000;
@@ -65,6 +66,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private final Map<DrasylAddress, BrokerLoggableRecord> loggableRecords = new HashMap<>();
     private final SchedulingStrategy schedulingStrategy = new RandomSchedulingStrategy();
     private final CsvLogger logger;
+    private final Map<DrasylAddress, PeersRttReport> rttReports = new HashMap<>();
 
     public BrokerHandler(final PrintStream out,
                          final PrintStream err,
@@ -152,14 +154,16 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
             providerChannels.put(sender, channel);
-            loggableRecords.put(sender, new BrokerLoggableRecord(sender, ((RegisterProvider) msg).getBenchmark()));
+            final BrokerLoggableRecord loggableRecord = new BrokerLoggableRecord(sender, ((RegisterProvider) msg).getBenchmark());
+            loggableRecords.put(sender, loggableRecord);
+            logger.log(loggableRecord);
             printResourceProviders();
         }
         else if (state == ONLINE && msg instanceof ResourceRequest) {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
-            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers);
+            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports);
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
             final String token = vm != null ? vm.token() : null;
@@ -303,6 +307,10 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             else {
                 LOG.info("Reject message {} as {} is no Provider.", msg, sender);
             }
+        }
+        else if (msg instanceof RttReport) {
+            LOG.info("Got RTT report {} from {}.", msg, sender);
+            rttReports.put(sender, ((RttReport) msg).getReport());
         }
     }
 

@@ -7,6 +7,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.PeersRttReport;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
@@ -24,6 +25,7 @@ import org.drasyl.jtasklet.message.OffloadTask;
 import org.drasyl.jtasklet.message.ResourceRequest;
 import org.drasyl.jtasklet.message.ResourceResponse;
 import org.drasyl.jtasklet.message.ReturnResult;
+import org.drasyl.jtasklet.message.RttReport;
 import org.drasyl.jtasklet.message.TaskFailed;
 import org.drasyl.jtasklet.message.TaskOffloaded;
 import org.drasyl.jtasklet.message.TaskResultReceived;
@@ -109,6 +111,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             if (superPeers.remove(((RemoveSuperPeerAndPathEvent) evt).getAddress()) && superPeers.isEmpty()) {
                 ctx.pipeline().fireUserEventTriggered(new NodeOffline());
             }
+        }
+        else if (state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
+            LOG.info("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
+            brokerChannel.writeAndFlush(new RttReport((PeersRttReport) evt)).addListener((ChannelFutureListener) future -> {
+                if (!future.isSuccess()) {
+                    LOG.info("[{}] Unable to send RTT report {} to Broker {}:", state, evt, broker, future.cause());
+                }
+            });
         }
         else if (evt instanceof TaskletEvent) {
             if (state != ONLINE && evt instanceof NodeOnline) {

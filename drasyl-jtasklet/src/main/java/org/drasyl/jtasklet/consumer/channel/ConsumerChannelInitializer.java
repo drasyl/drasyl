@@ -1,6 +1,7 @@
 package org.drasyl.jtasklet.consumer.channel;
 
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.PeersRttHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
@@ -45,6 +46,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
 
     @Override
     protected void lastStage(final DrasylServerChannel ch) throws Exception {
+        ch.pipeline().addLast(new PeersRttHandler(null, 2_500L));
         ch.pipeline().addLast(new ConsumerHandler(out, err, identity.getAddress(), broker, source, input, cycles));
         super.lastStage(ch);
     }
