@@ -9,6 +9,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.jtasklet.broker.BrokerLoggableRecord;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
 import org.drasyl.jtasklet.broker.scheduler.RandomSchedulingStrategy;
@@ -29,6 +30,7 @@ import org.drasyl.jtasklet.message.TaskFailed;
 import org.drasyl.jtasklet.message.TaskOffloaded;
 import org.drasyl.jtasklet.message.TaskResultReceived;
 import org.drasyl.jtasklet.message.TaskletMessage;
+import org.drasyl.jtasklet.util.CsvLogger;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -60,12 +62,16 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final Map<DrasylAddress, ResourceProvider> providers = new HashMap<>();
     private final Map<DrasylAddress, Channel> providerChannels = new HashMap<>();
+    private final Map<DrasylAddress, BrokerLoggableRecord> loggableRecords = new HashMap<>();
     private final SchedulingStrategy schedulingStrategy = new RandomSchedulingStrategy();
+    private final CsvLogger logger;
 
     public BrokerHandler(final PrintStream out,
-                         final PrintStream err) {
+                         final PrintStream err,
+                         final DrasylAddress address) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
+        logger = new CsvLogger("broker-" + address.toString().substring(0, 8) + ".csv");
     }
 
     @Override
@@ -79,6 +85,9 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             providers.forEach((address, provider) -> {
                 if (provider.state() != ProviderState.READY && provider.timeSinceLastStateChange() >= STUCK_PROVIDER_TIMEOUT) {
                     stuckProviders.add(address);
+                    final BrokerLoggableRecord loggableRecord = loggableRecords.remove(address);
+                    loggableRecord.unregister(provider.succeededTasks(), provider.failedTasks(), provider.errorRate(), provider.state(), provider.timeSinceLastStateChange(), provider.assignedTo());
+                    logger.log(loggableRecord);
                 }
             });
             if (!stuckProviders.isEmpty()) {
@@ -125,8 +134,11 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         if (evt instanceof ConnectionClosed && providers.containsKey(sender)) {
             LOG.info("Unregister Provider {} as connection has been closed.", sender);
-            providers.remove(sender);
+            final ResourceProvider provider = providers.remove(sender);
             providerChannels.remove(sender);
+            final BrokerLoggableRecord loggableRecord = loggableRecords.remove(sender);
+            loggableRecord.unregister(provider.succeededTasks(), provider.failedTasks(), provider.errorRate(), provider.state(), provider.timeSinceLastStateChange(), provider.assignedTo());
+            logger.log(loggableRecord);
             printResourceProviders();
         }
     }
@@ -140,6 +152,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
             providerChannels.put(sender, channel);
+            loggableRecords.put(sender, new BrokerLoggableRecord(sender, ((RegisterProvider) msg).getBenchmark()));
             printResourceProviders();
         }
         else if (state == ONLINE && msg instanceof ResourceRequest) {

@@ -1,6 +1,6 @@
 package org.drasyl.jtasklet.util;
 
-import org.drasyl.jtasklet.TaskRecord;
+import org.drasyl.jtasklet.LoggableRecord;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -24,7 +24,7 @@ public class CsvLogger {
         }
     }
 
-    public void log(final TaskRecord taskRecord) {
+    public void log(final LoggableRecord loggableRecord) {
         try {
             // header
             if (!headerWritten) {
@@ -32,7 +32,7 @@ public class CsvLogger {
                 escapedWrite(writer, "pid");
                 writer.append(",");
                 escapedWrite(writer, "time");
-                for (final Object title : taskRecord.logTitles()) {
+                for (final Object title : loggableRecord.logTitles()) {
                     writer.append(",");
                     escapedWrite(writer, title);
                 }
@@ -43,7 +43,7 @@ public class CsvLogger {
             escapedWrite(writer, PID);
             writer.append(",");
             escapedWrite(writer, RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
-            for (final Object title : taskRecord.logValues()) {
+            for (final Object title : loggableRecord.logValues()) {
                 writer.append(",");
                 escapedWrite(writer, title);
             }

@@ -28,7 +28,7 @@ import org.drasyl.jtasklet.message.ReturnResult;
 import org.drasyl.jtasklet.message.TaskExecuted;
 import org.drasyl.jtasklet.message.TaskExecuting;
 import org.drasyl.jtasklet.message.TaskletMessage;
-import org.drasyl.jtasklet.provider.ProviderTaskRecord;
+import org.drasyl.jtasklet.provider.ProviderLoggableRecord;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.jtasklet.util.CsvLogger;
@@ -64,7 +64,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private final long benchmark;
     private final EventLoopGroup taskEventLoop = new NioEventLoopGroup(1);
     private final RuntimeEnvironment runtimeEnvironment;
-    private ProviderTaskRecord taskRecord;
+    private ProviderLoggableRecord taskRecord;
     private DrasylChannel brokerChannel;
     private String token;
     private DrasylChannel consumerChannel;
@@ -205,7 +205,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
-            taskRecord = new ProviderTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
+            taskRecord = new ProviderLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
 
             // inform broker
             brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);

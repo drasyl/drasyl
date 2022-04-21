@@ -1,7 +1,7 @@
 package org.drasyl.jtasklet.consumer;
 
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.jtasklet.TaskRecord;
+import org.drasyl.jtasklet.LoggableRecord;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -9,12 +9,12 @@ import java.util.Arrays;
 
 import static org.drasyl.jtasklet.util.SourceUtil.minifySource;
 
-public class ConsumerTaskRecord implements TaskRecord {
+public class ConsumerLoggableRecord implements LoggableRecord {
     private final DrasylAddress consumer;
     private final DrasylAddress broker;
     private final String source;
     private final Object[] input;
-    private Instant resourceRequestTime;
+    private final Instant resourceRequestTime;
     private Instant resourceRequestedTime;
     private DrasylAddress provider;
     private String token;
@@ -25,10 +25,10 @@ public class ConsumerTaskRecord implements TaskRecord {
     private long executionTime;
     private Instant resultReturnedTime;
 
-    public ConsumerTaskRecord(final DrasylAddress consumer,
-                              final DrasylAddress broker,
-                              final String source,
-                              final Object[] input) {
+    public ConsumerLoggableRecord(final DrasylAddress consumer,
+                                  final DrasylAddress broker,
+                                  final String source,
+                                  final Object[] input) {
         this.consumer = consumer;
         this.broker = broker;
         this.source = source;

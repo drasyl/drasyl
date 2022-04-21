@@ -11,7 +11,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.consumer.ConsumerTaskRecord;
+import org.drasyl.jtasklet.consumer.ConsumerLoggableRecord;
 import org.drasyl.jtasklet.event.ConnectionClosed;
 import org.drasyl.jtasklet.event.ConnectionEstablished;
 import org.drasyl.jtasklet.event.ConnectionEvent;
@@ -73,7 +73,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private final String source;
     private final Object[] input;
     private int remainingCycles;
-    private ConsumerTaskRecord taskRecord;
+    private ConsumerLoggableRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
 
     public ConsumerHandler(final PrintStream out,
@@ -218,7 +218,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private void requestResource(final ChannelHandlerContext ctx) {
         state = RESOURCE_REQUESTING;
         LOG.info("[{}] Request resource at Broker {}.", state, broker);
-        this.taskRecord = new ConsumerTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
+        this.taskRecord = new ConsumerLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
         final ResourceRequest request = new ResourceRequest();
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
@@ -343,16 +343,30 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         out.println("Rem. Cycles : " + remainingCycles);
         if (--remainingCycles > 0) {
-            state = READY;
+            LOG.info("[{}] Before performing the next cycle. Close connection to Provider {} first.", state, provider);
 
             // close channel to provider first
-            providerChannel.close().addListener((ChannelFutureListener) future -> requestResource(ctx));
+            providerChannel.close().addListener((ChannelFutureListener) future -> {
+                state = READY;
+                if (future.isSuccess()) {
+                    LOG.info("[{}] Connection to Provider {} closed.", state, provider);
+                }
+                else {
+                    LOG.info("[{}] Failed to close connection to Provider {} closed:", state, provider, future.cause());
+                }
+                provider = null;
+                providerChannel = null;
+                requestResource(ctx);
+            });
         }
         else {
             state = CLOSED;
 
             // close consumer afterwards
-            informBrokerFuture.addListener((ChannelFutureListener) future -> ctx.channel().close());
+            informBrokerFuture.addListener((ChannelFutureListener) future -> {
+                LOG.info("[{}] Connection to Broker {} closed. Shutdown Consumer.", state, future.channel().remoteAddress());
+                ctx.channel().close();
+            });
         }
     }
 
