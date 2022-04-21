@@ -54,7 +54,7 @@ import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_SC
 
 public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProviderHandler.class);
-    private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
+    private static final int OFFLOAD_TASK_TIMEOUT = 30_000;
     private final CsvLogger logger;
     private State state = State.STARTED;
     private final PrintStream out;
