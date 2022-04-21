@@ -45,6 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_REGISTERED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CLOSED;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CONSUMER_CONNECTION_ESTABLISHED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.ONLINE;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.READY;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_EXECUTED;
@@ -150,15 +151,17 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             ctx.pipeline().close();
         }
         // beside the broker, only consumers will contact us
-        else if (state == BROKER_REGISTERED && evt instanceof ConnectionEstablished) {
-            LOG.info("[{}] Connection to Consumer(?) {} established.", state, sender);
+        else if (state == CONSUMER_CONNECTION_ESTABLISHED && evt instanceof ConnectionEstablished && consumer == null) {
+            state = CONSUMER_CONNECTION_ESTABLISHED;
+            consumer = sender;
+            LOG.info("[{}] Connection to Consumer {} established.", state, consumer);
 
             // apply timeout guard
             LOG.error("MUSS null sein: {}", timeoutGuard);
             timeoutGuard = ctx.executor().schedule(() -> {
                 // inform broker
                 final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                LOG.info("[{}] Consumer(?) {} has sent task to us within {}ms. Reset our state at Broker {}.", state, sender, OFFLOAD_TASK_TIMEOUT, providerReset);
+                LOG.info("[{}] Consumer {} has sent task to us within {}ms. Reset our state at Broker {}.", state, consumer, OFFLOAD_TASK_TIMEOUT, providerReset);
                 brokerChannel.writeAndFlush(providerReset).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         state = BROKER_REGISTERED;
@@ -197,7 +200,6 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             final TaskExecuting taskExecuting = new TaskExecuting(token);
             state = TASK_SCHEDULED;
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
-            consumer = sender;
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
             taskRecord = new ProviderTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
@@ -288,6 +290,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         BROKER_CONNECTION_ISSUED,
         READY,
         BROKER_REGISTERED,
+        CONSUMER_CONNECTION_ESTABLISHED,
         TASK_SCHEDULED,
         TASK_EXECUTING,
         TASK_EXECUTED,
