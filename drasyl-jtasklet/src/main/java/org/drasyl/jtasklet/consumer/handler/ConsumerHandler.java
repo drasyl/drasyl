@@ -50,6 +50,7 @@ import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.PROVIDE
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTING;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESULT_RECEIVED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADING;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -328,6 +329,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                                final TaskletMessage msg,
                                final DrasylAddress sender) {
         final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
+        state = RESULT_RECEIVED;
         LOG.info("[{}] Got result {} from Provider {}. Inform Broker {}.", state, msg, sender, taskResultReceived);
         timeoutGuard.cancel(false);
         timeoutGuard = null;
@@ -339,15 +341,16 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         // inform broker
         final ChannelFuture informBrokerFuture = brokerChannel.writeAndFlush(taskResultReceived);
 
+        out.println("Rem. Cycles : " + remainingCycles);
         if (--remainingCycles > 0) {
             state = READY;
-            out.println("Rem. Cycles : " + remainingCycles);
 
             // close channel to provider first
             providerChannel.close().addListener((ChannelFutureListener) future -> requestResource(ctx));
         }
         else {
             state = CLOSED;
+
             // close consumer afterwards
             informBrokerFuture.addListener((ChannelFutureListener) future -> ctx.channel().close());
         }
@@ -366,6 +369,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         PROVIDER_CONNECTION_FAILED,
         TASK_OFFLOADING,
         TASK_OFFLOADED,
+        RESULT_RECEIVED,
         CLOSED
     }
 }

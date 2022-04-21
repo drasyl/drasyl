@@ -118,6 +118,15 @@ public class ResourceProvider {
             case READY:
                 return false;
 
+            case EXECUTED:
+                this.providerState = READY;
+                this.token = nextToken;
+                this.nextToken = null;
+                this.assignedTo = null;
+                this.stateTime = System.currentTimeMillis();
+                this.failedTasks++;
+                return true;
+
             default:
                 this.providerState = FAILED;
                 this.stateTime = System.currentTimeMillis();
