@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.PeersRttReport;
@@ -40,15 +41,19 @@ import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.READY;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_CONNECTION_ISSUED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.BROKER_REGISTERED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CLOSED;
-import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.EXECUTE_TASK;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.ONLINE;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.READY;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_EXECUTED;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_EXECUTING;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_SCHEDULED;
 
 public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProviderHandler.class);
+    private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
     private final CsvLogger logger;
     private State state = State.STARTED;
     private final PrintStream out;
@@ -63,13 +68,14 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private String token;
     private DrasylChannel consumerChannel;
     private DrasylAddress consumer;
+    private ScheduledFuture<?> timeoutGuard;
 
     public ProviderHandler(final PrintStream out,
                            final PrintStream err,
                            final DrasylAddress address,
                            final DrasylAddress broker,
                            final long benchmark,
-                           RuntimeEnvironment runtimeEnvironment) {
+                           final RuntimeEnvironment runtimeEnvironment) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.broker = requireNonNull(broker);
@@ -85,13 +91,13 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         taskEventLoop.shutdownGracefully();
         ctx.fireChannelInactive();
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         if (evt instanceof AddPathAndSuperPeerEvent) {
             if (superPeers.add(((AddPathAndSuperPeerEvent) evt).getAddress()) && superPeers.size() == 1) {
                 ctx.pipeline().fireUserEventTriggered(new NodeOnline());
@@ -133,31 +139,47 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Connection to Broker {} established.", state, broker);
             registerAtBroker(ctx);
         }
-        else if (evt instanceof ConnectionFailed && sender.equals(broker)) {
+        else if (state != CLOSED && evt instanceof ConnectionFailed && sender.equals(broker)) {
             state = CLOSED;
             LOG.info("[{}] Failed to connect to Broker {}.", state, broker, ((ConnectionFailed) evt).cause());
             ctx.pipeline().close();
         }
-        else if (evt instanceof ConnectionClosed && sender.equals(broker)) {
+        else if (state != CLOSED && evt instanceof ConnectionClosed && sender.equals(broker)) {
             state = CLOSED;
             LOG.info("[{}] Broker {} closed connection. Shutdown Provider.", state, broker);
             ctx.pipeline().close();
         }
         // beside the broker, only consumers will contact us
-        else if (evt instanceof ConnectionEstablished) {
-            LOG.info("[{}] Connection to Consumer {} established.", state, sender);
+        else if (state == BROKER_REGISTERED && evt instanceof ConnectionEstablished) {
+            LOG.info("[{}] Connection to Consumer(?) {} established.", state, sender);
+
+            // apply timeout guard
+            timeoutGuard = ctx.executor().schedule(() -> {
+                // inform broker
+                final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
+                LOG.info("[{}] Consumer(?) {} has sent task to us within {}ms. Reset our state at Broker {}.", state, OFFLOAD_TASK_TIMEOUT, providerReset);
+                brokerChannel.writeAndFlush(providerReset).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        state = BROKER_REGISTERED;
+                        consumer = null;
+                        consumerChannel = null;
+                        LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state);
+                    }
+                    else {
+                        future.channel().close();
+                    }
+                });
+            }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
         }
-        else if (evt instanceof ConnectionClosed && sender.equals(consumer)) {
-            if (state == EXECUTE_TASK) {
-                // Consumer has closed connection to us, while we're still processing the task.
-                // As we're not able to kill the task execution, we have to wait for completion
-                // (despite the fact that the Consumer no more interested in the result...).
-                // So we have to wait for the execution to finish to inform the broker that we're
-                // available again. Reset state here, so the after-execution code can detect this
-                // situtation
-                consumer = null;
-                consumerChannel = null;
-            }
+        else if (state == TASK_SCHEDULED && evt instanceof ConnectionClosed && sender.equals(consumer)) {
+            // Consumer has closed connection to us, while we're still processing the task.
+            // As we're not able to kill the task execution, we have to wait for completion
+            // (despite the fact that the Consumer no more interested in the result...).
+            // So we have to wait for the execution to finish to inform the broker that we're
+            // available again. Reset state here, so the after-execution code can detect this
+            // situtation
+            consumer = null;
+            consumerChannel = null;
         }
     }
 
@@ -167,24 +189,26 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
         if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
+            timeoutGuard.cancel(false);
             final TaskExecuting taskExecuting = new TaskExecuting(token);
+            state = TASK_SCHEDULED;
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
             consumer = sender;
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
             taskRecord = new ProviderTaskRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
 
-            state = EXECUTE_TASK;
-
             // inform broker
             brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
             taskEventLoop.execute(() -> {
                 // execute
+                state = TASK_EXECUTING;
                 LOG.info("[{}] Start executing of task {} from Consumer {}.", state, msg, sender);
                 taskRecord.executing();
                 final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
                 taskRecord.executed(result.getOutput(), result.getExecutionTime());
+                state = TASK_EXECUTED;
                 LOG.info("[{}] Execution of task {} from Consumer {} finished in {}ms.", state, msg, sender, result.getExecutionTime());
 
                 if (consumerChannel != null) {
@@ -220,11 +244,17 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("[{}] Consumer {} is no longer connected to us. Reset our state at Broker {}.", state, sender, providerReset);
 
                     // inform broker
-                    brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
-
-                    state = BROKER_REGISTERED;
-                    consumer = null;
-                    LOG.info("[{}] Send me tasks! I'm hungry!", state);
+                    brokerChannel.writeAndFlush(providerReset).addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            state = BROKER_REGISTERED;
+                            consumer = null;
+                            consumerChannel = null;
+                            LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state);
+                        }
+                        else {
+                            future.channel().close();
+                        }
+                    });
                 }
             });
         }
@@ -254,7 +284,9 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         BROKER_CONNECTION_ISSUED,
         READY,
         BROKER_REGISTERED,
-        EXECUTE_TASK,
+        TASK_SCHEDULED,
+        TASK_EXECUTING,
+        TASK_EXECUTED,
         CLOSED
     }
 }
