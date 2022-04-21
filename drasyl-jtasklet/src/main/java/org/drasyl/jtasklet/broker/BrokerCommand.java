@@ -5,11 +5,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.identity.Identity;
 import org.drasyl.jtasklet.broker.channel.BrokerChannelInitializer;
+import org.drasyl.jtasklet.broker.scheduler.BenchmarkSchedulingStrategy;
+import org.drasyl.jtasklet.broker.scheduler.RandomSchedulingStrategy;
+import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+import static java.util.Objects.requireNonNull;
 
 @Command(
         name = "broker",
@@ -24,13 +30,19 @@ import picocli.CommandLine.Command;
 public class BrokerCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerCommand.class);
 
+    @Option(
+            names = { "--scheduler" },
+            defaultValue = "random"
+    )
+    protected SchedulingStrategyType schedulingStrategyType;
+
     public BrokerCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
     }
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, schedulingStrategyType.schedulingStrategy);
     }
 
     @Override
@@ -42,5 +54,15 @@ public class BrokerCommand extends ChannelOptions {
     @Override
     protected Logger log() {
         return LOG;
+    }
+
+    enum SchedulingStrategyType {
+        random(new RandomSchedulingStrategy()),
+        benchmark(new BenchmarkSchedulingStrategy());
+        private final SchedulingStrategy schedulingStrategy;
+
+        SchedulingStrategyType(final SchedulingStrategy schedulingStrategy) {
+            this.schedulingStrategy = requireNonNull(schedulingStrategy);
+        }
     }
 }

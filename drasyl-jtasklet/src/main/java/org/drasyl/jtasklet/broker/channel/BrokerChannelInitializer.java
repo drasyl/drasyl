@@ -4,6 +4,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.handler.BrokerHandler;
+import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
 import org.drasyl.util.Worm;
 
@@ -15,6 +16,7 @@ import static java.util.Objects.requireNonNull;
 
 public class BrokerChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
+    private final SchedulingStrategy schedulingStrategy;
 
     @SuppressWarnings("java:S107")
     public BrokerChannelInitializer(final Identity identity,
@@ -25,14 +27,16 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
                                     final PrintStream out,
                                     final PrintStream err,
                                     final Worm<Integer> exitCode,
-                                    final boolean protocolArmEnabled) {
+                                    final boolean protocolArmEnabled,
+                                    final SchedulingStrategy schedulingStrategy) {
         super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, err, exitCode);
         this.out = requireNonNull(out);
+        this.schedulingStrategy = requireNonNull(schedulingStrategy);
     }
 
     @Override
     protected void lastStage(final DrasylServerChannel ch) throws Exception {
-        ch.pipeline().addLast(new BrokerHandler(out, err, identity.getAddress()));
+        ch.pipeline().addLast(new BrokerHandler(out, err, identity.getAddress(), schedulingStrategy));
         super.lastStage(ch);
     }
 }

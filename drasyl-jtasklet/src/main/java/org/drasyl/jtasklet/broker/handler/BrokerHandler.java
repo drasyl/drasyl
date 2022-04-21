@@ -13,7 +13,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerLoggableRecord;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
-import org.drasyl.jtasklet.broker.scheduler.RandomSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.jtasklet.event.ConnectionClosed;
 import org.drasyl.jtasklet.event.ConnectionEvent;
@@ -64,16 +63,18 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private final Map<DrasylAddress, ResourceProvider> providers = new HashMap<>();
     private final Map<DrasylAddress, Channel> providerChannels = new HashMap<>();
     private final Map<DrasylAddress, BrokerLoggableRecord> loggableRecords = new HashMap<>();
-    private final SchedulingStrategy schedulingStrategy = new RandomSchedulingStrategy();
+    private final SchedulingStrategy schedulingStrategy;
     private final CsvLogger logger;
     private final Map<DrasylAddress, PeersRttReport> rttReports = new HashMap<>();
 
     public BrokerHandler(final PrintStream out,
                          final PrintStream err,
-                         final DrasylAddress address) {
+                         final DrasylAddress address,
+                         final SchedulingStrategy schedulingStrategy) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         logger = new CsvLogger("broker-" + address.toString().substring(0, 8) + ".csv");
+        this.schedulingStrategy = requireNonNull(schedulingStrategy);
     }
 
     @Override

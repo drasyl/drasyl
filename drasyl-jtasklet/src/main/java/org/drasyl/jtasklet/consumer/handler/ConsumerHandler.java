@@ -352,7 +352,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         // inform broker
         final ChannelFuture informBrokerFuture = brokerChannel.writeAndFlush(taskResultReceived);
 
-        out.println("Rem. Cycles : " + remainingCycles);
+        out.println("Rem. Cycles : " + (remainingCycles - 1));
         if (--remainingCycles > 0) {
             LOG.info("[{}] Before performing the next cycle. Close connection to Provider {} first.", state, provider);
 

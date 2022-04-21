@@ -14,6 +14,13 @@ public class RttReport implements TaskletMessage {
         this.report = requireNonNull(report);
     }
 
+    @Override
+    public String toString() {
+        return "RttReport{" +
+                "report=" + report +
+                '}';
+    }
+
     public PeersRttReport getReport() {
         return report;
     }
