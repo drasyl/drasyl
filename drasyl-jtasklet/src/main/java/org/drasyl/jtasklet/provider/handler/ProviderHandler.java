@@ -151,7 +151,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             ctx.pipeline().close();
         }
         // beside the broker, only consumers will contact us
-        else if (state == CONSUMER_CONNECTION_ESTABLISHED && evt instanceof ConnectionEstablished && consumer == null) {
+        else if (state == BROKER_REGISTERED && evt instanceof ConnectionEstablished && consumer == null) {
             state = CONSUMER_CONNECTION_ESTABLISHED;
             consumer = sender;
             LOG.info("[{}] Connection to Consumer {} established.", state, consumer);
@@ -194,7 +194,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                                  final TaskletMessage msg) {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
-        if (state == BROKER_REGISTERED && msg instanceof OffloadTask) {
+        if (state == CONSUMER_CONNECTION_ESTABLISHED && msg instanceof OffloadTask) {
             timeoutGuard.cancel(false);
             timeoutGuard = null;
             final TaskExecuting taskExecuting = new TaskExecuting(token);
@@ -290,7 +290,10 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         BROKER_CONNECTION_ISSUED,
         READY,
         BROKER_REGISTERED,
+        CONSUMER_CONNECTION_ISSUED,
         CONSUMER_CONNECTION_ESTABLISHED,
+        CONSUMER_CONNECTION_CLOSED,
+        CONSUMER_CONNECTION_FAILED,
         TASK_SCHEDULED,
         TASK_EXECUTING,
         TASK_EXECUTED,
