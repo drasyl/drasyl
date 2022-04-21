@@ -157,7 +157,9 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Connection to Consumer {} established.", state, consumer);
 
             // apply timeout guard
-            LOG.error("MUSS null sein: {}", timeoutGuard);
+            if (timeoutGuard != null) {
+                LOG.error("timeoutGuard war nicht null");
+            }
             timeoutGuard = ctx.executor().schedule(() -> {
                 timeoutGuard = null;
                 // inform broker

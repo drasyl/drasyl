@@ -233,7 +233,9 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         });
 
         // apply timeout guard
-        LOG.error("MUSS null sein: {}", timeoutGuard);
+        if (timeoutGuard != null) {
+            LOG.error("timeoutGuard war nicht null");
+        }
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             if (state == RESOURCE_REQUESTING) {
@@ -305,8 +307,10 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
             }
         });
 
-        // apply timeout guard
-        LOG.error("MUSS null sein: {}", timeoutGuard);
+        // apply timeout guardm
+        if (timeoutGuard != null) {
+            LOG.error("timeoutGuard war nicht null");
+        }
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
             // inform broker

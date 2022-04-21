@@ -49,7 +49,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.jtasklet.broker.handler.BrokerHandler.State.ONLINE;
 
-// FIXME: ResourceProvider kann in !READY verklemmen
+// FIXME: VM-Register und VM-Unregister loggen!
 public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerHandler.class);
     private static final int STUCK_PROVIDER_TIMEOUT = 60_000;
@@ -93,7 +93,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         if (evt instanceof AddPathAndSuperPeerEvent) {
             if (superPeers.add(((AddPathAndSuperPeerEvent) evt).getAddress()) && superPeers.size() == 1) {
                 ctx.pipeline().fireUserEventTriggered(new NodeOnline());
@@ -137,7 +137,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         if (state == ONLINE && msg instanceof RegisterProvider) {
             LOG.info("Provider {} registered: {}", sender, msg);
-            ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
+            final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
             providerChannels.put(sender, channel);
             printResourceProviders();
