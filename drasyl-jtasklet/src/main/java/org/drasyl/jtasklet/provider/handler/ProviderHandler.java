@@ -49,6 +49,7 @@ import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CLOSED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.CONSUMER_CONNECTION_ESTABLISHED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.ONLINE;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.READY;
+import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.STARTED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_EXECUTED;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_EXECUTING;
 import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.TASK_SCHEDULED;
@@ -57,7 +58,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProviderHandler.class);
     private static final int OFFLOAD_TASK_TIMEOUT = 30_000;
     private final CsvLogger logger;
-    private State state = State.STARTED;
+    private State state = STARTED;
     private final PrintStream out;
     private final PrintStream err;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
@@ -110,7 +111,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().fireUserEventTriggered(new NodeOffline());
             }
         }
-        else if (state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
+        else if (state != STARTED && state != ONLINE && state != BROKER_CONNECTION_ISSUED && state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
             LOG.info("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
             brokerChannel.writeAndFlush(new RttReport((PeersRttReport) evt)).addListener((ChannelFutureListener) future -> {
                 if (!future.isSuccess()) {

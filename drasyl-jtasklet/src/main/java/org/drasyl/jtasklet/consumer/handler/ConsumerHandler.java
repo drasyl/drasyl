@@ -53,6 +53,7 @@ import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.READY;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESOURCE_REQUESTING;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESULT_RECEIVED;
+import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.STARTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADING;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -63,7 +64,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
     private static final int RETRY_INTERVAL = 5_000;
     private final CsvLogger logger;
-    private State state = State.STARTED;
+    private State state = STARTED;
     private final PrintStream out;
     private final PrintStream err;
     private final IdentityPublicKey broker;
@@ -112,7 +113,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().fireUserEventTriggered(new NodeOffline());
             }
         }
-        else if (state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
+        else if (state != STARTED && state != ONLINE && state != BROKER_CONNECTION_ISSUED && state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
             LOG.info("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
             brokerChannel.writeAndFlush(new RttReport((PeersRttReport) evt)).addListener((ChannelFutureListener) future -> {
                 if (!future.isSuccess()) {
