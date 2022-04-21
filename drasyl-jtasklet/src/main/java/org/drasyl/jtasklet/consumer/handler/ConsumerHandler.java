@@ -361,10 +361,11 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         }
         else {
             state = CLOSED;
+            LOG.info("[{}] Close connection to Broker {}.", state, broker);
 
             // close consumer afterwards
             informBrokerFuture.addListener((ChannelFutureListener) future -> {
-                LOG.info("[{}] Connection to Broker {} closed. Shutdown Consumer.", state, future.channel().remoteAddress());
+                LOG.info("[{}] Connection to Broker {} closed. Shutdown Consumer.", state, broker, future.channel().remoteAddress());
                 ctx.channel().close();
             });
         }
