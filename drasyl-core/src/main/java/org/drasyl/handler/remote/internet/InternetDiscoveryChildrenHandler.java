@@ -449,7 +449,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             }
             catch (final UnknownHostException e) {
                 // stick on old address
-                LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
+                if (inetAddress.isUnresolved()) {
+                    LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
+                }
             }
             return inetAddress;
         }
