@@ -159,6 +159,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             // apply timeout guard
             LOG.error("MUSS null sein: {}", timeoutGuard);
             timeoutGuard = ctx.executor().schedule(() -> {
+                timeoutGuard = null;
                 // inform broker
                 final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
                 LOG.info("[{}] Consumer {} has sent task to us within {}ms. Reset our state at Broker {}.", state, consumer, OFFLOAD_TASK_TIMEOUT, providerReset);

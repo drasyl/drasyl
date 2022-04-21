@@ -235,6 +235,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         // apply timeout guard
         LOG.error("MUSS null sein: {}", timeoutGuard);
         timeoutGuard = ctx.executor().schedule(() -> {
+            timeoutGuard = null;
             if (state == RESOURCE_REQUESTING) {
                 state = CLOSED;
                 LOG.info("[{}] Broker {} has not responded to our request {} within {}ms. Shutdown Consumer.", state, broker, request, RESOURCE_REQUEST_TIMEOUT);
@@ -307,6 +308,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         // apply timeout guard
         LOG.error("MUSS null sein: {}", timeoutGuard);
         timeoutGuard = ctx.executor().schedule(() -> {
+            timeoutGuard = null;
             // inform broker
             final TaskFailed taskFailed = new TaskFailed(token);
             LOG.info("[{}] Provider {} has not provided results for our task {} within {}ms. Inform Broker {}.", state, provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
