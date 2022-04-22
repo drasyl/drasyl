@@ -64,17 +64,14 @@ class DrasylServerChannelTest {
     @Nested
     class DoClose {
         @Test
-        void shouldRemoveLocalAddressAndCloseChannelAndCloseAllChildChannels(@Mock final SocketAddress address,
-                                                                             @Mock final DrasylChannel childChannel,
-                                                                             @Mock final DrasylAddress localAddress) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(address, childChannel), localAddress);
+        void shouldRemoveLocalAddressAndCloseChannel(@Mock final DrasylAddress localAddress) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), localAddress);
 
             channel.doClose();
 
             assertNull(channel.localAddress0());
             assertFalse(channel.isOpen());
             assertFalse(channel.isActive());
-            verify(childChannel).close();
         }
     }
 }

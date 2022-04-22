@@ -24,14 +24,18 @@ package org.drasyl.channel;
 import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoop;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -40,7 +44,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -108,7 +111,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
-                ch.pipeline().addLast(new PendingWritesFlusher(channels.values()));
+                ch.pipeline().addLast(new PendingWritesFlusher());
             }
         }));
     }
@@ -121,13 +124,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 localAddress = null;
             }
             state = State.CLOSED;
-
-            // close all child channels
-            if (channels != null) {
-                for (final Channel channel : channels.values()) {
-                    channel.close();
-                }
-            }
         }
     }
 
@@ -153,7 +149,34 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
-    private static class ChildChannelRouter extends ChannelInboundHandlerAdapter {
+    /**
+     * This handler routes inbound messages and events to the correct child channel. If there is
+     * currently no child channel, a new one is automatically created.
+     */
+    private static class ChildChannelRouter extends ChannelDuplexHandler {
+        @Override
+        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+            // close all child channels first...
+            final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
+            for (final Channel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
+                combiner.add(channel.close());
+            }
+            final Promise<Void> aggregatePromise = ctx.newPromise();
+            combiner.finish(aggregatePromise);
+
+            // ...then pass close event further through the pipeline
+            aggregatePromise.addListener(future -> {
+                if (future.isSuccess()) {
+                    // all child channels has been sucesfully closed
+                    ctx.close(promise);
+                }
+                else {
+                    // there was an error, close channel and return error then.
+                    ctx.close().addListener(future2 -> promise.tryFailure(future.cause()));
+                }
+            });
+        }
+
         @Override
         public void channelRead(final ChannelHandlerContext ctx,
                                 final Object msg) {
@@ -252,6 +275,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
     }
 
+    /**
+     * This handler ensures that we have only one child channel per remote address at a time. If a
+     * new child channel is created, the previous one will be closed.
+     */
     private static class DuplicateChannelFilter extends SimpleChannelInboundHandler<DrasylChannel> {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
@@ -260,25 +287,24 @@ public class DrasylServerChannel extends AbstractServerChannel {
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
             if (oldValue != null) {
                 oldValue.close();
+                // wait for close to complete!?
             }
 
             ctx.fireChannelRead(msg);
         }
     }
 
+    /**
+     * This handler is part of the backpressure mechanisms of the server channel. It informs all
+     * child channels to flush once the server channel has become writable again.
+     */
     private static class PendingWritesFlusher extends ChannelInboundHandlerAdapter {
-        private final Collection<DrasylChannel> channels;
-
-        public PendingWritesFlusher(final Collection<DrasylChannel> channels) {
-            this.channels = requireNonNull(channels);
-        }
-
         @Override
         public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
             ctx.fireChannelWritabilityChanged();
 
             if (ctx.channel().isWritable()) {
-                for (final DrasylChannel channel : channels) {
+                for (final DrasylChannel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
                     if (channel.pendingWrites) {
                         channel.flush();
                     }
