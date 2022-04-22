@@ -157,6 +157,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment pshAck(final long seq,
+                                                    final long ack,
+                                                    final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), data);
+    }
+
     public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
     }

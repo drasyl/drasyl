@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -75,8 +76,6 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(101, handler.sndUna);
             assertEquals(101, handler.sndNxt);
             assertEquals(301, handler.rcvNxt);
-
-            channel.writeOutbound(Unpooled.buffer());
 
             assertTrue(channel.isOpen());
             channel.close();
@@ -157,16 +156,22 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(LISTEN, handler.state);
 
         // write should perform an active OPEN handshake
-        final ChannelFuture writeFuture = channel.writeOneOutbound("Hello");
+        final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{
+                1,
+                2,
+                3
+        });
+        final ChannelFuture writeFuture = channel.writeOneOutbound(data);
         assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
         assertFalse(writeFuture.isDone());
 
         // after handshake the write should be formed
         channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
-        assertEquals("Hello", channel.readOutbound());
+        assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
         assertTrue(writeFuture.isDone());
 
         channel.close();
+        data.release();
     }
 
     // One node is in CLOSED state
@@ -349,11 +354,43 @@ class ConnectionHandshakeHandlerTest {
             });
 
             final ChannelPromise writeFuture = ctx.newPromise();
-            handler.write(ctx, "Hello", writeFuture);
+            final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{
+                    1,
+                    2,
+                    3
+            });
+            handler.write(ctx, data, writeFuture);
 
             assertTrue(writeFuture.isDone());
             assertFalse(writeFuture.isSuccess());
             assertThat(writeFuture.cause(), instanceOf(ConnectionHandshakeException.class));
+
+            channel.close();
+        }
+    }
+
+    @Nested
+    class SegmentTextHandling {
+        @Test
+        void shouldPutOutboundDataIntoSegments() {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf data = Unpooled.buffer();
+            channel.writeOutbound(data);
+            assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data), channel.readOutbound());
+
+            channel.close();
+        }
+
+        @Test
+        void shouldExtractSegmentText() {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf data = Unpooled.buffer();
+            channel.writeInbound(ConnectionHandshakeSegment.pshAck(300, 100, data));
+            assertEquals(data, channel.readInbound());
 
             channel.close();
         }
