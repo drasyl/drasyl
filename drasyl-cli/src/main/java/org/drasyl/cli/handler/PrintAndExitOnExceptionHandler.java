@@ -53,4 +53,3 @@ public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter
         }
     }
 }
-

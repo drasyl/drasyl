@@ -25,8 +25,6 @@ import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -292,9 +290,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 // wait for close to complete!?
             }
 
-                ctx.fireChannelRead(msg);
-            }
+            ctx.fireChannelRead(msg);
         }
+    }
 
     /**
      * This handler is part of the backpressure mechanisms of the server channel. It informs all

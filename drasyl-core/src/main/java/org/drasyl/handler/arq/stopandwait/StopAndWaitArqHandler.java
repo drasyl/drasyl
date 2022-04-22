@@ -212,7 +212,8 @@ public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S135")
     private void writeNextPending(final ChannelHandlerContext ctx) {
         final Channel channel = ctx.channel();
-        if (!channel.isOpen()) {
+        if (!channel.isActive()) {
+            discardPendingWrites(ctx, new ClosedChannelException());
             return;
         }
 
