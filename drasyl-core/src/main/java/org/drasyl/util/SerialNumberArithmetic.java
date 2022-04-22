@@ -14,7 +14,7 @@ public class SerialNumberArithmetic {
      * @param serialBits size of the serial number space
      * @return resulting sequence number of the addition
      */
-    public static long add(final long s, final long n, int serialBits) {
+    public static long add(final long s, final long n, final int serialBits) {
         return (s + n) % (long) Math.pow(2, serialBits);
     }
 
@@ -24,7 +24,7 @@ public class SerialNumberArithmetic {
      * @param serialBits size of the serial number space
      * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
      */
-    public static boolean lessThan(final long i1, final long i2, int serialBits) {
+    public static boolean lessThan(final long i1, final long i2, final int serialBits) {
         final long pow = (long) Math.pow(2, serialBits - 1d);
         return (i1 < i2 && i2 - i1 < pow) || (i1 > i2 && i1 - i2 > pow);
     }
@@ -36,7 +36,7 @@ public class SerialNumberArithmetic {
      * @return {@code true} if {@code i1} is less than or equal to {@code i2}. Otherwise {@code
      * false}
      */
-    public static boolean lessThanOrEqualTo(final long i1, final long i2, int serialBits) {
+    public static boolean lessThanOrEqualTo(final long i1, final long i2, final int serialBits) {
         return i1 == i2 || lessThan(i1, i2, serialBits);
     }
 
@@ -46,7 +46,7 @@ public class SerialNumberArithmetic {
      * @param serialBits size of the serial number space
      * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
      */
-    public static boolean greaterThan(final long i1, final long i2, int serialBits) {
+    public static boolean greaterThan(final long i1, final long i2, final int serialBits) {
         final long pow = (long) Math.pow(2, serialBits - 1d);
         return (i1 < i2 && i2 - i1 > pow) || (i1 > i2 && i1 - i2 < pow);
     }
@@ -58,7 +58,7 @@ public class SerialNumberArithmetic {
      * @return {@code true} if {@code i1} is greater than or equal to {@code i2}. Otherwise {@code
      * false}
      */
-    public static boolean greaterThanOrEqualTo(final long i1, final long i2, int serialBits) {
+    public static boolean greaterThanOrEqualTo(final long i1, final long i2, final int serialBits) {
         return i1 == i2 || greaterThan(i1, i2, serialBits);
     }
 }
