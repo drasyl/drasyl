@@ -55,8 +55,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Joins one ore multiple super peer(s) as a children. Uses the super peer with the best latency as
- * a default gateway for outbound messages.
+ * Joins one or multiple super peer(s) as a children. Uses the super peer with the best RTT as a
+ * default gateway for outbound messages.
  *
  * @see InternetDiscoverySuperPeerHandler
  */
@@ -286,11 +286,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                               final AcknowledgementMessage msg,
                                               final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
-        LOG.trace("Got Acknowledgement ({}ms latency) from super peer `{}`.", () -> System.currentTimeMillis() - msg.getTime(), () -> publicKey);
+        final long rtt = currentTime.getAsLong() - msg.getTime();
+        LOG.trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
 
-        final long latency = currentTime.getAsLong() - msg.getTime();
         final SuperPeer superPeer = superPeers.get(publicKey);
-        superPeer.acknowledgementReceived(latency);
+        superPeer.acknowledgementReceived(rtt);
 
         // we don't have a super peer yet, so this is now our best one
         if (bestSuperPeer == null) {
@@ -319,14 +319,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     private void determineBestSuperPeer(final ChannelHandlerContext ctx) {
         IdentityPublicKey newBestSuperPeer = null;
-        long bestLatency = Long.MAX_VALUE;
+        long bestRtt = Long.MAX_VALUE;
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
             final SuperPeer superPeer = entry.getValue();
             if (!superPeer.isStale()) {
-                if (superPeer.latency < bestLatency) {
+                if (superPeer.rtt < bestRtt) {
                     newBestSuperPeer = publicKey;
-                    bestLatency = superPeer.latency;
+                    bestRtt = superPeer.rtt;
                 }
             }
             else {
@@ -342,7 +342,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             bestSuperPeer = newBestSuperPeer;
             if (LOG.isTraceEnabled()) {
                 if (newBestSuperPeer != null) {
-                    LOG.trace("New best super peer ({}ms latency)! Replace `{}` with `{}`", bestLatency, oldBestSuperPeer, newBestSuperPeer);
+                    LOG.trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
                 }
                 else {
                     LOG.trace("All super peers stale!");
@@ -398,19 +398,19 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         long lastAcknowledgementTime;
-        long latency;
+        long rtt;
         private InetSocketAddress inetAddress;
 
         SuperPeer(final LongSupplier currentTime,
                   final long pingTimeoutMillis,
                   final InetSocketAddress inetAddress,
                   final long lastAcknowledgementTime,
-                  final long latency) {
+                  final long rtt) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
             this.lastAcknowledgementTime = lastAcknowledgementTime;
-            this.latency = latency;
+            this.rtt = rtt;
         }
 
         public SuperPeer(final LongSupplier currentTime,
@@ -423,9 +423,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             return inetAddress;
         }
 
-        public void acknowledgementReceived(final long latency) {
+        public void acknowledgementReceived(final long rtt) {
             this.lastAcknowledgementTime = currentTime.getAsLong();
-            this.latency = latency;
+            this.rtt = rtt;
         }
 
         public boolean isStale() {

@@ -160,14 +160,14 @@ class InternetDiscoveryChildrenHandlerTest {
         @Nested
         class AcknowledgementReceived {
             @Test
-            void shouldRecordLastAcknowledgementTimeAndLatency() {
+            void shouldRecordLastAcknowledgementTimeAndRtt() {
                 when(currentTime.getAsLong()).thenReturn(1L);
 
                 final SuperPeer superPeer = new SuperPeer(currentTime, 0L, inetAddress);
                 superPeer.acknowledgementReceived(2L);
 
                 assertEquals(1L, superPeer.lastAcknowledgementTime);
-                assertEquals(2L, superPeer.latency);
+                assertEquals(2L, superPeer.rtt);
             }
         }
 
