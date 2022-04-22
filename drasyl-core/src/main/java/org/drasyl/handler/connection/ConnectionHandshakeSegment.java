@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
-import org.drasyl.util.Preconditions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -156,6 +155,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public static ConnectionHandshakeSegment syn(final long seq) {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment pshAck(final long seq,
+                                                    final long ack,
+                                                    final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), data);
     }
 
     public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {

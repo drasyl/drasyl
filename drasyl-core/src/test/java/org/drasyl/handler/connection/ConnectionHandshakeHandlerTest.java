@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -353,6 +355,34 @@ class ConnectionHandshakeHandlerTest {
             assertThat(writeFuture.cause(), instanceOf(ConnectionHandshakeException.class));
 
             channel.close();
+        }
+    }
+
+    @Nested
+    class SegmentTextHandling {
+        @Test
+        void shouldPutOutboundDataIntoSegments() {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf data = Unpooled.buffer();
+            channel.writeOutbound(data);
+            assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data), channel.readOutbound());
+
+            channel.close();
+        }
+
+        @Test
+        void shouldExtractSegmentText() {
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+            final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{ 1, 2, 3 });
+            channel.writeInbound(ConnectionHandshakeSegment.pshAck(300, 100, data));
+            assertEquals(data, channel.readInbound());
+
+            channel.close();
+            data.release();
         }
     }
 }

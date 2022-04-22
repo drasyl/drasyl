@@ -1,21 +1,26 @@
 package org.drasyl.util;
 
+import static org.drasyl.util.Preconditions.requireInRange;
+import static org.drasyl.util.Preconditions.requireNonNegative;
+
 /**
  * Utility class for <a href="https://www.rfc-editor.org/rfc/rfc1982">serial number arithmetic</a>.
  */
 public class SerialNumberArithmetic {
+    private static final int MAX_SERIAL_BITS = 63;
+
     private SerialNumberArithmetic() {
         // util class
     }
 
     /**
-     * @param s          sequence number we want increment
+     * @param s          sequence number we want increment. Must be non-negative.
      * @param n          number to add. Must be within range {@code [0, (2^(serialBits - 1) - 1)]}
      * @param serialBits size of the serial number space
      * @return resulting sequence number of the addition
      */
     public static long add(final long s, final long n, final int serialBits) {
-        return (s + n) % (long) Math.pow(2, serialBits);
+        return (requireNonNegative(s) + requireInRange(n, 0, (long) Math.pow(2, serialBits - 1d) - 1)) % (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS));
     }
 
     /**
@@ -25,7 +30,9 @@ public class SerialNumberArithmetic {
      * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
      */
     public static boolean lessThan(final long i1, final long i2, final int serialBits) {
-        final long pow = (long) Math.pow(2, serialBits - 1d);
+        requireNonNegative(i1);
+        requireNonNegative(i2);
+        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS) - 1d);
         return (i1 < i2 && i2 - i1 < pow) || (i1 > i2 && i1 - i2 > pow);
     }
 
@@ -47,7 +54,9 @@ public class SerialNumberArithmetic {
      * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
      */
     public static boolean greaterThan(final long i1, final long i2, final int serialBits) {
-        final long pow = (long) Math.pow(2, serialBits - 1d);
+        requireNonNegative(i1);
+        requireNonNegative(i2);
+        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS) - 1d);
         return (i1 < i2 && i2 - i1 > pow) || (i1 > i2 && i1 - i2 < pow);
     }
 
