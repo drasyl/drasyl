@@ -31,6 +31,7 @@ import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.DuplicatePathEventFilter;
+import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -300,9 +301,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             bestSuperPeer = (IdentityPublicKey) publicKey;
         }
 
-        final AddPathAndSuperPeerEvent event = AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH);
+        final AddPathAndSuperPeerEvent event = AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH, rtt);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
+        }
+        else {
+            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
         }
 
         determineBestSuperPeer(ctx);

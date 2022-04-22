@@ -186,6 +186,11 @@ public final class NumberUtil {
         return numberToHumanDataRate(number, (short) -1);
     }
 
+    /**
+     * Returns the <a href="http://en.wikipedia.org/wiki/Variance#Sample_variance">unbiased sample
+     * variance</a> of given {@code values}.
+     */
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public static double sampleVariance(final double... values) {
         if (values.length > 1) {
             final double mean = DoubleStream.of(values).average().getAsDouble();
@@ -196,6 +201,11 @@ public final class NumberUtil {
         }
     }
 
+    /**
+     * Returns the
+     * <a href="http://en.wikipedia.org/wiki/Standard_deviation#Corrected_sample_standard_deviation">
+     * corrected sample standard deviation</a> of given {@code values}.
+     */
     public static double sampleStandardDeviation(final double... values) {
         return Math.sqrt(sampleVariance(values));
     }
