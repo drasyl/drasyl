@@ -161,7 +161,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 // pass through
                 ctx.fireChannelRead(msg);
             }
-            else {
+            else if (ctx.channel().isOpen()) {
                 try {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
@@ -186,9 +186,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     channel.pipeline().fireChannelRead(o);
                     channel.pipeline().fireChannelReadComplete();
                 }
-                else if (recreateClosedChannel) {
-                    // channel we want message pass to has been closed in the meantime.
-                    // give message chance to be consumend by recreate a new channcel once
+                else if (ctx.channel().isOpen() && recreateClosedChannel) {
+                    // channel to which the message is to be passed to has been closed in the
+                    // meantime. give message chance to be consumed by recreate a new channel once
                     ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
                 }
                 else {
