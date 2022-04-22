@@ -28,6 +28,7 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.handler.PeersRttHandler;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -93,6 +94,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
     private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
     private static final int TELEMETRY_INTERVAL_SECONDS = SystemPropertyUtil.getInt("org.drasyl.telemetry.interval", 60);
+    private static final boolean RTT_REPORT_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.rtt.enabled", false);
     private static final URI TELEMETRY_URI;
 
     static {
@@ -130,6 +132,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
         discoveryStage(ch);
 
+        if (RTT_REPORT_ENABLED) {
+            ch.pipeline().addLast(new PeersRttHandler());
+        }
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginsHandler(config, identity));
         ch.pipeline().addLast(new NodeLifecycleTailHandler(node));

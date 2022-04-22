@@ -97,8 +97,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             final Integer networkId = key.first();
             final DrasylAddress publicKey = key.second();
             if (myNetworkId == networkId) {
-                otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path));
-                myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path));
+                otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path, 0L));
+                myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path, 0L));
             }
         });
         discoveries.put(

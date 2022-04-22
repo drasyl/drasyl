@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -227,9 +228,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH);
+        final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH, rtt);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
+        }
+        else {
+            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
         }
     }
 
