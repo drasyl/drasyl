@@ -19,6 +19,9 @@ import static io.netty.resolver.ResolvedAddressTypes.IPV4_ONLY;
 import static io.netty.resolver.ResolvedAddressTypes.IPV4_PREFERRED;
 import static io.netty.resolver.ResolvedAddressTypes.IPV6_PREFERRED;
 
+/**
+ * Helper class for resolving hostnames to IP addresses.
+ */
 public final class DnsResolver {
     private static final Logger LOG = LoggerFactory.getLogger(DnsResolver.class);
     static final ResolvedAddressTypes DEFAULT_RESOLVE_ADDRESS_TYPES;
