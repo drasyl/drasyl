@@ -39,10 +39,13 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.DnsResolver;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -436,15 +439,17 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
          * Triggers a new resolve of the hostname into an {@link java.net.InetAddress}.
          */
         public InetSocketAddress resolveInetAddress() {
-            // Note: Java DNS resolution is not great at all, maybe we need to use a more
-            // sophisticated resolution like netty's dns resolver
-            // see also https://blog.bmarwell.de/2020/09/23/javas-dns-resolution-is-so-90ies.html
-            final InetSocketAddress newInetAddress = new InetSocketAddress(this.inetAddress.getHostString(), this.inetAddress.getPort());
-            if (!newInetAddress.isUnresolved()) {
-                // make sure we don't regress to an unresolved address
-                this.inetAddress = newInetAddress;
+            try {
+                final InetAddress resolvedAddress = DnsResolver.resolve(inetAddress.getHostString());
+                inetAddress = new InetSocketAddress(resolvedAddress, inetAddress.getPort());
             }
-            return this.inetAddress;
+            catch (final UnknownHostException e) {
+                // keep existing address
+                if (inetAddress.isUnresolved()) {
+                    LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
+                }
+            }
+            return inetAddress;
         }
     }
 }
