@@ -59,8 +59,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Joins one or multiple super peer(s) as a children. Uses the super peer with the best RTT as a
- * default gateway for outbound messages.
+ * Joins one ore multiple super peer(s) as a children. Uses the super peer with the best latency as
+ * a default gateway for outbound messages.
  *
  * @see InternetDiscoverySuperPeerHandler
  */
@@ -326,14 +326,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     private void determineBestSuperPeer(final ChannelHandlerContext ctx) {
         IdentityPublicKey newBestSuperPeer = null;
-        long bestRtt = Long.MAX_VALUE;
+        long bestLatency = Long.MAX_VALUE;
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
             final SuperPeer superPeer = entry.getValue();
             if (!superPeer.isStale()) {
-                if (superPeer.rtt < bestRtt) {
+                if (superPeer.rtt < bestLatency) {
                     newBestSuperPeer = publicKey;
-                    bestRtt = superPeer.rtt;
+                    bestLatency = superPeer.rtt;
                 }
             }
             else {
@@ -349,7 +349,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             bestSuperPeer = newBestSuperPeer;
             if (LOG.isTraceEnabled()) {
                 if (newBestSuperPeer != null) {
-                    LOG.trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
+                    LOG.trace("New best super peer ({}ms latency)! Replace `{}` with `{}`", bestLatency, oldBestSuperPeer, newBestSuperPeer);
                 }
                 else {
                     LOG.trace("All super peers stale!");
@@ -430,9 +430,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             return inetAddress;
         }
 
-        public void acknowledgementReceived(final long rtt) {
+        public void acknowledgementReceived(final long latency) {
             this.lastAcknowledgementTime = currentTime.getAsLong();
-            this.rtt = rtt;
+            this.rtt = latency;
         }
 
         public boolean isStale() {
@@ -448,7 +448,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 inetAddress = new InetSocketAddress(resolvedAddress, inetAddress.getPort());
             }
             catch (final UnknownHostException e) {
-                // keep existing address
+                // stick on old address
                 if (inetAddress.isUnresolved()) {
                     LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
                 }

@@ -5,6 +5,8 @@ import org.drasyl.handler.PeersRttReport;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.util.Pair;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,39 +16,56 @@ import java.util.stream.Collectors;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 public class RttSchedulingStrategy implements SchedulingStrategy {
+    private static final Logger LOG = LoggerFactory.getLogger(RttSchedulingStrategy.class);
+    private final SchedulingStrategy FALLBACK = new RandomSchedulingStrategy();
+
+    @Override
+    public String toString() {
+        return "RttSchedulingStrategy{}";
+    }
+
     @Override
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttReport> rttReports,
                                                           final DrasylAddress consumer) {
-        final Map<DrasylAddress, Map<DrasylAddress, Double>> rtts = new HashMap<>();
+        final Map<Pair<DrasylAddress, DrasylAddress>, Double> rtts = new HashMap<>();
         for (final Entry<DrasylAddress, PeersRttReport> entry : rttReports.entrySet()) {
             final DrasylAddress source = entry.getKey();
-            final Map<DrasylAddress, Double> sourceRtts = new HashMap<>();
             for (final Entry<DrasylAddress, PeerRtt> entry2 : entry.getValue().peers().entrySet()) {
                 final DrasylAddress destination = entry2.getKey();
                 final PeerRtt peerRtt = entry2.getValue();
-                sourceRtts.put(destination, peerRtt.average());
+                rtts.put(Pair.of(source, destination), peerRtt.average());
             }
-            rtts.put(source, sourceRtts);
         }
 
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         if (!availableVms.isEmpty()) {
-            long minBenchmark = Long.MAX_VALUE;
-            DrasylAddress fastestAddress = null;
-            ResourceProvider fastestProvider = null;
+            double minRtt = Double.MAX_VALUE;
+            DrasylAddress bestAddress = null;
+            ResourceProvider bestProvider = null;
             for (final Entry<DrasylAddress, ResourceProvider> entry : availableVms.entrySet()) {
                 final DrasylAddress address = entry.getKey();
                 final ResourceProvider provider = entry.getValue();
 
-                if (provider.benchmark() < minBenchmark) {
-                    minBenchmark = provider.benchmark();
-                    fastestAddress = address;
-                    fastestProvider = provider;
+                final Double consumerToProviderRtt = rtts.get(Pair.of(consumer, address));
+                final Double providerToConsumerRtt = rtts.get(Pair.of(address, consumer));
+                if (consumerToProviderRtt != null && providerToConsumerRtt != null) {
+                    final double rtt = Math.max(consumerToProviderRtt, providerToConsumerRtt);
+                    if (rtt < minRtt) {
+                        minRtt = rtt;
+                        bestAddress = address;
+                        bestProvider = provider;
+                    }
                 }
             }
 
-            return Pair.of(fastestAddress, fastestProvider);
+            if (bestAddress == null) {
+                LOG.info("No RTT information between any available Providers and Consumer {} available. Fall back to {} scheduling", consumer, FALLBACK);
+                return FALLBACK.schedule(providers, rttReports, consumer);
+            }
+            else {
+                return Pair.of(bestAddress, bestProvider);
+            }
         }
         else {
             return Pair.of(null, null);

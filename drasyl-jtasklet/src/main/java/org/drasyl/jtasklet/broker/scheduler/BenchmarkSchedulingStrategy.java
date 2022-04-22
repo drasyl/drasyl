@@ -24,20 +24,20 @@ public class BenchmarkSchedulingStrategy implements SchedulingStrategy {
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         if (!availableVms.isEmpty()) {
             long minBenchmark = Long.MAX_VALUE;
-            DrasylAddress fastestAddress = null;
-            ResourceProvider fastestProvider = null;
+            DrasylAddress bestAddress = null;
+            ResourceProvider bestProvider = null;
             for (final Entry<DrasylAddress, ResourceProvider> entry : availableVms.entrySet()) {
                 final DrasylAddress address = entry.getKey();
                 final ResourceProvider provider = entry.getValue();
 
                 if (provider.benchmark() < minBenchmark) {
                     minBenchmark = provider.benchmark();
-                    fastestAddress = address;
-                    fastestProvider = provider;
+                    bestAddress = address;
+                    bestProvider = provider;
                 }
             }
 
-            return Pair.of(fastestAddress, fastestProvider);
+            return Pair.of(bestAddress, bestProvider);
         }
         else {
             return Pair.of(null, null);
