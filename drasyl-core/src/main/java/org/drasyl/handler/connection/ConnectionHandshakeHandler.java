@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -135,8 +136,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        // user call WRITE
-        userCallSend(ctx, msg, promise);
+        if (msg instanceof ByteBuf) {
+            // user call WRITE
+            userCallSend(ctx, (ByteBuf) msg, promise);
+        }
+        else {
+            // pass through
+            ctx.write(msg, promise);
+        }
     }
 
     @Override
@@ -202,7 +209,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void userCallSend(final ChannelHandlerContext ctx,
-                              final Object msg,
+                              final ByteBuf data,
                               final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
@@ -219,7 +226,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // enqueue our write
                 userCallFuture.addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
-                        ctx.write(msg, promise);
+                        userCallSend(ctx, data, promise);
                     }
                     else {
                         promise.setFailure(future.cause());
@@ -230,12 +237,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
             case SYN_RECEIVED:
-                ReferenceCountUtil.release(msg);
+                ReferenceCountUtil.release(data);
                 promise.setFailure(new ConnectionHandshakeException("Handshake in progress"));
                 break;
 
             case ESTABLISHED:
-                ctx.write(msg, promise);
+                // normally we would add this message to our SEND buffer until a PSH is triggered
+                // As this implementation is currently still message-oriented and not byte-oriented,
+                // we will send every message directly.
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
+                LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, seg);
+                ctx.write(seg, promise);
                 break;
 
             default:
@@ -243,8 +255,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // FIN-WAIT-2
                 // CLOSING
                 // LAST-ACK
-                LOG.trace("{}[{}] Channel is in process of being closed. Drop write `{}`.", ctx.channel(), state, msg);
-                ReferenceCountUtil.release(msg);
+                LOG.trace("{}[{}] Channel is in process of being closed. Drop write `{}`.", ctx.channel(), state, data);
+                ReferenceCountUtil.release(data);
                 promise.setFailure(CONNECTION_CLOSING_ERROR);
                 break;
         }
@@ -682,7 +694,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // check URG here...
 
-        // check segment text here...
+        // process segment text
+        if (seg.content().readableBytes() > 0) {
+            // normally we would add the segment text to the RECEIVE buffer until a PSH will be
+            // triggered. As this implementation is currently still message-oriented and not
+            // byte-oriented, we will send every message directly.
+
+            // ACKing and advancing the receive buffer is also not supported yet.
+            ctx.fireChannelRead(seg.content());
+        }
 
         // check FIN
         if (seg.isFin()) {
