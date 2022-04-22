@@ -46,7 +46,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -159,7 +158,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static class ChildChannelRouter extends ChannelDuplexHandler {
         @Override
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-            // close all child channels
+            // close all child channels first...
             final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
             for (final Channel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
                 combiner.add(channel.close());
@@ -167,12 +166,15 @@ public class DrasylServerChannel extends AbstractServerChannel {
             final Promise<Void> aggregatePromise = ctx.newPromise();
             combiner.finish(aggregatePromise);
 
-            aggregatePromise.addListener((ChannelFutureListener) future -> {
+            // ...then pass close event further through the pipeline
+            aggregatePromise.addListener(future -> {
                 if (future.isSuccess()) {
+                    // all child channels has been sucesfully closed
                     ctx.close(promise);
                 }
                 else {
-                    ctx.close().addListener((ChannelFutureListener) future2 -> promise.setFailure(future.cause()));
+                    // there was an error, close channel and return error then.
+                    ctx.close().addListener(future2 -> promise.tryFailure(future.cause()));
                 }
             });
         }
