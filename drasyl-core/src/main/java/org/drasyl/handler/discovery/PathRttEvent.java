@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,48 +26,22 @@ import org.drasyl.annotation.Nullable;
 import org.drasyl.identity.DrasylAddress;
 
 import java.net.InetSocketAddress;
-import java.util.Objects;
 
 /**
- * Signals that a direct routing path has been discovered to {@link AddPathEvent#getAddress()}.
+ * Signals that a new RTT measurement for a routing path has been performed to {@link
+ * AddPathEvent#getAddress()}.
  */
-@SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
-public abstract class AddPathEvent implements PathEvent {
+public abstract class PathRttEvent implements PathEvent {
     @Nullable
     public abstract InetSocketAddress getInetAddress();
 
     public abstract long getRtt();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getAddress(), getPath(), getInetAddress());
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final AddPathEvent that = (AddPathEvent) o;
-        return Objects.equals(getAddress(), that.getAddress()) &&
-                Objects.equals(getPath(), that.getPath()) &&
-                Objects.equals(getInetAddress(), that.getInetAddress());
-    }
-
-    public static AddPathEvent of(final DrasylAddress publicKey,
+    public static PathRttEvent of(final DrasylAddress publicKey,
                                   final InetSocketAddress inetAddress,
                                   final Object path,
                                   final long rtt) {
-        return new AutoValue_AddPathEvent(publicKey, path, inetAddress, rtt);
-    }
-
-    public static AddPathEvent of(final DrasylAddress publicKey,
-                                  final InetSocketAddress inetAddress,
-                                  final Object path) {
-        return of(publicKey, inetAddress, path, -1L);
+        return new AutoValue_PathRttEvent(publicKey, path, inetAddress, rtt);
     }
 }

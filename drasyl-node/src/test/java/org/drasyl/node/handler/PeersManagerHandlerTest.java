@@ -188,7 +188,7 @@ class PeersManagerHandlerTest {
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final InetSocketAddress inetAddress,
                                           @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path));
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path, 123L));
 
             assertEquals(Set.of(publicKey), superPeers);
             assertEquals(Set.of(path), paths.get(publicKey));
@@ -199,7 +199,7 @@ class PeersManagerHandlerTest {
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final InetSocketAddress inetAddress,
                                                                      @Mock final Object path) {
-            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path));
+            underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path, 123L));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> e instanceof NodeOnlineEvent));
