@@ -18,25 +18,38 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttReport> rttReports,
                                                           final DrasylAddress consumer) {
-        // build matrix
-//        final Set<DrasylAddress> addresses = new HashSet<>();
-//        addresses.addAll(providers.keySet());
-//        addresses.addAll(rttReports.keySet());
-//        rttReports.values().stream().map(PeersRttReport::peers).map(Map::keySet).forEach(addresses::addAll);
-
-        final Map<DrasylAddress, Map<DrasylAddress, Integer>> matrix = new HashMap<>();
-        for (final Entry<DrasylAddress, Double> entry : rttReports.entrySet()) {
+        final Map<DrasylAddress, Map<DrasylAddress, Double>> rtts = new HashMap<>();
+        for (final Entry<DrasylAddress, PeersRttReport> entry : rttReports.entrySet()) {
             final DrasylAddress source = entry.getKey();
-            final Map<DrasylAddress, Integer> map = new HashMap<>();
+            final Map<DrasylAddress, Double> sourceRtts = new HashMap<>();
             for (final Entry<DrasylAddress, PeerRtt> entry2 : entry.getValue().peers().entrySet()) {
                 final DrasylAddress destination = entry2.getKey();
                 final PeerRtt peerRtt = entry2.getValue();
-                map.put(destination, peerRtt.average());
+                sourceRtts.put(destination, peerRtt.average());
             }
+            rtts.put(source, sourceRtts);
         }
 
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        if (!availableVms.isEmpty()) {
+            long minBenchmark = Long.MAX_VALUE;
+            DrasylAddress fastestAddress = null;
+            ResourceProvider fastestProvider = null;
+            for (final Entry<DrasylAddress, ResourceProvider> entry : availableVms.entrySet()) {
+                final DrasylAddress address = entry.getKey();
+                final ResourceProvider provider = entry.getValue();
 
-        return Pair.of(null, null);
+                if (provider.benchmark() < minBenchmark) {
+                    minBenchmark = provider.benchmark();
+                    fastestAddress = address;
+                    fastestProvider = provider;
+                }
+            }
+
+            return Pair.of(fastestAddress, fastestProvider);
+        }
+        else {
+            return Pair.of(null, null);
+        }
     }
 }
