@@ -7,6 +7,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.jtasklet.broker.channel.BrokerChannelInitializer;
 import org.drasyl.jtasklet.broker.scheduler.BenchmarkSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.RandomSchedulingStrategy;
+import org.drasyl.jtasklet.broker.scheduler.RttSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.util.Worm;
@@ -58,7 +59,8 @@ public class BrokerCommand extends ChannelOptions {
 
     enum SchedulingStrategyType {
         random(new RandomSchedulingStrategy()),
-        benchmark(new BenchmarkSchedulingStrategy());
+        benchmark(new BenchmarkSchedulingStrategy()),
+        rtt(new RttSchedulingStrategy());
         private final SchedulingStrategy schedulingStrategy;
 
         SchedulingStrategyType(final SchedulingStrategy schedulingStrategy) {

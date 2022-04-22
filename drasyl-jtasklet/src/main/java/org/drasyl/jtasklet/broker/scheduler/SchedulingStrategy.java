@@ -9,5 +9,6 @@ import java.util.Map;
 
 public interface SchedulingStrategy {
     Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
-                                                   final Map<DrasylAddress, PeersRttReport> rttReports);
+                                                   final Map<DrasylAddress, PeersRttReport> rttReports,
+                                                   final DrasylAddress consumer);
 }

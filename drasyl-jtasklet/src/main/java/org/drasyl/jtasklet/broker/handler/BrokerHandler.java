@@ -164,7 +164,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
-            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports);
+            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender);
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
             final String token = vm != null ? vm.token() : null;
@@ -310,7 +310,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if (msg instanceof RttReport) {
-            LOG.info("Got RTT report {} from {}.", msg, sender);
+            LOG.debug("Got RTT report {} from {}.", msg, sender);
             rttReports.put(sender, ((RttReport) msg).getReport());
         }
     }

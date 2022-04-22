@@ -112,7 +112,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if (state != STARTED && state != ONLINE && state != BROKER_CONNECTION_ISSUED && state != CLOSED && brokerChannel != null && evt instanceof PeersRttReport) {
-            LOG.info("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
+            LOG.debug("[{}] Got RTT report {}. Redirect to Broker {}", state, evt, broker);
             brokerChannel.writeAndFlush(new RttReport((PeersRttReport) evt)).addListener((ChannelFutureListener) future -> {
                 if (!future.isSuccess()) {
                     LOG.info("[{}] Unable to send RTT report {} to Broker {}:", state, evt, broker, future.cause());
