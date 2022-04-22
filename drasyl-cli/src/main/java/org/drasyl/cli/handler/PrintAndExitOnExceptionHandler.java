@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Consumes all exceptions, prints them to given {@link PrintStream}, closes the channel, and will
- * then exit with error code {@code 1}. channel.
+ * then exit with error code {@code 1}.
  */
 public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream printStream;
