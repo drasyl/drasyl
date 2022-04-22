@@ -51,7 +51,7 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void flush(ChannelHandlerContext ctx) {
+    public void flush(final ChannelHandlerContext ctx) {
         doFlush = true;
         ctx.flush();
     }
