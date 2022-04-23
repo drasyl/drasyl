@@ -246,7 +246,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // together with other data for transmission efficiency. As this implementation is
                 // currently still message-oriented and not byte-oriented, we will send every message directly.
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
-                LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] As connection is established, we can pass the message `{}` to the network.", ctx.channel(), state, seg);
                 ctx.write(seg, promise);
                 break;
 
@@ -262,6 +262,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
                                final ChannelPromise promise) {
         LOG.trace("{}[{}] CLOSE call received.", ctx.channel(), state);
@@ -290,6 +291,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             case ESTABLISHED:
                 // save promise for later, as it we need ACKnowledgment from remote peer
                 userCallFuture = promise;
+
+                // signal user connection closing
+                ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
 
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                 sndNxt++;
@@ -416,7 +420,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isAck()) {
             // we are on a state were we have never sent anything that must be ACKed
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-            LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+            LOG.trace("{}[{}] We are on a state were we have never sent ansythink that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             ReferenceCountUtil.release(seg);
             return;
@@ -454,8 +458,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             ReferenceCountUtil.release(seg);
-
-            ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
             return;
         }
 
@@ -575,7 +577,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
                         LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. We're going back to the LISTEN state.", ctx.channel(), state, seg);
-                        // FIXME: irgendein event muss doch kommen nach xxxIssued? sollten wir den User hier nicht informieren? Sonst hängt er ewig im "ISSUED" modus
                         switchToNewState(ctx, LISTEN);
                         ReferenceCountUtil.release(seg);
                         return;
@@ -713,12 +714,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             final ChannelFuture ackFuture = ctx.writeAndFlush(response);
             ackFuture.addListener(CLOSE_ON_FAILURE);
 
-            // signal user connection closing
-            ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
-
             switch (state) {
                 case SYN_RECEIVED:
                 case ESTABLISHED:
+                    // signal user connection closing
+                    ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
+
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                     sndNxt++;
@@ -818,6 +819,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             this(ctx, seg, RTT);
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
