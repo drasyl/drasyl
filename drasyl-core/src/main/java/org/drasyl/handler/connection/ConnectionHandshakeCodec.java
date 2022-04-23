@@ -62,7 +62,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
-                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, in.retain());
+                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, in.discardSomeReadBytes().retain());
                 out.add(seg);
             }
             else {
