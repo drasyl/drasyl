@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 
@@ -95,7 +95,7 @@ public class ApplicationMessageTest {
 
             assertEquals(1, application.getNetworkId());
             assertEquals(buffer, application.getPayload());
-            assertFalse(application.getPayload().isWritable());
+            assertTrue(application.getPayload().isWritable());
             buffer.release();
         }
     }

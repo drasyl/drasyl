@@ -32,11 +32,12 @@ import java.util.List;
  */
 public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, ConnectionHandshakeSegment> {
     public static final int MAGIC_NUMBER = 852_550_535;
-    // magic number: 4 bytes
+    // Magic Number: 4 bytes
     // SEQ: 4 bytes
     // ACK: 4 bytes
     // CTL: 1 byte
-    public static final int MESSAGE_LENGTH = 13;
+    // data: arbitrary number of bytes
+    public static final int MIN_MESSAGE_LENGTH = 13;
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -55,7 +56,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= MESSAGE_LENGTH) {
+        if (in.readableBytes() >= MIN_MESSAGE_LENGTH) {
             in.markReaderIndex();
             if (MAGIC_NUMBER == in.readInt()) {
                 final long seq = in.readUnsignedInt();
