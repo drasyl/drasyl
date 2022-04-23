@@ -27,6 +27,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
@@ -56,16 +57,16 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
- * This handler performs a handshake with the remote peer. This can be used to create a
- * connection-oriented communication with the remote peer.
+ * This handler partially implements the Transmission Control Protocol know from <a
+ * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>. Only the
+ * three-way-handshake and tear-down handshake are currently supported. Segments just contain
+ * parameters required for that operations.
  * <p>
- * Depending of the configuration, the synchronization will be automatically issued on {@link
- * #channelActive(ChannelHandlerContext)} or must be manually initiated by the remote peer. Once the
- * synchronization is done, a {@link ConnectionHandshakeCompleted} event will be passed to channel,
- * on failure a {@link ConnectionHandshakeException} exception is passed to channel.
+ * The handler can be configured to perform an active or passive OPEN process.
  * <p>
- * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
- * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
+ * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
+ * once the handshake has been issued. The handshake process will result either in a {@link
+ * ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
@@ -136,13 +137,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof ByteBuf) {
-            // user call WRITE
-            userCallSend(ctx, (ByteBuf) msg, promise);
+        if (!(msg instanceof ByteBuf)) {
+            final UnsupportedMessageTypeException exception = new UnsupportedMessageTypeException(msg, ByteBuf.class);
+            ReferenceCountUtil.release(msg);
+            promise.setFailure(exception);
         }
         else {
-            // pass through
-            ctx.write(msg, promise);
+            // user call WRITE
+            userCallSend(ctx, (ByteBuf) msg, promise);
         }
     }
 
@@ -627,7 +629,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case ESTABLISHED:
-                    // FIXME : implement
+                    // normally we would here remove ACKed segment from the retransmission queue and
+                    // therefore update the SEND queue. But this currently not implemented. So,
+                    // nothing to do here...
                     break;
 
                 case FIN_WAIT_1:
@@ -645,8 +649,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
-
-                    // TODO: the user's close can be acked
 
                     break;
 
