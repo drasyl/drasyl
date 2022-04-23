@@ -48,7 +48,6 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
         buf.writeBytes(seg.content());
-        seg.release();
         out.add(buf);
     }
 

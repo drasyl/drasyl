@@ -1,8 +1,10 @@
 package test;
 
+import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -14,7 +16,7 @@ public class DropRandomOutboundMessagesHandler extends ChannelOutboundHandlerAda
     private final float lossRate;
     private int maxDrop;
 
-    public DropRandomOutboundMessagesHandler(final float lossRate, int maxDrop) {
+    public DropRandomOutboundMessagesHandler(final float lossRate, final int maxDrop) {
         this.lossRate = lossRate;
         this.maxDrop = requirePositive(maxDrop);
     }
@@ -27,6 +29,7 @@ public class DropRandomOutboundMessagesHandler extends ChannelOutboundHandlerAda
         if (maxDrop > 0 && RandomUtil.randomInt(1, 100) <= lossRate * 100) {
             LOG.info("Drop: {}", msg);
             promise.setSuccess();
+            ReferenceCountUtil.release(msg);
             maxDrop--;
         }
         else {
