@@ -242,9 +242,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                // normally we would add this message to our SEND buffer until a PSH is triggered
-                // As this implementation is currently still message-oriented and not byte-oriented,
-                // we will send every message directly.
+                // normally we would add this message to or send buffer, to allow it to be sent
+                // together with other data for transmission efficiency. As this implementation is
+                // currently still message-oriented and not byte-oriented, we will send every message directly.
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, seg);
                 ctx.write(seg, promise);
@@ -570,6 +570,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         switchToNewState(ctx, CLOSED);
                         ReferenceCountUtil.release(seg);
                         ctx.fireExceptionCaught(new ConnectionHandshakeException("Connection refused"));
+                        return;
                     }
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
@@ -577,8 +578,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         // FIXME: irgendein event muss doch kommen nach xxxIssued? sollten wir den User hier nicht informieren? Sonst hängt er ewig im "ISSUED" modus
                         switchToNewState(ctx, LISTEN);
                         ReferenceCountUtil.release(seg);
+                        return;
                     }
-                    break;
 
                 case ESTABLISHED:
                 case FIN_WAIT_1:
@@ -587,16 +588,16 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     switchToNewState(ctx, CLOSED);
                     ReferenceCountUtil.release(seg);
                     ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
-                    break;
+                    return;
 
                 default:
                     // CLOSING
-                    // LAST-ACFailed to offload taskK
-                    // TIME-WAIT
+                    // LAST-ACK
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
                     ctx.channel().close();
                     ReferenceCountUtil.release(seg);
+                    return;
             }
         }
 
@@ -609,24 +610,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         cancelTimeoutGuards();
                         switchToNewState(ctx, ESTABLISHED);
-
-                        if (acceptableAck) {
-                            // advance send state
-                            sndUna = seg.ack();
-                        }
-                        else if (lessThan(seg.ack(), sndUna, SEQ_NO_SPACE)) {
-                            // ACK is duplicate, ignore
-                            ReferenceCountUtil.release(seg);
-                        }
-
-                        ReferenceCountUtil.release(seg);
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
-                    }
-                    else {
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                        LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
-                        ReferenceCountUtil.release(seg);
-                        ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
+
+                        if (!acceptableAck) {
+                            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
+                            LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
+                            ReferenceCountUtil.release(seg);
+                            ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
+                            return;
+                        }
+
+                        // advance send state
+                        sndUna = seg.ack();
                     }
                     break;
 
@@ -694,15 +689,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // check URG here...
 
-        // process segment text
-        if (seg.content().readableBytes() > 0) {
-            // normally we would add the segment text to the RECEIVE buffer until a PSH will be
-            // triggered. As this implementation is currently still message-oriented and not
-            // byte-oriented, we will send every message directly.
+        // check segment text here...
 
-            // ACKing and advancing the receive buffer is also not supported yet.
-            ctx.fireChannelRead(seg.content());
-        }
+        // normally we would add the segment text to the RECEIVE buffer until a PSH will be triggered.
+        // As this implementation is currently still message-oriented and not byte-oriented, we will
+        // pass every received message directly.
+        ctx.fireChannelRead(seg.content());
 
         // check FIN
         if (seg.isFin()) {

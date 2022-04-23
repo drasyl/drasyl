@@ -156,16 +156,22 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(LISTEN, handler.state);
 
         // write should perform an active OPEN handshake
-        final ChannelFuture writeFuture = channel.writeOneOutbound("Hello");
+        final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{
+                1,
+                2,
+                3
+        });
+        final ChannelFuture writeFuture = channel.writeOneOutbound(data);
         assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
         assertFalse(writeFuture.isDone());
 
         // after handshake the write should be formed
         channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
-        assertEquals("Hello", channel.readOutbound());
+        assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
         assertTrue(writeFuture.isDone());
 
         channel.close();
+        data.release();
     }
 
     // One node is in CLOSED state
@@ -348,7 +354,12 @@ class ConnectionHandshakeHandlerTest {
             });
 
             final ChannelPromise writeFuture = ctx.newPromise();
-            handler.write(ctx, "Hello", writeFuture);
+            final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{
+                    1,
+                    2,
+                    3
+            });
+            handler.write(ctx, data, writeFuture);
 
             assertTrue(writeFuture.isDone());
             assertFalse(writeFuture.isSuccess());
@@ -377,12 +388,11 @@ class ConnectionHandshakeHandlerTest {
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            final ByteBuf data = Unpooled.wrappedBuffer(new byte[]{ 1, 2, 3 });
+            final ByteBuf data = Unpooled.buffer();
             channel.writeInbound(ConnectionHandshakeSegment.pshAck(300, 100, data));
             assertEquals(data, channel.readInbound());
 
             channel.close();
-            data.release();
         }
     }
 }
