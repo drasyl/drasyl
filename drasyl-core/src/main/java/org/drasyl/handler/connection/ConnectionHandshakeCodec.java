@@ -48,7 +48,6 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
         buf.writeBytes(seg.content());
-        seg.release();
         out.add(buf);
     }
 
@@ -56,7 +55,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() == MESSAGE_LENGTH) {
+        if (in.readableBytes() >= MESSAGE_LENGTH) {
             in.markReaderIndex();
             if (MAGIC_NUMBER == in.readInt()) {
                 final long seq = in.readUnsignedInt();
