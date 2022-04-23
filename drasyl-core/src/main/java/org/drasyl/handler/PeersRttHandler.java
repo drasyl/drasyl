@@ -193,7 +193,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    static class PeerRtt {
+    public static class PeerRtt {
         public static final int RTTS_COUNT = 200;
         private final Role role;
         private final InetSocketAddress inetAddress;
@@ -279,7 +279,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
         }
 
-        private enum Role {
+        public enum Role {
             SUPER("S"),
             CHILDREN("C"),
             DEFAULT("");
