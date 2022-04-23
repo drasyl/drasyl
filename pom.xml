@@ -137,7 +137,7 @@
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.34.0</json-unit-assertj.version>
-        <protobuf.version>3.20.0</protobuf.version>
+        <protobuf.version>3.20.1</protobuf.version>
         <auto-value.version>1.9</auto-value.version>
         <jna.version>5.11.0</jna.version>
 
