@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
@@ -55,7 +54,6 @@ import static org.drasyl.jtasklet.broker.handler.BrokerHandler.State.ONLINE;
 public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerHandler.class);
     private static final int STUCK_PROVIDER_TIMEOUT = 60_000;
-    private static final Random RANDOM = new Random();
     private State state = State.STARTED;
     private final PrintStream out;
     private final PrintStream err;
