@@ -118,7 +118,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected void discoveryStage(final DrasylServerChannel ch) {
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
         ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
-        ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, PING_COMMUNICATION_TIMEOUT_MILLIS, MAX_PEERS));
+        ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, 0, 0));
         ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 

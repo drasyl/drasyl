@@ -88,6 +88,34 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 
+    /**
+     * @param myNetworkId                    network this node belongs to.
+     * @param myPublicKey                    public key of this node.
+     * @param mySecretKey                    secret key of this node.
+     * @param myProofOfWork                  proof of work of this node.
+     * @param initialPingDelayMillis         time in milliseconds before sending first Hello
+     *                                       message. Useful when starting a large number of nodes
+     *                                       in parallel to distribute the load on the super
+     *                                       peer(s).
+     * @param pingIntervalMillis             interval time in milliseconds for sending Hello
+     *                                       messages to super peer(s).
+     * @param pingTimeoutMillis              time in milliseconds without response from super peer
+     *                                       to consider it unreachable.
+     * @param maxTimeOffsetMillis            Hello and confirmation messages are timestamped to
+     *                                       measure RTT and limit the possibility of replay
+     *                                       attacks. Here you can specify how large the offset
+     *                                       between the current system time and the timestamp
+     *                                       included in the message can be before the message is
+     *                                       discarded. Note that there is a natural offset between
+     *                                       the system clock of different computers.
+     * @param superPeerAddresses             super peers this node is registering to.
+     * @param pingCommunicationTimeoutMillis time in milliseconds without application traffic before
+     *                                       a traversed route will be discarded. Set to {@code 0}
+     *                                       to disable removal of unused routes.
+     * @param maxPeers                       max number of traversed routes this node will keep
+     *                                       alive at the same time. Set to {@code 0} to disable
+     *                                       this restriction.
+     */
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
                                                       final IdentityPublicKey myPublicKey,
@@ -383,7 +411,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * #isReachable()}) return {@code false}.
          */
         public boolean isStale() {
-            return !isNew() && (!hasApplicationTraffic() || !isReachable());
+            return pingCommunicationTimeoutMillis != 0 && !isNew() && (!hasApplicationTraffic() || !isReachable());
         }
     }
 }
