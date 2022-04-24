@@ -38,6 +38,8 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
             }
         }
 
+        LOG.info("My RTT table", rtts);
+
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         if (!availableVms.isEmpty()) {
             double minRtt = Double.MAX_VALUE;
