@@ -155,15 +155,15 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         @JsonCreator
         public PeerRtt(@JsonProperty("role") final Role role,
                        @JsonProperty("inetAddress") final InetSocketAddress inetAddress,
-                       @JsonProperty("rtt") final long rtt) {
+                       @JsonProperty("last") final long last) {
             this.role = requireNonNull(role);
             this.inetAddress = requireNonNull(inetAddress);
             this.records = new EvictingQueue<>(RTTS_COUNT);
-            records.add(rtt);
+            records.add(last);
             this.sent = 1;
-            this.last = rtt;
-            this.best = rtt;
-            this.worst = rtt;
+            this.last = last;
+            this.best = last;
+            this.worst = last;
         }
 
         @JsonGetter
@@ -187,7 +187,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return RTT of last ping
          */
-        @JsonIgnore
+        @JsonGetter
         public long last() {
             return last;
         }
