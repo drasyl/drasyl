@@ -295,7 +295,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 userCallFuture = promise;
 
                 // signal user connection closing
-                ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
+                final ConnectionHandshakeClosing evt = HANDSHAKE_CLOSING_EVENT;
+                LOG.trace("{}[{}] Trigger event `{}`.", ctx.channel(), state, evt);
+                ctx.fireUserEventTriggered(evt);
 
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                 sndNxt++;
@@ -357,7 +359,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // start user timeout guard
         applyUserTimeout(ctx, "OPEN", userCallFuture);
 
-        ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
+        final ConnectionHandshakeIssued evt = HANDSHAKE_ISSUED_EVENT;
+        LOG.trace("{}[{}] Trigger event `{}`.", ctx.channel(), state, evt);
+        ctx.fireUserEventTriggered(evt);
     }
 
     /*
@@ -528,7 +532,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
                 ReferenceCountUtil.release(seg);
 
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
+                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(sndNxt, rcvNxt);
+                LOG.trace("{}[{}] Trigger event `{}`.", ctx.channel(), state, evt);
+                ctx.fireUserEventTriggered(evt);
             }
             else {
                 switchToNewState(ctx, SYN_RECEIVED);
@@ -613,7 +619,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         cancelTimeoutGuards();
                         switchToNewState(ctx, ESTABLISHED);
-                        ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
+                        final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted(sndNxt, rcvNxt);
+                        LOG.trace("{}[{}] Trigger event `{}`.", ctx.channel(), state, evt);
+                        ctx.fireUserEventTriggered(evt);
 
                         if (!acceptableAck) {
                             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
@@ -720,7 +728,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case SYN_RECEIVED:
                 case ESTABLISHED:
                     // signal user connection closing
-                    ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
+                    final ConnectionHandshakeClosing evt = HANDSHAKE_CLOSING_EVENT;
+                    LOG.trace("{}[{}] Trigger event `{}`.", ctx.channel(), state, evt);
+                    ctx.fireUserEventTriggered(evt);
 
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
