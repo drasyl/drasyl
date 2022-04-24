@@ -64,6 +64,7 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
                 return FALLBACK.schedule(providers, rttReports, consumer);
             }
             else {
+                LOG.info("Schedule request from Consumer {} to Provider {}. The have a RTT of {}ms", consumer, bestProvider, minRtt);
                 return Pair.of(bestAddress, bestProvider);
             }
         }
