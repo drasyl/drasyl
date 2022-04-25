@@ -133,6 +133,7 @@ class WormholeCommandIT {
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                Map.of(),
                 "",
                 new Payload("Hello World", null),
                 10,
@@ -166,6 +167,7 @@ class WormholeCommandIT {
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                Map.of(),
                 code,
                 10
         ).call());
@@ -201,6 +203,7 @@ class WormholeCommandIT {
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                Map.of(),
                 "",
                 new Payload(null, file),
                 10,
@@ -236,6 +239,7 @@ class WormholeCommandIT {
                     10_000,
                     0,
                     Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                    Map.of(),
                     code,
                     10
             ).call());

@@ -43,7 +43,7 @@ public class BrokerCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, schedulingStrategyType.schedulingStrategy);
+        return new BrokerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, staticRoutes, out, err, exitCode, !protocolArmDisabled, schedulingStrategyType.schedulingStrategy);
     }
 
     @Override

@@ -29,6 +29,7 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.perf.channel.PerfClientChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfClientChildChannelInitializer;
 import org.drasyl.cli.perf.message.SessionRequest;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -98,13 +99,14 @@ public class PerfClientCommand extends ChannelOptions {
                       final int onlineTimeoutMillis,
                       final int networkId,
                       final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                      final Map<DrasylAddress, InetSocketAddress> staticRoutes,
                       final IdentityPublicKey server,
                       final boolean waitForDirectConnection,
                       final boolean reverseMode,
                       final int testDuration,
                       final int messagesPerSecond,
                       final int messageSize) {
-        super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers, staticRoutes);
         this.server = server;
         this.waitForDirectConnection = waitForDirectConnection;
         this.reverseMode = reverseMode;

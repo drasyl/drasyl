@@ -2,6 +2,7 @@ package org.drasyl.jtasklet.provider.channel;
 
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.PeersRttHandler;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.AbstractChannelInitializer;
@@ -27,6 +28,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
                                       final int networkId,
                                       final long onlineTimeoutMillis,
                                       final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                                      final Map<DrasylAddress, InetSocketAddress> staticRoutes,
                                       final PrintStream out,
                                       final PrintStream err,
                                       final Worm<Integer> exitCode,
@@ -34,7 +36,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
                                       final IdentityPublicKey broker,
                                       final long benchmark,
                                       final RuntimeEnvironment runtimeEnvironment) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, err, exitCode);
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, staticRoutes, protocolArmEnabled, err, exitCode);
         this.out = requireNonNull(out);
         this.broker = broker;
         this.benchmark = benchmark;

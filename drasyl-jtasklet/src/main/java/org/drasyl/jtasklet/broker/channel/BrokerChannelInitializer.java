@@ -1,6 +1,7 @@
 package org.drasyl.jtasklet.broker.channel;
 
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.handler.BrokerHandler;
@@ -24,12 +25,13 @@ public class BrokerChannelInitializer extends AbstractChannelInitializer {
                                     final int networkId,
                                     final long onlineTimeoutMillis,
                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                                    final Map<DrasylAddress, InetSocketAddress> staticRoutes,
                                     final PrintStream out,
                                     final PrintStream err,
                                     final Worm<Integer> exitCode,
                                     final boolean protocolArmEnabled,
                                     final SchedulingStrategy schedulingStrategy) {
-        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, err, exitCode);
+        super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, staticRoutes, protocolArmEnabled, err, exitCode);
         this.out = requireNonNull(out);
         this.schedulingStrategy = requireNonNull(schedulingStrategy);
     }

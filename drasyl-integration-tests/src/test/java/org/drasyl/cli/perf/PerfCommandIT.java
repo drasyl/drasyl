@@ -130,7 +130,8 @@ class PerfCommandIT {
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
                 0,
-                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort()))
+                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                Map.of()
         ).call());
         serverThread.start();
 
@@ -161,6 +162,7 @@ class PerfCommandIT {
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                Map.of(),
                 serverAddress,
                 true,
                 false,

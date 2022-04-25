@@ -73,7 +73,7 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ProviderChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, broker, benchmark, runtimeEnvironment);
+        return new ProviderChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, staticRoutes, out, err, exitCode, !protocolArmDisabled, broker, benchmark, runtimeEnvironment);
     }
 
     @Override

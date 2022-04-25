@@ -63,6 +63,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected final int networkId;
     protected final long onlineTimeoutMillis;
     private final Map<IdentityPublicKey, InetSocketAddress> superPeers;
+    private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
     protected final boolean protocolArmEnabled;
     protected final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -73,6 +74,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
                                          final int networkId,
                                          final long onlineTimeoutMillis,
                                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                                         final Map<DrasylAddress, InetSocketAddress> staticRoutes,
                                          final boolean protocolArmEnabled,
                                          final PrintStream err,
                                          final Worm<Integer> exitCode) {
@@ -81,6 +83,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         this.networkId = networkId;
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
         this.superPeers = requireNonNull(superPeers);
+        this.staticRoutes = requireNonNull(staticRoutes);
         this.protocolArmEnabled = protocolArmEnabled;
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -131,11 +134,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
                 Duration.ofMinutes(1),
                 Path.of("")
         ));
-        ch.pipeline().addLast(new StaticRoutesHandler(Map.of(
-                IdentityPublicKey.of("fc2d61a3c2f31553d6bc181f422ec51037282dd562dd88bb48fca39ac14aed71"), InetSocketAddress.createUnresolved("localhost", 20000), // broker
-                IdentityPublicKey.of("433d6fbf56bac02302a04d18d9f8dc3739ee0c249c57d99b43941d7c6849209f"), InetSocketAddress.createUnresolved("localhost", 21001), // vm
-                IdentityPublicKey.of("6eef89030f8cbb1482a3f6c6b92071b1b690f55d41b98d0f2ebf638de2b15c56"), InetSocketAddress.createUnresolved("localhost", 22001) // consumer
-        )));
+        ch.pipeline().addLast(new StaticRoutesHandler(staticRoutes));
         ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
