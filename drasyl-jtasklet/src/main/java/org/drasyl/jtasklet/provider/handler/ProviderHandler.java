@@ -234,6 +234,8 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("[{}] Send result {} back to Consumer {}.", state, response, sender);
                     consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
+                            taskRecord.returnedResult();
+
                             // inform broker
                             final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
                             brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);

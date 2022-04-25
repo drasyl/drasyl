@@ -22,6 +22,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
     private Object[] output;
     private long executionTime;
     private Instant executedTime;
+    private Instant returnedResult;
 
     public ProviderLoggableRecord(final DrasylAddress provider,
                                   final DrasylAddress broker,
@@ -55,6 +56,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 ", output=" + Arrays.toString(output) +
                 ", executionTime=" + executionTime +
                 ", executedTime=" + executedTime +
+                ", returnedResult=" + returnedResult +
                 '}';
     }
 
@@ -66,6 +68,10 @@ public class ProviderLoggableRecord implements LoggableRecord {
         this.output = output;
         this.executionTime = executionTime;
         executedTime = Instant.now();
+    }
+
+    public void returnedResult() {
+        returnedResult = Instant.now();
     }
 
     @Override
@@ -87,7 +93,10 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 "output",
                 "executionTime",
                 "executedTime",
-                "executedTimeDelta"
+                "executedTimeDelta",
+                // return result
+                "returnedResult",
+                "returnedResultDelta"
         };
     }
 
@@ -110,7 +119,9 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 output != null ? Arrays.toString(output) : "",
                 executionTime,
                 executedTime != null ? executedTime.toEpochMilli() : -1,
-                executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1
+                executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1,
+                returnedResult != null ? returnedResult.toEpochMilli() : -1,
+                returnedResult != null ? Duration.between(offloadTaskTime, returnedResult).toMillis() : -1
         };
     }
 }
