@@ -28,6 +28,7 @@ import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
@@ -42,6 +43,8 @@ import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -119,6 +122,13 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
         ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
         ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, superPeers, 0, 0));
+        ch.pipeline().addLast(new LocalHostDiscovery(
+                networkId,
+                true,
+                bindAddress.getAddress(),
+                Duration.ofMinutes(1),
+                Path.of("")
+        ));
         ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
     }
 
