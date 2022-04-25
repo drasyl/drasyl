@@ -29,7 +29,6 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChildChannelInitializer;
 import org.drasyl.cli.wormhole.WormholeCodeConverter;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
@@ -79,7 +78,7 @@ public class TunnelConsumeCommand extends ChannelOptions {
                          final int onlineTimeoutMillis,
                          final int networkId,
                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                         final Map<DrasylAddress, InetSocketAddress> staticRoutes,
+                         final Map<IdentityPublicKey, InetSocketAddress> staticRoutes,
                          final Pair<IdentityPublicKey, String> code,
                          final int port) {
         super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers, staticRoutes);

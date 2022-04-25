@@ -28,7 +28,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.perf.channel.PerfServerChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -59,7 +58,7 @@ public class PerfServerCommand extends ChannelOptions {
                       final int onlineTimeoutMillis,
                       final int networkId,
                       final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                      final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
+                      final Map<IdentityPublicKey, InetSocketAddress> staticRoutes) {
         super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers, staticRoutes);
     }
 

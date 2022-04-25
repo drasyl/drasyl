@@ -27,7 +27,6 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -482,7 +481,8 @@ public abstract class DrasylConfig {
 
             return constructor.newInstance(pluginConfig);
         }
-        catch (final ClassNotFoundException | NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        catch (final ClassNotFoundException | NoSuchMethodException | InstantiationException |
+                     InvocationTargetException | IllegalAccessException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -516,7 +516,8 @@ public abstract class DrasylConfig {
 
             return constructor.newInstance();
         }
-        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException | NoSuchMethodException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -565,10 +566,10 @@ public abstract class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
-    public static Map<DrasylAddress, InetSocketAddress> getStaticRoutes(final Config config,
-                                                                        final String path) {
+    public static Map<IdentityPublicKey, InetSocketAddress> getStaticRoutes(final Config config,
+                                                                            final String path) {
         try {
-            final Map<DrasylAddress, InetSocketAddress> routes = new HashMap<>();
+            final Map<IdentityPublicKey, InetSocketAddress> routes = new HashMap<>();
             for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
                 final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
@@ -621,8 +622,8 @@ public abstract class DrasylConfig {
 
     /**
      * Creates a new builder to build a custom {@link DrasylConfig}. The built configuration is
-     * derived from the default configuration. The builder must be finalized by calling {@link
-     * Builder#build()} to create the resulting {@link DrasylConfig}.
+     * derived from the default configuration. The builder must be finalized by calling
+     * {@link Builder#build()} to create the resulting {@link DrasylConfig}.
      *
      * @return the new builder
      */
@@ -646,15 +647,15 @@ public abstract class DrasylConfig {
     public abstract IdentitySecretKey getIdentitySecretKey();
 
     /**
-     * @return the identity specified in {@link #getIdentityPublicKey()}, {@link
-     * #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if some of
-     * these properties are not present.
+     * @return the identity specified in {@link #getIdentityPublicKey()},
+     * {@link #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if
+     * some of these properties are not present.
      * @throws IllegalStateException if the key pair returned by {@link #getIdentityPublicKey()} and
      *                               {@link #getIdentitySecretKey()} is not {@code null} and can not
-     *                               be converted to a key agreement key pair OR the {@link
-     *                               #getIdentityProofOfWork()} does not match to the identity key
-     *                               pair/required difficulty specified in {@link
-     *                               Identity#POW_DIFFICULTY}.
+     *                               be converted to a key agreement key pair OR the
+     *                               {@link #getIdentityProofOfWork()} does not match to the
+     *                               identity key pair/required difficulty specified in
+     *                               {@link Identity#POW_DIFFICULTY}.
      */
     public Identity getIdentity() {
         if (getIdentityProofOfWork() != null && getIdentityPublicKey() != null && getIdentitySecretKey() != null) {
@@ -708,7 +709,7 @@ public abstract class DrasylConfig {
 
     public abstract Set<PeerEndpoint> getRemoteSuperPeerEndpoints();
 
-    public abstract Map<DrasylAddress, InetSocketAddress> getRemoteStaticRoutes();
+    public abstract Map<IdentityPublicKey, InetSocketAddress> getRemoteStaticRoutes();
 
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
@@ -776,8 +777,9 @@ public abstract class DrasylConfig {
         public abstract Builder identitySecretKey(final IdentitySecretKey identitySecretKey);
 
         /**
-         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)}, {@link
-         * #identityProofOfWork(ProofOfWork)}, and {@link #identitySecretKey(IdentitySecretKey)}.
+         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)},
+         * {@link #identityProofOfWork(ProofOfWork)}, and
+         * {@link #identitySecretKey(IdentitySecretKey)}.
          */
         public Builder identity(final Identity identity) {
             return identityPublicKey(identity.getIdentityPublicKey()).identityProofOfWork(identity.getProofOfWork()).identitySecretKey(identity.getIdentitySecretKey());
@@ -811,7 +813,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
-        public abstract Builder remoteStaticRoutes(final Map<DrasylAddress, InetSocketAddress> remoteStaticRoutes);
+        public abstract Builder remoteStaticRoutes(final Map<IdentityPublicKey, InetSocketAddress> remoteStaticRoutes);
 
         public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
 

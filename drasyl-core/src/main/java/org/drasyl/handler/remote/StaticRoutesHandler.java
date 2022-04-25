@@ -29,6 +29,7 @@ import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -43,9 +44,9 @@ import static java.util.Objects.requireNonNull;
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
-    private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
+    private final Map<IdentityPublicKey, InetSocketAddress> staticRoutes;
 
-    public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
+    public StaticRoutesHandler(final Map<IdentityPublicKey, InetSocketAddress> staticRoutes) {
         this.staticRoutes = requireNonNull(staticRoutes);
     }
 

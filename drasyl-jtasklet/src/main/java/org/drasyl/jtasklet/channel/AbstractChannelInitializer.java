@@ -37,7 +37,6 @@ import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.handler.PathEventsFilter;
@@ -63,7 +62,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
     protected final int networkId;
     protected final long onlineTimeoutMillis;
     private final Map<IdentityPublicKey, InetSocketAddress> superPeers;
-    private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
+    private final Map<IdentityPublicKey, InetSocketAddress> staticRoutes;
     protected final boolean protocolArmEnabled;
     protected final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -74,7 +73,7 @@ public abstract class AbstractChannelInitializer extends ChannelInitializer<Dras
                                          final int networkId,
                                          final long onlineTimeoutMillis,
                                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                         final Map<DrasylAddress, InetSocketAddress> staticRoutes,
+                                         final Map<IdentityPublicKey, InetSocketAddress> staticRoutes,
                                          final boolean protocolArmEnabled,
                                          final PrintStream err,
                                          final Worm<Integer> exitCode) {

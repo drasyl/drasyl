@@ -28,7 +28,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChildChannelInitializer;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Pair;
@@ -77,7 +76,7 @@ public class WormholeReceiveCommand extends ChannelOptions {
                            final int onlineTimeoutMillis,
                            final int networkId,
                            final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                           final Map<DrasylAddress, InetSocketAddress> staticRoutes,
+                           final Map<IdentityPublicKey, InetSocketAddress> staticRoutes,
                            final Pair<IdentityPublicKey, String> code,
                            final long ackInterval) {
         super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers, staticRoutes);

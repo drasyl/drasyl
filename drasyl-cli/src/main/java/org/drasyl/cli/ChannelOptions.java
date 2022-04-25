@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -98,7 +97,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             defaultValue = "c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=localhost:22527,5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c=localhost:22528",
             split = ","
     )
-    protected Map<DrasylAddress, InetSocketAddress> staticRoutes;
+    protected Map<IdentityPublicKey, InetSocketAddress> staticRoutes;
 
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,
@@ -111,7 +110,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                              final int onlineTimeoutMillis,
                              final int networkId,
                              final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                             final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
+                             final Map<IdentityPublicKey, InetSocketAddress> staticRoutes) {
         super(logLevel);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);

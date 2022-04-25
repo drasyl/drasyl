@@ -29,7 +29,6 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -74,7 +73,7 @@ public class TunnelExposeCommand extends ChannelOptions {
                         final int onlineTimeoutMillis,
                         final int networkId,
                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                        final Map<DrasylAddress, InetSocketAddress> staticRoutes,
+                        final Map<IdentityPublicKey, InetSocketAddress> staticRoutes,
                         final String password,
                         final Service service) {
         super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers, staticRoutes);
