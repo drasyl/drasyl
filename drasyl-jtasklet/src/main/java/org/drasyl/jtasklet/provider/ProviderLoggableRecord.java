@@ -74,12 +74,14 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 "provider",
                 "broker",
                 "benchmark",
+                // offload task
                 "consumer",
                 "token",
                 "source",
                 "input",
                 "offloadTaskTime",
                 "offloadTaskTimeDelta",
+                // execute task
                 "executingTime",
                 "executingTimeDelta",
                 "output",
@@ -95,12 +97,14 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 provider,
                 broker,
                 benchmark,
+                // offload task
                 consumer,
                 token,
                 minifySource(source),
                 Arrays.toString(input),
-                offloadTaskTime,
+                offloadTaskTime.toEpochMilli(),
                 0,
+                // execute task
                 executingTime != null ? executingTime.toEpochMilli() : -1,
                 executingTime != null ? Duration.between(offloadTaskTime, executingTime).toMillis() : -1,
                 output != null ? Arrays.toString(output) : "",

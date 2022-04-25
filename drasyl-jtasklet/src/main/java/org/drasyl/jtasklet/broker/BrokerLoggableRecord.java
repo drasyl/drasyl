@@ -2,78 +2,69 @@ package org.drasyl.jtasklet.broker;
 
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.jtasklet.LoggableRecord;
-import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
+
+import java.time.Duration;
+import java.time.Instant;
 
 import static java.util.Objects.requireNonNull;
 
 public class BrokerLoggableRecord implements LoggableRecord {
-    private final DrasylAddress provider;
-    private final long benchmark;
-    private int succeededTasks;
-    private int failedTasks;
-    private float errorRate;
-    private ProviderState state;
-    private long timeSinceLastStateChange;
-    private DrasylAddress assignedTo;
+    private final DrasylAddress consumer;
+    private final Instant resourceRequestTime;
+    private DrasylAddress provider;
+    private long benchmark;
+    private String token;
+    private Instant assignResourceTime;
+    private Instant resourceRespondedTime;
 
-    public BrokerLoggableRecord(final DrasylAddress provider, final long benchmark) {
-        this.provider = requireNonNull(provider);
+    public BrokerLoggableRecord(final DrasylAddress consumer) {
+        this.consumer = requireNonNull(consumer);
+        this.resourceRequestTime = Instant.now();
+    }
+
+    public void assignResource(final DrasylAddress provider, final long benchmark, final String token) {
+        this.provider = provider;
         this.benchmark = benchmark;
+        this.token = token;
+        this.assignResourceTime = Instant.now();
     }
 
-    @Override
-    public String toString() {
-        return "BrokerLoggableRecord{" +
-                "provider=" + provider +
-                ", benchmark=" + benchmark +
-                ", succeededTasks=" + succeededTasks +
-                ", failedTasks=" + failedTasks +
-                ", errorRate=" + errorRate +
-                ", state=" + state +
-                ", timeSinceLastStateChange=" + timeSinceLastStateChange +
-                ", assignedTo=" + assignedTo +
-                '}';
-    }
-
-    public void unregister(final int succeededTasks,
-                           final int failedTasks,
-                           final float errorRate,
-                           final ProviderState state,
-                           final long timeSinceLastStateChange,
-                           final DrasylAddress assignedTo) {
-        this.succeededTasks = succeededTasks;
-        this.failedTasks = failedTasks;
-        this.errorRate = errorRate;
-        this.state = state;
-        this.timeSinceLastStateChange = timeSinceLastStateChange;
-        this.assignedTo = assignedTo;
+    public void resourceResponded() {
+        this.resourceRespondedTime = Instant.now();
     }
 
     @Override
     public String[] logTitles() {
         return new String[] {
+                "consumer",
+                "resourceRequestTime",
+                "resourceRequestTimeDelta",
                 "provider",
                 "benchmark",
-                "succeededTasks",
-                "failedTasks",
-                "errorRate",
-                "state",
-                "timeSinceLastStateChange",
-                "assignedTo"
+                "token",
+                "assignResourceTime",
+                "assignResourceTimeDelta",
+                "resourceRespondedTime",
+                "resourceRespondedTimeDelta"
         };
     }
 
     @Override
     public Object[] logValues() {
         return new Object[] {
+            // resource request
+            consumer,
+            resourceRequestTime.toEpochMilli(),
+            0,
+            // assign resource
             provider,
             benchmark,
-            succeededTasks,
-            failedTasks,
-            errorRate,
-            state,
-            timeSinceLastStateChange,
-            assignedTo
+            token,
+            assignResourceTime != null ? assignResourceTime.toEpochMilli() : -1,
+            assignResourceTime != null ? Duration.between(resourceRequestTime, assignResourceTime).toMillis() : -1,
+            // resource responded
+            resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
+            resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
         };
     }
 }

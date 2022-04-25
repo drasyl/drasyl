@@ -46,7 +46,7 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     }
 
     @Override
-    protected void initChannel(DrasylChannel ch) {
+    protected void initChannel(final DrasylChannel ch) {
         // handshake
         ch.pipeline().addLast(
                 new ConnectionHandshakeCodec(),
@@ -54,8 +54,8 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
 //                new ConnectionHandshakeStatusHandler(out, err),
                 new ChannelInboundHandlerAdapter() {
                     @Override
-                    public void userEventTriggered(ChannelHandlerContext ctx,
-                                                   Object evt) {
+                    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                   final Object evt) {
                         if (evt instanceof ConnectionHandshakeCompleted) {
                             ChildChannelInitializer.this.arqStage(ch);
                             ChildChannelInitializer.this.chunkingStage(ch);
@@ -78,7 +78,7 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
         ch.pipeline().addLast(new ConnectionEventHandler());
     }
 
-    protected void handshakeCompletedStage(DrasylChannel ch) {
+    protected void handshakeCompletedStage(final DrasylChannel ch) {
         ch.parent().pipeline().fireUserEventTriggered(new ConnectionEstablished(ch));
         ch.pipeline().addLast(new PassInboundMessagesToParentHandler());
     }

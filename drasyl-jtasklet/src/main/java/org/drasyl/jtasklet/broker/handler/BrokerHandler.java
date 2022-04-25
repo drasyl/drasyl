@@ -60,10 +60,10 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final Map<DrasylAddress, ResourceProvider> providers = new HashMap<>();
     private final Map<DrasylAddress, Channel> providerChannels = new HashMap<>();
-    private final Map<DrasylAddress, BrokerLoggableRecord> loggableRecords = new HashMap<>();
     private final SchedulingStrategy schedulingStrategy;
     private final CsvLogger logger;
     private final Map<DrasylAddress, PeersRttReport> rttReports = new HashMap<>();
+    private BrokerLoggableRecord loggableRecord;
 
     public BrokerHandler(final PrintStream out,
                          final PrintStream err,
@@ -86,9 +86,6 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             providers.forEach((address, provider) -> {
                 if (provider.state() != ProviderState.READY && provider.timeSinceLastStateChange() >= STUCK_PROVIDER_TIMEOUT) {
                     stuckProviders.add(address);
-                    final BrokerLoggableRecord loggableRecord = loggableRecords.remove(address);
-                    loggableRecord.unregister(provider.succeededTasks(), provider.failedTasks(), provider.errorRate(), provider.state(), provider.timeSinceLastStateChange(), provider.assignedTo());
-                    logger.log(loggableRecord);
                 }
             });
             if (!stuckProviders.isEmpty()) {
@@ -135,11 +132,8 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         if (evt instanceof ConnectionClosed && providers.containsKey(sender)) {
             LOG.info("Unregister Provider {} as connection has been closed.", sender);
-            final ResourceProvider provider = providers.remove(sender);
+            providers.remove(sender);
             providerChannels.remove(sender);
-            final BrokerLoggableRecord loggableRecord = loggableRecords.remove(sender);
-            loggableRecord.unregister(provider.succeededTasks(), provider.failedTasks(), provider.errorRate(), provider.state(), provider.timeSinceLastStateChange(), provider.assignedTo());
-            logger.log(loggableRecord);
             printResourceProviders();
         }
     }
@@ -153,13 +147,11 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
             providers.put(sender, provider);
             providerChannels.put(sender, channel);
-            final BrokerLoggableRecord loggableRecord = new BrokerLoggableRecord(sender, ((RegisterProvider) msg).getBenchmark());
-            loggableRecords.put(sender, loggableRecord);
-            logger.log(loggableRecord);
             printResourceProviders();
         }
         else if (state == ONLINE && msg instanceof ResourceRequest) {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
+            loggableRecord = new BrokerLoggableRecord(sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
             final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender);
@@ -171,12 +163,14 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 printResourceProviders();
             }
             LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
+            loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token);
 
             final ResourceResponse response = new ResourceResponse(publicKey, token);
             LOG.info("Send Consumer {} the resource response {}.", sender, response);
             channel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
                     LOG.info("Response at Consumer {} arrived!", sender);
+                    loggableRecord.resourceResponded();
                 }
                 else {
                     LOG.info("Failed to sent response to Consumer {}.", sender, future.cause());
@@ -188,6 +182,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                         vm.providerReset(token);
                     }
                 }
+                logger.log(loggableRecord);
             });
         }
         else if (state == ONLINE && msg instanceof TaskOffloaded) {

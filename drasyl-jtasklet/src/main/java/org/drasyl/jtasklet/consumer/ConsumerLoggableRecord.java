@@ -102,7 +102,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 "output",
                 "executionTime",
                 "resultReturnedTime",
-                "offloadedTaskTimeDelta"
+                "resultReturnedTimeDelta"
         };
     }
 
@@ -113,18 +113,22 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 broker,
                 minifySource(source),
                 Arrays.toString(input),
+                // resource request
                 resourceRequestTime != null ? resourceRequestTime.toEpochMilli() : -1,
                 0,
                 resourceRequestedTime != null ? resourceRequestedTime.toEpochMilli() : -1,
                 resourceRequestedTime != null ? Duration.between(resourceRequestTime, resourceRequestedTime).toMillis() : -1,
+                // resource responded
                 provider,
                 token,
                 resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
                 resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
+                // offload task
                 offloadTaskTime != null ? offloadTaskTime.toEpochMilli() : -1,
                 offloadTaskTime != null ? Duration.between(resourceRequestTime, offloadTaskTime).toMillis() : -1,
                 offloadedTaskTime != null ? offloadedTaskTime.toEpochMilli() : -1,
                 offloadedTaskTime != null ? Duration.between(resourceRequestTime, offloadedTaskTime).toMillis() : -1,
+                // return result
                 output != null ? Arrays.toString(output) : "",
                 executionTime,
                 resultReturnedTime != null ? resultReturnedTime.toEpochMilli() : -1,

@@ -38,6 +38,7 @@ public class CsvLogger {
                 }
                 writer.append('\n');
             }
+            writer.flush();
 
             // row
             escapedWrite(writer, PID);
