@@ -37,8 +37,11 @@
 
 <!--        <logger name="org.drasyl.jtasklet" level="debug"></logger>-->
 
-<!--            <logger name="org.drasyl.handler.connection" level="trace">-->
-<!--            </logger>-->
+    <!--            <logger name="org.drasyl.handler.connection" level="trace">-->
+    <!--            </logger>-->
+
+                <logger name="org.drasyl.handler.remote.LocalHostDiscovery" level="trace">
+                </logger>
 
     <!--    <logger name="org.drasyl.handler.stream" level="trace">-->
     <!--    </logger>-->
