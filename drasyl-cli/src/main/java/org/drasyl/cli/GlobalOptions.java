@@ -69,10 +69,6 @@ public abstract class GlobalOptions {
 //        if (logger2 instanceof Slf4JLogger && ((Slf4JLogger) logger2).delegate() instanceof ch.qos.logback.classic.Logger) {
 //            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger2).delegate()).setLevel(Level.TRACE);
 //        }
-        final Logger logger3 = LoggerFactory.getLogger("org.drasyl.handler.remote.LocalHostDiscovery");
-        if (logger3 instanceof Slf4JLogger && ((Slf4JLogger) logger3).delegate() instanceof ch.qos.logback.classic.Logger) {
-            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger3).delegate()).setLevel(Level.TRACE);
-        }
     }
 
     protected abstract Logger log();
