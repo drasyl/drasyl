@@ -217,7 +217,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             final FileSystem fileSystem = discoveryPath.getFileSystem();
             watchService = fileSystem.newWatchService();
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
-            LOG.error("Watch service for directory `{}` registered", directory);
+            LOG.error("Watch service for directory `{}` registered.", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
             // directory has been changed
             watchDisposable = ctx.executor().scheduleWithFixedDelay(() -> {
@@ -278,7 +278,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings("java:S134")
     synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath();
-        LOG.error("Scan directory {} for new peers.", discoveryPath);
+        LOG.error("Scan directory `{}` for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.channel().localAddress().toString();
         final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
