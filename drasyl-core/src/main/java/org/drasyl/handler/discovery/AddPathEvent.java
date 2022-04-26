@@ -37,6 +37,11 @@ public abstract class AddPathEvent implements PathEvent {
     @Nullable
     public abstract InetSocketAddress getInetAddress();
 
+    /**
+     * Returns the round-trip time (RTT) to the peer. If RTT is unknown, {@code -1} is returned.
+     *
+     * @return round-trip time (RTT) to the peer. If RTT is unknown, {@code -1} is returned.
+     */
     public abstract long getRtt();
 
     @Override
