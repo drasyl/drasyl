@@ -139,7 +139,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             final InetSocketAddress localAddress = routes.get(recipient);
             if (localAddress != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
+                LOG.error("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
             }
             else {
@@ -154,7 +154,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
     private void startDiscovery(final ChannelHandlerContext ctx,
                                 final int port) {
-        LOG.debug("Start Local Host Discovery...");
+        LOG.error("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath();
         final File directory = discoveryPath.toFile();
 
@@ -171,11 +171,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             ctx.executor().execute(() -> scan(ctx));
             keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX), port);
         }
-        LOG.debug("Local Host Discovery started.");
+        LOG.error("Local Host Discovery started.");
     }
 
     private void stopDiscovery(final ChannelHandlerContext ctx) {
-        LOG.debug("Stop Local Host Discovery...");
+        LOG.error("Stop Local Host Discovery...");
 
         if (watchDisposable != null) {
             watchDisposable.cancel(false);
@@ -198,13 +198,13 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             Files.deleteIfExists(filePath);
         }
         catch (final IOException e) {
-            LOG.debug("Unable to delete `{}`", filePath, e);
+            LOG.error("Unable to delete `{}`", filePath, e);
         }
 
         routes.keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath)));
         routes.clear();
 
-        LOG.debug("Local Host Discovery stopped.");
+        LOG.error("Local Host Discovery stopped.");
     }
 
     /**
@@ -217,7 +217,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             final FileSystem fileSystem = discoveryPath.getFileSystem();
             watchService = fileSystem.newWatchService();
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
-            LOG.debug("Watch service for directory `{}` registered", directory);
+            LOG.error("Watch service for directory `{}` registered", directory);
             final long pollInterval = WATCH_SERVICE_POLL_INTERVAL.toMillis();
             // directory has been changed
             watchDisposable = ctx.executor().scheduleWithFixedDelay(() -> {
@@ -228,7 +228,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }, randomLong(pollInterval), pollInterval, MILLISECONDS);
         }
         catch (final IOException e) {
-            LOG.debug("Unable to register watch service. Use polling as fallback: ", e);
+            LOG.error("Unable to register watch service. Use polling as fallback: ", e);
 
             // use polling as fallback
             watchService = null;
@@ -278,7 +278,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings("java:S134")
     synchronized void scan(final ChannelHandlerContext ctx) {
         final Path discoveryPath = discoveryPath();
-        LOG.debug("Scan directory {} for new peers.", discoveryPath);
+        LOG.error("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.channel().localAddress().toString();
         final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
         final File[] files = discoveryPath.toFile().listFiles();
@@ -291,7 +291,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                         final IdentityPublicKey publicKey = IdentityPublicKey.of(fileName.replace(FILE_SUFFIX, ""));
                         final Set<InetSocketAddress> addresses = fileReader.apply(file);
                         if (!addresses.isEmpty()) {
-                            LOG.trace("Addresses `{}` for peer `{}` discovered by file `{}`", addresses, publicKey, fileName);
+                            LOG.error("Addresses `{}` for peer `{}` discovered by file `{}`", addresses, publicKey, fileName);
                             final InetSocketAddress firstAddress = SetUtil.firstElement(addresses);
                             newRoutes.put(publicKey, firstAddress);
                         }
@@ -314,7 +314,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             final IdentityPublicKey publicKey = i.next();
 
             if (!newRoutes.containsKey(publicKey)) {
-                LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
+                LOG.error("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath));
                 i.remove();
             }
@@ -335,7 +335,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings("java:S2308")
     private void postInformation(final Path filePath,
                                  final Set<InetSocketAddress> addresses) {
-        LOG.trace("Post own addresses `{}` to file `{}`", addresses, filePath);
+        LOG.error("Post own addresses `{}` to file `{}`", addresses, filePath);
         final File file = filePath.toFile();
         try {
             if (!file.setLastModified(System.currentTimeMillis())) {
