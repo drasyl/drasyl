@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +78,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
         when(uniteMsg.getSender()).thenReturn(superPeerPublicKey);
-        when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
+        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
@@ -89,7 +90,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         final InetAddressedMessage<HelloMessage> helloMsg = channel.readOutbound();
         assertThat(helloMsg.content(), instanceOf(HelloMessage.class));
-        assertSame(uniteMsg.getSocketAddress(), helloMsg.recipient());
+        assertSame(otherPeerInetAddress, helloMsg.recipient());
         assertTrue(traversingPeers.containsKey(uniteMsg.getAddress()));
     }
 
@@ -100,7 +101,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                 @Mock final InetSocketAddress otherPeerInetAddress,
                                                 @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
-        when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
+        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);

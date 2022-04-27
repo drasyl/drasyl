@@ -46,6 +46,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
@@ -164,16 +165,21 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
         final DrasylAddress address = msg.getAddress();
-        final InetSocketAddress inetAddress = msg.getSocketAddress();
-        LOG.trace("Got Unite for peer `{}` with address `{}`. Try to reach peer.", address, inetAddress);
+        final Set<InetSocketAddress> inetAddresses = msg.getInetAddresses();
+        LOG.trace("Got Unite for peer `{}` with addresses `{}`. Try to reach peer.", address, inetAddresses);
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
-            // send Discovery
-            final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress));
-            traversingPeer.applicationTrafficSentOrReceived();
-            traversingPeer.helloSent();
-            writeHelloMessage(ctx, address, traversingPeer.inetAddress(), false);
+            // send Hello
+            for (final InetSocketAddress inetAddress : inetAddresses) {
+                final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress));
+                traversingPeer.applicationTrafficSentOrReceived();
+                traversingPeer.helloSent();
+                writeHelloMessage(ctx, address, traversingPeer.inetAddress(), false);
+            }
             ctx.flush();
+        }
+        else {
+            LOG.trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, inetAddresses, inetAddresses);
         }
     }
 
@@ -226,7 +232,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         LOG.trace("Got Acknowledgement ({}ms RTT) from traversing peer `{}`.", () -> rtt, () -> publicKey);
 
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
-        traversingPeer.acknowledgementReceived(inetAddress);
+        traversingPeer.acknowledgementReceived(inetAddress); // FIXME: check RTT/duplicates
 
         final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH, rtt);
         if (pathEventFilter.add(event)) {
@@ -236,6 +242,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
         }
     }
+
+    /*
+     * Pinging
+     */
 
     @Override
     void doHeartbeat(final ChannelHandlerContext ctx) {

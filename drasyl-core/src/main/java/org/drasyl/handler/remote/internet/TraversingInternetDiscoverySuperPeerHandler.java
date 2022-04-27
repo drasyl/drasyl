@@ -79,7 +79,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                        final long uniteMinIntervalMillis) {
         super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
-            uniteAttemptsCache = new ExpiringSet(1_000, uniteMinIntervalMillis);
+            uniteAttemptsCache = new ExpiringSet<>(1_000, uniteMinIntervalMillis);
         }
         else {
             uniteAttemptsCache = null;
@@ -129,7 +129,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             final InetSocketAddress recipientAddress = recipient.inetAddress();
 
             // send recipient's information to sender
-            final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, recipientAddress);
+            final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, Set.of(recipientAddress));
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> senderAddress);
             ctx.write(new InetAddressedMessage<>(senderUnite, senderAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
@@ -138,7 +138,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             });
 
             // send sender's information to recipient
-            final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, senderAddress);
+            final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, Set.of(recipientAddress));
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> recipientAddress);
             ctx.write(new InetAddressedMessage<>(recipientUnite, recipientAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
