@@ -264,7 +264,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ch.pipeline().addLast(new LocalHostDiscovery(
                         config.getNetworkId(),
                         config.isRemoteLocalHostDiscoveryWatchEnabled(),
-                        config.getRemoteBindHost(),
                         config.getRemoteLocalHostDiscoveryLeaseTime(),
                         config.getRemoteLocalHostDiscoveryPath()
                 ));
@@ -358,7 +357,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx,
                                     final Throwable e) {
-            if (e instanceof UdpServer.BindFailedException || e instanceof TcpServer.BindFailedException) {
+            if (e instanceof UdpServer.UdpServerBindFailedException || e instanceof TcpServer.TcpServerBindFailedException) {
                 LOG.warn("drasyl node faced unrecoverable error and must shut down:", e);
                 userEventTriggered(ctx, NodeUnrecoverableErrorEvent.of(Node.of(node.identity()), e));
                 ctx.close();

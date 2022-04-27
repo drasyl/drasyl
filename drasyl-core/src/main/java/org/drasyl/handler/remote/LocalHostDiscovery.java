@@ -80,7 +80,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
     private final Map<IdentityPublicKey, InetSocketAddress> routes;
     private final boolean watchEnabled;
-    private final InetAddress bindHost;
     private final Duration leaseTime;
     private final Path path;
     private final int networkId;
@@ -90,7 +89,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
     public LocalHostDiscovery(final int networkId,
                               final boolean watchEnabled,
-                              final InetAddress bindHost,
                               final Duration leaseTime,
                               final Path path) {
         this(
@@ -98,7 +96,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
                 new HashMap<>(),
                 watchEnabled,
-                bindHost,
                 leaseTime,
                 path,
                 networkId, null,
@@ -111,7 +108,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                        final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
                        final Map<IdentityPublicKey, InetSocketAddress> routes,
                        final boolean watchEnabled,
-                       final InetAddress bindHost,
                        final Duration leaseTime,
                        final Path path,
                        final int networkId,
@@ -121,7 +117,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this.fileWriter = requireNonNull(fileWriter);
         this.routes = requireNonNull(routes);
         this.watchEnabled = watchEnabled;
-        this.bindHost = bindHost;
         this.leaseTime = leaseTime;
         this.path = path;
         this.networkId = networkId;
@@ -153,7 +148,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     }
 
     private void startDiscovery(final ChannelHandlerContext ctx,
-                                final int port) {
+                                final InetSocketAddress bindAddress) {
         LOG.debug("Start Local Host Discovery...");
         final Path discoveryPath = discoveryPath();
         final File directory = discoveryPath.toFile();
@@ -169,7 +164,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 tryWatchDirectory(ctx, discoveryPath);
             }
             ctx.executor().execute(() -> scan(ctx));
-            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX), port);
+            keepOwnInformationUpToDate(ctx, discoveryPath.resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX), bindAddress);
         }
         LOG.debug("Local Host Discovery started.");
     }
@@ -240,18 +235,18 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
      */
     private void keepOwnInformationUpToDate(final ChannelHandlerContext ctx,
                                             final Path filePath,
-                                            final int port) {
+                                            final InetSocketAddress bindAddress) {
         // get own address(es)
         final Set<InetAddress> addresses;
-        if (bindHost.isAnyLocalAddress()) {
+        if (bindAddress.getAddress().isAnyLocalAddress()) {
             // use all available addresses
             addresses = NetworkUtil.getAddresses();
         }
         else {
             // use given host
-            addresses = Set.of(bindHost);
+            addresses = Set.of(bindAddress.getAddress());
         }
-        final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, port)).collect(Collectors.toSet());
+        final Set<InetSocketAddress> socketAddresses = addresses.stream().map(a -> new InetSocketAddress(a, bindAddress.getPort())).collect(Collectors.toSet());
 
         final Duration refreshInterval;
         if (leaseTime.compareTo(REFRESH_INTERVAL_SAFETY_MARGIN) > 0) {
@@ -358,8 +353,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof UdpServer.Port) {
-            startDiscovery(ctx, ((UdpServer.Port) evt).getPort());
+        if (evt instanceof UdpServer.UdpServerBound) {
+            startDiscovery(ctx, ((UdpServer.UdpServerBound) evt).getBindAddress());
         }
 
         ctx.fireUserEventTriggered(evt);
