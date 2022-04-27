@@ -71,8 +71,8 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
                                                                             @Mock final InetSocketAddress inetAddress) {
         final InetSocketAddress childrenAInetAddress = new InetSocketAddress(22527);
         final InetSocketAddress childrenBInetAddress = new InetSocketAddress(22528);
-        when(childrenPeerA.inetAddress()).thenReturn(childrenAInetAddress);
-        when(childrenPeerB.inetAddress()).thenReturn(childrenBInetAddress);
+        when(childrenPeerA.publicInetAddress()).thenReturn(childrenAInetAddress);
+        when(childrenPeerB.publicInetAddress()).thenReturn(childrenBInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKeyA, childrenPeerA, publicKeyB, childrenPeerB));
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);

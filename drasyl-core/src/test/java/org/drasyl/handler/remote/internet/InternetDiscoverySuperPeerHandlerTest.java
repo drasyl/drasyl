@@ -181,7 +181,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                   @Mock final InetSocketAddress inetAddress,
                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
@@ -204,7 +204,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                                   @Mock final InetSocketAddress inetAddress,
                                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(hopLimit.compareTo(any())).thenReturn(0);
@@ -238,7 +238,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                    @Mock final ChildrenPeer childrenPeer,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                    @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
