@@ -195,12 +195,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                 final UnsignedShort armedLength = PrivateHeader.getArmedLength(getBytes());
                 final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(), getNonce(), sessionPair);
                 final byte[] encryptedBytes;
+                final byte[] unencryptedRemainder;
 
                 if (armedLength.getValue() > 0) {
-                    encryptedBytes = cryptoInstance.encrypt(InputStreamHelper.readAllBytes(in), new byte[0], getNonce(), sessionPair);
+                    encryptedBytes = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, armedLength.getValue()), new byte[0], getNonce(), sessionPair);
+                    unencryptedRemainder = InputStreamHelper.readAllBytes(in);
                 }
                 else {
                     encryptedBytes = InputStreamHelper.readAllBytes(in);
+                    unencryptedRemainder = new byte[0];
                 }
 
                 return ArmedProtocolMessage.of(
@@ -208,7 +211,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                         getHopCount(), getNetworkId(),
                         getRecipient(), getSender(),
                         getProofOfWork(),
-                        Unpooled.wrappedBuffer(encryptedPrivateHeader, encryptedBytes)
+                        Unpooled.wrappedBuffer(encryptedPrivateHeader, encryptedBytes, unencryptedRemainder)
                 );
             }
         }
