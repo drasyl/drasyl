@@ -39,7 +39,9 @@ import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.network.NetworkUtil;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -48,6 +50,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
@@ -174,7 +177,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                 final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddress));
                 traversingPeer.applicationTrafficSentOrReceived();
                 traversingPeer.helloSent();
-                writeHelloMessage(ctx, address, traversingPeer.inetAddress(), false);
+                writeHelloMessage(ctx, address, traversingPeer.inetAddress(), null);
             }
             ctx.flush();
         }
@@ -210,7 +213,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             // send Discovery immediately to speed up traversal
             traversingPeer.applicationTrafficSentOrReceived();
             traversingPeer.helloSent();
-            writeHelloMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), false);
+            writeHelloMessage(ctx, msg.getSender(), traversingPeer.inetAddress(), null);
             ctx.flush();
         }
     }
@@ -268,10 +271,24 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             else {
                 // send Discovery
                 traversingPeer.helloSent();
-                writeHelloMessage(ctx, address, traversingPeer.inetAddress, false);
+                writeHelloMessage(ctx, address, traversingPeer.inetAddress, null);
                 ctx.flush();
             }
         }
+    }
+
+    @Override
+    protected Set<InetSocketAddress> getPrivateAddresses() {
+        final Set<InetAddress> addresses;
+        if (bindAddress.getAddress().isAnyLocalAddress()) {
+            // use all available addresses
+            addresses = NetworkUtil.getAddresses();
+        }
+        else {
+            // use given host
+            addresses = Set.of(bindAddress.getAddress());
+        }
+        return addresses.stream().map(a -> new InetSocketAddress(a, bindAddress.getPort())).collect(Collectors.toSet());
     }
 
     private boolean isApplicationMessageFromTraversingPeer(final Object msg) {

@@ -33,6 +33,7 @@ import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.InputStreamHelper;
+import org.drasyl.util.UnsignedShort;
 
 import java.io.IOException;
 
@@ -126,13 +127,17 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
                 final PrivateHeader privateHeader = PrivateHeader.of(Unpooled.wrappedBuffer(decryptedPrivateHeader));
-
+                final UnsignedShort armedLength = privateHeader.getArmedLength();
                 final byte[] decryptedBytes;
-                if (privateHeader.getArmedLength().getValue() > 0) {
-                    decryptedBytes = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, privateHeader.getArmedLength().getValue() + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), new byte[0], getNonce(), sessionPair);
+                final byte[] undecryptedRemainder;
+
+                if (armedLength.getValue() > 0) {
+                    decryptedBytes = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, armedLength.getValue() + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), new byte[0], getNonce(), sessionPair);
+                    undecryptedRemainder = InputStreamHelper.readAllBytes(in);
                 }
                 else {
                     decryptedBytes = InputStreamHelper.readAllBytes(in);
+                    undecryptedRemainder = new byte[0];
                 }
 
                 return UnarmedProtocolMessage.of(
@@ -143,7 +148,7 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
                         getRecipient(),
                         getSender(),
                         getProofOfWork(),
-                        Unpooled.wrappedBuffer(decryptedPrivateHeader, decryptedBytes)).read();
+                        Unpooled.wrappedBuffer(decryptedPrivateHeader, decryptedBytes, undecryptedRemainder)).read();
             }
         }
         catch (final IOException | CryptoException e) {

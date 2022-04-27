@@ -39,6 +39,7 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.SetUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
@@ -276,8 +278,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                         final InetSocketAddress inetAddress) {
         LOG.trace("Got Discovery from `{}`.", msg.getSender());
 
-        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress));
-        childrenPeer.helloReceived(inetAddress);
+        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getPrivateInetAddresses()));
+        childrenPeer.helloReceived(inetAddress, msg.getPrivateInetAddresses());
         final AddPathAndChildrenEvent event = AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);
@@ -319,35 +321,49 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private InetSocketAddress inetAddress;
+        private Set<InetSocketAddress> privateInetAddresses;
         long lastHelloTime;
 
         ChildrenPeer(final LongSupplier currentTime,
                      final long pingTimeoutMillis,
                      final InetSocketAddress inetAddress,
+                     final Set<InetSocketAddress> privateInetAddresses,
                      final long lastHelloTime) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.inetAddress = requireNonNull(inetAddress);
+            this.privateInetAddresses = requireNonNull(privateInetAddresses);
             this.lastHelloTime = lastHelloTime;
         }
 
         public ChildrenPeer(final LongSupplier currentTime,
                             final long pingTimeoutMillis,
-                            final InetSocketAddress inetAddress) {
-            this(currentTime, pingTimeoutMillis, inetAddress, 0L);
+                            final InetSocketAddress inetAddress,
+                            final Set<InetSocketAddress> privateInetAddresses) {
+            this(currentTime, pingTimeoutMillis, inetAddress, privateInetAddresses, 0L);
         }
 
         public InetSocketAddress inetAddress() {
             return inetAddress;
         }
 
-        public void helloReceived(final InetSocketAddress inetAddress) {
+        public Set<InetSocketAddress> privateInetAddresses() {
+            return privateInetAddresses;
+        }
+
+        public void helloReceived(final InetSocketAddress inetAddress,
+                                  final Set<InetSocketAddress> privateInetAddresses) {
             this.lastHelloTime = currentTime.getAsLong();
             this.inetAddress = requireNonNull(inetAddress);
+            this.privateInetAddresses = requireNonNull(privateInetAddresses);
         }
 
         public boolean isStale() {
             return lastHelloTime < currentTime.getAsLong() - pingTimeoutMillis;
+        }
+
+        public Set<InetSocketAddress> inetAddresses() {
+            return SetUtil.merge(privateInetAddresses, inetAddress);
         }
     }
 }

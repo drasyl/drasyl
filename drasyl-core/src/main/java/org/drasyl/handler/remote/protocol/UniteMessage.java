@@ -197,7 +197,9 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(UNITE, UnsignedShort.of(MIN_LENGTH)).writeTo(out);
+        int length = MIN_LENGTH;
+        length += getInetAddresses().size() * (IPV6_LENGTH + 2);
+        PrivateHeader.of(UNITE, UnsignedShort.of(length)).writeTo(out);
     }
 
     @Override
