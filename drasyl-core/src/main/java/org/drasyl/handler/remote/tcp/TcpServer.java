@@ -50,7 +50,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Starts a TCP-based server, allowing clients in very restrictive networks that do not allow
@@ -119,7 +118,7 @@ public class TcpServer extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S1905")
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
+    public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
                 .group((EventLoopGroup) ctx.executor().parent())
@@ -158,12 +157,12 @@ public class TcpServer extends ChannelDuplexHandler {
                 final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
                 LOG.info("Server started and listening at tcp:/{}", socketAddress);
 
-                ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+                ctx.fireUserEventTriggered(new TcpServerBound(socketAddress));
                 ctx.fireChannelActive();
             }
             else {
                 // server start failed
-                ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, future.cause()));
+                ctx.fireExceptionCaught(new TcpServerBindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, future.cause()));
             }
         }
     }
@@ -268,25 +267,29 @@ public class TcpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * Signals that the {@link TcpServer} is bind to {@link TcpServer.Port#getPort()}.
+     * Signals that the {@link TcpServer} is bind to {@link TcpServerBound#getPort()}.
      */
-    public static class Port {
-        private final int value;
+    public static class TcpServerBound {
+        private final InetSocketAddress bindAddress;
 
-        public Port(final int value) {
-            this.value = requireNonNegative(value, "port must be non-negative");
+        public TcpServerBound(final InetSocketAddress bindAddress) {
+            this.bindAddress = requireNonNull(bindAddress);
+        }
+
+        public InetSocketAddress getBindAddress() {
+            return bindAddress;
         }
 
         public int getPort() {
-            return value;
+            return getBindAddress().getPort();
         }
     }
 
     /**
      * Signals that the {@link TcpServer} was unable to bind to port.
      */
-    public static class BindFailedException extends Exception {
-        public BindFailedException(final String message, final Throwable cause) {
+    public static class TcpServerBindFailedException extends Exception {
+        public TcpServerBindFailedException(final String message, final Throwable cause) {
             super(message, cause);
         }
     }

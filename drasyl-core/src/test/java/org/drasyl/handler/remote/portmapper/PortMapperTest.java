@@ -51,7 +51,9 @@ class PortMapperTest {
     class EventHandling {
         @Test
         void shouldStartFirstMethodOnPortEvent(@Mock final PortMapping method,
-                                               @Mock final UdpServer.Port event) {
+                                               @Mock final UdpServer.UdpServerBound event) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
+
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
 
             final PortMapper handler = new PortMapper(methods, 0, null);
@@ -132,7 +134,8 @@ class PortMapperTest {
         @Test
         void shouldCycleToNextMethodOnFailure(@Mock final PortMapping method1,
                                               @Mock final PortMapping method2,
-                                              @Mock final UdpServer.Port event) {
+                                              @Mock final UdpServer.UdpServerBound event) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             doAnswer(invocation -> {
                 final Runnable onFailure = invocation.getArgument(2, Runnable.class);
                 onFailure.run();

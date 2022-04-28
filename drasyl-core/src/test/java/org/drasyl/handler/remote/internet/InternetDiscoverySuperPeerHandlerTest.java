@@ -44,6 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
@@ -180,7 +181,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                   @Mock final InetSocketAddress inetAddress,
                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
@@ -203,7 +204,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                                   @Mock final InetSocketAddress inetAddress,
                                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(hopLimit.compareTo(any())).thenReturn(0);
@@ -237,7 +238,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                    @Mock final ChildrenPeer childrenPeer,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                    @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.inetAddress()).thenReturn(childrenInetAddress);
+        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
@@ -258,6 +259,8 @@ class InternetDiscoverySuperPeerHandlerTest {
         private LongSupplier currentTime;
         @Mock
         private InetSocketAddress inetAddress;
+        @Mock
+        private Set<InetSocketAddress> privateInetAddresses;
 
         @Nested
         class DiscoveryReceived {
@@ -265,8 +268,8 @@ class InternetDiscoverySuperPeerHandlerTest {
             void shouldRecordLatestDiscoveryTime() {
                 when(currentTime.getAsLong()).thenReturn(1L);
 
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 0L, inetAddress);
-                childrenPeer.helloReceived(inetAddress);
+                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 0L, inetAddress, privateInetAddresses);
+                childrenPeer.helloReceived(inetAddress, privateInetAddresses);
 
                 assertEquals(1L, childrenPeer.lastHelloTime);
             }
@@ -278,7 +281,7 @@ class InternetDiscoverySuperPeerHandlerTest {
             void shouldReturnFalseIfDiscoveryHasNotTimedOut() {
                 when(currentTime.getAsLong()).thenReturn(55L);
 
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, 50L);
+                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, privateInetAddresses, 50L);
 
                 assertFalse(childrenPeer.isStale());
             }
@@ -287,7 +290,7 @@ class InternetDiscoverySuperPeerHandlerTest {
             void shouldReturnTrueIfDiscoveryHasBeenTimedOut() {
                 when(currentTime.getAsLong()).thenReturn(55L);
 
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, 5L);
+                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, privateInetAddresses, 5L);
 
                 assertTrue(childrenPeer.isStale());
             }

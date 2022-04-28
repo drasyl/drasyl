@@ -74,12 +74,12 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                   final Object evt) throws Exception {
-                        if (evt instanceof UdpServer.Port) {
-                            port = ((UdpServer.Port) evt).getPort();
+                                                   final Object evt) {
+                        if (evt instanceof UdpServer.UdpServerBound) {
+                            port = ((UdpServer.UdpServerBound) evt).getBindAddress().getPort();
                         }
-                        else if (evt instanceof TcpServer.Port) {
-                            tcpFallbackPort = ((TcpServer.Port) evt).getPort();
+                        else if (evt instanceof TcpServer.TcpServerBound) {
+                            tcpFallbackPort = ((TcpServer.TcpServerBound) evt).getPort();
                         }
                         else {
                             ctx.fireUserEventTriggered(evt);
@@ -92,11 +92,11 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
 
     @Override
     public void onEvent(@NonNull final Event event) {
-        if (event instanceof UdpServer.Port) {
-            port = ((UdpServer.Port) event).getPort();
+        if (event instanceof UdpServer.UdpServerBound) {
+            port = ((UdpServer.UdpServerBound) event).getBindAddress().getPort();
         }
-        else if (event instanceof TcpServer.Port) {
-            tcpFallbackPort = ((TcpServer.Port) event).getPort();
+        else if (event instanceof TcpServer.TcpServerBound) {
+            tcpFallbackPort = ((TcpServer.TcpServerBound) event).getPort();
         }
         else if (event instanceof InboundExceptionEvent) {
             LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
@@ -55,9 +56,9 @@ public class UniteMessageTest {
     class GetSocketAddress {
         @Test
         void shouldReturnCorrectAddress() {
-            final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, new InetSocketAddress(22527));
+            final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, Set.of(new InetSocketAddress(22527)));
 
-            assertEquals(new InetSocketAddress(22527), unite.getSocketAddress());
+            assertEquals(Set.of(new InetSocketAddress(22527)), unite.getInetAddresses());
         }
     }
 
@@ -65,7 +66,7 @@ public class UniteMessageTest {
     class Of {
         @Test
         void shouldCreateUniteMessage() {
-            final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, new InetSocketAddress(22527));
+            final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, Set.of(new InetSocketAddress(22527)));
 
             assertEquals(1, unite.getNetworkId());
             assertEquals(publicKey, unite.getAddress());

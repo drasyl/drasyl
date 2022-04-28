@@ -47,7 +47,6 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Binds to an udp port, sends outgoing messages via udp, and sends received udp packets to the
@@ -105,7 +104,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S1905")
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws BindFailedException {
+    public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
                 .group((EventLoopGroup) ctx.executor().parent())
@@ -232,12 +231,12 @@ public class UdpServer extends ChannelDuplexHandler {
                 LOG.info("Server started and listening at udp:/{}.", socketAddress);
 
                 UdpServer.this.channel = myChannel;
-                ctx.fireUserEventTriggered(new Port(socketAddress.getPort()));
+                ctx.fireUserEventTriggered(new UdpServerBound(socketAddress));
                 ctx.fireChannelActive();
             }
             else {
                 // server start failed
-                ctx.fireExceptionCaught(new BindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
+                ctx.fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
             }
         }
     }
@@ -254,25 +253,25 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * Signals that the {@link UdpServer} is bind to {@link Port#getPort()}.
+     * Signals that the {@link UdpServer} is bound to {@link UdpServerBound#getBindAddress()}.
      */
-    public static class Port {
-        private final int value;
+    public static class UdpServerBound {
+        private final InetSocketAddress bindAddress;
 
-        public Port(final int value) {
-            this.value = requireNonNegative(value, "port must be non-negative");
+        public UdpServerBound(final InetSocketAddress bindAddress) {
+            this.bindAddress = requireNonNull(bindAddress);
         }
 
-        public int getPort() {
-            return value;
+        public InetSocketAddress getBindAddress() {
+            return bindAddress;
         }
     }
 
     /**
-     * Signals that the {@link UdpServer} was unable to bind to port.
+     * Signals that the {@link UdpServer} was unable to bind to given address.
      */
-    public static class BindFailedException extends Exception {
-        public BindFailedException(final String message, final Throwable cause) {
+    public static class UdpServerBindFailedException extends Exception {
+        public UdpServerBindFailedException(final String message, final Throwable cause) {
             super(message, cause);
         }
     }

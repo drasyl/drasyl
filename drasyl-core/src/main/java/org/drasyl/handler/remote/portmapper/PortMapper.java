@@ -116,9 +116,9 @@ public class PortMapper extends SimpleChannelInboundHandler<InetAddressedMessage
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof UdpServer.Port) {
+        if (evt instanceof UdpServer.UdpServerBound) {
             LOG.debug("Try to map port with method `{}`.", () -> methods.get(currentMethodPointer));
-            methods.get(currentMethodPointer).start(ctx, ((UdpServer.Port) evt).getPort(), () -> cycleNextMethod(ctx, ((UdpServer.Port) evt).getPort()));
+            methods.get(currentMethodPointer).start(ctx, ((UdpServer.UdpServerBound) evt).getBindAddress().getPort(), () -> cycleNextMethod(ctx, ((UdpServer.UdpServerBound) evt).getBindAddress().getPort()));
         }
 
         ctx.fireUserEventTriggered(evt);
