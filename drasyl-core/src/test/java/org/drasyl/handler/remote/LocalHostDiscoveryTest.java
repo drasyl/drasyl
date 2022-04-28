@@ -104,6 +104,7 @@ class LocalHostDiscoveryTest {
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(discoveryPath.resolve(anyString()).toFile().mkdirs()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().canRead()).thenReturn(true);
@@ -141,6 +142,7 @@ class LocalHostDiscoveryTest {
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation1 -> {
                 invocation1.getArgument(0, Runnable.class).run();
@@ -167,6 +169,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
