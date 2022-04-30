@@ -29,6 +29,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -102,14 +103,15 @@ class LocalHostDiscoveryTest {
     class StartDiscovery {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
+        void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(discoveryPath.resolve(anyString()).toFile().mkdirs()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().canRead()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().canWrite()).thenReturn(true);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, false, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, false, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -117,14 +119,14 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event) throws IOException {
+        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event) throws IOException {
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(anyString())).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.pipeline().fireUserEventTriggered(event);
@@ -138,9 +140,10 @@ class LocalHostDiscoveryTest {
 
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
+        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation1 -> {
                 invocation1.getArgument(0, Runnable.class).run();
@@ -152,7 +155,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -162,11 +165,12 @@ class LocalHostDiscoveryTest {
 
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.Port event,
+        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
+            when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
 
@@ -191,7 +195,7 @@ class LocalHostDiscoveryTest {
             doReturn(fileSystem).when(discoveryPath).getFileSystem();
             doReturn(watchService).when(fileSystem).newWatchService();
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, true, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -208,7 +212,7 @@ class LocalHostDiscoveryTest {
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             routes.put(publicKey, address);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             handler.channelInactive(ctx);
 
             verify(watchDisposable).cancel(false);
@@ -227,7 +231,7 @@ class LocalHostDiscoveryTest {
             when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
             when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
@@ -245,7 +249,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, leaseTime, discoveryPath, networkId, watchDisposable, postDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
@@ -276,7 +280,7 @@ class LocalHostDiscoveryTest {
             Files.createDirectory(path.getParent());
             Files.writeString(path, "192.168.188.42:12345\n192.168.188.23:12345", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, bindHost, ofMinutes(5), dir, networkId, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, routes, watchEnabled, ofMinutes(5), dir, networkId, watchDisposable, postDisposable);
             handler.scan(ctx);
 
             assertEquals(Map.of(

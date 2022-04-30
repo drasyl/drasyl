@@ -37,7 +37,7 @@ public interface PortMapping {
      * be created, {@code onFailure} must be called once.
      *
      * @param ctx       the handler context
-     * @param port      the {@link UdpServer.Port} port
+     * @param port      the {@link UdpServer.UdpServerBound} port
      * @param onFailure will be called once on failure
      */
     void start(ChannelHandlerContext ctx, int port, Runnable onFailure);

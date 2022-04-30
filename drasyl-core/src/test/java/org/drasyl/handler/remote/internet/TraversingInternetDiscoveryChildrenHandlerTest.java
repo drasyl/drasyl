@@ -44,7 +44,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -77,7 +79,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
         when(uniteMsg.getSender()).thenReturn(superPeerPublicKey);
-        when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
+        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
@@ -89,7 +91,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         final InetAddressedMessage<HelloMessage> helloMsg = channel.readOutbound();
         assertThat(helloMsg.content(), instanceOf(HelloMessage.class));
-        assertSame(uniteMsg.getSocketAddress(), helloMsg.recipient());
+        assertSame(otherPeerInetAddress, helloMsg.recipient());
         assertTrue(traversingPeers.containsKey(uniteMsg.getAddress()));
     }
 
@@ -100,7 +102,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                 @Mock final InetSocketAddress otherPeerInetAddress,
                                                 @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
-        when(uniteMsg.getSocketAddress()).thenReturn(otherPeerInetAddress);
+        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
@@ -181,7 +183,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                                      @Mock final TraversingPeer traversingPeer,
                                                                      @Mock final InetSocketAddress traversingPeerInetAddress) {
         when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
-        when(traversingPeer.inetAddress()).thenReturn(traversingPeerInetAddress);
+        when(traversingPeer.primaryAddress()).thenReturn(traversingPeerInetAddress);
         when(traversingPeer.isReachable()).thenReturn(true);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
@@ -204,16 +206,16 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         private LongSupplier currentTime;
 
         @Nested
-        class SetInetAddress {
+        class AddInetAddressCandidate {
             @Test
-            void shouldSetInetAddress() {
+            void shouldAddInetAddress() {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddressA, 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
 
-                assertTrue(traversingPeer.setInetAddress(inetAddressB));
-                assertSame(inetAddressB, traversingPeer.inetAddress());
+                assertTrue(traversingPeer.addInetAddressCandidate(inetAddressB));
+                assertTrue(traversingPeer.inetAddressCandidates().contains(inetAddressB));
             }
         }
 
@@ -223,7 +225,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordFirstDiscoveryTime(@Mock final InetSocketAddress inetAddress) {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddress, 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, 0L);
                 traversingPeer.helloSent();
                 traversingPeer.helloSent();
 
@@ -239,11 +241,11 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
                 when(currentTime.getAsLong()).thenReturn(1L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddressA, 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
                 traversingPeer.acknowledgementReceived(inetAddressB);
 
                 assertEquals(1L, traversingPeer.lastAcknowledgementTime);
-                assertSame(inetAddressB, traversingPeer.inetAddress());
+                assertSame(inetAddressB, traversingPeer.primaryAddress());
             }
         }
 
@@ -253,7 +255,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordLastApplicationTime(@Mock final InetSocketAddress inetAddress) {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, inetAddress, 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, 0L);
                 traversingPeer.applicationTrafficSentOrReceived();
 
                 assertEquals(1L, traversingPeer.lastApplicationTime);

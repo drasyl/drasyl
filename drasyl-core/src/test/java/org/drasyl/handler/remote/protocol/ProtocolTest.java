@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -92,11 +93,11 @@ public class ProtocolTest {
                     IdentityTestUtil.ID_1.getIdentityPublicKey(),
                     IdentityTestUtil.ID_1.getProofOfWork(),
                     IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                    address);
+                    Set.of(address));
             final ByteBuf byteBuf = Unpooled.buffer();
             unit.writeBodyTo(byteBuf);
 
-            assertEquals(UniteMessage.LENGTH, byteBuf.readableBytes());
+            assertEquals(UniteMessage.MIN_LENGTH, byteBuf.readableBytes());
         }
 
         @Test
@@ -108,11 +109,11 @@ public class ProtocolTest {
                     IdentityTestUtil.ID_1.getIdentityPublicKey(),
                     IdentityTestUtil.ID_1.getProofOfWork(),
                     IdentityTestUtil.ID_1.getIdentityPublicKey(),
-                    address);
+                    Set.of(address));
             final ByteBuf byteBuf = Unpooled.buffer();
             unit.writeBodyTo(byteBuf);
 
-            assertEquals(UniteMessage.LENGTH, byteBuf.readableBytes());
+            assertEquals(UniteMessage.MIN_LENGTH, byteBuf.readableBytes());
         }
     }
 }

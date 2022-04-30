@@ -30,6 +30,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetSocketAddress;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +46,7 @@ public class HelloMessageTest {
     private IdentityPublicKey recipient;
     private long time;
     private IdentitySecretKey secretKey;
+    private Set<InetSocketAddress> privateInetAddresses;
 
     @BeforeEach
     void setUp() {
@@ -51,30 +55,33 @@ public class HelloMessageTest {
         recipient = ID_2.getIdentityPublicKey();
         time = System.currentTimeMillis();
         secretKey = ID_1.getIdentitySecretKey();
+        privateInetAddresses = Set.of(new InetSocketAddress("192.168.1.2", 22527));
     }
 
     @Nested
     class Of {
         @Test
         void shouldCreateSignedHelloMessageIfChildrenTimeIsPresent() {
-            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L, secretKey);
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L, secretKey, privateInetAddresses);
 
             assertEquals(1, hello.getNetworkId());
             assertEquals(time, hello.getTime());
             assertEquals(1337L, hello.getChildrenTime());
             assertTrue(hello.isSigned());
             assertTrue(hello.verifySignature());
+            assertEquals(privateInetAddresses, hello.getPrivateInetAddresses());
         }
 
         @Test
         void shouldCreateUnsignedHelloMessageIfChildrenTimeIsNotPresent() {
-            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 0, secretKey);
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 0, secretKey, privateInetAddresses);
 
             assertEquals(1, hello.getNetworkId());
             assertEquals(time, hello.getTime());
             assertEquals(0, hello.getChildrenTime());
             assertFalse(hello.isSigned());
             assertFalse(hello.verifySignature());
+            assertEquals(privateInetAddresses, hello.getPrivateInetAddresses());
         }
     }
 }
