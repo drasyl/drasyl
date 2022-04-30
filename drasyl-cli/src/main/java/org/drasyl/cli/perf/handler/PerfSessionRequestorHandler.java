@@ -24,14 +24,13 @@ package org.drasyl.cli.perf.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.ChannelDirectPathChanged;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.perf.message.Noop;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionConfirmation;
 import org.drasyl.cli.perf.message.SessionRejection;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -55,7 +54,6 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     private Future<?> timeoutTask;
     private boolean sessionRequested;
     private boolean directConnectionRequested;
-    private boolean directConnectionPresent;
 
     @SuppressWarnings("java:S107")
     PerfSessionRequestorHandler(final PrintStream out,
@@ -64,8 +62,7 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
                                 final boolean waitForDirectConnection,
                                 final Future<?> timeoutTask,
                                 final boolean sessionRequested,
-                                final boolean directConnectionRequested,
-                                final boolean directConnectionPresent) {
+                                final boolean directConnectionRequested) {
         this.out = requireNonNull(out);
         this.request = requireNonNull(request);
         this.requestTimeoutMillis = requirePositive(requestTimeoutMillis);
@@ -73,14 +70,13 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
         this.timeoutTask = timeoutTask;
         this.sessionRequested = sessionRequested;
         this.directConnectionRequested = directConnectionRequested;
-        this.directConnectionPresent = directConnectionPresent;
     }
 
     public PerfSessionRequestorHandler(final PrintStream out,
                                        final SessionRequest request,
                                        final long requestTimeoutMillis,
                                        final boolean waitForDirectConnection) {
-        this(out, request, requestTimeoutMillis, waitForDirectConnection, null, false, false, false);
+        this(out, request, requestTimeoutMillis, waitForDirectConnection, null, false, false);
     }
 
     @Override
@@ -114,10 +110,8 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        final boolean isDirection = evt instanceof AddPathAndSuperPeerEvent || evt instanceof AddPathAndChildrenEvent || evt instanceof AddPathEvent;
-        if (directConnectionRequested && !directConnectionPresent && isDirection) {
+        if (evt instanceof ChannelDirectPathChanged && directConnectionRequested) {
             out.println("Direct connection to " + ctx.channel().remoteAddress() + " established!");
-            directConnectionPresent = true;
             requestSession(ctx);
         }
         ctx.fireUserEventTriggered(evt);
@@ -134,12 +128,12 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     }
 
     private void requestSession(final ChannelHandlerContext ctx) {
-        if (!sessionRequested && (!waitForDirectConnection || directConnectionPresent) && ctx.channel().isActive()) {
+        if (!sessionRequested && (!waitForDirectConnection || ((DrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
             out.println("Request session at " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(request).addListener(FIRE_EXCEPTION_ON_FAILURE);
             sessionRequested = true;
         }
-        if (!directConnectionRequested && waitForDirectConnection && !directConnectionPresent) {
+        if (!directConnectionRequested && waitForDirectConnection && !((DrasylChannel) ctx.channel()).isDirectPathPresent()) {
             out.println("Try to establish direct connection to " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(new Noop()).addListener(FIRE_EXCEPTION_ON_FAILURE);
             directConnectionRequested = true;

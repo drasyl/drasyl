@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelOption.CREATE_CHANNEL_ON_PATH_EVENT;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 @SuppressWarnings("java:S118")
@@ -148,7 +147,6 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
                     .channel(DrasylServerChannel.class)
-                    .option(CREATE_CHANNEL_ON_PATH_EVENT, false)
                     .handler(handler)
                     .childHandler(childHandler);
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();

@@ -23,7 +23,6 @@ package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInboundInvoker;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -107,7 +106,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         ctx.fireUserEventTriggered(evt);
     }
 
-    private void addPath(final ChannelInboundInvoker ctx,
+    private void addPath(final ChannelHandlerContext ctx,
                          final DrasylAddress publicKey,
                          final Object path) {
         requireNonNull(publicKey);
@@ -118,7 +117,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void removePath(final ChannelInboundInvoker ctx,
+    private void removePath(final ChannelHandlerContext ctx,
                             final DrasylAddress publicKey,
                             final Object path) {
         requireNonNull(publicKey);
@@ -129,7 +128,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void addPathAndSuperPeer(final ChannelInboundInvoker ctx,
+    private void addPathAndSuperPeer(final ChannelHandlerContext ctx,
                                      final DrasylAddress publicKey,
                                      final Object path) {
         requireNonNull(publicKey);
@@ -148,7 +147,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void removeSuperPeerAndPath(final ChannelInboundInvoker ctx,
+    private void removeSuperPeerAndPath(final ChannelHandlerContext ctx,
                                         final DrasylAddress publicKey,
                                         final Object path) {
         requireNonNull(path);
@@ -164,7 +163,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void addPathAndChildren(final ChannelInboundInvoker ctx,
+    private void addPathAndChildren(final ChannelHandlerContext ctx,
                                     final DrasylAddress publicKey,
                                     final Object path) {
         requireNonNull(publicKey);
@@ -180,7 +179,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         children.add(publicKey);
     }
 
-    private void removeChildrenAndPath(final ChannelInboundInvoker ctx,
+    private void removeChildrenAndPath(final ChannelHandlerContext ctx,
                                        final DrasylAddress publicKey,
                                        final Object path) {
         requireNonNull(publicKey);
