@@ -65,9 +65,9 @@ public abstract class AddPathEvent implements PathEvent {
         return new AutoValue_AddPathEvent(publicKey, path, inetAddress, rtt);
     }
 
-    public static AddPathEvent of(final DrasylAddress publicKey,
+    public static AddPathEvent of(final DrasylAddress address,
                                   final InetSocketAddress inetAddress,
                                   final Object path) {
-        return of(publicKey, inetAddress, path, -1L);
+        return of(address, inetAddress, path, -1L);
     }
 }

@@ -32,8 +32,8 @@ import org.drasyl.identity.DrasylAddress;
 @SuppressWarnings({ "java:S118", "java:S1118", "java:S2974" })
 @AutoValue
 public abstract class RemoveSuperPeerAndPathEvent implements PathEvent {
-    public static RemoveSuperPeerAndPathEvent of(final DrasylAddress addresss,
+    public static RemoveSuperPeerAndPathEvent of(final DrasylAddress address,
                                                  final Object path) {
-        return new AutoValue_RemoveSuperPeerAndPathEvent(addresss, path);
+        return new AutoValue_RemoveSuperPeerAndPathEvent(address, path);
     }
 }
