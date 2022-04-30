@@ -30,6 +30,8 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.Murmur3;
+import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
 import picocli.CommandLine.Option;
 
@@ -42,9 +44,11 @@ import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
+import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 @SuppressWarnings("java:S118")
 public abstract class ChannelOptions extends GlobalOptions implements Callable<Integer> {
+    public static final short MIN_DERIVED_PORT = 22528;
     protected final PrintStream out;
     protected final PrintStream err;
     protected final EventLoopGroup parentGroup;
@@ -58,7 +62,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected File identityFile;
     @Option(
             names = { "--bind" },
-            description = "Binds UDP server to given IP and port. If no port is specified, a random free port will be used.",
+            description = "Binds UDP server to given IP and port. If no port is specified, a port in the range 22528 and 65528 is derived from the identity's public key.",
             paramLabel = "<host>[:<port>]",
             defaultValue = "0.0.0.0:0"
     )
@@ -140,6 +144,13 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                 out.println("Identity generated!");
             }
             final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
+
+            if (bindAddress.getPort() == 0) {
+                // derive bind port from identity
+                final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(identity.getAddress().toByteArray())).getValue();
+                final int identityPort = (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+                bindAddress = new InetSocketAddress(bindAddress.getAddress(), identityPort);
+            }
 
             final ChannelHandler handler = getHandler(exitCode, identity);
             final ChannelHandler childHandler = getChildHandler(exitCode, identity);
