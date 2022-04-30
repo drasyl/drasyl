@@ -23,13 +23,11 @@ package org.drasyl.channel;
 
 import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoop;
@@ -64,7 +62,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
-    private final ChannelConfig config = new DefaultChannelConfig(this);
+    private final DrasylServerChannelConfig config = new DefaultDrasylServerChannelConfig(this);
     public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
 
@@ -135,7 +133,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    public ChannelConfig config() {
+    public DrasylServerChannelConfig config() {
         return config;
     }
 
@@ -155,7 +153,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
      */
     private static class ChildChannelRouter extends ChannelDuplexHandler {
         @Override
-        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        public void close(final ChannelHandlerContext ctx,
+                          final ChannelPromise promise) throws Exception {
             // close all child channels first...
             final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
             for (final Channel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
@@ -242,7 +241,20 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                         final PathEvent e,
                                         final IdentityPublicKey peer,
                                         final boolean recreateClosedChannel) {
-            final Channel channel = getOrCreateChildChannel(ctx, peer);
+            final boolean createChannelOnPathEvent = ((DrasylServerChannelConfig) ctx.channel().config()).createChannelOnPathEvent();
+
+            final Channel channel;
+            if (createChannelOnPathEvent) {
+                channel = getOrCreateChildChannel(ctx, peer);
+            }
+            else {
+                channel = getChildChannel(ctx, peer);
+
+                if (channel == null) {
+                    // drop event
+                    return;
+                }
+            }
 
             // pass event to channel
             channel.eventLoop().execute(() -> {
@@ -260,11 +272,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
             });
         }
 
+        private static Channel getChildChannel(final ChannelHandlerContext ctx,
+                                               final IdentityPublicKey remoteAddress) {
+            final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
+            return parent.channels.get(remoteAddress);
+        }
+
         private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
                                                        final IdentityPublicKey remoteAddress) {
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
 
-            Channel channel = parent.channels.get(remoteAddress);
+            Channel channel = getChildChannel(ctx, remoteAddress);
             if (channel == null) {
                 channel = new DrasylChannel(parent, remoteAddress);
                 ctx.fireChannelRead(channel);
