@@ -211,7 +211,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             // send Discovery immediately to speed up traversal
             traversingPeer.applicationTrafficSentOrReceived();
             traversingPeer.helloSent();
-            writeHelloMessage(ctx, msg.getSender(), traversingPeer.primaryAddress(), null);
+            writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
         }
     }
