@@ -26,10 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
-import io.netty.util.concurrent.Future;
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarBuilder;
-import me.tongfei.progressbar.ProgressBarStyle;
+import org.drasyl.cli.handler.ChunkedInputProgressBarHandler;
 import org.drasyl.cli.wormhole.message.FileMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -39,7 +36,6 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 
 public class WormholeFileSender extends AbstractWormholeSender {
@@ -68,26 +64,12 @@ public class WormholeFileSender extends AbstractWormholeSender {
             if (f.isSuccess()) {
                 final ChunkedFile chunkedFile = new ChunkedFile(file, CHUNK_SIZE);
 
-                final ProgressBar progressBar = new ProgressBarBuilder()
-                        .setInitialMax(file.length())
-                        .setUnit("MB", 1_000_000)
-                        .setStyle(ProgressBarStyle.ASCII)
-                        .setUpdateIntervalMillis(PROGRESS_BAR_INTERVAL)
-                        .showSpeed(PROGRESS_BAR_SPEED_FORMAT)
-                        .build();
-
-                final Future<?> progressTask = ctx.executor().scheduleAtFixedRate(() -> progressBar.stepTo(chunkedFile.progress()), 0, PROGRESS_BAR_INTERVAL, MILLISECONDS);
-
                 ctx.writeAndFlush(chunkedFile).addListener((ChannelFutureListener) f2 -> {
-                    progressTask.cancel(false);
                     if (f2.isSuccess()) {
-                        progressBar.stepTo(chunkedFile.progress());
-                        progressBar.close();
                         out.println("file sent");
                         f2.channel().close();
                     }
                     else {
-                        progressBar.close();
                         f2.channel().pipeline().fireExceptionCaught(f2.cause());
                     }
                 });
@@ -99,6 +81,7 @@ public class WormholeFileSender extends AbstractWormholeSender {
 
         ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
+        ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
         ctx.pipeline().remove(ctx.name());
     }
 
