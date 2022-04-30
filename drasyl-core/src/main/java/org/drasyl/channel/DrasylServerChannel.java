@@ -248,7 +248,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
             channel.eventLoop().execute(() -> {
                 if (channel.isActive()) {
                     channel.pipeline().fireUserEventTriggered(e);
-                    channel.pipeline().fireChannelReadComplete();
                 }
                 else if (recreateClosedChannel) {
                     // channel to which the event is to be passed to has been closed in the
