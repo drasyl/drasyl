@@ -88,8 +88,8 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             await().until(() -> {
                 final Object evt = channel.readEvent();
-                if (evt instanceof UdpServer.Port) {
-                    port = ((UdpServer.Port) evt).getPort();
+                if (evt instanceof UdpServer.UdpServerBound) {
+                    port = ((UdpServer.UdpServerBound) evt).getBindAddress().getPort();
                     return true;
                 }
                 else {

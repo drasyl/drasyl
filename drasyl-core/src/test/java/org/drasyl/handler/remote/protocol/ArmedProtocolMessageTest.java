@@ -30,7 +30,6 @@ import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.UnsignedShort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -40,8 +39,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.InetSocketAddress;
+import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
@@ -150,7 +149,7 @@ public class ArmedProtocolMessageTest {
 
         @Test
         void shouldBeAbleToDisarmToDiscoveryMessage() throws CryptoException, InvalidMessageFormatException {
-            final FullReadMessage<?> message = HelloMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), 0, System.currentTimeMillis(), ID_1.getIdentitySecretKey());
+            final FullReadMessage<?> message = HelloMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), 0, System.currentTimeMillis(), ID_1.getIdentitySecretKey(), Set.of());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
 
@@ -158,8 +157,8 @@ public class ArmedProtocolMessageTest {
         }
 
         @Test
-        void shouldBeAbleToDisarmToUniteMessage() throws CryptoException, InvalidMessageFormatException, UnknownHostException {
-            final FullReadMessage<?> message = UniteMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_1.getIdentityPublicKey(), InetAddress.getByName("127.0.0.1"), UnsignedShort.of(80));
+        void shouldBeAbleToDisarmToUniteMessage() throws CryptoException, InvalidMessageFormatException {
+            final FullReadMessage<?> message = UniteMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_1.getIdentityPublicKey(), Set.of(new InetSocketAddress(80)));
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
 

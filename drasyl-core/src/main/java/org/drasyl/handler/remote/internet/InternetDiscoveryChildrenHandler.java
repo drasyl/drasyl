@@ -33,6 +33,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -50,6 +51,7 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
@@ -82,6 +84,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private final long pingIntervalMillis;
     Future<?> heartbeatDisposable;
     private IdentityPublicKey bestSuperPeer;
+    protected InetSocketAddress bindAddress;
 
     @SuppressWarnings("java:S107")
     InternetDiscoveryChildrenHandler(final int myNetworkId,
@@ -210,6 +213,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         }
     }
 
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        if (evt instanceof UdpServerBound) {
+            bindAddress = ((UdpServerBound) evt).getBindAddress();
+        }
+        ctx.fireUserEventTriggered(evt);
+    }
+
     /*
      * Pinging
      */
@@ -236,14 +247,22 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     void doHeartbeat(final ChannelHandlerContext ctx) {
         determineBestSuperPeer(ctx);
 
+        // get own private address(es)
+        final Set<InetSocketAddress> privateInetAddresses = getPrivateAddresses();
+
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
             final InetSocketAddress resolvedAddress = superPeer.resolveInetAddress();
 
-            writeHelloMessage(ctx, publicKey, resolvedAddress, true);
+            writeHelloMessage(ctx, publicKey, resolvedAddress, privateInetAddresses);
         }));
         ctx.flush();
+    }
+
+    protected Set<InetSocketAddress> getPrivateAddresses() {
+        // not used by this implementation. Only required for NAT traversal.
+        return Set.of();
     }
 
     /**
@@ -252,11 +271,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected void writeHelloMessage(final ChannelHandlerContext ctx,
                                      final DrasylAddress publicKey,
                                      final InetSocketAddress inetAddress,
-                                     final boolean isChildrenJoin) {
+                                     final Set<InetSocketAddress> privateInetAddresses) {
+        final boolean isChildrenJoin = privateInetAddresses != null;
         final HelloMessage msg;
         if (isChildrenJoin) {
             // hello message is used to register at super peer as children
-            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, DEFAULT_CHILDREN_TIME, mySecretKey);
+            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, DEFAULT_CHILDREN_TIME, mySecretKey, privateInetAddresses);
         }
         else {
             // hello message is used to announce us at peer

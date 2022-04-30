@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -120,7 +121,7 @@ class RateLimiterTest {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), ID_3.getIdentityPublicKey(), new InetSocketAddress(1337));
+        final UniteMessage msg = UniteMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), ID_3.getIdentityPublicKey(), Set.of(new InetSocketAddress(1337)));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
@@ -142,7 +143,7 @@ class RateLimiterTest {
                                                     @Mock final Supplier<Long> timeProvider) {
         when(ctx.channel().localAddress()).thenReturn(ownIdentity.getAddress());
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final UniteMessage msg = UniteMessage.of(0, recipient.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), new InetSocketAddress(1337));
+        final UniteMessage msg = UniteMessage.of(0, recipient.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), recipient.getIdentityPublicKey(), Set.of(new InetSocketAddress(1337)));
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));
