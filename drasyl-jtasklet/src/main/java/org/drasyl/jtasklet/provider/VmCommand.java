@@ -10,6 +10,7 @@ import org.drasyl.jtasklet.provider.channel.ProviderChannelInitializer;
 import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.GraalVmJsRuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
+import org.drasyl.jtasklet.provider.runtime.ThrottledRuntimeEnvironment;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -31,7 +32,7 @@ public class VmCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(VmCommand.class);
     private static final Object[] BENCHMARK_PRIMES_INPUT = new Object[]{ 1, 250_000 };
     private static final Object[] BENCHMARK_EUROPEAN_OPTION_MC_INPUT = new Object[]{ 20_000, 100 };
-    private final RuntimeEnvironment runtimeEnvironment;
+    private RuntimeEnvironment runtimeEnvironment;
     @Option(
             names = { "--broker" }
     )
@@ -41,16 +42,26 @@ public class VmCommand extends ChannelOptions {
             defaultValue = "5"
     )
     private int benchmarkRuns;
+    @Option(
+            names = { "--cpu-throttle" },
+            defaultValue = "1.0",
+            description = {
+                    "Simulates a slower CPU.",
+                    "Value 1.5 means that CPU will need 50% more time for computation."
+            }
+    )
+    private double cpuThrottle;
     private long benchmark;
 
     public VmCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup(1));
-        runtimeEnvironment = new GraalVmJsRuntimeEnvironment();
     }
 
     @Override
     public Integer call() {
         setLogLevel();
+
+        runtimeEnvironment = new ThrottledRuntimeEnvironment(new GraalVmJsRuntimeEnvironment(), (float) cpuThrottle);
 
         try {
             LOG.info("Perform benchmark...");
