@@ -6,14 +6,12 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.util.Pair;
 
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
+import static org.drasyl.util.RandomUtil.randomInt;
 
 public class RandomSchedulingStrategy implements SchedulingStrategy {
-    private static final Random RANDOM = new Random();
-
     @Override
     public String toString() {
         return "RandomSchedulingStrategy{}";
@@ -26,7 +24,7 @@ public class RandomSchedulingStrategy implements SchedulingStrategy {
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!availableVms.isEmpty()) {
             final DrasylAddress[] publicKeys = availableVms.keySet().toArray(new DrasylAddress[0]);
-            final int rnd = RANDOM.nextInt(availableVms.size());
+            final int rnd = randomInt(availableVms.size() - 1);
             final DrasylAddress publicKey = publicKeys[rnd];
             return Pair.of(publicKey, availableVms.get(publicKey));
         }

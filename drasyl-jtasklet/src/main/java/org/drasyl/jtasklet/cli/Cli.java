@@ -1,6 +1,5 @@
 package org.drasyl.jtasklet.cli;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.IdentityPublicKeyMixin;
