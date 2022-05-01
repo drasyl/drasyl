@@ -4,7 +4,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedInput;
 import io.netty.util.concurrent.ScheduledFuture;
 import me.tongfei.progressbar.ProgressBar;
@@ -18,7 +17,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * This handler shows a progress bar once a {@link ChunkedInput} is written to the channel.
+ * This handler shows a progress bar for {@link ChunkedInput}s written to the channel.
  */
 public class ChunkedInputProgressBarHandler extends ChannelDuplexHandler {
     private static final DecimalFormat PROGRESS_BAR_SPEED_FORMAT = new DecimalFormat("0.00");
@@ -36,6 +35,7 @@ public class ChunkedInputProgressBarHandler extends ChannelDuplexHandler {
     public ChunkedInputProgressBarHandler(final int refreshInterval) {
         this(
                 new ProgressBarBuilder()
+                        .setUnit("MB", 1_000_000)
                         .setStyle(ProgressBarStyle.ASCII)
                         .setUpdateIntervalMillis(refreshInterval)
                         .showSpeed(PROGRESS_BAR_SPEED_FORMAT),
@@ -69,10 +69,6 @@ public class ChunkedInputProgressBarHandler extends ChannelDuplexHandler {
                                    final ChunkedInput<?> chunkedInput) {
         if (progressBar == null) {
             // create progress bar
-            if (chunkedInput instanceof ChunkedFile) {
-                // it's a file. use filesize as unit
-                progressBarBuilder.setUnit("MB", 1_000_000);
-            }
             progressBarBuilder.setInitialMax(chunkedInput.length());
             progressBar = progressBarBuilder.build();
 
