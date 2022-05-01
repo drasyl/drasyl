@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -36,10 +35,18 @@ import io.netty.channel.nio.NioEventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
+import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
+import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
+import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.HashSetMultimap;
+import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -64,9 +71,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
-    private final ChannelConfig config = new DefaultChannelConfig(this);
+    private final DefaultChannelConfig config = new DefaultChannelConfig(this);
     public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
+    final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -109,7 +117,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
         pipeline().addLast((new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
-                ch.pipeline().addLast(new ChildChannelRouter());
+                ch.pipeline().addLast(new ChildChannelRouter(paths));
                 ch.pipeline().addLast(new DuplicateChannelFilter());
                 ch.pipeline().addLast(new PendingWritesFlusher());
             }
@@ -135,7 +143,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    public ChannelConfig config() {
+    public DefaultChannelConfig config() {
         return config;
     }
 
@@ -154,8 +162,16 @@ public class DrasylServerChannel extends AbstractServerChannel {
      * currently no child channel, a new one is automatically created.
      */
     private static class ChildChannelRouter extends ChannelDuplexHandler {
+        private final SetMultimap<DrasylAddress, Object> paths;
+
+        @SuppressWarnings("java:S2384")
+        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
+            this.paths = requireNonNull(paths);
+        }
+
         @Override
-        public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        public void close(final ChannelHandlerContext ctx,
+                          final ChannelPromise promise) throws Exception {
             // close all child channels first...
             final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
             for (final Channel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
@@ -226,9 +242,15 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                        final Object evt) {
             if (evt instanceof PathEvent) {
                 try {
-                    final PathEvent e = (PathEvent) evt;
-                    final IdentityPublicKey peer = (IdentityPublicKey) e.getAddress();
-                    passEventToChannel(ctx, e, peer, true);
+                    final PathEvent pathEvent = (PathEvent) evt;
+                    final DrasylAddress peer = pathEvent.getAddress();
+
+                    if (pathEvent instanceof AddPathEvent || pathEvent instanceof AddPathAndSuperPeerEvent || pathEvent instanceof AddPathAndChildrenEvent) {
+                        addPath(ctx, peer, pathEvent.getPath());
+                    }
+                    else if (pathEvent instanceof RemovePathEvent || pathEvent instanceof RemoveSuperPeerAndPathEvent || pathEvent instanceof RemoveChildrenAndPathEvent) {
+                        removePath(ctx, peer, pathEvent.getPath());
+                    }
                 }
                 catch (final ClassCastException e) {
                     LOG.debug("Can't cast address of event `{}`: ", evt, e);
@@ -238,34 +260,42 @@ public class DrasylServerChannel extends AbstractServerChannel {
             ctx.fireUserEventTriggered(evt);
         }
 
-        private void passEventToChannel(final ChannelHandlerContext ctx,
-                                        final PathEvent e,
-                                        final IdentityPublicKey peer,
-                                        final boolean recreateClosedChannel) {
-            final Channel channel = getOrCreateChildChannel(ctx, peer);
+        private void addPath(final ChannelHandlerContext ctx,
+                             final DrasylAddress address,
+                             final Object path) {
+            requireNonNull(address);
+            requireNonNull(path);
 
-            // pass event to channel
-            channel.eventLoop().execute(() -> {
-                if (channel.isActive()) {
-                    channel.pipeline().fireUserEventTriggered(e);
-                    channel.pipeline().fireChannelReadComplete();
-                }
-                else if (recreateClosedChannel) {
-                    // channel to which the event is to be passed to has been closed in the
-                    // meantime. give event chance to be consumed by recreate a new channel once
-                    ctx.executor().execute(() -> passEventToChannel(ctx, e, peer, false));
-                }
-                else {
-                    // drop event
-                }
-            });
+            final boolean firstPath = paths.get(address).isEmpty();
+            final Channel channel = getChildChannel(ctx, address);
+            if (paths.put(address, path) && firstPath && channel != null) {
+                channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
+            }
+        }
+
+        private void removePath(final ChannelHandlerContext ctx,
+                                final DrasylAddress address,
+                                final Object path) {
+            requireNonNull(address);
+            requireNonNull(path);
+
+            final Channel channel = getChildChannel(ctx, address);
+            if (paths.remove(address, path) && paths.get(address).isEmpty() && channel != null) {
+                channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
+            }
+        }
+
+        private static Channel getChildChannel(final ChannelHandlerContext ctx,
+                                               final DrasylAddress remoteAddress) {
+            final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
+            return parent.channels.get(remoteAddress);
         }
 
         private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                                       final IdentityPublicKey remoteAddress) {
+                                                       final DrasylAddress remoteAddress) {
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
 
-            Channel channel = parent.channels.get(remoteAddress);
+            Channel channel = getChildChannel(ctx, remoteAddress);
             if (channel == null) {
                 channel = new DrasylChannel(parent, remoteAddress);
                 ctx.fireChannelRead(channel);

@@ -59,10 +59,10 @@ public abstract class AddPathAndSuperPeerEvent implements PathEvent {
                 Objects.equals(getInetAddress(), that.getInetAddress());
     }
 
-    public static AddPathAndSuperPeerEvent of(final DrasylAddress publicKey,
+    public static AddPathAndSuperPeerEvent of(final DrasylAddress address,
                                               final InetSocketAddress inetAddress,
                                               final Object path,
                                               final long rtt) {
-        return new AutoValue_AddPathAndSuperPeerEvent(publicKey, path, inetAddress, rtt);
+        return new AutoValue_AddPathAndSuperPeerEvent(address, path, inetAddress, rtt);
     }
 }

@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +51,7 @@ class PortMapperTest {
     class EventHandling {
         @Test
         void shouldStartFirstMethodOnPortEvent(@Mock final PortMapping method,
-                                               @Mock final UdpServer.UdpServerBound event) {
+                                               @Mock final UdpServerBound event) {
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
 
             final ArrayList<PortMapping> methods = new ArrayList<>(List.of(method));
@@ -134,7 +134,7 @@ class PortMapperTest {
         @Test
         void shouldCycleToNextMethodOnFailure(@Mock final PortMapping method1,
                                               @Mock final PortMapping method2,
-                                              @Mock final UdpServer.UdpServerBound event) {
+                                              @Mock final UdpServerBound event) {
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             doAnswer(invocation -> {
                 final Runnable onFailure = invocation.getArgument(2, Runnable.class);

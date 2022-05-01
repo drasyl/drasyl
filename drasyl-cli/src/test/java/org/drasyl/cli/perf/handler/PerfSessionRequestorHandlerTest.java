@@ -23,14 +23,8 @@ package org.drasyl.cli.perf.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.concurrent.Future;
-import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler.PerfSessionRequestRejectedException;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler.PerfSessionRequestTimeoutException;
-import org.drasyl.cli.perf.message.Noop;
-import org.drasyl.cli.perf.message.SessionConfirmation;
-import org.drasyl.cli.perf.message.SessionRejection;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.handler.discovery.AddPathEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,14 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.PrintStream;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PerfSessionRequestorHandlerTest {
@@ -65,24 +53,6 @@ class PerfSessionRequestorHandlerTest {
     }
 
     @Test
-    void shouldRequestDirectSessionOnDirectConnection(@Mock final PrintStream out,
-                                                      @Mock final SessionRequest request,
-                                                      @Mock final AddPathEvent pathEvent) {
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        try {
-            assertThat(channel.readOutbound(), instanceOf(Noop.class));
-
-            channel.pipeline().fireUserEventTriggered(pathEvent);
-            assertEquals(request, channel.readOutbound());
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
     void shouldThrowExceptionOnTimeout(@Mock final PrintStream out,
                                        @Mock final SessionRequest request) {
         final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, false);
@@ -91,67 +61,8 @@ class PerfSessionRequestorHandlerTest {
         try {
             await().untilAsserted(() -> {
                 channel.runScheduledPendingTasks();
-                assertThrows(PerfSessionRequestTimeoutException.class, () -> channel.checkException());
+                assertThrows(PerfSessionRequestTimeoutException.class, channel::checkException);
             });
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldStartSessionOnRequestConfirmationWithSenderForNormalSession(@Mock final PrintStream out,
-                                                                           @Mock final SessionRequest request,
-                                                                           @Mock final Future<?> timeoutTask,
-                                                                           @Mock final SessionConfirmation confirmation) {
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true, timeoutTask, true, false, false);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        channel.writeInbound(confirmation);
-
-        try {
-            assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
-            assertNotNull(channel.pipeline().get(PerfSessionSenderHandler.class));
-            verify(timeoutTask).cancel(false);
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldStartSessionOnRequestConfirmationWithReceiverForReverseSession(@Mock final PrintStream out,
-                                                                              @Mock final SessionRequest request,
-                                                                              @Mock final Future<?> timeoutTask,
-                                                                              @Mock final SessionConfirmation confirmation) {
-        when(request.isReverse()).thenReturn(true);
-
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true, timeoutTask, true, false, false);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        channel.writeInbound(confirmation);
-
-        try {
-            assertNull(channel.pipeline().get(PerfSessionRequestorHandler.class));
-            assertNotNull(channel.pipeline().get(PerfSessionReceiverHandler.class));
-            verify(timeoutTask).cancel(false);
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldThrowExceptionOnRejection(@Mock final PrintStream out,
-                                         @Mock final SessionRequest request,
-                                         @Mock final Future<?> timeoutTask,
-                                         @Mock final SessionRejection rejection) {
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, true, timeoutTask, true, false, false);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        try {
-            assertThrows(PerfSessionRequestRejectedException.class, () -> channel.writeInbound(rejection));
-            verify(timeoutTask).cancel(false);
         }
         finally {
             channel.close();

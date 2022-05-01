@@ -25,9 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarBuilder;
-import me.tongfei.progressbar.ProgressBarStyle;
+import org.drasyl.cli.handler.InboundByteBufsProgressBarHandler;
 import org.drasyl.cli.wormhole.message.FileMessage;
 
 import java.io.File;
@@ -39,7 +37,6 @@ import java.nio.ByteBuffer;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.handler.WormholeFileSender.IDLE_TIMEOUT;
 import static org.drasyl.cli.wormhole.handler.WormholeFileSender.PROGRESS_BAR_INTERVAL;
-import static org.drasyl.cli.wormhole.handler.WormholeFileSender.PROGRESS_BAR_SPEED_FORMAT;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -48,7 +45,6 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
     private final File file;
     private final long length;
     private RandomAccessFile randomAccessFile;
-    private ProgressBar progressBar;
 
     public WormholeFileReceiver(final PrintStream out,
                                 final File file,
@@ -82,23 +78,12 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
             return;
         }
 
-        progressBar = new ProgressBarBuilder()
-                .setInitialMax(length)
-                .setUnit("MB", 1_000_000)
-                .setStyle(ProgressBarStyle.ASCII)
-                .setUpdateIntervalMillis(PROGRESS_BAR_INTERVAL)
-                .showSpeed(PROGRESS_BAR_SPEED_FORMAT)
-                .build();
-
+        ctx.pipeline().addBefore(ctx.name(), null, new InboundByteBufsProgressBarHandler(length, PROGRESS_BAR_INTERVAL));
         ctx.pipeline().addBefore(ctx.name(), null, new ReadTimeoutHandler(IDLE_TIMEOUT));
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        if (progressBar != null) {
-            progressBar.close();
-        }
-
         if (randomAccessFile != null) {
             try {
                 randomAccessFile.close();
@@ -121,10 +106,8 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
             randomAccessFile.getChannel().position(currentFileLength);
             randomAccessFile.getChannel().write(byteBuffer);
         }
-        progressBar.stepTo(currentFileLength + readableBytes);
 
         if (currentFileLength + readableBytes == length) {
-            progressBar.close();
             out.println("Received file written to " + file.getName());
 
             ctx.pipeline().close();

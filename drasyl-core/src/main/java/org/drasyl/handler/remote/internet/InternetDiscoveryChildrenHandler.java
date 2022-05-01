@@ -33,7 +33,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
-import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -61,8 +61,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Joins one ore multiple super peer(s) as a children. Uses the super peer with the best latency as
- * a default gateway for outbound messages.
+ * Joins one or multiple super peer(s) as a children. Uses the super peer with the best RTT as a
+ * default gateway for outbound messages.
  *
  * @see InternetDiscoverySuperPeerHandler
  */
@@ -215,8 +215,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
-        if (evt instanceof UdpServer.UdpServerBound) {
-            bindAddress = ((UdpServer.UdpServerBound) evt).getBindAddress();
+        if (evt instanceof UdpServerBound) {
+            bindAddress = ((UdpServerBound) evt).getBindAddress();
         }
         ctx.fireUserEventTriggered(evt);
     }

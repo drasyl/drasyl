@@ -29,6 +29,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -102,7 +103,7 @@ class LocalHostDiscoveryTest {
     class StartDiscovery {
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event,
+        void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(discoveryPath.resolve(anyString()).toFile().mkdirs()).thenReturn(true);
@@ -118,7 +119,7 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event) throws IOException {
+        void shouldTryToRegisterAWatchService(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event) throws IOException {
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -139,7 +140,7 @@ class LocalHostDiscoveryTest {
 
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event,
+        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
@@ -164,7 +165,7 @@ class LocalHostDiscoveryTest {
 
         @Test
         @Timeout(value = 5_000, unit = MILLISECONDS)
-        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServer.UdpServerBound event,
+        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,

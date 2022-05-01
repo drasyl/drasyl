@@ -12,7 +12,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: Option `--mtu` to sub-command `tun` added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
 - CLI: `node-rc` sub-command added.
-- Node: Added `UnconfirmedAddressResolveHandler` that does send messages to unconfirmed (sender) addresses as last-resort (before the messages were simply dropped).
+- Node: Added `UnconfirmedAddressResolveHandler` that does send messages to unconfirmed (sender)
+  addresses as last-resort (before the messages were simply dropped).
+- NAT Traversal is now also able to establish a P2P connection if both device are behind a common
+  NAT device that does not support hairpinning.
+-
 -
 
 ### Changed

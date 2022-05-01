@@ -28,7 +28,7 @@ import io.netty.util.ReferenceCountUtil;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.tcp.TcpServer;
+import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
@@ -78,8 +78,8 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
                         if (evt instanceof UdpServer.UdpServerBound) {
                             port = ((UdpServer.UdpServerBound) evt).getBindAddress().getPort();
                         }
-                        else if (evt instanceof TcpServer.TcpServerBound) {
-                            tcpFallbackPort = ((TcpServer.TcpServerBound) evt).getPort();
+                        else if (evt instanceof TcpServerBound) {
+                            tcpFallbackPort = ((TcpServerBound) evt).getPort();
                         }
                         else {
                             ctx.fireUserEventTriggered(evt);
@@ -95,8 +95,8 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         if (event instanceof UdpServer.UdpServerBound) {
             port = ((UdpServer.UdpServerBound) event).getBindAddress().getPort();
         }
-        else if (event instanceof TcpServer.TcpServerBound) {
-            tcpFallbackPort = ((TcpServer.TcpServerBound) event).getPort();
+        else if (event instanceof TcpServerBound) {
+            tcpFallbackPort = ((TcpServerBound) event).getPort();
         }
         else if (event instanceof InboundExceptionEvent) {
             LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());
