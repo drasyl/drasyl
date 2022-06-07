@@ -1,13 +1,13 @@
 # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Build.gitlab-ci.yml
 docker-build:
   stage: build
-  image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image:v1.14.0"
+  image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-build-image:v1.15.0"
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_BUILDKIT: 1
     AUTO_DEVOPS_BUILD_IMAGE_EXTRA_ARGS: "--platform linux/amd64,linux/arm/v7,linux/arm64/v8"
   services:
-    - docker:dind
+    - docker:20.10.16-dind
   script:
     - |
       if [[ -z "$CI_COMMIT_TAG" ]]; then
