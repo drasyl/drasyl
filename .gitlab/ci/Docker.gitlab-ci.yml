@@ -5,7 +5,7 @@ docker-build:
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_BUILDKIT: 1
-    AUTO_DEVOPS_BUILD_IMAGE_EXTRA_ARGS: "--platform linux/amd64,linux/arm/v7,linux/arm64/v8"
+    AUTO_DEVOPS_BUILD_IMAGE_EXTRA_ARGS: "--platform linux/amd64,linux/arm/v7,linux/arm64"
   services:
     - docker:20.10.16-dind
   script:
