@@ -1,9 +1,10 @@
 FROM eclipse-temurin:11-jdk AS build
 
-ADD . /build
+COPY . /build
 
-RUN cd /build && \
-    ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests -Dmaven.javadoc.skip=true package
+WORKDIR /build/
+
+RUN ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests -Dmaven.javadoc.skip=true package
 
 FROM crazymax/7zip AS unzip
 
