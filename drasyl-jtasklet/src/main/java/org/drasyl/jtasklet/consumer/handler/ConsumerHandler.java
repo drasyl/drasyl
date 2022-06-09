@@ -246,7 +246,8 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         // apply timeout guard
         if (timeoutGuard != null) {
-            LOG.error("timeoutGuard war nicht null");
+            timeoutGuard.cancel(false);
+            timeoutGuard = null;
         }
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
@@ -262,8 +263,10 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                                      final TaskletMessage msg,
                                      final DrasylAddress sender) {
         LOG.info("[{}] Got resource response {} from Broker {}.", state, msg, sender);
-        timeoutGuard.cancel(false);
-        timeoutGuard = null;
+        if (timeoutGuard != null) {
+            timeoutGuard.cancel(false);
+            timeoutGuard = null;
+        }
         token = ((ResourceResponse) msg).getToken();
         provider = ((ResourceResponse) msg).getPublicKey();
         taskRecord.resourceResponded(provider, token);
@@ -321,7 +324,8 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
 
         // apply timeout guardm
         if (timeoutGuard != null) {
-            LOG.error("timeoutGuard war nicht null");
+            timeoutGuard.cancel(false);
+            timeoutGuard = null;
         }
         timeoutGuard = ctx.executor().schedule(() -> {
             timeoutGuard = null;
@@ -342,8 +346,10 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         final TaskResultReceived taskResultReceived = new TaskResultReceived(token);
         state = RESULT_RECEIVED;
         LOG.info("[{}] Got result {} from Provider {}. Inform Broker {}.", state, msg, sender, taskResultReceived);
-        timeoutGuard.cancel(false);
-        timeoutGuard = null;
+        if (timeoutGuard != null) {
+            timeoutGuard.cancel(false);
+            timeoutGuard = null;
+        }
         taskRecord.resultReturned(((ReturnResult) msg).getOutput(), ((ReturnResult) msg).getExecutionTime());
 
         out.println("Output      : " + Arrays.toString(((ReturnResult) msg).getOutput()));
