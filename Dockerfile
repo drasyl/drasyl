@@ -37,6 +37,11 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/drasyl/logback.xml
 
+# install "ip" command for drasyl's "tun" subcommand
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iproute2 \
+  && rm -rf /var/lib/apt/lists/*
+
 # run as non-root user
 RUN groupadd --gid 22527 drasyl && \
     useradd --system --uid 22527 --gid drasyl --home-dir /drasyl/ --no-log-init drasyl && \
