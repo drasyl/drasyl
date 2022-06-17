@@ -18,4 +18,6 @@ visual-coverage:
     - maven-verify
   artifacts:
     reports:
-      cobertura: drasyl-all/target/site/cobertura.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: drasyl-all/target/site/cobertura.xml
