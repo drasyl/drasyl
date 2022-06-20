@@ -63,8 +63,8 @@ public class TunRoute {
         }
     }
 
-    static InetAddress deriveInetAddressFromOverlayAddress(final Subnet subnet,
-                                                           final DrasylAddress overlayAddress) {
+    public static InetAddress deriveInetAddressFromOverlayAddress(final Subnet subnet,
+                                                                  final DrasylAddress overlayAddress) {
         final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(overlayAddress.toByteArray())).getValue();
         final int n = (int) (identityHash % subnet.networkSize());
         return subnet.nth(n);

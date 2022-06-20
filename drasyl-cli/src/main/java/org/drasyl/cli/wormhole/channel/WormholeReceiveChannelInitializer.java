@@ -62,7 +62,7 @@ public class WormholeReceiveChannelInitializer extends AbstractChannelInitialize
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SpawnChildChannelToPeer(ch, sender));
+        p.addLast(new SpawnChildChannelToPeer(sender));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

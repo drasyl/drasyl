@@ -19,38 +19,43 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc;
+package org.drasyl.cli.tunrc;
 
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.rc.AbstractRcSubcommand;
-import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Map;
 
 @Command(
-        name = "send",
+        name = "remove-route",
         description = {
-                "Sends a message."
+                "Removes a route."
         }
 )
-public class NodeRcSendCommand extends AbstractRcSubcommand {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeRcSendCommand.class);
+public class TunRcRemoveRouteCommand extends AbstractRcSubcommand {
+    private static final Logger LOG = LoggerFactory.getLogger(TunRcRemoveRouteCommand.class);
     @Option(
-            names = { "--recipient" },
-            description = "Recipient of the message.",
+            names = { "--public-key" },
+            description = "Public key of the peer.",
             paramLabel = "<public-key>",
             required = true
     )
-    private IdentityPublicKey recipient;
-    @ArgGroup(exclusive = true, multiplicity = "1")
-    private Payload payload;
+    private IdentityPublicKey publicKey;
+    @Option(
+            names = { "--address" },
+            description = {
+                    "IP address of the peer."
+            },
+            paramLabel = "<address>"
+    )
+    private InetAddress address;
 
     @Override
     protected Logger log() {
@@ -59,32 +64,9 @@ public class NodeRcSendCommand extends AbstractRcSubcommand {
 
     @Override
     protected JsonRpc2Request getRequest() throws IOException {
-        final Object requestPayload;
-        if (this.payload.string != null) {
-            requestPayload = this.payload.string;
-        }
-        else {
-            requestPayload = HexUtil.fromString(this.payload.hexString);
-        }
-
-        return new JsonRpc2Request("send", Map.of(
-                "recipient", recipient.toString(),
-                "payload", requestPayload
+        return new JsonRpc2Request("removeRoute", Map.of(
+                "publicKey", publicKey.toString(),
+                "address", address != null ? address.getHostAddress() : ""
         ));
-    }
-
-    static class Payload {
-        @Option(
-                names = { "--text" },
-                description = "String to be used as message payload.",
-                paramLabel = "<text>"
-        )
-        private String string;
-        @Option(
-                names = { "--hex" },
-                description = "Bytes as hex string to be used as message payload.",
-                paramLabel = "<bytes>"
-        )
-        private String hexString;
     }
 }

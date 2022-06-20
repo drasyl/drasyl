@@ -19,33 +19,45 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node.channel;
+package org.drasyl.cli.rc.handler;
 
-import io.netty.channel.ChannelPipeline;
-import org.drasyl.cli.node.handler.JsonRpc2DrasylNodeHandler;
-import org.drasyl.cli.rc.channel.RcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.node.DrasylNode;
-import org.drasyl.node.event.Event;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+import org.drasyl.cli.node.message.JsonRpc2Response;
 
-import java.util.Queue;
+import java.io.InputStream;
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * Creates a JSON-RPC 2.0 over TCP server channel.
+ * Decode bytes to {@link JsonRpc2Response}s.
  */
-public class NodeRcJsonRpc2OverTcpServerInitializer extends RcJsonRpc2OverTcpServerInitializer {
-    private final DrasylNode node;
-    private final Queue<Event> events;
+public class JsonRpc2ResponseDecoder extends ByteToMessageDecoder {
+    private final ObjectReader reader;
 
-    public NodeRcJsonRpc2OverTcpServerInitializer(final DrasylNode node,
-                                                  final Queue<Event> events) {
-        this.node = requireNonNull(node);
-        this.events = requireNonNull(events);
+    public JsonRpc2ResponseDecoder(final ObjectReader reader) {
+        this.reader = requireNonNull(reader);
+    }
+
+    public JsonRpc2ResponseDecoder(final ObjectMapper mapper) {
+        this(mapper.reader());
+    }
+
+    public JsonRpc2ResponseDecoder() {
+        this(new ObjectMapper());
     }
 
     @Override
-    protected void jsonRpc2RequestStage(ChannelPipeline p) {
-        p.addLast(new JsonRpc2DrasylNodeHandler(node, events));
+    protected void decode(final ChannelHandlerContext ctx,
+                          final ByteBuf in,
+                          final List<Object> out) throws Exception {
+        try (final InputStream inputStream = new ByteBufInputStream(in)) {
+            out.add(reader.readValue(inputStream, JsonRpc2Response.class));
+        }
     }
 }

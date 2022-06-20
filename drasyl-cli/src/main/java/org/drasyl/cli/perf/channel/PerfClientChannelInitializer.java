@@ -62,7 +62,7 @@ public class PerfClientChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SpawnChildChannelToPeer(ch, server));
+        p.addLast(new SpawnChildChannelToPeer(server));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

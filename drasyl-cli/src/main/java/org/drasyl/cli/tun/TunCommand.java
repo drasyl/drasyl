@@ -34,7 +34,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -45,26 +47,32 @@ import org.drasyl.cli.CliException;
 import org.drasyl.cli.converter.SubnetConverter;
 import org.drasyl.cli.tun.channel.TunChannelInitializer;
 import org.drasyl.cli.tun.channel.TunChildChannelInitializer;
+import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverHttpServerInitializer;
+import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelOption.AUTO_READ;
@@ -82,6 +90,13 @@ public class TunCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunCommand.class);
     private final Map<IdentityPublicKey, Channel> channels = new HashMap<>();
     @Option(
+            names = { "--rc-bind" },
+            description = "Binds remote control server to given IP and port. If no port is specified, a random free port will be used.",
+            paramLabel = "<host>[:<port>]",
+            defaultValue = "0.0.0.0:25421"
+    )
+    protected InetSocketAddress rcBindAddress;
+    @Option(
             names = { "--subnet" },
             description = "IP Subnet the TUN device should route traffic for. Formatted as CIDR notation.",
             converter = SubnetConverter.class,
@@ -90,14 +105,18 @@ public class TunCommand extends ChannelOptions {
     private Subnet subnet;
     @Option(
             names = { "--addr" },
-            description = "IP Address assigned to the TUN device. If no address is specified, an ip address within <subnet> will be assigned (consistent for a given overlay address)."
+            description = {
+                    "IP Address assigned to the TUN device.",
+                    "If no address is specified, an ip address within <subnet> will be assigned (consistent for a given overlay address)."
+            }
     )
     private InetAddress address;
     @Option(
             names = { "--route" },
-            description = "An overlay-to-ip-address mapping. If no address is specified, an ip address within <subnet> will be assigned (consistent for a given overlay address).",
-            required = true,
-            arity = "1..*",
+            description = {
+                    "An overlay-to-ip-address mapping.",
+                    "If no address is specified, an ip address within <subnet> will be assigned (consistent for a given overlay address)."
+            },
             converter = TunRouteConverter.class,
             paramLabel = "<public-key>[=<address>]"
     )
@@ -121,18 +140,25 @@ public class TunCommand extends ChannelOptions {
             defaultValue = "1220"
     )
     private int mtu;
+    @ArgGroup(exclusive = true, multiplicity = "0..1")
+    private RemoteControl rc;
 
     protected TunCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     @Override
     public Integer call() {
         setLogLevel();
 
-        routes = routes.stream().map(p -> p.ensureInetAddress(subnet)).collect(Collectors.toList());
+        if (routes != null) {
+            routes = routes.stream().map(p -> p.ensureInetAddress(subnet)).collect(Collectors.toList());
+        }
+        else {
+            routes = new ArrayList<>();
+        }
 
+        Channel rcChannel = null;
         try {
             if (!identityFile.exists()) {
                 out.println("Identity not found. Generate a new one. This may take a while...");
@@ -149,6 +175,7 @@ public class TunCommand extends ChannelOptions {
                 throw new IllegalStateException("Given TUN device address must be part of the given subnet.");
             }
 
+            final Map<InetAddress, DrasylAddress> routesMap = routes.stream().collect(Collectors.toMap(TunRoute::inetAddress, TunRoute::overlayAddress));
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
@@ -161,11 +188,28 @@ public class TunCommand extends ChannelOptions {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
 
-                            p.addLast(new AddressAndSubnetHandler(identity));
-                            p.addLast(new TunToDrasylHandler(identity, exitCode));
+                            p.addLast(new AddressAndSubnetHandler(identity, routesMap));
+                            p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap));
                         }
                     });
             final Channel ch = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
+
+            if (rc != null) {
+                final TunRcJsonRpc2OverTcpServerInitializer channelInitializer;
+                if (rc.rcTcpJsonRpc) {
+                    channelInitializer = new TunRcJsonRpc2OverTcpServerInitializer(routesMap, identity, subnet, ch, address);
+                }
+                else {
+                    channelInitializer = new TunRcJsonRpc2OverHttpServerInitializer(routesMap, identity, subnet, ch, address);
+                }
+                final ServerBootstrap rcBootstrap = new ServerBootstrap()
+                        .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(channelInitializer);
+                rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
+                LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());
+            }
+
             ch.closeFuture().syncUninterruptibly();
 
             return exitCode.getOrSet(0);
@@ -174,6 +218,9 @@ public class TunCommand extends ChannelOptions {
             throw new CliException(e);
         }
         finally {
+            if (rcChannel != null) {
+                rcChannel.close().syncUninterruptibly();
+            }
             parentGroup.shutdownGracefully();
             childGroup.shutdownGracefully();
         }
@@ -216,9 +263,12 @@ public class TunCommand extends ChannelOptions {
      */
     private class AddressAndSubnetHandler extends ChannelInboundHandlerAdapter {
         private final Identity identity;
+        private final Map<InetAddress, DrasylAddress> routes;
 
-        public AddressAndSubnetHandler(final Identity identity) {
+        public AddressAndSubnetHandler(final Identity identity,
+                                       final Map<InetAddress, DrasylAddress> routes) {
             this.identity = requireNonNull(identity);
+            this.routes = requireNonNull(routes);
         }
 
         @Override
@@ -234,30 +284,11 @@ public class TunCommand extends ChannelOptions {
             out.println();
 
             // print routing table
-            out.println("My routing table:");
-
-            final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>();
-            routingTable.put(address, identity.getAddress());
-            routingTable.putAll(routes.stream().collect(Collectors.toMap(TunRoute::inetAddress, TunRoute::overlayAddress)));
-            final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
-            inetAddresses.sort(new InetAddressComparator());
-
-            for (final InetAddress inetAddress : inetAddresses) {
-                out.print("  ");
-                out.printf("%1$-14s", inetAddress.getHostAddress());
-                out.print(" <-> ");
-                out.print(routingTable.get(inetAddress));
-                if (address.equals(inetAddress)) {
-                    out.print(" (this is me)");
-                }
-                out.println();
-            }
-            out.println();
+            printRoutingTable(out, identity, address, routes);
 
             ctx.pipeline().remove(ctx.name());
         }
 
-        @SuppressWarnings("UnstableApiUsage")
         private void configurateTun(final TunChannel channel,
                                     final String name) throws IOException {
             final String addressStr = address.getHostAddress();
@@ -294,11 +325,14 @@ public class TunCommand extends ChannelOptions {
         private final Identity identity;
         private final Worm<Integer> exitCode;
         private Channel channel;
-        private Map<InetAddress, DrasylAddress> peersMap;
+        private final Map<InetAddress, DrasylAddress> routes;
 
-        public TunToDrasylHandler(final Identity identity, final Worm<Integer> exitCode) {
+        public TunToDrasylHandler(final Identity identity,
+                                  final Worm<Integer> exitCode,
+                                  final Map<InetAddress, DrasylAddress> routes) {
             this.identity = requireNonNull(identity);
             this.exitCode = requireNonNull(exitCode);
+            this.routes = requireNonNull(routes);
         }
 
         @Override
@@ -306,10 +340,8 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // create drasyl channel
-            peersMap = routes.stream().collect(Collectors.toMap(TunRoute::inetAddress, TunRoute::overlayAddress));
-            final Set<DrasylAddress> peersKeys = Set.copyOf(peersMap.values());
-            final ChannelHandler handler = new TunChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), peersKeys, !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), peersKeys, channels);
+            final ChannelHandler handler = new TunChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
@@ -326,6 +358,7 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelInactive();
         }
 
+        @SuppressWarnings("SuspiciousMethodCalls")
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final Tun4Packet msg) {
@@ -337,15 +370,80 @@ public class TunCommand extends ChannelOptions {
                 // loopback
                 ctx.writeAndFlush(msg.retain());
             }
-            else if (peersMap.containsKey(dst) && channels.containsKey(peersMap.get(dst))) {
-                LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> peersMap.get(dst));
-                final Channel peerChannel = channels.get(peersMap.get(dst));
-                peerChannel.writeAndFlush(msg.retain());
-            }
             else {
-                LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
-                // TODO: reply with ICMP host unreachable message?
+                final DrasylAddress publicKey = routes.get(dst);
+                if (routes.containsKey(dst) && channels.containsKey(publicKey)) {
+                    LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
+                    final Channel peerChannel = channels.get(publicKey);
+                    peerChannel.writeAndFlush(msg.retain());
+                }
+                else {
+                    LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
+                    // TODO: reply with ICMP host unreachable message?
+                }
             }
         }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+            if (evt instanceof AddRoute) {
+                final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) channel, ((AddRoute) evt).publicKey);
+                channel.pipeline().fireChannelRead(childChannel);
+            }
+            else {
+                ctx.fireUserEventTriggered(evt);
+            }
+        }
+    }
+
+    static class RemoteControl {
+        @Option(
+                names = "--rc-jsonrpc-tcp",
+                description = {
+                        "Starts a JSON-RPC 2.0 over TCP server listening on remote requests.",
+                        "Available methods: routes, add-route, remove-route, identity"
+                }
+        )
+        boolean rcTcpJsonRpc;
+        @Option(
+                names = "--rc-jsonrpc-http",
+                description = {
+                        "Starts a JSON-RPC 2.0 over HTTP server listening on remote requests.",
+                        "Available methods: routes, add-route, remove-route, identity"
+                }
+        )
+        boolean rcTcpJsonHttp;
+    }
+
+    public static class AddRoute {
+        final IdentityPublicKey publicKey;
+
+        public AddRoute(final IdentityPublicKey publicKey) {
+            this.publicKey = requireNonNull(publicKey);
+        }
+    }
+
+    public static void printRoutingTable(final PrintStream out,
+                                         final Identity identity,
+                                         final InetAddress address,
+                                         final Map<InetAddress, DrasylAddress> routes) {
+        out.println("My routing table:");
+
+        final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>(routes);
+        routingTable.put(address, identity.getAddress());
+        final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
+        inetAddresses.sort(new InetAddressComparator());
+
+        for (final InetAddress inetAddress : inetAddresses) {
+            out.print("  ");
+            out.printf("%1$-14s", inetAddress.getHostAddress());
+            out.print(" <-> ");
+            out.print(routingTable.get(inetAddress));
+            if (address.equals(inetAddress)) {
+                out.print(" (this is me)");
+            }
+            out.println();
+        }
+        out.println();
     }
 }

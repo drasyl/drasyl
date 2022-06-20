@@ -62,7 +62,7 @@ public class TunnelConsumeChannelInitializer extends AbstractChannelInitializer 
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SpawnChildChannelToPeer(ch, exposer));
+        p.addLast(new SpawnChildChannelToPeer(exposer));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

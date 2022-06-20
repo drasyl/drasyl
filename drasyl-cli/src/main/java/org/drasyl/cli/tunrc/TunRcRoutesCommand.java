@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc;
+package org.drasyl.cli.tunrc;
 
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.rc.AbstractRcSubcommand;
@@ -28,13 +28,13 @@ import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
 
 @Command(
-        name = "shutdown",
+        name = "routes",
         description = {
-                "Shutdowns the node."
+                "Requests all routes."
         }
 )
-public class NodeRcShutdownCommand extends AbstractRcSubcommand {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeRcShutdownCommand.class);
+public class TunRcRoutesCommand extends AbstractRcSubcommand {
+    private static final Logger LOG = LoggerFactory.getLogger(TunRcRoutesCommand.class);
 
     @Override
     protected Logger log() {
@@ -43,6 +43,6 @@ public class NodeRcShutdownCommand extends AbstractRcSubcommand {
 
     @Override
     protected JsonRpc2Request getRequest() {
-        return new JsonRpc2Request("shutdown");
+        return new JsonRpc2Request("routes");
     }
 }

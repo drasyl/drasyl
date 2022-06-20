@@ -19,44 +19,30 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc.handler;
+package org.drasyl.cli.tunrc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
 import org.drasyl.cli.node.message.JsonRpc2Request;
+import org.drasyl.cli.rc.AbstractRcSubcommand;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
+import picocli.CommandLine.Command;
 
-import java.io.OutputStream;
+@Command(
+        name = "identity",
+        description = {
+                "Requests the identity."
+        }
+)
+public class TunRcIdentityCommand extends AbstractRcSubcommand {
+    private static final Logger LOG = LoggerFactory.getLogger(TunRcIdentityCommand.class);
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Encodes {@link JsonRpc2Request}s to bytes.
- */
-public class JsonRpc2RequestEncoder extends MessageToByteEncoder<JsonRpc2Request> {
-    private final ObjectWriter writer;
-
-    public JsonRpc2RequestEncoder(final ObjectWriter writer) {
-        this.writer = requireNonNull(writer);
-    }
-
-    public JsonRpc2RequestEncoder(final ObjectMapper mapper) {
-        this(mapper.writer());
-    }
-
-    public JsonRpc2RequestEncoder() {
-        this(new ObjectMapper());
+    @Override
+    protected Logger log() {
+        return LOG;
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final JsonRpc2Request msg,
-                          final ByteBuf out) throws Exception {
-        try (final OutputStream outputStream = new ByteBufOutputStream(out)) {
-            writer.writeValue(outputStream, msg);
-        }
+    protected JsonRpc2Request getRequest() {
+        return new JsonRpc2Request("identity");
     }
 }

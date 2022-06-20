@@ -22,6 +22,7 @@
 package org.drasyl.cli.noderc;
 
 import org.drasyl.cli.node.message.JsonRpc2Request;
+import org.drasyl.cli.rc.AbstractRcSubcommand;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
@@ -32,7 +33,7 @@ import picocli.CommandLine.Command;
                 "Requests the identity."
         }
 )
-public class NodeRcIdentityCommand extends AbstractNodeRcSubcommand {
+public class NodeRcIdentityCommand extends AbstractRcSubcommand {
     private static final Logger LOG = LoggerFactory.getLogger(NodeRcIdentityCommand.class);
 
     @Override
