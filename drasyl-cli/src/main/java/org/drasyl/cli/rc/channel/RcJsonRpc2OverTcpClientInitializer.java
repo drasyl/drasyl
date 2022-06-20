@@ -19,44 +19,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node.handler;
+package org.drasyl.cli.rc.channel;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
+import org.drasyl.cli.rc.handler.JsonRpc2RequestEncoder;
+import org.drasyl.cli.rc.handler.JsonRpc2ResponseDecoder;
+import org.drasyl.cli.rc.handler.OneshotJsonRpc2RequestHandler;
 
-import java.io.OutputStream;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * Encodes {@link JsonRpc2Response}s to bytes.
- */
-public class JsonRpc2ResponeEncoder extends MessageToByteEncoder<JsonRpc2Response> {
-    private final ObjectWriter writer;
+public class RcJsonRpc2OverTcpClientInitializer extends ChannelInitializer<Channel> {
+    private final JsonRpc2Request request;
+    private final Consumer<JsonRpc2Response> responseConsumer;
 
-    public JsonRpc2ResponeEncoder(final ObjectWriter writer) {
-        this.writer = requireNonNull(writer);
-    }
-
-    public JsonRpc2ResponeEncoder(final ObjectMapper mapper) {
-        this(mapper.writer());
-    }
-
-    public JsonRpc2ResponeEncoder() {
-        this(new ObjectMapper());
+    public RcJsonRpc2OverTcpClientInitializer(final JsonRpc2Request request,
+                                              final Consumer<JsonRpc2Response> responseConsumer) {
+        this.request = requireNonNull(request);
+        this.responseConsumer = requireNonNull(responseConsumer);
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final JsonRpc2Response msg,
-                          final ByteBuf out) throws Exception {
-        try (final OutputStream outputStream = new ByteBufOutputStream(out)) {
-            writer.writeValue(outputStream, msg);
-        }
+    public void initChannel(final Channel ch) throws Exception {
+        final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new JsonRpc2RequestEncoder());
+        p.addLast(new JsonRpc2ResponseDecoder());
+        p.addLast(new OneshotJsonRpc2RequestHandler(request, responseConsumer));
     }
 }

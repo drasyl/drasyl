@@ -19,30 +19,26 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node.handler;
+package org.drasyl.cli.tunrc;
 
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
-import org.drasyl.cli.node.message.JsonRpc2Error;
-import org.drasyl.cli.node.message.JsonRpc2Response;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.HelpCommand;
 
-import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
-import static org.drasyl.cli.node.message.JsonRpc2Error.PARSE_ERROR;
-
-@Sharable
-public class JsonRpc2ExceptionHandler extends ChannelDuplexHandler {
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx,
-                                final Throwable cause) {
-        if (cause instanceof DecoderException) {
-            final JsonRpc2Error error = new JsonRpc2Error(PARSE_ERROR, "invalid JSON was received.");
-            final JsonRpc2Response response = new JsonRpc2Response(error, "");
-            ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+@Command(
+        name = "tun-rc",
+        header = {
+                "Remote controlling a network interface created by the \"tun\" command.",
+                "Target TUN interface must be started with --rc-jsonrpc-tcp"
+        },
+        synopsisHeading = "%nUsage: ",
+        commandListHeading = "%nCommands:%n",
+        subcommands = {
+                HelpCommand.class,
+                TunRcAddRouteCommand.class,
+                TunRcIdentityCommand.class,
+                TunRcRemoveRouteCommand.class,
+                TunRcRoutesCommand.class
         }
-        else {
-            ctx.fireExceptionCaught(cause);
-        }
-    }
+)
+public class TunRcCommand {
 }

@@ -19,30 +19,45 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc;
+package org.drasyl.cli.rc.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
 import org.drasyl.cli.node.message.JsonRpc2Request;
-import org.drasyl.cli.rc.AbstractRcSubcommand;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
-import picocli.CommandLine.Command;
 
-@Command(
-        name = "shutdown",
-        description = {
-                "Shutdowns the node."
-        }
-)
-public class NodeRcShutdownCommand extends AbstractRcSubcommand {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeRcShutdownCommand.class);
+import java.io.InputStream;
+import java.util.List;
 
-    @Override
-    protected Logger log() {
-        return LOG;
+import static java.util.Objects.requireNonNull;
+
+/**
+ * Decode bytes to {@link JsonRpc2Request}s.
+ */
+public class JsonRpc2RequestDecoder extends ByteToMessageDecoder {
+    private final ObjectReader reader;
+
+    public JsonRpc2RequestDecoder(final ObjectReader reader) {
+        this.reader = requireNonNull(reader);
+    }
+
+    public JsonRpc2RequestDecoder(final ObjectMapper mapper) {
+        this(mapper.reader());
+    }
+
+    public JsonRpc2RequestDecoder() {
+        this(new ObjectMapper());
     }
 
     @Override
-    protected JsonRpc2Request getRequest() {
-        return new JsonRpc2Request("shutdown");
+    protected void decode(final ChannelHandlerContext ctx,
+                          final ByteBuf in,
+                          final List<Object> out) throws Exception {
+        try (final InputStream inputStream = new ByteBufInputStream(in)) {
+            out.add(reader.readValue(inputStream, JsonRpc2Request.class));
+        }
     }
 }

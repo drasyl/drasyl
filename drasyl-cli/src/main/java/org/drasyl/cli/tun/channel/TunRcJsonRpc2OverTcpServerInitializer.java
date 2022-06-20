@@ -19,33 +19,45 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node.channel;
+package org.drasyl.cli.tun.channel;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.cli.node.handler.JsonRpc2DrasylNodeHandler;
 import org.drasyl.cli.rc.channel.RcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.node.DrasylNode;
-import org.drasyl.node.event.Event;
+import org.drasyl.cli.tun.handler.JsonRpc2TunHandler;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
+import org.drasyl.util.network.Subnet;
 
-import java.util.Queue;
+import java.net.InetAddress;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Creates a JSON-RPC 2.0 over TCP server channel.
  */
-public class NodeRcJsonRpc2OverTcpServerInitializer extends RcJsonRpc2OverTcpServerInitializer {
-    private final DrasylNode node;
-    private final Queue<Event> events;
+public class TunRcJsonRpc2OverTcpServerInitializer extends RcJsonRpc2OverTcpServerInitializer {
+    private final Map<InetAddress, DrasylAddress> routes;
+    private final Identity identity;
+    private final Subnet subnet;
+    private final Channel channel;
+    private final InetAddress address;
 
-    public NodeRcJsonRpc2OverTcpServerInitializer(final DrasylNode node,
-                                                  final Queue<Event> events) {
-        this.node = requireNonNull(node);
-        this.events = requireNonNull(events);
+    public TunRcJsonRpc2OverTcpServerInitializer(final Map<InetAddress, DrasylAddress> routes,
+                                                 final Identity identity,
+                                                 final Subnet subnet,
+                                                 final Channel channel,
+                                                 final InetAddress address) {
+        this.routes = requireNonNull(routes);
+        this.identity = requireNonNull(identity);
+        this.subnet = requireNonNull(subnet);
+        this.channel = requireNonNull(channel);
+        this.address = requireNonNull(address);
     }
 
     @Override
-    protected void jsonRpc2RequestStage(ChannelPipeline p) {
-        p.addLast(new JsonRpc2DrasylNodeHandler(node, events));
+    protected void jsonRpc2RequestStage(final ChannelPipeline p) {
+        p.addLast(new JsonRpc2TunHandler(routes, identity, subnet, channel, address));
     }
 }

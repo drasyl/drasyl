@@ -19,45 +19,30 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc.handler;
+package org.drasyl.cli.rc.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
+import io.netty.handler.codec.DecoderException;
+import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Response;
 
-import java.io.InputStream;
-import java.util.List;
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
+import static org.drasyl.cli.node.message.JsonRpc2Error.PARSE_ERROR;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * Decode bytes to {@link JsonRpc2Response}s.
- */
-public class JsonRpc2ResponseDecoder extends ByteToMessageDecoder {
-    private final ObjectReader reader;
-
-    public JsonRpc2ResponseDecoder(final ObjectReader reader) {
-        this.reader = requireNonNull(reader);
-    }
-
-    public JsonRpc2ResponseDecoder(final ObjectMapper mapper) {
-        this(mapper.reader());
-    }
-
-    public JsonRpc2ResponseDecoder() {
-        this(new ObjectMapper());
-    }
-
+@Sharable
+public class JsonRpc2ExceptionHandler extends ChannelDuplexHandler {
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final ByteBuf in,
-                          final List<Object> out) throws Exception {
-        try (final InputStream inputStream = new ByteBufInputStream(in)) {
-            out.add(reader.readValue(inputStream, JsonRpc2Response.class));
+    public void exceptionCaught(final ChannelHandlerContext ctx,
+                                final Throwable cause) {
+        if (cause instanceof DecoderException) {
+            final JsonRpc2Error error = new JsonRpc2Error(PARSE_ERROR, "invalid JSON was received.");
+            final JsonRpc2Response response = new JsonRpc2Response(error, "");
+            ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        }
+        else {
+            ctx.fireExceptionCaught(cause);
         }
     }
 }

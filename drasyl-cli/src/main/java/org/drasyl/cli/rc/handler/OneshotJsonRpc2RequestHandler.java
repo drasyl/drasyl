@@ -19,37 +19,46 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc.channel;
+package org.drasyl.cli.rc.handler;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
-import org.drasyl.cli.noderc.handler.JsonRpc2RequestEncoder;
-import org.drasyl.cli.noderc.handler.JsonRpc2ResponseDecoder;
-import org.drasyl.cli.noderc.handler.OneshotJsonRpc2RequestHandler;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.function.Consumer;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 
-public class NodeRcJsonRpc2OverTcpClientInitializer extends ChannelInitializer<Channel> {
+public class OneshotJsonRpc2RequestHandler extends SimpleChannelInboundHandler<JsonRpc2Response> {
+    private static final Logger LOG = LoggerFactory.getLogger(OneshotJsonRpc2RequestHandler.class);
     private final JsonRpc2Request request;
     private final Consumer<JsonRpc2Response> responseConsumer;
 
-    public NodeRcJsonRpc2OverTcpClientInitializer(final JsonRpc2Request request,
-                                                  final Consumer<JsonRpc2Response> responseConsumer) {
+    public OneshotJsonRpc2RequestHandler(final JsonRpc2Request request,
+                                         final Consumer<JsonRpc2Response> responseConsumer) {
         this.request = requireNonNull(request);
-        this.responseConsumer = requireNonNull(responseConsumer);
+        this.responseConsumer = responseConsumer;
     }
 
     @Override
-    public void initChannel(final Channel ch) throws Exception {
-        final ChannelPipeline p = ch.pipeline();
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
 
-        p.addLast(new JsonRpc2RequestEncoder());
-        p.addLast(new JsonRpc2ResponseDecoder());
-        p.addLast(new OneshotJsonRpc2RequestHandler(request, responseConsumer));
+        LOG.trace("Send request `{}`.", request);
+        ctx.writeAndFlush(request).addListener(FIRE_EXCEPTION_ON_FAILURE);
+    }
+
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final JsonRpc2Response response) throws Exception {
+        LOG.trace("Got response `{}`.", response);
+        if (request.getId().equals(response.getId())) {
+            responseConsumer.accept(response);
+            ctx.channel().close();
+        }
     }
 }

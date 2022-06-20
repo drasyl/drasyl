@@ -43,7 +43,7 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final Channel tun;
-    private final Set<DrasylAddress> peers;
+    private final Set<DrasylAddress> remoteAddress;
 
     @SuppressWarnings("java:S107")
     public TunChannelInitializer(final Identity identity,
@@ -54,13 +54,13 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
                                  final PrintStream err,
                                  final Worm<Integer> exitCode,
                                  final Channel tun,
-                                 final Set<DrasylAddress> peers,
+                                 final Set<DrasylAddress> remoteAddress,
                                  final boolean protocolArmEnabled) {
         super(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.tun = requireNonNull(tun);
-        this.peers = requireNonNull(peers);
+        this.remoteAddress = requireNonNull(remoteAddress);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SpawnChildChannelToPeer(ch, peers));
+        p.addLast(new SpawnChildChannelToPeer(remoteAddress));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
 
         // close tun device as well

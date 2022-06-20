@@ -38,38 +38,37 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
+import java.net.InetAddress;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.channel.AbstractChannelInitializer.MAX_PEERS;
 
-@SuppressWarnings("UnstableApiUsage")
 public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private static final Logger LOG = LoggerFactory.getLogger(TunChildChannelInitializer.class);
     private static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
     private final Identity identity;
     private final Channel tun;
-    private final Set<DrasylAddress> peers;
+    private final Map<InetAddress, DrasylAddress> routes;
     private final Map<IdentityPublicKey, Channel> channels;
 
     public TunChildChannelInitializer(final PrintStream err,
                                       final Identity identity,
                                       final Channel tun,
-                                      final Set<DrasylAddress> peers,
+                                      final Map<InetAddress, DrasylAddress> routes,
                                       final Map<IdentityPublicKey, Channel> channels) {
         this.err = requireNonNull(err);
         this.identity = requireNonNull(identity);
         this.tun = requireNonNull(tun);
-        this.peers = requireNonNull(peers);
+        this.routes = requireNonNull(routes);
         this.channels = requireNonNull(channels);
     }
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws CryptoException {
-        if (!peers.contains(ch.remoteAddress())) {
+        if (!routes.containsValue(ch.remoteAddress())) {
             LOG.debug("Close channel for `{}` that is not in my peers list.", ch.remoteAddress());
             ch.close();
             return;

@@ -28,6 +28,7 @@ import org.drasyl.cli.noderc.NodeRcCommand;
 import org.drasyl.cli.perf.PerfCommand;
 import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;
+import org.drasyl.cli.tunrc.TunRcCommand;
 import org.drasyl.cli.wormhole.WormholeCommand;
 import org.drasyl.identity.IdentityPublicKey;
 import picocli.AutoComplete.GenerateCompletion;
@@ -57,6 +58,7 @@ import static java.util.Objects.requireNonNull;
                 PerfCommand.class,
                 PublicKeyCommand.class,
                 TunCommand.class,
+                TunRcCommand.class,
                 TunnelCommand.class,
                 VersionCommand.class,
                 WormholeCommand.class

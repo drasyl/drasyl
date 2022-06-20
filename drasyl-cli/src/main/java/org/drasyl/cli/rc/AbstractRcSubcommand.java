@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.noderc;
+package org.drasyl.cli.rc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,14 +32,14 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
-import org.drasyl.cli.noderc.channel.NodeRcJsonRpc2OverTcpClientInitializer;
+import org.drasyl.cli.rc.channel.RcJsonRpc2OverTcpClientInitializer;
 import org.drasyl.util.Worm;
 import picocli.CommandLine.Option;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
 
-abstract class AbstractNodeRcSubcommand extends GlobalOptions implements Callable<Integer> {
+public abstract class AbstractRcSubcommand extends GlobalOptions implements Callable<Integer> {
     protected final ObjectWriter jsonWriter = new ObjectMapper().writerWithDefaultPrettyPrinter();
     @Option(
             names = { "--rc-addr" },
@@ -59,9 +59,7 @@ abstract class AbstractNodeRcSubcommand extends GlobalOptions implements Callabl
             final Bootstrap b = new Bootstrap()
                     .group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new NodeRcJsonRpc2OverTcpClientInitializer(getRequest(), response -> {
-                        exitCode.trySet(onResponse(response));
-                    }));
+                    .handler(new RcJsonRpc2OverTcpClientInitializer(getRequest(), response -> exitCode.trySet(onResponse(response))));
             final ChannelFuture future = b.connect(rcAddress).syncUninterruptibly();
 
             // wait for client to complete
@@ -74,6 +72,7 @@ abstract class AbstractNodeRcSubcommand extends GlobalOptions implements Callabl
         return exitCode.get();
     }
 
+    @SuppressWarnings("java:S112")
     protected abstract JsonRpc2Request getRequest() throws Exception;
 
     protected int onResponse(final JsonRpc2Response response) {

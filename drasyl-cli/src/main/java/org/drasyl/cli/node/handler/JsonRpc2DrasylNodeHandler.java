@@ -22,10 +22,10 @@
 package org.drasyl.cli.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
+import org.drasyl.cli.rc.handler.JsonRpc2RequestHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
@@ -45,12 +45,11 @@ import java.util.concurrent.CompletionStage;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.node.message.JsonRpc2Error.INVALID_PARAMS;
-import static org.drasyl.cli.node.message.JsonRpc2Error.METHOD_NOT_FOUND;
 
 /**
  * Allow remote controling of a {@link DrasylNode} via JSON-RPC 2.0.
  */
-public class JsonRpc2DrasylNodeHandler extends SimpleChannelInboundHandler<JsonRpc2Request> {
+public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2DrasylNodeHandler.class);
     private final DrasylNode node;
     private final Queue<Event> events;
@@ -83,9 +82,7 @@ public class JsonRpc2DrasylNodeHandler extends SimpleChannelInboundHandler<JsonR
             events(ctx, request);
         }
         else {
-            final JsonRpc2Error error = new JsonRpc2Error(METHOD_NOT_FOUND, "the method '" + method + "' does not exist / is not available.");
-            final JsonRpc2Response response = new JsonRpc2Response(error, "");
-            ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            requestMethodNotFound(ctx, request, method);
         }
     }
 
@@ -140,7 +137,7 @@ public class JsonRpc2DrasylNodeHandler extends SimpleChannelInboundHandler<JsonR
     }
 
     private void identity(final ChannelHandlerContext ctx, final JsonRpc2Request request) {
-        LOG.trace("Got Identity request.");
+        LOG.trace("Got identity request.");
 
         final Object requestId = request.getId();
         if (requestId != null) {
@@ -151,7 +148,7 @@ public class JsonRpc2DrasylNodeHandler extends SimpleChannelInboundHandler<JsonR
             ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
         }
         else {
-            LOG.trace("Drop Identity request as it was sent as notification.");
+            LOG.trace("Drop identity request as it was sent as notification.");
         }
     }
 
@@ -256,19 +253,5 @@ public class JsonRpc2DrasylNodeHandler extends SimpleChannelInboundHandler<JsonR
         else {
             LOG.trace("Drop event request as it was sent as notification.");
         }
-    }
-
-    private Map<String, Object> identityMap(final Identity identity) {
-        return Map.of(
-                "proofOfWork", identity.getProofOfWork().intValue(),
-                "identityKeyPair", Map.of(
-                        "publicKey", identity.getIdentityPublicKey().toString(),
-                        "secretKey", identity.getIdentitySecretKey().toUnmaskedString()
-                ),
-                "agreementKeyPair", Map.of(
-                        "publicKey", identity.getKeyAgreementPublicKey().toString(),
-                        "secretKey", identity.getKeyAgreementSecretKey().toUnmaskedString()
-                )
-        );
     }
 }
