@@ -9,13 +9,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- CLI: Option `--mtu` to sub-command `tun` added.
-- CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
-- CLI: `node-rc` sub-command added.
+- NAT Traversal is now also able to establish a P2P connection if both device are behind a common
+  NAT device that does not support hairpinning.- CLI: Option `--mtu` to sub-command `tun` added.
 - Node: Added `UnconfirmedAddressResolveHandler` that does send messages to unconfirmed (sender)
   addresses as last-resort (before the messages were simply dropped).
-- NAT Traversal is now also able to establish a P2P connection if both device are behind a common
-  NAT device that does not support hairpinning.
+- CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
+- CLI: `node-rc` sub-command added.
+- CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `tun` added.
+- CLI: `tun-rc` sub-command added.
 -
 -
 
@@ -28,8 +29,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
-- DrasylNode: Groups plugin is working again.
 - Internet discovery now regularly checks if the super peer DNS records have changed.
+- DrasylNode: Groups plugin is working again.
 -
 -
 
