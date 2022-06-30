@@ -34,7 +34,10 @@ import java.util.Queue;
 /**
  * Creates a JSON-RPC 2.0 over HTTP server channel.
  */
+@SuppressWarnings("java:S110")
 public class NodeRcJsonRpc2OverHttpServerInitializer extends NodeRcJsonRpc2OverTcpServerInitializer {
+    public static final int MAX_CONTENT_LENGTH = 1_048_576; // bytes
+
     public NodeRcJsonRpc2OverHttpServerInitializer(final DrasylNode node,
                                                    final Queue<Event> events) {
         super(node, events);
@@ -45,17 +48,9 @@ public class NodeRcJsonRpc2OverHttpServerInitializer extends NodeRcJsonRpc2OverT
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new HttpServerCodec());
-        p.addLast(new HttpObjectAggregator(1_048_576));
+        p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH));
         p.addLast(new HttpToBytesCodec());
 
         super.initChannel(ch);
     }
 }
-
-//new SimpleChannelInboundHandler<FullHttpMessage>() {
-//@Override
-//protected void channelRead0(final ChannelHandlerContext ctx,
-//final FullHttpMessage msg) throws Exception {
-//        System.out.println();
-//        }
-//        }

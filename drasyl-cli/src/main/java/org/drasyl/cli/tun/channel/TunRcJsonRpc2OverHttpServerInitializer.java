@@ -38,6 +38,8 @@ import java.util.Map;
  */
 @SuppressWarnings("java:S110")
 public class TunRcJsonRpc2OverHttpServerInitializer extends TunRcJsonRpc2OverTcpServerInitializer {
+    public static final int HTTP_MAX_CONTENT_LENGTH = 1_024 * 1_024; // bytes
+
     public TunRcJsonRpc2OverHttpServerInitializer(final Map<InetAddress, DrasylAddress> routes,
                                                   final Identity identity,
                                                   final Subnet subnet,
@@ -51,7 +53,7 @@ public class TunRcJsonRpc2OverHttpServerInitializer extends TunRcJsonRpc2OverTcp
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new HttpServerCodec());
-        p.addLast(new HttpObjectAggregator(1_048_576));
+        p.addLast(new HttpObjectAggregator(HTTP_MAX_CONTENT_LENGTH));
         p.addLast(new HttpToBytesCodec());
 
         super.initChannel(ch);
