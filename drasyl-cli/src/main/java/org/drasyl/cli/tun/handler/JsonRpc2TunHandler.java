@@ -94,7 +94,7 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
         try {
             final IdentityPublicKey publicKey = IdentityPublicKey.of(publicKeyParam);
             final InetAddress address;
-            if (!addressParam.isEmpty()) {
+            if (addressParam != null && !addressParam.isEmpty()) {
                 address = InetAddress.getByName(addressParam);
             }
             else {
