@@ -93,6 +93,15 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
         final String addressParam = request.getParam("address", "");
         try {
             final IdentityPublicKey publicKey = IdentityPublicKey.of(publicKeyParam);
+
+            if (identity.getIdentityPublicKey().equals(publicKey)) {
+                final JsonRpc2Error error = new JsonRpc2Error(INVALID_PARAMS, "Cannot add route to self.");
+                final JsonRpc2Response response = new JsonRpc2Response(error, requestId);
+                LOG.trace("Send response `{}`.", response);
+                ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                return;
+            }
+
             final InetAddress address;
             if (addressParam != null && !addressParam.isEmpty()) {
                 address = InetAddress.getByName(addressParam);
@@ -119,7 +128,7 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
                 ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
         }
-        catch (final IllegalArgumentException | UnknownHostException e) {
+        catch (final NullPointerException | IllegalArgumentException | UnknownHostException e) {
             if (requestId != null) {
                 final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
                 final JsonRpc2Response response = new JsonRpc2Response(error, requestId);
