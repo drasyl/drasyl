@@ -26,6 +26,9 @@ import static java.lang.System.out;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.node.message.JsonRpc2Error.INVALID_PARAMS;
 
+/**
+ * Allow remote controlling of a TUN interface via JSON-RPC 2.0.
+ */
 public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2TunHandler.class);
     private final Map<InetAddress, DrasylAddress> routes;

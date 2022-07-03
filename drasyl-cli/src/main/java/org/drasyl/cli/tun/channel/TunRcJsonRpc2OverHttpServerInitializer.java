@@ -25,7 +25,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.drasyl.cli.node.handler.HttpToBytesCodec;
+import org.drasyl.cli.rc.handler.JsonRpc2BadHttpRequestHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.network.Subnet;
@@ -39,6 +41,7 @@ import java.util.Map;
 @SuppressWarnings("java:S110")
 public class TunRcJsonRpc2OverHttpServerInitializer extends TunRcJsonRpc2OverTcpServerInitializer {
     public static final int HTTP_MAX_CONTENT_LENGTH = 1_024 * 1_024; // bytes
+    public static final int HTTP_REQUEST_TIMEOUT = 60; // seconds
 
     public TunRcJsonRpc2OverHttpServerInitializer(final Map<InetAddress, DrasylAddress> routes,
                                                   final Identity identity,
@@ -54,6 +57,8 @@ public class TunRcJsonRpc2OverHttpServerInitializer extends TunRcJsonRpc2OverTcp
 
         p.addLast(new HttpServerCodec());
         p.addLast(new HttpObjectAggregator(HTTP_MAX_CONTENT_LENGTH));
+        p.addLast(new ReadTimeoutHandler(HTTP_REQUEST_TIMEOUT));
+        p.addLast(new JsonRpc2BadHttpRequestHandler());
         p.addLast(new HttpToBytesCodec());
 
         super.initChannel(ch);

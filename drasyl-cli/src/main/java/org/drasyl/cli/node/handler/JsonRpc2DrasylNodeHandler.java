@@ -47,7 +47,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.node.message.JsonRpc2Error.INVALID_PARAMS;
 
 /**
- * Allow remote controling of a {@link DrasylNode} via JSON-RPC 2.0.
+ * Allow remote controlling of a {@link DrasylNode} via JSON-RPC 2.0.
  */
 public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
     private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2DrasylNodeHandler.class);

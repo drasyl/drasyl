@@ -45,7 +45,7 @@ public class NodeRcJsonRpc2OverTcpServerInitializer extends RcJsonRpc2OverTcpSer
     }
 
     @Override
-    protected void jsonRpc2RequestStage(ChannelPipeline p) {
+    protected void jsonRpc2RequestStage(final ChannelPipeline p) {
         p.addLast(new JsonRpc2DrasylNodeHandler(node, events));
     }
 }

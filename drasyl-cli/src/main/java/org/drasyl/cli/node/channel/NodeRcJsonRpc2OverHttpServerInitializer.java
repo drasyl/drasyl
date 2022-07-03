@@ -25,7 +25,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.drasyl.cli.node.handler.HttpToBytesCodec;
+import org.drasyl.cli.rc.handler.JsonRpc2BadHttpRequestHandler;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
 
@@ -36,7 +38,8 @@ import java.util.Queue;
  */
 @SuppressWarnings("java:S110")
 public class NodeRcJsonRpc2OverHttpServerInitializer extends NodeRcJsonRpc2OverTcpServerInitializer {
-    public static final int MAX_CONTENT_LENGTH = 1_048_576; // bytes
+    public static final int HTTP_MAX_CONTENT_LENGTH = 1_048_576; // bytes
+    public static final int HTTP_REQUEST_TIMEOUT = 60; // seconds
 
     public NodeRcJsonRpc2OverHttpServerInitializer(final DrasylNode node,
                                                    final Queue<Event> events) {
@@ -48,7 +51,9 @@ public class NodeRcJsonRpc2OverHttpServerInitializer extends NodeRcJsonRpc2OverT
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new HttpServerCodec());
-        p.addLast(new HttpObjectAggregator(MAX_CONTENT_LENGTH));
+        p.addLast(new HttpObjectAggregator(HTTP_MAX_CONTENT_LENGTH));
+        p.addLast(new ReadTimeoutHandler(HTTP_REQUEST_TIMEOUT));
+        p.addLast(new JsonRpc2BadHttpRequestHandler());
         p.addLast(new HttpToBytesCodec());
 
         super.initChannel(ch);
