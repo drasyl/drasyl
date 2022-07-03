@@ -27,12 +27,17 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Response;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
+import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static org.drasyl.cli.node.message.JsonRpc2Error.PARSE_ERROR;
 
 @Sharable
 public class JsonRpc2ExceptionHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(JsonRpc2ExceptionHandler.class);
+
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
@@ -42,7 +47,11 @@ public class JsonRpc2ExceptionHandler extends ChannelDuplexHandler {
             ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
         }
         else {
-            ctx.fireExceptionCaught(cause);
+            LOG.error("Error fired. Reply with 'Internal Server Error' and close connection.", cause);
+            final JsonRpc2Error error = new JsonRpc2Error(500, "Internal Server Error");
+            final JsonRpc2Response response = new JsonRpc2Response(error, "");
+            LOG.trace("Send response `{}`.", response);
+            ctx.writeAndFlush(response).addListener(CLOSE);
         }
     }
 }
