@@ -21,8 +21,7 @@ features.
 
 For end-user related support questions, try using first:
 
-- the drasyl gitter
-  room: [![Gitter](https://badges.gitter.im/drasyl-overlay/drasyl.svg)](https://gitter.im/drasyl-overlay/drasyl)
+- the drasyl Discord: [![Discord](https://img.shields.io/discord/959492172560891905)](https://discord.gg/2tcZPy7BCu)
 
 ## Any contributions you make will be under the [MIT License](./LICENSE)
 
