@@ -31,16 +31,17 @@ import org.drasyl.node.event.MessageEvent;
 import java.nio.file.Path;
 
 /**
- * Starts a node that sends all received messages back to the receiver. Based on the <a
+ * Starts a {@link DrasylNode} that sends all received messages back to the receiver. Based on the <a
  * href="https://tools.ietf.org/html/rfc862">Echo Protocol</a>.
  *
  * @see EchoClient
+ * @see EchoServerBootstrap
  */
 @SuppressWarnings({ "java:S106", "java:S125", "java:S112", "java:S2096" })
-public class EchoServer extends DrasylNode {
+public class EchoServerNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "echo-server.identity");
 
-    protected EchoServer(final DrasylConfig config) throws DrasylException {
+    protected EchoServerNode(final DrasylConfig config) throws DrasylException {
         super(config);
     }
 
@@ -57,10 +58,11 @@ public class EchoServer extends DrasylNode {
     public static void main(final String[] args) throws DrasylException {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
+                .remoteMessageArmApplicationEnabled(false)
                 .build();
-        final EchoServer node = new EchoServer(config);
+        final EchoServerNode node = new EchoServerNode(config);
 
         node.start().toCompletableFuture().join();
-        System.out.println("EchoServer listening on address " + node.identity().getIdentityPublicKey());
+        System.out.println("EchoServer listening on address " + node.identity().getAddress());
     }
 }

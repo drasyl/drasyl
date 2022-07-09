@@ -35,10 +35,10 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.RandomUtil.randomString;
 
 /**
- * Starts a node which sends one message to given address and echoes back any received message to
+ * Starts a {@link DrasylNode} which sends one message to given address and echoes back any received message to
  * the sender. Based on the <a href="https://tools.ietf.org/html/rfc862">Echo Protocol</a>.
  *
- * @see EchoServer
+ * @see EchoServerNode
  */
 @SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S126", "java:S2096" })
 public class EchoClient extends DrasylNode {
@@ -72,6 +72,7 @@ public class EchoClient extends DrasylNode {
 
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
+                .remoteMessageArmApplicationEnabled(false)
                 .build();
         final EchoClient node = new EchoClient(config);
 
