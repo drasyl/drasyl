@@ -219,6 +219,7 @@ jobs:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl-overlay/drasyl-choco
       - name: Download ZIP, update versions and checksum
+        id: choco
         run: |
           $Version = "${{ github.event.release.tag_name }}".substring(1)
           echo $Version
