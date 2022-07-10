@@ -19,7 +19,7 @@ mvn clean release:prepare
 An additional call of `mvn release:perform` is not necessary! A GitHub Action workflow performs this
 tasks automatically.
 
-* Wait for the GitHub Action to deploy new version to Maven Central ("Deploy" workflow).
+* Wait for the GitHub Action to deploy new version to Maven Central ([Deploy](https://github.com/drasyl-overlay/drasyl/actions/workflows/deploy.yml) workflow).
 * Deploy to our public super peers (this is a manual process).
 * Create Release on GitHub:
   * Go to https://github.com/drasyl-overlay/drasyl/tags.
