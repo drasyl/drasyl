@@ -15,19 +15,35 @@ Maven:
 
 ```xml
 
+<repositories>
+    <repository>
+        <id>oss.sonatype.org-snapshot</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
+```xml
+
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-node</artifactId>
-    <version>0.8.0</version>
+    <version>0.9.0-SNAPSHOT</version>
 </dependency>
 ```
 
 Other dependency managers:
 
 ```java
-Gradle : compile"org.drasyl:drasyl-node:0.8.0" // build.gradle 
-Ivy    : <dependency org="org.drasyl"name="drasyl-node"rev="0.8.0"conf="build"/> // ivy.xml
-SBT    : libraryDependencies+="org.drasyl"%"drasyl-node"%"0.8.0" // build.sbt
+Gradle : compile"org.drasyl:drasyl-node:0.9.0-SNAPSHOT" // build.gradle 
+Ivy    : <dependency org="org.drasyl"name="drasyl-node"rev="0.9.0-SNAPSHOT"conf="build"/> // ivy.xml
+SBT    : libraryDependencies+="org.drasyl"%"drasyl-node"%"0.9.0-SNAPSHOT" // build.sbt
 ```
 
 ## Implementing `DrasylNode`
