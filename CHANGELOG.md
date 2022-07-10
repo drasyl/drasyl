@@ -5,34 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.0] - 2022-0X-XX
+## [0.8.0] - 2022-07-10
 
 ### Added
 
-- NAT Traversal is now also able to establish a P2P connection if both device are behind a common
-  NAT device that does not support hairpinning.- CLI: Option `--mtu` to sub-command `tun` added.
+- NAT Traversal is now also able to establish a P2P connection if both devices are behind a shared
+  NAT device that does not support [hairpinning](https://datatracker.ietf.org/doc/html/rfc4787#section-6).
 - Node: Added `UnconfirmedAddressResolveHandler` that does send messages to unconfirmed (sender)
   addresses as last-resort (before the messages were simply dropped).
+- CLI: Option `--mtu` to sub-command `tun` added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `node` added.
 - CLI: `node-rc` sub-command added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `tun` added.
 - CLI: `tun-rc` sub-command added.
--
--
+- CLI: `tun` command will not work within docker.
 
 ### Changed
 
-- Dependencies have been updated.
 - CLI: Improve `tun` sub-command performance by tweaking default MTU size.
--
--
+- CLI: Instead of a random port, drasyl now listens on a port that is derived from the identity.
+- Dependencies have been updated.
 
 ### Fixed
 
 - Internet discovery now regularly checks if the super peer DNS records have changed.
 - DrasylNode: Groups plugin is working again.
--
--
+- [guava](https://github.com/google/guava) dependency removed.
 
 ## [0.7.0] - 2022-02-18
 
