@@ -26,7 +26,7 @@ tasks automatically.
   * Click `Create release` for tag `v1.2.0`.
   * **Title:** `v1.2.0`
   * **Description:** `[CHANGELOG.md](CHANGELOG.md)`
-* Wait for GitHub Action to complete "Release" workflow.
+* Wait for GitHub Action to complete [Release](https://github.com/drasyl-overlay/drasyl/actions/workflows/release.yml) workflow.
 * Update back to next SNAPSHOT version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
   and [Chart.yaml](chart/Chart.yaml) and [getting-started.md](docs/content/getting-started.md).
