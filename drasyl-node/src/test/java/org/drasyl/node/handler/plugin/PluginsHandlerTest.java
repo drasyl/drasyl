@@ -49,7 +49,7 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             final PluginsHandler handler = new PluginsHandler(config, identity);
 
-            handler.channelActive(ctx);
+            ctx.fireChannelActive();
 
             verify(plugin).onAfterStart(any());
         }

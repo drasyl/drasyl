@@ -201,7 +201,8 @@ class TcpServerTest {
 
         @Test
         void shouldAddClientOnNewConnection(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
-            new TcpServer.TcpServerHandler(clients, ctx).channelActive(nettyCtx);
+            new TcpServer.TcpServerHandler(clients, ctx);
+            nettyCtx.fireChannelActive();
 
             verify(clients).put(any(), any());
         }

@@ -71,7 +71,7 @@ class MessagesThroughputHandlerTest {
         });
 
         final MessagesThroughputHandler handler = new MessagesThroughputHandler(consumeOutbound, consumeInbound, outboundMessages, inboundMessages, printStream, null);
-        handler.channelActive(ctx);
+        ctx.fireChannelActive();
 
         verify(printStream).printf(anyString(), any(), any(), any(), any());
     }
