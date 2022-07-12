@@ -31,6 +31,7 @@ tasks automatically.
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
   and [Chart.yaml](chart/Chart.yaml) and [getting-started.md](docs/content/getting-started.md).
 * Push the new version to chocolatey. For instructions see this repo: [https://github.com/drasyl-overlay/drasyl-choco](https://github.com/drasyl-overlay/drasyl-choco/blob/master/RELEASE.md)
+* Create/update version branch (e.g., `v1.2` if you release `v1.2.0`) and push.
 
 ## Making a manual build of docker
 
