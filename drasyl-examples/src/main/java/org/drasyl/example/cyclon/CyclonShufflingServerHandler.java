@@ -3,6 +3,7 @@ package org.drasyl.example.cyclon;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.membership.cyclon.CyclonView;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;

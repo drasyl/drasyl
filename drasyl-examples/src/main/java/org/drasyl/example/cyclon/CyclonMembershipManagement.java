@@ -59,7 +59,7 @@ public class CyclonMembershipManagement {
                         p.addLast(new TraversingInternetDiscoveryChildrenHandler(NETWORK_ID, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, 5_000, 30_000, 60_000, SuperPeers.SUPER_PEERS, 60_000, 100));
                         p.addLast(new ApplicationMessageToPayloadCodec(NETWORK_ID, identity.getIdentityPublicKey(), identity.getProofOfWork()));
 
-                        p.addLast(new CyclonShufflingClientHandler());
+                        //p.addLast(new CyclonShufflingClientHandler());
                     }
                 })
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
