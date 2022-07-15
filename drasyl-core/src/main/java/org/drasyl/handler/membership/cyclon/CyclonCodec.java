@@ -16,6 +16,9 @@ import java.util.Set;
 
 import static org.drasyl.identity.IdentityPublicKey.KEY_LENGTH_AS_BYTES;
 
+/**
+ * Encodes {@link CyclonMessage} messages to {@link ByteBuf}s and vice versa.
+ */
 @Sharable
 public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<ByteBuf>, OverlayAddressedMessage<CyclonMessage>> {
     public static final int MAGIC_NUMBER_REQUEST = -85766231;
@@ -24,21 +27,19 @@ public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
     public static final int MIN_MESSAGE_LENGTH = 4;
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx, final OverlayAddressedMessage<CyclonMessage> msg, final List<Object> out) throws Exception {
-        if (msg.content() instanceof CyclonShuffleRequest) {
+    protected void encode(final ChannelHandlerContext ctx,
+                          final OverlayAddressedMessage<CyclonMessage> msg,
+                          final List<Object> out) throws Exception {
+        if (msg.content() instanceof ShuffleRequest) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_REQUEST);
-            // neighbors
-            final Set<CyclonNeighbor> neighbors = msg.content().getNeighbors();
-            encodeNeighbors(buf, neighbors);
+            encodeNeighbors(buf, msg.content().getNeighbors());
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof CyclonShuffleResponse) {
+        else if (msg.content() instanceof ShuffleResponse) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_RESPONSE);
-            // neighbors
-            final Set<CyclonNeighbor> neighbors = msg.content().getNeighbors();
-            encodeNeighbors(buf, neighbors);
+            encodeNeighbors(buf, msg.content().getNeighbors());
             out.add(msg.replace(buf));
         }
         else {
@@ -48,9 +49,7 @@ public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
 
     private void encodeNeighbors(final ByteBuf buf, final Set<CyclonNeighbor> neighbors) {
         for (final CyclonNeighbor neighbor : neighbors) {
-            // address
             buf.writeBytes(neighbor.getAddress().toByteArray());
-            // size
             buf.writeShort(neighbor.getAge());
         }
     }
@@ -65,12 +64,12 @@ public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
             switch (magicNumber) {
                 case MAGIC_NUMBER_REQUEST: {
                     final Set<CyclonNeighbor> neighbors = decodeNeighbors(msg.content());
-                    out.add(msg.replace(CyclonShuffleRequest.of(neighbors)));
+                    out.add(msg.replace(ShuffleRequest.of(neighbors)));
                     break;
                 }
                 case MAGIC_NUMBER_RESPONSE: {
                     final Set<CyclonNeighbor> neighbors = decodeNeighbors(msg.content());
-                    out.add(msg.replace(CyclonShuffleResponse.of(neighbors)));
+                    out.add(msg.replace(ShuffleResponse.of(neighbors)));
                     break;
                 }
                 default: {

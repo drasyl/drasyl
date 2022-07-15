@@ -14,6 +14,7 @@ import org.drasyl.handler.membership.cyclon.CyclonNeighbor;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingClientHandler;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingServerHandler;
 import org.drasyl.handler.membership.cyclon.CyclonView;
+import org.drasyl.handler.membership.cyclon.SortedList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
@@ -24,7 +25,6 @@ import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHan
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.SetUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,8 +51,7 @@ public class CyclonMembershipManagement {
 
         System.out.println("My address = " + identity.getAddress());
 
-        final CyclonView initialView = CyclonView.of(8, Arrays.stream(args).map(m -> CyclonNeighbor.of(IdentityPublicKey.of(m))).collect(Collectors.toSet()));
-        final CyclonShufflingClientHandler handler = new CyclonShufflingClientHandler(initialView, 10_000, 4);
+        final CyclonView view = new CyclonView(8, new SortedList<>(Arrays.stream(args).map(m -> CyclonNeighbor.of(IdentityPublicKey.of(m))).collect(Collectors.toList())));
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
@@ -73,8 +72,8 @@ public class CyclonMembershipManagement {
                         p.addLast(new ApplicationMessageToPayloadCodec(NETWORK_ID, identity.getIdentityPublicKey(), identity.getProofOfWork()));
 
                         p.addLast(new CyclonCodec());
-                        p.addLast(handler);
-                        p.addLast(new CyclonShufflingServerHandler());
+                        p.addLast(new CyclonShufflingClientHandler(4, 10_000, view, null));
+                        p.addLast(new CyclonShufflingServerHandler(4, view));
                     }
                 })
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
@@ -99,15 +98,13 @@ public class CyclonMembershipManagement {
                     try {
                         final IdentityPublicKey publicKey = IdentityPublicKey.of(word);
                         newNeighbors.add(CyclonNeighbor.of(publicKey));
+                        view.add(CyclonNeighbor.of(publicKey));
                     }
                     catch (final IllegalArgumentException e) {
                         System.err.println("Invalid public key discarded: " + word);
                         System.err.flush();
                     }
                 }
-
-                final CyclonView newView = CyclonView.of(handler.getView().getCapacity(), SetUtil.merge(handler.getView().getNeighbors(), newNeighbors));
-                handler.setView(newView);
 
                 System.out.printf(newNeighbors.size() + " address(es) added.");
             }
