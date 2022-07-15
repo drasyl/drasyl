@@ -1,5 +1,6 @@
 package org.drasyl.handler.membership.cyclon;
 
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -12,7 +13,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.min;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Node's partial view of the entire network.
@@ -26,20 +26,13 @@ public class CyclonView {
      * @param viewSize  max. cache slots (denoted as <i>c</i> in the paper)
      * @param neighbors
      */
-    public CyclonView(final int viewSize, final SortedList<CyclonNeighbor> neighbors) {
+    private CyclonView(final int viewSize, final List<CyclonNeighbor> neighbors) {
         if (viewSize < 1) {
             throw new IllegalArgumentException("viewSize (c) must be greater than or equal to 1.");
         }
         this.viewSize = viewSize;
         LOG.debug("viewSize (c) = {}", this.viewSize);
-        this.neighbors = requireNonNull(neighbors);
-    }
-
-    /**
-     * @param viewSize max. cache slots (denoted as <i>c</i> in the paper)
-     */
-    public CyclonView(final int viewSize) {
-        this(viewSize, new SortedList<>());
+        this.neighbors = new SortedList<>(neighbors);
     }
 
     @Override
@@ -126,5 +119,13 @@ public class CyclonView {
 
     public boolean add(final CyclonNeighbor neighbor) {
         return neighbors.add(neighbor);
+    }
+
+    public static CyclonView of(final int viewSize, final List<CyclonNeighbor> neighbors) {
+        return new CyclonView(viewSize, neighbors);
+    }
+
+    public static CyclonView ofKeys(final int viewSize, final List<DrasylAddress> neighbors) {
+        return of(viewSize, neighbors.stream().map(CyclonNeighbor::of).collect(Collectors.toList()));
     }
 }

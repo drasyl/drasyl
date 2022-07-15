@@ -1,19 +1,20 @@
 package org.drasyl.handler.membership.cyclon;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
-public class ShuffleResponse implements CyclonMessage {
+public class CyclonShuffleResponse implements CyclonMessage {
     private final Set<CyclonNeighbor> neighbors;
 
-    private ShuffleResponse(final Set<CyclonNeighbor> neighbors) {
+    private CyclonShuffleResponse(final Set<CyclonNeighbor> neighbors) {
         this.neighbors = requireNonNull(neighbors);
+    }
+
+    private CyclonShuffleResponse(final CyclonNeighbor... neighbors) {
+        this(Set.of(neighbors));
     }
 
     @Override
@@ -29,7 +30,7 @@ public class ShuffleResponse implements CyclonMessage {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final ShuffleResponse that = (ShuffleResponse) o;
+        final CyclonShuffleResponse that = (CyclonShuffleResponse) o;
         return Objects.equals(neighbors, that.neighbors);
     }
 
@@ -40,13 +41,16 @@ public class ShuffleResponse implements CyclonMessage {
 
     @Override
     public String toString() {
-        return "ShuffleResponse{\n" +
+        return "CyclonShuffleResponse{\n" +
                 neighbors.stream().map(Object::toString).collect(Collectors.joining(",\n\t", "\t", "\n")) +
                 '}';
     }
 
-    @JsonCreator
-    public static ShuffleResponse of(@JsonProperty("neighbors") final Set<CyclonNeighbor> neighbors) {
-        return new ShuffleResponse(neighbors);
+    public static CyclonShuffleResponse of(final Set<CyclonNeighbor> neighbors) {
+        return new CyclonShuffleResponse(neighbors);
+    }
+
+    public static CyclonShuffleResponse of(final CyclonNeighbor... neighbors) {
+        return new CyclonShuffleResponse(neighbors);
     }
 }

@@ -14,7 +14,6 @@ import org.drasyl.handler.membership.cyclon.CyclonNeighbor;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingClientHandler;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingServerHandler;
 import org.drasyl.handler.membership.cyclon.CyclonView;
-import org.drasyl.handler.membership.cyclon.SortedList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
@@ -51,7 +50,7 @@ public class CyclonMembershipManagement {
 
         System.out.println("My address = " + identity.getAddress());
 
-        final CyclonView view = new CyclonView(8, new SortedList<>(Arrays.stream(args).map(m -> CyclonNeighbor.of(IdentityPublicKey.of(m))).collect(Collectors.toList())));
+        final CyclonView view = CyclonView.ofKeys(8, Arrays.stream(args).map(IdentityPublicKey::of).collect(Collectors.toList()));
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()

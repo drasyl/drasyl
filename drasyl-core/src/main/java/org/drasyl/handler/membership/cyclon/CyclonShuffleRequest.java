@@ -1,18 +1,19 @@
 package org.drasyl.handler.membership.cyclon;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
-public class ShuffleRequest implements CyclonMessage {
+public class CyclonShuffleRequest implements CyclonMessage {
     private final Set<CyclonNeighbor> neighbors;
 
-    private ShuffleRequest(final Set<CyclonNeighbor> neighbors) {
+    private CyclonShuffleRequest(final Set<CyclonNeighbor> neighbors) {
         this.neighbors = requireNonNull(neighbors);
+    }
+
+    private CyclonShuffleRequest(final CyclonNeighbor... neighbors) {
+        this(Set.of(neighbors));
     }
 
     @Override
@@ -22,13 +23,16 @@ public class ShuffleRequest implements CyclonMessage {
 
     @Override
     public String toString() {
-        return "ShuffleRequest{\n" +
+        return "CyclonShuffleRequest{\n" +
                 neighbors.stream().map(Object::toString).collect(Collectors.joining(",\n\t", "\t", "\n")) +
                 '}';
     }
 
-    @JsonCreator
-    public static ShuffleRequest of(@JsonProperty("neighbors") final Set<CyclonNeighbor> neighbors) {
-        return new ShuffleRequest(neighbors);
+    public static CyclonShuffleRequest of(final Set<CyclonNeighbor> neighbors) {
+        return new CyclonShuffleRequest(neighbors);
+    }
+
+    public static CyclonShuffleRequest of(final CyclonNeighbor... neighbors) {
+        return new CyclonShuffleRequest(neighbors);
     }
 }

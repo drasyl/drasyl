@@ -18,7 +18,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Handles "Enhanced Shuffling" requests initiated by {@link CyclonShufflingClientHandler}.
  */
-public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<ShuffleRequest>> {
+public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<CyclonShuffleRequest>> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CyclonShufflingServerHandler.class);
     private final int shuffleSize;
     private final CyclonView view;
@@ -45,12 +45,12 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
     @Override
     public boolean acceptInboundMessage(final Object msg) {
         return msg instanceof AddressedEnvelope &&
-                ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ShuffleRequest;
+                ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof CyclonShuffleRequest;
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final OverlayAddressedMessage<ShuffleRequest> msg) {
+                                final OverlayAddressedMessage<CyclonShuffleRequest> msg) {
         handleShuffleRequest(ctx, msg);
     }
 
@@ -59,7 +59,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
      */
 
     private void handleShuffleRequest(final ChannelHandlerContext ctx,
-                                      final OverlayAddressedMessage<ShuffleRequest> request) {
+                                      final OverlayAddressedMessage<CyclonShuffleRequest> request) {
         logger.debug("Received following shuffle request from `{}`:\n{}", request.sender(), request.content());
         logger.trace("Current neighbors: {}", view);
 
@@ -71,7 +71,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
         // Remove P (in paper at step 6, but doing so here to remove useless transport overload)
         randomNeighbors.remove(CyclonNeighbor.of((DrasylAddress) request.sender()));
 
-        final OverlayAddressedMessage<ShuffleResponse> response = new OverlayAddressedMessage<>(ShuffleResponse.of(randomNeighbors), request.sender(), null);
+        final OverlayAddressedMessage<CyclonShuffleResponse> response = new OverlayAddressedMessage<>(CyclonShuffleResponse.of(randomNeighbors), request.sender(), null);
         logger.debug("Send following shuffle response to `{}`:\n{}", response.recipient(), response.content());
         ctx.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
             if (future.cause() != null) {

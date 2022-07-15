@@ -35,28 +35,28 @@ class CyclonActiveShufflingHandlerTest {
                                                                    @Mock(name = "address2") final DrasylAddress address2,
                                                                    @Mock(name = "address3") final DrasylAddress address3) {
         // arrange
-        final CyclonView view = new CyclonView(4, new SortedList<>(List.of(
+        final CyclonView view = CyclonView.of(4, List.of(
                 CyclonNeighbor.of(address0, 0),
                 CyclonNeighbor.of(address1, 1),
                 CyclonNeighbor.of(address2, 1),
                 CyclonNeighbor.of(address3, 2)
-        )));
+        ));
 
         // act
         final ChannelHandler handler = new CyclonShufflingClientHandler(2, 100, view, null);
         final EmbeddedChannel ch = new EmbeddedChannel(handler);
 
         // assert
-        final AtomicReference<AddressedEnvelope<ShuffleRequest, ?>> requestRef = new AtomicReference<>();
+        final AtomicReference<AddressedEnvelope<CyclonShuffleRequest, ?>> requestRef = new AtomicReference<>();
         await().untilAsserted(() -> {
             ch.runScheduledPendingTasks();
             final Object o = ch.readOutbound();
             assertNotNull(o);
             assertThat(o, instanceOf(AddressedEnvelope.class));
-            assertThat(((AddressedEnvelope<?, ?>) o).content(), instanceOf(ShuffleRequest.class));
-            requestRef.set((AddressedEnvelope<ShuffleRequest, ?>) o);
+            assertThat(((AddressedEnvelope<?, ?>) o).content(), instanceOf(CyclonShuffleRequest.class));
+            requestRef.set((AddressedEnvelope<CyclonShuffleRequest, ?>) o);
         });
-        final AddressedEnvelope<ShuffleRequest, ?> request = requestRef.get();
+        final AddressedEnvelope<CyclonShuffleRequest, ?> request = requestRef.get();
         assertEquals(address3, request.recipient());
         assertThat(request.content().getNeighbors(), hasSize(2)); // equal to shuffle size
         assertThat(request.content().getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of((DrasylAddress) ch.localAddress(), 0)))); // sender must be included
@@ -77,17 +77,17 @@ class CyclonActiveShufflingHandlerTest {
                                        @Mock(name = "address4") final DrasylAddress address4) {
         // arrange
         final EmbeddedChannel ch = new EmbeddedChannel();
-        final OverlayAddressedMessage<ShuffleRequest> shuffleRequest = new OverlayAddressedMessage<>(ShuffleRequest.of(Set.of(
+        final OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest = new OverlayAddressedMessage<>(CyclonShuffleRequest.of(
                 CyclonNeighbor.of((DrasylAddress) ch.localAddress(), 0),
                 CyclonNeighbor.of(address2, 2)
-        )), recipient);
-        final CyclonView view = new CyclonView(4, new SortedList<>(List.of(
+        ), recipient);
+        final CyclonView view = CyclonView.of(4, List.of(
                 CyclonNeighbor.of(address0, 2),
                 CyclonNeighbor.of(address1, 2),
                 CyclonNeighbor.of(address2, 2),
                 CyclonNeighbor.of(address3, 3)
-        )));
-        final ShuffleResponse response = ShuffleResponse.of(Set.of(
+        ));
+        final CyclonShuffleResponse response = CyclonShuffleResponse.of(Set.of(
                 CyclonNeighbor.of((DrasylAddress) ch.localAddress(), 0), // own address must be filtered out
                 CyclonNeighbor.of(address4, 3) // should replace address2 contained in request
         ));

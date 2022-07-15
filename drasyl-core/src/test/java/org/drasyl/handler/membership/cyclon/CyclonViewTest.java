@@ -25,11 +25,11 @@ class CyclonViewTest {
                                                                        @Mock(name = "address3") final DrasylAddress address3,
                                                                        @Mock(name = "address4") final DrasylAddress address4) {
             // arrange
-            final CyclonView view = new CyclonView(4, new SortedList<>(List.of(
+            final CyclonView view = CyclonView.of(4, List.of(
                     CyclonNeighbor.of(address0, 1), // should be kept
                     CyclonNeighbor.of(address1, 2), // should be replaced (oldest replace candidate)
                     CyclonNeighbor.of(address2) // should be kept
-            )));
+            ));
 
             // act
             final List<CyclonNeighbor> receivedNeighbors = List.of(
@@ -57,10 +57,10 @@ class CyclonViewTest {
                                                                                   @Mock(name = "address3") final DrasylAddress address3,
                                                                                   @Mock(name = "address4") final DrasylAddress address4) {
             // arrange
-            final CyclonView view = new CyclonView(2, new SortedList<>(List.of(
+            final CyclonView view = CyclonView.of(2, List.of(
                     CyclonNeighbor.of(address0, 1), // should be replaced (replace candidate)
                     CyclonNeighbor.of(address1, 2)  // should be replaced (oldest neighbor)
-            )));
+            ));
 
             // act
             final List<CyclonNeighbor> receivedNeighbors = List.of(

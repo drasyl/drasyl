@@ -20,7 +20,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * Initiates the "Enhanced Shuffling" algorithm of CYCLON.
  */
-public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<AddressedEnvelope<ShuffleResponse, SocketAddress>> {
+public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<AddressedEnvelope<CyclonShuffleResponse, SocketAddress>> {
     public static final int VIEW_SIZE = 8;
     public static final int SHUFFLE_SIZE = 4;
     public static final int SHUFFLE_INTERVAL = 10_000;
@@ -28,7 +28,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     private final int shuffleSize;
     private final int shuffleInterval;
     private final CyclonView view;
-    private OverlayAddressedMessage<ShuffleRequest> shuffleRequest;
+    private OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest;
 
     /**
      * @param shuffleSize     max. number of neighbors to shuffle (denoted as <i>ℓ</i> in the
@@ -40,7 +40,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     public CyclonShufflingClientHandler(final int shuffleSize,
                                         final int shuffleInterval,
                                         final CyclonView view,
-                                        final OverlayAddressedMessage<ShuffleRequest> shuffleRequest) {
+                                        final OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest) {
         if (shuffleSize < 1 || shuffleSize > view.viewSize()) {
             throw new IllegalArgumentException("shuffleSize (ℓ) must be within the interval [1, c].");
         }
@@ -73,13 +73,13 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     @Override
     public boolean acceptInboundMessage(final Object msg) {
         return msg instanceof AddressedEnvelope &&
-                ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ShuffleResponse &&
+                ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof CyclonShuffleResponse &&
                 shuffleRequest != null && ((AddressedEnvelope<?, SocketAddress>) msg).sender().equals(shuffleRequest.recipient());
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final AddressedEnvelope<ShuffleResponse, SocketAddress> msg) {
+                                final AddressedEnvelope<CyclonShuffleResponse, SocketAddress> msg) {
         handleShuffleResponse(ctx, msg);
     }
 
@@ -124,7 +124,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
 
         // 4. Send the updated subset to peer Q.
         logger.trace("Send the updated subset to peer Q.");
-        shuffleRequest = new OverlayAddressedMessage<>(ShuffleRequest.of(neighborsSubset), q.getAddress(), null);
+        shuffleRequest = new OverlayAddressedMessage<>(CyclonShuffleRequest.of(neighborsSubset), q.getAddress(), null);
         logger.debug("Send following shuffle request to `{}`:\n{}", shuffleRequest.recipient(), shuffleRequest.content());
         ctx.writeAndFlush(shuffleRequest).addListener((ChannelFutureListener) future -> {
             if (future.cause() != null) {
@@ -134,7 +134,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     }
 
     private void handleShuffleResponse(final ChannelHandlerContext ctx,
-                                       final AddressedEnvelope<ShuffleResponse, SocketAddress> msg) {
+                                       final AddressedEnvelope<CyclonShuffleResponse, SocketAddress> msg) {
         logger.debug("Received following shuffle response from `{}`:\n{}", msg.sender(), msg.content());
         logger.trace("Current neighbors: {}", view);
 

@@ -30,13 +30,13 @@ public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<CyclonMessage> msg,
                           final List<Object> out) throws Exception {
-        if (msg.content() instanceof ShuffleRequest) {
+        if (msg.content() instanceof CyclonShuffleRequest) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_REQUEST);
             encodeNeighbors(buf, msg.content().getNeighbors());
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof ShuffleResponse) {
+        else if (msg.content() instanceof CyclonShuffleResponse) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_RESPONSE);
             encodeNeighbors(buf, msg.content().getNeighbors());
@@ -64,12 +64,12 @@ public class CyclonCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
             switch (magicNumber) {
                 case MAGIC_NUMBER_REQUEST: {
                     final Set<CyclonNeighbor> neighbors = decodeNeighbors(msg.content());
-                    out.add(msg.replace(ShuffleRequest.of(neighbors)));
+                    out.add(msg.replace(CyclonShuffleRequest.of(neighbors)));
                     break;
                 }
                 case MAGIC_NUMBER_RESPONSE: {
                     final Set<CyclonNeighbor> neighbors = decodeNeighbors(msg.content());
-                    out.add(msg.replace(ShuffleResponse.of(neighbors)));
+                    out.add(msg.replace(CyclonShuffleResponse.of(neighbors)));
                     break;
                 }
                 default: {
