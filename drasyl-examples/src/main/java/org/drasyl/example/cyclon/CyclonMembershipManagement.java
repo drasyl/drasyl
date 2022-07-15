@@ -49,6 +49,8 @@ public class CyclonMembershipManagement {
         }
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
+        System.out.println("My address = " + identity.getAddress());
+
         final CyclonView initialView = CyclonView.of(8, Arrays.stream(args).map(m -> CyclonNeighbor.of(IdentityPublicKey.of(m))).collect(Collectors.toSet()));
         final CyclonShufflingClientHandler handler = new CyclonShufflingClientHandler(initialView, 10_000, 4);
 
