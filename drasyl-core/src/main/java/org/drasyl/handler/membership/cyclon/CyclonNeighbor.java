@@ -7,6 +7,11 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * A CYCLON neighbor.
+ *
+ * @see CyclonView
+ */
 public class CyclonNeighbor implements Comparable<CyclonNeighbor> {
     private final DrasylAddress address;
     private int age;

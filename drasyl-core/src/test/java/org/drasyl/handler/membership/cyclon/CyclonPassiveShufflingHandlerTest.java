@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
@@ -31,7 +31,7 @@ class CyclonPassiveShufflingHandlerTest {
                                                     @Mock(name = "address3") final DrasylAddress address3,
                                                     @Mock(name = "address4") final DrasylAddress address4) {
         // arrange
-        final CyclonView view = CyclonView.of(4, List.of(
+        final CyclonView view = CyclonView.of(4, Set.of(
                 CyclonNeighbor.of(address0, 2),
                 CyclonNeighbor.of(address1, 0),
                 CyclonNeighbor.of(address2, 1),

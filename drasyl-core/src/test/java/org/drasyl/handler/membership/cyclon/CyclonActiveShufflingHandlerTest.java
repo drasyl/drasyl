@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,7 +34,7 @@ class CyclonActiveShufflingHandlerTest {
                                                                    @Mock(name = "address2") final DrasylAddress address2,
                                                                    @Mock(name = "address3") final DrasylAddress address3) {
         // arrange
-        final CyclonView view = CyclonView.of(4, List.of(
+        final CyclonView view = CyclonView.of(4, Set.of(
                 CyclonNeighbor.of(address0, 0),
                 CyclonNeighbor.of(address1, 1),
                 CyclonNeighbor.of(address2, 1),
@@ -43,7 +42,7 @@ class CyclonActiveShufflingHandlerTest {
         ));
 
         // act
-        final ChannelHandler handler = new CyclonShufflingClientHandler(2, 100, view, null);
+        final ChannelHandler handler = new CyclonShufflingClientHandler(2, 100, view);
         final EmbeddedChannel ch = new EmbeddedChannel(handler);
 
         // assert
@@ -81,7 +80,7 @@ class CyclonActiveShufflingHandlerTest {
                 CyclonNeighbor.of((DrasylAddress) ch.localAddress(), 0),
                 CyclonNeighbor.of(address2, 2)
         ), recipient);
-        final CyclonView view = CyclonView.of(4, List.of(
+        final CyclonView view = CyclonView.of(4, Set.of(
                 CyclonNeighbor.of(address0, 2),
                 CyclonNeighbor.of(address1, 2),
                 CyclonNeighbor.of(address2, 2),

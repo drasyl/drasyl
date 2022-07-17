@@ -7,7 +7,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,7 +25,7 @@ class CyclonViewTest {
                                                                        @Mock(name = "address3") final DrasylAddress address3,
                                                                        @Mock(name = "address4") final DrasylAddress address4) {
             // arrange
-            final CyclonView view = CyclonView.of(4, List.of(
+            final CyclonView view = CyclonView.of(4, Set.of(
                     CyclonNeighbor.of(address0, 1), // should be kept
                     CyclonNeighbor.of(address1, 2), // should be replaced (oldest replace candidate)
                     CyclonNeighbor.of(address2) // should be kept
@@ -58,7 +57,7 @@ class CyclonViewTest {
                                                                                   @Mock(name = "address3") final DrasylAddress address3,
                                                                                   @Mock(name = "address4") final DrasylAddress address4) {
             // arrange
-            final CyclonView view = CyclonView.of(2, List.of(
+            final CyclonView view = CyclonView.of(2, Set.of(
                     CyclonNeighbor.of(address0, 1), // should be replaced (replace candidate)
                     CyclonNeighbor.of(address1, 2)  // should be replaced (oldest neighbor)
             ));

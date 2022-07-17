@@ -14,9 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Handles "Enhanced Shuffling" requests initiated by {@link CyclonShufflingClientHandler}.
+ * Waits for {@link CyclonShuffleRequest}s sent by {@link CyclonShufflingClientHandler}.
  */
 public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<CyclonShuffleRequest>> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CyclonShufflingServerHandler.class);
@@ -29,11 +30,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
      */
     public CyclonShufflingServerHandler(final int shuffleSize,
                                         final CyclonView view) {
-        if (shuffleSize < 1 || shuffleSize > view.viewSize()) {
-            throw new IllegalArgumentException("shuffleSize (ℓ) must be within the interval [1, c].");
-        }
-        this.shuffleSize = shuffleSize;
-        logger.debug("shuffleSize (ℓ) = {}", this.shuffleSize);
+        this.shuffleSize = requirePositive(shuffleSize);
         this.view = requireNonNull(view);
     }
 
@@ -69,7 +66,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
         logger.trace("Random neighbors: {}", randomNeighbors);
 
         // Remove P (in paper at step 6, but doing so here to remove useless transport overload)
-        randomNeighbors.remove(CyclonNeighbor.of((DrasylAddress) request.sender()));
+        randomNeighbors.remove(CyclonNeighbor.of(request.sender()));
 
         final OverlayAddressedMessage<CyclonShuffleResponse> response = new OverlayAddressedMessage<>(CyclonShuffleResponse.of(randomNeighbors), request.sender(), null);
         logger.debug("Send following shuffle response to `{}`:\n{}", response.recipient(), response.content());

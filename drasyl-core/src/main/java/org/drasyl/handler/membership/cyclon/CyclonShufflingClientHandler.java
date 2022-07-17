@@ -16,6 +16,7 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Initiates the "Enhanced Shuffling" algorithm of CYCLON.
@@ -41,15 +42,16 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
                                         final int shuffleInterval,
                                         final CyclonView view,
                                         final OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest) {
-        if (shuffleSize < 1 || shuffleSize > view.viewSize()) {
-            throw new IllegalArgumentException("shuffleSize (ℓ) must be within the interval [1, c].");
-        }
-        this.shuffleSize = shuffleSize;
-        this.shuffleInterval = shuffleInterval;
-        logger.debug("shuffleSize (ℓ) = {}", this.shuffleSize);
-        logger.debug("shuffleInterval (ΔT) = {}ms", this.shuffleInterval);
+        this.shuffleSize = requirePositive(shuffleSize);
+        this.shuffleInterval = requirePositive(shuffleInterval);
         this.view = requireNonNull(view);
         this.shuffleRequest = shuffleRequest;
+    }
+
+    public CyclonShufflingClientHandler(final int shuffleSize,
+                                        final int shuffleInterval,
+                                        final CyclonView view) {
+        this(shuffleSize, shuffleInterval, view, null);
     }
 
     /*

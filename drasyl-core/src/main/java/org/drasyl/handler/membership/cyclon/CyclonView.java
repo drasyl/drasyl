@@ -3,8 +3,6 @@ package org.drasyl.handler.membership.cyclon;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.InconsistentSortedSet;
 import org.drasyl.util.Pair;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,26 +14,24 @@ import java.util.SortedSet;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.reverseOrder;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.SetUtil.firstElements;
 
 /**
- * Node's partial view of the entire network.
+ * Local peer's (partial) view of the network.
+ *
+ * @see CyclonNeighbor
  */
 public class CyclonView {
-    private static final Logger LOG = LoggerFactory.getLogger(CyclonView.class);
-    private final int viewSize;
+    private final int capacity;
     private final SortedSet<CyclonNeighbor> neighbors;
 
     /**
-     * @param viewSize  max. cache slots (denoted as <i>c</i> in the paper)
-     * @param neighbors
+     * @param capacity  view capacity (denoted as <i>c</i> in the paper)
+     * @param neighbors initial list of neighbors
      */
-    private CyclonView(final int viewSize, final List<CyclonNeighbor> neighbors) {
-        if (viewSize < 1) {
-            throw new IllegalArgumentException("viewSize (c) must be greater than or equal to 1.");
-        }
-        this.viewSize = viewSize;
-        LOG.debug("viewSize (c) = {}", this.viewSize);
+    private CyclonView(final int capacity, final Set<CyclonNeighbor> neighbors) {
+        this.capacity = requirePositive(capacity);
         this.neighbors = new InconsistentSortedSet<>(neighbors);
     }
 
@@ -79,11 +75,11 @@ public class CyclonView {
     public void update(final Set<CyclonNeighbor> fullReceivedNeighbors,
                        final Set<CyclonNeighbor> replaceCandidates) {
         // pick up no more than viewSize received neighbors
-        final Set<CyclonNeighbor> receivedNeighbors = firstElements(fullReceivedNeighbors, viewSize);
+        final Set<CyclonNeighbor> receivedNeighbors = firstElements(fullReceivedNeighbors, capacity);
 
         // do we need to replace?
         // replace sent neighbors first (replaceCandidates)
-        int replaceCount = Math.max(neighbors.size() + receivedNeighbors.size() - viewSize, 0);
+        int replaceCount = Math.max(neighbors.size() + receivedNeighbors.size() - capacity, 0);
         final Set<CyclonNeighbor> sortedReplaceCandidates = new InconsistentSortedSet<>(reverseOrder());
         sortedReplaceCandidates.addAll(replaceCandidates);
         final Iterator<CyclonNeighbor> iterator = sortedReplaceCandidates.iterator();
@@ -108,7 +104,7 @@ public class CyclonView {
     }
 
     public int viewSize() {
-        return viewSize;
+        return capacity;
     }
 
     public boolean remove(final CyclonNeighbor neighbor) {
@@ -119,11 +115,11 @@ public class CyclonView {
         return neighbors.add(neighbor);
     }
 
-    public static CyclonView of(final int viewSize, final List<CyclonNeighbor> neighbors) {
-        return new CyclonView(viewSize, neighbors);
+    public static CyclonView of(final int capacity, final Set<CyclonNeighbor> neighbors) {
+        return new CyclonView(capacity, neighbors);
     }
 
-    public static CyclonView ofKeys(final int viewSize, final List<DrasylAddress> neighbors) {
-        return of(viewSize, neighbors.stream().map(CyclonNeighbor::of).collect(Collectors.toList()));
+    public static CyclonView ofKeys(final int capacity, final Set<DrasylAddress> neighbors) {
+        return of(capacity, neighbors.stream().map(CyclonNeighbor::of).collect(Collectors.toSet()));
     }
 }
