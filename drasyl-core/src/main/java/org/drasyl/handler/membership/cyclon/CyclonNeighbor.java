@@ -3,7 +3,6 @@ package org.drasyl.handler.membership.cyclon;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Preconditions;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -56,9 +55,6 @@ public class CyclonNeighbor implements Comparable<CyclonNeighbor> {
 
     @Override
     public int compareTo(final CyclonNeighbor o) {
-        if (age == o.age) {
-            return Arrays.compare(address.toByteArray(), o.address.toByteArray());
-        }
         return Integer.compare(age, o.age);
     }
 

@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
@@ -32,13 +33,13 @@ class CyclonViewTest {
             ));
 
             // act
-            final List<CyclonNeighbor> receivedNeighbors = List.of(
+            final Set<CyclonNeighbor> receivedNeighbors = Set.of(
                     CyclonNeighbor.of(address3),
                     CyclonNeighbor.of(address4)
             );
-            final List<CyclonNeighbor> replaceCandidates = List.of(
-                    CyclonNeighbor.of(address0),
-                    CyclonNeighbor.of(address1)
+            final Set<CyclonNeighbor> replaceCandidates = Set.of(
+                    CyclonNeighbor.of(address0, 1),
+                    CyclonNeighbor.of(address1, 2)
             );
             view.update(receivedNeighbors, replaceCandidates);
 
@@ -63,13 +64,13 @@ class CyclonViewTest {
             ));
 
             // act
-            final List<CyclonNeighbor> receivedNeighbors = List.of(
+            final Set<CyclonNeighbor> receivedNeighbors = Set.of(
                     CyclonNeighbor.of(address2, 1),
                     CyclonNeighbor.of(address3, 0),
                     CyclonNeighbor.of(address4, 1)
             );
-            final List<CyclonNeighbor> replaceCandidates = List.of(
-                    CyclonNeighbor.of(address0)
+            final Set<CyclonNeighbor> replaceCandidates = Set.of(
+                    CyclonNeighbor.of(address0, 1)
             );
             view.update(receivedNeighbors, replaceCandidates);
 

@@ -106,7 +106,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
 
         // 1. Increase by one the age of all neighbors.
         logger.trace("Increase by one the age of all neighbors.");
-        view.increaseAge();
+        view.increaseAgeByOne();
 
         // 2. Select neighbor Q with the highest age among all neighbors, and ℓ − 1 other random neighbors.
         logger.trace("Select neighbor Q with the highest age among all neighbors, and ℓ − 1 other random neighbors.");
