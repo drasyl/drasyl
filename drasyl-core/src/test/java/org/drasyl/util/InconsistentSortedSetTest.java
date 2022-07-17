@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.MySortedSetTest.EqualPersonWithSameHeight.equalPersonWithEqualge;
+import static org.drasyl.util.InconsistentSortedSetTest.EqualPersonWithSameHeight.equalPersonWithEqualge;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.hasItem;
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class MySortedSetTest {
+class InconsistentSortedSetTest {
     public static final Person ALICE_15 = new Person("Alice", 15);
     public static final Person ALICE_18 = new Person("Alice", 18);
     public static final Person BOB_16 = new Person("Bob", 16);
@@ -38,7 +38,7 @@ class MySortedSetTest {
     class Size {
         @Test
         void shouldReturnNumberOfElementsInSet() {
-            final Set<Person> set = new MySortedSet<>();
+            final Set<Person> set = new InconsistentSortedSet<>();
 
             set.add(CHARLIE_21);
             set.add(BOB_16);
@@ -54,14 +54,14 @@ class MySortedSetTest {
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         @Test
         void shouldReturnTrueIfSetIsEmpty() {
-            final Set<Person> set = new MySortedSet<>();
+            final Set<Person> set = new InconsistentSortedSet<>();
 
             assertTrue(set.isEmpty());
         }
 
         @Test
         void shouldReturnFalseIfSetIsNotEmpty() {
-            final Set<Person> set = new MySortedSet<>(List.of(ALICE_15));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(ALICE_15));
 
             assertFalse(set.isEmpty());
         }
@@ -71,7 +71,7 @@ class MySortedSetTest {
     class Contains {
         @Test
         void shouldReturnTrueIfEqualElementIsContainedInSet() {
-            final Set<Person> set = new MySortedSet<>();
+            final Set<Person> set = new InconsistentSortedSet<>();
 
             assertFalse(set.contains(ALICE_15));
 
@@ -87,7 +87,7 @@ class MySortedSetTest {
     class IteratorTest {
         @Test
         void shouldReturnIteratorWithSortedElements() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
             final Iterator<Person> iterator = set.iterator();
 
             assertTrue(iterator.hasNext());
@@ -107,7 +107,7 @@ class MySortedSetTest {
     class ToArray {
         @Test
         void shouldReturnArrayWithSortedElements() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
             final Object[] array = set.toArray();
 
             assertThat(array, arrayWithSize(3));
@@ -118,7 +118,7 @@ class MySortedSetTest {
 
         @Test
         void shouldFillAndReturnArrayWithSortedElements() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18));
             final Person[] array = set.toArray(new Person[3]);
 
             assertThat(array[0], equalPersonWithEqualge(ALICE_15));
@@ -131,7 +131,7 @@ class MySortedSetTest {
     class Add {
         @Test
         void shouldAddElementIfNoEqualElementAlreadyExistInSet() {
-            final Set<Person> set = new MySortedSet<>();
+            final Set<Person> set = new InconsistentSortedSet<>();
 
             assertTrue(set.add(CHARLIE_21));
             assertTrue(set.add(BOB_16));
@@ -149,7 +149,7 @@ class MySortedSetTest {
     class Remove {
         @Test
         void shouldRemoveEqualElementFromSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
 
             assertTrue(set.remove(CHARLIE_21));
             assertTrue(set.remove(ALICE_15));
@@ -164,14 +164,14 @@ class MySortedSetTest {
     class ContainsAll {
         @Test
         void shouldReturnTrueIfEqualElementsArePresentInSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertTrue(set.containsAll(List.of(ALICE_15, BOB_16)));
         }
 
         @Test
         void shouldReturnFalseIfNoneEqualElementsArePresentInSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertFalse(set.containsAll(List.of(ALICE_15, BOB_16, CHARLIE_21)));
         }
@@ -181,7 +181,7 @@ class MySortedSetTest {
     class AddAll {
         @Test
         void shouldAddNewElementsToSet() {
-            final Set<Person> set = new MySortedSet<>();
+            final Set<Person> set = new InconsistentSortedSet<>();
 
             assertTrue(set.addAll(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18)));
             assertFalse(set.addAll(List.of(CHARLIE_21, BOB_16, ALICE_15, ALICE_18)));
@@ -197,7 +197,7 @@ class MySortedSetTest {
     class RetainAll {
         @Test
         void shouldRemoveAllElementsNotInGivenSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
 
             assertTrue(set.retainAll(List.of(ALICE_15)));
             assertFalse(set.retainAll(List.of(ALICE_15)));
@@ -211,7 +211,7 @@ class MySortedSetTest {
     class RemoveAll {
         @Test
         void shouldRemoveAllElementsInGivenSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
 
             assertTrue(set.removeAll(List.of(ALICE_15, CHARLIE_21)));
             assertFalse(set.removeAll(List.of(ALICE_15, CHARLIE_21)));
@@ -225,7 +225,7 @@ class MySortedSetTest {
     class Clear {
         @Test
         void shouldClearSet() {
-            final Set<Person> set = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final Set<Person> set = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
 
             set.clear();
 
@@ -237,7 +237,7 @@ class MySortedSetTest {
     class Comparator {
         @Test
         void shouldReturnNull() {
-            final SortedSet<Person> set = new MySortedSet<>();
+            final SortedSet<Person> set = new InconsistentSortedSet<>();
 
             assertNull(set.comparator());
         }
@@ -247,7 +247,7 @@ class MySortedSetTest {
     class SubSet {
         @Test
         void shouldReturnRequestedSubSet() {
-            final SortedSet<Person> subSet = new MySortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).subSet(BOB_16, ALICE_18);
+            final SortedSet<Person> subSet = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).subSet(BOB_16, ALICE_18);
 
             assertThat(subSet, hasSize(1));
             assertThat(subSet, hasItem(equalPersonWithEqualge(BOB_16)));
@@ -256,7 +256,7 @@ class MySortedSetTest {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionIfFromElementIsGreaterThanToElement() {
-            final MySortedSet<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final InconsistentSortedSet<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertThrows(IllegalArgumentException.class, () -> set.subSet(ALICE_18, BOB_16));
         }
@@ -264,7 +264,7 @@ class MySortedSetTest {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionIfFromElementLiesOutsideTheBoundsOfTheRange() {
-            final MySortedSet<Person> set = new MySortedSet<>(List.of(BOB_16, CHARLIE_21));
+            final InconsistentSortedSet<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, CHARLIE_21));
 
             assertThrows(IllegalArgumentException.class, () -> set.subSet(ALICE_15, ALICE_18));
         }
@@ -272,7 +272,7 @@ class MySortedSetTest {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionIfToElementLiesOutsideTheBoundsOfTheRange() {
-            final MySortedSet<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final InconsistentSortedSet<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertThrows(IllegalArgumentException.class, () -> set.subSet(ALICE_15, CHARLIE_21));
         }
@@ -282,7 +282,7 @@ class MySortedSetTest {
     class HeadSet {
         @Test
         void shouldReturnRequestedHeadSet() {
-            final SortedSet<Person> headSet = new MySortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).headSet(ALICE_18);
+            final SortedSet<Person> headSet = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).headSet(ALICE_18);
 
             assertThat(headSet, hasSize(1));
             assertThat(headSet, hasItem(equalPersonWithEqualge(BOB_16)));
@@ -291,7 +291,7 @@ class MySortedSetTest {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionIfToElementLiesOutsideTheBoundsOfTheRange() {
-            final MySortedSet<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final InconsistentSortedSet<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertThrows(IllegalArgumentException.class, () -> set.headSet(CHARLIE_21));
         }
@@ -301,7 +301,7 @@ class MySortedSetTest {
     class TailSet {
         @Test
         void shouldReturnRequestedTailSet() {
-            final SortedSet<Person> tailSet = new MySortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).tailSet(ALICE_18);
+            final SortedSet<Person> tailSet = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18, CHARLIE_21)).tailSet(ALICE_18);
 
             assertThat(tailSet, hasSize(2));
             assertThat(tailSet, hasItem(equalPersonWithEqualge(ALICE_18)));
@@ -311,7 +311,7 @@ class MySortedSetTest {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         @Test
         void shouldThrowExceptionIfToElementLiesOutsideTheBoundsOfTheRange() {
-            final MySortedSet<Person> set = new MySortedSet<>(List.of(BOB_16, ALICE_18));
+            final InconsistentSortedSet<Person> set = new InconsistentSortedSet<>(List.of(BOB_16, ALICE_18));
 
             assertThrows(IllegalArgumentException.class, () -> set.tailSet(CHARLIE_21));
         }
@@ -321,10 +321,10 @@ class MySortedSetTest {
     class First {
         @Test
         void shouldWork() {
-            final SortedSet<Person> set1 = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final SortedSet<Person> set1 = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
             assertEquals(BOB_16, set1.first());
 
-            final SortedSet<Person> set2 = new MySortedSet<>();
+            final SortedSet<Person> set2 = new InconsistentSortedSet<>();
             assertThrows(NoSuchElementException.class, set2::first);
         }
     }
@@ -333,10 +333,10 @@ class MySortedSetTest {
     class Last {
         @Test
         void shouldWork() {
-            final SortedSet<Person> set1 = new MySortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
+            final SortedSet<Person> set1 = new InconsistentSortedSet<>(List.of(CHARLIE_21, BOB_16, ALICE_18));
             assertEquals(CHARLIE_21, set1.last());
 
-            final SortedSet<Person> set2 = new MySortedSet<>();
+            final SortedSet<Person> set2 = new InconsistentSortedSet<>();
             assertThrows(NoSuchElementException.class, set2::last);
         }
     }
