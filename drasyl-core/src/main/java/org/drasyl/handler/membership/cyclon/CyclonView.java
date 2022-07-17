@@ -103,7 +103,7 @@ public class CyclonView {
         neighbors.addAll(receivedNeighbors);
     }
 
-    public int viewSize() {
+    public int capacity() {
         return capacity;
     }
 

@@ -3,6 +3,7 @@ package org.drasyl.handler.membership.cyclon;
 import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
@@ -18,6 +19,24 @@ import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Waits for {@link CyclonShuffleRequest}s sent by {@link CyclonShufflingClientHandler}.
+ * <p>
+ * This handler should be used together with {@link CyclonShufflingClientHandler} and
+ * {@link CyclonCodec}.
+ * <blockquote>
+ * <pre>
+ *  {@link ChannelPipeline} p = ...;
+ *  {@link CyclonView} view = {@link CyclonView}.ofKeys(8, Set.of(pubKeyA, pubKeyB, ...));
+ *  ...
+ *  p.addLast("cyclon_codec", <b>new {@link CyclonCodec}()</b>);
+ *  p.addLast("cyclon_client", <b>new {@link CyclonShufflingClientHandler}(4, 10_000, view)</b>);
+ *  p.addLast("cyclon_server", <b>new {@link CyclonShufflingServerHandler}(4, view)</b>);
+ *  ...
+ *  </pre>
+ * </blockquote>
+ *
+ * @see CyclonShufflingClientHandler
+ * @see <a href="https://doi.org/10.1007/s10922-005-4441-x">CYCLON: Inexpensive Membership
+ * Management for Unstructured P2P Overlays</a>
  */
 public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<CyclonShuffleRequest>> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CyclonShufflingServerHandler.class);

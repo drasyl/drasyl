@@ -10,3 +10,4 @@ This package contains examples of how to use drasyl.
 * [Finite State Machines](src/main/java/org/drasyl/example/diningphilosophers)
 * [Groups Plugin](src/main/java/org/drasyl/example/groups)
 * [Observable DrasylNode](src/main/java/org/drasyl/example/ObservableDrasylNode.java)
+* [CYCLON Membership Management](src/main/java/org/drasyl/example/cyclon)
