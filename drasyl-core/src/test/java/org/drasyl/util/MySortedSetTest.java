@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.MySortedSetTest.EqualPersonWithSameAge.equalPersonWithEqualge;
+import static org.drasyl.util.MySortedSetTest.EqualPersonWithSameHeight.equalPersonWithEqualge;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.hasItem;
@@ -342,15 +342,15 @@ class MySortedSetTest {
     }
 
     /**
-     * A data object class that is equal by {@link #name} and sorted by {@link #age}.
+     * A data object class that is equal by {@link #name} and sorted by {@link #height}.
      */
     static class Person implements Comparable<Person> {
         final String name;
-        final int age;
+        final int height;
 
-        Person(final String name, final int age) {
+        Person(final String name, final int height) {
             this.name = name;
-            this.age = age;
+            this.height = height;
         }
 
         @Override
@@ -367,40 +367,40 @@ class MySortedSetTest {
         public String toString() {
             return "Person{" +
                     "name='" + name + '\'' +
-                    ", age=" + age +
+                    ", height=" + height +
                     '}';
         }
 
         @Override
         public int compareTo(final Person o) {
-            return Integer.compare(age, o.age);
+            return Integer.compare(height, o.height);
         }
     }
 
     /**
      * As {@link Person#equals(Object)} only compares {@link Person#name}, we need this special
-     * matcher that also compares {@link Person#age} in addition.
+     * matcher that also compares {@link Person#height} in addition.
      */
-    public static class EqualPersonWithSameAge extends TypeSafeMatcher<Person> {
+    public static class EqualPersonWithSameHeight extends TypeSafeMatcher<Person> {
         private final Person left;
 
-        private EqualPersonWithSameAge(final Person left) {
+        private EqualPersonWithSameHeight(final Person left) {
             this.left = requireNonNull(left);
         }
 
         @Override
         protected boolean matchesSafely(final Person right) {
             return left.equals(right) &&
-                    left.age == right.age;
+                    left.height == right.height;
         }
 
         @Override
         public void describeTo(final Description description) {
-            description.appendText("equal neighbor with same age as " + left);
+            description.appendText("equal neighbor with same height as " + left);
         }
 
         public static Matcher<Person> equalPersonWithEqualge(final Person left) {
-            return new EqualPersonWithSameAge(left);
+            return new EqualPersonWithSameHeight(left);
         }
     }
 }
