@@ -8,6 +8,7 @@ import org.drasyl.cli.node.message.JsonRpc2Response;
 import org.drasyl.cli.rc.handler.JsonRpc2RequestHandler;
 import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tun.TunCommand.AddRoute;
+import org.drasyl.cli.tun.TunCommand.RemoveRoute;
 import org.drasyl.cli.tun.TunRoute;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -111,6 +112,7 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
             }
 
             LOG.trace("Add route {} <-> {}", address, publicKey);
+            //noinspection StatementWithEmptyBody
             while (routes.values().remove(publicKey)) ;
             final DrasylAddress previousKey = routes.put(address, publicKey);
 
@@ -196,16 +198,23 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
         if (publicKey != null) {
             if (address != null) {
                 LOG.trace("Remove route {} <-> {}", address, publicKey);
-                routes.remove(address, publicKey);
+                if (routes.remove(address, publicKey)) {
+                    channel.pipeline().fireUserEventTriggered(new RemoveRoute(publicKey));
+                }
             }
             else {
                 LOG.trace("Remove route * <-> {}", publicKey);
-                while (routes.values().remove(publicKey)) ;
+                while (routes.values().remove(publicKey)) {
+                    channel.pipeline().fireUserEventTriggered(new RemoveRoute(publicKey));
+                }
             }
         }
         else {
             LOG.trace("Remove route {} <-> *", address);
-            routes.remove(address);
+            final DrasylAddress removedPublicKey = routes.remove(address);
+            if (removedPublicKey != null) {
+                channel.pipeline().fireUserEventTriggered(new RemoveRoute((IdentityPublicKey) removedPublicKey));
+            }
         }
 
         TunCommand.printRoutingTable(out, identity, myAddress, routes);

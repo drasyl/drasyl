@@ -12,13 +12,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
-import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
-import org.drasyl.handler.remote.OtherNetworkFilter;
-import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
-import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
+import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 
@@ -26,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.drasyl.example.util.SuperPeers.SUPER_PEERS;
 
 /**
  * Same like {@link EchoServerNode}, but uses the more extensive
@@ -35,9 +28,9 @@ import static org.drasyl.example.util.SuperPeers.SUPER_PEERS;
  * @see EchoClient
  * @see EchoServerNode
  */
+@SuppressWarnings("java:S106")
 public class EchoServerBootstrap {
     private static final String IDENTITY = System.getProperty("identity", "echo-server.identity");
-    private static final int NETWORK_ID = 1;
 
     public static void main(final String[] args) throws IOException {
         // load/create identity
@@ -51,23 +44,7 @@ public class EchoServerBootstrap {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new ChannelInitializer<DrasylServerChannel>() {
-                    @Override
-                    protected void initChannel(final DrasylServerChannel ch) {
-                        // control plane channel
-                        final ChannelPipeline p = ch.pipeline();
-
-                        p.addLast(new UdpServer(22527));
-                        p.addLast(new ByteToRemoteMessageCodec());
-                        p.addLast(new OtherNetworkFilter(NETWORK_ID));
-                        p.addLast(new InvalidProofOfWorkFilter());
-                        p.addLast(new ProtocolArmHandler(identity, 100));
-                        p.addLast(new TraversingInternetDiscoveryChildrenHandler(NETWORK_ID, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, 5_000, 30_000, 60_000, SUPER_PEERS, 60_000, 100));
-                        p.addLast(new ApplicationMessageToPayloadCodec(NETWORK_ID, identity.getIdentityPublicKey(), identity.getProofOfWork()));
-
-                        System.out.println("EchoServer listening on address " + identity.getAddress());
-                    }
-                })
+                .handler(new TraversingDrasylServerChannelInitializer(identity))
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {
@@ -92,6 +69,7 @@ public class EchoServerBootstrap {
 
         try {
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            System.out.println("EchoServer listening on address " + ch.localAddress());
             ch.closeFuture().awaitUninterruptibly();
         }
         finally {

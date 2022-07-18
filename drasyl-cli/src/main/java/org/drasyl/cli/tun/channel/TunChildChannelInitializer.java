@@ -66,6 +66,7 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
         this.channels = requireNonNull(channels);
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     protected void initChannel(final DrasylChannel ch) throws CryptoException {
         if (!routes.containsValue(ch.remoteAddress())) {
@@ -74,6 +75,7 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
             return;
         }
         channels.put((IdentityPublicKey) ch.remoteAddress(), ch);
+        ch.closeFuture().addListener(future -> channels.remove(ch.remoteAddress()));
 
         final ChannelPipeline p = ch.pipeline();
 
