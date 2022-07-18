@@ -33,6 +33,10 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 public final class OtherNetworkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
     private final int networkId;
 
+    /**
+     * @param networkId the network id we belong to. Messages from other networks cause
+     *                  {@link OtherNetworkException}s.
+     */
     public OtherNetworkFilter(final int networkId) {
         super(false);
         this.networkId = networkId;
