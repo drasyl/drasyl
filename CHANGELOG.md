@@ -21,7 +21,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
--
+- CLI sub-command `tun`: Ensure that a route is fully removed upon request.
 -
 -
 

@@ -390,6 +390,12 @@ public class TunCommand extends ChannelOptions {
                 final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) channel, ((AddRoute) evt).publicKey);
                 channel.pipeline().fireChannelRead(childChannel);
             }
+            else if (evt instanceof RemoveRoute) {
+                final Channel childChannel = channels.get(((RemoveRoute) evt).publicKey);
+                if (childChannel != null) {
+                    childChannel.close();
+                }
+            }
             else {
                 ctx.fireUserEventTriggered(evt);
             }
@@ -419,6 +425,14 @@ public class TunCommand extends ChannelOptions {
         final IdentityPublicKey publicKey;
 
         public AddRoute(final IdentityPublicKey publicKey) {
+            this.publicKey = requireNonNull(publicKey);
+        }
+    }
+
+    public static class RemoveRoute {
+        final IdentityPublicKey publicKey;
+
+        public RemoveRoute(final IdentityPublicKey publicKey) {
             this.publicKey = requireNonNull(publicKey);
         }
     }
