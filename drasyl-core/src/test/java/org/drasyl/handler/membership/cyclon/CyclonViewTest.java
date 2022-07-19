@@ -54,8 +54,7 @@ class CyclonViewTest {
         void shouldIgnoreReceivedNeighborsExceedingViewSizeAndReplacedOldestFirst(@Mock(name = "address0") final DrasylAddress address0,
                                                                                   @Mock(name = "address1") final DrasylAddress address1,
                                                                                   @Mock(name = "address2") final DrasylAddress address2,
-                                                                                  @Mock(name = "address3") final DrasylAddress address3,
-                                                                                  @Mock(name = "address4") final DrasylAddress address4) {
+                                                                                  @Mock(name = "address3") final DrasylAddress address3) {
             // arrange
             final CyclonView view = CyclonView.of(2, Set.of(
                     CyclonNeighbor.of(address0, 1), // should be replaced (replace candidate)
@@ -65,8 +64,7 @@ class CyclonViewTest {
             // act
             final Set<CyclonNeighbor> receivedNeighbors = Set.of(
                     CyclonNeighbor.of(address2, 1),
-                    CyclonNeighbor.of(address3, 0),
-                    CyclonNeighbor.of(address4, 1)
+                    CyclonNeighbor.of(address3, 1)
             );
             final Set<CyclonNeighbor> replaceCandidates = Set.of(
                     CyclonNeighbor.of(address0, 1)
@@ -76,7 +74,7 @@ class CyclonViewTest {
             // assert
             assertThat(view.getNeighbors(), hasSize(2)); // equal to view size
             assertThat(view.getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of(address2, 1))));
-            assertThat(view.getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of(address3, 0))));
+            assertThat(view.getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of(address3, 1))));
         }
     }
 }
