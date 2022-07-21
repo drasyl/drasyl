@@ -10,19 +10,15 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordCodec;
-import org.drasyl.identity.DrasylAddress;
+import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.ArrayUtil;
-import org.drasyl.util.Sha;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -38,21 +34,12 @@ public class ChordDistributedHashTable {
         }
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
-        // generate local id
-        final byte[] bytes = Sha.sha1(identity.getAddress().toByteArray());
-        final byte[] compressed = ArrayUtil.compress(bytes, 4);
-        final int localId = ByteBuffer.wrap(compressed).getInt();
-
-        // initialize an empty finger table
-        final Map<Integer, IdentityPublicKey> fingers = new HashMap<>();
-        for (int i = 1; i <= 32; i++) {
-            fingers.put(i, null);
-        }
-
-        // print join info
-        System.out.println("Joining the Chord ring.");
-        System.out.println("Local address: " + identity.getAddress());
-        //m_node.printNeighbors();
+        final long localId = ChordUtil.chordId(identity.getAddress());
+        final AtomicReference<IdentityPublicKey> predecessor = new AtomicReference<>();
+        final ChordFingerTable fingerTable = new ChordFingerTable(localId);
+        System.out.println("My Address: " + identity.getAddress());
+        System.out.println("My Id: " + ChordUtil.chordIdToTex(localId) + " (" + localId + ")");
+        System.out.println(fingerTable);
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
