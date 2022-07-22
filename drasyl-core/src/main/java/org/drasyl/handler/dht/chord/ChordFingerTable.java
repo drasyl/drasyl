@@ -31,6 +31,10 @@ public class ChordFingerTable {
         return sb.toString();
     }
 
+    public IdentityPublicKey get(final int i) {
+        return entries[i - 1];
+    }
+
     public static long ithStart(final long id, final int i) {
         return (long) ((id + Math.pow(2, i)) % Math.pow(2, 32));
     }
