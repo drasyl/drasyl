@@ -1,4 +1,4 @@
-package org.drasyl.handler.dht.chord;
+package org.drasyl.handler.dht.chord.message;
 
 import com.google.auto.value.AutoValue;
 import org.drasyl.identity.IdentityPublicKey;

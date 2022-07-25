@@ -29,10 +29,18 @@ public final class ChordUtil {
         return chordId((IdentityPublicKey) address);
     }
 
-    public static String chordIdToTex(final long id) {
+    public static String chordIdToHex(final long id) {
         final ByteBuffer buf = ByteBuffer.allocate(Long.BYTES).putLong(id).position(Integer.BYTES);
         final byte[] a = new byte[buf.position()];
         buf.get(a);
         return HexUtil.bytesToHex(a);
+    }
+
+    public static long computeRelativeId(final long universal, final long local) {
+        long ret = universal - local;
+        if (ret < 0) {
+            ret += Math.pow(2, 32);
+        }
+        return ret;
     }
 }

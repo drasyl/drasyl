@@ -13,6 +13,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordFoo;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -40,9 +41,9 @@ public class ChordDistributedHashTable {
 
         final long myId = ChordUtil.chordId(identity.getAddress());
         final AtomicReference<IdentityPublicKey> predecessor = new AtomicReference<>();
-        final ChordFingerTable fingerTable = new ChordFingerTable(myId);
+        final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address: " + identity.getAddress());
-        System.out.println("My Id: " + ChordUtil.chordIdToTex(myId));
+        System.out.println("My Id: " + ChordUtil.chordIdToHex(myId));
         System.out.println();
         System.out.println("My Predecessor: " + predecessor.get());
         System.out.println("My Successor: " + fingerTable.get(1));
@@ -62,24 +63,22 @@ public class ChordDistributedHashTable {
 
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ChannelDuplexHandler() {
-                            @Override
-                            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                           final Object evt) {
-                                ctx.fireUserEventTriggered(evt);
-                                if (evt instanceof AddPathAndSuperPeerEvent) {
-                                    // die ganzen chord handler hängne nun hinter den handlern, die in die child pipeline-führen :(
-                                    // kann man die child router handler sachen nicht alle in den tail/head context verschieben!?
-                                    p.addLast(new ChordCodec());
+                        p.addLast(new ChordCodec());
+                        p.addLast(new ChordFoo(predecessor, fingerTable));
+                        if (contact != null) {
+                            p.addLast(new ChannelDuplexHandler() {
+                                @Override
+                                public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                               final Object evt) {
+                                    ctx.fireUserEventTriggered(evt);
+                                    if (evt instanceof AddPathAndSuperPeerEvent) {
+                                        p.addAfter(p.context(ChordCodec.class).name(), null, new ChordJoinHandler(fingerTable, contact));
 
-                                    if (contact != null) {
-                                        p.addLast(new ChordJoinHandler(myId, contact));
+                                        ctx.pipeline().remove(ctx.name());
                                     }
-
-                                    ctx.pipeline().remove(ctx.name());
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                 })
                 .childHandler(new ChannelInitializer<DrasylChannel>() {

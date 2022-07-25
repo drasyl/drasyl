@@ -1,4 +1,4 @@
-package org.drasyl.handler.dht.chord;
+package org.drasyl.handler.dht.chord.message;
 
 /**
  * Interface to denote messages used by Chor.

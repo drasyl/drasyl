@@ -2,8 +2,12 @@ package org.drasyl.handler.dht.chord;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.dht.chord.message.ChordMessage;
+import org.drasyl.handler.dht.chord.message.FindSuccessor;
+import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -11,13 +15,14 @@ import org.drasyl.util.logging.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
+public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<FoundSuccessor>> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordJoinHandler.class);
-    private final long myId;
+    private final ChordFingerTable fingerTable;
     private final IdentityPublicKey contact;
+    private Future<?> joinTimeoutGuard;
 
-    public ChordJoinHandler(final long myId, final IdentityPublicKey contact) {
-        this.myId = myId;
+    public ChordJoinHandler(final ChordFingerTable fingerTable, final IdentityPublicKey contact) {
+        this.fingerTable = requireNonNull(fingerTable);
         this.contact = requireNonNull(contact);
     }
 
@@ -29,19 +34,32 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        cancelJoinTimeoutGuard();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        cancelJoinTimeoutGuard();
+        ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
         doJoin(ctx);
         ctx.fireChannelActive();
     }
 
     private void doJoin(final ChannelHandlerContext ctx) {
-        LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, ChordUtil.chordIdToTex(myId));
-        final ChordMessage msg = FindSuccessor.of(myId);
+        LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, ChordUtil.chordIdToHex(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress())));
+        final ChordMessage msg = FindSuccessor.of(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress()));
         ctx.writeAndFlush(new OverlayAddressedMessage<>(msg, contact)).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
-                // wait for response
-                ctx.executor().schedule(() -> {
-                    System.out.println("TIMEOUT!");
+                // create timeout guard
+                joinTimeoutGuard = ctx.executor().schedule(() -> {
+                    LOG.error("Got no response from `{}` within 5000ms.", contact);
+                    ctx.pipeline().fireExceptionCaught(new ChordException("Cannot find node you are trying to contact. Please exit."));
+                    ctx.channel().close();
                 }, 5_000, MILLISECONDS);
             }
             else {
@@ -49,5 +67,29 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
                 ctx.channel().close();
             }
         });
+    }
+
+    private void cancelJoinTimeoutGuard() {
+        if (joinTimeoutGuard != null) {
+            joinTimeoutGuard.cancel(false);
+        }
+    }
+
+    @Override
+    public boolean acceptInboundMessage(final Object msg) throws Exception {
+        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof FoundSuccessor;
+    }
+
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final OverlayAddressedMessage<FoundSuccessor> msg) throws Exception {
+        cancelJoinTimeoutGuard();
+
+        final IdentityPublicKey successor = msg.content().getAddress();
+        LOG.info("Successor for id `{}` is `{}`.", ChordUtil.chordIdToHex(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress())), successor);
+        LOG.info("Set `{}` as our successor.", successor);
+        fingerTable.setSuccessor(ctx, successor);
+
+        System.out.println(fingerTable);
     }
 }
