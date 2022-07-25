@@ -21,10 +21,14 @@
  */
 package org.drasyl.util;
 
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -96,5 +100,79 @@ public final class FutureUtil {
                 promise.tryFailure(e);
             }
         });
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T, R> Future<R> map(final io.netty.util.concurrent.Future<T> future, final
+    EventExecutor executor, final Function<T, R> mapper) {
+        if (future.cause() != null) {
+            // Cast is safe because the result type is not used in failed futures.
+            return (Future<R>) future;
+        }
+        else if (future.isSuccess()) {
+            return executor.submit(new CallableMapper<>(future, mapper));
+        }
+        final Promise<R> promise = executor.newPromise();
+        future.addListener(new MapperFutureListener<>(promise, mapper));
+        promise.addListener(new PropagateCancelListener(future));
+        return promise;
+    }
+
+    private static final class CallableMapper<T, R> implements Callable<R> {
+        private final io.netty.util.concurrent.Future<T> future;
+        private final Function<T, R> mapper;
+
+        CallableMapper(final io.netty.util.concurrent.Future<T> future,
+                       final Function<T, R> mapper) {
+            this.future = requireNonNull(future);
+            this.mapper = requireNonNull(mapper);
+        }
+
+        @Override
+        public R call() {
+            return mapper.apply(future.getNow());
+        }
+    }
+
+    private static class MapperFutureListener<T, R> implements FutureListener<T> {
+        private final Function<T, R> mapper;
+        private final Promise<R> mappedPromise;
+
+        public MapperFutureListener(final Promise<R> mappedPromise, final Function<T, R> mapper) {
+            this.mapper = requireNonNull(mapper);
+            this.mappedPromise = requireNonNull(mappedPromise);
+        }
+
+        @Override
+        public void operationComplete(final Future<T> future) {
+            if (future.cause() == null) {
+                final T result = future.getNow();
+                try {
+                    final R mappedResult = mapper.apply(result);
+                    mappedPromise.trySuccess(mappedResult);
+                }
+                catch (final Exception e) {
+                    mappedPromise.tryFailure(e);
+                }
+            }
+            else {
+                mappedPromise.tryFailure(future.cause());
+            }
+        }
+    }
+
+    private static class PropagateCancelListener implements FutureListener<Object> {
+        private final Future<?> future;
+
+        public PropagateCancelListener(final Future<?> future) {
+            this.future = requireNonNull(future);
+        }
+
+        @Override
+        public void operationComplete(final Future<Object> future) throws Exception {
+            if (future.isCancelled()) {
+                this.future.cancel(false);
+            }
+        }
     }
 }
