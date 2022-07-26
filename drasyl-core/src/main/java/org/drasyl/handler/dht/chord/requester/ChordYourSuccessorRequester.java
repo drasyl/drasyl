@@ -1,6 +1,7 @@
-package org.drasyl.handler.dht.chord.request;
+package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
@@ -10,11 +11,11 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-public class ChordYourSuccessorRequestHandler extends AbstractChordOneShotRequestHandler<ChordMessage, IdentityPublicKey> {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordYourSuccessorRequestHandler.class);
+public class ChordYourSuccessorRequester extends AbstractChordRequester<ChordMessage, IdentityPublicKey> {
+    private static final Logger LOG = LoggerFactory.getLogger(ChordYourSuccessorRequester.class);
 
-    public ChordYourSuccessorRequestHandler(final IdentityPublicKey peer,
-                                            final Promise<IdentityPublicKey> promise) {
+    public ChordYourSuccessorRequester(final IdentityPublicKey peer,
+                                       final Promise<IdentityPublicKey> promise) {
         super(YourSuccessor.of(), peer, promise);
     }
 
@@ -38,5 +39,12 @@ public class ChordYourSuccessorRequestHandler extends AbstractChordOneShotReques
     @Override
     protected Logger logger() {
         return LOG;
+    }
+
+    public static Future<IdentityPublicKey> yourSuccessorRequest(final ChannelHandlerContext ctx,
+                                                                 final IdentityPublicKey peer) {
+        final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
+        ctx.pipeline().addBefore(ctx.name(), null, new ChordYourSuccessorRequester(peer, promise));
+        return promise;
     }
 }

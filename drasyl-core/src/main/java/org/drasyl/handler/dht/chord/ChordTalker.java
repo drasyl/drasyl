@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper;
 import org.drasyl.handler.dht.chord.message.Alive;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
@@ -24,6 +25,9 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
+import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
+import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 
 public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMessage<ChordMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordTalker.class);
@@ -68,7 +72,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                final DrasylAddress sender,
                                final Closest closest) {
         final long id = closest.getId();
-        ChordUtil.closest_preceding_finger(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+        closestPrecedingFinger(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
             final IdentityPublicKey result = future.get();
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
@@ -103,7 +107,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        ChordUtil.find_successor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+        ChordFindSuccessorHelper.findSuccessor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });
@@ -117,9 +121,9 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
             fingerTable.setPredecessor(newPredecessorCandiate);
         }
         else {
-            final long oldpre_id = ChordUtil.hashSocketAddress(fingerTable.getPredecessor());
-            final long local_relative_id = ChordUtil.computeRelativeId(ChordUtil.hashSocketAddress((IdentityPublicKey) ctx.channel().localAddress()), oldpre_id);
-            final long newpre_relative_id = ChordUtil.computeRelativeId(ChordUtil.hashSocketAddress(newPredecessorCandiate), oldpre_id);
+            final long oldpre_id = chordId(fingerTable.getPredecessor());
+            final long local_relative_id = computeRelativeChordId(ctx.channel().localAddress(), oldpre_id);
+            final long newpre_relative_id = computeRelativeChordId(newPredecessorCandiate, oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
                 LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
                 fingerTable.setPredecessor(newPredecessorCandiate);

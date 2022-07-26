@@ -11,14 +11,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.dht.chord.ChordAskPredecessor;
 import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
-import org.drasyl.handler.dht.chord.ChordFixFingers;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.ChordStabilize;
 import org.drasyl.handler.dht.chord.ChordTalker;
 import org.drasyl.handler.dht.chord.ChordUtil;
+import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
+import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
+import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -27,6 +27,9 @@ import org.drasyl.node.identity.IdentityManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
+
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 
 public class ChordNode {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
@@ -40,10 +43,10 @@ public class ChordNode {
         }
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
-        final long myId = ChordUtil.hashSocketAddress(identity.getAddress());
+        final long myId = ChordUtil.chordId(identity.getAddress());
         final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address: " + identity.getAddress());
-        System.out.println("My Id: " + ChordUtil.longTo8DigitHex(myId) + " (" + ChordUtil.chordPosition(myId) + ")");
+        System.out.println("My Id: " + chordIdToHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
         System.out.println("My Predecessor: " + fingerTable.getPredecessor());
         System.out.println("My Successor: " + fingerTable.getSuccessor());
@@ -63,9 +66,9 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ChordCodec());
-                        p.addLast(new ChordStabilize(fingerTable));
-                        p.addLast(new ChordFixFingers(fingerTable));
-                        p.addLast(new ChordAskPredecessor(fingerTable));
+                        p.addLast(new ChordStabilizeTask(fingerTable));
+                        p.addLast(new ChordFixFingersTask(fingerTable));
+                        p.addLast(new ChordAskPredecessorTask(fingerTable));
                         p.addLast(new ChordTalker(fingerTable));
 
                         if (contact != null) {

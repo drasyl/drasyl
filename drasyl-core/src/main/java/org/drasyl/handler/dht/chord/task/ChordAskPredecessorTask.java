@@ -1,25 +1,27 @@
-package org.drasyl.handler.dht.chord;
+package org.drasyl.handler.dht.chord.task;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 
 /**
  * Ask predecessor thread that periodically asks for predecessor's keep-alive, and delete
  * predecessor if it's dead.
  */
-public class ChordAskPredecessor extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessor.class);
+public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessorTask.class);
     private final ChordFingerTable fingerTable;
     private ScheduledFuture<?> askPredecessorTaskFuture;
 
-    public ChordAskPredecessor(final ChordFingerTable fingerTable) {
+    public ChordAskPredecessorTask(final ChordFingerTable fingerTable) {
         this.fingerTable = requireNonNull(fingerTable);
     }
 
@@ -63,7 +65,7 @@ public class ChordAskPredecessor extends ChannelInboundHandlerAdapter {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                ChordUtil.requestKeep(ctx, fingerTable.getPredecessor()).addListener((FutureListener<Void>) future -> {
+                keepRequest(ctx, fingerTable.getPredecessor()).addListener((FutureListener<Void>) future -> {
                     if (future.cause() != null) {
                         // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");

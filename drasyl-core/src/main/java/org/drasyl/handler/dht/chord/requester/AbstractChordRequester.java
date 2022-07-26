@@ -1,4 +1,4 @@
-package org.drasyl.handler.dht.chord.request;
+package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,6 +12,7 @@ import org.drasyl.util.logging.Logger;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Implemented by handlers that need to sent a request to a peer and waiting for the response
@@ -19,18 +20,27 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * @param <T> response message type
  * @param <R> future result type
  */
-abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> extends SimpleChannelInboundHandler<OverlayAddressedMessage<T>> {
+abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleChannelInboundHandler<OverlayAddressedMessage<T>> {
     private final ChordMessage request;
     protected final IdentityPublicKey peer;
     private final Promise<R> promise;
+    private final int requestTimeoutMillis;
     private ScheduledFuture<?> timeoutGuard;
 
-    protected AbstractChordOneShotRequestHandler(final ChordMessage request,
-                                                 final IdentityPublicKey peer,
-                                                 final Promise<R> promise) {
+    protected AbstractChordRequester(final ChordMessage request,
+                                     final IdentityPublicKey peer,
+                                     final Promise<R> promise,
+                                     final int requestTimeoutMillis) {
         this.request = requireNonNull(request);
         this.peer = requireNonNull(peer);
         this.promise = requireNonNull(promise);
+        this.requestTimeoutMillis = requirePositive(requestTimeoutMillis);
+    }
+
+    protected AbstractChordRequester(final ChordMessage request,
+                                     final IdentityPublicKey peer,
+                                     final Promise<R> promise) {
+        this(request, peer, promise, 5_000);
     }
 
     @Override
@@ -42,7 +52,7 @@ abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> ext
                     //failRequest(ctx, new Exception(StringUtil.simpleClassName(AbstractChordOneShotRequestHandler.this) + " timeout after 5000ms."));
                     promise.trySuccess(null);
                     ctx.pipeline().remove(ctx.name());
-                }, 5000, MILLISECONDS);
+                }, requestTimeoutMillis, MILLISECONDS);
             }
             else {
                 failRequest(ctx, future.cause());

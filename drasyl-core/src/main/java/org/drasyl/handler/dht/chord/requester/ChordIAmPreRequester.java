@@ -1,6 +1,7 @@
-package org.drasyl.handler.dht.chord.request;
+package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.Notified;
@@ -8,11 +9,11 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-public class ChordIAmPreRequestHandler extends AbstractChordOneShotRequestHandler<Notified, Void> {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordIAmPreRequestHandler.class);
+public class ChordIAmPreRequester extends AbstractChordRequester<Notified, Void> {
+    private static final Logger LOG = LoggerFactory.getLogger(ChordIAmPreRequester.class);
 
-    public ChordIAmPreRequestHandler(final IdentityPublicKey peer,
-                                     final Promise<Void> promise) {
+    public ChordIAmPreRequester(final IdentityPublicKey peer,
+                                final Promise<Void> promise) {
         super(IAmPre.of(), peer, promise);
     }
 
@@ -37,5 +38,12 @@ public class ChordIAmPreRequestHandler extends AbstractChordOneShotRequestHandle
     @Override
     protected boolean acceptResponse(final Object msg) {
         return msg instanceof Notified;
+    }
+
+    public static Future<Void> iAmPreRequest(final ChannelHandlerContext ctx,
+                                             final IdentityPublicKey peer) {
+        final Promise<Void> promise = ctx.executor().newPromise();
+        ctx.pipeline().addBefore(ctx.name(), null, new ChordIAmPreRequester(peer, promise));
+        return promise;
     }
 }

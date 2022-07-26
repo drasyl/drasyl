@@ -16,7 +16,6 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
-import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -29,6 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
+import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.yourSuccessorRequest;
 
 public class ChordQuery {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
@@ -42,11 +48,11 @@ public class ChordQuery {
         }
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
-        final long myId = ChordUtil.hashSocketAddress(identity.getAddress());
+        final long myId = chordId(identity.getAddress());
         final AtomicReference<IdentityPublicKey> predecessor = new AtomicReference<>();
         final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address: " + identity.getAddress());
-        System.out.println("My Id: " + ChordUtil.longTo8DigitHex(myId) + " (" + ChordUtil.chordPosition(myId) + ")");
+        System.out.println("My Id: " + chordIdToHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
         System.out.println("My Predecessor: " + predecessor.get());
         System.out.println("My Successor: " + fingerTable.get(1));
@@ -79,14 +85,14 @@ public class ChordQuery {
                                 ctx.fireUserEventTriggered(evt);
                                 if (first.get() && evt instanceof AddPathAndSuperPeerEvent) {
                                     first.set(false);
-                                    ChordUtil.requestKeep(ctx, contact).addListener((FutureListener<Void>) future -> {
+                                    keepRequest(ctx, contact).addListener((FutureListener<Void>) future -> {
                                         if (future.cause() != null) {
                                             System.out.println("\nCannot find node you are trying to contact. Now exit.\n");
                                             System.exit(0);
                                         }
 
                                         // it's alive, print connection info
-                                        System.out.println("Connection to node " + contact + ", position " + ChordUtil.hashSocketAddress(contact) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(contact)) + ").");
+                                        System.out.println("Connection to node " + contact + ", position " + chordId(contact) + " (" + chordIdPosition(contact) + ").");
 
                                         // check if system is stable
                                         checkStable(ctx, contact, ctx.executor().newPromise()).addListener(new FutureListener<>() {
@@ -135,9 +141,9 @@ public class ChordQuery {
 
         // search
         else if (command.length() > 0) {
-            final long hash = ChordUtil.hashString(command);
-            System.out.println("\nHash value is " + Long.toHexString(hash) + " (" + ChordUtil.chordPosition(hash) + ")");
-            ChordUtil.requestFindSuccessor(ctx, hash, contact).addListener((FutureListener<IdentityPublicKey>) future -> {
+            final long hash = chordId(command);
+            System.out.println("\nHash value is " + Long.toHexString(hash) + " (" + chordIdPosition(hash) + ")");
+            findSuccessorRequest(ctx, hash, contact).addListener((FutureListener<IdentityPublicKey>) future -> {
                 final IdentityPublicKey result = future.getNow();
                 if (result == null) {
                     System.out.println("The node your are contacting is disconnected. Now exit.");
@@ -145,8 +151,8 @@ public class ChordQuery {
                 }
 
                 // print out response
-                System.out.println("\nResponse from node " + contact + "\t" + ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(contact)) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(contact)) + ").");
-                System.out.println("Node " + result + "\t" + ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(result)) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(result)) + ").");
+                System.out.println("\nResponse from node " + contact + "\t" + chordIdToHex(chordId(contact)) + " (" + chordIdPosition(contact) + ").");
+                System.out.println("Node " + result + "\t" + chordIdToHex(result) + " (" + chordIdPosition(result) + ").");
 
                 takeInput(ctx, contact);
             });
@@ -156,9 +162,9 @@ public class ChordQuery {
     private static Promise<Void> checkStable(final ChannelHandlerContext ctx,
                                              final IdentityPublicKey contact,
                                              final Promise<Void> stableFuture) {
-        ChordUtil.requestYourPredecessor(ctx, contact).addListener((FutureListener<IdentityPublicKey>) future12 -> {
+        yourPredecessorRequest(ctx, contact).addListener((FutureListener<IdentityPublicKey>) future12 -> {
             final IdentityPublicKey pred_addr = future12.getNow();
-            ChordUtil.requestYourSuccessor(ctx, contact).addListener((FutureListener<IdentityPublicKey>) future1 -> {
+            yourSuccessorRequest(ctx, contact).addListener((FutureListener<IdentityPublicKey>) future1 -> {
                 final IdentityPublicKey succ_addr = future1.getNow();
 
                 if (pred_addr == null || succ_addr == null) {
