@@ -50,6 +50,7 @@ abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleC
             if (future.cause() == null) {
                 timeoutGuard = ctx.executor().schedule(() -> {
                     //failRequest(ctx, new Exception(StringUtil.simpleClassName(AbstractChordOneShotRequestHandler.this) + " timeout after 5000ms."));
+                    // FIXME: lieber exception?
                     promise.trySuccess(null);
                     ctx.pipeline().remove(ctx.name());
                 }, requestTimeoutMillis, MILLISECONDS);

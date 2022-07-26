@@ -123,6 +123,7 @@ public final class FutureUtil {
                                                final EventExecutor executor,
                                                final Function<T, Future<R>> chain) {
         final Promise<R> objectPromise = executor.newPromise();
+        // FIXME: cause geht hier doch verloren!
         predecessor.addListener((FutureListener<T>) future -> chain.apply(future.getNow()).addListener(new PromiseNotifier<>(objectPromise)));
         return objectPromise;
     }
