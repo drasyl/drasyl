@@ -1,4 +1,4 @@
-package org.drasyl.handler.dht.chord;
+package org.drasyl.handler.dht.chord.request;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,6 +13,12 @@ import org.drasyl.util.logging.Logger;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ * Implemented by handlers that need to sent a request to a peer and waiting for the response
+ *
+ * @param <T> response message type
+ * @param <R> future result type
+ */
 abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> extends SimpleChannelInboundHandler<OverlayAddressedMessage<T>> {
     private final ChordMessage request;
     protected final IdentityPublicKey peer;
@@ -34,8 +40,8 @@ abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> ext
             if (future.cause() == null) {
                 timeoutGuard = ctx.executor().schedule(() -> {
                     //failRequest(ctx, new Exception(StringUtil.simpleClassName(AbstractChordOneShotRequestHandler.this) + " timeout after 5000ms."));
-                    ctx.pipeline().remove(ctx.name());
                     promise.trySuccess(null);
+                    ctx.pipeline().remove(ctx.name());
                 }, 5000, MILLISECONDS);
             }
             else {
@@ -43,6 +49,29 @@ abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> ext
             }
         });
     }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        cancelTimeoutGuard();
+        promise.cancel(false);
+    }
+
+    @Override
+    public boolean acceptInboundMessage(final Object msg) throws Exception {
+        return msg instanceof OverlayAddressedMessage && peer.equals(((OverlayAddressedMessage<?>) msg).sender()) && acceptResponse(((OverlayAddressedMessage<?>) msg).content());
+    }
+
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final OverlayAddressedMessage<T> msg) throws Exception {
+        cancelTimeoutGuard();
+        final T response = msg.content();
+        logger().debug("Go response for request `{}` to peer `{}`: {}", request, peer, response);
+        handleResponse(ctx, response, promise);
+        ctx.pipeline().remove(ctx.name());
+    }
+
+    protected abstract boolean acceptResponse(final Object msg);
 
     private void cancelTimeoutGuard() {
         if (timeoutGuard != null) {
@@ -54,25 +83,8 @@ abstract class AbstractChordOneShotRequestHandler<T extends ChordMessage, R> ext
     private void failRequest(final ChannelHandlerContext ctx, final Throwable cause) {
         logger().debug("Request `{}` to peer `{}` failed:", request, peer, cause);
         cancelTimeoutGuard();
-        ctx.pipeline().remove(ctx.name());
         promise.tryFailure(cause);
-    }
-
-    @Override
-    public boolean acceptInboundMessage(final Object msg) throws Exception {
-        return msg instanceof OverlayAddressedMessage && peer.equals(((OverlayAddressedMessage<?>) msg).sender()) && acceptResponse(((OverlayAddressedMessage<?>) msg).content());
-    }
-
-    protected abstract boolean acceptResponse(final Object msg);
-
-    @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final OverlayAddressedMessage<T> msg) throws Exception {
-        cancelTimeoutGuard();
         ctx.pipeline().remove(ctx.name());
-        final T response = msg.content();
-        logger().debug("Go response for request `{}` to peer `{}`: {}", request, peer, response);
-        handleResponse(ctx, response, promise);
     }
 
     protected abstract void handleResponse(final ChannelHandlerContext ctx,

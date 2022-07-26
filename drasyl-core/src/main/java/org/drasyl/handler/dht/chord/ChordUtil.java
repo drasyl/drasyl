@@ -5,6 +5,12 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
+import org.drasyl.handler.dht.chord.request.ChordClosestRequestHandler;
+import org.drasyl.handler.dht.chord.request.ChordFindSuccessorRequestHandler;
+import org.drasyl.handler.dht.chord.request.ChordIAmPreRequestHandler;
+import org.drasyl.handler.dht.chord.request.ChordKeepRequestHandler;
+import org.drasyl.handler.dht.chord.request.ChordYourPredecessorRequestHandler;
+import org.drasyl.handler.dht.chord.request.ChordYourSuccessorRequestHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
@@ -109,7 +115,7 @@ public final class ChordUtil {
             }
 
             long ret = (compressed[0] & 0xFF) << 24 | (compressed[1] & 0xFF) << 16 | (compressed[2] & 0xFF) << 8 | (compressed[3] & 0xFF);
-            ret = ret & (long) 0xFFFFFFFFl;
+            ret = ret & 0xFFFFFFFFl;
             return ret;
         }
         return 0;

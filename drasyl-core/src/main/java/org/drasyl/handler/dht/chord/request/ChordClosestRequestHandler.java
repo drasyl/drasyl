@@ -1,4 +1,4 @@
-package org.drasyl.handler.dht.chord;
+package org.drasyl.handler.dht.chord.request;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Promise;
