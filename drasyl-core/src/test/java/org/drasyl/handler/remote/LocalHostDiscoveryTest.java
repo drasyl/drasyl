@@ -102,7 +102,7 @@ class LocalHostDiscoveryTest {
     @Nested
     class StartDiscovery {
         @Test
-        @Timeout(value = 5_000, unit = MILLISECONDS)
+        @Timeout(value = 10_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
@@ -139,7 +139,7 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        @Timeout(value = 5_000, unit = MILLISECONDS)
+        @Timeout(value = 10_000, unit = MILLISECONDS)
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
@@ -164,7 +164,7 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        @Timeout(value = 5_000, unit = MILLISECONDS)
+        @Timeout(value = 10_000, unit = MILLISECONDS)
         void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final FileSystem fileSystem,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
