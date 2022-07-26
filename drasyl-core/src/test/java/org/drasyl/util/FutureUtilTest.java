@@ -169,7 +169,7 @@ class FutureUtilTest {
         @Test
         void shouldApplyMapperFunctionWhenFutureSucceeds() {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
             promise.setSuccess(42);
 
             assertEquals("42", mappedFuture.getNow());
@@ -179,7 +179,7 @@ class FutureUtilTest {
         void shouldApplyMapperFunctionOnSucceededFuture() {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
             promise.setSuccess(42);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
 
             assertEquals("42", mappedFuture.getNow());
         }
@@ -187,7 +187,7 @@ class FutureUtilTest {
         @Test
         void shouldPassFailureWhenFutureFails(@Mock final Throwable cause) {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
             promise.setFailure(cause);
 
             assertEquals(cause, mappedFuture.cause());
@@ -197,7 +197,7 @@ class FutureUtilTest {
         void shouldPassFailureOnFailedFuture(@Mock final Throwable cause) {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
             promise.setFailure(cause);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
 
             assertEquals(cause, mappedFuture.cause());
         }
@@ -207,7 +207,7 @@ class FutureUtilTest {
             when(mapper.apply(any())).thenThrow(RuntimeException.class);
 
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, mapper);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, mapper);
             promise.setSuccess(42);
 
             assertThat(mappedFuture.cause(), instanceOf(RuntimeException.class));
@@ -219,7 +219,7 @@ class FutureUtilTest {
 
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
             promise.setSuccess(42);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, mapper);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, mapper);
 
             assertThat(mappedFuture.cause(), instanceOf(RuntimeException.class));
         }
@@ -228,7 +228,7 @@ class FutureUtilTest {
         void shouldCancelFutureIfMappedFutureIsCanceled() {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
             promise.cancel(false);
-            final Future<String> mappedFuture = FutureUtil.map(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
+            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
             mappedFuture.cancel(false);
 
             assertTrue(promise.isCancelled());

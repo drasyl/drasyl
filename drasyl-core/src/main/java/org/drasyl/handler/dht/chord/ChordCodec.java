@@ -17,7 +17,8 @@ import org.drasyl.handler.dht.chord.message.Keep;
 import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
-import org.drasyl.handler.dht.chord.message.Nothing;
+import org.drasyl.handler.dht.chord.message.NothingPredecessor;
+import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
@@ -34,15 +35,16 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
     public static final int MAGIC_NUMBER_MY_CLOSEST = -256235099;
     public static final int MAGIC_NUMBER_YOUR_SUCCESSOR = -256235098;
     public static final int MAGIC_NUMBER_MY_SUCCESSOR = -256235097;
-    public static final int MAGIC_NUMBER_YOUR_PREDECESSOR = -256235096;
-    public static final int MAGIC_NUMBER_MY_PREDECESSOR = -256235095;
-    public static final int MAGIC_NUMBER_NOTHING = -256235094;
-    public static final int MAGIC_NUMBER_FIND_SUCCESSOR = -256235093;
-    public static final int MAGIC_NUMBER_FOUND_SUCCESSOR = -256235092;
-    public static final int MAGIC_NUMBER_I_AM_PRE = -256235091;
-    public static final int MAGIC_NUMBER_NOTIFIED = -256235090;
-    public static final int MAGIC_NUMBER_KEEP = -256235089;
-    public static final int MAGIC_NUMBER_ALIVE = -256235088;
+    public static final int MAGIC_NUMBER_NOTHING_SUCCESSOR = -256235096;
+    public static final int MAGIC_NUMBER_YOUR_PREDECESSOR = -256235095;
+    public static final int MAGIC_NUMBER_MY_PREDECESSOR = -256235094;
+    public static final int MAGIC_NUMBER_NOTHING_PREDECESSOR = -256235093;
+    public static final int MAGIC_NUMBER_FIND_SUCCESSOR = -256235092;
+    public static final int MAGIC_NUMBER_FOUND_SUCCESSOR = -256235091;
+    public static final int MAGIC_NUMBER_I_AM_PRE = -256235090;
+    public static final int MAGIC_NUMBER_NOTIFIED = -256235089;
+    public static final int MAGIC_NUMBER_KEEP = -256235088;
+    public static final int MAGIC_NUMBER_ALIVE = -256235087;
     // magic number: 4 bytes
     public static final int MIN_MESSAGE_LENGTH = 4;
 
@@ -65,7 +67,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
         else if (msg.content() instanceof YourSuccessor) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_YOUR_SUCCESSOR);
-            buf.writeBytes(((YourSuccessor) msg.content()).getAddress().toByteArray());
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof MySuccessor) {
@@ -74,21 +75,25 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             buf.writeBytes(((MySuccessor) msg.content()).getAddress().toByteArray());
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof Nothing) {
+        else if (msg.content() instanceof NothingSuccessor) {
             final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_NOTHING);
+            buf.writeInt(MAGIC_NUMBER_NOTHING_SUCCESSOR);
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof YourPredecessor) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_YOUR_PREDECESSOR);
-            buf.writeBytes(((YourPredecessor) msg.content()).getAddress().toByteArray());
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof MyPredecessor) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_MY_PREDECESSOR);
             buf.writeBytes(((MyPredecessor) msg.content()).getAddress().toByteArray());
+            out.add(msg.replace(buf));
+        }
+        else if (msg.content() instanceof NothingPredecessor) {
+            final ByteBuf buf = ctx.alloc().buffer();
+            buf.writeInt(MAGIC_NUMBER_NOTHING_PREDECESSOR);
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof FindSuccessor) {
@@ -106,7 +111,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
         else if (msg.content() instanceof IAmPre) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_I_AM_PRE);
-            buf.writeBytes(((IAmPre) msg.content()).getAddress().toByteArray());
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof Notified) {
@@ -148,9 +152,7 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     break;
                 }
                 case MAGIC_NUMBER_YOUR_SUCCESSOR: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(YourSuccessor.of(IdentityPublicKey.of(addressBuffer))));
+                    out.add(msg.replace(YourSuccessor.of()));
                     break;
                 }
                 case MAGIC_NUMBER_MY_SUCCESSOR: {
@@ -159,10 +161,12 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     out.add(msg.replace(MySuccessor.of(IdentityPublicKey.of(addressBuffer))));
                     break;
                 }
+                case MAGIC_NUMBER_NOTHING_SUCCESSOR: {
+                    out.add(msg.replace(NothingSuccessor.of()));
+                    break;
+                }
                 case MAGIC_NUMBER_YOUR_PREDECESSOR: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(YourPredecessor.of(IdentityPublicKey.of(addressBuffer))));
+                    out.add(msg.replace(YourPredecessor.of()));
                     break;
                 }
                 case MAGIC_NUMBER_MY_PREDECESSOR: {
@@ -171,8 +175,8 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     out.add(msg.replace(MyPredecessor.of(IdentityPublicKey.of(addressBuffer))));
                     break;
                 }
-                case MAGIC_NUMBER_NOTHING: {
-                    out.add(msg.replace(Nothing.of()));
+                case MAGIC_NUMBER_NOTHING_PREDECESSOR: {
+                    out.add(msg.replace(NothingPredecessor.of()));
                     break;
                 }
                 case MAGIC_NUMBER_FIND_SUCCESSOR: {
@@ -186,9 +190,7 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     break;
                 }
                 case MAGIC_NUMBER_I_AM_PRE: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(IAmPre.of(IdentityPublicKey.of(addressBuffer))));
+                    out.add(msg.replace(IAmPre.of()));
                     break;
                 }
                 case MAGIC_NUMBER_NOTIFIED: {

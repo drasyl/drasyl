@@ -51,15 +51,16 @@ public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddress
     }
 
     private void doJoin(final ChannelHandlerContext ctx) {
-        LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, ChordUtil.chordIdToHex(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress())));
-        final ChordMessage msg = FindSuccessor.of(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress()));
+        LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress((IdentityPublicKey) ctx.channel().localAddress())));
+        final ChordMessage msg = FindSuccessor.of(ChordUtil.hashSocketAddress((IdentityPublicKey) ctx.channel().localAddress()));
         ctx.writeAndFlush(new OverlayAddressedMessage<>(msg, contact)).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 // create timeout guard
                 joinTimeoutGuard = ctx.executor().schedule(() -> {
                     LOG.error("Got no response from `{}` within 5000ms.", contact);
                     ctx.pipeline().fireExceptionCaught(new ChordException("Cannot find node you are trying to contact. Please exit."));
-                    ctx.channel().close();
+                    ctx.pipeline().close();
+                    System.exit(1);
                 }, 5_000, MILLISECONDS);
             }
             else {
@@ -86,10 +87,8 @@ public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddress
         cancelJoinTimeoutGuard();
 
         final IdentityPublicKey successor = msg.content().getAddress();
-        LOG.info("Successor for id `{}` is `{}`.", ChordUtil.chordIdToHex(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress())), successor);
+        LOG.info("Successor for id `{}` is `{}`.", ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress((IdentityPublicKey) ctx.channel().localAddress())), successor);
         LOG.info("Set `{}` as our successor.", successor);
         fingerTable.setSuccessor(ctx, successor);
-
-        System.out.println(fingerTable);
     }
 }

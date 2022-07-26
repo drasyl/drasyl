@@ -25,6 +25,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseNotifier;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -103,7 +104,7 @@ public final class FutureUtil {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T, R> Future<R> map(final io.netty.util.concurrent.Future<T> future, final
+    public static <T, R> Future<R> mapFuture(final io.netty.util.concurrent.Future<T> future, final
     EventExecutor executor, final Function<T, R> mapper) {
         if (future.cause() != null) {
             // Cast is safe because the result type is not used in failed futures.
@@ -116,6 +117,14 @@ public final class FutureUtil {
         future.addListener(new MapperFutureListener<>(promise, mapper));
         promise.addListener(new PropagateCancelListener(future));
         return promise;
+    }
+
+    public static <T,R> Future<R> chainFuture(final Future<T> predecessor,
+                                               final EventExecutor executor,
+                                               final Function<T, Future<R>> chain) {
+        final Promise<R> objectPromise = executor.newPromise();
+        predecessor.addListener((FutureListener<T>) future -> chain.apply(future.getNow()).addListener(new PromiseNotifier<>(objectPromise)));
+        return objectPromise;
     }
 
     private static final class CallableMapper<T, R> implements Callable<R> {
