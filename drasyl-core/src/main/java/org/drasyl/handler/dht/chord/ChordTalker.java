@@ -18,6 +18,7 @@ import org.drasyl.handler.dht.chord.message.NothingPredecessor;
 import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -35,56 +36,81 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OverlayAddressedMessage<ChordMessage> msg) throws Exception {
+        final DrasylAddress sender = msg.sender();
         if (msg.content() instanceof Closest) {
-            final long id = ((Closest) msg.content()).getId();
-            ChordUtil.closest_preceding_finger(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
-                final IdentityPublicKey result = future.get();
-                final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), msg.sender());
-                ctx.writeAndFlush(response);
-            });
+            handleClosest(ctx, sender, (Closest) msg.content());
         }
         else if (msg.content() instanceof YourSuccessor) {
-            if (fingerTable.hasSuccessor()) {
-                final OverlayAddressedMessage<MySuccessor> response = new OverlayAddressedMessage<>(MySuccessor.of(fingerTable.getSuccessor()), msg.sender());
-                ctx.writeAndFlush(response);
-            }
-            else {
-                final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), msg.sender());
-                ctx.writeAndFlush(response);
-            }
+            handleYourSuccessor(ctx, sender);
         }
         else if (msg.content() instanceof YourPredecessor) {
-            if (fingerTable.hasPredecessor()) {
-                final OverlayAddressedMessage<MyPredecessor> response = new OverlayAddressedMessage<>(MyPredecessor.of(fingerTable.getPredecessor()), msg.sender());
-                ctx.writeAndFlush(response);
-            }
-            else {
-                final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), msg.sender());
-                ctx.writeAndFlush(response);
-            }
+            handleYourPredecessor(ctx, sender);
         }
         else if (msg.content() instanceof FindSuccessor) {
-            final long id = ((FindSuccessor) msg.content()).getId();
-
-            ChordUtil.find_successor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
-                final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), msg.sender());
-                ctx.writeAndFlush(response);
-            });
+            handleFindSuccessor(ctx, sender, (FindSuccessor) msg.content());
         }
         else if (msg.content() instanceof IAmPre) {
-            notified(ctx, (IdentityPublicKey) msg.sender());
+            handleIAmPre(ctx, (IdentityPublicKey) sender);
         }
         else if (msg.content() instanceof Keep) {
-            final OverlayAddressedMessage<Alive> response = new OverlayAddressedMessage<>(Alive.of(), msg.sender());
-            ctx.writeAndFlush(response);
+            handleKeep(ctx, sender);
         }
         else {
             ctx.fireChannelRead(msg);
         }
     }
 
-    private void notified(final ChannelHandlerContext ctx,
-                          final IdentityPublicKey newPredecessorCandiate) {
+    /*
+     * Message Handlers
+     */
+
+    private void handleClosest(final ChannelHandlerContext ctx,
+                               final DrasylAddress sender,
+                               final Closest closest) {
+        final long id = closest.getId();
+        ChordUtil.closest_preceding_finger(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+            final IdentityPublicKey result = future.get();
+            final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
+            ctx.writeAndFlush(response);
+        });
+    }
+
+    private void handleYourSuccessor(final ChannelHandlerContext ctx, final DrasylAddress sender) {
+        if (fingerTable.hasSuccessor()) {
+            final OverlayAddressedMessage<MySuccessor> response = new OverlayAddressedMessage<>(MySuccessor.of(fingerTable.getSuccessor()), sender);
+            ctx.writeAndFlush(response);
+        }
+        else {
+            final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), sender);
+            ctx.writeAndFlush(response);
+        }
+    }
+
+    private void handleYourPredecessor(final ChannelHandlerContext ctx,
+                                       final DrasylAddress sender) {
+        if (fingerTable.hasPredecessor()) {
+            final OverlayAddressedMessage<MyPredecessor> response = new OverlayAddressedMessage<>(MyPredecessor.of(fingerTable.getPredecessor()), sender);
+            ctx.writeAndFlush(response);
+        }
+        else {
+            final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), sender);
+            ctx.writeAndFlush(response);
+        }
+    }
+
+    private void handleFindSuccessor(final ChannelHandlerContext ctx,
+                                     final DrasylAddress sender,
+                                     final FindSuccessor findSuccessor) {
+        final long id = findSuccessor.getId();
+
+        ChordUtil.find_successor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+            final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
+            ctx.writeAndFlush(response);
+        });
+    }
+
+    private void handleIAmPre(final ChannelHandlerContext ctx,
+                              final IdentityPublicKey newPredecessorCandiate) {
         LOG.debug("Notified by `{}`.", newPredecessorCandiate);
         if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
             LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
@@ -101,5 +127,10 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
         }
 
         ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandiate));
+    }
+
+    private void handleKeep(final ChannelHandlerContext ctx, final DrasylAddress sender) {
+        final OverlayAddressedMessage<Alive> response = new OverlayAddressedMessage<>(Alive.of(), sender);
+        ctx.writeAndFlush(response);
     }
 }

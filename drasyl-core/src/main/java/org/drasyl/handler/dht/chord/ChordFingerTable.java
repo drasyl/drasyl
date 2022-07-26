@@ -30,13 +30,19 @@ public class ChordFingerTable {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
 
+        sb.append("LOCAL:        " + localAddress + " " + ChordUtil.longTo8DigitHex(localId) + " (" + ChordUtil.chordPosition(localId) + ")");
+        sb.append(System.lineSeparator());
+        sb.append("PREDECESSOR:  " + getPredecessor() + " " + (hasPredecessor() ? ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(getPredecessor())) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(getPredecessor())) + ")" : ""));
+        sb.append(System.lineSeparator());
+        sb.append("FINGER TABLE:");
+        sb.append(System.lineSeparator());
+
         // header
-        sb.append("No.\tStart\t\tAddress\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tId");
+        sb.append("No.\tStart\t\t\tAddress\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tId");
         sb.append(System.lineSeparator());
 
         // body
         for (int i = 0; i < entries.length; i++) {
-            //entries[i] = IdentityPublicKey.of("4e563e668f9820c2dbbbe39bc04ea6cfb68ce67777abe15a3258072cdd9ab042");
             final long ithStart = ChordUtil.ithStart(localId, i + 1);
             sb.append((i + 1) + "\t" + ChordUtil.longTo8DigitHex(ithStart) + " (" + ChordUtil.chordPosition(ithStart) + ")" + "\t" + entries[i] + "\t" + (entries[i] != null ? ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(entries[i])) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(entries[i])) + ")" : ""));
             sb.append(System.lineSeparator());

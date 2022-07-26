@@ -4,6 +4,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
@@ -12,22 +13,57 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ * Stabilize thread that periodically asks successor for its predecessor and determine if current
+ * node should update or delete its successor.
+ */
 public class ChordStabilize extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordStabilize.class);
     private final ChordFingerTable fingerTable;
+    private ScheduledFuture<?> stabilizeTaskFuture;
 
     public ChordStabilize(final ChordFingerTable fingerTable) {
         this.fingerTable = requireNonNull(fingerTable);
     }
 
+    /*
+     * Handler Events
+     */
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            scheduleStabilizeTask(ctx);
+        }
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        cancelStabilizeTask();
+    }
+
+    /*
+     * Channel Events
+     */
+
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        scheduleAskSuccessorForPredecessor(ctx);
+        scheduleStabilizeTask(ctx);
         ctx.fireChannelActive();
     }
 
-    private void scheduleAskSuccessorForPredecessor(final ChannelHandlerContext ctx) {
-        ctx.executor().schedule(() -> {
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        cancelStabilizeTask();
+        ctx.fireChannelInactive();
+    }
+
+    /*
+     * Stabilize Task
+     */
+
+    private void scheduleStabilizeTask(final ChannelHandlerContext ctx) {
+        stabilizeTaskFuture = ctx.executor().schedule(() -> {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
             final IdentityPublicKey successor = fingerTable.getSuccessor();
             final Future<Void> voidFuture;
@@ -76,12 +112,19 @@ public class ChordStabilize extends ChannelInboundHandlerAdapter {
                             LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                             return fingerTable.notify(ctx, successor);
                         }
-                    }).addListener((FutureListener<Void>) future12 -> scheduleAskSuccessorForPredecessor(ctx));
+                    }).addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
                 }
                 else {
-                    scheduleAskSuccessorForPredecessor(ctx);
+                    scheduleStabilizeTask(ctx);
                 }
             });
         }, 500, MILLISECONDS);
+    }
+
+    private void cancelStabilizeTask() {
+        if (stabilizeTaskFuture != null) {
+            stabilizeTaskFuture.cancel(false);
+            stabilizeTaskFuture = null;
+        }
     }
 }

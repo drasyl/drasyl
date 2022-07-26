@@ -67,6 +67,7 @@ public class ChordNode {
                         p.addLast(new ChordFixFingers(fingerTable));
                         p.addLast(new ChordAskPredecessor(fingerTable));
                         p.addLast(new ChordTalker(fingerTable));
+
                         if (contact != null) {
                             p.addLast(new ChannelDuplexHandler() {
                                 @Override
@@ -75,7 +76,6 @@ public class ChordNode {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
                                         p.addAfter(p.context(ChordCodec.class).name(), null, new ChordJoinHandler(fingerTable, contact));
-
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }
@@ -108,12 +108,7 @@ public class ChordNode {
                 else if (command.startsWith("info")) {
                     System.out.println("==============================================================");
                     System.out.println();
-                    System.out.println("LOCAL:\t\t" + identity.getAddress() + " " + ChordUtil.longTo8DigitHex(myId) + " (" + ChordUtil.chordPosition(myId) + ")");
-                    System.out.println();
-                    System.out.println("PREDECESSOR:\t" + fingerTable.getPredecessor() + " " + (fingerTable.hasPredecessor() ? ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(fingerTable.getPredecessor())) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(fingerTable.getPredecessor())) + ")" : ""));
-                    System.out.println();
-                    System.out.println("FINGER TABLE:");
-                    System.out.println(fingerTable);
+                    System.out.print(fingerTable);
                     System.out.println();
                     System.out.println("==============================================================");
                 }
