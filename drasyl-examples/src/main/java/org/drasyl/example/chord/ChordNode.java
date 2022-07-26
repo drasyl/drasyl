@@ -27,7 +27,6 @@ import org.drasyl.node.identity.IdentityManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class ChordNode {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
@@ -42,13 +41,12 @@ public class ChordNode {
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
         final long myId = ChordUtil.hashSocketAddress(identity.getAddress());
-        final AtomicReference<IdentityPublicKey> predecessor = new AtomicReference<>();
         final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address: " + identity.getAddress());
         System.out.println("My Id: " + ChordUtil.longTo8DigitHex(myId) + " (" + ChordUtil.chordPosition(myId) + ")");
         System.out.println();
-        System.out.println("My Predecessor: " + predecessor.get());
-        System.out.println("My Successor: " + fingerTable.get(1));
+        System.out.println("My Predecessor: " + fingerTable.getPredecessor());
+        System.out.println("My Successor: " + fingerTable.getSuccessor());
         System.out.println();
 
         final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
@@ -65,10 +63,10 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ChordCodec());
-                        p.addLast(new ChordStabilize(predecessor, fingerTable));
+                        p.addLast(new ChordStabilize(fingerTable));
                         p.addLast(new ChordFixFingers(fingerTable));
-                        p.addLast(new ChordAskPredecessor(predecessor));
-                        p.addLast(new ChordTalker(predecessor, fingerTable));
+                        p.addLast(new ChordAskPredecessor(fingerTable));
+                        p.addLast(new ChordTalker(fingerTable));
                         if (contact != null) {
                             p.addLast(new ChannelDuplexHandler() {
                                 @Override
@@ -98,7 +96,7 @@ public class ChordNode {
 
             // begin to take user input, "info" or "quit"
             final Scanner userinput = new Scanner(System.in);
-            while(true) {
+            while (true) {
                 System.out.println("\nType \"info\" to check this node's data or \n type \"quit\"to leave ring: ");
                 String command = null;
                 command = userinput.next();
@@ -112,7 +110,7 @@ public class ChordNode {
                     System.out.println();
                     System.out.println("LOCAL:\t\t" + identity.getAddress() + " " + ChordUtil.longTo8DigitHex(myId) + " (" + ChordUtil.chordPosition(myId) + ")");
                     System.out.println();
-                    System.out.println("PREDECESSOR:\t" + predecessor.get() + " " + (predecessor.get() != null ? ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(predecessor.get())) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(predecessor.get())) + ")" : ""));
+                    System.out.println("PREDECESSOR:\t" + fingerTable.getPredecessor() + " " + (fingerTable.hasPredecessor() ? ChordUtil.longTo8DigitHex(ChordUtil.hashSocketAddress(fingerTable.getPredecessor())) + " (" + ChordUtil.chordPosition(ChordUtil.hashSocketAddress(fingerTable.getPredecessor())) + ")" : ""));
                     System.out.println();
                     System.out.println("FINGER TABLE:");
                     System.out.println(fingerTable);

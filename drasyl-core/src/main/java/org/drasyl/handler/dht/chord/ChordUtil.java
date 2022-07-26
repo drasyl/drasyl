@@ -18,7 +18,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.drasyl.util.FutureUtil.chainFuture;
 import static org.drasyl.util.FutureUtil.mapFuture;
@@ -361,7 +360,6 @@ public final class ChordUtil {
      * Try to fill successor with candidates in finger table or even predecessor
      */
     public static Future<Void> fillSuccessor(final ChannelHandlerContext ctx,
-                                             final AtomicReference<IdentityPublicKey> predecessor,
                                              final ChordFingerTable fingerTable) {
         LOG.debug("Try to fill successor with candidates in finger table or even predecessor.");
         final IdentityPublicKey successor = fingerTable.getSuccessor();
@@ -375,8 +373,8 @@ public final class ChordUtil {
 
         return chainFuture(future, ctx.executor(), unused -> {
             final IdentityPublicKey successor2 = fingerTable.getSuccessor();
-            if ((successor2 == null || successor2.equals(ctx.channel().localAddress())) && predecessor.get() != null && !predecessor.get().equals(ctx.channel().localAddress())) {
-                return fingerTable.updateIthFinger(ctx, 1, predecessor.get());
+            if ((successor2 == null || successor2.equals(ctx.channel().localAddress())) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+                return fingerTable.updateIthFinger(ctx, 1, fingerTable.getPredecessor());
             }
             else {
                 return ctx.executor().newSucceededFuture(null);

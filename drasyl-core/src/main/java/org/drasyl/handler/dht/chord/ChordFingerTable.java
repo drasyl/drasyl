@@ -8,8 +8,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.FutureUtil.chainFuture;
 
 public class ChordFingerTable {
@@ -18,10 +18,11 @@ public class ChordFingerTable {
     private final IdentityPublicKey[] entries;
     private final IdentityPublicKey localAddress;
     private final long localId;
+    private IdentityPublicKey predecessor;
 
     public ChordFingerTable(final IdentityPublicKey localAddress) {
         this.entries = new IdentityPublicKey[SIZE];
-        this.localAddress = Objects.requireNonNull(localAddress);
+        this.localAddress = requireNonNull(localAddress);
         this.localId = ChordUtil.hashSocketAddress(localAddress);
     }
 
@@ -52,9 +53,29 @@ public class ChordFingerTable {
         return get(1);
     }
 
+    public boolean hasSuccessor() {
+        return getSuccessor() != null;
+    }
+
     public Future<Void> setSuccessor(final ChannelHandlerContext ctx,
                                      final IdentityPublicKey successor) {
         return updateIthFinger(ctx, 1, successor);
+    }
+
+    public IdentityPublicKey getPredecessor() {
+        return predecessor;
+    }
+
+    public boolean hasPredecessor() {
+        return getPredecessor() != null;
+    }
+
+    public void setPredecessor(final IdentityPublicKey predecessor) {
+        this.predecessor = predecessor;
+    }
+
+    public void removePredecessor() {
+        setPredecessor(null);
     }
 
     // i = 1..32
@@ -93,8 +114,7 @@ public class ChordFingerTable {
         return ctx.executor().newSucceededFuture(null);
     }
 
-    public Future<Void> deleteSuccessor(final ChannelHandlerContext ctx,
-                                        final AtomicReference<IdentityPublicKey> predecessor) {
+    public Future<Void> deleteSuccessor(final ChannelHandlerContext ctx) {
         final IdentityPublicKey successor = getSuccessor();
 
         //nothing to delete, just return
@@ -115,19 +135,19 @@ public class ChordFingerTable {
         deleteSuccessor_recursive(ctx, i);
 
         // if predecessor is successor, delete it
-        if (predecessor.get() != null && predecessor.get().equals(successor)) {
-            predecessor.set(null);
+        if (hasPredecessor() && Objects.equals(getPredecessor(), getSuccessor())) {
+            removePredecessor();
         }
 
         // try to fill successor
-        return FutureUtil.chainFuture(ChordUtil.fillSuccessor(ctx, predecessor, this), ctx.executor(), unused -> {
+        return FutureUtil.chainFuture(ChordUtil.fillSuccessor(ctx, this), ctx.executor(), unused -> {
             final IdentityPublicKey successor2 = getSuccessor();
 
             // if successor is still null or local node,
             // and the predecessor is another node, keep asking
             // it's predecessor until find local node's new successor
-            if ((successor2 == null || successor2.equals(localAddress)) && predecessor.get() != null && !predecessor.get().equals(localAddress)) {
-                final IdentityPublicKey p = predecessor.get();
+            if ((successor2 == null || localAddress.equals(successor2)) && hasPredecessor() && !localAddress.equals(getPredecessor())) {
+                final IdentityPublicKey p = getPredecessor();
 
                 final Future<Void> voidFuture = FutureUtil.mapFuture(deleteSuccessor_recursive2(ctx, p, successor2), ctx.executor(), publicKey -> null);
                 return chainFuture(voidFuture, ctx.executor(), publicKey -> {

@@ -22,18 +22,13 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import static java.util.Objects.requireNonNull;
 
 public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMessage<ChordMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordTalker.class);
-    private final AtomicReference<IdentityPublicKey> predecessor;
     private final ChordFingerTable fingerTable;
 
-    public ChordTalker(final AtomicReference<IdentityPublicKey> predecessor,
-                       final ChordFingerTable fingerTable) {
-        this.predecessor = requireNonNull(predecessor);
+    public ChordTalker(final ChordFingerTable fingerTable) {
         this.fingerTable = requireNonNull(fingerTable);
     }
 
@@ -49,7 +44,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
             });
         }
         else if (msg.content() instanceof YourSuccessor) {
-            if (fingerTable.getSuccessor() != null) {
+            if (fingerTable.hasSuccessor()) {
                 final OverlayAddressedMessage<MySuccessor> response = new OverlayAddressedMessage<>(MySuccessor.of(fingerTable.getSuccessor()), msg.sender());
                 ctx.writeAndFlush(response);
             }
@@ -59,8 +54,8 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
             }
         }
         else if (msg.content() instanceof YourPredecessor) {
-            if (predecessor.get() != null) {
-                final OverlayAddressedMessage<MyPredecessor> response = new OverlayAddressedMessage<>(MyPredecessor.of(predecessor.get()), msg.sender());
+            if (fingerTable.hasPredecessor()) {
+                final OverlayAddressedMessage<MyPredecessor> response = new OverlayAddressedMessage<>(MyPredecessor.of(fingerTable.getPredecessor()), msg.sender());
                 ctx.writeAndFlush(response);
             }
             else {
@@ -89,22 +84,22 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
     }
 
     private void notified(final ChannelHandlerContext ctx,
-                          final IdentityPublicKey sender) {
-        LOG.debug("Notified by `{}`.", sender);
-        if (predecessor.get() == null || predecessor.get().equals(ctx.channel().localAddress())) {
-            LOG.info("Set predecessor `{}`.", sender);
-            predecessor.set(sender);
+                          final IdentityPublicKey newPredecessorCandiate) {
+        LOG.debug("Notified by `{}`.", newPredecessorCandiate);
+        if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+            LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
+            fingerTable.setPredecessor(newPredecessorCandiate);
         }
         else {
-            final long oldpre_id = ChordUtil.hashSocketAddress(predecessor.get());
+            final long oldpre_id = ChordUtil.hashSocketAddress(fingerTable.getPredecessor());
             final long local_relative_id = ChordUtil.computeRelativeId(ChordUtil.hashSocketAddress((IdentityPublicKey) ctx.channel().localAddress()), oldpre_id);
-            final long newpre_relative_id = ChordUtil.computeRelativeId(ChordUtil.hashSocketAddress(sender), oldpre_id);
+            final long newpre_relative_id = ChordUtil.computeRelativeId(ChordUtil.hashSocketAddress(newPredecessorCandiate), oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
-                LOG.info("Set predecessor `{}`.", sender);
-                predecessor.set(sender);
+                LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
+                fingerTable.setPredecessor(newPredecessorCandiate);
             }
         }
 
-        ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), sender));
+        ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandiate));
     }
 }

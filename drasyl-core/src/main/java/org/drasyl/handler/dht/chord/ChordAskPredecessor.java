@@ -3,43 +3,41 @@ package org.drasyl.handler.dht.chord;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.identity.IdentityPublicKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ChordAskPredecessor extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessor.class);
-    private final AtomicReference<IdentityPublicKey> predecessor;
+    private final ChordFingerTable fingerTable;
 
-    public ChordAskPredecessor(final AtomicReference<IdentityPublicKey> predecessor) {
-        this.predecessor = requireNonNull(predecessor);
+    public ChordAskPredecessor(final ChordFingerTable fingerTable) {
+        this.fingerTable = requireNonNull(fingerTable);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        extracted(ctx);
+        schedulePredecessorAliveCheck(ctx);
         ctx.fireChannelActive();
     }
 
-    private void extracted(final ChannelHandlerContext ctx) {
+    private void schedulePredecessorAliveCheck(final ChannelHandlerContext ctx) {
         ctx.executor().schedule(() -> {
-            final IdentityPublicKey publicKey = predecessor.get();
-            if (publicKey != null) {
+            if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                ChordUtil.requestKeep(ctx, publicKey).addListener((FutureListener<Void>) future -> {
+                ChordUtil.requestKeep(ctx, fingerTable.getPredecessor()).addListener((FutureListener<Void>) future -> {
                     if (future.cause() != null) {
+                        // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");
-                        predecessor.set(null);
+                        fingerTable.removePredecessor();
                     }
+                    schedulePredecessorAliveCheck(ctx);
                 });
             }
             else {
-                extracted(ctx);
+                schedulePredecessorAliveCheck(ctx);
             }
         }, 500, MILLISECONDS);
     }

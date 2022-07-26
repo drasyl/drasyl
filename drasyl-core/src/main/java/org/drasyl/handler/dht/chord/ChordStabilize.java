@@ -9,36 +9,31 @@ import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class ChordStabilize extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordStabilize.class);
-    private final AtomicReference<IdentityPublicKey> predecessor;
     private final ChordFingerTable fingerTable;
 
-    public ChordStabilize(final AtomicReference<IdentityPublicKey> predecessor,
-                          final ChordFingerTable fingerTable) {
-        this.predecessor = requireNonNull(predecessor);
+    public ChordStabilize(final ChordFingerTable fingerTable) {
         this.fingerTable = requireNonNull(fingerTable);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        extracted(ctx);
+        scheduleAskSuccessorForPredecessor(ctx);
         ctx.fireChannelActive();
     }
 
-    private void extracted(final ChannelHandlerContext ctx) {
+    private void scheduleAskSuccessorForPredecessor(final ChannelHandlerContext ctx) {
         ctx.executor().schedule(() -> {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
             final IdentityPublicKey successor = fingerTable.getSuccessor();
             final Future<Void> voidFuture;
             if (successor == null || successor.equals(ctx.channel().localAddress())) {
                 // Try to fill successor with candidates in finger table or even predecessor
-                voidFuture = ChordUtil.fillSuccessor(ctx, predecessor, fingerTable);//fill
+                voidFuture = ChordUtil.fillSuccessor(ctx, fingerTable);//fill
             }
             else {
                 voidFuture = ctx.executor().newSucceededFuture(null);
@@ -53,7 +48,7 @@ public class ChordStabilize extends ChannelInboundHandlerAdapter {
                         // if bad connection with successor! delete successor
                         if (x == null) {
                             LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                            return fingerTable.deleteSuccessor(ctx, predecessor);
+                            return fingerTable.deleteSuccessor(ctx);
                         }
 
                         // else if successor's predecessor is not itself
@@ -81,10 +76,10 @@ public class ChordStabilize extends ChannelInboundHandlerAdapter {
                             LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                             return fingerTable.notify(ctx, successor);
                         }
-                    }).addListener((FutureListener<Void>) future12 -> extracted(ctx));
+                    }).addListener((FutureListener<Void>) future12 -> scheduleAskSuccessorForPredecessor(ctx));
                 }
                 else {
-                    extracted(ctx);
+                    scheduleAskSuccessorForPredecessor(ctx);
                 }
             });
         }, 500, MILLISECONDS);
