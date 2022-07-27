@@ -6,6 +6,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
+import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
 
 /**
@@ -89,7 +91,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                         // if bad connection with successor! delete successor
                         if (x == null) {
                             LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                            return fingerTable.deleteSuccessor(ctx);
+                            return ChordDeleteSuccessorHelper.deleteSuccessor(ctx, fingerTable);
                         }
 
                         // else if successor's predecessor is not itself
@@ -115,7 +117,10 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                         // successor's predecessor is successor itself, then notify successor
                         else {
                             LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
-                            return fingerTable.notify(ctx, successor);
+                            if (!successor.equals(ctx.channel().localAddress())) {
+                                return iAmPreRequest(ctx, successor);
+                            }
+                            return ctx.executor().newSucceededFuture(null);
                         }
                     }).addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
                 }
