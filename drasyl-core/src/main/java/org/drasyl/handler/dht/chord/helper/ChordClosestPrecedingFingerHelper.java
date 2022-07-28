@@ -3,7 +3,7 @@ package org.drasyl.handler.dht.chord.helper;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.UnexecutableFutureComposer;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -11,7 +11,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
-import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public final class ChordClosestPrecedingFingerHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordClosestPrecedingFingerHelper.class);
@@ -20,56 +20,55 @@ public final class ChordClosestPrecedingFingerHelper {
         // util class
     }
 
-    public static UnexecutableFutureComposer<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
-                                                                                       final long findid,
-                                                                                       final ChordFingerTable fingerTable) {
+    public static FutureComposer<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
+                                                                           final long findid,
+                                                                           final ChordFingerTable fingerTable) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdToHex(findid));
         final long localId = chordId(ctx.channel().localAddress());
         final long findid_relative = computeRelativeChordId(findid, localId);
 
         // check from last item in finger table
-        return recursive(ctx, findid, localId, findid_relative, Integer.SIZE, fingerTable);
+        return checkFinger(ctx, findid, localId, findid_relative, Integer.SIZE, fingerTable);
     }
 
-    private static UnexecutableFutureComposer<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
-                                                                           final long findid,
-                                                                           final long localId,
-                                                                           final long findid_relative,
-                                                                           final int i,
-                                                                           final ChordFingerTable fingerTable) {
+    private static FutureComposer<IdentityPublicKey> checkFinger(final ChannelHandlerContext ctx,
+                                                                 final long findid,
+                                                                 final long localId,
+                                                                 final long findid_relative,
+                                                                 final int i,
+                                                                 final ChordFingerTable fingerTable) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdToHex(findid));
-            return composeUnexecutableFuture((IdentityPublicKey) ctx.channel().localAddress());
+            return composeFuture((IdentityPublicKey) ctx.channel().localAddress());
         }
         else {
-            return composeUnexecutableFuture(fingerTable.get(i)).chain(ith_finger -> {
+            return composeFuture(fingerTable.get(i)).chain(ith_finger -> {
                 if (ith_finger != null) {
+                    // if its relative id is the closest, check if its alive
                     final long ith_finger_id = chordId(ith_finger);
                     final long ith_finger_relative_id = computeRelativeChordId(ith_finger_id, localId);
 
-                    // if its relative id is the closest, check if its alive
                     if (ith_finger_relative_id > 0 && ith_finger_relative_id < findid_relative) {
                         LOG.debug("{}th finger {} is closest preceding finger of {}.", i, chordIdToHex(ith_finger_id), chordIdToHex(findid));
                         LOG.debug("Check if it is still alive.");
 
-                        return composeUnexecutableFuture()
-                                .then(keepRequest(ctx, ith_finger))
+                        return keepRequest(ctx, ith_finger)
                                 .chain2(future -> {
                                     //it is alive, return it
                                     if (future.isSuccess()) {
                                         LOG.debug("Peer is still alive.");
-                                        return composeUnexecutableFuture(ith_finger);
+                                        return composeFuture(ith_finger);
                                     }
                                     // else, remove its existence from finger table
                                     else {
                                         LOG.warn("Peer is not alive. Remove it from finger table.");
                                         fingerTable.removePeer(ith_finger);
-                                        return composeUnexecutableFuture(null);
+                                        return composeFuture(null);
                                     }
                                 });
                     }
                 }
-                return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);
+                return checkFinger(ctx, findid, localId, findid_relative, i - 1, fingerTable);
             });
         }
     }

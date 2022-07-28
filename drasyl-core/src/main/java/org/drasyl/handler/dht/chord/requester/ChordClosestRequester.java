@@ -5,12 +5,11 @@ import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.UnexecutableFutureComposer;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.util.FutureComposer.composeFuture;
-import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 public class ChordClosestRequester extends AbstractChordRequester<MyClosest, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordClosestRequester.class);
@@ -38,11 +37,11 @@ public class ChordClosestRequester extends AbstractChordRequester<MyClosest, Ide
         return LOG;
     }
 
-    public static UnexecutableFutureComposer<IdentityPublicKey> closestRequest(final ChannelHandlerContext ctx,
-                                                                               final IdentityPublicKey peer,
-                                                                               final long id) {
+    public static FutureComposer<IdentityPublicKey> closestRequest(final ChannelHandlerContext ctx,
+                                                                   final IdentityPublicKey peer,
+                                                                   final long id) {
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordClosestRequester(peer, id, promise));
-        return composeUnexecutableFuture().thenUnexecutable(composeFuture(ctx.executor(), promise));
+        return composeFuture().then(promise);
     }
 }

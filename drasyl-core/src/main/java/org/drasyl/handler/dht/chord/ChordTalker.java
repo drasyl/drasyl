@@ -72,7 +72,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                final DrasylAddress sender,
                                final Closest closest) {
         final long id = closest.getId();
-        closestPrecedingFinger(ctx, id, fingerTable).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
+        closestPrecedingFinger(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
             final IdentityPublicKey result = future.get();
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
@@ -107,7 +107,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        findSuccessor(ctx, id, fingerTable).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
+        findSuccessor(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });

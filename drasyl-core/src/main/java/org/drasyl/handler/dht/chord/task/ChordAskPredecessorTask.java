@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
-import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 /**
  * Ask predecessor thread that periodically asks for predecessor's keep-alive, and delete
@@ -66,7 +65,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                composeUnexecutableFuture().then(keepRequest(ctx, fingerTable.getPredecessor())).compose(ctx.executor()).toFuture().addListener((FutureListener<Void>) future -> {
+                keepRequest(ctx, fingerTable.getPredecessor()).finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
                     if (future.cause() != null) { // FIXME: oder NULL?
                         // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");
