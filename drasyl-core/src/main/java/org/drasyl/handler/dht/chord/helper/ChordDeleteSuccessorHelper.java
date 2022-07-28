@@ -48,7 +48,7 @@ public final class ChordDeleteSuccessorHelper {
 
         // try to fill successor
         return composeUnexecutableFuture()
-                .thenUnexecutable(fillSuccessor(ctx, fingerTable))
+                .thenUnexecutable(fillSuccessor(ctx, fingerTable).compose(ctx.executor()))
                 .chain(unused -> {
                     final IdentityPublicKey successor2 = fingerTable.getSuccessor();
 

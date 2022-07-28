@@ -76,7 +76,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
             final FutureComposer<Void> voidFuture;
             if (successor == null || successor.equals(ctx.channel().localAddress())) {
                 // Try to fill successor with candidates in finger table or even predecessor
-                voidFuture = fillSuccessor(ctx, fingerTable);//fill
+                voidFuture = fillSuccessor(ctx, fingerTable).compose(ctx.executor());//fill
             }
             else {
                 voidFuture = composeFuture(ctx.executor());
