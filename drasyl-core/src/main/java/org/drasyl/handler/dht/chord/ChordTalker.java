@@ -42,7 +42,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OverlayAddressedMessage<ChordMessage> msg) throws Exception {
         final DrasylAddress sender = msg.sender();
-        LOG.error("Got `{}` from `{}`.", msg.content(), sender);
+        LOG.debug("Got `{}` from `{}`.", msg.content(), sender);
         if (msg.content() instanceof Closest) {
             handleClosest(ctx, sender, (Closest) msg.content());
         }

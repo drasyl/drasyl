@@ -15,7 +15,6 @@ import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordTalker;
-import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
 import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
@@ -28,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
 
+import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 
@@ -43,13 +43,10 @@ public class ChordNode {
         }
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
-        final long myId = ChordUtil.chordId(identity.getAddress());
+        final long myId = chordId(identity.getAddress());
         final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
-        System.out.println("My Address: " + identity.getAddress());
-        System.out.println("My Id: " + chordIdToHex(myId) + " (" + chordIdPosition(myId) + ")");
-        System.out.println();
-        System.out.println("My Predecessor: " + fingerTable.getPredecessor());
-        System.out.println("My Successor: " + fingerTable.getSuccessor());
+        System.out.println("My Address : " + identity.getAddress());
+        System.out.println("My Id      : " + chordIdToHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
 
         final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
@@ -66,9 +63,9 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ChordCodec());
-                        p.addLast(new ChordStabilizeTask(fingerTable));
-                        p.addLast(new ChordFixFingersTask(fingerTable));
-                        p.addLast(new ChordAskPredecessorTask(fingerTable));
+                        p.addLast(new ChordStabilizeTask(fingerTable, 5000));
+                        p.addLast(new ChordFixFingersTask(fingerTable, 5000));
+                        p.addLast(new ChordAskPredecessorTask(fingerTable, 5000));
                         p.addLast(new ChordTalker(fingerTable));
 
                         if (contact != null) {

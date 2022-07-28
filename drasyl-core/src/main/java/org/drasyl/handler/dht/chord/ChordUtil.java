@@ -63,7 +63,7 @@ public final class ChordUtil {
     }
 
     public static String chordIdToHex(final SocketAddress id) {
-        return chordIdPosition(chordId(id));
+        return chordIdToHex(chordId(id));
     }
 
     public static String chordIdPosition(final long id) {

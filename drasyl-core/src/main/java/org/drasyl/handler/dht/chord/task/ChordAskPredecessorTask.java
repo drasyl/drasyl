@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Ask predecessor thread that periodically asks for predecessor's keep-alive, and delete
@@ -19,10 +20,17 @@ import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequ
 public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessorTask.class);
     private final ChordFingerTable fingerTable;
+    private final long checkIntervalMillis;
     private ScheduledFuture<?> askPredecessorTaskFuture;
 
-    public ChordAskPredecessorTask(final ChordFingerTable fingerTable) {
+    public ChordAskPredecessorTask(final ChordFingerTable fingerTable,
+                                   final long checkIntervalMillis) {
         this.fingerTable = requireNonNull(fingerTable);
+        this.checkIntervalMillis = requirePositive(checkIntervalMillis);
+    }
+
+    public ChordAskPredecessorTask(final ChordFingerTable fingerTable) {
+        this(fingerTable, 500);
     }
 
     /*
@@ -77,7 +85,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
             else {
                 scheduleAskPredecessorTask(ctx);
             }
-        }, 500, MILLISECONDS);
+        }, checkIntervalMillis, MILLISECONDS);
     }
 
     private void cancelAskPredecessorTask() {

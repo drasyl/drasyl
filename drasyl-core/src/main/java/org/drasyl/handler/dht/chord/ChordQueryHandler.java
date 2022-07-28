@@ -54,10 +54,10 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                    final IdentityPublicKey contact,
                                    final long id,
                                    final ChannelPromise promise) {
-        LOG.error("checkContactAlive?");
+        LOG.debug("checkContactAlive?");
         keepRequest(ctx, contact).finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) { // FIXME: im fehlerfall NULL oder im cause?
-                LOG.error("checkContactAlive = true");
+                LOG.debug("checkContactAlive = true");
                 // now check
                 checkContactStable(ctx, contact, id, promise);
             }
@@ -71,7 +71,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final IdentityPublicKey contact,
                                     final long id,
                                     final ChannelPromise promise) {
-        LOG.error("checkContactStable?");
+        LOG.debug("checkContactStable?");
         yourPredecessorRequest(ctx, contact)
                 .chain(pred_addr -> yourSuccessorRequest(ctx, contact)
                         .map(succ_addr -> {
@@ -89,7 +89,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                 .finish(ctx.executor())
                 .addListener((FutureListener<Boolean>) future -> {
                     if (future.isSuccess()) {
-                        LOG.error("checkContactStable = true");
+                        LOG.debug("checkContactStable = true");
                         // do actual lookup
                         doActualLookup(ctx, contact, id, promise);
                     }

@@ -19,6 +19,7 @@ import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillS
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Stabilize thread that periodically asks successor for its predecessor and determine if current
@@ -27,10 +28,16 @@ import static org.drasyl.util.FutureComposer.composeFuture;
 public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordStabilizeTask.class);
     private final ChordFingerTable fingerTable;
+    private final long checkIntervalMillis;
     private ScheduledFuture<?> stabilizeTaskFuture;
 
-    public ChordStabilizeTask(final ChordFingerTable fingerTable) {
+    public ChordStabilizeTask(final ChordFingerTable fingerTable, final long checkIntervalMillis) {
         this.fingerTable = requireNonNull(fingerTable);
+        this.checkIntervalMillis = requirePositive(checkIntervalMillis);
+    }
+
+    public ChordStabilizeTask(final ChordFingerTable fingerTable) {
+        this(fingerTable, 500);
     }
 
     /*
@@ -131,7 +138,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     scheduleStabilizeTask(ctx);
                 }
             });
-        }, 500, MILLISECONDS);
+        }, checkIntervalMillis, MILLISECONDS);
     }
 
     private void cancelStabilizeTask() {

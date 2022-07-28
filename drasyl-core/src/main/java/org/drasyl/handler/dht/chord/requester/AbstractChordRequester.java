@@ -46,7 +46,7 @@ abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleC
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        logger().error("Send request `{}` to peer `{}`.", request, peer);
+        logger().debug("Send request `{}` to peer `{}`.", request, peer);
         ctx.writeAndFlush(new OverlayAddressedMessage<>(request, peer)).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 timeoutGuard = ctx.executor().schedule(() -> {
@@ -76,7 +76,7 @@ abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleC
                                 final OverlayAddressedMessage<T> msg) throws Exception {
         cancelTimeoutGuard();
         final T response = msg.content();
-        logger().error("Go response for request `{}` to peer `{}`: {}", request, peer, response);
+        logger().debug("Go response for request `{}` to peer `{}`: {}", request, peer, response);
         handleResponse(ctx, response, promise);
         ctx.pipeline().remove(ctx.name());
     }
