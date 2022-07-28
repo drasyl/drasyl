@@ -25,9 +25,9 @@ public final class UnexecutableFutureComposer<T> {
         return new FutureComposer<>(executor, future.apply(executor));
     }
 
-//    public <R> UnexecutableFutureComposer<R> map(final Function<T, R> mapper) {
-//        return new UnexecutableFutureComposer<>(executor -> mapFuture(future.apply(executor), executor, mapper));
-//    }
+    public <R> UnexecutableFutureComposer<R> map(final Function<T, R> mapper) {
+        return new UnexecutableFutureComposer<>(executor -> mapFuture(future.apply(executor), executor, mapper));
+    }
 
     public <R> FutureComposer<R> then(final FutureComposer<R> then) {
         return new FutureComposer<>(then.executor, chainFuture(future.apply(then.executor), then.executor, t -> then.toFuture()));
