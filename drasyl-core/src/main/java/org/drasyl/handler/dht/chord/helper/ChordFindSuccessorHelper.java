@@ -3,14 +3,14 @@ package org.drasyl.handler.dht.chord.helper;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureComposer;
+import org.drasyl.util.UnexecutableFutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.helper.ChordFindPredecessorHelper.findPredecessor;
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.yourSuccessorRequest;
-import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 public final class ChordFindSuccessorHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFindSuccessorHelper.class);
@@ -19,9 +19,9 @@ public final class ChordFindSuccessorHelper {
         // util class
     }
 
-    public static FutureComposer<IdentityPublicKey> findSuccessor(final ChannelHandlerContext ctx,
-                                                                  final long id,
-                                                                  final ChordFingerTable fingerTable) {
+    public static UnexecutableFutureComposer<IdentityPublicKey> findSuccessor(final ChannelHandlerContext ctx,
+                                                                              final long id,
+                                                                              final ChordFingerTable fingerTable) {
         LOG.debug("Find successor of `{}`.", chordIdToHex(id));
 
         // initialize return value as this node's successor (might be null)
@@ -29,15 +29,15 @@ public final class ChordFindSuccessorHelper {
 
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", chordIdToHex(id));
 
-        return composeFuture(ctx.executor())
-                .then(findPredecessor(ctx, id, fingerTable).compose(ctx.executor()))
+        return composeUnexecutableFuture()
+                .then(findPredecessor(ctx, id, fingerTable))
                 .chain(pre -> {
                     // if other node found, ask it for its successor
                     if (!pre.equals(ctx.channel().localAddress())) {
-                        return yourSuccessorRequest(ctx, pre);
+                        return composeUnexecutableFuture().thenUnexecutable(yourSuccessorRequest(ctx, pre));
                     }
                     else {
-                        return composeFuture(ctx.executor(), ret);
+                        return composeUnexecutableFuture(ret);
                     }
                 })
                 .map(ret1 -> {
