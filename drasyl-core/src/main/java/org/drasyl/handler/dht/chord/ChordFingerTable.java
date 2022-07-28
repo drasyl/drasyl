@@ -42,9 +42,9 @@ public class ChordFingerTable {
         sb.append(System.lineSeparator());
 
         // body
-        for (int i = 0; i < entries.length; i++) {
-            final long ithStart = ithFingerStart(localAddress, i + 1);
-            sb.append((i + 1) + "\t" + chordIdToHex(ithStart) + " (" + chordIdPosition(ithStart) + ")" + "\t" + entries[i] + "\t" + (entries[i] != null ? chordIdToHex(entries[i]) + " (" + chordIdPosition(entries[i]) + ")" : ""));
+        for (int i = 1; i <= entries.length; i++) {
+            final long ithStart = ithFingerStart(localAddress, i);
+            sb.append(i + "\t" + chordIdToHex(ithStart) + " (" + chordIdPosition(ithStart) + ")" + "\t" + entries[i - 1] + "\t" + (entries[i - 1] != null ? chordIdToHex(entries[i - 1]) + " (" + chordIdPosition(entries[i - 1]) + ")" : ""));
             sb.append(System.lineSeparator());
         }
 
@@ -100,7 +100,7 @@ public class ChordFingerTable {
         final IdentityPublicKey oldValue = entries[i - 1];
         entries[i - 1] = value;
         if (!Objects.equals(value, oldValue)) {
-            LOG.info("Update {}th finger to `{}`.", i, value);
+            LOG.info("Update {}th finger to `{}` ({} -> {} -> {}).", i, value, oldValue != null ? chordIdPosition(oldValue) : "null", value != null ? chordIdPosition(value) : "null", chordIdPosition(ithFingerStart(localAddress, i)));
         }
 
         // if the updated one is successor, notify the new successor

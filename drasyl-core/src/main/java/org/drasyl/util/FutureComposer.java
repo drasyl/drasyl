@@ -4,11 +4,10 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.FutureUtil.chain2Future;
-import static org.drasyl.util.FutureUtil.chainFuture;
-import static org.drasyl.util.FutureUtil.mapFuture;
 
 public final class FutureComposer<T> {
     private final Function<EventExecutor, Future<T>> futureResolver;
@@ -22,27 +21,20 @@ public final class FutureComposer<T> {
     }
 
     /**
-     * transformiert das ergebnis des alten futures.
-     */
-    public <R> FutureComposer<R> map(final Function<T, R> mapper) {
-        return new FutureComposer<>(executor -> mapFuture(futureResolver.apply(executor), executor, mapper));
-    }
-
-    /**
      * waits for future to be done before we continue.
      */
-    public <R> FutureComposer<R> then(final Future<R> future) {
+    public <R> FutureComposer<R> chain(final Future<R> future) {
         return new FutureComposer<>(executor -> {
             futureResolver.apply(executor);
             return future;
         });
     }
 
-    public <R> FutureComposer<R> chain(final Function<T, FutureComposer<R>> mapper) {
-        return new FutureComposer<>(executor -> chainFuture(futureResolver.apply(executor), executor, future -> mapper.apply(future).futureResolver.apply(executor)));
+    public <R> FutureComposer<R> chain(final Supplier<FutureComposer<R>> mapper) {
+        return new FutureComposer<>(executor -> chain2Future(futureResolver.apply(executor), executor, future -> mapper.get().futureResolver.apply(executor)));
     }
 
-    public <R> FutureComposer<R> chain2(final Function<Future<T>, FutureComposer<R>> mapper) {
+    public <R> FutureComposer<R> chain(final Function<Future<T>, FutureComposer<R>> mapper) {
         return new FutureComposer<>(executor -> chain2Future(futureResolver.apply(executor), executor, future -> mapper.apply(future).futureResolver.apply(executor)));
     }
 
@@ -52,5 +44,9 @@ public final class FutureComposer<T> {
 
     public static <R> FutureComposer<R> composeFuture() {
         return composeFuture(null);
+    }
+
+    public static <R> FutureComposer<R> composeFailedFuture(final Throwable cause) {
+        return new FutureComposer<>(executor -> executor.newFailedFuture(cause));
     }
 }

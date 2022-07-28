@@ -59,11 +59,14 @@ public final class ChordUtil {
         final ByteBuffer buf = ByteBuffer.allocate(Long.BYTES).putLong(id).position(Integer.BYTES);
         final byte[] a = new byte[buf.position()];
         buf.get(a);
+//        System.out.println("id = " + id);
+//        System.out.println("a = " + Arrays.toString(a));
         return HexUtil.bytesToHex(a);
     }
 
     public static String chordIdToHex(final SocketAddress id) {
-        return chordIdToHex(chordId(id));
+        final String x = chordIdToHex(chordId(id));
+        return x;
     }
 
     public static String chordIdPosition(final long id) {

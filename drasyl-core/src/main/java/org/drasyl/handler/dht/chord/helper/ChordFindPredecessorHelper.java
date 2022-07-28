@@ -8,6 +8,8 @@ import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Objects;
+
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 import static org.drasyl.handler.dht.chord.requester.ChordClosestRequester.closestRequest;
@@ -48,9 +50,10 @@ public final class ChordFindPredecessorHelper {
         }
 
         // if current node is local node, find my closest
-        if (pre_n.equals(ctx.channel().localAddress())) {
+        if (Objects.equals(pre_n, ctx.channel().localAddress())) {
             return closestPrecedingFinger(ctx, findid, fingerTable)
-                    .chain(n -> {
+                    .chain(future -> {
+                        final IdentityPublicKey n = future.getNow();
                         if (pre_n.equals(n)) {
                             return composeFuture(n);
                         }
@@ -62,12 +65,14 @@ public final class ChordFindPredecessorHelper {
         // else current node is remote node, sent request to it for its closest
         else {
             return closestRequest(ctx, pre_n, findid)
-                    .chain(result -> {
+                    .chain(future -> {
+                        final IdentityPublicKey result = future.getNow();
                         // if fail to get response, set n to most recently
-                        if (result == null) { // FIXME: oder cause?
+                        if (result == null) {
                             return yourSuccessorRequest(ctx, most_recently_alive)
-                                    .chain(n_successor -> {
-                                        if (n_successor == null) { // FIXME: oder cause?
+                                    .chain(future1 -> {
+                                        final IdentityPublicKey n_successor = future1.getNow();
+                                        if (n_successor == null) {
                                             return composeFuture((IdentityPublicKey) ctx.channel().localAddress());
                                         }
                                         return recursive(ctx, findid, most_recently_alive, findid_relative_id, n_successor_relative_id, most_recently_alive, fingerTable);
@@ -84,9 +89,10 @@ public final class ChordFindPredecessorHelper {
                             // set n as most recently alive
                             // ask "result" for its successor
                             return yourSuccessorRequest(ctx, result)
-                                    .chain(n_successor -> {
+                                    .chain(future1 -> {
+                                        final IdentityPublicKey n_successor = future1.getNow();
                                         // if we can get its response, then "result" must be our next n
-                                        if (n_successor != null) { // FIXME: oder cause?
+                                        if (n_successor != null) {
                                             if (pre_n.equals(result)) {
                                                 return composeFuture(result);
                                             }

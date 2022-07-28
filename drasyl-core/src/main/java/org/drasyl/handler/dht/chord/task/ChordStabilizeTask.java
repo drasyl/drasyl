@@ -95,9 +95,10 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
 
                     // try to get my successor's predecessor
                     yourPredecessorRequest(ctx, successor)
-                            .chain(x -> {
+                            .chain(future2 -> {
                                 // if bad connection with successor! delete successor
-                                if (x == null) { // FIXME: oder cause?
+                                IdentityPublicKey x = future2.getNow();
+                                if (x == null) {
                                     LOG.debug("Bad connection with successor. Delete successor from finger table.");
                                     return deleteSuccessor(ctx, fingerTable);
                                 }

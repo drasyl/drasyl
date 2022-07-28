@@ -28,7 +28,7 @@ public final class ChordFillSuccessorHelper {
             future = composeFuture();
         }
 
-        return future.chain(unused -> {
+        return future.chain(() -> {
             final IdentityPublicKey successor2 = fingerTable.getSuccessor();
             if ((successor2 == null || successor2.equals(ctx.channel().localAddress())) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
                 return fingerTable.updateIthFinger(ctx, 1, fingerTable.getPredecessor());
@@ -62,7 +62,7 @@ public final class ChordFillSuccessorHelper {
                                                    final ChordFingerTable fingerTable) {
         if (j >= 1) {
             return fingerTable.updateIthFinger(ctx, j, ithfinger)
-                    .chain(unused -> recursive2(ctx, j - 1, ithfinger, fingerTable));
+                    .chain(() -> recursive2(ctx, j - 1, ithfinger, fingerTable));
         }
         else {
             return composeFuture();

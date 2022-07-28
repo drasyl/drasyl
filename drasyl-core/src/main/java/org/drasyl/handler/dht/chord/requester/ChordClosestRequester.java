@@ -9,6 +9,7 @@ import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordClosestRequester extends AbstractChordRequester<MyClosest, IdentityPublicKey> {
@@ -40,8 +41,11 @@ public class ChordClosestRequester extends AbstractChordRequester<MyClosest, Ide
     public static FutureComposer<IdentityPublicKey> closestRequest(final ChannelHandlerContext ctx,
                                                                    final IdentityPublicKey peer,
                                                                    final long id) {
+        if (peer == null) {
+            return composeFailedFuture(new Exception("peer is null"));
+        }
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordClosestRequester(peer, id, promise));
-        return composeFuture().then(promise);
+        return composeFuture().chain(promise);
     }
 }

@@ -12,6 +12,7 @@ import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.yourSuccessorRequest;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordQueryHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChordQueryHandler.class);
@@ -56,7 +57,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                    final ChannelPromise promise) {
         LOG.debug("checkContactAlive?");
         keepRequest(ctx, contact).finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
-            if (future.isSuccess()) { // FIXME: im fehlerfall NULL oder im cause?
+            if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
                 // now check
                 checkContactStable(ctx, contact, id, promise);
@@ -73,18 +74,20 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final ChannelPromise promise) {
         LOG.debug("checkContactStable?");
         yourPredecessorRequest(ctx, contact)
-                .chain(pred_addr -> yourSuccessorRequest(ctx, contact)
-                        .map(succ_addr -> {
+                .chain(future -> yourSuccessorRequest(ctx, contact)
+                        .chain(future1 -> {
+                            final IdentityPublicKey pred_addr = future.getNow();
+                            final IdentityPublicKey succ_addr = future1.getNow();
                             if (pred_addr == null || succ_addr == null) {
-                                promise.setFailure(new Exception("Contact node " + contact + " is disconnected. Please try an other contact node."));
                                 this.promise = null;
-                                return false;
+                                promise.setFailure(new Exception("Contact node " + contact + " is disconnected. Please try an other contact node."));
+                                return composeFuture(false);
                             }
 
                             final boolean pred = pred_addr.equals(contact);
                             final boolean succ = succ_addr.equals(contact);
 
-                            return pred == succ;
+                            return composeFuture(pred == succ);
                         }))
                 .finish(ctx.executor())
                 .addListener((FutureListener<Boolean>) future -> {
@@ -94,8 +97,8 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                         doActualLookup(ctx, contact, id, promise);
                     }
                     else {
-                        promise.tryFailure(new Exception("Contact node " + contact + " is not stable. Please try again later."));
                         this.promise = null;
+                        promise.tryFailure(new Exception("Contact node " + contact + " is not stable. Please try again later."));
                     }
                 });
     }
@@ -105,9 +108,15 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                 final long id,
                                 final ChannelPromise promise) {
         findSuccessorRequest(ctx, id, contact).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
-            ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
-            this.promise = null;
-            promise.trySuccess();
+            if (future.isSuccess()) {
+                ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
+                this.promise = null;
+                promise.trySuccess();
+            }
+            else {
+                this.promise = null;
+                promise.tryFailure(future.cause());
+            }
         });
     }
 }

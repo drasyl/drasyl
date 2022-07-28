@@ -48,7 +48,7 @@ public final class ChordDeleteSuccessorHelper {
 
         // try to fill successor
         return fillSuccessor(ctx, fingerTable)
-                .chain(unused -> {
+                .chain(() -> {
                     final IdentityPublicKey successor2 = fingerTable.getSuccessor();
 
                     // if successor is still null or local node,
@@ -58,11 +58,8 @@ public final class ChordDeleteSuccessorHelper {
                         final IdentityPublicKey p = fingerTable.getPredecessor();
 
                         return recursive2(ctx, p, successor2)
-                                .map(publicKey1 -> null)
-                                .chain(publicKey -> {
-                                    // update successor
-                                    return fingerTable.updateIthFinger(ctx, 1, p);
-                                });
+                                // update successor
+                                .chain(() -> fingerTable.updateIthFinger(ctx, 1, p));
                     }
                     else {
                         return composeFuture();
@@ -74,7 +71,7 @@ public final class ChordDeleteSuccessorHelper {
                                                   final ChordFingerTable fingerTable,
                                                   final int j) {
         return fingerTable.updateIthFinger(ctx, j, null)
-                .chain(unused -> {
+                .chain(() -> {
                     if (j > 1) {
                         return recursive(ctx, fingerTable, j - 1);
                     }
@@ -88,16 +85,17 @@ public final class ChordDeleteSuccessorHelper {
                                                                 final IdentityPublicKey p,
                                                                 final IdentityPublicKey successor) {
         return yourPredecessorRequest(ctx, p)
-                .chain(p_pre -> {
-                    if (p_pre == null) { // FIXME: oder cause???
-                        return FutureComposer.composeFuture(p);
+                .chain(future -> {
+                    IdentityPublicKey p_pre = future.getNow();
+                    if (p_pre == null) {
+                        return composeFuture(p);
                     }
 
                     // if p's predecessor is node is just deleted,
                     // or itself (nothing found in p), or local address,
                     // p is current node's new successor, break
                     if (p_pre.equals(p) || p_pre.equals(ctx.channel().localAddress()) || p_pre.equals(successor)) {
-                        return FutureComposer.composeFuture(p);
+                        return composeFuture(p);
                     }
 
                     // else, keep asking

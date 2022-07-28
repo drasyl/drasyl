@@ -51,7 +51,7 @@ public class ChordNode {
 
         final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
 
-        final EventLoopGroup group = new NioEventLoopGroup(1);
+        final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
@@ -63,9 +63,9 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ChordCodec());
-                        p.addLast(new ChordStabilizeTask(fingerTable, 5000));
-                        p.addLast(new ChordFixFingersTask(fingerTable, 5000));
-                        p.addLast(new ChordAskPredecessorTask(fingerTable, 5000));
+                        p.addLast(new ChordStabilizeTask(fingerTable, 500));
+                        p.addLast(new ChordFixFingersTask(fingerTable, 500));
+                        p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
                         p.addLast(new ChordTalker(fingerTable));
 
                         if (contact != null) {

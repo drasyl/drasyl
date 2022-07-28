@@ -9,6 +9,7 @@ import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordFindSuccessorRequester extends AbstractChordRequester<FoundSuccessor, IdentityPublicKey> {
@@ -39,8 +40,11 @@ public class ChordFindSuccessorRequester extends AbstractChordRequester<FoundSuc
     public static FutureComposer<IdentityPublicKey> findSuccessorRequest(final ChannelHandlerContext ctx,
                                                                          final long id,
                                                                          final IdentityPublicKey peer) {
+        if (peer == null) {
+            return composeFailedFuture(new Exception("peer is null"));
+        }
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordFindSuccessorRequester(peer, id, promise));
-        return composeFuture().then(promise);
+        return composeFuture().chain(promise);
     }
 }

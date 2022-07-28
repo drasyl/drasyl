@@ -111,7 +111,6 @@ public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddress
     private void failJoinTask(final ChannelHandlerContext ctx, final Throwable cause) {
         ctx.pipeline().fireExceptionCaught(cause);
         ctx.pipeline().close();
-        System.exit(1);
     }
 
     private void cancelJoinTask() {

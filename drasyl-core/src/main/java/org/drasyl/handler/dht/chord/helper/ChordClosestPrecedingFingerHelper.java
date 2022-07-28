@@ -42,7 +42,8 @@ public final class ChordClosestPrecedingFingerHelper {
             return composeFuture((IdentityPublicKey) ctx.channel().localAddress());
         }
         else {
-            return composeFuture(fingerTable.get(i)).chain(ith_finger -> {
+            return composeFuture(fingerTable.get(i)).chain(future2 -> {
+                final IdentityPublicKey ith_finger = future2.getNow();
                 if (ith_finger != null) {
                     // if its relative id is the closest, check if its alive
                     final long ith_finger_id = chordId(ith_finger);
@@ -53,7 +54,7 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("Check if it is still alive.");
 
                         return keepRequest(ctx, ith_finger)
-                                .chain2(future -> {
+                                .chain(future -> {
                                     //it is alive, return it
                                     if (future.isSuccess()) {
                                         LOG.debug("Peer is still alive.");
@@ -63,8 +64,8 @@ public final class ChordClosestPrecedingFingerHelper {
                                     else {
                                         LOG.warn("Peer is not alive. Remove it from finger table.");
                                         fingerTable.removePeer(ith_finger);
-                                        return composeFuture(null);
                                     }
+                                    return checkFinger(ctx, findid, localId, findid_relative, i - 1, fingerTable);
                                 });
                     }
                 }

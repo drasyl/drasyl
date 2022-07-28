@@ -22,7 +22,7 @@ public final class Sha {
         // util class
     }
 
-    public static byte[] sha1(final byte[] bytes) {
+    public synchronized static byte[] sha1(final byte[] bytes) {
         return SHA1.digest(bytes);
     }
 }

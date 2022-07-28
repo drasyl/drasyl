@@ -7,9 +7,12 @@ import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Objects;
+
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.helper.ChordFindPredecessorHelper.findPredecessor;
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.yourSuccessorRequest;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public final class ChordFindSuccessorHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFindSuccessorHelper.class);
@@ -29,20 +32,22 @@ public final class ChordFindSuccessorHelper {
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", chordIdToHex(id));
 
         return findPredecessor(ctx, id, fingerTable)
-                .chain(pre -> {
+                .chain(future -> {
+                    final IdentityPublicKey pre = future.getNow();
                     // if other node found, ask it for its successor
-                    if (!pre.equals(ctx.channel().localAddress())) {
+                    if (!Objects.equals(pre, ctx.channel().localAddress())) {
                         return yourSuccessorRequest(ctx, pre);
                     }
                     else {
-                        return FutureComposer.composeFuture(ret);
+                        return composeFuture(ret);
                     }
                 })
-                .map(ret1 -> {
-                    if (ret1 == null) { // FIXME: oder cause?
-                        return (IdentityPublicKey) ctx.channel().localAddress();
+                .chain(future -> {
+                    final IdentityPublicKey ret1 = future.getNow();
+                    if (ret1 == null) {
+                        return composeFuture((IdentityPublicKey) ctx.channel().localAddress());
                     }
-                    return ret1;
+                    return composeFuture(ret1);
                 });
     }
 }

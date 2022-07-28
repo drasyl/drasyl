@@ -29,7 +29,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 
 public class ChordQuery {
-    private static final String IDENTITY = System.getProperty("identity", "chord.identity");
+    private static final String IDENTITY = System.getProperty("identity", "chord-query.identity");
 
     public static void main(final String[] args) throws IOException {
         // load/create identity
@@ -45,6 +45,9 @@ public class ChordQuery {
         if (contact == null) {
             System.out.println("\nInvalid input. Now exit.\n");
             System.exit(1);
+        }
+        else {
+            System.out.println("My contact node: " + contact);
         }
 
         final EventLoopGroup group = new NioEventLoopGroup(1);

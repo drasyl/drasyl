@@ -75,7 +75,8 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                final Closest closest) {
         final long id = closest.getId();
         closestPrecedingFinger(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
-            final IdentityPublicKey result = future.get();
+            final IdentityPublicKey result = future.getNow();
+            // FIXME: hier ist result manchmal null -> NPE
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
         });
@@ -121,6 +122,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
         if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
             LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
             fingerTable.setPredecessor(newPredecessorCandidate);
+            // FIXME: wieso hier nicht checken, ob er als geeigneter fingers dient?
         }
         else {
             final long oldpre_id = chordId(fingerTable.getPredecessor());
