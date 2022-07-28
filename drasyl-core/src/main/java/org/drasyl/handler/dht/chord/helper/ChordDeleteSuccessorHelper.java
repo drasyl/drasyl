@@ -1,9 +1,9 @@
 package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -20,13 +20,13 @@ public final class ChordDeleteSuccessorHelper {
         // util class
     }
 
-    public static Future<Void> deleteSuccessor(final ChannelHandlerContext ctx,
-                                               final ChordFingerTable fingerTable) {
+    public static FutureComposer<Void> deleteSuccessor(final ChannelHandlerContext ctx,
+                                                       final ChordFingerTable fingerTable) {
         final IdentityPublicKey successor = fingerTable.getSuccessor();
 
         //nothing to delete, just return
         if (successor == null) {
-            return null;
+            return composeFuture(ctx.executor());
         }
 
         // find the last existence of successor in the finger table
@@ -64,19 +64,17 @@ public final class ChordDeleteSuccessorHelper {
                                 .chain(publicKey -> {
                                     // update successor
                                     return fingerTable.updateIthFinger(ctx, 1, p);
-                                })
-                                .toFuture();
+                                });
                     }
                     else {
-                        return composeFuture(ctx.executor()).toFuture();
+                        return composeFuture(ctx.executor());
                     }
-                })
-                .toFuture();
+                });
     }
 
-    private static Future<Void> recursive(final ChannelHandlerContext ctx,
-                                          final ChordFingerTable fingerTable,
-                                          final int j) {
+    private static FutureComposer<Void> recursive(final ChannelHandlerContext ctx,
+                                                  final ChordFingerTable fingerTable,
+                                                  final int j) {
         return composeFuture(ctx.executor())
                 .then(fingerTable.updateIthFinger(ctx, j, null))
                 .chain(unused -> {
@@ -86,32 +84,30 @@ public final class ChordDeleteSuccessorHelper {
                     else {
                         return fingerTable.updateIthFinger(ctx, j, null);
                     }
-                })
-                .toFuture();
+                });
     }
 
-    private static Future<IdentityPublicKey> recursive2(final ChannelHandlerContext ctx,
-                                                        final IdentityPublicKey p,
-                                                        final IdentityPublicKey successor) {
+    private static FutureComposer<IdentityPublicKey> recursive2(final ChannelHandlerContext ctx,
+                                                                final IdentityPublicKey p,
+                                                                final IdentityPublicKey successor) {
         return composeFuture(ctx.executor())
                 .then(yourPredecessorRequest(ctx, p))
                 .chain(p_pre -> {
                     if (p_pre == null) { // FIXME: oder cause???
-                        return composeFuture(ctx.executor(), p).toFuture();
+                        return composeFuture(ctx.executor(), p);
                     }
 
                     // if p's predecessor is node is just deleted,
                     // or itself (nothing found in p), or local address,
                     // p is current node's new successor, break
                     if (p_pre.equals(p) || p_pre.equals(ctx.channel().localAddress()) || p_pre.equals(successor)) {
-                        return composeFuture(ctx.executor(), p).toFuture();
+                        return composeFuture(ctx.executor(), p);
                     }
 
                     // else, keep asking
                     else {
                         return recursive2(ctx, p_pre, successor);
                     }
-                })
-                .toFuture();
+                });
     }
 }

@@ -4,7 +4,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper;
 import org.drasyl.handler.dht.chord.message.Alive;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
@@ -28,6 +27,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
+import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 
 public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMessage<ChordMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordTalker.class);
@@ -72,7 +72,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                final DrasylAddress sender,
                                final Closest closest) {
         final long id = closest.getId();
-        closestPrecedingFinger(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+        closestPrecedingFinger(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
             final IdentityPublicKey result = future.get();
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
@@ -107,7 +107,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        ChordFindSuccessorHelper.findSuccessor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+        findSuccessor(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });

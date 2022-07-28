@@ -1,10 +1,10 @@
 package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -21,9 +21,9 @@ public final class ChordFindPredecessorHelper {
         // util class
     }
 
-    public static Future<IdentityPublicKey> findPredecessor(final ChannelHandlerContext ctx,
-                                                            final long findid,
-                                                            final ChordFingerTable fingerTable) {
+    public static FutureComposer<IdentityPublicKey> findPredecessor(final ChannelHandlerContext ctx,
+                                                                    final long findid,
+                                                                    final ChordFingerTable fingerTable) {
         LOG.debug("Find predecessor of `{}`", chordIdToHex(findid));
         final IdentityPublicKey n = (IdentityPublicKey) ctx.channel().localAddress();
         final IdentityPublicKey n_successor = fingerTable.getSuccessor();
@@ -36,15 +36,15 @@ public final class ChordFindPredecessorHelper {
         return recursive(ctx, findid, n, findid_relative_id, n_successor_relative_id, (IdentityPublicKey) ctx.channel().localAddress(), fingerTable);
     }
 
-    private static Future<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
-                                                       final long findid,
-                                                       final IdentityPublicKey pre_n,
-                                                       final long findid_relative_id,
-                                                       final long n_successor_relative_id,
-                                                       final IdentityPublicKey most_recently_alive,
-                                                       final ChordFingerTable fingerTable) {
+    private static FutureComposer<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
+                                                               final long findid,
+                                                               final IdentityPublicKey pre_n,
+                                                               final long findid_relative_id,
+                                                               final long n_successor_relative_id,
+                                                               final IdentityPublicKey most_recently_alive,
+                                                               final ChordFingerTable fingerTable) {
         if (findid_relative_id > 0 && findid_relative_id <= n_successor_relative_id) {
-            return composeFuture(ctx.executor(), pre_n).toFuture();
+            return composeFuture(ctx.executor(), pre_n);
         }
 
         // if current node is local node, find my closest
@@ -53,13 +53,12 @@ public final class ChordFindPredecessorHelper {
                     .then(closestPrecedingFinger(ctx, findid, fingerTable))
                     .chain(n -> {
                         if (pre_n.equals(n)) {
-                            return composeFuture(ctx.executor(), n).toFuture();
+                            return composeFuture(ctx.executor(), n);
                         }
                         else {
                             return recursive(ctx, findid, n, findid_relative_id, n_successor_relative_id, most_recently_alive, fingerTable);
                         }
-                    })
-                    .toFuture();
+                    });
         }
         // else current node is remote node, sent request to it for its closest
         else {
@@ -72,16 +71,15 @@ public final class ChordFindPredecessorHelper {
                                     .then(yourSuccessorRequest(ctx, most_recently_alive))
                                     .chain(n_successor -> {
                                         if (n_successor == null) { // FIXME: oder cause?
-                                            return composeFuture(ctx.executor(), (IdentityPublicKey) ctx.channel().localAddress()).toFuture();
+                                            return composeFuture(ctx.executor(), (IdentityPublicKey) ctx.channel().localAddress());
                                         }
                                         return recursive(ctx, findid, most_recently_alive, findid_relative_id, n_successor_relative_id, most_recently_alive, fingerTable);
-                                    })
-                                    .toFuture();
+                                    });
                         }
 
                         // if n's closest is itself, return n
                         else if (result.equals(pre_n)) {
-                            return composeFuture(ctx.executor(), result).toFuture();
+                            return composeFuture(ctx.executor(), result);
                         }
 
                         // else n's closest is other node "result"
@@ -94,7 +92,7 @@ public final class ChordFindPredecessorHelper {
                                         // if we can get its response, then "result" must be our next n
                                         if (n_successor != null) { // FIXME: oder cause?
                                             if (pre_n.equals(result)) {
-                                                return composeFuture(ctx.executor(), result).toFuture();
+                                                return composeFuture(ctx.executor(), result);
                                             }
 
                                             // compute relative ids for while loop judgement
@@ -107,11 +105,9 @@ public final class ChordFindPredecessorHelper {
                                         else {
                                             return yourSuccessorRequest(ctx, pre_n);
                                         }
-                                    })
-                                    .toFuture();
+                                    });
                         }
-                    })
-                    .toFuture();
+                    });
         }
     }
 }

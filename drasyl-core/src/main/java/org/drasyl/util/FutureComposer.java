@@ -24,24 +24,20 @@ public final class FutureComposer<T> {
         return new FutureComposer<>(executor, mapFuture(future, executor, mapper));
     }
 
-    public <R> FutureComposer<R> chain(final Function<T, Future<R>> chaining) {
-        return new FutureComposer<>(executor, chainFuture(future, executor, chaining));
+    public <R> FutureComposer<R> chain(final Function<T, FutureComposer<R>> chaining) {
+        return new FutureComposer<>(executor, chainFuture(future, executor, t -> chaining.apply(t).toFuture()));
     }
 
-    public <R> FutureComposer<R> chain2(final Function<Future<T>, Future<R>> chaining) {
-        return new FutureComposer<>(executor, chain2Future(future, executor, chaining));
+    public <R> FutureComposer<R> chain2(final Function<Future<T>, FutureComposer<R>> chaining) {
+        return new FutureComposer<>(executor, chain2Future(future, executor, t -> chaining.apply(t).toFuture()));
     }
 
-    public <R> FutureComposer<R> then(final Future<R> keepRequest) {
-        return new FutureComposer<>(executor, chainFuture(future, executor, t -> keepRequest));
+    public <R> FutureComposer<R> then(final FutureComposer<R> then) {
+        return new FutureComposer<>(executor, chainFuture(future, executor, t -> then.toFuture()));
     }
 
     public Future<T> toFuture() {
         return future;
-    }
-
-    public <R> FutureComposer<R> just(final R value) {
-        return new FutureComposer<>(executor, executor.newSucceededFuture(value));
     }
 
     public static <T> FutureComposer<T> composeFuture(final EventExecutor executor,
@@ -55,6 +51,6 @@ public final class FutureComposer<T> {
     }
 
     public static FutureComposer<Void> composeFuture(final EventExecutor executor) {
-        return composeFuture(executor, null);
+        return composeFuture(executor, (Void) null);
     }
 }

@@ -1,9 +1,9 @@
 package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -19,9 +19,9 @@ public final class ChordFindSuccessorHelper {
         // util class
     }
 
-    public static Future<IdentityPublicKey> findSuccessor(final ChannelHandlerContext ctx,
-                                                          final long id,
-                                                          final ChordFingerTable fingerTable) {
+    public static FutureComposer<IdentityPublicKey> findSuccessor(final ChannelHandlerContext ctx,
+                                                                  final long id,
+                                                                  final ChordFingerTable fingerTable) {
         LOG.debug("Find successor of `{}`.", chordIdToHex(id));
 
         // initialize return value as this node's successor (might be null)
@@ -37,7 +37,7 @@ public final class ChordFindSuccessorHelper {
                         return yourSuccessorRequest(ctx, pre);
                     }
                     else {
-                        return composeFuture(ctx.executor(), ret).toFuture();
+                        return composeFuture(ctx.executor(), ret);
                     }
                 })
                 .map(ret1 -> {
@@ -45,7 +45,6 @@ public final class ChordFindSuccessorHelper {
                         return (IdentityPublicKey) ctx.channel().localAddress();
                     }
                     return ret1;
-                })
-                .toFuture();
+                });
     }
 }

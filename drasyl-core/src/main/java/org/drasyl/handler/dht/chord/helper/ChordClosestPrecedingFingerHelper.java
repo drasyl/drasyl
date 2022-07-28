@@ -1,9 +1,9 @@
 package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -20,9 +20,9 @@ public final class ChordClosestPrecedingFingerHelper {
         // util class
     }
 
-    public static Future<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
-                                                                   final long findid,
-                                                                   final ChordFingerTable fingerTable) {
+    public static FutureComposer<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
+                                                                           final long findid,
+                                                                           final ChordFingerTable fingerTable) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdToHex(findid));
         final long localId = chordId(ctx.channel().localAddress());
         final long findid_relative = computeRelativeChordId(findid, localId);
@@ -31,15 +31,15 @@ public final class ChordClosestPrecedingFingerHelper {
         return recursive(ctx, findid, localId, findid_relative, Integer.SIZE, fingerTable);
     }
 
-    private static Future<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
-                                                       final long findid,
-                                                       final long localId,
-                                                       final long findid_relative,
-                                                       final int i,
-                                                       final ChordFingerTable fingerTable) {
+    private static FutureComposer<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
+                                                               final long findid,
+                                                               final long localId,
+                                                               final long findid_relative,
+                                                               final int i,
+                                                               final ChordFingerTable fingerTable) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdToHex(findid));
-            return composeFuture(ctx.executor(), (IdentityPublicKey) ctx.channel().localAddress()).toFuture();
+            return composeFuture(ctx.executor(), (IdentityPublicKey) ctx.channel().localAddress());
         }
 
         final IdentityPublicKey ith_finger = fingerTable.get(i);
@@ -58,7 +58,7 @@ public final class ChordClosestPrecedingFingerHelper {
                             //it is alive, return it
                             if (future.isSuccess()) {
                                 LOG.debug("Peer is still alive.");
-                                return composeFuture(ctx.executor(), ith_finger).toFuture();
+                                return composeFuture(ctx.executor(), ith_finger);
                             }
                             // else, remove its existence from finger table
                             else {
@@ -66,7 +66,7 @@ public final class ChordClosestPrecedingFingerHelper {
                                 fingerTable.removePeer(ith_finger);
                                 return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);
                             }
-                        }).toFuture();
+                        });
             }
         }
         return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);

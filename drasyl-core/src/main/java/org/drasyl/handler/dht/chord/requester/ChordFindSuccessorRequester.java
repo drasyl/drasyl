@@ -1,11 +1,11 @@
 package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -34,11 +34,11 @@ public class ChordFindSuccessorRequester extends AbstractChordRequester<FoundSuc
         return LOG;
     }
 
-    public static Future<IdentityPublicKey> findSuccessorRequest(final ChannelHandlerContext ctx,
-                                                                 final long id,
-                                                                 final IdentityPublicKey peer) {
+    public static FutureComposer<IdentityPublicKey> findSuccessorRequest(final ChannelHandlerContext ctx,
+                                                                         final long id,
+                                                                         final IdentityPublicKey peer) {
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordFindSuccessorRequester(peer, id, promise));
-        return promise;
+        return FutureComposer.composeFuture(ctx.executor(), promise);
     }
 }

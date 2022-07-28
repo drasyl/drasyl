@@ -1,13 +1,13 @@
 package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
 import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -41,10 +41,10 @@ public class ChordYourSuccessorRequester extends AbstractChordRequester<ChordMes
         return LOG;
     }
 
-    public static Future<IdentityPublicKey> yourSuccessorRequest(final ChannelHandlerContext ctx,
-                                                                 final IdentityPublicKey peer) {
+    public static FutureComposer<IdentityPublicKey> yourSuccessorRequest(final ChannelHandlerContext ctx,
+                                                                         final IdentityPublicKey peer) {
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordYourSuccessorRequester(peer, promise));
-        return promise;
+        return FutureComposer.composeFuture(ctx.executor(), promise);
     }
 }

@@ -1,8 +1,8 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -89,17 +89,14 @@ public class ChordFingerTable {
         }
     }
 
-    public Future<Void> setSuccessor(final ChannelHandlerContext ctx,
-                                     final IdentityPublicKey successor) {
+    public FutureComposer<Void> setSuccessor(final ChannelHandlerContext ctx,
+                                             final IdentityPublicKey successor) {
         return updateIthFinger(ctx, 1, successor);
     }
 
-    /**
-     * @param i between 1 and 32
-     */
-    public Future<Void> updateIthFinger(final ChannelHandlerContext ctx,
-                                        final int i,
-                                        final IdentityPublicKey value) {
+    public FutureComposer<Void> updateIthFinger(final ChannelHandlerContext ctx,
+                                                final int i,
+                                                final IdentityPublicKey value) {
         final IdentityPublicKey oldValue = entries[i - 1];
         entries[i - 1] = value;
         if (!Objects.equals(value, oldValue)) {
@@ -111,7 +108,7 @@ public class ChordFingerTable {
             return iAmPreRequest(ctx, value);
         }
         else {
-            return composeFuture(ctx.executor()).toFuture();
+            return composeFuture(ctx.executor());
         }
     }
 }

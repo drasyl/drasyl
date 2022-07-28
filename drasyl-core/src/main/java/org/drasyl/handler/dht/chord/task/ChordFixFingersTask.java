@@ -6,7 +6,6 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordUtil;
-import org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper;
 import org.drasyl.identity.IdentityPublicKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,7 @@ import java.util.Random;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
+import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 
 /**
  * Fixfingers thread that periodically access a random entry in finger table and fix it.
@@ -74,10 +74,10 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             //final int i = 32;
             final long id = ChordUtil.ithFingerStart(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, chordIdToHex(id));
-            ChordFindSuccessorHelper.findSuccessor(ctx, id, fingerTable).addListener((FutureListener<IdentityPublicKey>) future -> {
+            findSuccessor(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
                 final IdentityPublicKey ithfinger = future.get();
                 LOG.debug("Successor for id `{}` is `{}`.", chordIdToHex(id), ithfinger);
-                fingerTable.updateIthFinger(ctx, i, ithfinger).addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));
+                fingerTable.updateIthFinger(ctx, i, ithfinger).toFuture().addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));
             });
         }, 500, MILLISECONDS);
     }

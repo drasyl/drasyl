@@ -1,9 +1,9 @@
 package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -16,19 +16,16 @@ public final class ChordFillSuccessorHelper {
         // util class
     }
 
-    /**
-     * Try to fill successor with candidates in finger table or even predecessor
-     */
-    public static Future<Void> fillSuccessor(final ChannelHandlerContext ctx,
-                                             final ChordFingerTable fingerTable) {
+    public static FutureComposer<Void> fillSuccessor(final ChannelHandlerContext ctx,
+                                                     final ChordFingerTable fingerTable) {
         LOG.debug("Try to fill successor with candidates in finger table or even predecessor.");
         final IdentityPublicKey successor = fingerTable.getSuccessor();
-        final Future<Void> future;
+        final FutureComposer<Void> future;
         if (successor == null || successor.equals(ctx.channel().localAddress())) {
             future = recursive(ctx, 2, fingerTable);
         }
         else {
-            future = composeFuture(ctx.executor()).toFuture();
+            future = composeFuture(ctx.executor());
         }
 
         return composeFuture(ctx.executor())
@@ -39,15 +36,14 @@ public final class ChordFillSuccessorHelper {
                         return fingerTable.updateIthFinger(ctx, 1, fingerTable.getPredecessor());
                     }
                     else {
-                        return composeFuture(ctx.executor()).toFuture();
+                        return composeFuture(ctx.executor());
                     }
-                })
-                .toFuture();
+                });
     }
 
-    private static Future<Void> recursive(final ChannelHandlerContext ctx,
-                                          final int i,
-                                          final ChordFingerTable fingerTable) {
+    private static FutureComposer<Void> recursive(final ChannelHandlerContext ctx,
+                                                  final int i,
+                                                  final ChordFingerTable fingerTable) {
         if (i <= Integer.SIZE) {
             final IdentityPublicKey ithfinger = fingerTable.get(i);
             if (ithfinger != null && !ithfinger.equals(ctx.channel().localAddress())) {
@@ -58,22 +54,21 @@ public final class ChordFillSuccessorHelper {
             }
         }
         else {
-            return composeFuture(ctx.executor()).toFuture();
+            return composeFuture(ctx.executor());
         }
     }
 
-    private static Future<Void> recursive2(final ChannelHandlerContext ctx,
-                                           final int j,
-                                           final IdentityPublicKey ithfinger,
-                                           final ChordFingerTable fingerTable) {
+    private static FutureComposer<Void> recursive2(final ChannelHandlerContext ctx,
+                                                   final int j,
+                                                   final IdentityPublicKey ithfinger,
+                                                   final ChordFingerTable fingerTable) {
         if (j >= 1) {
             return composeFuture(ctx.executor())
                     .then(fingerTable.updateIthFinger(ctx, j, ithfinger))
-                    .chain(unused -> recursive2(ctx, j - 1, ithfinger, fingerTable))
-                    .toFuture();
+                    .chain(unused -> recursive2(ctx, j - 1, ithfinger, fingerTable));
         }
         else {
-            return composeFuture(ctx.executor()).toFuture();
+            return composeFuture(ctx.executor());
         }
     }
 }
