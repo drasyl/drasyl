@@ -34,7 +34,7 @@ public final class ChordFindSuccessorHelper {
                 .chain(pre -> {
                     // if other node found, ask it for its successor
                     if (!pre.equals(ctx.channel().localAddress())) {
-                        return composeUnexecutableFuture().thenUnexecutable(yourSuccessorRequest(ctx, pre));
+                        return composeUnexecutableFuture().then(yourSuccessorRequest(ctx, pre));
                     }
                     else {
                         return composeUnexecutableFuture(ret);

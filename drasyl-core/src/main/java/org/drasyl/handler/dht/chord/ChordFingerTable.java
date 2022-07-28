@@ -105,7 +105,7 @@ public class ChordFingerTable {
 
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
-            return composeUnexecutableFuture().thenUnexecutable(iAmPreRequest(ctx, value));
+            return composeUnexecutableFuture().then(iAmPreRequest(ctx, value));
         }
         else {
             return composeUnexecutableFuture();

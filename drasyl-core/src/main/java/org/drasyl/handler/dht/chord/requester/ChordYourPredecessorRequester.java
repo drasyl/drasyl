@@ -7,11 +7,12 @@ import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.NothingPredecessor;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureComposer;
+import org.drasyl.util.UnexecutableFutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordMessage, IdentityPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordYourPredecessorRequester.class);
@@ -43,10 +44,10 @@ public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordM
         return LOG;
     }
 
-    public static FutureComposer<IdentityPublicKey> yourPredecessorRequest(final ChannelHandlerContext ctx,
-                                                                           final IdentityPublicKey peer) {
+    public static UnexecutableFutureComposer<IdentityPublicKey> yourPredecessorRequest(final ChannelHandlerContext ctx,
+                                                                                                      final IdentityPublicKey peer) {
         final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordYourPredecessorRequester(peer, promise));
-        return composeFuture(ctx.executor(), promise);
+        return composeUnexecutableFuture().thenUnexecutable(composeFuture(ctx.executor(), promise));
     }
 }

@@ -63,12 +63,12 @@ public final class ChordFindPredecessorHelper {
         // else current node is remote node, sent request to it for its closest
         else {
             return composeUnexecutableFuture()
-                    .thenUnexecutable(closestRequest(ctx, pre_n, findid))
+                    .then(closestRequest(ctx, pre_n, findid))
                     .chain(result -> {
                         // if fail to get response, set n to most recently
                         if (result == null) { // FIXME: oder cause?
                             return composeUnexecutableFuture()
-                                    .thenUnexecutable(yourSuccessorRequest(ctx, most_recently_alive))
+                                    .then(yourSuccessorRequest(ctx, most_recently_alive))
                                     .chain(n_successor -> {
                                         if (n_successor == null) { // FIXME: oder cause?
                                             return composeUnexecutableFuture((IdentityPublicKey) ctx.channel().localAddress());
@@ -87,7 +87,7 @@ public final class ChordFindPredecessorHelper {
                             // set n as most recently alive
                             // ask "result" for its successor
                             return composeUnexecutableFuture()
-                                    .thenUnexecutable(yourSuccessorRequest(ctx, result))
+                                    .then(yourSuccessorRequest(ctx, result))
                                     .chain(n_successor -> {
                                         // if we can get its response, then "result" must be our next n
                                         if (n_successor != null) { // FIXME: oder cause?
@@ -103,7 +103,7 @@ public final class ChordFindPredecessorHelper {
                                         }
                                         // else n sticks, ask n's successor
                                         else {
-                                            return composeUnexecutableFuture().thenUnexecutable(yourSuccessorRequest(ctx, pre_n));
+                                            return composeUnexecutableFuture().then(yourSuccessorRequest(ctx, pre_n));
                                         }
                                     });
                         }

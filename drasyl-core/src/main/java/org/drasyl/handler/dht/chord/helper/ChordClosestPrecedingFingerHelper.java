@@ -53,7 +53,7 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("Check if it is still alive.");
 
                         return composeUnexecutableFuture()
-                                .thenUnexecutable(keepRequest(ctx, ith_finger))
+                                .then(keepRequest(ctx, ith_finger))
                                 .chain2(future -> {
                                     //it is alive, return it
                                     if (future.isSuccess()) {

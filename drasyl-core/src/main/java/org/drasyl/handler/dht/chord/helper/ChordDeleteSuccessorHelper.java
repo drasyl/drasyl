@@ -48,7 +48,7 @@ public final class ChordDeleteSuccessorHelper {
 
         // try to fill successor
         return composeUnexecutableFuture()
-                .thenUnexecutable(fillSuccessor(ctx, fingerTable).compose(ctx.executor()))
+                .then(fillSuccessor(ctx, fingerTable))
                 .chain(unused -> {
                     final IdentityPublicKey successor2 = fingerTable.getSuccessor();
 
@@ -91,7 +91,7 @@ public final class ChordDeleteSuccessorHelper {
                                                                             final IdentityPublicKey p,
                                                                             final IdentityPublicKey successor) {
         return composeUnexecutableFuture()
-                .thenUnexecutable(yourPredecessorRequest(ctx, p))
+                .then(yourPredecessorRequest(ctx, p))
                 .chain(p_pre -> {
                     if (p_pre == null) { // FIXME: oder cause???
                         return composeUnexecutableFuture(p);

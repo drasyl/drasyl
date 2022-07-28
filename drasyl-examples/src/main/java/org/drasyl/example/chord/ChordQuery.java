@@ -86,7 +86,7 @@ public class ChordQuery {
                                 ctx.fireUserEventTriggered(evt);
                                 if (first.get() && evt instanceof AddPathAndSuperPeerEvent) {
                                     first.set(false);
-                                    composeUnexecutableFuture().then(keepRequest(ctx, contact)).toFuture().addListener((FutureListener<Void>) future -> {
+                                    composeUnexecutableFuture().then(keepRequest(ctx, contact)).compose(ctx.executor()).toFuture().addListener((FutureListener<Void>) future -> {
                                         if (future.cause() != null) { // FIXME: ich glaube hier ist im fehlerfall NULL
                                             System.out.println("\nCannot find node you are trying to contact. Now exit.\n");
                                             System.exit(0);
@@ -144,7 +144,7 @@ public class ChordQuery {
         else if (command.length() > 0) {
             final long hash = chordId(command);
             System.out.println("\nHash value is " + Long.toHexString(hash) + " (" + chordIdPosition(hash) + ")");
-            composeUnexecutableFuture().then(findSuccessorRequest(ctx, hash, contact)).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
+            composeUnexecutableFuture().then(findSuccessorRequest(ctx, hash, contact)).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
                 final IdentityPublicKey result = future.getNow();
                 if (result == null) {
                     System.out.println("The node your are contacting is disconnected. Now exit.");
@@ -163,9 +163,9 @@ public class ChordQuery {
     private static Promise<Void> checkStable(final ChannelHandlerContext ctx,
                                              final IdentityPublicKey contact,
                                              final Promise<Void> stableFuture) {
-        composeUnexecutableFuture().then(yourPredecessorRequest(ctx, contact)).toFuture().addListener((FutureListener<IdentityPublicKey>) future12 -> {
+        composeUnexecutableFuture().then(yourPredecessorRequest(ctx, contact)).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future12 -> {
             final IdentityPublicKey pred_addr = future12.getNow();
-            yourSuccessorRequest(ctx, contact).toFuture().addListener((FutureListener<IdentityPublicKey>) future1 -> {
+            yourSuccessorRequest(ctx, contact).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future1 -> {
                 final IdentityPublicKey succ_addr = future1.getNow();
 
                 if (pred_addr == null || succ_addr == null) {
