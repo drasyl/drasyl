@@ -21,7 +21,7 @@ public final class ChordDeleteSuccessorHelper {
     }
 
     public static FutureComposer<Void> deleteSuccessor(final ChannelHandlerContext ctx,
-                                                       final ChordFingerTable fingerTable) {
+                                                                   final ChordFingerTable fingerTable) {
         final IdentityPublicKey successor = fingerTable.getSuccessor();
 
         //nothing to delete, just return
@@ -63,7 +63,7 @@ public final class ChordDeleteSuccessorHelper {
                                 .map(publicKey -> null)
                                 .chain(publicKey -> {
                                     // update successor
-                                    return fingerTable.updateIthFinger(ctx, 1, p);
+                                    return fingerTable.updateIthFinger(ctx, 1, p).compose(ctx.executor());
                                 });
                     }
                     else {
@@ -76,13 +76,13 @@ public final class ChordDeleteSuccessorHelper {
                                                   final ChordFingerTable fingerTable,
                                                   final int j) {
         return composeFuture(ctx.executor())
-                .then(fingerTable.updateIthFinger(ctx, j, null))
+                .then(fingerTable.updateIthFinger(ctx, j, null).compose(ctx.executor()))
                 .chain(unused -> {
                     if (j > 1) {
-                        return recursive(ctx, fingerTable, j - 1);
+                        return recursive(ctx, fingerTable, j - 1).compose(ctx.executor());
                     }
                     else {
-                        return fingerTable.updateIthFinger(ctx, j, null);
+                        return fingerTable.updateIthFinger(ctx, j, null).compose(ctx.executor());
                     }
                 });
     }

@@ -44,6 +44,11 @@ public final class FutureComposer<T> {
         return future;
     }
 
+    public FutureComposer<T> compose(final EventExecutor executor) {
+        // IGNORE
+        return this;
+    }
+
     public static <T> FutureComposer<T> composeFuture(final EventExecutor executor,
                                                       final Future<T> future) {
         return new FutureComposer<>(executor, future);

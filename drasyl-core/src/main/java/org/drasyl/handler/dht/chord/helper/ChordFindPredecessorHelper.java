@@ -50,7 +50,7 @@ public final class ChordFindPredecessorHelper {
         // if current node is local node, find my closest
         if (pre_n.equals(ctx.channel().localAddress())) {
             return composeFuture(ctx.executor())
-                    .then(closestPrecedingFinger(ctx, findid, fingerTable))
+                    .then(closestPrecedingFinger(ctx, findid, fingerTable).compose(ctx.executor()))
                     .chain(n -> {
                         if (pre_n.equals(n)) {
                             return composeFuture(ctx.executor(), n);

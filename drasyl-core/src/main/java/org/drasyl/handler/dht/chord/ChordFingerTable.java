@@ -2,7 +2,7 @@ package org.drasyl.handler.dht.chord;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureComposer;
+import org.drasyl.util.UnexecutableFutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -13,7 +13,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
-import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 public class ChordFingerTable {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFingerTable.class);
@@ -89,14 +89,14 @@ public class ChordFingerTable {
         }
     }
 
-    public FutureComposer<Void> setSuccessor(final ChannelHandlerContext ctx,
-                                             final IdentityPublicKey successor) {
+    public UnexecutableFutureComposer<Void> setSuccessor(final ChannelHandlerContext ctx,
+                                                         final IdentityPublicKey successor) {
         return updateIthFinger(ctx, 1, successor);
     }
 
-    public FutureComposer<Void> updateIthFinger(final ChannelHandlerContext ctx,
-                                                final int i,
-                                                final IdentityPublicKey value) {
+    public UnexecutableFutureComposer<Void> updateIthFinger(final ChannelHandlerContext ctx,
+                                                            final int i,
+                                                            final IdentityPublicKey value) {
         final IdentityPublicKey oldValue = entries[i - 1];
         entries[i - 1] = value;
         if (!Objects.equals(value, oldValue)) {
@@ -105,10 +105,10 @@ public class ChordFingerTable {
 
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
-            return iAmPreRequest(ctx, value);
+            return composeUnexecutableFuture().thenUnexecutable(iAmPreRequest(ctx, value));
         }
         else {
-            return composeFuture(ctx.executor());
+            return composeUnexecutableFuture();
         }
     }
 }

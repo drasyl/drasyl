@@ -83,7 +83,7 @@ public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddress
         final IdentityPublicKey successor = msg.content().getAddress();
         LOG.info("Successor for id `{}` is `{}`.", chordIdToHex(ctx.channel().localAddress()), successor);
         LOG.info("Set `{}` as our successor.", successor);
-        fingerTable.setSuccessor(ctx, successor);
+        fingerTable.setSuccessor(ctx, successor).compose(ctx.executor());
         ctx.pipeline().remove(ctx.name());
     }
 

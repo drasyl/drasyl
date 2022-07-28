@@ -8,6 +8,7 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.FutureUtil.chain2Future;
 import static org.drasyl.util.FutureUtil.chainFuture;
+import static org.drasyl.util.FutureUtil.mapFuture;
 
 public final class UnexecutableFutureComposer<T> {
     private final Function<EventExecutor, Future<T>> future;
@@ -24,8 +25,20 @@ public final class UnexecutableFutureComposer<T> {
         return new FutureComposer<>(executor, future.apply(executor));
     }
 
+//    public <R> UnexecutableFutureComposer<R> map(final Function<T, R> mapper) {
+//        return new UnexecutableFutureComposer<>(executor -> mapFuture(future.apply(executor), executor, mapper));
+//    }
+
     public <R> FutureComposer<R> then(final FutureComposer<R> then) {
         return new FutureComposer<>(then.executor, chainFuture(future.apply(then.executor), then.executor, t -> then.toFuture()));
+    }
+
+    public <R> UnexecutableFutureComposer<R> then(final Function<T, R> mapper) {
+        return new UnexecutableFutureComposer<>(executor -> mapFuture(future.apply(executor), executor, mapper));
+    }
+
+    public <R> UnexecutableFutureComposer<R> then(final UnexecutableFutureComposer<R> mapper) {
+        return new UnexecutableFutureComposer<>(executor -> chainFuture(future.apply(executor), executor, t -> mapper.toFuture(executor)));
     }
 
     public <R> UnexecutableFutureComposer<R> thenUnexecutable(final FutureComposer<R> then) {

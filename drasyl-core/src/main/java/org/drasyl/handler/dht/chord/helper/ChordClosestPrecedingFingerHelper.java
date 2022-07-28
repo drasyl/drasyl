@@ -3,7 +3,7 @@ package org.drasyl.handler.dht.chord.helper;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureComposer;
+import org.drasyl.util.UnexecutableFutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -11,7 +11,6 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
-import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 public final class ChordClosestPrecedingFingerHelper {
@@ -21,9 +20,9 @@ public final class ChordClosestPrecedingFingerHelper {
         // util class
     }
 
-    public static FutureComposer<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
-                                                                           final long findid,
-                                                                           final ChordFingerTable fingerTable) {
+    public static UnexecutableFutureComposer<IdentityPublicKey> closestPrecedingFinger(final ChannelHandlerContext ctx,
+                                                                                       final long findid,
+                                                                                       final ChordFingerTable fingerTable) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdToHex(findid));
         final long localId = chordId(ctx.channel().localAddress());
         final long findid_relative = computeRelativeChordId(findid, localId);
@@ -32,18 +31,18 @@ public final class ChordClosestPrecedingFingerHelper {
         return recursive(ctx, findid, localId, findid_relative, Integer.SIZE, fingerTable);
     }
 
-    private static FutureComposer<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
-                                                               final long findid,
-                                                               final long localId,
-                                                               final long findid_relative,
-                                                               final int i,
-                                                               final ChordFingerTable fingerTable) {
+    private static UnexecutableFutureComposer<IdentityPublicKey> recursive(final ChannelHandlerContext ctx,
+                                                                           final long findid,
+                                                                           final long localId,
+                                                                           final long findid_relative,
+                                                                           final int i,
+                                                                           final ChordFingerTable fingerTable) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdToHex(findid));
-            return composeUnexecutableFuture((IdentityPublicKey) ctx.channel().localAddress()).compose(ctx.executor());
+            return composeUnexecutableFuture((IdentityPublicKey) ctx.channel().localAddress());
         }
         else {
-            return composeFuture(ctx.executor(), fingerTable.get(i)).chain(ith_finger -> {
+            return composeUnexecutableFuture(fingerTable.get(i)).chain(ith_finger -> {
                 if (ith_finger != null) {
                     final long ith_finger_id = chordId(ith_finger);
                     final long ith_finger_relative_id = computeRelativeChordId(ith_finger_id, localId);
@@ -67,7 +66,7 @@ public final class ChordClosestPrecedingFingerHelper {
                                         fingerTable.removePeer(ith_finger);
                                         return composeUnexecutableFuture(null);
                                     }
-                                }).compose(ctx.executor());
+                                });
                     }
                 }
                 return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);

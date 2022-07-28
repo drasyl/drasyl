@@ -77,7 +77,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             findSuccessor(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
                 final IdentityPublicKey ithfinger = future.get();
                 LOG.debug("Successor for id `{}` is `{}`.", chordIdToHex(id), ithfinger);
-                fingerTable.updateIthFinger(ctx, i, ithfinger).toFuture().addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));
+                fingerTable.updateIthFinger(ctx, i, ithfinger).compose(ctx.executor()).toFuture().addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));
             });
         }, 500, MILLISECONDS);
     }

@@ -5,7 +5,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
-import org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureComposer;
 import org.slf4j.Logger;
@@ -15,6 +14,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
+import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
@@ -93,7 +93,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 // if bad connection with successor! delete successor
                                 if (x == null) { // FIXME: oder cause?
                                     LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                                    return ChordDeleteSuccessorHelper.deleteSuccessor(ctx, fingerTable);
+                                    return deleteSuccessor(ctx, fingerTable).compose(ctx.executor());
                                 }
 
                                 // else if successor's predecessor is not itself
@@ -109,7 +109,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                     final long x_relative_id = computeRelativeChordId(x, local_id);
                                     if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
                                         LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
-                                        return fingerTable.updateIthFinger(ctx, 1, x);
+                                        return fingerTable.updateIthFinger(ctx, 1, x).compose(ctx.executor());
                                     }
                                     else {
                                         return composeFuture(ctx.executor());
