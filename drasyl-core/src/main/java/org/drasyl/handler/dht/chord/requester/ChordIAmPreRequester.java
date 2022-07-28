@@ -48,11 +48,4 @@ public class ChordIAmPreRequester extends AbstractChordRequester<Notified, Void>
         ctx.pipeline().addBefore(ctx.name(), null, new ChordIAmPreRequester(peer, promise));
         return composeFuture(ctx.executor(), promise);
     }
-
-    public static FutureComposer<Void> iAmPreRequestU(final ChannelHandlerContext ctx,
-                                                     final IdentityPublicKey peer) {
-        final Promise<Void> promise = ctx.executor().newPromise();
-        ctx.pipeline().addBefore(ctx.name(), null, new ChordIAmPreRequester(peer, promise));
-        return composeFuture(ctx.executor(), promise);
-    }
 }

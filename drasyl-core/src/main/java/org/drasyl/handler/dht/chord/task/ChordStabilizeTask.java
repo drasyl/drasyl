@@ -19,6 +19,7 @@ import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillS
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.UnexecutableFutureComposer.composeUnexecutableFuture;
 
 /**
  * Stabilize thread that periodically asks successor for its predecessor and determine if current
@@ -120,7 +121,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 else {
                                     LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                                     if (!successor.equals(ctx.channel().localAddress())) {
-                                        return iAmPreRequest(ctx, successor);
+                                        return composeUnexecutableFuture().then(iAmPreRequest(ctx, successor));
                                     }
                                     return composeFuture(ctx.executor());
                                 }

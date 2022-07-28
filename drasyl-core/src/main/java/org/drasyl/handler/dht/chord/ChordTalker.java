@@ -107,7 +107,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        findSuccessor(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
+        findSuccessor(ctx, id, fingerTable).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });

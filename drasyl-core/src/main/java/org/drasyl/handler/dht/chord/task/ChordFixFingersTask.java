@@ -74,7 +74,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             //final int i = 32;
             final long id = ChordUtil.ithFingerStart(ChordUtil.chordId((IdentityPublicKey) ctx.channel().localAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, chordIdToHex(id));
-            findSuccessor(ctx, id, fingerTable).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
+            findSuccessor(ctx, id, fingerTable).compose(ctx.executor()).toFuture().addListener((FutureListener<IdentityPublicKey>) future -> {
                 final IdentityPublicKey ithfinger = future.get();
                 LOG.debug("Successor for id `{}` is `{}`.", chordIdToHex(id), ithfinger);
                 fingerTable.updateIthFinger(ctx, i, ithfinger).compose(ctx.executor()).toFuture().addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));

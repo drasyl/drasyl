@@ -30,7 +30,7 @@ public final class ChordFindSuccessorHelper {
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", chordIdToHex(id));
 
         return composeFuture(ctx.executor())
-                .then(findPredecessor(ctx, id, fingerTable))
+                .then(findPredecessor(ctx, id, fingerTable).compose(ctx.executor()))
                 .chain(pre -> {
                     // if other node found, ask it for its successor
                     if (!pre.equals(ctx.channel().localAddress())) {
