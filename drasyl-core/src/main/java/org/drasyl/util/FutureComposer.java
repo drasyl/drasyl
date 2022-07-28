@@ -11,11 +11,11 @@ import static org.drasyl.util.FutureUtil.chainFuture;
 import static org.drasyl.util.FutureUtil.mapFuture;
 
 public final class FutureComposer<T> {
-    private final EventExecutor executor;
+    final EventExecutor executor;
     private final Future<T> future;
 
-    private FutureComposer(final EventExecutor executor,
-                           final Future<T> future) {
+    FutureComposer(final EventExecutor executor,
+                   final Future<T> future) {
         this.executor = requireNonNull(executor);
         this.future = requireNonNull(future);
     }
@@ -30,6 +30,10 @@ public final class FutureComposer<T> {
 
     public <R> FutureComposer<R> chain2(final Function<Future<T>, FutureComposer<R>> chaining) {
         return new FutureComposer<>(executor, chain2Future(future, executor, t -> chaining.apply(t).toFuture()));
+    }
+
+    public <R> UnexecutableFutureComposer<R> chain2Unexecutable(final Function<Future<T>, FutureComposer<R>> chaining) {
+        return new UnexecutableFutureComposer<>(executor -> new FutureComposer<>(executor, chain2Future(future, executor, t -> chaining.apply(t).toFuture())).toFuture());
     }
 
     public <R> FutureComposer<R> then(final FutureComposer<R> then) {
