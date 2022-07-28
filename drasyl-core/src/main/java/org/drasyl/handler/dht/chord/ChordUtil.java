@@ -2,7 +2,6 @@ package org.drasyl.handler.dht.chord;
 
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Sha;
 
 import java.net.SocketAddress;
@@ -71,7 +70,7 @@ public final class ChordUtil {
         return id * 100 / POWER_OF_TWO[Integer.SIZE] + "%";
     }
 
-    public static String chordIdPosition(final IdentityPublicKey id) {
+    public static String chordIdPosition(final DrasylAddress id) {
         return chordIdPosition(chordId(id));
     }
 

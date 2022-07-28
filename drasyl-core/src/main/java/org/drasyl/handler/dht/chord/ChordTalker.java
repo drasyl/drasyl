@@ -15,6 +15,7 @@ import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
 import org.drasyl.handler.dht.chord.message.NothingPredecessor;
+import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
@@ -41,6 +42,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final OverlayAddressedMessage<ChordMessage> msg) throws Exception {
         final DrasylAddress sender = msg.sender();
+        LOG.error("Got `{}` from `{}`.", msg.content(), sender);
         if (msg.content() instanceof Closest) {
             handleClosest(ctx, sender, (Closest) msg.content());
         }
@@ -85,7 +87,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
             ctx.writeAndFlush(response);
         }
         else {
-            final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), sender);
+            final OverlayAddressedMessage<NothingSuccessor> response = new OverlayAddressedMessage<>(NothingSuccessor.of(), sender);
             ctx.writeAndFlush(response);
         }
     }
@@ -114,27 +116,28 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
     }
 
     private void handleIAmPre(final ChannelHandlerContext ctx,
-                              final IdentityPublicKey newPredecessorCandiate) {
-        LOG.debug("Notified by `{}`.", newPredecessorCandiate);
+                              final IdentityPublicKey newPredecessorCandidate) {
+        LOG.debug("Notified by `{}`.", newPredecessorCandidate);
         if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
-            LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
-            fingerTable.setPredecessor(newPredecessorCandiate);
+            LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
+            fingerTable.setPredecessor(newPredecessorCandidate);
         }
         else {
             final long oldpre_id = chordId(fingerTable.getPredecessor());
             final long local_relative_id = computeRelativeChordId(ctx.channel().localAddress(), oldpre_id);
-            final long newpre_relative_id = computeRelativeChordId(newPredecessorCandiate, oldpre_id);
+            final long newpre_relative_id = computeRelativeChordId(newPredecessorCandidate, oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
-                LOG.info("Set predecessor `{}`.", newPredecessorCandiate);
-                fingerTable.setPredecessor(newPredecessorCandiate);
+                LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
+                fingerTable.setPredecessor(newPredecessorCandidate);
             }
         }
 
-        ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandiate));
+        ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandidate));
     }
 
     private void handleKeep(final ChannelHandlerContext ctx, final DrasylAddress sender) {
         final OverlayAddressedMessage<Alive> response = new OverlayAddressedMessage<>(Alive.of(), sender);
+        LOG.debug("Send `{}` to `{}`.", response.content(), response.recipient());
         ctx.writeAndFlush(response);
     }
 }
