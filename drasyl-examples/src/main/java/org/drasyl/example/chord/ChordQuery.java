@@ -86,7 +86,7 @@ public class ChordQuery {
                                 if (first.get() && evt instanceof AddPathAndSuperPeerEvent) {
                                     first.set(false);
                                     keepRequest(ctx, contact).addListener((FutureListener<Void>) future -> {
-                                        if (future.cause() != null) {
+                                        if (future.cause() != null) { // FIXME: ich glaube hier ist im fehlerfall NULL
                                             System.out.println("\nCannot find node you are trying to contact. Now exit.\n");
                                             System.exit(0);
                                         }

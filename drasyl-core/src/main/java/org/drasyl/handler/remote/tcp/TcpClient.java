@@ -148,7 +148,7 @@ public class TcpClient extends ChannelDuplexHandler {
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
                 LOG.trace("Send message `{}` for `{}` via TCP connection.", () -> byteBufMsg, ((InetAddressedMessage<ByteBuf>) msg)::recipient);
-                mySuperPeerChannel.channel().write(byteBufMsg).addListener(new PromiseNotifier<>(promise));
+                PromiseNotifier.cascade(mySuperPeerChannel.channel().write(byteBufMsg), promise);
             }
             else {
                 // pass through message

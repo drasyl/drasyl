@@ -104,7 +104,7 @@ public class TcpServer extends ChannelDuplexHandler {
             final Channel client = clientChannels.get(recipient);
             if (client != null) {
                 LOG.trace("Send message `{}` via TCP to client `{}`", byteBufMsg, recipient);
-                client.writeAndFlush(byteBufMsg).addListener(new PromiseNotifier<>(promise));
+                PromiseNotifier.cascade(client.writeAndFlush(byteBufMsg), promise);
             }
             else {
                 // message is not addressed to any of our clients. pass through message

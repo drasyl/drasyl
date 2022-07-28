@@ -2,9 +2,6 @@ package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
-import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
@@ -14,6 +11,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public final class ChordClosestPrecedingFingerHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordClosestPrecedingFingerHelper.class);
@@ -41,7 +39,7 @@ public final class ChordClosestPrecedingFingerHelper {
                                                        final ChordFingerTable fingerTable) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdToHex(findid));
-            return ctx.executor().newSucceededFuture((IdentityPublicKey) ctx.channel().localAddress());
+            return composeFuture(ctx.executor(), (IdentityPublicKey) ctx.channel().localAddress()).toFuture();
         }
 
         final IdentityPublicKey ith_finger = fingerTable.get(i);
@@ -53,22 +51,22 @@ public final class ChordClosestPrecedingFingerHelper {
             if (ith_finger_relative_id > 0 && ith_finger_relative_id < findid_relative) {
                 LOG.debug("{}th finger {} is closest preceding finger of {}.", i, chordIdToHex(ith_finger_id), chordIdToHex(findid));
                 LOG.debug("Check if it is still alive.");
-                final Promise<IdentityPublicKey> objectPromise = ctx.executor().newPromise();
-                keepRequest(ctx, ith_finger).addListener((FutureListener<Void>) future -> {
-                    //it is alive, return it
-                    if (future.cause() == null) {
-                        LOG.debug("Peer is still alive.");
-                        objectPromise.setSuccess(ith_finger);
-                    }
 
-                    // else, remove its existence from finger table
-                    else {
-                        LOG.warn("Peer is not alive. Remove it from finger table.");
-                        fingerTable.removePeer(ith_finger);
-                        recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable).addListener(new PromiseNotifier<>(objectPromise));
-                    }
-                });
-                return objectPromise;
+                return composeFuture(ctx.executor())
+                        .then(keepRequest(ctx, ith_finger))
+                        .chain2(future -> {
+                            //it is alive, return it
+                            if (future.isSuccess()) {
+                                LOG.debug("Peer is still alive.");
+                                return composeFuture(ctx.executor(), ith_finger).toFuture();
+                            }
+                            // else, remove its existence from finger table
+                            else {
+                                LOG.warn("Peer is not alive. Remove it from finger table.");
+                                fingerTable.removePeer(ith_finger);
+                                return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);
+                            }
+                        }).toFuture();
             }
         }
         return recursive(ctx, findid, localId, findid_relative, i - 1, fingerTable);

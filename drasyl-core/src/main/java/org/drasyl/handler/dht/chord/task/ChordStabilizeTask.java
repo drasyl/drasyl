@@ -8,7 +8,6 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +18,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
  * Stabilize thread that periodically asks successor for its predecessor and determine if current
@@ -79,7 +79,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                 voidFuture = fillSuccessor(ctx, fingerTable);//fill
             }
             else {
-                voidFuture = ctx.executor().newSucceededFuture(null);
+                voidFuture = composeFuture(ctx.executor()).toFuture();
             }
 
             voidFuture.addListener((FutureListener<Void>) future -> {
@@ -87,42 +87,46 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     LOG.debug("Check if successor has still us a predecessor.");
 
                     // try to get my successor's predecessor
-                    FutureUtil.chainFuture(yourPredecessorRequest(ctx, successor), ctx.executor(), x -> {
-                        // if bad connection with successor! delete successor
-                        if (x == null) {
-                            LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                            return ChordDeleteSuccessorHelper.deleteSuccessor(ctx, fingerTable);
-                        }
+                    composeFuture(ctx.executor())
+                            .then(yourPredecessorRequest(ctx, successor))
+                            .chain(x -> {
+                                // if bad connection with successor! delete successor
+                                if (x == null) { // FIXME: oder cause?
+                                    LOG.debug("Bad connection with successor. Delete successor from finger table.");
+                                    return ChordDeleteSuccessorHelper.deleteSuccessor(ctx, fingerTable);
+                                }
 
-                        // else if successor's predecessor is not itself
-                        else if (!x.equals(successor)) {
-                            if (x.equals(ctx.channel().localAddress())) {
-                                LOG.debug("Successor has still us as predecessor. All fine.");
-                            }
-                            else {
-                                LOG.debug("Successor's predecessor is {}.", x);
-                            }
-                            final long local_id = chordId(ctx.channel().localAddress());
-                            final long successor_relative_id = computeRelativeChordId(successor, local_id);
-                            final long x_relative_id = computeRelativeChordId(x, local_id);
-                            if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
-                                LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
-                                return fingerTable.updateIthFinger(ctx, 1, x);
-                            }
-                            else {
-                                return ctx.executor().newSucceededFuture(null);
-                            }
-                        }
+                                // else if successor's predecessor is not itself
+                                else if (!x.equals(successor)) {
+                                    if (x.equals(ctx.channel().localAddress())) {
+                                        LOG.debug("Successor has still us as predecessor. All fine.");
+                                    }
+                                    else {
+                                        LOG.debug("Successor's predecessor is {}.", x);
+                                    }
+                                    final long local_id = chordId(ctx.channel().localAddress());
+                                    final long successor_relative_id = computeRelativeChordId(successor, local_id);
+                                    final long x_relative_id = computeRelativeChordId(x, local_id);
+                                    if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
+                                        LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
+                                        return fingerTable.updateIthFinger(ctx, 1, x);
+                                    }
+                                    else {
+                                        return composeFuture(ctx.executor()).toFuture();
+                                    }
+                                }
 
-                        // successor's predecessor is successor itself, then notify successor
-                        else {
-                            LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
-                            if (!successor.equals(ctx.channel().localAddress())) {
-                                return iAmPreRequest(ctx, successor);
-                            }
-                            return ctx.executor().newSucceededFuture(null);
-                        }
-                    }).addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
+                                // successor's predecessor is successor itself, then notify successor
+                                else {
+                                    LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
+                                    if (!successor.equals(ctx.channel().localAddress())) {
+                                        return iAmPreRequest(ctx, successor);
+                                    }
+                                    return composeFuture(ctx.executor()).toFuture();
+                                }
+                            })
+                            .toFuture()
+                            .addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
                 }
                 else {
                     scheduleStabilizeTask(ctx);

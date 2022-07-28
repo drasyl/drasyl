@@ -81,7 +81,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
      * be submitted!</b>
      * </p>
      */
-    public static CompletableFuture<Void> shutdown() {
+    public static CompletableFuture<Void> shutdown() { // FIXME: switch to netty future!? dann könnte FutureCombiner weg
         final FutureCombiner combiner = FutureCombiner.getInstance();
 
         if (childEventLoopGroupCreated) {

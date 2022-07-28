@@ -66,7 +66,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
                 keepRequest(ctx, fingerTable.getPredecessor()).addListener((FutureListener<Void>) future -> {
-                    if (future.cause() != null) {
+                    if (future.cause() != null) { // FIXME: oder NULL?
                         // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");
                         fingerTable.removePredecessor();

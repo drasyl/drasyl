@@ -13,6 +13,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordFingerTable {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFingerTable.class);
@@ -110,7 +111,7 @@ public class ChordFingerTable {
             return iAmPreRequest(ctx, value);
         }
         else {
-            return ctx.executor().newSucceededFuture(null);
+            return composeFuture(ctx.executor()).toFuture();
         }
     }
 }

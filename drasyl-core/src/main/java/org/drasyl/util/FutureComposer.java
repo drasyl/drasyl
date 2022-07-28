@@ -1,0 +1,60 @@
+package org.drasyl.util;
+
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.Future;
+
+import java.util.function.Function;
+
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.FutureUtil.chain2Future;
+import static org.drasyl.util.FutureUtil.chainFuture;
+import static org.drasyl.util.FutureUtil.mapFuture;
+
+public final class FutureComposer<T> {
+    private final EventExecutor executor;
+    private final Future<T> future;
+
+    private FutureComposer(final EventExecutor executor,
+                           final Future<T> future) {
+        this.executor = requireNonNull(executor);
+        this.future = requireNonNull(future);
+    }
+
+    public <R> FutureComposer<R> map(final Function<T, R> mapper) {
+        return new FutureComposer<>(executor, mapFuture(future, executor, mapper));
+    }
+
+    public <R> FutureComposer<R> chain(final Function<T, Future<R>> chaining) {
+        return new FutureComposer<>(executor, chainFuture(future, executor, chaining));
+    }
+
+    public <R> FutureComposer<R> chain2(final Function<Future<T>, Future<R>> chaining) {
+        return new FutureComposer<>(executor, chain2Future(future, executor, chaining));
+    }
+
+    public <R> FutureComposer<R> then(final Future<R> keepRequest) {
+        return new FutureComposer<>(executor, chainFuture(future, executor, t -> keepRequest));
+    }
+
+    public Future<T> toFuture() {
+        return future;
+    }
+
+    public <R> FutureComposer<R> just(final R value) {
+        return new FutureComposer<>(executor, executor.newSucceededFuture(value));
+    }
+
+    public static <T> FutureComposer<T> composeFuture(final EventExecutor executor,
+                                                      final Future<T> future) {
+        return new FutureComposer<>(executor, future);
+    }
+
+    public static <R> FutureComposer<R> composeFuture(final EventExecutor executor,
+                                                      final R result) {
+        return new FutureComposer<>(executor, executor.newSucceededFuture(result));
+    }
+
+    public static FutureComposer<Void> composeFuture(final EventExecutor executor) {
+        return composeFuture(executor, null);
+    }
+}

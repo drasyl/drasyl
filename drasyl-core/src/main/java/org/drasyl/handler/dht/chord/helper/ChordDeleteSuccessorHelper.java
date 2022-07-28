@@ -4,7 +4,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -12,7 +11,7 @@ import java.util.Objects;
 
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
-import static org.drasyl.util.FutureUtil.chainFuture;
+import static org.drasyl.util.FutureComposer.composeFuture;
 
 public final class ChordDeleteSuccessorHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordDeleteSuccessorHelper.class);
@@ -48,59 +47,71 @@ public final class ChordDeleteSuccessorHelper {
         }
 
         // try to fill successor
-        return FutureUtil.chainFuture(fillSuccessor(ctx, fingerTable), ctx.executor(), unused -> {
-            final IdentityPublicKey successor2 = fingerTable.getSuccessor();
+        return composeFuture(ctx.executor())
+                .then(fillSuccessor(ctx, fingerTable))
+                .chain(unused -> {
+                    final IdentityPublicKey successor2 = fingerTable.getSuccessor();
 
-            // if successor is still null or local node,
-            // and the predecessor is another node, keep asking
-            // it's predecessor until find local node's new successor
-            if ((successor2 == null || ctx.channel().localAddress().equals(successor2)) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
-                final IdentityPublicKey p = fingerTable.getPredecessor();
+                    // if successor is still null or local node,
+                    // and the predecessor is another node, keep asking
+                    // it's predecessor until find local node's new successor
+                    if ((successor2 == null || ctx.channel().localAddress().equals(successor2)) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+                        final IdentityPublicKey p = fingerTable.getPredecessor();
 
-                final Future<Void> voidFuture = FutureUtil.mapFuture(recursive2(ctx, p, successor2), ctx.executor(), publicKey -> null);
-                return chainFuture(voidFuture, ctx.executor(), publicKey -> {
-                    // update successor
-                    return fingerTable.updateIthFinger(ctx, 1, p);
-                });
-            }
-            else {
-                return ctx.executor().newSucceededFuture(null);
-            }
-        });
+                        return composeFuture(ctx.executor())
+                                .then(recursive2(ctx, p, successor2))
+                                .map(publicKey -> null)
+                                .chain(publicKey -> {
+                                    // update successor
+                                    return fingerTable.updateIthFinger(ctx, 1, p);
+                                })
+                                .toFuture();
+                    }
+                    else {
+                        return composeFuture(ctx.executor()).toFuture();
+                    }
+                })
+                .toFuture();
     }
 
     private static Future<Void> recursive(final ChannelHandlerContext ctx,
                                           final ChordFingerTable fingerTable,
                                           final int j) {
-        return chainFuture(fingerTable.updateIthFinger(ctx, j, null), ctx.executor(), unused -> {
-            if (j > 1) {
-                return recursive(ctx, fingerTable, j - 1);
-            }
-            else {
-                return fingerTable.updateIthFinger(ctx, j, null);
-            }
-        });
+        return composeFuture(ctx.executor())
+                .then(fingerTable.updateIthFinger(ctx, j, null))
+                .chain(unused -> {
+                    if (j > 1) {
+                        return recursive(ctx, fingerTable, j - 1);
+                    }
+                    else {
+                        return fingerTable.updateIthFinger(ctx, j, null);
+                    }
+                })
+                .toFuture();
     }
 
     private static Future<IdentityPublicKey> recursive2(final ChannelHandlerContext ctx,
                                                         final IdentityPublicKey p,
                                                         final IdentityPublicKey successor) {
-        return chainFuture(yourPredecessorRequest(ctx, p), ctx.executor(), p_pre -> {
-            if (p_pre == null) {
-                return ctx.executor().newSucceededFuture(p);
-            }
+        return composeFuture(ctx.executor())
+                .then(yourPredecessorRequest(ctx, p))
+                .chain(p_pre -> {
+                    if (p_pre == null) { // FIXME: oder cause???
+                        return composeFuture(ctx.executor(), p).toFuture();
+                    }
 
-            // if p's predecessor is node is just deleted,
-            // or itself (nothing found in p), or local address,
-            // p is current node's new successor, break
-            if (p_pre.equals(p) || p_pre.equals(ctx.channel().localAddress()) || p_pre.equals(successor)) {
-                return ctx.executor().newSucceededFuture(p);
-            }
+                    // if p's predecessor is node is just deleted,
+                    // or itself (nothing found in p), or local address,
+                    // p is current node's new successor, break
+                    if (p_pre.equals(p) || p_pre.equals(ctx.channel().localAddress()) || p_pre.equals(successor)) {
+                        return composeFuture(ctx.executor(), p).toFuture();
+                    }
 
-            // else, keep asking
-            else {
-                return recursive2(ctx, p_pre, successor);
-            }
-        });
+                    // else, keep asking
+                    else {
+                        return recursive2(ctx, p_pre, successor);
+                    }
+                })
+                .toFuture();
     }
 }

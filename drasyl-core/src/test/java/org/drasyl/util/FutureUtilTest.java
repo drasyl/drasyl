@@ -165,7 +165,7 @@ class FutureUtilTest {
     }
 
     @Nested
-    class Map {
+    class MapFuture {
         @Test
         void shouldApplyMapperFunctionWhenFutureSucceeds() {
             final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
@@ -202,6 +202,7 @@ class FutureUtilTest {
             assertEquals(cause, mappedFuture.cause());
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Test
         void shouldCreateFailedFutureIfMapperFailsWhenFutureFails(@Mock final Function mapper) {
             when(mapper.apply(any())).thenThrow(RuntimeException.class);
@@ -213,6 +214,7 @@ class FutureUtilTest {
             assertThat(mappedFuture.cause(), instanceOf(RuntimeException.class));
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Test
         void shouldCreateFailedFutureIfMapperFailsOnSucceededFuture(@Mock final Function mapper) {
             when(mapper.apply(any())).thenThrow(RuntimeException.class);
@@ -233,5 +235,10 @@ class FutureUtilTest {
 
             assertTrue(promise.isCancelled());
         }
+    }
+
+    @Nested
+    class ChainFuture {
+
     }
 }

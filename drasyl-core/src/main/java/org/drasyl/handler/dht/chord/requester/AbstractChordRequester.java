@@ -5,6 +5,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -47,11 +48,9 @@ abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleC
     public void handlerAdded(final ChannelHandlerContext ctx) {
         logger().debug("Send request `{}` to peer `{}`.", request, peer);
         ctx.writeAndFlush(new OverlayAddressedMessage<>(request, peer)).addListener((ChannelFutureListener) future -> {
-            if (future.cause() == null) {
+            if (future.isSuccess()) {
                 timeoutGuard = ctx.executor().schedule(() -> {
-                    //failRequest(ctx, new Exception(StringUtil.simpleClassName(AbstractChordOneShotRequestHandler.this) + " timeout after 5000ms."));
-                    // FIXME: lieber exception?
-                    promise.trySuccess(null);
+                    failRequest(ctx, new Exception(StringUtil.simpleClassName(AbstractChordRequester.this) + " timeout after 5000ms."));
                     ctx.pipeline().remove(ctx.name());
                 }, requestTimeoutMillis, MILLISECONDS);
             }

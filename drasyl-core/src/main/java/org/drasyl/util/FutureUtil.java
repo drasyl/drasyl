@@ -103,11 +103,29 @@ public final class FutureUtil {
         });
     }
 
+    /**
+     * Creates a <strong>new</strong> {@link Future} that will complete with the result of
+     * {@code future} mapped through the given mapper function {@code mapper}.
+     * <p>
+     * If {@code future} fails, then the returned future will fail as well, with the same exception.
+     * Cancellation of either future will cancel the other. If the mapper function throws, the
+     * returned future will fail, but {@code future} will be unaffected.
+     *
+     * @param future   The future whose result should be passed to a mapper function.
+     * @param executor The executor in which the returned future (and thus the mapper function)
+     *                 should run.
+     * @param mapper   The function that will convert the result of this future into the result of
+     *                 the returned future.
+     * @param <T>      The result type of the function to be mapped.
+     * @param <R>      The result type of the mapper function, and of the returned future.
+     * @return A new future instance that will complete with the mapped result of this future.
+     */
     @SuppressWarnings("unchecked")
-    public static <T, R> Future<R> mapFuture(final io.netty.util.concurrent.Future<T> future, final
-    EventExecutor executor, final Function<T, R> mapper) {
+    public static <T, R> Future<R> mapFuture(final Future<T> future,
+                                             final EventExecutor executor,
+                                             final Function<T, R> mapper) {
         if (future.cause() != null) {
-            // Cast is safe because the result type is not used in failed futures.
+            // cast is safe because the result type is not used in failed futures.
             return (Future<R>) future;
         }
         else if (future.isSuccess()) {
@@ -119,20 +137,45 @@ public final class FutureUtil {
         return promise;
     }
 
-    public static <T,R> Future<R> chainFuture(final Future<T> predecessor,
+    @SuppressWarnings("unchecked")
+    public static <T, R> Future<R> chainFuture(final Future<T> predecessor,
                                                final EventExecutor executor,
-                                               final Function<T, Future<R>> chain) {
-        final Promise<R> objectPromise = executor.newPromise();
-        // FIXME: cause geht hier doch verloren!
-        predecessor.addListener((FutureListener<T>) future -> chain.apply(future.getNow()).addListener(new PromiseNotifier<>(objectPromise)));
-        return objectPromise;
+                                               final Function<T, Future<R>> mapper) {
+        if (predecessor.cause() != null) {
+            // cast is safe because the result type is not used in failed futures.
+            return (Future<R>) predecessor;
+        }
+        else if (predecessor.isSuccess()) {
+            // FIXME: wird im falschen thread ausgeführt
+            return mapper.apply(predecessor.getNow());
+        }
+        final Promise<R> promise = executor.newPromise();
+        predecessor.addListener(new ChainingFutureListener<>(mapper, promise));
+        return promise;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T, R> Future<R> chain2Future(final Future<T> predecessor,
+                                               final EventExecutor executor,
+                                               final Function<Future<T>, Future<R>> mapper) {
+        if (predecessor.cause() != null) {
+            // cast is safe because the result type is not used in failed futures.
+            return (Future<R>) predecessor;
+        }
+        else if (predecessor.isSuccess()) {
+            // FIXME: wird im falschen thread ausgeführt
+            return mapper.apply(predecessor);
+        }
+        final Promise<R> promise = executor.newPromise();
+        predecessor.addListener((FutureListener<T>) future -> PromiseNotifier.cascade(mapper.apply(future), promise));
+        return promise;
     }
 
     private static final class CallableMapper<T, R> implements Callable<R> {
-        private final io.netty.util.concurrent.Future<T> future;
+        private final Future<T> future;
         private final Function<T, R> mapper;
 
-        CallableMapper(final io.netty.util.concurrent.Future<T> future,
+        CallableMapper(final Future<T> future,
                        final Function<T, R> mapper) {
             this.future = requireNonNull(future);
             this.mapper = requireNonNull(mapper);
@@ -155,7 +198,7 @@ public final class FutureUtil {
 
         @Override
         public void operationComplete(final Future<T> future) {
-            if (future.cause() == null) {
+            if (future.isSuccess()) {
                 final T result = future.getNow();
                 try {
                     final R mappedResult = mapper.apply(result);
@@ -164,6 +207,9 @@ public final class FutureUtil {
                 catch (final Exception e) {
                     mappedPromise.tryFailure(e);
                 }
+            }
+            else if (future.isCancelled()) {
+                mappedPromise.cancel(false);
             }
             else {
                 mappedPromise.tryFailure(future.cause());
@@ -182,6 +228,28 @@ public final class FutureUtil {
         public void operationComplete(final Future<Object> future) throws Exception {
             if (future.isCancelled()) {
                 this.future.cancel(false);
+            }
+        }
+    }
+
+    private static class ChainingFutureListener<T, R> implements FutureListener<T> {
+        private final Function<T, Future<R>> mapper;
+        private final Promise<R> promise;
+
+        public ChainingFutureListener(final Function<T, Future<R>> mapper,
+                                      final Promise<R> promise) {
+            this.mapper = mapper;
+            this.promise = promise;
+        }
+
+        @Override
+        public void operationComplete(final Future<T> future) throws Exception {
+            if (future.isSuccess()) {
+                PromiseNotifier.cascade(mapper.apply(future.getNow()), promise);
+            }
+            else {
+                // cast is safe because the result type is not used in failed futures.
+                ((Future<R>) future).addListener(new PromiseNotifier<>(promise));
             }
         }
     }
