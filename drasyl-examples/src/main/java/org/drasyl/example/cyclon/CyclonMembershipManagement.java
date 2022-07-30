@@ -43,7 +43,6 @@ public class CyclonMembershipManagement {
     private static final int VIEW_SIZE = Integer.parseInt(System.getProperty("viewSize", "4"));
     private static final int SHUFFLE_SIZE = Integer.parseInt(System.getProperty("shuffleSize", "2"));
     private static final int SHUFFLE_INTERVAL = Integer.parseInt(System.getProperty("viewSize", "10000"));
-    private static final int NETWORK_ID = 1;
     public static final String PROMPT = "Space-separated list of peers to add manually to my view: ";
 
     public static void main(final String[] args) throws IOException {
