@@ -6,14 +6,13 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordUtil;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
-import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -77,12 +76,12 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             // no randomness for debugging
             counter = ++counter % 31;
             final int i = counter + 2;
-            final long id = ChordUtil.ithFingerStart(chordId((IdentityPublicKey) ctx.channel().localAddress()), i);
-            LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, chordIdToHex(id));
+            final long id = ChordUtil.ithFingerStart(chordId(ctx.channel().localAddress()), i);
+            LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
             findSuccessor(ctx, id, fingerTable)
                     .chain(future -> {
-                        final IdentityPublicKey ithfinger = future.getNow();
-                        LOG.debug("Successor for id `{}` is `{}`.", chordIdToHex(id), ithfinger);
+                        final DrasylAddress ithfinger = future.getNow();
+                        LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithfinger);
                         return fingerTable.updateIthFinger(ctx, i, ithfinger);
                     })
                     .finish(ctx.executor())

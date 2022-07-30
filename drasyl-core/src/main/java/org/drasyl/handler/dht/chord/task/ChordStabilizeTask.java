@@ -5,7 +5,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,11 +13,11 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
-import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
+import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -79,7 +79,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
     private void scheduleStabilizeTask(final ChannelHandlerContext ctx) {
         stabilizeTaskFuture = ctx.executor().schedule(() -> {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
-            final IdentityPublicKey successor = fingerTable.getSuccessor();
+            final DrasylAddress successor = fingerTable.getSuccessor();
             final FutureComposer<Void> voidFuture;
             if (successor == null || successor.equals(ctx.channel().localAddress())) {
                 // Try to fill successor with candidates in finger table or even predecessor
@@ -94,10 +94,10 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     LOG.debug("Check if successor has still us a predecessor.");
 
                     // try to get my successor's predecessor
-                    yourPredecessorRequest(ctx, successor)
+                    requestPredecessor(ctx, successor)
                             .chain(future2 -> {
                                 // if bad connection with successor! delete successor
-                                IdentityPublicKey x = future2.getNow();
+                                DrasylAddress x = future2.getNow();
                                 if (x == null) {
                                     LOG.debug("Bad connection with successor. Delete successor from finger table.");
                                     return deleteSuccessor(ctx, fingerTable);
@@ -112,8 +112,8 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                         LOG.debug("Successor's predecessor is {}.", x);
                                     }
                                     final long local_id = chordId(ctx.channel().localAddress());
-                                    final long successor_relative_id = computeRelativeChordId(successor, local_id);
-                                    final long x_relative_id = computeRelativeChordId(x, local_id);
+                                    final long successor_relative_id = relativeChordId(successor, local_id);
+                                    final long x_relative_id = relativeChordId(x, local_id);
                                     if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
                                         LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
                                         return fingerTable.updateIthFinger(ctx, 1, x);

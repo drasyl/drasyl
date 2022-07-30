@@ -1,14 +1,14 @@
 package org.drasyl.handler.dht.chord;
 
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Sha;
 
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+import static org.drasyl.util.Preconditions.requireInRange;
+
 public final class ChordUtil {
-    public static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];
+    private static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];
 
     static {
         long value = 1;
@@ -26,66 +26,57 @@ public final class ChordUtil {
      *
      */
 
-    /**
-     * Returns the start id for the {@code i}th finger.
-     *
-     * @param i between 1 and 32
-     */
-    public static long ithFingerStart(final long localId, final int i) {
-        return (localId + POWER_OF_TWO[i - 1]) % POWER_OF_TWO[Integer.SIZE];
-    }
-
-    public static long ithFingerStart(final SocketAddress localId, final int i) {
-        return ithFingerStart(chordId(localId), i);
-    }
-
-    public static long chordId(final byte[] bytes) {
+    public static long chordId(final Object o) {
+        final int hashCode = o.hashCode();
+        final byte[] bytes = ByteBuffer.allocate(Integer.BYTES).putInt(hashCode).array();
         return ByteBuffer.allocate(Long.BYTES).putInt(0).put(Sha.sha1(bytes), 0, Integer.BYTES).position(0).getLong();
     }
 
-    public static long chordId(final DrasylAddress address) {
-        return chordId(address.toByteArray());
-    }
-
-    public static long chordId(final SocketAddress address) {
-        return chordId((DrasylAddress) address);
-    }
-
-    public static long chordId(final String s) {
-        return chordId(s.getBytes());
-    }
-
-    public static String chordIdToHex(final long id) {
+    public static String chordIdHex(final long id) {
         final ByteBuffer buf = ByteBuffer.allocate(Long.BYTES).putLong(id).position(Integer.BYTES);
         final byte[] a = new byte[buf.position()];
         buf.get(a);
-//        System.out.println("id = " + id);
-//        System.out.println("a = " + Arrays.toString(a));
         return HexUtil.bytesToHex(a);
     }
 
-    public static String chordIdToHex(final SocketAddress id) {
-        final String x = chordIdToHex(chordId(id));
-        return x;
+    public static String chordIdHex(final Object o) {
+        return chordIdHex(chordId(o));
     }
 
     public static String chordIdPosition(final long id) {
         return id * 100 / POWER_OF_TWO[Integer.SIZE] + "%";
     }
 
-    public static String chordIdPosition(final DrasylAddress id) {
-        return chordIdPosition(chordId(id));
+    public static String chordIdPosition(final Object o) {
+        return chordIdPosition(chordId(o));
     }
 
-    public static long computeRelativeChordId(final long universal, final long local) {
-        long ret = universal - local;
+    /**
+     * Returns the start id for the {@code i}th finger.
+     *
+     * @param i between 1 and 32
+     */
+    public static long ithFingerStart(final long baseId, final int i) {
+        return (baseId + POWER_OF_TWO[requireInRange(i, 1, Integer.SIZE) - 1]) % POWER_OF_TWO[Integer.SIZE];
+    }
+
+    public static long ithFingerStart(final Object o, final int i) {
+        return ithFingerStart(chordId(o), i);
+    }
+
+    public static long relativeChordId(final long aId, final long bId) {
+        long ret = aId - bId;
         if (ret < 0) {
             ret += POWER_OF_TWO[Integer.SIZE];
         }
         return ret;
     }
 
-    public static long computeRelativeChordId(final SocketAddress universal, final long local) {
-        return computeRelativeChordId(chordId(universal), local);
+    public static long relativeChordId(final Object a, final long b) {
+        return relativeChordId(chordId(a), b);
+    }
+
+    public static long relativeChordId(final Object a, final Object b) {
+        return relativeChordId(a, chordId(b));
     }
 }

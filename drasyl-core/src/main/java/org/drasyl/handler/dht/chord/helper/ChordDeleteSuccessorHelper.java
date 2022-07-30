@@ -2,29 +2,25 @@ package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Objects;
 
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 public final class ChordDeleteSuccessorHelper {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordDeleteSuccessorHelper.class);
-
     private ChordDeleteSuccessorHelper() {
         // util class
     }
 
     public static FutureComposer<Void> deleteSuccessor(final ChannelHandlerContext ctx,
                                                        final ChordFingerTable fingerTable) {
-        final IdentityPublicKey successor = fingerTable.getSuccessor();
+        final DrasylAddress successor = fingerTable.getSuccessor();
 
-        //nothing to delete, just return
+        // nothing to delete, just return
         if (successor == null) {
             return composeFuture();
         }
@@ -32,14 +28,14 @@ public final class ChordDeleteSuccessorHelper {
         // find the last existence of successor in the finger table
         int i;
         for (i = Integer.SIZE; i > 0; i--) {
-            final IdentityPublicKey ithfinger = fingerTable.get(i);
-            if (ithfinger != null && ithfinger.equals(successor)) {
+            final DrasylAddress ithFinger = fingerTable.get(i);
+            if (ithFinger != null && ithFinger.equals(successor)) {
                 break;
             }
         }
 
         // delete it, from the last existence to the first one
-        recursive(ctx, fingerTable, i);
+        deleteFromIthToFirstFinger(ctx, fingerTable, i);
 
         // if predecessor is successor, delete it
         if (fingerTable.hasPredecessor() && Objects.equals(fingerTable.getPredecessor(), fingerTable.getSuccessor())) {
@@ -49,17 +45,17 @@ public final class ChordDeleteSuccessorHelper {
         // try to fill successor
         return fillSuccessor(ctx, fingerTable)
                 .chain(() -> {
-                    final IdentityPublicKey successor2 = fingerTable.getSuccessor();
+                    final DrasylAddress successor2 = fingerTable.getSuccessor();
 
                     // if successor is still null or local node,
                     // and the predecessor is another node, keep asking
                     // it's predecessor until find local node's new successor
                     if ((successor2 == null || ctx.channel().localAddress().equals(successor2)) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
-                        final IdentityPublicKey p = fingerTable.getPredecessor();
+                        final DrasylAddress predecessor = fingerTable.getPredecessor();
 
-                        return recursive2(ctx, p, successor2)
+                        return findNewSuccessor(ctx, predecessor, successor2)
                                 // update successor
-                                .chain(() -> fingerTable.updateIthFinger(ctx, 1, p));
+                                .chain(() -> fingerTable.updateIthFinger(ctx, 1, predecessor));
                     }
                     else {
                         return composeFuture();
@@ -67,13 +63,13 @@ public final class ChordDeleteSuccessorHelper {
                 });
     }
 
-    private static FutureComposer<Void> recursive(final ChannelHandlerContext ctx,
-                                                  final ChordFingerTable fingerTable,
-                                                  final int j) {
+    private static FutureComposer<Void> deleteFromIthToFirstFinger(final ChannelHandlerContext ctx,
+                                                                   final ChordFingerTable fingerTable,
+                                                                   final int j) {
         return fingerTable.updateIthFinger(ctx, j, null)
                 .chain(() -> {
                     if (j > 1) {
-                        return recursive(ctx, fingerTable, j - 1);
+                        return deleteFromIthToFirstFinger(ctx, fingerTable, j - 1);
                     }
                     else {
                         return fingerTable.updateIthFinger(ctx, j, null);
@@ -81,26 +77,25 @@ public final class ChordDeleteSuccessorHelper {
                 });
     }
 
-    private static FutureComposer<IdentityPublicKey> recursive2(final ChannelHandlerContext ctx,
-                                                                final IdentityPublicKey p,
-                                                                final IdentityPublicKey successor) {
-        return yourPredecessorRequest(ctx, p)
+    private static FutureComposer<DrasylAddress> findNewSuccessor(final ChannelHandlerContext ctx,
+                                                                  final DrasylAddress peer,
+                                                                  final DrasylAddress successor) {
+        return requestPredecessor(ctx, peer)
                 .chain(future -> {
-                    IdentityPublicKey p_pre = future.getNow();
-                    if (p_pre == null) {
-                        return composeFuture(p);
+                    DrasylAddress predecessor = future.getNow();
+                    if (predecessor == null) {
+                        return composeFuture(peer);
                     }
 
                     // if p's predecessor is node is just deleted,
-                    // or itself (nothing found in p), or local address,
+                    // or itself (nothing found in predecessor), or local address,
                     // p is current node's new successor, break
-                    if (p_pre.equals(p) || p_pre.equals(ctx.channel().localAddress()) || p_pre.equals(successor)) {
-                        return composeFuture(p);
+                    if (predecessor.equals(peer) || predecessor.equals(ctx.channel().localAddress()) || predecessor.equals(successor)) {
+                        return composeFuture(peer);
                     }
-
                     // else, keep asking
                     else {
-                        return recursive2(ctx, p_pre, successor);
+                        return findNewSuccessor(ctx, predecessor, successor);
                     }
                 });
     }

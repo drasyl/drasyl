@@ -4,16 +4,17 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.yourPredecessorRequest;
-import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.yourSuccessorRequest;
+import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
+import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+@SuppressWarnings({ "java:S1192" })
 public class ChordQueryHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChordQueryHandler.class);
     private ChannelPromise promise;
@@ -39,7 +40,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     }
 
     private void doLookup(final ChannelHandlerContext ctx,
-                          final IdentityPublicKey contact,
+                          final DrasylAddress contact,
                           final long id,
                           final ChannelPromise promise) {
         if (this.promise == null) {
@@ -52,7 +53,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     }
 
     private void checkContactAlive(final ChannelHandlerContext ctx,
-                                   final IdentityPublicKey contact,
+                                   final DrasylAddress contact,
                                    final long id,
                                    final ChannelPromise promise) {
         LOG.debug("checkContactAlive?");
@@ -69,25 +70,22 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     }
 
     private void checkContactStable(final ChannelHandlerContext ctx,
-                                    final IdentityPublicKey contact,
+                                    final DrasylAddress contact,
                                     final long id,
                                     final ChannelPromise promise) {
         LOG.debug("checkContactStable?");
-        yourPredecessorRequest(ctx, contact)
-                .chain(future -> yourSuccessorRequest(ctx, contact)
+        requestPredecessor(ctx, contact)
+                .chain(future -> requestSuccessor(ctx, contact)
                         .chain(future1 -> {
-                            final IdentityPublicKey pred_addr = future.getNow();
-                            final IdentityPublicKey succ_addr = future1.getNow();
-                            if (pred_addr == null || succ_addr == null) {
+                            final DrasylAddress predecessor = future.getNow();
+                            final DrasylAddress successor = future1.getNow();
+                            if (predecessor == null || successor == null) {
                                 this.promise = null;
                                 promise.setFailure(new Exception("Contact node " + contact + " is disconnected. Please try an other contact node."));
                                 return composeFuture(false);
                             }
 
-                            final boolean pred = pred_addr.equals(contact);
-                            final boolean succ = succ_addr.equals(contact);
-
-                            return composeFuture(pred == succ);
+                            return composeFuture(predecessor.equals(contact) == successor.equals(contact));
                         }))
                 .finish(ctx.executor())
                 .addListener((FutureListener<Boolean>) future -> {
@@ -104,10 +102,10 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     }
 
     private void doActualLookup(final ChannelHandlerContext ctx,
-                                final IdentityPublicKey contact,
+                                final DrasylAddress contact,
                                 final long id,
                                 final ChannelPromise promise) {
-        findSuccessorRequest(ctx, id, contact).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
+        findSuccessor(ctx, id, contact).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
                 ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
                 this.promise = null;

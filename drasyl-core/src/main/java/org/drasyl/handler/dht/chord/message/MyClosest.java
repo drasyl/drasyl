@@ -1,7 +1,7 @@
 package org.drasyl.handler.dht.chord.message;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 /**
  * Reply sent in response to {@link Closest} including the closest finger to a given {@code id}.
@@ -10,9 +10,9 @@ import org.drasyl.identity.IdentityPublicKey;
  */
 @AutoValue
 public abstract class MyClosest implements ChordMessage {
-    public abstract IdentityPublicKey getAddress();
+    public abstract DrasylAddress getAddress();
 
-    public static MyClosest of(final IdentityPublicKey address) {
+    public static MyClosest of(final DrasylAddress address) {
         return new AutoValue_MyClosest(address);
     }
 }

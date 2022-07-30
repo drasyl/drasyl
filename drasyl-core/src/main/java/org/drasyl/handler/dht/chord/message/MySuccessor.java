@@ -1,7 +1,7 @@
 package org.drasyl.handler.dht.chord.message;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 /**
  * Reply sent in response to {@link YourSuccessor} including my predecessor.
@@ -10,9 +10,9 @@ import org.drasyl.identity.IdentityPublicKey;
  */
 @AutoValue
 public abstract class MySuccessor implements ChordMessage {
-    public abstract IdentityPublicKey getAddress();
+    public abstract DrasylAddress getAddress();
 
-    public static MySuccessor of(final IdentityPublicKey address) {
+    public static MySuccessor of(final DrasylAddress address) {
         return new AutoValue_MySuccessor(address);
     }
 }

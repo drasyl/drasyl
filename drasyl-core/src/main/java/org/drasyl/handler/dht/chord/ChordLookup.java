@@ -1,7 +1,7 @@
 package org.drasyl.handler.dht.chord;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 
 import static org.drasyl.util.Preconditions.requireInRange;
 
@@ -10,11 +10,11 @@ import static org.drasyl.util.Preconditions.requireInRange;
 public abstract class ChordLookup {
     public static final long MAX_ID = (long) Math.pow(2, 32);
 
-    public abstract IdentityPublicKey getContact();
+    public abstract DrasylAddress getContact();
 
     public abstract long getId();
 
-    public static ChordLookup of(final IdentityPublicKey contact, final long id) {
+    public static ChordLookup of(final DrasylAddress contact, final long id) {
         return new AutoValue_ChordLookup(contact, requireInRange(id, 0, MAX_ID));
     }
 }

@@ -8,7 +8,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 
 import static java.util.Objects.requireNonNull;
@@ -23,13 +23,13 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleChannelInboundHandler<OverlayAddressedMessage<T>> {
     private final ChordMessage request;
-    protected final IdentityPublicKey peer;
+    protected final DrasylAddress peer;
     private final Promise<R> promise;
     private final int requestTimeoutMillis;
     private ScheduledFuture<?> timeoutGuard;
 
     protected AbstractChordRequester(final ChordMessage request,
-                                     final IdentityPublicKey peer,
+                                     final DrasylAddress peer,
                                      final Promise<R> promise,
                                      final int requestTimeoutMillis) {
         this.request = requireNonNull(request);
@@ -39,7 +39,7 @@ abstract class AbstractChordRequester<T extends ChordMessage, R> extends SimpleC
     }
 
     protected AbstractChordRequester(final ChordMessage request,
-                                     final IdentityPublicKey peer,
+                                     final DrasylAddress peer,
                                      final Promise<R> promise) {
         this(request, peer, promise, 5_000);
     }

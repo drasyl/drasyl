@@ -20,13 +20,12 @@ import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
-import static org.drasyl.handler.dht.chord.ChordUtil.computeRelativeChordId;
+import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 
@@ -56,7 +55,7 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
             handleFindSuccessor(ctx, sender, (FindSuccessor) msg.content());
         }
         else if (msg.content() instanceof IAmPre) {
-            handleIAmPre(ctx, (IdentityPublicKey) sender);
+            handleIAmPre(ctx, sender);
         }
         else if (msg.content() instanceof Keep) {
             handleKeep(ctx, sender);
@@ -74,8 +73,8 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                final DrasylAddress sender,
                                final Closest closest) {
         final long id = closest.getId();
-        closestPrecedingFinger(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
-            final IdentityPublicKey result = future.getNow();
+        closestPrecedingFinger(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
+            final DrasylAddress result = future.getNow();
             // FIXME: hier ist result manchmal null -> NPE
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
@@ -110,14 +109,14 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        findSuccessor(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<IdentityPublicKey>) future -> {
+        findSuccessor(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });
     }
 
     private void handleIAmPre(final ChannelHandlerContext ctx,
-                              final IdentityPublicKey newPredecessorCandidate) {
+                              final DrasylAddress newPredecessorCandidate) {
         LOG.debug("Notified by `{}`.", newPredecessorCandidate);
         if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
             LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
@@ -126,8 +125,8 @@ public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMes
         }
         else {
             final long oldpre_id = chordId(fingerTable.getPredecessor());
-            final long local_relative_id = computeRelativeChordId(ctx.channel().localAddress(), oldpre_id);
-            final long newpre_relative_id = computeRelativeChordId(newPredecessorCandidate, oldpre_id);
+            final long local_relative_id = relativeChordId(ctx.channel().localAddress(), oldpre_id);
+            final long newpre_relative_id = relativeChordId(newPredecessorCandidate, oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
                 LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
                 fingerTable.setPredecessor(newPredecessorCandidate);

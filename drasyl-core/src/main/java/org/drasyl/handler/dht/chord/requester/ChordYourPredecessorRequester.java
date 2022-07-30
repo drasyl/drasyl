@@ -6,7 +6,7 @@ import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.NothingPredecessor;
 import org.drasyl.handler.dht.chord.message.YourPredecessor;
-import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -14,11 +14,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
-public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordMessage, IdentityPublicKey> {
+public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordMessage, DrasylAddress> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordYourPredecessorRequester.class);
 
-    public ChordYourPredecessorRequester(final IdentityPublicKey peer,
-                                         final Promise<IdentityPublicKey> promise) {
+    public ChordYourPredecessorRequester(final DrasylAddress peer,
+                                         final Promise<DrasylAddress> promise) {
         super(YourPredecessor.of(), peer, promise);
     }
 
@@ -30,7 +30,7 @@ public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordM
     @Override
     protected void handleResponse(final ChannelHandlerContext ctx,
                                   final ChordMessage response,
-                                  final Promise<IdentityPublicKey> promise) {
+                                  final Promise<DrasylAddress> promise) {
         if (response instanceof MyPredecessor) {
             promise.trySuccess(((MyPredecessor) response).getAddress());
         }
@@ -44,12 +44,12 @@ public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordM
         return LOG;
     }
 
-    public static FutureComposer<IdentityPublicKey> yourPredecessorRequest(final ChannelHandlerContext ctx,
-                                                                           final IdentityPublicKey peer) {
+    public static FutureComposer<DrasylAddress> requestPredecessor(final ChannelHandlerContext ctx,
+                                                                   final DrasylAddress peer) {
         if (peer == null) {
             return composeFailedFuture(new Exception("peer is null"));
         }
-        final Promise<IdentityPublicKey> promise = ctx.executor().newPromise();
+        final Promise<DrasylAddress> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordYourPredecessorRequester(peer, promise));
         return composeFuture().chain(promise);
     }

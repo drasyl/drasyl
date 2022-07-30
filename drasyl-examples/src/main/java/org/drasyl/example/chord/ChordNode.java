@@ -15,6 +15,7 @@ import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordTalker;
+import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
 import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
@@ -29,8 +30,8 @@ import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
-import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 
+@SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordNode {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
 
@@ -46,7 +47,7 @@ public class ChordNode {
         final long myId = chordId(identity.getAddress());
         final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address : " + identity.getAddress());
-        System.out.println("My Id      : " + chordIdToHex(myId) + " (" + chordIdPosition(myId) + ")");
+        System.out.println("My Id      : " + ChordUtil.chordIdHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
 
         final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
@@ -95,14 +96,14 @@ public class ChordNode {
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
 
             // begin to take user input, "info" or "quit"
-            final Scanner userinput = new Scanner(System.in);
-            while (true) {
+            final Scanner userInput = new Scanner(System.in);
+            while (ch.isOpen()) {
                 System.out.println("\nType \"info\" to check this node's data or \n type \"quit\"to leave ring: ");
                 String command = null;
-                command = userinput.next();
+                command = userInput.next();
                 if (command.startsWith("quit")) {
-//                    m_node.stopAllThreads();
-//                    System.out.println("Leaving the ring...");
+                    System.out.println("Leaving the ring...");
+                    ch.close();
                     System.exit(0);
                 }
                 else if (command.startsWith("info")) {
@@ -113,8 +114,6 @@ public class ChordNode {
                     System.out.println("==============================================================");
                 }
             }
-
-//            ch.closeFuture().awaitUninterruptibly();
         }
         finally {
             group.shutdownGracefully();

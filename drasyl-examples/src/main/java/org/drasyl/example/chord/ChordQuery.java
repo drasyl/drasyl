@@ -16,6 +16,7 @@ import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordLookup;
 import org.drasyl.handler.dht.chord.ChordQueryHandler;
 import org.drasyl.handler.dht.chord.ChordResponse;
+import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -26,8 +27,8 @@ import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
-import static org.drasyl.handler.dht.chord.ChordUtil.chordIdToHex;
 
+@SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordQuery {
     private static final String IDENTITY = System.getProperty("identity", "chord-query.identity");
 
@@ -67,7 +68,7 @@ public class ChordQuery {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
                                                         final ChordResponse msg) {
-                                System.out.println("Hash " + chordIdToHex(msg.getId()) + " (" + chordIdPosition(msg.getId()) + ") belongs to node " + msg.getAddress() + " (" + chordIdPosition(msg.getAddress()) + ")");
+                                System.out.println("Hash " + ChordUtil.chordIdHex(msg.getId()) + " (" + chordIdPosition(msg.getId()) + ") belongs to node " + msg.getAddress() + " (" + chordIdPosition(msg.getAddress()) + ")");
                             }
                         });
                     }
@@ -85,10 +86,10 @@ public class ChordQuery {
 
             while (ch.isOpen()) {
                 // begin to take user input
-                final Scanner userinput = new Scanner(System.in);
+                final Scanner userInput = new Scanner(System.in);
                 System.out.println("\nPlease enter your search key (or type \"quit\" to leave): ");
                 String command = null;
-                command = userinput.nextLine();
+                command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {
@@ -98,7 +99,7 @@ public class ChordQuery {
                 // search
                 else if (command.length() > 0) {
                     final long hash = chordId(command);
-                    System.out.println("String `" + command + "` results in hash " + chordIdToHex(hash) + " (" + chordIdPosition(hash) + ")");
+                    System.out.println("String `" + command + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
                     ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
                         if (future.cause() != null) {
                             System.err.println(future.cause());
