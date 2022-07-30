@@ -28,16 +28,18 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordNodeMulti {
+    private static final String CONTACT = System.getProperty("contact", "d4cb81c941c276ccac03e7d7e1131e1d7f3d00454eb7ee578374b1cfc3990284");
+    private static final int COUNT = Integer.valueOf(System.getProperty("count", "100"));
     public static void main(final String[] args) throws IOException, InterruptedException {
         final EventLoopGroup group = new NioEventLoopGroup();
         final AtomicReference<IdentityPublicKey> contact = new AtomicReference<>(IdentityPublicKey.of("d4cb81c941c276ccac03e7d7e1131e1d7f3d00454eb7ee578374b1cfc3990284"));
-        for (int i = 1; i < 10; i++) {
-            final Identity identity = IdentityManager.readIdentityFile(Path.of("/Users/heiko/Development/drasyl-non-public/Identities/drasyl-" + i + ".identity"));
+        for (int i = 2; i < 10; i++) {
+            final Identity identity = IdentityManager.readIdentityFile(Path.of("/root/Identities/drasyl-" + i + ".identity"));
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(group)
                     .channel(DrasylServerChannel.class)
-                    .handler(new TraversingDrasylServerChannelInitializer(identity, 60000 + i) {
+                    .handler(new TraversingDrasylServerChannelInitializer(identity, 20000 + i) {
                         @Override
                         protected void initChannel(final DrasylServerChannel ch) {
                             super.initChannel(ch);
