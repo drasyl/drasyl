@@ -156,10 +156,10 @@ public class ChatCli {
              */
             private Behavior peerEvent(final PeerEvent event) {
                 if (event instanceof PeerDirectEvent) {
-                    addBeforePrompt("Direct connection to " + event.getPeer().getIdentityPublicKey() + " available.");
+                    addBeforePrompt("Direct connection to " + event.getPeer().getAddress() + " available.");
                 }
                 else if (event instanceof PeerRelayEvent) {
-                    addBeforePrompt("Relayed connection to " + event.getPeer().getIdentityPublicKey() + " available.");
+                    addBeforePrompt("Relayed connection to " + event.getPeer().getAddress() + " available.");
                 }
                 return Behaviors.same();
             }
