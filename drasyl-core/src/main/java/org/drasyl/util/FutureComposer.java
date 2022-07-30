@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.FutureUtil.chain2Future;
+import static org.drasyl.util.FutureUtil.chainFuture;
 
 public final class FutureComposer<T> {
     private final Function<EventExecutor, Future<T>> futureResolver;
@@ -31,11 +31,11 @@ public final class FutureComposer<T> {
     }
 
     public <R> FutureComposer<R> chain(final Supplier<FutureComposer<R>> mapper) {
-        return new FutureComposer<>(executor -> chain2Future(futureResolver.apply(executor), executor, future -> mapper.get().futureResolver.apply(executor)));
+        return new FutureComposer<>(executor -> chainFuture(futureResolver.apply(executor), executor, future -> mapper.get().futureResolver.apply(executor)));
     }
 
     public <R> FutureComposer<R> chain(final Function<Future<T>, FutureComposer<R>> mapper) {
-        return new FutureComposer<>(executor -> chain2Future(futureResolver.apply(executor), executor, future -> mapper.apply(future).futureResolver.apply(executor)));
+        return new FutureComposer<>(executor -> chainFuture(futureResolver.apply(executor), executor, future -> mapper.apply(future).futureResolver.apply(executor)));
     }
 
     public static <R> FutureComposer<R> composeFuture(final R result) {

@@ -138,26 +138,9 @@ public final class FutureUtil {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T, R> Future<R> chainFuture(final Future<T> future,
+    public static <T, R> Future<R> chainFuture(final Future<T> predecessor,
                                                final EventExecutor executor,
-                                               final Function<T, Future<R>> mapper) {
-        if (future.cause() != null) {
-            // cast is safe because the result type is not used in failed futures.
-            return (Future<R>) future;
-        }
-        else if (future.isSuccess()) {
-            // FIXME: wird im falschen thread ausgeführt
-            return mapper.apply(future.getNow());
-        }
-        final Promise<R> promise = executor.newPromise();
-        future.addListener(new ChainingFutureListener<>(mapper, promise));
-        return promise;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T, R> Future<R> chain2Future(final Future<T> predecessor,
-                                                final EventExecutor executor,
-                                                final Function<Future<T>, Future<R>> mapper) {
+                                               final Function<Future<T>, Future<R>> mapper) {
         if (predecessor.cause() != null) {
             // cast is safe because the result type is not used in failed futures.
             return (Future<R>) predecessor;
