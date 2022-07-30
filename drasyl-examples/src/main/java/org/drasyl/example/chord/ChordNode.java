@@ -14,7 +14,7 @@ import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.ChordTalker;
+import org.drasyl.handler.dht.chord.ChordListener;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
@@ -67,7 +67,7 @@ public class ChordNode {
                         p.addLast(new ChordStabilizeTask(fingerTable, 500));
                         p.addLast(new ChordFixFingersTask(fingerTable, 500));
                         p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
-                        p.addLast(new ChordTalker(fingerTable));
+                        p.addLast(new ChordListener(fingerTable));
 
                         if (contact != null) {
                             p.addLast(new ChannelDuplexHandler() {

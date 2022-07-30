@@ -5,6 +5,11 @@ import org.drasyl.identity.DrasylAddress;
 
 import static org.drasyl.util.Preconditions.requireInRange;
 
+/**
+ * Triggers a lookup in the DHT ring to find the closest node for given {@code id}.
+ *
+ * @see ChordLookup
+ */
 @SuppressWarnings("java:S1118")
 @AutoValue
 public abstract class ChordLookup {

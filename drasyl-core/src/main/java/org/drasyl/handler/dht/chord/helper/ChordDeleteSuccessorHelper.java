@@ -11,6 +11,10 @@ import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillS
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
 public final class ChordDeleteSuccessorHelper {
     private ChordDeleteSuccessorHelper() {
         // util class

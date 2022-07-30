@@ -2,6 +2,7 @@ package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Promise;
+import org.drasyl.handler.dht.chord.ChordException;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.identity.DrasylAddress;
@@ -12,6 +13,9 @@ import org.drasyl.util.logging.LoggerFactory;
 import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * Sends a {@link Closest} message to given {@link #peer}.
+ */
 public class ChordClosestRequester extends AbstractChordRequester<MyClosest, DrasylAddress> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordClosestRequester.class);
 
@@ -42,7 +46,7 @@ public class ChordClosestRequester extends AbstractChordRequester<MyClosest, Dra
                                                                final DrasylAddress peer,
                                                                final long id) {
         if (peer == null) {
-            return composeFailedFuture(new Exception("peer is null"));
+            return composeFailedFuture(new ChordException("peer is null"));
         }
         final Promise<DrasylAddress> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordClosestRequester(peer, id, promise));

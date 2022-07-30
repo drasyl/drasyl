@@ -2,6 +2,7 @@ package org.drasyl.handler.dht.chord.requester;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Promise;
+import org.drasyl.handler.dht.chord.ChordException;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.NothingPredecessor;
@@ -14,6 +15,9 @@ import org.drasyl.util.logging.LoggerFactory;
 import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * Sends a {@link YourPredecessor} message to given {@link #peer}.
+ */
 public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordMessage, DrasylAddress> {
     private static final Logger LOG = LoggerFactory.getLogger(ChordYourPredecessorRequester.class);
 
@@ -47,7 +51,7 @@ public class ChordYourPredecessorRequester extends AbstractChordRequester<ChordM
     public static FutureComposer<DrasylAddress> requestPredecessor(final ChannelHandlerContext ctx,
                                                                    final DrasylAddress peer) {
         if (peer == null) {
-            return composeFailedFuture(new Exception("peer is null"));
+            return composeFailedFuture(new ChordException("peer is null"));
         }
         final Promise<DrasylAddress> promise = ctx.executor().newPromise();
         ctx.pipeline().addBefore(ctx.name(), null, new ChordYourPredecessorRequester(peer, promise));

@@ -29,11 +29,17 @@ import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 
-public class ChordTalker extends SimpleChannelInboundHandler<OverlayAddressedMessage<ChordMessage>> {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordTalker.class);
+/**
+ * A handler that listens to {@link ChordMessage}'s sent by other peers.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
+public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedMessage<ChordMessage>> {
+    private static final Logger LOG = LoggerFactory.getLogger(ChordListener.class);
     private final ChordFingerTable fingerTable;
 
-    public ChordTalker(final ChordFingerTable fingerTable) {
+    public ChordListener(final ChordFingerTable fingerTable) {
         this.fingerTable = requireNonNull(fingerTable);
     }
 

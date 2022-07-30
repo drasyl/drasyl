@@ -22,8 +22,11 @@ import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Stabilize thread that periodically asks successor for its predecessor and determine if current
- * node should update or delete its successor.
+ * Handler class providing {@code n.stabilize()} functionality that periodically asks successor for
+ * its predecessor and determine if current node should update or delete its successor.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
  */
 public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordStabilizeTask.class);

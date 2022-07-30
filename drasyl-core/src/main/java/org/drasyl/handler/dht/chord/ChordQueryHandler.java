@@ -4,6 +4,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.Promise;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -14,6 +15,15 @@ import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequest
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * This handler performs a lookup in the Chord table once an outbound {@link ChordLookup} message is
+ * written to the channel. Once the lookup is done, the write {@link Promise} is succeeded and an
+ * inbound {@link ChordResponse} message is passed to the channel. On error, the {@link Promise} is
+ * failed.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
 @SuppressWarnings({ "java:S1192" })
 public class ChordQueryHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChordQueryHandler.class);
@@ -48,7 +58,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
             checkContactAlive(ctx, contact, id, promise);
         }
         else {
-            promise.tryFailure(new Exception("Another Chord lookup is in progress. Please try again later."));
+            promise.tryFailure(new ChordException("Another Chord lookup is in progress. Please try again later."));
         }
     }
 
@@ -64,7 +74,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                 checkContactStable(ctx, contact, id, promise);
             }
             else {
-                promise.setFailure(new Exception("Contact node " + contact + " does not answer."));
+                promise.setFailure(new ChordException("Contact node " + contact + " does not answer."));
             }
         });
     }
@@ -81,7 +91,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                             final DrasylAddress successor = future1.getNow();
                             if (predecessor == null || successor == null) {
                                 this.promise = null;
-                                promise.setFailure(new Exception("Contact node " + contact + " is disconnected. Please try an other contact node."));
+                                promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
                                 return composeFuture(false);
                             }
 
@@ -96,7 +106,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                     }
                     else {
                         this.promise = null;
-                        promise.tryFailure(new Exception("Contact node " + contact + " is not stable. Please try again later."));
+                        promise.tryFailure(new ChordException("Contact node " + contact + " is not stable. Please try again later."));
                     }
                 });
     }

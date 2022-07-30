@@ -16,6 +16,9 @@ import static org.drasyl.util.Preconditions.requirePositive;
 /**
  * Ask predecessor thread that periodically asks for predecessor's keep-alive, and delete
  * predecessor if it's dead.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
  */
 public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessorTask.class);

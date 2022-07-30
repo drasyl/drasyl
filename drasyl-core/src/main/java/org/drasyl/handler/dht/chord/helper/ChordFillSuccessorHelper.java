@@ -9,6 +9,10 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
 public final class ChordFillSuccessorHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFillSuccessorHelper.class);
 

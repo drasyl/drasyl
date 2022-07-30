@@ -14,6 +14,12 @@ import static org.drasyl.handler.dht.chord.helper.ChordFindPredecessorHelper.fin
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * Helper class providing {@code n.find_predecessor(id)} functionality.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
 public final class ChordFindSuccessorHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFindSuccessorHelper.class);
 

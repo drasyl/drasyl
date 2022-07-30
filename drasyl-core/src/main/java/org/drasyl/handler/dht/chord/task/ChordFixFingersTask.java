@@ -17,7 +17,11 @@ import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findS
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Fixfingers thread that periodically access a random entry in finger table and fix it.
+ * Handler class providing {@code n.fix_fingers()} functionality that periodically access a random
+ * entry in finger table ensuring it is up-to-date.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
  */
 public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFixFingersTask.class);

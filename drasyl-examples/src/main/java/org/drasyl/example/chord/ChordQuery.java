@@ -98,9 +98,10 @@ public class ChordQuery {
 
                 // search
                 else if (command.length() > 0) {
-                    final long hash = chordId(command);
-                    System.out.println("String `" + command + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
-                    ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
+                    final String[] s = command.split(" ");
+                    final long hash = chordId(s[1]);
+                    System.out.println("String `" + s[1] + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
+                    ch.write(ChordLookup.of(IdentityPublicKey.of(s[0]), hash)).addListener((ChannelFutureListener) future -> {
                         if (future.cause() != null) {
                             System.err.println(future.cause());
                         }

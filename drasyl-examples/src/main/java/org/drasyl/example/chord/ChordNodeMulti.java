@@ -13,7 +13,7 @@ import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.ChordTalker;
+import org.drasyl.handler.dht.chord.ChordListener;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
 import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
@@ -29,11 +29,11 @@ import java.util.concurrent.atomic.AtomicReference;
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordNodeMulti {
     private static final String CONTACT = System.getProperty("contact", "d4cb81c941c276ccac03e7d7e1131e1d7f3d00454eb7ee578374b1cfc3990284");
-    private static final int COUNT = Integer.valueOf(System.getProperty("count", "100"));
+    private static final int COUNT = Integer.parseInt(System.getProperty("count", "1000"));
     public static void main(final String[] args) throws IOException, InterruptedException {
         final EventLoopGroup group = new NioEventLoopGroup();
-        final AtomicReference<IdentityPublicKey> contact = new AtomicReference<>(IdentityPublicKey.of("d4cb81c941c276ccac03e7d7e1131e1d7f3d00454eb7ee578374b1cfc3990284"));
-        for (int i = 2; i < 10; i++) {
+        final AtomicReference<IdentityPublicKey> contact = new AtomicReference<>(IdentityPublicKey.of(CONTACT));
+        for (int i = 2; i < COUNT; i++) {
             final Identity identity = IdentityManager.readIdentityFile(Path.of("/root/Identities/drasyl-" + i + ".identity"));
 
             final ServerBootstrap b = new ServerBootstrap()
@@ -52,7 +52,7 @@ public class ChordNodeMulti {
                             p.addLast(new ChordStabilizeTask(fingerTable, 500));
                             p.addLast(new ChordFixFingersTask(fingerTable, 500));
                             p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
-                            p.addLast(new ChordTalker(fingerTable));
+                            p.addLast(new ChordListener(fingerTable));
 
                             p.addLast(new ChannelDuplexHandler() {
                                 @Override
@@ -79,7 +79,7 @@ public class ChordNodeMulti {
 
 //            contact.set(identity.getIdentityPublicKey());
 
-            Thread.sleep(5000);
+            Thread.sleep(20000);
         }
 
         while (true) {

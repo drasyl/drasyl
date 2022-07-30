@@ -13,6 +13,12 @@ import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
+/**
+ * Helper class providing {@code n.closest_preceding_finger(id)} functionality.
+ * <p>
+ * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
+ * Xia</a>.
+ */
 public final class ChordClosestPrecedingFingerHelper {
     private static final Logger LOG = LoggerFactory.getLogger(ChordClosestPrecedingFingerHelper.class);
 
