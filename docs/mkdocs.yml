@@ -89,6 +89,7 @@ nav:
   - 'Advanced Usage':
       - 'Bootstrapping': 'advanced-usage/bootstrapping.md'
       - 'Membership Management': 'advanced-usage/membership-management.md'
+      - 'Distributed Lookup': 'advanced-usage/distributed-lookup.md'
   - 'Configuration':
       - 'Overview': 'configuration/index.md'
       - 'Serialization': 'configuration/serialization.md'
