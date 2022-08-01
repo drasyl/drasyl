@@ -55,6 +55,12 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
         this.crypto = crypto;
     }
 
+    /**
+     * @param myIdentity       the own identity
+     * @param maxSessionsCount one session key pair must be derived for each peer. This number
+     *                         specifies how many pairs are cached before they must be derived
+     *                         again
+     */
     public ProtocolArmHandler(final Identity myIdentity,
                               final int maxSessionsCount) {
         this(myIdentity, Crypto.INSTANCE, maxSessionsCount, Duration.ZERO);
