@@ -79,22 +79,38 @@ public class UdpServer extends ChannelDuplexHandler {
         );
     }
 
+    /**
+     * @param bindAddress the address the UDP server will bind to
+     */
     public UdpServer(final InetSocketAddress bindAddress) {
         this(new Bootstrap().option(SO_BROADCAST, false), bindAddress);
     }
 
+    /**
+     * @param bindHost the host the UDP server will bind to
+     * @param bindPort the port the UDP server will bind to
+     */
     public UdpServer(final InetAddress bindHost,
                      final int bindPort) {
         this(new InetSocketAddress(bindHost, bindPort));
     }
 
+    /**
+     * @param bindHost the host the UDP server will bind to
+     * @param bindPort the port the UDP server will bind to
+     */
     public UdpServer(final String bindHost,
                      final int bindPort) {
         this(new InetSocketAddress(bindHost, bindPort));
     }
 
-    public UdpServer(final int inetPort) {
-        this(new InetSocketAddress(inetPort));
+    /**
+     * Create UDP server that will bind to host {@code 0.0.0.0} and port {@code bindPort}.
+     *
+     * @param bindPort the port the UDP server will bind to
+     */
+    public UdpServer(final int bindPort) {
+        this(new InetSocketAddress(bindPort));
     }
 
     @Override

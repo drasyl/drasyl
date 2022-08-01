@@ -91,6 +91,25 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 
+    /**
+     * @param myNetworkId                    the network we belong to
+     * @param myPublicKey                    own public key
+     * @param mySecretKey                    own secret key
+     * @param myProofOfWork                  own proof of work
+     * @param initialPingDelayMillis         time in millis after
+     *                                       {@link #channelActive(ChannelHandlerContext)} has been
+     *                                       fired, we start to ping super peers
+     * @param pingIntervalMillis             interval in millis between a ping
+     * @param pingTimeoutMillis              time in millis without ping response before a peer is
+     *                                       assumed as unreachable
+     * @param maxTimeOffsetMillis            time millis offset of received messages' timestamp
+     *                                       before discarding them
+     * @param superPeerAddresses             inet addresses and public keys of super peers
+     * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
+     *                                       discarded without application traffic
+     * @param maxPeers                       maximum number of peers to which a traversed connection
+     *                                       should be maintained at the same time
+     */
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
                                                       final IdentityPublicKey myPublicKey,
@@ -390,8 +409,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
 
         /**
-         * Returns {@code true}, if we just started to ping (within the last {@link
-         * #pingTimeoutMillis} the peer.
+         * Returns {@code true}, if we just started to ping (within the last
+         * {@link #pingTimeoutMillis} the peer.
          */
         public boolean isNew() {
             return firstHelloTime >= currentTime.getAsLong() - pingTimeoutMillis;
@@ -414,8 +433,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
 
         /**
-         * Returns {@code true}, if {@link #isNew()} ()} and ({@link #isNew()} or {@link
-         * #isReachable()}) return {@code false}.
+         * Returns {@code true}, if {@link #isNew()} ()} and ({@link #isNew()} or
+         * {@link #isReachable()}) return {@code false}.
          */
         public boolean isStale() {
             return !isNew() && (!hasApplicationTraffic() || !isReachable());
