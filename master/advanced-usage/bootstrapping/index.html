@@ -19,7 +19,7 @@
     
     
       
-        <title>Serialization - drasyl</title>
+        <title>Bootstrapping - drasyl</title>
       
     
     
@@ -66,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#serialization" class="md-skip">
+        <a href="#bootstrapping" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +93,7 @@
           </span>
           <span class="md-header-nav__topic md-ellipsis">
             
-              Serialization
+              Bootstrapping
             
           </span>
         </div>
@@ -214,10 +214,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
     
     <label class="md-nav__link" for="nav-3">
       Advanced Usage
@@ -235,11 +237,83 @@
           
           
 
+  
 
-  <li class="md-nav__item">
-    <a href="../../advanced-usage/bootstrapping/" title="Bootstrapping" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Bootstrapping
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
+    <a href="./" title="Bootstrapping" class="md-nav__link md-nav__link--active">
       Bootstrapping
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background-netty-concepts" class="md-nav__link">
+    Background: Netty Concepts
+  </a>
+  
+    <nav class="md-nav" aria-label="Background: Netty Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#channels" class="md-nav__link">
+    Channels
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#events-handlers" class="md-nav__link">
+    Events Handlers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bootstrapping_1" class="md-nav__link">
+    Bootstrapping
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-node-using-bootstrapping" class="md-nav__link">
+    Create Node using Bootstrapping
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
         
@@ -252,12 +326,10 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  <li class="md-nav__item md-nav__item--nested">
     
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
     
     <label class="md-nav__link" for="nav-4">
       Configuration
@@ -277,7 +349,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../" title="Overview" class="md-nav__link">
+    <a href="../../configuration/" title="Overview" class="md-nav__link">
       Overview
     </a>
   </li>
@@ -287,83 +359,11 @@
           
           
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-      
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Serialization
-        <span class="md-nav__icon md-icon"></span>
-      </label>
-    
-    <a href="./" title="Serialization" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../../configuration/serialization/" title="Serialization" class="md-nav__link">
       Serialization
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    Configuration
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-in-serializers" class="md-nav__link">
-    Build-in serializers
-  </a>
-  
-    <nav class="md-nav" aria-label="Build-in serializers">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#enabled-and-bound-to-the-serializable-classes" class="md-nav__link">
-    Enabled and bound to the serializable classes
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#enabled-and-must-be-manually-bound" class="md-nav__link">
-    Enabled and must be manually bound
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-notes" class="md-nav__link">
-    Security notes
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
         
@@ -373,7 +373,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../logging/" title="Logging" class="md-nav__link">
+    <a href="../../configuration/logging/" title="Logging" class="md-nav__link">
       Logging
     </a>
   </li>
@@ -494,30 +494,30 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    Configuration
+  <a href="#background-netty-concepts" class="md-nav__link">
+    Background: Netty Concepts
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-in-serializers" class="md-nav__link">
-    Build-in serializers
-  </a>
-  
-    <nav class="md-nav" aria-label="Build-in serializers">
+    <nav class="md-nav" aria-label="Background: Netty Concepts">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#enabled-and-bound-to-the-serializable-classes" class="md-nav__link">
-    Enabled and bound to the serializable classes
+  <a href="#channels" class="md-nav__link">
+    Channels
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#enabled-and-must-be-manually-bound" class="md-nav__link">
-    Enabled and must be manually bound
+  <a href="#events-handlers" class="md-nav__link">
+    Events Handlers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bootstrapping_1" class="md-nav__link">
+    Bootstrapping
   </a>
   
 </li>
@@ -528,8 +528,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#security-notes" class="md-nav__link">
-    Security notes
+  <a href="#create-node-using-bootstrapping" class="md-nav__link">
+    Create Node using Bootstrapping
   </a>
   
 </li>
@@ -546,7 +546,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/drasyl-overlay/drasyl/edit/master/docs/content/configuration/serialization.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/drasyl-overlay/drasyl/edit/master/docs/content/advanced-usage/bootstrapping.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
@@ -554,182 +554,88 @@
                   
                 
                 
-                <h1 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h1>
-<p>The messages that drasyl nodes send to each other are JVM objects. Message passing between nodes
-living on the same JVM is straightforward: It is done via reference passing. However, messages that
-must leave the JVM to reach a node running on a different host must go through some form of
-serialization (i.e., the objects must be converted to and from byte arrays).</p>
-<p>The serialization mechanism in drasyl allows you to write custom serializers and to define which
-serializer should be used for what.</p>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>In order for drasyl to know which serializer to use for what, you need to edit your configuration:</p>
-<p>In the <code>drasyl.serialization.serializers</code>-section, bind names to implementations of
-<a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html"><code>Serializer</code></a>
-you want to use, like this:</p>
-<pre class="highlight"><code>drasyl {
-  serialization {
-    serializers {
-      java = "org.drasyl.node.handler.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.node.handler.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.node.handler.serialization.ProtobufSerializer"
-      myown = "docs.serialization.MyOwnSerializer"
-    }
-  }
-}</code></pre>
-<p>After you’ve bound names to different implementations of
-<a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/Serializer.html"><code>Serializer</code></a>
-you need to wire which classes should be serialized using which serializer. This is done in
-the <code>drasyl.serialization.bindings.inbound</code>-section for inbound messages and
-<code>drasyl.serialization.bindings.outbound</code>-section for outbound messages:</p>
-<pre class="highlight"><code>drasyl {
-  serialization {
-    serializers {
-      java = "org.drasyl.node.handler.serialization.JavaSerializer"
-      jackson-json = "org.drasyl.node.handler.serialization.JacksonJsonSerializer"
-      proto = "org.drasyl.node.handler.serialization.ProtobufSerializer"
-      myown = "docs.serialization.MyOwnSerializer"
-    }
+                <h1 id="bootstrapping">Bootstrapping<a class="headerlink" href="#bootstrapping" title="Permanent link">&para;</a></h1>
+<p>In the <a href="../../getting-started/">previous section</a>, we learned how to use the <code>DrasylNode</code> class — a
+minimalist interface to integrate drasyl into your application.
+It provides rich flexibility through customization, configuring the node that best fits your use case.
+But for some use cases, you may want to customize your node even further.
+For this, we provide a Bootstrapping interface, a more powerful way to create a drasyl node.</p>
+<p>To help understand the Bootstrapping interface, we first want to give the background some information on
+the technical internals of drasyl and the applied concepts.</p>
+<h2 id="background-netty-concepts">Background: Netty Concepts<a class="headerlink" href="#background-netty-concepts" title="Permanent link">&para;</a></h2>
+<p>The core of drasyl is built with <a href="https://netty.io/">Netty</a>.
+Netty describes itself as "an asynchronous event-driven network application framework for rapid
+development of maintainable high performance protocol servers &amp; clients".
+To this end, Netty defines an architectural model and a rich set of design patterns for network
+programming.</p>
+<h3 id="channels"><code>Channel</code>s<a class="headerlink" href="#channels" title="Permanent link">&para;</a></h3>
+<p>One of Netty's primary building block is the <code>Channel</code>. A <code>Channel</code> is a <a href="https://docs.oracle.com/javase/7/docs/api/java/nio/channels/Channel.html">basic construct of Java NIO</a>.
+It represents</p>
+<blockquote>
+<p>an open connection to an entity such as a hardware device, a file, a  network socket, or a program
+component that is capable of performing  one or more distinct I/O operations, for example reading
+or writing.</p>
+</blockquote>
+<p>Netty uses this <code>Channel</code> interface mainly for IP-based transports like TCP or UDP.
+drasyl has adopted this concept and provides a unified interface for communication with peers, regardless of their location and route.</p>
+<h3 id="events-handlers">Events Handlers<a class="headerlink" href="#events-handlers" title="Permanent link">&para;</a></h3>
+<p>Netty (and therefore drasyl) uses distinct events to notify your application about status changes of the channel or issues operations.
+This allows your application to react with the appropriate action based on the type of occurring event (e.g., logging, data transformation, flow-control, business logic, etc.).</p>
+<p>To control what actions your application should apply, each <code>Channel</code> applies the interceptor design pattern.
+That means that you can register a given number of interceptors (so-called <a href="https://livebook.manning.com/book/netty-in-action/chapter-6/"><code>ChannelHandler</code></a>s) to a channel, performing independently various.
+These <code>ChannelHandler</code>s can be added, removed, and resorted to at any time for each <code>Channel</code>.
+Netty provides an extensive set of predefined handlers, most of which are compatible with drasyl!</p>
+<h3 id="bootstrapping_1">Bootstrapping<a class="headerlink" href="#bootstrapping_1" title="Permanent link">&para;</a></h3>
+<p><a href="https://livebook.manning.com/book/netty-in-action/chapter-8/">Bootstrapping</a> defines the startup code configuring the <code>Channel</code>.
+At a minimum, it binds the node to a given overlay identity on which it will listen for connection requests.</p>
+<p>To learn more about Netty, the used concepts, and how to use them, we recommend reading the
+<a href="https://netty.io/wiki/user-guide.html">Netty User Guide</a> as well as the book "Netty in Action" by
+Marvin Wolfthal and Norman Maurer.</p>
+<h2 id="create-node-using-bootstrapping">Create Node using Bootstrapping<a class="headerlink" href="#create-node-using-bootstrapping" title="Permanent link">&para;</a></h2>
+<p>First, we need to create a <code>ServerBootstrap</code> object that describes the behavior of our drasyl node.
+The <code>TraversingDrasylServerChannelInitializer</code> is a special <code>ChannelHandler</code> that conveniently
+populates other handlers necessary for the minimal operation of a drasyl node.
+The implementation of <code>ChannelInitializer</code> in the following line defines how to handle received data
+from other peers. In this case, they are interpreted and output as a string.</p>
+<pre class="highlight"><code class="language-java">final ServerBootstrap b = new ServerBootstrap()
+    // we want to create a drasyl-based channel (not UDP or TCP).
+    .channel(DrasylServerChannel.class)
+    // create and assign a thread pool dedicated to proccess in- and outbound data.
+    .group(new NioEventLoopGroup())
+    // ChannelHandler in charge of performing all control plane-related operations.
+    // There is only one server channel per node.
+    .handler(new TraversingDrasylServerChannelInitializer(identity))
+    // ChannelHandler in charge of performing all data plane-related operations.
+    // There is a child channel for each peer.
+    .childHandler(new ChannelInitializer&lt;DrasylChannel&gt;() {
+        @Override
+        protected void initChannel(final DrasylChannel ch) {
+            final ChannelPipeline p = ch.pipeline();
 
-    bindings {
-        inbound {
-          "[Ljava.lang.String;" = java
-          "docs.serialization.JsonSerializable" = jackson-json
-          "com.google.protobuf.Message" = proto
-          "docs.serialization.MyOwnSerializable" = myown
+            p.addLast(new SimpleChannelInboundHandler&lt;ByteBuf&gt;() {
+                @Override
+                protected void channelRead0(final ChannelHandlerContext ctx,
+                                            final ByteBuf msg) {
+                    System.out.println("Got `" + msg.toString(UTF_8) + "` from `" + ctx.channel().remoteAddress() + "`");
+                }
+            });
         }
-
-        outbound {
-          "[Ljava.lang.String;" = java
-          "docs.serialization.JsonSerializable" = jackson-json
-          "com.google.protobuf.Message" = proto
-          "docs.serialization.MyOwnSerializable" = myown
-        }
-    }
-  }
+    });</code></pre>
+<p>Now that the "recipe" for our drasyl node has been defined, we can start it and wait for messages to
+arrive.</p>
+<pre class="highlight"><code class="language-java">try {
+    // create new node with given identity.
+    final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+    System.out.println("Node listening on address " + ch.localAddress());
+    // wait for node to stop.
+    ch.closeFuture().awaitUninterruptibly();
+}
+finally {
+    // ensure that thread pool is shutdown
+    group.shutdownGracefully();
 }</code></pre>
-<p>You only need to specify the name of an interface or abstract base class of the messages.</p>
-<h2 id="build-in-serializers">Build-in serializers<a class="headerlink" href="#build-in-serializers" title="Permanent link">&para;</a></h2>
-<p>drasyl ships some build-in serializers for the most common object types. Serializers are already
-defined and bound for the most common message types (Java primives, their wrapper classes, strings,
-and byte arrays). On the other hand, some serializers have to be bound manually to the desired
-classes.</p>
-<h3 id="enabled-and-bound-to-the-serializable-classes">Enabled and bound to the serializable classes<a class="headerlink" href="#enabled-and-bound-to-the-serializable-classes" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Name</th>
-<th style="text-align: left;">Class</th>
-<th style="text-align: left;">Serializable Classes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><code>primitive-boolean</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/BooleanSerializer.html"><code>BooleanSerializer</code></a></td>
-<td style="text-align: left;"><code>Boolean</code>, <code>boolean</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-byte</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteSerializer.html"><code>ByteSerializer</code></a></td>
-<td style="text-align: left;"><code>Byte</code>, <code>byte</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-char</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/CharacterSerializer.html"><code>CharacterSerializer</code></a></td>
-<td style="text-align: left;"><code>Character</code>, <code>char</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-float</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/FloatSerializer.html"><code>FloatSerializer</code></a></td>
-<td style="text-align: left;"><code>Float</code>, <code>float</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-int</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/IntegerSerializer.html"><code>IntegerSerializer</code></a></td>
-<td style="text-align: left;"><code>Integer</code>, <code>int</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-long</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/LongSerializer.html"><code>LongSerializer</code></a></td>
-<td style="text-align: left;"><code>Long</code>, <code>long</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>primitive-short</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ShortSerializer.html"><code>ShortSerializer</code></a></td>
-<td style="text-align: left;"><code>Short</code>, <code>short</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>bytes</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ByteArraySerializer.html"><code>ByteArraySerializer</code></a></td>
-<td style="text-align: left;"><code>byte[]</code></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>string</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/StringSerializer.html"><code>StringSerializer</code></a></td>
-<td style="text-align: left;"><code>String</code></td>
-</tr>
-</tbody>
-</table>
-<p>So if you only send object types that are included in this table, you don't need to configure
-anything!</p>
-<h3 id="enabled-and-must-be-manually-bound">Enabled and must be manually bound<a class="headerlink" href="#enabled-and-must-be-manually-bound" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Name</th>
-<th style="text-align: left;">Class</th>
-<th style="text-align: left;">Serializable Classes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><code>java</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JavaSerializer.html"><code>JavaSerializer</code></a></td>
-<td style="text-align: left;"><a href="https://docs.oracle.com/javase/7/docs/api/java/io/Serializable.html"><code>Serializable</code></a></td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>jackson-json</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/JacksonJsonSerializer.html"><code>JacksonJsonSerializer</code></a></td>
-<td style="text-align: left;">all Jackson-compatible classes</td>
-</tr>
-<tr>
-<td style="text-align: left;"><code>proto</code></td>
-<td style="text-align: left;"><a href="https://api.drasyl.org/master/org/drasyl/node/handler/serialization/ProtobufSerializer.html"><code>ProtobufSerializer</code></a></td>
-<td style="text-align: left;">Protobuf <a href="https://developers.google.com/protocol-buffers/docs/reference/java/com/google/protobuf/Message"><code>Message</code></a></td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li><a href="https://github.com/FasterXML/jackson">Serialization with Jackson</a> is a good choice in many cases
-  and our recommendation if you don’t have other preferences.</li>
-<li><a href="https://developers.google.com/protocol-buffers">Google Protocol Buffers</a> is good if you want more
-  control over the schema evolution of your messages, but it requires more work to develop and
-  maintain the mapping between serialized representation and domain representation.</li>
-</ul>
-<p>Before binding arbitrary classes to a Serializer, please read the security notes below.</p>
-<h2 id="security-notes">Security notes<a class="headerlink" href="#security-notes" title="Permanent link">&para;</a></h2>
-<p>With this configuration, a developer guarantees that all classes are secure and cannot be misused as
-a deserialization gadget in the context of the Serializer. A reckless implementation of a permitted
-class can leave the entire application and all executing machines vulnerable to remote code
-execution.</p>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>An attacker is in general interested in all "non-pure" methods, which have promising side
-effects. A method is "pure" if:</p>
-<ul>
-<li>The execution of the function has no side effects, and</li>
-<li>the return value of the function depends only on the input parameters passed to the function.</li>
-</ul>
-<p>For example, a vulnerability could be a setter or getter that connects to a database. 
-A vulnerable class is for example the ch.qos.logback.core.db.DriverManagerConnectionSource. 
-An attacker can choose the URL arbitrarily. By calling getConnection, Server Side Request Forgery (SSRF) and DOS attacks can occur.</p>
-<p>You can find more about this in the following literature:</p>
-<ul>
-<li><a href="https://raw.githubusercontent.com/mbechler/marshalsec/master/marshalsec.pdf">Java Unmarshaller Security - Turning your data into code execution by Moritz Bechler</a></li>
-<li><a href="https://i.blackhat.com/us-18/Thu-August-9/us-18-Haken-Automated-Discovery-of-Deserialization-Gadget-Chains-wp.pdf">Automated Discovery of Deserialization Gadget Chains by Ian Haken</a></li>
-<li><a href="https://frohoff.github.io/appseccali-marshalling-pickles/">Marshalling Pickles by Chris Frohoff and Garbriel Lawrence</a></li>
-</ul>
-</div>
+<p>A fully working example can be found
+here: <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-examples/src/main/java/org/drasyl/example/echo/EchoServerBootstrap.java">EchoServerBootstrap</a></p>
                 
                   
                     
@@ -761,7 +667,7 @@ An attacker can choose the URL arbitrarily. By calling getConnection, Server Sid
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
         
-          <a href="../" title="Overview" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../../getting-started/" title="Getting Started" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-footer-nav__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
             </div>
@@ -770,19 +676,19 @@ An attacker can choose the URL arbitrarily. By calling getConnection, Server Sid
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Overview
+                Getting Started
               </div>
             </div>
           </a>
         
         
-          <a href="../logging/" title="Logging" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../../configuration/" title="Overview" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-footer-nav__title">
               <div class="md-ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Logging
+                Overview
               </div>
             </div>
             <div class="md-footer-nav__button md-icon">
