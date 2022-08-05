@@ -140,7 +140,7 @@ public class TcpClient extends ChannelDuplexHandler {
         resolveSuperPeers();
 
         if (msg instanceof InetAddressedMessage &&
-                superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress((InetSocketAddress) socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
+                superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress(socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
             final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
 

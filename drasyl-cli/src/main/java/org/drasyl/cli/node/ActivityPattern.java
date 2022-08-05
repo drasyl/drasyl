@@ -44,6 +44,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 public class ActivityPattern {
+    private ActivityPattern() {
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(ActivityPattern.class);
 
     @JsonTypeInfo(use = Id.NAME, property = "type")
@@ -53,7 +56,7 @@ public class ActivityPattern {
             @Type(name = "goto", value = GotoActivity.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
-    static interface Activity {
+    interface Activity {
         void perform(final ChannelHandlerContext ctx, final ActivityPatternHandler handler);
     }
 
@@ -112,7 +115,7 @@ public class ActivityPattern {
             LOG.info("[{}] Send peer `{}` message `{}`.", activityIndex, getRecipient(), byteBuf);
             ctx.pipeline().writeAndFlush(new OverlayAddressedMessage<>(byteBuf, getRecipient(), (DrasylAddress) ctx.channel().localAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("[{}] Unable to send peer `{}` message `{}`.", () -> activityIndex, () -> getRecipient(), () -> getPayload(), future::cause);
+                    LOG.warn("[{}] Unable to send peer `{}` message `{}`: `{}`", () -> activityIndex, this::getRecipient, this::getPayload, future::cause);
                 }
             });
             handler.doNextActivity(ctx);
