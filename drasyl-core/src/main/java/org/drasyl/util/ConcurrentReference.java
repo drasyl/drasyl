@@ -31,8 +31,8 @@ import java.util.function.UnaryOperator;
 /**
  * This class wraps an object of type {@code T} and serves as a write many read many memory. The
  * advantage of this class is that all methods are lock free until a given condition is met for a
- * write/update operation. Therefore this class requires less locks than an {@link
- * java.util.concurrent.atomic.AtomicReference}.
+ * write/update operation. Therefore this class requires less locks than an
+ * {@link java.util.concurrent.atomic.AtomicReference}.
  *
  * @param <T> the type of the {@link ConcurrentReference} object
  */
@@ -41,13 +41,13 @@ public class ConcurrentReference<T> {
     private final ReentrantReadWriteLock lock;
     private Optional<T> value;
 
-    private ConcurrentReference(final ReentrantReadWriteLock lock, final Optional<T> value) {
+    private ConcurrentReference(final ReentrantReadWriteLock lock, final T value) {
         this.lock = lock;
-        this.value = value;
+        this.value = Optional.ofNullable(value);
     }
 
     private ConcurrentReference() {
-        this(new ReentrantReadWriteLock(), Optional.empty());
+        this(new ReentrantReadWriteLock(), null);
     }
 
     /**
@@ -67,14 +67,14 @@ public class ConcurrentReference<T> {
      * @return a write many read many memory with the initial value of {@code initialValue}
      */
     public static <T> ConcurrentReference<T> of(final T initialValue) {
-        return new ConcurrentReference<>(new ReentrantReadWriteLock(), Optional.ofNullable(initialValue));
+        return new ConcurrentReference<>(new ReentrantReadWriteLock(), initialValue);
     }
 
     /**
-     * Sets the write many read many memory to the return value of {@code supplier} if {@link
-     * #value} is {@link Objects#isNull(Object)}. Otherwise, nothing happens. Blocks only if the if
-     * {@link #value} is {@link Objects#isNull(Object)} and another thread tries to read or write
-     * concurrently the {@code #value}.
+     * Sets the write many read many memory to the return value of {@code supplier} if
+     * {@link #value} is {@link Objects#isNull(Object)}. Otherwise, nothing happens. Blocks only if
+     * the if {@link #value} is {@link Objects#isNull(Object)} and another thread tries to read or
+     * write concurrently the {@code #value}.
      *
      * @param supplier the value supplier
      * @return the value after applying the {@code supplier} or the old value if not {@code null}
@@ -98,15 +98,15 @@ public class ConcurrentReference<T> {
     }
 
     /**
-     * Sets the write many read many memory to the return value of {@code unaryFunction} if {@link
-     * #value} fulfills the {@code condition}. Otherwise, nothing happens. Blocks only if {@code
-     * condition} is fulfilled and another thread tries to read or write concurrently the {@code
-     * #value}.
+     * Sets the write many read many memory to the return value of {@code unaryFunction} if
+     * {@link #value} fulfills the {@code condition}. Otherwise, nothing happens. Blocks only if
+     * {@code condition} is fulfilled and another thread tries to read or write concurrently the
+     * {@code #value}.
      *
      * @param condition     the condition to test
      * @param unaryFunction the unary function to apply
-     * @return the value after applying the {@code unaryFunction} or the old value if {@code
-     * condition} not fulfilled
+     * @return the value after applying the {@code unaryFunction} or the old value if
+     * {@code condition} not fulfilled
      */
     public Optional<T> computeOnCondition(final Predicate<T> condition,
                                           final UnaryOperator<T> unaryFunction) {

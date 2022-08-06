@@ -65,24 +65,24 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
                                 final JsonRpc2Request request) throws Exception {
         LOG.trace("Got request `{}`.", request);
 
-        final String method = request.getMethod();
-        if ("start".equals(method)) {
-            start(ctx, request);
-        }
-        else if ("shutdown".equals(method)) {
-            shutdown(ctx, request);
-        }
-        else if ("identity".equals(method)) {
-            identity(ctx, request);
-        }
-        else if ("send".equals(method)) {
-            send(ctx, request);
-        }
-        else if ("events".equals(method)) {
-            events(ctx, request);
-        }
-        else {
-            requestMethodNotFound(ctx, request, method);
+        switch (request.getMethod()) {
+            case "start":
+                start(ctx, request);
+                break;
+            case "shutdown":
+                shutdown(ctx, request);
+                break;
+            case "identity":
+                identity(ctx, request);
+                break;
+            case "send":
+                send(ctx, request);
+                break;
+            case "events":
+                events(ctx, request);
+                break;
+            default:
+                requestMethodNotFound(ctx, request, request.getMethod());
         }
     }
 

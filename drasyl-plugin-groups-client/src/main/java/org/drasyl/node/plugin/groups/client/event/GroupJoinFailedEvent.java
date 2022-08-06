@@ -44,8 +44,8 @@ public abstract class GroupJoinFailedEvent implements GroupEvent {
     public abstract Runnable getReJoin();
 
     /**
-     * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is {@code
-     *                              null}
+     * @throws NullPointerException if {@code group}, {@code reason} or {@code reJoin} is
+     *                              {@code null}
      */
     public static GroupJoinFailedEvent of(final Group group,
                                           final GroupJoinFailedMessage.Error reason,
@@ -67,6 +67,6 @@ public abstract class GroupJoinFailedEvent implements GroupEvent {
             return false;
         }
         final GroupJoinFailedEvent that = (GroupJoinFailedEvent) o;
-        return Objects.equals(getGroup(), that.getGroup()) & Objects.equals(getReason(), that.getReason());
+        return Objects.equals(getGroup(), that.getGroup()) && Objects.equals(getReason(), that.getReason());
     }
 }

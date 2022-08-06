@@ -41,17 +41,6 @@ public abstract class Peer {
     public abstract DrasylAddress getAddress();
 
     /**
-     * Returns the peer's public key.
-     *
-     * @return the peer's public key.
-     * @deprecated Use {@link #getAddress()} instead.
-     */
-    @Deprecated(since = "0.6.0", forRemoval = true)
-    public DrasylAddress getIdentityPublicKey() {
-        return getAddress();
-    }
-
-    /**
      * @throws NullPointerException if {@code address} is {@code null}
      */
     public static Peer of(final DrasylAddress address) {

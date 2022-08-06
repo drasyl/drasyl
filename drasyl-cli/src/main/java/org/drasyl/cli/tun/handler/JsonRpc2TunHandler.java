@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.cli.tun.handler;
 
 import io.netty.channel.Channel;
@@ -55,21 +76,21 @@ public class JsonRpc2TunHandler extends JsonRpc2RequestHandler {
                                 final JsonRpc2Request request) throws Exception {
         LOG.trace("Got request `{}`.", request);
 
-        final String method = request.getMethod();
-        if ("routes".equals(method)) {
-            routes(ctx, request);
-        }
-        else if ("addRoute".equals(method)) {
-            addRoute(ctx, request);
-        }
-        else if ("removeRoute".equals(method)) {
-            removeRoute(ctx, request);
-        }
-        else if ("identity".equals(method)) {
-            identity(ctx, request);
-        }
-        else {
-            requestMethodNotFound(ctx, request, method);
+        switch (request.getMethod()) {
+            case "routes":
+                routes(ctx, request);
+                break;
+            case "addRoute":
+                addRoute(ctx, request);
+                break;
+            case "removeRoute":
+                removeRoute(ctx, request);
+                break;
+            case "identity":
+                identity(ctx, request);
+                break;
+            default:
+                requestMethodNotFound(ctx, request, request.getMethod());
         }
     }
 

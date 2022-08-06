@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.util;
 
 import java.util.ArrayList;
@@ -11,14 +32,14 @@ import java.util.Set;
 import java.util.SortedSet;
 
 /**
- * A {@link SortedSet} where elements are ordered using their {@linkplain Comparable natural
- * ordering}, or by a {@link Comparator} provided at set creation time, depending on which
- * constructor is used.
+ * A {@link SortedSet} where elements are ordered using their
+ * {@linkplain Comparable natural ordering}, or by a {@link Comparator} provided at set creation
+ * time, depending on which constructor is used.
  * <p>
  * Unlike {@link java.util.TreeSet}, ordering does not have to be <i>consistent with equals</i>. In
- * other words, {@link java.util.TreeSet} implies that objects are equal if {@link
- * Comparable#compareTo(Object)} returns {@code 0}. In contrast, {@link InconsistentSortedSet} uses
- * {@link Object#equals(Object)} to determine equality.
+ * other words, {@link java.util.TreeSet} implies that objects are equal if
+ * {@link Comparable#compareTo(Object)} returns {@code 0}. In contrast,
+ * {@link InconsistentSortedSet} uses {@link Object#equals(Object)} to determine equality.
  * <p>
  * <strong>Here an example which cannot be handled by {@link java.util.TreeSet} but from
  * {@link InconsistentSortedSet}:</strong><br>Assume the DAO class {@code Person} with attributes
@@ -71,11 +92,11 @@ public class InconsistentSortedSet<E> implements SortedSet<E> {
 
     /**
      * Constructs a new, empty set, ordered according to the given comparator.  All keys inserted
-     * into the map must be <em>mutually comparable</em> by the given comparator: {@code
-     * comparator.compare(k1, k2)} must not throw a {@code ClassCastException} for any elements
-     * {@code k1} and {@code k2} in the set. If the user attempts to put an element into the set
-     * that violates this constraint, the {@code put(Object key, Object value)} call will throw a
-     * {@code ClassCastException}.
+     * into the map must be <em>mutually comparable</em> by the given comparator:
+     * {@code comparator.compare(k1, k2)} must not throw a {@code ClassCastException} for any
+     * elements {@code k1} and {@code k2} in the set. If the user attempts to put an element into
+     * the set that violates this constraint, the {@code put(Object key, Object value)} call will
+     * throw a {@code ClassCastException}.
      *
      * @param comparator the comparator that will be used to order this set. If {@code null}, the
      *                   {@linkplain Comparable natural ordering} of the keys will be used.

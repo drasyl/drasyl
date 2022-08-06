@@ -27,7 +27,7 @@ import java.util.Objects;
 /**
  * This class represents an unsigned integer in a rang of [0, 2^24)
  */
-public class UnsignedMediumInteger {
+public final class UnsignedMediumInteger {
     public static final UnsignedMediumInteger MIN_VALUE = UnsignedMediumInteger.of(new byte[3]);
     public static final UnsignedMediumInteger MAX_VALUE = UnsignedMediumInteger.of(new byte[]{
             (byte) 0xFF,
