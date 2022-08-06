@@ -30,6 +30,9 @@ import java.util.TreeSet;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -123,6 +126,45 @@ class SetUtilTest {
             final SortedSet<String> set = new TreeSet<>();
 
             assertNull(SetUtil.firstElement(set));
+        }
+    }
+
+    @Nested
+    class FirstElements {
+        @Test
+        void shouldReturnFirstNElementsOfASet() {
+            final SortedSet<String> set = new TreeSet<>();
+            set.add("banana");
+            set.add("cherry");
+            set.add("pear");
+
+            final Set<String> subSet = SetUtil.firstElements(set, 2);
+
+            assertThat(subSet, hasSize(2));
+            assertThat(subSet, hasItem(equalTo("banana")));
+            assertThat(subSet, hasItem(equalTo("cherry")));
+        }
+
+        @Test
+        void shouldReturnEmptySetIfZeroElementsAreRequested() {
+            final SortedSet<String> set = new TreeSet<>();
+            set.add("banana");
+            set.add("cherry");
+            set.add("pear");
+
+            final Set<String> subSet = SetUtil.firstElements(set, 0);
+
+            assertThat(subSet, hasSize(0));
+        }
+
+        @Test
+        void shouldThrowExceptionForNegativeN() {
+            final SortedSet<String> set = new TreeSet<>();
+            set.add("banana");
+            set.add("cherry");
+            set.add("pear");
+
+            assertThrows(IllegalArgumentException.class, () -> SetUtil.firstElements(set, -1));
         }
     }
 
