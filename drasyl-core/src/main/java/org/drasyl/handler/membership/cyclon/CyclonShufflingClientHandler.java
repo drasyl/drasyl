@@ -26,6 +26,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.drasyl.channel.OverlayAddressedMessage;
@@ -68,6 +69,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     private final int shuffleInterval;
     private final CyclonView view;
     private OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest;
+    private Future<?> shuffleTask;
 
     /**
      * @param shuffleSize     max. number of neighbors to shuffle (denoted as <i>ℓ</i> in the
@@ -99,14 +101,25 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
-            ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
+            shuffleTask = ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
         }
     }
 
     @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        stopShuffling();
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
+        ctx.executor().scheduleAtFixedRate(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
         ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        stopShuffling();
+        ctx.fireChannelInactive();
     }
 
     @SuppressWarnings("unchecked")
@@ -128,7 +141,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
      */
 
     @SuppressWarnings({ "java:S3655" })
-    private void initiateShuffle(final ChannelHandlerContext ctx) {
+    void initiateShuffle(final ChannelHandlerContext ctx) {
         logger.trace("Start Shuffling...");
 
         // previous shuffle still running? -> shuffle timeout
@@ -171,6 +184,13 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
                 logger.warn("Unable to send the following shuffle request to `{}`:\n{}", shuffleRequest.recipient(), shuffleRequest.content(), future.cause());
             }
         });
+    }
+
+    private void stopShuffling() {
+        if (shuffleTask != null) {
+            shuffleTask.cancel(false);
+            shuffleTask = null;
+        }
     }
 
     private void handleShuffleResponse(final ChannelHandlerContext ctx,

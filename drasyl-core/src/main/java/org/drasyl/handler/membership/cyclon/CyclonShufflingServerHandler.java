@@ -34,6 +34,7 @@ import org.drasyl.identity.DrasylAddress;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -63,6 +64,19 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(CyclonShufflingServerHandler.class);
     private final int shuffleSize;
     private final CyclonView view;
+    private final Function<ChannelHandlerContext, DrasylAddress> localAddressProvider;
+
+    /**
+     * @param shuffleSize max. number of neighbors to shuffle (denoted as <i>ℓ</i> in the paper)
+     * @param view        local peer's (partial) view of the network
+     */
+    CyclonShufflingServerHandler(final int shuffleSize,
+                                 final CyclonView view,
+                                 final Function<ChannelHandlerContext, DrasylAddress> localAddressProvider) {
+        this.shuffleSize = requirePositive(shuffleSize);
+        this.view = requireNonNull(view);
+        this.localAddressProvider = requireNonNull(localAddressProvider);
+    }
 
     /**
      * @param shuffleSize max. number of neighbors to shuffle (denoted as <i>ℓ</i> in the paper)
@@ -70,8 +84,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
      */
     public CyclonShufflingServerHandler(final int shuffleSize,
                                         final CyclonView view) {
-        this.shuffleSize = requirePositive(shuffleSize);
-        this.view = requireNonNull(view);
+        this(shuffleSize, view, ctx -> (DrasylAddress) ctx.channel().localAddress());
     }
 
     /*
@@ -121,7 +134,7 @@ public class CyclonShufflingServerHandler extends SimpleChannelInboundHandler<Ov
         final Set<CyclonNeighbor> receivedNeighbors = new HashSet<>(request.content().getNeighbors());
 
         // 6. Discard entries pointing at Q, and entries already contained in Q's cache.
-        receivedNeighbors.remove(CyclonNeighbor.of((DrasylAddress) ctx.channel().localAddress()));
+        receivedNeighbors.remove(CyclonNeighbor.of(localAddressProvider.apply(ctx)));
         receivedNeighbors.removeAll(view.getNeighbors());
 
         // 7. Update Q’s cache to include all remaining entries, by firstly using empty cache slots
