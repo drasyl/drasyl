@@ -93,6 +93,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      * @param bytes public key
      * @return {@link IdentityPublicKey}
      * @throws NullPointerException if {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
     public static IdentityPublicKey of(final byte[] bytes) {
         return of(ImmutableByteArray.of(bytes));
