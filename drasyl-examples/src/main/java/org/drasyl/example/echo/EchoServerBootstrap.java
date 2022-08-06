@@ -49,7 +49,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @see EchoClient
  * @see EchoServerNode
  */
-@SuppressWarnings("java:S106")
+@SuppressWarnings({ "java:S106", "java:S1166" })
 public class EchoServerBootstrap {
     private static final String IDENTITY = System.getProperty("identity", "echo-server.identity");
 
