@@ -36,7 +36,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * @see <a href="https://doi.org/10.1007/s10922-005-4441-x">CYCLON: Inexpensive Membership
  * Management for Unstructured P2P Overlays</a>
  */
-@SuppressWarnings("java:S106")
+@SuppressWarnings({
+        "java:S106",
+        "java:S109",
+        "java:S110",
+        "java:S2096",
+        "java:S4248",
+        "java:S5867"
+})
 public class CyclonMembershipManagement {
     public static final Scanner SCANNER = new Scanner(System.in, UTF_8);
     private static final String IDENTITY = System.getProperty("identity", "cyclon.identity");

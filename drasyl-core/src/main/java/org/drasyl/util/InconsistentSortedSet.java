@@ -149,6 +149,7 @@ public class InconsistentSortedSet<E> implements SortedSet<E> {
         return modified;
     }
 
+    @SuppressWarnings("java:S2250")
     @Override
     public boolean remove(final Object o) {
         final boolean modified = internalSet.remove(o);
@@ -238,6 +239,7 @@ public class InconsistentSortedSet<E> implements SortedSet<E> {
         return new InconsistentSortedSet<>(internalList.subList(fromIndex, internalList.size()));
     }
 
+    @SuppressWarnings("java:S1166")
     @Override
     public E first() {
         try {
@@ -248,6 +250,7 @@ public class InconsistentSortedSet<E> implements SortedSet<E> {
         }
     }
 
+    @SuppressWarnings("java:S1166")
     @Override
     public E last() {
         try {

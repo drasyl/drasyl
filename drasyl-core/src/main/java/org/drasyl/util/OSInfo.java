@@ -37,6 +37,7 @@ import java.util.function.Function;
  */
 public final class OSInfo {
     private static final Logger LOG = LoggerFactory.getLogger(OSInfo.class);
+    private static final String UNKNOWN = "unknown";
     static volatile boolean lock;
     private final String osName = detectOSName();
     private final String osVersion = detectOSVersion();
@@ -46,7 +47,6 @@ public final class OSInfo {
     private final int availableProcessors = detectAvailableProcessors();
     private final String cpuName = detectCPUName();
     private final long totalMemory = detectTotalMemory();
-    private static final String UNKNOWN = "unknown";
 
     private OSInfo() {
         // util class
