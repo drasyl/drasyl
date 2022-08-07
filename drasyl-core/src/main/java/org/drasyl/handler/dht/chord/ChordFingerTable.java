@@ -1,6 +1,7 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
@@ -12,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
-import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordFingerTable {
@@ -110,7 +110,8 @@ public class ChordFingerTable {
 
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
-            return iAmPreRequest(ctx, value);
+            final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, value);
+            return composeFuture().chain(service.iAmPre());
         }
         else {
             return composeFuture();

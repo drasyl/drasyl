@@ -8,16 +8,12 @@ import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
-import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
-import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 
@@ -45,9 +41,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         }
         else if (msg.content() instanceof FindSuccessor) {
             handleFindSuccessor(ctx, sender, (FindSuccessor) msg.content());
-        }
-        else if (msg.content() instanceof IAmPre) {
-            handleIAmPre(ctx, sender);
         }
         else {
             ctx.fireChannelRead(msg);
@@ -79,26 +72,5 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });
-    }
-
-    private void handleIAmPre(final ChannelHandlerContext ctx,
-                              final DrasylAddress newPredecessorCandidate) {
-        LOG.debug("Notified by `{}`.", newPredecessorCandidate);
-        if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
-            LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
-            fingerTable.setPredecessor(newPredecessorCandidate);
-            // FIXME: wieso hier nicht checken, ob er als geeigneter fingers dient?
-        }
-        else {
-            final long oldpre_id = chordId(fingerTable.getPredecessor());
-            final long local_relative_id = relativeChordId(ctx.channel().localAddress(), oldpre_id);
-            final long newpre_relative_id = relativeChordId(newPredecessorCandidate, oldpre_id);
-            if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
-                LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
-                fingerTable.setPredecessor(newPredecessorCandidate);
-            }
-        }
-
-        ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandidate));
     }
 }

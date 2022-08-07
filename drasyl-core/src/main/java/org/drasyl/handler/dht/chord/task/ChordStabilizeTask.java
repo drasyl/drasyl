@@ -18,7 +18,6 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -132,7 +131,8 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 else {
                                     LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                                     if (!successor.equals(fingerTable.getLocalAddress())) {
-                                        return iAmPreRequest(ctx, successor);
+                                        final ChordService service2 = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, successor);
+                                        return composeFuture().chain(service2.iAmPre());
                                     }
                                     return composeFuture();
                                 }

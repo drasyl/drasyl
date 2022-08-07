@@ -12,9 +12,7 @@ import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
-import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.Notified;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
@@ -76,16 +74,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             buf.writeBytes(((FoundSuccessor) msg.content()).getAddress().toByteArray());
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof IAmPre) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_I_AM_PRE);
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof Notified) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_NOTIFIED);
-            out.add(msg.replace(buf));
-        }
         else {
             throw new EncoderException("Unknown ChordMessage type: " + StringUtil.simpleClassName(msg));
         }
@@ -123,14 +111,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
                     msg.content().readBytes(addressBuffer);
                     out.add(msg.replace(FoundSuccessor.of(IdentityPublicKey.of(addressBuffer))));
-                    break;
-                }
-                case MAGIC_NUMBER_I_AM_PRE: {
-                    out.add(msg.replace(IAmPre.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_NOTIFIED: {
-                    out.add(msg.replace(Notified.of()));
                     break;
                 }
                 default: {

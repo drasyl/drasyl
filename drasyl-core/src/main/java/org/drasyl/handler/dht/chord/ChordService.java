@@ -30,4 +30,6 @@ public interface ChordService {
     Future<DrasylAddress> yourPredecessor();
 
     Future<DrasylAddress> yourSuccessor();
+
+    Future<Void> iAmPre();
 }
