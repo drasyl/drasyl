@@ -5,12 +5,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
@@ -67,7 +67,9 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                    final long id,
                                    final ChannelPromise promise) {
         LOG.debug("checkContactAlive?");
-        keepRequest(ctx, contact).finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
+        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
+        ((MyChordService) service).setCtx(ctx);
+        service.keep().addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
                 // now check

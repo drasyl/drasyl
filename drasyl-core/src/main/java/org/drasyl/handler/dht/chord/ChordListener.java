@@ -4,13 +4,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.dht.chord.message.Alive;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
-import org.drasyl.handler.dht.chord.message.Keep;
 import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
@@ -62,9 +60,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         }
         else if (msg.content() instanceof IAmPre) {
             handleIAmPre(ctx, sender);
-        }
-        else if (msg.content() instanceof Keep) {
-            handleKeep(ctx, sender);
         }
         else {
             ctx.fireChannelRead(msg);
@@ -140,11 +135,5 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         }
 
         ctx.writeAndFlush(new OverlayAddressedMessage<>(Notified.of(), newPredecessorCandidate));
-    }
-
-    private void handleKeep(final ChannelHandlerContext ctx, final DrasylAddress sender) {
-        final OverlayAddressedMessage<Alive> response = new OverlayAddressedMessage<>(Alive.of(), sender);
-        LOG.debug("Send `{}` to `{}`.", response.content(), response.recipient());
-        ctx.writeAndFlush(response);
     }
 }

@@ -2,6 +2,9 @@ package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordService;
+import org.drasyl.handler.dht.chord.MyChordService;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
@@ -10,7 +13,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
-import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
@@ -59,7 +61,9 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("{}th finger {} is closest preceding finger of {}.", i, chordIdHex(ithFingerId), chordIdHex(findId));
                         LOG.debug("Check if it is still alive.");
 
-                        return keepRequest(ctx, ithFinger)
+                        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, ithFinger);
+                        ((MyChordService) service).setCtx(ctx);
+                        return composeFuture().chain(service.keep())
                                 .chain(future2 -> {
                                     //it is alive, return it
                                     if (future2.isSuccess()) {

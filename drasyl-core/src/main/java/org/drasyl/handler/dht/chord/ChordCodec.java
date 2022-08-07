@@ -1,19 +1,18 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.dht.chord.message.Alive;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
-import org.drasyl.handler.dht.chord.message.Keep;
 import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
@@ -24,6 +23,7 @@ import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
 
+import java.net.SocketAddress;
 import java.util.List;
 
 /**
@@ -47,6 +47,12 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
     public static final int MAGIC_NUMBER_ALIVE = -256235087;
     // magic number: 4 bytes
     public static final int MIN_MESSAGE_LENGTH = 4;
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean acceptOutboundMessage(Object msg) {
+        return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ChordMessage;
+    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -118,19 +124,15 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             buf.writeInt(MAGIC_NUMBER_NOTIFIED);
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof Keep) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_KEEP);
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof Alive) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_ALIVE);
-            out.add(msg.replace(buf));
-        }
         else {
             throw new EncoderException("Unknown ChordMessage type: " + StringUtil.simpleClassName(msg));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ByteBuf;
     }
 
     @Override
@@ -195,14 +197,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                 }
                 case MAGIC_NUMBER_NOTIFIED: {
                     out.add(msg.replace(Notified.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_KEEP: {
-                    out.add(msg.replace(Keep.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_ALIVE: {
-                    out.add(msg.replace(Alive.of()));
                     break;
                 }
                 default: {

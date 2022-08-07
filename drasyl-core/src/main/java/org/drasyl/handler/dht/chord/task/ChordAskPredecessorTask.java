@@ -5,12 +5,14 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordService;
+import org.drasyl.handler.dht.chord.MyChordService;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.dht.chord.requester.ChordKeepRequester.keepRequest;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -76,7 +78,9 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                keepRequest(ctx, fingerTable.getPredecessor()).finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
+                final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, fingerTable.getPredecessor());
+                ((MyChordService) service).setCtx(ctx);
+                service.keep().addListener((FutureListener<Void>) future -> {
                     if (!future.isSuccess()) {
                         // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");
