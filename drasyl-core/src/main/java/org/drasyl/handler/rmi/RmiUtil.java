@@ -104,7 +104,7 @@ final class RmiUtil {
             for (int i = 0; i < parameterTypes.length; i++) {
                 Class<?> parameterType = getAutoboxedType(parameterTypes[i]);
                 final Class<?> argClazz = args[i].getClass();
-                if (!parameterType.equals(argClazz)) {
+                if (!parameterType.equals(argClazz) && !(parameterType == Long.class && argClazz == Integer.class)) {
                     throw new IOException("Expected argument " + i + " to be of type " + parameterType + ", but was " + argClazz + ".");
                 }
             }

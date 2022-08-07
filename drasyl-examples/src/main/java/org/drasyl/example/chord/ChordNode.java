@@ -74,8 +74,8 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiServerHandler server = new RmiServerHandler();
-                        server.bind("ChordService", new MyChordService(fingerTable));
                         final RmiClientHandler client = new RmiClientHandler();
+                        server.bind("ChordService", new MyChordService(fingerTable, client));
 
                         p.addLast(new ChordCodec());
                         p.addLast(new ChordStabilizeTask(fingerTable, 500));

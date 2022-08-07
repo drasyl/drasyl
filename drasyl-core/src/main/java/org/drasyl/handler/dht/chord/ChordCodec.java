@@ -9,10 +9,8 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
-import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
-import org.drasyl.handler.dht.chord.message.MyClosest;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
@@ -50,19 +48,7 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<ChordMessage> msg,
                           final List<Object> out) throws Exception {
-        if (msg.content() instanceof Closest) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_CLOSEST);
-            buf.writeLong(((Closest) msg.content()).getId());
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof MyClosest) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_MY_CLOSEST);
-            buf.writeBytes(((MyClosest) msg.content()).getAddress().toByteArray());
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof FindSuccessor) {
+        if (msg.content() instanceof FindSuccessor) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_FIND_SUCCESSOR);
             buf.writeLong(((FindSuccessor) msg.content()).getId());
@@ -93,16 +79,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             msg.content().markReaderIndex();
             final int magicNumber = msg.content().readInt();
             switch (magicNumber) {
-                case MAGIC_NUMBER_CLOSEST: {
-                    out.add(msg.replace(Closest.of(msg.content().readLong())));
-                    break;
-                }
-                case MAGIC_NUMBER_MY_CLOSEST: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(MyClosest.of(IdentityPublicKey.of(addressBuffer))));
-                    break;
-                }
                 case MAGIC_NUMBER_FIND_SUCCESSOR: {
                     out.add(msg.replace(FindSuccessor.of(msg.content().readLong())));
                     break;

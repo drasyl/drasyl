@@ -1,6 +1,5 @@
 package org.drasyl.handler.dht.chord.helper;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordService;
 import org.drasyl.handler.dht.chord.ChordUtil;
@@ -28,8 +27,7 @@ public final class ChordFindSuccessorHelper {
         // util class
     }
 
-    public static FutureComposer<DrasylAddress> findSuccessor(final ChannelHandlerContext ctx,
-                                                              final long id,
+    public static FutureComposer<DrasylAddress> findSuccessor(final long id,
                                                               final ChordFingerTable fingerTable,
                                                               final RmiClientHandler client) {
         LOG.debug("Find successor of `{}`.", ChordUtil.chordIdHex(id));
@@ -39,7 +37,7 @@ public final class ChordFindSuccessorHelper {
 
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", ChordUtil.chordIdHex(id));
 
-        return findPredecessor(ctx, id, fingerTable, client)
+        return findPredecessor(id, fingerTable, client)
                 .chain(future -> {
                     final DrasylAddress pre = future.getNow();
                     // if other node found, ask it for its successor

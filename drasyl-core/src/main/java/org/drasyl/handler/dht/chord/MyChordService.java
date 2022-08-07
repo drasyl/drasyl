@@ -21,11 +21,13 @@
  */
 package org.drasyl.handler.dht.chord;
 
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
 import org.drasyl.handler.rmi.RmiCaller;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -33,16 +35,20 @@ import org.drasyl.util.logging.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
+import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 
 public class MyChordService implements ChordService {
     private static final Logger LOG = LoggerFactory.getLogger(MyChordService.class);
     @RmiCaller
     private DrasylAddress caller;
-    private ChannelHandlerContext ctx;
+    //private ChannelHandlerContext ctx;
     private final ChordFingerTable fingerTable;
+    private final RmiClientHandler client;
+    private final EventLoopGroup group = new NioEventLoopGroup();
 
-    public MyChordService(final ChordFingerTable fingerTable) {
+    public MyChordService(final ChordFingerTable fingerTable, RmiClientHandler client) {
         this.fingerTable = requireNonNull(fingerTable);
+        this.client = requireNonNull(client);
     }
 
     @Override
@@ -74,14 +80,14 @@ public class MyChordService implements ChordService {
     public Future<Void> iAmPre() {
         final DrasylAddress newPredecessorCandidate = caller;
         LOG.debug("Notified by `{}`.", newPredecessorCandidate);
-        if (!fingerTable.hasPredecessor() || ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+        if (!fingerTable.hasPredecessor() || fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
             LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
             fingerTable.setPredecessor(newPredecessorCandidate);
             // FIXME: wieso hier nicht checken, ob er als geeigneter fingers dient?
         }
         else {
             final long oldpre_id = chordId(fingerTable.getPredecessor());
-            final long local_relative_id = relativeChordId(ctx.channel().localAddress(), oldpre_id);
+            final long local_relative_id = relativeChordId(fingerTable.getLocalAddress(), oldpre_id);
             final long newpre_relative_id = relativeChordId(newPredecessorCandidate, oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
                 LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
@@ -90,5 +96,10 @@ public class MyChordService implements ChordService {
         }
 
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
+    }
+
+    @Override
+    public Future<DrasylAddress> closest(final long id) {
+        return closestPrecedingFinger(id, fingerTable, client).finish(group.next());
     }
 }
