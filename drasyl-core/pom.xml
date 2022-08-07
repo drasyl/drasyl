@@ -83,6 +83,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- CBOR (de)serialization (required by RmiUtil) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Test Dependencies -->
 
         <!-- unit tests frameworks -->
