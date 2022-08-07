@@ -51,4 +51,14 @@ public class MyChordService implements ChordService {
             return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
         }
     }
+
+    @Override
+    public Future<DrasylAddress> yourSuccessor() {
+        if (fingerTable.hasSuccessor()) {
+            return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, fingerTable.getSuccessor());
+        }
+        else {
+            return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
+        }
+    }
 }

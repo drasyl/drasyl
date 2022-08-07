@@ -28,4 +28,6 @@ public interface ChordService {
     Future<Void> keep();
 
     Future<DrasylAddress> yourPredecessor();
+
+    Future<DrasylAddress> yourSuccessor();
 }

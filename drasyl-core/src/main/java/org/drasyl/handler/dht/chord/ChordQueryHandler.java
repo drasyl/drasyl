@@ -11,7 +11,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
@@ -87,18 +86,20 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
 
         final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
         composeFuture().chain(service.yourPredecessor())
-                .chain(future -> requestSuccessor(ctx, contact)
-                        .chain(future1 -> {
-                            final DrasylAddress predecessor = future.getNow();
-                            final DrasylAddress successor = future1.getNow();
-                            if (predecessor == null || successor == null) {
-                                this.promise = null;
-                                promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
-                                return composeFuture(false);
-                            }
+                .chain(future -> {
+                    return composeFuture().chain(service.yourSuccessor())
+                            .chain(future1 -> {
+                                final DrasylAddress predecessor = future.getNow();
+                                final DrasylAddress successor = future1.getNow();
+                                if (predecessor == null || successor == null) {
+                                    this.promise = null;
+                                    promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
+                                    return composeFuture(false);
+                                }
 
-                            return composeFuture(predecessor.equals(contact) == successor.equals(contact));
-                        }))
+                                return composeFuture(predecessor.equals(contact) == successor.equals(contact));
+                            });
+                })
                 .finish(ctx.executor())
                 .addListener((FutureListener<Boolean>) future -> {
                     if (future.isSuccess()) {

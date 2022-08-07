@@ -14,10 +14,7 @@ import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.MySuccessor;
-import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
-import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
 
 import java.net.SocketAddress;
@@ -65,22 +62,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_MY_CLOSEST);
             buf.writeBytes(((MyClosest) msg.content()).getAddress().toByteArray());
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof YourSuccessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_YOUR_SUCCESSOR);
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof MySuccessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_MY_SUCCESSOR);
-            buf.writeBytes(((MySuccessor) msg.content()).getAddress().toByteArray());
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof NothingSuccessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_NOTHING_SUCCESSOR);
             out.add(msg.replace(buf));
         }
         else if (msg.content() instanceof FindSuccessor) {
@@ -132,20 +113,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                     final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
                     msg.content().readBytes(addressBuffer);
                     out.add(msg.replace(MyClosest.of(IdentityPublicKey.of(addressBuffer))));
-                    break;
-                }
-                case MAGIC_NUMBER_YOUR_SUCCESSOR: {
-                    out.add(msg.replace(YourSuccessor.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_MY_SUCCESSOR: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(MySuccessor.of(IdentityPublicKey.of(addressBuffer))));
-                    break;
-                }
-                case MAGIC_NUMBER_NOTHING_SUCCESSOR: {
-                    out.add(msg.replace(NothingSuccessor.of()));
                     break;
                 }
                 case MAGIC_NUMBER_FIND_SUCCESSOR: {

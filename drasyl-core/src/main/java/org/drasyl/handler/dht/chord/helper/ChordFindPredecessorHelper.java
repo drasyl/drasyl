@@ -2,7 +2,9 @@ package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordService;
 import org.drasyl.handler.dht.chord.ChordUtil;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
@@ -14,7 +16,6 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 import static org.drasyl.handler.dht.chord.requester.ChordClosestRequester.requestClosest;
-import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
@@ -100,7 +101,8 @@ public final class ChordFindPredecessorHelper {
                     final DrasylAddress closest = future.getNow();
                     // if fail to get response, set currentNode to most recently
                     if (closest == null) {
-                        return requestSuccessor(ctx, mostRecentlyAlive)
+                        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, mostRecentlyAlive);
+                        return composeFuture().chain(service.yourSuccessor())
                                 .chain(future1 -> {
                                     final DrasylAddress mostRecentlysSuccessor = future1.getNow();
                                     if (mostRecentlysSuccessor == null) {
@@ -129,7 +131,8 @@ public final class ChordFindPredecessorHelper {
                                                                           final DrasylAddress currentNode,
                                                                           final ChordFingerTable fingerTable,
                                                                           final DrasylAddress closest) {
-        return requestSuccessor(ctx, closest)
+        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, closest);
+        return composeFuture().chain(service.yourSuccessor())
                 .chain(future -> {
                     final DrasylAddress closestsSuccessor = future.getNow();
                     // if we can get its response, then "closest" must be our next currentNode
@@ -146,7 +149,8 @@ public final class ChordFindPredecessorHelper {
                     }
                     // else currentNode sticks, ask currentNode's successor
                     else {
-                        return requestSuccessor(ctx, currentNode);
+                        final ChordService service2 = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, currentNode);
+                        return composeFuture().chain(service2.yourSuccessor());
                     }
                 });
     }

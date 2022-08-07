@@ -10,10 +10,7 @@ import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.MySuccessor;
-import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
-import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -46,9 +43,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         if (msg.content() instanceof Closest) {
             handleClosest(ctx, sender, (Closest) msg.content());
         }
-        else if (msg.content() instanceof YourSuccessor) {
-            handleYourSuccessor(ctx, sender);
-        }
         else if (msg.content() instanceof FindSuccessor) {
             handleFindSuccessor(ctx, sender, (FindSuccessor) msg.content());
         }
@@ -74,17 +68,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
             ctx.writeAndFlush(response);
         });
-    }
-
-    private void handleYourSuccessor(final ChannelHandlerContext ctx, final DrasylAddress sender) {
-        if (fingerTable.hasSuccessor()) {
-            final OverlayAddressedMessage<MySuccessor> response = new OverlayAddressedMessage<>(MySuccessor.of(fingerTable.getSuccessor()), sender);
-            ctx.writeAndFlush(response);
-        }
-        else {
-            final OverlayAddressedMessage<NothingSuccessor> response = new OverlayAddressedMessage<>(NothingSuccessor.of(), sender);
-            ctx.writeAndFlush(response);
-        }
     }
 
     private void handleFindSuccessor(final ChannelHandlerContext ctx,
