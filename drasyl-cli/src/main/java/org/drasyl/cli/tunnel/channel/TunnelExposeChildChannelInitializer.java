@@ -21,10 +21,11 @@
  */
 package org.drasyl.cli.tunnel.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
 import org.drasyl.cli.tunnel.handler.ExposeDrasylHandler;
@@ -48,7 +49,7 @@ import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 
-public class TunnelExposeChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
@@ -62,6 +63,7 @@ public class TunnelExposeChildChannelInitializer extends ChannelInitializer<Dras
                                                final Identity identity,
                                                final String password,
                                                final Service service) {
+        super(false);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
@@ -72,9 +74,15 @@ public class TunnelExposeChildChannelInitializer extends ChannelInitializer<Dras
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
-
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        super.initChannel(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
 
         // add ARQ to make sure messages arrive
         p.addLast(new GoBackNArqCodec());
@@ -89,5 +97,12 @@ public class TunnelExposeChildChannelInitializer extends ChannelInitializer<Dras
         p.addLast(new ExposeDrasylHandler(password, service.getTcp()));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
+
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        new Exception("The exposing node did not respond within " + handshakeTimeoutMillis + "ms. Try again later.", cause).printStackTrace(err);
+        ctx.channel().close();
+        exitCode.trySet(1);
     }
 }

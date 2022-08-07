@@ -41,8 +41,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 /**
  * Performs the Go-Back-N ARQ protocol.
  * <p>
- * It also updates the {@linkplain Channel#isWritable() writability} of the associated {@link
- * Channel}. This update allows pending write operations to determine the writability.
+ * It also updates the {@linkplain Channel#isWritable() writability} of the associated
+ * {@link Channel}. This update allows pending write operations to determine the writability.
  * <p>
  * This handler changes the behavior of the {@link io.netty.util.concurrent.Promise}s returned by
  * {@link io.netty.channel.ChannelHandlerContext#write(Object)}: The promise is not complemented
@@ -57,8 +57,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * <p>
  * This handler tries to automatically synchronize the sequence numbers.
  * <p>
- * This handler should be used together with {@link GoBackNArqCodec} and {@link
- * ByteToGoBackNArqDataCodec}.
+ * This handler should be used together with {@link GoBackNArqCodec} and
+ * {@link ByteToGoBackNArqDataCodec}.
  * <blockquote>
  * <pre>
  *  {@link ChannelPipeline} p = ...;
@@ -168,6 +168,7 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
+        //noinspection unchecked
         LOG.trace("[{}] Used windows size of {} and retry timeout of {}ms", ctx.channel()::id, () -> windowSize, retryTimeout::toMillis);
         if (windowShouldAffectWritability) {
             this.window = new PendingQueueWindow(ctx, windowSize);
@@ -176,12 +177,21 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             this.window = new SimpleWindow(windowSize);
         }
         this.overflow = new PendingWriteQueue(ctx);
+
+        if (ctx.channel().isActive()) {
+            // try to synchronize sequence numbers
+            synchronizeSequenceNumbers(ctx);
+        }
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        ctx.fireChannelActive();
         // try to synchronize sequence numbers
+        synchronizeSequenceNumbers(ctx);
+        ctx.fireChannelActive();
+    }
+
+    private void synchronizeSequenceNumbers(final ChannelHandlerContext ctx) {
         ctx.writeAndFlush(new GoBackNArqRst());
         ackTask(ctx);
     }
@@ -216,6 +226,7 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             ackRequired = true;
 
             if (!data.sequenceNo().equals(nextInboundSequenceNo)) {
+                //noinspection unchecked
                 LOG.trace("[{}] Got unexpected data {}. Expected {}. Drop it.", ctx.channel().id()::asShortText, () -> data, () -> nextInboundSequenceNo);
                 data.release();
             }
@@ -292,8 +303,8 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * We have to remove {@code cumAck} elements from our {@link #window} and add up to {@code
-     * cumAck} elements from {@link #overflow} to {@link #window}.
+     * We have to remove {@code cumAck} elements from our {@link #window} and add up to
+     * {@code cumAck} elements from {@link #overflow} to {@link #window}.
      *
      * @param ctx    the handler context
      * @param cumAck the amount of acknowledged packages

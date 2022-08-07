@@ -51,7 +51,8 @@ class GoBackNArqHandlerTest {
         @Test
         void senderShouldActCorrectly() {
             final ChannelHandler handler = new GoBackNArqHandler(1, Duration.ofMillis(100), Duration.ofMillis(10));
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            channel.pipeline().addLast(handler);
 
             final GoBackNArqData data0 = new GoBackNArqData(Unpooled.buffer());
             final GoBackNArqData data1 = new GoBackNArqData(Unpooled.buffer());
@@ -91,7 +92,8 @@ class GoBackNArqHandlerTest {
         @Test
         void senderShouldStopTimer() {
             final ChannelHandler handler = new GoBackNArqHandler(1, Duration.ofMillis(100), Duration.ofMillis(10));
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            channel.pipeline().addLast(handler);
 
             final GoBackNArqData data0 = new GoBackNArqData(Unpooled.buffer());
 
@@ -122,7 +124,8 @@ class GoBackNArqHandlerTest {
         void senderShouldActCorrectlyOnOverflow() {
             final ChannelHandler handler = new GoBackNArqHandler(2, Duration.ofMillis(100),
                     UnsignedInteger.MAX_VALUE.decrement(), UnsignedInteger.MIN_VALUE, UnsignedInteger.MIN_VALUE, true, Duration.ofMillis(10));
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            channel.pipeline().addLast(handler);
 
             final GoBackNArqData data0 = new GoBackNArqData(Unpooled.buffer());
             final GoBackNArqData data1 = new GoBackNArqData(Unpooled.buffer());
@@ -156,7 +159,8 @@ class GoBackNArqHandlerTest {
         @Test
         void senderShouldDropWrongAck() {
             final ChannelHandler handler = new GoBackNArqHandler(1, Duration.ofMillis(100), Duration.ofMillis(10));
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            channel.pipeline().addLast(handler);
 
             final GoBackNArqData data0 = new GoBackNArqData(Unpooled.buffer());
 
@@ -179,7 +183,8 @@ class GoBackNArqHandlerTest {
         @Test
         void senderShouldSkipCanceledMessage() {
             final ChannelHandler handler = new GoBackNArqHandler(1, Duration.ofMillis(100), Duration.ofMillis(10));
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            channel.pipeline().addLast(handler);
 
             final GoBackNArqData data0 = new GoBackNArqData(Unpooled.buffer());
             final GoBackNArqData data1 = new GoBackNArqData(Unpooled.buffer());

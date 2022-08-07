@@ -21,15 +21,15 @@
  */
 package org.drasyl.cli.perf.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
@@ -45,7 +45,7 @@ import java.time.Duration;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer.ARQ_RETRY_TIMEOUT;
 
-public class PerfClientChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class PerfClientChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(PerfClientChildChannelInitializer.class);
     public static final int REQUEST_TIMEOUT_MILLIS = 10_000;
     private final PrintStream out;
@@ -61,6 +61,7 @@ public class PerfClientChildChannelInitializer extends ChannelInitializer<Drasyl
                                              final IdentityPublicKey server,
                                              final boolean waitForDirectConnection,
                                              final SessionRequest sessionRequest) {
+        super(true);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -70,30 +71,44 @@ public class PerfClientChildChannelInitializer extends ChannelInitializer<Drasyl
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) throws CryptoException {
+    protected void initChannel(final DrasylChannel ch) throws Exception {
         if (!server.equals(ch.remoteAddress())) {
             LOG.debug("Close channel for peer `{}` that is not my server.", ch.remoteAddress());
             ch.close();
             return;
         }
 
+        // close parent as well
+        ch.closeFuture().addListener(f -> ch.parent().close());
+
+        super.initChannel(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
         // fast (de)serializer for Probe messages
         p.addLast(new ProbeCodec());
 
         // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+        p.addLast(new GoBackNArqCodec());
+        p.addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
+        p.addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
 
+        // perf
         p.addLast(new PerfSessionRequestorHandler(out, sessionRequest, REQUEST_TIMEOUT_MILLIS, waitForDirectConnection));
-        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
 
-        // close parent as well
-        ch.closeFuture().addListener(f -> ch.parent().close());
+        p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
+
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        new Exception("Unable to connect to server.", cause).printStackTrace(err);
+        ctx.channel().close();
+        exitCode.trySet(1);
     }
 }
