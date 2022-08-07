@@ -47,8 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConnectionHandshakeHandlerIT {
-    private static final float LOSS_RATE = 0.5f;
-    private static final int MAX_DROP = 10;
+    private static final float LOSS_RATE = 0.2f;
+    private static final int MAX_DROP = 3;
 
     @Test
     void passiveOpenCompleted() throws Exception {

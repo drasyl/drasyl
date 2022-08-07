@@ -21,13 +21,13 @@
  */
 package org.drasyl.cli.wormhole.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
@@ -50,9 +50,8 @@ import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitialize
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveChildChannelInitializer.class);
-    public static final int REQUEST_TIMEOUT_MILLIS = 10_000;
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -68,6 +67,7 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
                                                   final IdentityPublicKey sender,
                                                   final String password,
                                                   final long ackInterval) {
+        super(true);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -78,17 +78,26 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) throws CryptoException {
+    protected void initChannel(final DrasylChannel ch) throws Exception {
         if (!sender.equals(ch.remoteAddress())) {
             LOG.debug("Close channel for peer `{}` that is not the wormhole sender.", ch.remoteAddress());
             ch.close();
             return;
         }
 
-        final ChannelPipeline p = ch.pipeline();
+        // close parent as well
+        ch.closeFuture().addListener(f -> ch.parent().close());
 
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        super.initChannel(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
 
         // add ARQ to make sure messages arrive
         ch.pipeline().addLast(new GoBackNArqCodec());
@@ -98,11 +107,15 @@ public class WormholeReceiveChildChannelInitializer extends ChannelInitializer<D
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
-        p.addLast(new WormholeReceiver(out, password, REQUEST_TIMEOUT_MILLIS));
+        p.addLast(new WormholeReceiver(out, password));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
 
-        // close parent as well
-        ch.closeFuture().addListener(f -> ch.parent().close());
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        new Exception("The sender did not respond within " + handshakeTimeoutMillis + "ms. Try again later.", cause).printStackTrace(err);
+        ctx.channel().close();
+        exitCode.trySet(1);
     }
 }

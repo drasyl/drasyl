@@ -21,10 +21,11 @@
  */
 package org.drasyl.cli.tunnel.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
@@ -45,14 +46,14 @@ import java.io.PrintStream;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
-import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARQ_RETRY_TIMEOUT;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
-public class TunnelConsumeChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class TunnelConsumeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(TunnelConsumeChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;
@@ -69,6 +70,7 @@ public class TunnelConsumeChildChannelInitializer extends ChannelInitializer<Dra
                                                 final IdentityPublicKey exposer,
                                                 final String password,
                                                 final int port) {
+        super(true);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -81,15 +83,24 @@ public class TunnelConsumeChildChannelInitializer extends ChannelInitializer<Dra
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
         if (!exposer.equals(ch.remoteAddress())) {
-            LOG.trace("Close channel for peer `{}` that is not the service exposer.", ch.remoteAddress());
+            LOG.trace("Close channel for peer `{}` that is not the tunnel exposer.", ch.remoteAddress());
             ch.close();
             return;
         }
 
-        final ChannelPipeline p = ch.pipeline();
+        // close parent as well
+        ch.closeFuture().addListener(f -> ch.parent().close());
 
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        super.initChannel(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
 
         // add ARQ to make sure messages arrive
         p.addLast(new GoBackNArqCodec());
@@ -104,8 +115,12 @@ public class TunnelConsumeChildChannelInitializer extends ChannelInitializer<Dra
         p.addLast(new ConsumeDrasylHandler(out, port, exposer, password));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
 
-        // close parent as well
-        ch.closeFuture().addListener(f -> ch.parent().close());
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        cause.printStackTrace(err);
+        ctx.channel().close();
+        exitCode.trySet(1);
     }
 }

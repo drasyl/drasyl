@@ -60,6 +60,10 @@ public class WormholeFileSender extends AbstractWormholeSender {
     protected void transferPayload(final ChannelHandlerContext ctx) {
         out.println("Sending file (" + numberToHumanData(file.length()) + "): " + file.getName());
 
+        ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
+        ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
+        ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
+
         ctx.writeAndFlush(new FileMessage(file.getName(), file.length())).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
                 final ChunkedFile chunkedFile = new ChunkedFile(file, CHUNK_SIZE);
@@ -78,10 +82,6 @@ public class WormholeFileSender extends AbstractWormholeSender {
                 f.channel().pipeline().fireExceptionCaught(f.cause());
             }
         });
-
-        ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
-        ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
-        ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
         ctx.pipeline().remove(ctx.name());
     }
 
