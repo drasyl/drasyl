@@ -30,7 +30,7 @@ public final class ChordClosestPrecedingFingerHelper {
                                                                        final long findId,
                                                                        final ChordFingerTable fingerTable) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdHex(findId));
-        final long myId = chordId(ctx.channel().localAddress());
+        final long myId = chordId(fingerTable.getLocalAddress());
         final long findIdRelativeId = relativeChordId(findId, myId);
 
         // check from last item in finger table
@@ -45,7 +45,7 @@ public final class ChordClosestPrecedingFingerHelper {
                                                              final ChordFingerTable fingerTable) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdHex(findId));
-            return composeFuture((DrasylAddress) ctx.channel().localAddress());
+            return composeFuture(fingerTable.getLocalAddress());
         }
         else {
             return composeFuture(fingerTable.get(i)).chain(future -> {

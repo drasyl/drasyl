@@ -52,6 +52,10 @@ public class ChordFingerTable {
         return sb.toString();
     }
 
+    public DrasylAddress getLocalAddress() {
+        return localAddress;
+    }
+
     public DrasylAddress get(final int i) {
         return entries[i - 1];
     }

@@ -34,7 +34,7 @@ public final class ChordFindPredecessorHelper {
                                                                 final long findId,
                                                                 final ChordFingerTable fingerTable) {
         LOG.debug("Find predecessor of `{}`", ChordUtil.chordIdHex(findId));
-        final DrasylAddress myAddress = (DrasylAddress) ctx.channel().localAddress();
+        final DrasylAddress myAddress = fingerTable.getLocalAddress();
         final DrasylAddress mySuccessor = fingerTable.getSuccessor();
         final long findIdRelativeId = relativeChordId(findId, myAddress);
         long mySuccessorRelativeId;
@@ -45,7 +45,7 @@ public final class ChordFindPredecessorHelper {
             mySuccessorRelativeId = relativeChordId(mySuccessor, myAddress);
         }
 
-        return recursive(ctx, findId, myAddress, findIdRelativeId, mySuccessorRelativeId, (DrasylAddress) ctx.channel().localAddress(), fingerTable);
+        return recursive(ctx, findId, myAddress, findIdRelativeId, mySuccessorRelativeId, fingerTable.getLocalAddress(), fingerTable);
     }
 
     private static FutureComposer<DrasylAddress> recursive(final ChannelHandlerContext ctx,
@@ -60,7 +60,7 @@ public final class ChordFindPredecessorHelper {
         }
 
         // if current node is local node, find my closest
-        if (Objects.equals(currentNode, ctx.channel().localAddress())) {
+        if (Objects.equals(currentNode, fingerTable.getLocalAddress())) {
             return findMyClosest(ctx, findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
         }
         // else current node is remote node, sent request to it for its closest
@@ -104,7 +104,7 @@ public final class ChordFindPredecessorHelper {
                                 .chain(future1 -> {
                                     final DrasylAddress mostRecentlysSuccessor = future1.getNow();
                                     if (mostRecentlysSuccessor == null) {
-                                        return composeFuture((DrasylAddress) ctx.channel().localAddress());
+                                        return composeFuture(fingerTable.getLocalAddress());
                                     }
                                     return recursive(ctx, findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
                                 });

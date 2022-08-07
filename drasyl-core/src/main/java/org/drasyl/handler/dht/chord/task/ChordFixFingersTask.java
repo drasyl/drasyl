@@ -80,7 +80,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             // no randomness for debugging
             counter = ++counter % 31;
             final int i = counter + 2;
-            final long id = ChordUtil.ithFingerStart(chordId(ctx.channel().localAddress()), i);
+            final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
             findSuccessor(ctx, id, fingerTable)
                     .chain(future -> {

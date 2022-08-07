@@ -54,10 +54,10 @@ public final class ChordDeleteSuccessorHelper {
                     // if successor is still null or local node,
                     // and the predecessor is another node, keep asking
                     // it's predecessor until find local node's new successor
-                    if ((successor2 == null || ctx.channel().localAddress().equals(successor2)) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+                    if ((successor2 == null || fingerTable.getLocalAddress().equals(successor2)) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
                         final DrasylAddress predecessor = fingerTable.getPredecessor();
 
-                        return findNewSuccessor(ctx, predecessor, successor2)
+                        return findNewSuccessor(ctx, predecessor, successor2, fingerTable)
                                 // update successor
                                 .chain(() -> fingerTable.updateIthFinger(ctx, 1, predecessor));
                     }
@@ -83,7 +83,8 @@ public final class ChordDeleteSuccessorHelper {
 
     private static FutureComposer<DrasylAddress> findNewSuccessor(final ChannelHandlerContext ctx,
                                                                   final DrasylAddress peer,
-                                                                  final DrasylAddress successor) {
+                                                                  final DrasylAddress successor,
+                                                                  final ChordFingerTable fingerTable) {
         return requestPredecessor(ctx, peer)
                 .chain(future -> {
                     DrasylAddress predecessor = future.getNow();
@@ -94,12 +95,12 @@ public final class ChordDeleteSuccessorHelper {
                     // if p's predecessor is node is just deleted,
                     // or itself (nothing found in predecessor), or local address,
                     // p is current node's new successor, break
-                    if (predecessor.equals(peer) || predecessor.equals(ctx.channel().localAddress()) || predecessor.equals(successor)) {
+                    if (predecessor.equals(peer) || predecessor.equals(fingerTable.getLocalAddress()) || predecessor.equals(successor)) {
                         return composeFuture(peer);
                     }
                     // else, keep asking
                     else {
-                        return findNewSuccessor(ctx, predecessor, successor);
+                        return findNewSuccessor(ctx, predecessor, successor, fingerTable);
                     }
                 });
     }

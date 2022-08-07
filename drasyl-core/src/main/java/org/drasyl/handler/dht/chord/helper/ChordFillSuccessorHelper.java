@@ -25,7 +25,7 @@ public final class ChordFillSuccessorHelper {
         LOG.debug("Try to fill successor with candidates in finger table or even predecessor.");
         final DrasylAddress successor = fingerTable.getSuccessor();
         final FutureComposer<Void> future;
-        if (successor == null || successor.equals(ctx.channel().localAddress())) {
+        if (successor == null || successor.equals(fingerTable.getLocalAddress())) {
             future = findSuccessorStartingFromIthFinger(ctx, 2, fingerTable);
         }
         else {
@@ -34,7 +34,7 @@ public final class ChordFillSuccessorHelper {
 
         return future.chain(() -> {
             final DrasylAddress successor2 = fingerTable.getSuccessor();
-            if ((successor2 == null || successor2.equals(ctx.channel().localAddress())) && fingerTable.hasPredecessor() && !ctx.channel().localAddress().equals(fingerTable.getPredecessor())) {
+            if ((successor2 == null || successor2.equals(fingerTable.getLocalAddress())) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
                 return fingerTable.updateIthFinger(ctx, 1, fingerTable.getPredecessor());
             }
             else {
@@ -48,7 +48,7 @@ public final class ChordFillSuccessorHelper {
                                                                            final ChordFingerTable fingerTable) {
         if (i <= Integer.SIZE) {
             final DrasylAddress ithFinger = fingerTable.get(i);
-            if (ithFinger != null && !ithFinger.equals(ctx.channel().localAddress())) {
+            if (ithFinger != null && !ithFinger.equals(fingerTable.getLocalAddress())) {
                 return updateFingersFromIthToFirstFinger(ctx, i - 1, ithFinger, fingerTable);
             }
             else {

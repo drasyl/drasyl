@@ -41,7 +41,7 @@ public final class ChordFindSuccessorHelper {
                 .chain(future -> {
                     final DrasylAddress pre = future.getNow();
                     // if other node found, ask it for its successor
-                    if (!Objects.equals(pre, ctx.channel().localAddress())) {
+                    if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
                         return requestSuccessor(ctx, pre);
                     }
                     else {
@@ -51,7 +51,7 @@ public final class ChordFindSuccessorHelper {
                 .chain(future -> {
                     final DrasylAddress ret1 = future.getNow();
                     if (ret1 == null) {
-                        return composeFuture((DrasylAddress) ctx.channel().localAddress());
+                        return composeFuture(fingerTable.getLocalAddress());
                     }
                     return composeFuture(ret1);
                 });
