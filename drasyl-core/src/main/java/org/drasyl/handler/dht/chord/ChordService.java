@@ -34,4 +34,6 @@ public interface ChordService {
     Future<Void> iAmPre();
 
     Future<DrasylAddress> closest(final long id);
+
+    Future<DrasylAddress> findSuccessor(final long id);
 }

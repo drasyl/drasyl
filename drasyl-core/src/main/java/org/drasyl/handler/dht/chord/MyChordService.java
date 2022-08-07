@@ -26,6 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
+import org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper;
 import org.drasyl.handler.rmi.RmiCaller;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
@@ -41,7 +42,6 @@ public class MyChordService implements ChordService {
     private static final Logger LOG = LoggerFactory.getLogger(MyChordService.class);
     @RmiCaller
     private DrasylAddress caller;
-    //private ChannelHandlerContext ctx;
     private final ChordFingerTable fingerTable;
     private final RmiClientHandler client;
     private final EventLoopGroup group = new NioEventLoopGroup();
@@ -101,5 +101,10 @@ public class MyChordService implements ChordService {
     @Override
     public Future<DrasylAddress> closest(final long id) {
         return closestPrecedingFinger(id, fingerTable, client).finish(group.next());
+    }
+
+    @Override
+    public Future<DrasylAddress> findSuccessor(long id) {
+        return ChordFindSuccessorHelper.findSuccessor(id, fingerTable, client).finish(group.next());
     }
 }

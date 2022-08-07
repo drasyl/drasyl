@@ -15,10 +15,8 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.ChordListener;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.MyChordService;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
@@ -77,11 +75,9 @@ public class ChordNode {
                         final RmiClientHandler client = new RmiClientHandler();
                         server.bind("ChordService", new MyChordService(fingerTable, client));
 
-                        p.addLast(new ChordCodec());
                         p.addLast(new ChordStabilizeTask(fingerTable, 500));
                         p.addLast(new ChordFixFingersTask(fingerTable, 500));
                         p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
-                        p.addLast(new ChordListener(fingerTable));
 
                         p.addLast(new MessageToMessageCodec<OverlayAddressedMessage<?>, AddressedEnvelope<?, ?>>() {
                             @Override
@@ -109,7 +105,7 @@ public class ChordNode {
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
-                                        p.addAfter(p.context(ChordCodec.class).name(), null, new ChordJoinHandler(fingerTable, contact));
+                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }

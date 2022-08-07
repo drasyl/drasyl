@@ -10,7 +10,6 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
@@ -40,7 +39,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof ChordLookup) {
-            doLookup(ctx, ((ChordLookup) msg).getContact(), ((ChordLookup) msg).getId(), promise);
+            doLookup(ctx, ((ChordLookup) msg).getContact(), ((ChordLookup) msg).getId(), promise, ctx.pipeline().get(RmiClientHandler.class));
         }
         else {
             ctx.write(msg, promise);
@@ -50,10 +49,10 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     private void doLookup(final ChannelHandlerContext ctx,
                           final DrasylAddress contact,
                           final long id,
-                          final ChannelPromise promise) {
+                          final ChannelPromise promise, RmiClientHandler client) {
         if (this.promise == null) {
             this.promise = promise;
-            checkContactAlive(ctx, contact, id, promise);
+            checkContactAlive(ctx, contact, id, promise, client);
         }
         else {
             promise.tryFailure(new ChordException("Another Chord lookup is in progress. Please try again later."));
@@ -63,14 +62,15 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     private void checkContactAlive(final ChannelHandlerContext ctx,
                                    final DrasylAddress contact,
                                    final long id,
-                                   final ChannelPromise promise) {
+                                   final ChannelPromise promise,
+                                   final RmiClientHandler client) {
         LOG.debug("checkContactAlive?");
-        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
+        final ChordService service = client.lookup("ChordService", ChordService.class, contact);
         service.keep().addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
                 // now check
-                checkContactStable(ctx, contact, id, promise);
+                checkContactStable(ctx, contact, id, promise, client);
             }
             else {
                 promise.setFailure(new ChordException("Contact node " + contact + " does not answer."));
@@ -81,10 +81,11 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     private void checkContactStable(final ChannelHandlerContext ctx,
                                     final DrasylAddress contact,
                                     final long id,
-                                    final ChannelPromise promise) {
+                                    final ChannelPromise promise,
+                                    final RmiClientHandler client) {
         LOG.debug("checkContactStable?");
 
-        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
+        final ChordService service = client.lookup("ChordService", ChordService.class, contact);
         composeFuture().chain(service.yourPredecessor())
                 .chain(future -> {
                     return composeFuture().chain(service.yourSuccessor())
@@ -105,7 +106,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                     if (future.isSuccess()) {
                         LOG.debug("checkContactStable = true");
                         // do actual lookup
-                        doActualLookup(ctx, contact, id, promise);
+                        doActualLookup(ctx, contact, id, promise, client);
                     }
                     else {
                         this.promise = null;
@@ -117,8 +118,10 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     private void doActualLookup(final ChannelHandlerContext ctx,
                                 final DrasylAddress contact,
                                 final long id,
-                                final ChannelPromise promise) {
-        findSuccessor(ctx, id, contact).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
+                                final ChannelPromise promise,
+                                final RmiClientHandler client) {
+        final ChordService service = client.lookup("ChordService", ChordService.class, contact);
+        service.findSuccessor(id).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
                 ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
                 this.promise = null;

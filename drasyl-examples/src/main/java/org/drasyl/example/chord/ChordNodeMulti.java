@@ -10,10 +10,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.dht.chord.ChordCodec;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.ChordListener;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
 import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
@@ -48,11 +46,9 @@ public class ChordNodeMulti {
 
                             final ChannelPipeline p = ch.pipeline();
 
-                            p.addLast(new ChordCodec());
                             p.addLast(new ChordStabilizeTask(fingerTable, 500));
                             p.addLast(new ChordFixFingersTask(fingerTable, 500));
                             p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
-                            p.addLast(new ChordListener(fingerTable));
 
                             p.addLast(new ChannelDuplexHandler() {
                                 @Override
@@ -61,7 +57,7 @@ public class ChordNodeMulti {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
                                         System.out.println(ctx.channel().localAddress());
-                                        p.addAfter(p.context(ChordCodec.class).name(), null, new ChordJoinHandler(fingerTable, contact.get()));
+                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact.get()));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }
