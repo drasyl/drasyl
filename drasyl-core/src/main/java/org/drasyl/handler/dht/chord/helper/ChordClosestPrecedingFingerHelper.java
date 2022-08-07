@@ -1,6 +1,5 @@
 package org.drasyl.handler.dht.chord.helper;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
@@ -27,23 +26,23 @@ public final class ChordClosestPrecedingFingerHelper {
         // util class
     }
 
-    public static FutureComposer<DrasylAddress> closestPrecedingFinger(final ChannelHandlerContext ctx,
-                                                                       final long findId,
-                                                                       final ChordFingerTable fingerTable) {
+    public static FutureComposer<DrasylAddress> closestPrecedingFinger(final long findId,
+                                                                       final ChordFingerTable fingerTable,
+                                                                       final RmiClientHandler client) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdHex(findId));
         final long myId = chordId(fingerTable.getLocalAddress());
         final long findIdRelativeId = relativeChordId(findId, myId);
 
         // check from last item in finger table
-        return checkFinger(ctx, myId, findId, findIdRelativeId, Integer.SIZE, fingerTable);
+        return checkFinger(myId, findId, findIdRelativeId, Integer.SIZE, fingerTable, client);
     }
 
-    private static FutureComposer<DrasylAddress> checkFinger(final ChannelHandlerContext ctx,
-                                                             final long myId,
+    private static FutureComposer<DrasylAddress> checkFinger(final long myId,
                                                              final long findId,
                                                              final long findIdRelative,
                                                              final int i,
-                                                             final ChordFingerTable fingerTable) {
+                                                             final ChordFingerTable fingerTable,
+                                                             final RmiClientHandler client) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdHex(findId));
             return composeFuture(fingerTable.getLocalAddress());
@@ -60,7 +59,7 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("{}th finger {} is closest preceding finger of {}.", i, chordIdHex(ithFingerId), chordIdHex(findId));
                         LOG.debug("Check if it is still alive.");
 
-                        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, ithFinger);
+                        final ChordService service = client.lookup("ChordService", ChordService.class, ithFinger);
                         return composeFuture().chain(service.keep())
                                 .chain(future2 -> {
                                     //it is alive, return it
@@ -73,11 +72,11 @@ public final class ChordClosestPrecedingFingerHelper {
                                         LOG.warn("Peer `{}` is not alive. Remove it from finger table.", ithFinger);
                                         fingerTable.removePeer(ithFinger);
                                     }
-                                    return checkFinger(ctx, myId, findId, findIdRelative, i - 1, fingerTable);
+                                    return checkFinger(myId, findId, findIdRelative, i - 1, fingerTable, client);
                                 });
                     }
                 }
-                return checkFinger(ctx, myId, findId, findIdRelative, i - 1, fingerTable);
+                return checkFinger(myId, findId, findIdRelative, i - 1, fingerTable, client);
             });
         }
     }

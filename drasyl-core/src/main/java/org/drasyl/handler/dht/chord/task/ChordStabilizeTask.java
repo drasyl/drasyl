@@ -84,9 +84,10 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
             final DrasylAddress successor = fingerTable.getSuccessor();
             final FutureComposer<Void> voidFuture;
+            final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
             if (successor == null || successor.equals(fingerTable.getLocalAddress())) {
                 // Try to fill successor with candidates in finger table or even predecessor
-                voidFuture = fillSuccessor(ctx, fingerTable);//fill
+                voidFuture = fillSuccessor(fingerTable, client);//fill
             }
             else {
                 voidFuture = composeFuture();
@@ -97,14 +98,14 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     LOG.debug("Check if successor has still us a predecessor.");
 
                     // try to get my successor's predecessor
-                    final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, successor);
+                    final ChordService service = client.lookup("ChordService", ChordService.class, successor);
                     composeFuture().chain(service.yourPredecessor())
                             .chain(future2 -> {
                                 // if bad connection with successor! delete successor
                                 DrasylAddress x = future2.getNow();
                                 if (x == null) {
                                     LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                                    return deleteSuccessor(ctx, fingerTable);
+                                    return deleteSuccessor(fingerTable, client);
                                 }
 
                                 // else if successor's predecessor is not itself
@@ -120,7 +121,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                     final long x_relative_id = relativeChordId(x, local_id);
                                     if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
                                         LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
-                                        return fingerTable.updateIthFinger(ctx, 1, x);
+                                        return fingerTable.updateIthFinger(1, x, client);
                                     }
                                     else {
                                         return composeFuture();
@@ -131,7 +132,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 else {
                                     LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                                     if (!successor.equals(fingerTable.getLocalAddress())) {
-                                        final ChordService service2 = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, successor);
+                                        final ChordService service2 = client.lookup("ChordService", ChordService.class, successor);
                                         return composeFuture().chain(service2.iAmPre());
                                     }
                                     return composeFuture();

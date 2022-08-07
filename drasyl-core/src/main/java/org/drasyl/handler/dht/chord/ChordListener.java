@@ -9,6 +9,7 @@ import org.drasyl.handler.dht.chord.message.Closest;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.MyClosest;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -55,7 +56,7 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
                                final DrasylAddress sender,
                                final Closest closest) {
         final long id = closest.getId();
-        closestPrecedingFinger(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
+        closestPrecedingFinger(id, fingerTable, ctx.pipeline().get(RmiClientHandler.class)).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
             final DrasylAddress result = future.getNow();
             // FIXME: hier ist result manchmal null -> NPE
             final OverlayAddressedMessage<MyClosest> response = new OverlayAddressedMessage<>(MyClosest.of(result), sender);
@@ -68,7 +69,7 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
                                      final FindSuccessor findSuccessor) {
         final long id = findSuccessor.getId();
 
-        findSuccessor(ctx, id, fingerTable).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
+        findSuccessor(ctx, id, fingerTable, ctx.pipeline().get(RmiClientHandler.class)).finish(ctx.executor()).addListener((FutureListener<DrasylAddress>) future -> {
             final OverlayAddressedMessage<FoundSuccessor> response = new OverlayAddressedMessage<>(FoundSuccessor.of(future.getNow()), sender);
             ctx.writeAndFlush(response);
         });

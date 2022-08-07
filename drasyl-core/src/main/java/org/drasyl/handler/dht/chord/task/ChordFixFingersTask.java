@@ -6,6 +6,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordUtil;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,11 +83,11 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             final int i = counter + 2;
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
-            findSuccessor(ctx, id, fingerTable)
+            findSuccessor(ctx, id, fingerTable, ctx.pipeline().get(RmiClientHandler.class))
                     .chain(future -> {
                         final DrasylAddress ithfinger = future.getNow();
                         LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithfinger);
-                        return fingerTable.updateIthFinger(ctx, i, ithfinger);
+                        return fingerTable.updateIthFinger(i, ithfinger, ctx.pipeline().get(RmiClientHandler.class));
                     })
                     .finish(ctx.executor())
                     .addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));

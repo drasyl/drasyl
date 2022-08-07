@@ -1,6 +1,5 @@
 package org.drasyl.handler.dht.chord;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
@@ -94,14 +93,14 @@ public class ChordFingerTable {
         }
     }
 
-    public FutureComposer<Void> setSuccessor(final ChannelHandlerContext ctx,
-                                             final DrasylAddress successor) {
-        return updateIthFinger(ctx, 1, successor);
+    public FutureComposer<Void> setSuccessor(final DrasylAddress successor,
+                                             final RmiClientHandler client) {
+        return updateIthFinger(1, successor, client);
     }
 
-    public FutureComposer<Void> updateIthFinger(final ChannelHandlerContext ctx,
-                                                final int i,
-                                                final DrasylAddress value) {
+    public FutureComposer<Void> updateIthFinger(final int i,
+                                                final DrasylAddress value,
+                                                final RmiClientHandler client) {
         final DrasylAddress oldValue = entries[i - 1];
         entries[i - 1] = value;
         if (!Objects.equals(value, oldValue)) {
@@ -110,7 +109,7 @@ public class ChordFingerTable {
 
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
-            final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, value);
+            final ChordService service = client.lookup("ChordService", ChordService.class, value);
             return composeFuture().chain(service.iAmPre());
         }
         else {

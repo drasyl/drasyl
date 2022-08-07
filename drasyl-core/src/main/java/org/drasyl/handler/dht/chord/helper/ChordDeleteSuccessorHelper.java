@@ -1,6 +1,5 @@
 package org.drasyl.handler.dht.chord.helper;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
@@ -21,8 +20,8 @@ public final class ChordDeleteSuccessorHelper {
         // util class
     }
 
-    public static FutureComposer<Void> deleteSuccessor(final ChannelHandlerContext ctx,
-                                                       final ChordFingerTable fingerTable) {
+    public static FutureComposer<Void> deleteSuccessor(final ChordFingerTable fingerTable,
+                                                       final RmiClientHandler client) {
         final DrasylAddress successor = fingerTable.getSuccessor();
 
         // nothing to delete, just return
@@ -40,7 +39,7 @@ public final class ChordDeleteSuccessorHelper {
         }
 
         // delete it, from the last existence to the first one
-        deleteFromIthToFirstFinger(ctx, fingerTable, i);
+        deleteFromIthToFirstFinger(fingerTable, i, client);
 
         // if predecessor is successor, delete it
         if (fingerTable.hasPredecessor() && Objects.equals(fingerTable.getPredecessor(), fingerTable.getSuccessor())) {
@@ -48,7 +47,7 @@ public final class ChordDeleteSuccessorHelper {
         }
 
         // try to fill successor
-        return fillSuccessor(ctx, fingerTable)
+        return fillSuccessor(fingerTable, client)
                 .chain(() -> {
                     final DrasylAddress successor2 = fingerTable.getSuccessor();
 
@@ -58,9 +57,9 @@ public final class ChordDeleteSuccessorHelper {
                     if ((successor2 == null || fingerTable.getLocalAddress().equals(successor2)) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
                         final DrasylAddress predecessor = fingerTable.getPredecessor();
 
-                        return findNewSuccessor(ctx, predecessor, successor2, fingerTable)
+                        return findNewSuccessor(predecessor, successor2, fingerTable, client)
                                 // update successor
-                                .chain(() -> fingerTable.updateIthFinger(ctx, 1, predecessor));
+                                .chain(() -> fingerTable.updateIthFinger(1, predecessor, client));
                     }
                     else {
                         return composeFuture();
@@ -68,25 +67,25 @@ public final class ChordDeleteSuccessorHelper {
                 });
     }
 
-    private static FutureComposer<Void> deleteFromIthToFirstFinger(final ChannelHandlerContext ctx,
-                                                                   final ChordFingerTable fingerTable,
-                                                                   final int j) {
-        return fingerTable.updateIthFinger(ctx, j, null)
+    private static FutureComposer<Void> deleteFromIthToFirstFinger(final ChordFingerTable fingerTable,
+                                                                   final int j,
+                                                                   final RmiClientHandler client) {
+        return fingerTable.updateIthFinger(j, null, client)
                 .chain(() -> {
                     if (j > 1) {
-                        return deleteFromIthToFirstFinger(ctx, fingerTable, j - 1);
+                        return deleteFromIthToFirstFinger(fingerTable, j - 1, client);
                     }
                     else {
-                        return fingerTable.updateIthFinger(ctx, j, null);
+                        return fingerTable.updateIthFinger(j, null, client);
                     }
                 });
     }
 
-    private static FutureComposer<DrasylAddress> findNewSuccessor(final ChannelHandlerContext ctx,
-                                                                  final DrasylAddress peer,
+    private static FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
                                                                   final DrasylAddress successor,
-                                                                  final ChordFingerTable fingerTable) {
-        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, peer);
+                                                                  final ChordFingerTable fingerTable,
+                                                                  final RmiClientHandler client) {
+        final ChordService service = client.lookup("ChordService", ChordService.class, peer);
         return composeFuture().chain(service.yourPredecessor())
                 .chain(future -> {
                     DrasylAddress predecessor = future.getNow();
@@ -102,7 +101,7 @@ public final class ChordDeleteSuccessorHelper {
                     }
                     // else, keep asking
                     else {
-                        return findNewSuccessor(ctx, predecessor, successor, fingerTable);
+                        return findNewSuccessor(predecessor, successor, fingerTable, client);
                     }
                 });
     }

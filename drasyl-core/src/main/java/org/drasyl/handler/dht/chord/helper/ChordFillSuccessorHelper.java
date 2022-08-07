@@ -1,7 +1,7 @@
 package org.drasyl.handler.dht.chord.helper;
 
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
@@ -20,13 +20,13 @@ public final class ChordFillSuccessorHelper {
         // util class
     }
 
-    public static FutureComposer<Void> fillSuccessor(final ChannelHandlerContext ctx,
-                                                     final ChordFingerTable fingerTable) {
+    public static FutureComposer<Void> fillSuccessor(final ChordFingerTable fingerTable,
+                                                     final RmiClientHandler client) {
         LOG.debug("Try to fill successor with candidates in finger table or even predecessor.");
         final DrasylAddress successor = fingerTable.getSuccessor();
         final FutureComposer<Void> future;
         if (successor == null || successor.equals(fingerTable.getLocalAddress())) {
-            future = findSuccessorStartingFromIthFinger(ctx, 2, fingerTable);
+            future = findSuccessorStartingFromIthFinger(2, fingerTable, client);
         }
         else {
             future = composeFuture();
@@ -35,7 +35,7 @@ public final class ChordFillSuccessorHelper {
         return future.chain(() -> {
             final DrasylAddress successor2 = fingerTable.getSuccessor();
             if ((successor2 == null || successor2.equals(fingerTable.getLocalAddress())) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
-                return fingerTable.updateIthFinger(ctx, 1, fingerTable.getPredecessor());
+                return fingerTable.updateIthFinger(1, fingerTable.getPredecessor(), client);
             }
             else {
                 return composeFuture();
@@ -43,16 +43,16 @@ public final class ChordFillSuccessorHelper {
         });
     }
 
-    private static FutureComposer<Void> findSuccessorStartingFromIthFinger(final ChannelHandlerContext ctx,
-                                                                           final int i,
-                                                                           final ChordFingerTable fingerTable) {
+    private static FutureComposer<Void> findSuccessorStartingFromIthFinger(final int i,
+                                                                           final ChordFingerTable fingerTable,
+                                                                           final RmiClientHandler client) {
         if (i <= Integer.SIZE) {
             final DrasylAddress ithFinger = fingerTable.get(i);
             if (ithFinger != null && !ithFinger.equals(fingerTable.getLocalAddress())) {
-                return updateFingersFromIthToFirstFinger(ctx, i - 1, ithFinger, fingerTable);
+                return updateFingersFromIthToFirstFinger(i - 1, ithFinger, fingerTable, client);
             }
             else {
-                return findSuccessorStartingFromIthFinger(ctx, i + 1, fingerTable);
+                return findSuccessorStartingFromIthFinger(i + 1, fingerTable, client);
             }
         }
         else {
@@ -60,13 +60,13 @@ public final class ChordFillSuccessorHelper {
         }
     }
 
-    private static FutureComposer<Void> updateFingersFromIthToFirstFinger(final ChannelHandlerContext ctx,
-                                                                          final int j,
+    private static FutureComposer<Void> updateFingersFromIthToFirstFinger(final int j,
                                                                           final DrasylAddress ithfinger,
-                                                                          final ChordFingerTable fingerTable) {
+                                                                          final ChordFingerTable fingerTable,
+                                                                          final RmiClientHandler client) {
         if (j >= 1) {
-            return fingerTable.updateIthFinger(ctx, j, ithfinger)
-                    .chain(() -> updateFingersFromIthToFirstFinger(ctx, j - 1, ithfinger, fingerTable));
+            return fingerTable.updateIthFinger(j, ithfinger, client)
+                    .chain(() -> updateFingersFromIthToFirstFinger(j - 1, ithfinger, fingerTable, client));
         }
         else {
             return composeFuture();

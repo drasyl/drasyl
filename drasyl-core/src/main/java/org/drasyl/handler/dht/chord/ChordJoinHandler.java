@@ -8,6 +8,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.dht.chord.message.ChordMessage;
 import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -83,7 +84,7 @@ public class ChordJoinHandler extends SimpleChannelInboundHandler<OverlayAddress
         final DrasylAddress successor = msg.content().getAddress();
         LOG.info("Successor for id `{}` is `{}`.", chordIdHex(ctx.channel().localAddress()), successor);
         LOG.info("Set `{}` as our successor.", successor);
-        fingerTable.setSuccessor(ctx, successor).finish(ctx.executor());
+        fingerTable.setSuccessor(successor, ctx.pipeline().get(RmiClientHandler.class)).finish(ctx.executor());
         ctx.pipeline().remove(ctx.name());
     }
 

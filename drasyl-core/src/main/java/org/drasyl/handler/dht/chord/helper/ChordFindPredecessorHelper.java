@@ -33,7 +33,8 @@ public final class ChordFindPredecessorHelper {
 
     public static FutureComposer<DrasylAddress> findPredecessor(final ChannelHandlerContext ctx,
                                                                 final long findId,
-                                                                final ChordFingerTable fingerTable) {
+                                                                final ChordFingerTable fingerTable,
+                                                                final RmiClientHandler client) {
         LOG.debug("Find predecessor of `{}`", ChordUtil.chordIdHex(findId));
         final DrasylAddress myAddress = fingerTable.getLocalAddress();
         final DrasylAddress mySuccessor = fingerTable.getSuccessor();
@@ -46,7 +47,7 @@ public final class ChordFindPredecessorHelper {
             mySuccessorRelativeId = relativeChordId(mySuccessor, myAddress);
         }
 
-        return recursive(ctx, findId, myAddress, findIdRelativeId, mySuccessorRelativeId, fingerTable.getLocalAddress(), fingerTable);
+        return recursive(ctx, findId, myAddress, findIdRelativeId, mySuccessorRelativeId, fingerTable.getLocalAddress(), fingerTable, client);
     }
 
     private static FutureComposer<DrasylAddress> recursive(final ChannelHandlerContext ctx,
@@ -55,18 +56,19 @@ public final class ChordFindPredecessorHelper {
                                                            final long findIdRelativeId,
                                                            final long currentNodeSuccessorsRelativeId,
                                                            final DrasylAddress mostRecentlyAlive,
-                                                           final ChordFingerTable fingerTable) {
+                                                           final ChordFingerTable fingerTable,
+                                                           final RmiClientHandler client) {
         if (findIdRelativeId > 0 && findIdRelativeId <= currentNodeSuccessorsRelativeId) {
             return composeFuture(currentNode);
         }
 
         // if current node is local node, find my closest
         if (Objects.equals(currentNode, fingerTable.getLocalAddress())) {
-            return findMyClosest(ctx, findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
+            return findMyClosest(ctx, findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
         }
         // else current node is remote node, sent request to it for its closest
         else {
-            return findPeersClosest(ctx, findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
+            return findPeersClosest(ctx, findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
         }
     }
 
@@ -76,15 +78,16 @@ public final class ChordFindPredecessorHelper {
                                                                final long findIdRelativeId,
                                                                final long currentNodeSuccessorsRelativeId,
                                                                final DrasylAddress mostRecentlyAlive,
-                                                               final ChordFingerTable fingerTable) {
-        return closestPrecedingFinger(ctx, findId, fingerTable)
+                                                               final ChordFingerTable fingerTable,
+                                                               final RmiClientHandler client) {
+        return closestPrecedingFinger(findId, fingerTable, client)
                 .chain(future -> {
                     final DrasylAddress finger = future.getNow();
                     if (currentNode.equals(finger)) {
                         return composeFuture(finger);
                     }
                     else {
-                        return recursive(ctx, findId, finger, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
+                        return recursive(ctx, findId, finger, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
                     }
                 });
     }
@@ -95,20 +98,21 @@ public final class ChordFindPredecessorHelper {
                                                                   final long findIdRelativeId,
                                                                   final long currentNodeSuccessorsRelativeId,
                                                                   final DrasylAddress mostRecentlyAlive,
-                                                                  final ChordFingerTable fingerTable) {
+                                                                  final ChordFingerTable fingerTable,
+                                                                  final RmiClientHandler client) {
         return requestClosest(ctx, currentNode, findId)
                 .chain(future -> {
                     final DrasylAddress closest = future.getNow();
                     // if fail to get response, set currentNode to most recently
                     if (closest == null) {
-                        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, mostRecentlyAlive);
+                        final ChordService service = client.lookup("ChordService", ChordService.class, mostRecentlyAlive);
                         return composeFuture().chain(service.yourSuccessor())
                                 .chain(future1 -> {
                                     final DrasylAddress mostRecentlysSuccessor = future1.getNow();
                                     if (mostRecentlysSuccessor == null) {
                                         return composeFuture(fingerTable.getLocalAddress());
                                     }
-                                    return recursive(ctx, findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable);
+                                    return recursive(ctx, findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
                                 });
                     }
 
@@ -121,7 +125,7 @@ public final class ChordFindPredecessorHelper {
                     else {
                         // set currentNode as most recently alive
                         // ask "closest" for its successor
-                        return requestClosestsSuccessor(ctx, findId, currentNode, fingerTable, closest);
+                        return requestClosestsSuccessor(ctx, findId, currentNode, fingerTable, closest, client);
                     }
                 });
     }
@@ -130,8 +134,9 @@ public final class ChordFindPredecessorHelper {
                                                                           final long findId,
                                                                           final DrasylAddress currentNode,
                                                                           final ChordFingerTable fingerTable,
-                                                                          final DrasylAddress closest) {
-        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, closest);
+                                                                          final DrasylAddress closest,
+                                                                          final RmiClientHandler client) {
+        final ChordService service = client.lookup("ChordService", ChordService.class, closest);
         return composeFuture().chain(service.yourSuccessor())
                 .chain(future -> {
                     final DrasylAddress closestsSuccessor = future.getNow();
@@ -145,11 +150,11 @@ public final class ChordFindPredecessorHelper {
                         final long closestSuccessorsRelativeId = relativeChordId(closestsSuccessor, closest);
                         final long findIdsRelativeId = relativeChordId(findId, chordId(closest));
 
-                        return recursive(ctx, findId, closest, findIdsRelativeId, closestSuccessorsRelativeId, currentNode, fingerTable);
+                        return recursive(ctx, findId, closest, findIdsRelativeId, closestSuccessorsRelativeId, currentNode, fingerTable, client);
                     }
                     // else currentNode sticks, ask currentNode's successor
                     else {
-                        final ChordService service2 = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, currentNode);
+                        final ChordService service2 = client.lookup("ChordService", ChordService.class, currentNode);
                         return composeFuture().chain(service2.yourSuccessor());
                     }
                 });
