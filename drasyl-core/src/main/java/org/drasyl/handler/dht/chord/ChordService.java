@@ -22,7 +22,10 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.util.concurrent.Future;
+import org.drasyl.identity.DrasylAddress;
 
 public interface ChordService {
     Future<Void> keep();
+
+    Future<DrasylAddress> yourPredecessor();
 }

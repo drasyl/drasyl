@@ -5,6 +5,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordService;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 import org.slf4j.Logger;
@@ -17,7 +19,6 @@ import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.handler.dht.chord.requester.ChordIAmPreRequester.iAmPreRequest;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -97,7 +98,8 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     LOG.debug("Check if successor has still us a predecessor.");
 
                     // try to get my successor's predecessor
-                    requestPredecessor(ctx, successor)
+                    final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, successor);
+                    composeFuture().chain(service.yourPredecessor())
                             .chain(future2 -> {
                                 // if bad connection with successor! delete successor
                                 DrasylAddress x = future2.getNow();

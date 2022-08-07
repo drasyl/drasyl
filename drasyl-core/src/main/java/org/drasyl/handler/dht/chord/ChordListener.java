@@ -10,12 +10,9 @@ import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
-import org.drasyl.handler.dht.chord.message.NothingPredecessor;
 import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
-import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
@@ -52,9 +49,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         else if (msg.content() instanceof YourSuccessor) {
             handleYourSuccessor(ctx, sender);
         }
-        else if (msg.content() instanceof YourPredecessor) {
-            handleYourPredecessor(ctx, sender);
-        }
         else if (msg.content() instanceof FindSuccessor) {
             handleFindSuccessor(ctx, sender, (FindSuccessor) msg.content());
         }
@@ -89,18 +83,6 @@ public class ChordListener extends SimpleChannelInboundHandler<OverlayAddressedM
         }
         else {
             final OverlayAddressedMessage<NothingSuccessor> response = new OverlayAddressedMessage<>(NothingSuccessor.of(), sender);
-            ctx.writeAndFlush(response);
-        }
-    }
-
-    private void handleYourPredecessor(final ChannelHandlerContext ctx,
-                                       final DrasylAddress sender) {
-        if (fingerTable.hasPredecessor()) {
-            final OverlayAddressedMessage<MyPredecessor> response = new OverlayAddressedMessage<>(MyPredecessor.of(fingerTable.getPredecessor()), sender);
-            ctx.writeAndFlush(response);
-        }
-        else {
-            final OverlayAddressedMessage<NothingPredecessor> response = new OverlayAddressedMessage<>(NothingPredecessor.of(), sender);
             ctx.writeAndFlush(response);
         }
     }

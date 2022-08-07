@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
+import org.drasyl.identity.DrasylAddress;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,5 +40,15 @@ public class MyChordService implements ChordService {
     @Override
     public Future<Void> keep() {
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
+    }
+
+    @Override
+    public Future<DrasylAddress> yourPredecessor() {
+        if (fingerTable.hasPredecessor()) {
+            return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, fingerTable.getPredecessor());
+        }
+        else {
+            return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
+        }
     }
 }

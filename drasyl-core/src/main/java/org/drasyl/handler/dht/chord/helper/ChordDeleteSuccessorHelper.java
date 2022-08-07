@@ -2,13 +2,14 @@ package org.drasyl.handler.dht.chord.helper;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordService;
+import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
 
 import java.util.Objects;
 
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 /**
@@ -85,7 +86,8 @@ public final class ChordDeleteSuccessorHelper {
                                                                   final DrasylAddress peer,
                                                                   final DrasylAddress successor,
                                                                   final ChordFingerTable fingerTable) {
-        return requestPredecessor(ctx, peer)
+        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, peer);
+        return composeFuture().chain(service.yourPredecessor())
                 .chain(future -> {
                     DrasylAddress predecessor = future.getNow();
                     if (predecessor == null) {

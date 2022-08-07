@@ -11,7 +11,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.dht.chord.requester.ChordFindSuccessorRequester.findSuccessor;
-import static org.drasyl.handler.dht.chord.requester.ChordYourPredecessorRequester.requestPredecessor;
 import static org.drasyl.handler.dht.chord.requester.ChordYourSuccessorRequester.requestSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
@@ -68,7 +67,6 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                    final ChannelPromise promise) {
         LOG.debug("checkContactAlive?");
         final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
-        ((MyChordService) service).setCtx(ctx);
         service.keep().addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
@@ -86,7 +84,9 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final long id,
                                     final ChannelPromise promise) {
         LOG.debug("checkContactStable?");
-        requestPredecessor(ctx, contact)
+
+        final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, contact);
+        composeFuture().chain(service.yourPredecessor())
                 .chain(future -> requestSuccessor(ctx, contact)
                         .chain(future1 -> {
                             final DrasylAddress predecessor = future.getNow();

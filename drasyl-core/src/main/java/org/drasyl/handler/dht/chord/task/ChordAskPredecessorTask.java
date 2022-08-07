@@ -6,7 +6,6 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordService;
-import org.drasyl.handler.dht.chord.MyChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +78,6 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
                 final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, fingerTable.getPredecessor());
-                ((MyChordService) service).setCtx(ctx);
                 service.keep().addListener((FutureListener<Void>) future -> {
                     if (!future.isSuccess()) {
                         // timeout

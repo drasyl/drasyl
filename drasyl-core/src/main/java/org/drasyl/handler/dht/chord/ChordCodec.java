@@ -14,12 +14,9 @@ import org.drasyl.handler.dht.chord.message.FindSuccessor;
 import org.drasyl.handler.dht.chord.message.FoundSuccessor;
 import org.drasyl.handler.dht.chord.message.IAmPre;
 import org.drasyl.handler.dht.chord.message.MyClosest;
-import org.drasyl.handler.dht.chord.message.MyPredecessor;
 import org.drasyl.handler.dht.chord.message.MySuccessor;
-import org.drasyl.handler.dht.chord.message.NothingPredecessor;
 import org.drasyl.handler.dht.chord.message.NothingSuccessor;
 import org.drasyl.handler.dht.chord.message.Notified;
-import org.drasyl.handler.dht.chord.message.YourPredecessor;
 import org.drasyl.handler.dht.chord.message.YourSuccessor;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -86,22 +83,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
             buf.writeInt(MAGIC_NUMBER_NOTHING_SUCCESSOR);
             out.add(msg.replace(buf));
         }
-        else if (msg.content() instanceof YourPredecessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_YOUR_PREDECESSOR);
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof MyPredecessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_MY_PREDECESSOR);
-            buf.writeBytes(((MyPredecessor) msg.content()).getAddress().toByteArray());
-            out.add(msg.replace(buf));
-        }
-        else if (msg.content() instanceof NothingPredecessor) {
-            final ByteBuf buf = ctx.alloc().buffer();
-            buf.writeInt(MAGIC_NUMBER_NOTHING_PREDECESSOR);
-            out.add(msg.replace(buf));
-        }
         else if (msg.content() instanceof FindSuccessor) {
             final ByteBuf buf = ctx.alloc().buffer();
             buf.writeInt(MAGIC_NUMBER_FIND_SUCCESSOR);
@@ -165,20 +146,6 @@ public class ChordCodec extends MessageToMessageCodec<OverlayAddressedMessage<By
                 }
                 case MAGIC_NUMBER_NOTHING_SUCCESSOR: {
                     out.add(msg.replace(NothingSuccessor.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_YOUR_PREDECESSOR: {
-                    out.add(msg.replace(YourPredecessor.of()));
-                    break;
-                }
-                case MAGIC_NUMBER_MY_PREDECESSOR: {
-                    final byte[] addressBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
-                    msg.content().readBytes(addressBuffer);
-                    out.add(msg.replace(MyPredecessor.of(IdentityPublicKey.of(addressBuffer))));
-                    break;
-                }
-                case MAGIC_NUMBER_NOTHING_PREDECESSOR: {
-                    out.add(msg.replace(NothingPredecessor.of()));
                     break;
                 }
                 case MAGIC_NUMBER_FIND_SUCCESSOR: {
