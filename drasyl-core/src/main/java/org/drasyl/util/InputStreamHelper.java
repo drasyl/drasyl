@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Class that provides utils for {@link InputStream}s.
  */
-public class InputStreamHelper {
+public final class InputStreamHelper {
     private InputStreamHelper() {
         // util class
     }
@@ -56,14 +56,15 @@ public class InputStreamHelper {
      * end of stream and may be in an inconsistent state. It is strongly recommended that the stream
      * be promptly closed if an I/O error occurs.
      *
-     * <p> Source: <a href="https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java">
+     * <p> Source: <a
+     * href="https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java">
      * https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java</a>
      *
      * @return a byte array containing the bytes read from this input stream
      * @throws IOException      if an I/O error occurs
      * @throws OutOfMemoryError if an array of the required size cannot be allocated.
-     * @implSpec This method invokes {@link #readNBytes(InputStream, int)} with a length of {@link
-     * Integer#MAX_VALUE}.
+     * @implSpec This method invokes {@link #readNBytes(InputStream, int)} with a length of
+     * {@link Integer#MAX_VALUE}.
      * @since 9
      */
     public static byte[] readAllBytes(final InputStream is) throws IOException {
@@ -98,7 +99,8 @@ public class InputStreamHelper {
      * end of stream and may be in an inconsistent state. It is strongly recommended that the stream
      * be promptly closed if an I/O error occurs.
      *
-     * <p> Source: <a href="https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java">
+     * <p> Source: <a
+     * href="https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java">
      * https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/master/src/java.base/share/classes/java/io/InputStream.java</a>
      *
      * @param len the maximum number of bytes to read

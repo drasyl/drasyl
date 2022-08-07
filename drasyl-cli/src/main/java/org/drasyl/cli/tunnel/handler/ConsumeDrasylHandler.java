@@ -78,7 +78,19 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
      */
 
     @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            startServer(ctx);
+        }
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        startServer(ctx);
+        ctx.fireChannelActive();
+    }
+
+    private void startServer(final ChannelHandlerContext ctx) {
         // prepare TCP server for binding TCP clients
         bootstrap.group((EventLoopGroup) ctx.executor().parent())
                 .channel(NioServerSocketChannel.class)
@@ -87,8 +99,6 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
                 .childOption(AUTO_READ, false)
                 .bind(port)
                 .addListener(new BindingDrasylHandlerBindListener(port, ctx));
-
-        ctx.fireChannelActive();
     }
 
     @Override
@@ -149,7 +159,7 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
             p.addLast(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable cause) throws Exception {
+                                            final Throwable cause) {
                     cause.printStackTrace();
                     ctx.close();
                 }
@@ -167,7 +177,7 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
         }
 
         @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 final Channel myChannel = future.channel();
                 out.println("Service exposed by " + exposer + " can now be accessed via local server listening at " + myChannel.localAddress());

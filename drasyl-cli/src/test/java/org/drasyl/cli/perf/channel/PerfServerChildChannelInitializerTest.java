@@ -54,7 +54,7 @@ class PerfServerChildChannelInitializerTest {
             final ChannelInitializer<DrasylChannel> handler = new PerfServerChildChannelInitializer(out, err, exitCode);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(7)).addLast(any());
+            verify(channel.pipeline(), times(3)).addLast(any());
         }
     }
 }

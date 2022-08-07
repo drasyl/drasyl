@@ -40,16 +40,16 @@ import static java.util.Objects.requireNonNull;
 /**
  * TCP client connection to the exposed local service.
  */
-public class ExposeTcpCHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ExposeTcpCHandler.class);
+public class ExposeTcpHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ExposeTcpHandler.class);
     private final Map<String, ChannelHandlerContext> tcpClients;
     private final ChannelHandlerContext consumerCtx;
     private final String id;
     private boolean closeReceived;
 
-    public ExposeTcpCHandler(final Map<String, ChannelHandlerContext> tcpClients,
-                             final ChannelHandlerContext consumerCtx,
-                             final String id) {
+    public ExposeTcpHandler(final Map<String, ChannelHandlerContext> tcpClients,
+                            final ChannelHandlerContext consumerCtx,
+                            final String id) {
         this.tcpClients = requireNonNull(tcpClients);
         this.consumerCtx = requireNonNull(consumerCtx);
         this.id = requireNonNull(id);

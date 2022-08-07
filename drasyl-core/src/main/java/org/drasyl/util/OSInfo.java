@@ -35,8 +35,9 @@ import java.util.function.Function;
  * Utility class that can be used to detect properties specific to the current runtime
  * environment/operating system, such as os name.
  */
-public class OSInfo {
+public final class OSInfo {
     private static final Logger LOG = LoggerFactory.getLogger(OSInfo.class);
+    private static final String UNKNOWN = "unknown";
     static volatile boolean lock;
     private final String osName = detectOSName();
     private final String osVersion = detectOSVersion();
@@ -136,9 +137,9 @@ public class OSInfo {
     }
 
     /**
-     * Executes the given {@code commands} and applies for every result line the given {@code
-     * matcher}. If the {@code matcher} returns a non-null value, it will be returned. If the {@code
-     * matcher} does not match to any line, a IOException will be thrown.
+     * Executes the given {@code commands} and applies for every result line the given
+     * {@code matcher}. If the {@code matcher} returns a non-null value, it will be returned. If the
+     * {@code matcher} does not match to any line, a IOException will be thrown.
      *
      * @param commands the commands to execute
      * @param matcher  the matcher to match for the wanted to be output
@@ -232,23 +233,23 @@ public class OSInfo {
         return cpuName;
     }
 
-    private String detectOSName() {
-        final String val = System.getProperty("os.name", "unknown");
+    private static String detectOSName() {
+        final String val = System.getProperty("os.name", UNKNOWN);
 
         LOG.debug("OS name: {}", () -> val);
 
         return val;
     }
 
-    private String detectOSVersion() {
-        final String val = System.getProperty("os.version", "unknown");
+    private static String detectOSVersion() {
+        final String val = System.getProperty("os.version", UNKNOWN);
 
         LOG.debug("OS version: {}", () -> val);
 
         return val;
     }
 
-    private String detectOSArch() {
+    private static String detectOSArch() {
         final String val = Platform.ARCH;
 
         LOG.debug("OS arch: {}", () -> val);
@@ -256,16 +257,16 @@ public class OSInfo {
         return val;
     }
 
-    private String detectCurrentUser() {
-        final String val = System.getProperty("user.name", "unknown");
+    private static String detectCurrentUser() {
+        final String val = System.getProperty("user.name", UNKNOWN);
 
         LOG.debug("Current user: {}", () -> val);
 
         return val;
     }
 
-    private String detectCPUName() {
-        String val = "unknown";
+    private static String detectCPUName() {
+        String val = UNKNOWN;
 
         try {
             if (Platform.isWindows()) {

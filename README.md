@@ -30,7 +30,7 @@ drasyl node without having to write configuration files or provide IP addresses 
 
 * Provides Communication Channels between any two Nodes (on the Internet).
 * Automatic Discovery of Peers running within same Process, Computer, LAN, or the Internet.
-* Automatic Handover to most local Communication Channel.
+* Automatic Handover to most local Route.
 * Overcomes Network Barriers (Stateful Firewalls, NATs).
 * UDP Hole Punching.
 * Port Mapping (UPnP-IGD, NAT-PMP, PCP).

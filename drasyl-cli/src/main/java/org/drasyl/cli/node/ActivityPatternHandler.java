@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class ActivityPatternHandler extends ChannelInboundHandlerAdapter {
     private final List<Activity> activities;
-    int index = 0;
+    int index;
 
     public ActivityPatternHandler(final List<Activity> activities) {
         this.activities = requireNonNull(activities);

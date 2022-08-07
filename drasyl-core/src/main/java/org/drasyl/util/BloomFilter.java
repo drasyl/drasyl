@@ -34,8 +34,8 @@ import static java.util.Objects.requireNonNull;
  * A bloom filter is a probabilistic data structure that can quickly and efficiently check whether
  * an element is included in a set.
  * <p>
- * This implementation uses {@link Murmur3.murmur3_x86_32} as hash source is backed by a {@link
- * BitSet}.
+ * This implementation uses {@link Murmur3.murmur3_x86_32} as hash source is backed by a
+ * {@link BitSet}.
  * <p>
  * Although this class implements {@link Set}, not all set operations are actually supported (e.g.
  * removal or retrieval of elements).
@@ -80,18 +80,18 @@ public class BloomFilter<E> implements Set<E> {
      *                      {@code n} and {@code p}
      * @param k             Number of hash functions. If {@code 0}, this value is derived from
      *                      {@code m} and {@code n}
-     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to {@code
-     *                      byte[]} arrays
+     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to
+     *                      {@code byte[]} arrays
      * @param bitSet        {@link BitSet} holding this bloom filter's state. Caller must ensure
      *                      that it has the correct size.
      * @throws IllegalArgumentException if one parameter is not {@code 0} or {@code p} is not
      *                                  between 0 and 1
      * @throws NullPointerException     if {@code bytesSupplier} is {@code null}
      */
-    public BloomFilter(int n,
-                       double p,
-                       int m,
-                       int k,
+    public BloomFilter(final int n,
+                       final double p,
+                       final int m,
+                       final int k,
                        final Function<E, byte[]> bytesSupplier,
                        final BitSet bitSet) {
         this(new Parameters(n, p, m, k), bytesSupplier, bitSet);
@@ -115,16 +115,16 @@ public class BloomFilter<E> implements Set<E> {
      *                      {@code n} and {@code p}
      * @param k             Number of hash functions. If {@code 0}, this value is derived from
      *                      {@code m} and {@code n}
-     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to {@code
-     *                      byte[]} arrays
+     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to
+     *                      {@code byte[]} arrays
      * @throws IllegalArgumentException if one parameter is not {@code 0} or {@code p} is not
      *                                  between 0 and 1
      * @throws NullPointerException     if {@code bytesSupplier} is {@code null}
      */
-    public BloomFilter(int n,
-                       double p,
-                       int m,
-                       int k,
+    public BloomFilter(final int n,
+                       final double p,
+                       final int m,
+                       final int k,
                        final Function<E, byte[]> bytesSupplier) {
         this(new Parameters(n, p, m, k), bytesSupplier);
     }
@@ -138,8 +138,8 @@ public class BloomFilter<E> implements Set<E> {
      *
      * @param n             Number of items in the filter
      * @param p             Probability of false positives, fraction between 0 and 1
-     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to {@code
-     *                      byte[]} arrays
+     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to
+     *                      {@code byte[]} arrays
      * @param bitSet        {@link BitSet} holding this bloom filter's state. Caller must ensure
      *                      that it has the correct size.
      * @throws IllegalArgumentException if {@code n} or {@code p} is {@code 0} or {@code p} is not
@@ -162,8 +162,8 @@ public class BloomFilter<E> implements Set<E> {
      *
      * @param n             Number of items in the filter
      * @param p             Probability of false positives, fraction between 0 and 1
-     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to {@code
-     *                      byte[]} arrays
+     * @param bytesSupplier a {@link Function} that convert objects of type {@code E} to
+     *                      {@code byte[]} arrays
      * @throws IllegalArgumentException if {@code n} or {@code p} is {@code 0} or {@code p} is not
      *                                  between 0 and 1
      * @throws NullPointerException     if {@code bytesSupplier} is {@code null}
@@ -201,9 +201,9 @@ public class BloomFilter<E> implements Set<E> {
     }
 
     /**
-     * Checks if {@code element} is contained in the filter. False positive messages may occur.
+     * Checks if {@code o} is contained in the filter. False positive messages may occur.
      *
-     * @param element element to check
+     * @param o element to check
      * @return if {@code element}
      */
     public boolean contains(final Object o) {
@@ -441,7 +441,7 @@ public class BloomFilter<E> implements Set<E> {
                 throw new IllegalArgumentException("leave an attribute 0 so it can be dervied");
             }
             else if (n == 0) {
-                if (p == 0) {
+                if (p == 0.0) {
                     throw new IllegalArgumentException("need p to derive n");
                 }
                 if (m == 0) {
@@ -453,7 +453,7 @@ public class BloomFilter<E> implements Set<E> {
 
                 n = (int) Math.ceil(m / (-k / Math.log(1 - Math.exp(Math.log(p) / k))));
             }
-            else if (p == 0) {
+            else if (p == 0.0) {
                 if (m == 0) {
                     throw new IllegalArgumentException("need m to derive p");
                 }
@@ -463,7 +463,7 @@ public class BloomFilter<E> implements Set<E> {
 
                 p = Math.pow(1 - Math.exp(-k / (m / n)), k);
             }
-            else if (p <= 0 || p >= 1) {
+            else if (p <= 0.0 || p >= 1.0) {
                 throw new IllegalArgumentException("p must be a fraction between 0 and 1");
             }
             else if (m == 0) {
@@ -479,14 +479,14 @@ public class BloomFilter<E> implements Set<E> {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public boolean equals(final Object o) {
             if (this == o) {
                 return true;
             }
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            Parameters that = (Parameters) o;
+            final Parameters that = (Parameters) o;
             return n == that.n && Double.compare(that.p, p) == 0 && m == that.m && k == that.k;
         }
 

@@ -1,4 +1,4 @@
-# Bootstrapping a Node
+# Bootstrapping
 
 In the [previous section](../getting-started.md), we learned how to use the `DrasylNode` class — a
 minimalist interface to integrate drasyl into your application.

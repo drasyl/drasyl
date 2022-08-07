@@ -21,14 +21,14 @@
  */
 package org.drasyl.cli.perf.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
@@ -40,7 +40,7 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 
-public class PerfServerChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class PerfServerChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
     private final PrintStream out;
     private final PrintStream err;
@@ -49,27 +49,36 @@ public class PerfServerChildChannelInitializer extends ChannelInitializer<Drasyl
     public PerfServerChildChannelInitializer(final PrintStream out,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode) {
+        super(false);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) throws CryptoException {
+    protected void handshakeCompleted(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
         // fast (de)serializer for Probe messages
         p.addLast(new ProbeCodec());
 
         // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+        p.addLast(new GoBackNArqCodec());
+        p.addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
+        p.addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
 
+        // perf
         p.addLast(new PerfSessionAcceptorHandler(out));
+
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
+
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + handshakeTimeoutMillis + "ms.");
+        ctx.close();
     }
 }

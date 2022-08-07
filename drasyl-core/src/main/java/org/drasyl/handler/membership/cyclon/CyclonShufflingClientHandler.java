@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.handler.membership.cyclon;
 
 import io.netty.channel.AddressedEnvelope;
@@ -5,6 +26,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.drasyl.channel.OverlayAddressedMessage;
@@ -18,6 +40,7 @@ import java.util.Set;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
+import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
  * Initiates the "Enhanced Shuffling" algorithm of CYCLON.
@@ -46,18 +69,19 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     private final int shuffleInterval;
     private final CyclonView view;
     private OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest;
+    private Future<?> shuffleTask;
 
     /**
      * @param shuffleSize     max. number of neighbors to shuffle (denoted as <i>ℓ</i> in the
      *                        paper)
      * @param shuffleInterval period for shuffle requests (denoted as <i>ΔT</i> in the paper)
-     * @param view
-     * @param shuffleRequest
+     * @param view            local peer's (partial) view of the network
+     * @param shuffleRequest  current open request
      */
-    public CyclonShufflingClientHandler(final int shuffleSize,
-                                        final int shuffleInterval,
-                                        final CyclonView view,
-                                        final OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest) {
+    CyclonShufflingClientHandler(final int shuffleSize,
+                                 final int shuffleInterval,
+                                 final CyclonView view,
+                                 final OverlayAddressedMessage<CyclonShuffleRequest> shuffleRequest) {
         this.shuffleSize = requirePositive(shuffleSize);
         this.shuffleInterval = requirePositive(shuffleInterval);
         this.view = requireNonNull(view);
@@ -77,14 +101,25 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
-            ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), (long) (shuffleInterval * Math.random()), shuffleInterval, MILLISECONDS);
+            shuffleTask = ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
         }
     }
 
     @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        stopShuffling();
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.executor().scheduleWithFixedDelay(() -> initiateShuffle(ctx), (long) (shuffleInterval * Math.random()), shuffleInterval, MILLISECONDS);
+        ctx.executor().scheduleAtFixedRate(() -> initiateShuffle(ctx), randomLong(shuffleInterval), shuffleInterval, MILLISECONDS);
         ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        stopShuffling();
+        ctx.fireChannelInactive();
     }
 
     @SuppressWarnings("unchecked")
@@ -106,7 +141,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
      */
 
     @SuppressWarnings({ "java:S3655" })
-    private void initiateShuffle(final ChannelHandlerContext ctx) {
+    void initiateShuffle(final ChannelHandlerContext ctx) {
         logger.trace("Start Shuffling...");
 
         // previous shuffle still running? -> shuffle timeout
@@ -149,6 +184,13 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
                 logger.warn("Unable to send the following shuffle request to `{}`:\n{}", shuffleRequest.recipient(), shuffleRequest.content(), future.cause());
             }
         });
+    }
+
+    private void stopShuffling() {
+        if (shuffleTask != null) {
+            shuffleTask.cancel(false);
+            shuffleTask = null;
+        }
     }
 
     private void handleShuffleResponse(final ChannelHandlerContext ctx,

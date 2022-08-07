@@ -60,7 +60,7 @@ class PerfClientChannelInitializerTest {
             final ChannelInboundHandler handler = new PerfClientChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, server, true);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(10)).addLast(any());
+            verify(channel.pipeline(), times(11)).addLast(any());
         }
     }
 }

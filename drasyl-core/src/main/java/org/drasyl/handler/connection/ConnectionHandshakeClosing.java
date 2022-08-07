@@ -19,16 +19,14 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.crypto;
+package org.drasyl.handler.connection;
 
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-
-class HashingTest {
-    @Test
-    void name() throws IOException, CryptoException {
-        final byte[] a = Hashing.sha256("Heiko");
-        System.out.println(HexUtil.bytesToHex(a));
+/**
+ * Signals that the connection is closing.
+ */
+public class ConnectionHandshakeClosing implements ConnectionHandshakeEvent {
+    @Override
+    public String toString() {
+        return "ConnectionHandshakeClosing{}";
     }
 }

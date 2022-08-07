@@ -21,15 +21,15 @@
  */
 package org.drasyl.cli.wormhole.channel;
 
-import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
 import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
@@ -47,7 +47,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeSendChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 150;
     public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
@@ -69,6 +69,7 @@ public class WormholeSendChildChannelInitializer extends ChannelInitializer<Dras
                                                final Payload payload,
                                                final int windowSize,
                                                final long windowTimeout) {
+        super(false);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -80,11 +81,20 @@ public class WormholeSendChildChannelInitializer extends ChannelInitializer<Dras
     }
 
     @Override
-    protected void initChannel(final DrasylChannel ch) throws CryptoException {
-        final ChannelPipeline p = ch.pipeline();
+    protected void initChannel(final DrasylChannel ch) throws Exception {
+        // close parent as well
+        ch.closeFuture().addListener(f -> ch.parent().close());
 
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+
+        super.initChannel(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
 
         // add ARQ to make sure messages arrive
         ch.pipeline().addLast(new GoBackNArqCodec());
@@ -102,8 +112,12 @@ public class WormholeSendChildChannelInitializer extends ChannelInitializer<Dras
         }
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
 
-        // close parent as well
-        ch.closeFuture().addListener(f -> ch.parent().close());
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        cause.printStackTrace(err);
+        ctx.channel().close();
+        exitCode.trySet(1);
     }
 }

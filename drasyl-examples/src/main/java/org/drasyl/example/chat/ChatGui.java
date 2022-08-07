@@ -27,11 +27,14 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
-import io.netty.util.internal.ThrowableUtil;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
 import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeException;
+import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -67,7 +70,6 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -78,7 +80,14 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings({ "java:S126", "java:S138", "java:S1188", "java:S1192", "java:S2096" })
+@SuppressWarnings({
+        "java:S109",
+        "java:S126",
+        "java:S138",
+        "java:S1188",
+        "java:S1192",
+        "java:S2096"
+})
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
@@ -132,11 +141,10 @@ public class ChatGui {
                 if (!recipient.isBlank()) {
                     final String text = messageField.getText();
                     messageField.setText("");
-                    node.send(recipient, null);
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
-                        if (e != null && !(e instanceof ClosedChannelException)) {
-                            appendTextToMessageArea("Unable to send message: " + ThrowableUtil.stackTraceToString(e) + "\n");
+                        if (e != null) {
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getClass().getName() + ": " + e.getMessage() + "\n");
                         }
                     });
                 }
@@ -219,6 +227,24 @@ public class ChatGui {
 
                     final ChannelPipeline p = ch.pipeline();
 
+                    // perform handshake to ensure both connections are synchronized
+                    p.addLast(new ConnectionHandshakeCodec());
+                    p.addLast(new ConnectionHandshakeHandler(10_000L, true));
+                    p.addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                    final Throwable cause) {
+                            if (cause instanceof ConnectionHandshakeException) {
+                                ctx.close();
+                            }
+                            else {
+                                ctx.fireExceptionCaught(cause);
+                            }
+                        }
+                    });
+                    p.addLast(new ConnectionHandshakePendWritesHandler());
+
+                    // ensure that messages are delivered
                     p.addLast(new StopAndWaitArqCodec());
                     p.addLast(new StopAndWaitArqHandler(RETRY_MILLIS));
                     p.addLast(new ByteToStopAndWaitArqDataCodec());

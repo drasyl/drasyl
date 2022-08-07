@@ -71,15 +71,27 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
      */
 
     @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (ctx.channel().isActive()) {
+            completeBootstrap(ctx);
+        }
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        completeBootstrap(ctx);
+        ctx.fireChannelActive();
+    }
+
+    private void completeBootstrap(final ChannelHandlerContext ctx) {
         // prepare TCP clients for connecting to exposing service
         bootstrap.group((EventLoopGroup) ctx.executor().parent())
                 .channel(NioSocketChannel.class)
                 // important to synchronize frontend and backend channels
                 .option(ChannelOption.AUTO_READ, false);
-        ctx.fireChannelActive();
     }
 
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
         // ensure TCP clients are shut down
@@ -111,22 +123,18 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
                 LOG.trace("{}: channelRead: Password wrong!", ctx.channel());
             }
             else if (!tcpClients.containsKey(msg.getChannelId())) {
-                LOG.trace("{}: channelRead: New tunnel `{}` requested. Establish TCP connection...", ctx.channel(), ((Connect) msg).getChannelId());
+                LOG.trace("{}: channelRead: New tunnel `{}` requested. Establish TCP connection...", ctx.channel(), msg.getChannelId());
                 bootstrap.handler(new ExposingDrasylHandlerChannelInitializer(ctx, (Connect) msg))
                         .connect(service)
                         .addListener(new ExposingDrasylHandlerConnectListener(ctx, msg.getChannelId()));
             }
         }
-        else if (msg instanceof TunnelMessage) {
+        else {
             // forward message to corresponding client (as event)
             final ChannelHandlerContext clientCtx = tcpClients.get(msg.getChannelId());
             if (clientCtx != null) {
                 clientCtx.pipeline().fireUserEventTriggered(msg);
             }
-        }
-        else {
-            // pass through all other messages
-            ctx.fireChannelRead(msg);
         }
     }
 
@@ -160,11 +168,11 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
         protected void initChannel(final Channel ch) throws Exception {
             final ChannelPipeline p = ch.pipeline();
             p.addLast(new MaxLengthFrameDecoder(MAX_FRAME_LENGTH));
-            p.addLast(new ExposeTcpCHandler(tcpClients, ctx, msg.getChannelId()));
+            p.addLast(new ExposeTcpHandler(tcpClients, ctx, msg.getChannelId()));
             p.addLast(new ChannelInboundHandlerAdapter() {
                 @Override
                 public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable cause) throws Exception {
+                                            final Throwable cause) {
                     cause.printStackTrace();
                     ctx.close();
                 }

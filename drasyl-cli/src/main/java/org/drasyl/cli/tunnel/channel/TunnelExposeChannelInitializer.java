@@ -38,6 +38,7 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S110")
 public class TunnelExposeChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
     private final PrintStream err;
@@ -72,7 +73,7 @@ public class TunnelExposeChannelInitializer extends AbstractChannelInitializer {
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
-            public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+            public void channelActive(final ChannelHandlerContext ctx) {
                 final String code = ch.localAddress() + password;
                 out.println("Service " + service.getTcp() + " exposed.");
                 out.println("Tunnel code is: " + code);

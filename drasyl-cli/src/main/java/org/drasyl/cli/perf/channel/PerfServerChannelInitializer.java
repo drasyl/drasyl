@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S110")
 public class PerfServerChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
     private final PrintStream err;

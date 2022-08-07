@@ -209,7 +209,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                     else {
                         // join failed
                         //noinspection unchecked
-                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture.cause()::getMessage);
+                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture::cause);
                     }
                     ctx.fireChannelActive();
                 });

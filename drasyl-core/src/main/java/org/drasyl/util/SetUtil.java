@@ -148,7 +148,7 @@ public final class SetUtil {
      * @return first {@code n} elements from set {@code set}
      * @throws IllegalArgumentException if {@code n} is negative
      */
-    @SuppressWarnings("java:S1166")
+    @SuppressWarnings({ "java:S881", "java:S1166", "java:S3242" })
     public static <E> Set<E> firstElements(final Set<E> set, final int n) {
         requireNonNegative(n);
         final Set<E> subSet = new HashSet<>();
