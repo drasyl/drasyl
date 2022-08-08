@@ -19,16 +19,18 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.handler.dht.chord;
 
+import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.util.Sha;
 
 import java.nio.ByteBuffer;
 
 import static org.drasyl.util.Preconditions.requireInRange;
 
+/**
+ * Utility class for Chord-related operations.
+ */
 public final class ChordUtil {
     private static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];
 
@@ -44,14 +46,10 @@ public final class ChordUtil {
         // util class
     }
 
-    /*
-     *
-     */
-
     public static long chordId(final Object o) {
         final int hashCode = o.hashCode();
         final byte[] bytes = ByteBuffer.allocate(Integer.BYTES).putInt(hashCode).array();
-        return ByteBuffer.allocate(Long.BYTES).putInt(0).put(Sha.sha1(bytes), 0, Integer.BYTES).position(0).getLong();
+        return ByteBuffer.allocate(Long.BYTES).putInt(0).put(Hashing.sha256(bytes), 0, Integer.BYTES).position(0).getLong();
     }
 
     public static String chordIdHex(final long id) {

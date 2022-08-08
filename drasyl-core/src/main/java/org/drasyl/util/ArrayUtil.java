@@ -94,16 +94,4 @@ public final class ArrayUtil {
         }
         return result;
     }
-
-    public static byte[] compress(final byte[] result, final int length) {
-        byte[] compressed = new byte[length];
-        for (int j = 0; j < length; j++) {
-            byte temp = result[j];
-            for (int k = 1; k < result.length / length; k++) {
-                temp = (byte) (temp ^ result[j+k]);
-            }
-            compressed[j] = temp;
-        }
-        return compressed;
-    }
 }
