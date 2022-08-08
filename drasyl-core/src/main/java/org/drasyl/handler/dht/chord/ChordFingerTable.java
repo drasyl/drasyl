@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 

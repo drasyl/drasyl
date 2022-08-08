@@ -32,7 +32,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 
 /**
  * Joins the Chord distributed hash table.
@@ -41,10 +41,14 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordJoinHandler.class);
     private final ChordFingerTable fingerTable;
     private final DrasylAddress contact;
+    private final RmiClientHandler client;
 
-    public ChordJoinHandler(final ChordFingerTable fingerTable, final DrasylAddress contact) {
+    public ChordJoinHandler(final ChordFingerTable fingerTable,
+                            final DrasylAddress contact,
+                            final RmiClientHandler client) {
         this.fingerTable = requireNonNull(fingerTable);
         this.contact = requireNonNull(contact);
+        this.client = requireNonNull(client);
     }
 
     /*
@@ -74,7 +78,6 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
 
     private void doJoin(final ChannelHandlerContext ctx) {
         LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, chordIdHex(ctx.channel().localAddress()));
-        final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
         service.findSuccessor(chordId(ctx.channel().localAddress())).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
@@ -88,6 +91,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
                 ctx.pipeline().fireExceptionCaught(new ChordException("Failed to join DHT ring.", future.cause()));
                 ctx.pipeline().close();
             }
+            ctx.pipeline().remove(ctx.name());
         });
     }
 }

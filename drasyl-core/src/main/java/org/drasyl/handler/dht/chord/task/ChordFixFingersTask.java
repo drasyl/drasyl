@@ -27,6 +27,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordUtil;
+import org.drasyl.handler.dht.chord.DefaultChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.slf4j.Logger;
@@ -35,8 +36,6 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
-import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -50,16 +49,19 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFixFingersTask.class);
     private final ChordFingerTable fingerTable;
     private final long checkIntervalMillis;
+    private final RmiClientHandler client;
+    private final DefaultChordService defaultChordService;
     private int counter;
     private ScheduledFuture<?> fixFingersTask;
 
-    public ChordFixFingersTask(final ChordFingerTable fingerTable, final long checkIntervalMillis) {
+    public ChordFixFingersTask(final ChordFingerTable fingerTable,
+                               final long checkIntervalMillis,
+                               RmiClientHandler client,
+                               final DefaultChordService defaultChordService) {
         this.fingerTable = requireNonNull(fingerTable);
         this.checkIntervalMillis = requirePositive(checkIntervalMillis);
-    }
-
-    public ChordFixFingersTask(final ChordFingerTable fingerTable) {
-        this(fingerTable, 500);
+        this.client = requireNonNull(client);
+        this.defaultChordService = requireNonNull(defaultChordService);
     }
 
     /*
@@ -105,8 +107,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             final int i = counter + 2;
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
-            final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
-            findSuccessor(id, fingerTable, client, SERVICE_NAME).then(future -> {
+            defaultChordService.composibleFindSuccessor(id).then(future -> {
                 final DrasylAddress ithFinger = future.getNow();
                 LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithFinger);
                 return fingerTable.updateIthFinger(i, ithFinger, client);

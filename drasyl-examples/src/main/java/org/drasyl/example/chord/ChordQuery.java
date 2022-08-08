@@ -69,7 +69,7 @@ public class ChordQuery {
 
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ChordQueryHandler());
+                        p.addLast(new ChordQueryHandler(client));
                         p.addLast(new SimpleChannelInboundHandler<ChordResponse>() {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,

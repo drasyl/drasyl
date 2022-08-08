@@ -18,7 +18,7 @@ import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
-import org.drasyl.handler.dht.chord.MyChordService;
+import org.drasyl.handler.dht.chord.DefaultChordService;
 import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
 import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
 import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
@@ -73,11 +73,12 @@ public class ChordNode {
 
                         final RmiServerHandler server = new RmiServerHandler();
                         final RmiClientHandler client = new RmiClientHandler();
-                        server.bind("ChordService", new MyChordService(fingerTable, client));
+                        final DefaultChordService defaultChordService = new DefaultChordService(fingerTable, client);
+                        server.bind("ChordService", defaultChordService);
 
-                        p.addLast(new ChordStabilizeTask(fingerTable, 500));
-                        p.addLast(new ChordFixFingersTask(fingerTable, 500));
-                        p.addLast(new ChordAskPredecessorTask(fingerTable, 500));
+                        p.addLast(new ChordStabilizeTask(fingerTable, 500, client, defaultChordService));
+                        p.addLast(new ChordFixFingersTask(fingerTable, 500, client, defaultChordService));
+                        p.addLast(new ChordAskPredecessorTask(fingerTable, 500, client));
 
                         p.addLast(new MessageToMessageCodec<OverlayAddressedMessage<?>, AddressedEnvelope<?, ?>>() {
                             @Override
@@ -105,7 +106,7 @@ public class ChordNode {
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
-                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact));
+                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact, client));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }

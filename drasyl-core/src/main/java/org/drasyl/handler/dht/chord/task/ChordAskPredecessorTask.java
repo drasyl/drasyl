@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -47,16 +47,15 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordAskPredecessorTask.class);
     private final ChordFingerTable fingerTable;
     private final long checkIntervalMillis;
+    private final RmiClientHandler client;
     private ScheduledFuture<?> askPredecessorTaskFuture;
 
     public ChordAskPredecessorTask(final ChordFingerTable fingerTable,
-                                   final long checkIntervalMillis) {
+                                   final long checkIntervalMillis,
+                                   final RmiClientHandler client) {
         this.fingerTable = requireNonNull(fingerTable);
         this.checkIntervalMillis = requirePositive(checkIntervalMillis);
-    }
-
-    public ChordAskPredecessorTask(final ChordFingerTable fingerTable) {
-        this(fingerTable, 500);
+        this.client = requireNonNull(client);
     }
 
     /*
@@ -99,7 +98,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup(SERVICE_NAME, ChordService.class, fingerTable.getPredecessor());
+                final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, fingerTable.getPredecessor());
                 service.keep().addListener((FutureListener<Void>) future -> {
                     if (!future.isSuccess()) {
                         // timeout

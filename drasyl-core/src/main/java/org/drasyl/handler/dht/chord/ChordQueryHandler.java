@@ -31,7 +31,8 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
@@ -48,6 +49,11 @@ import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 public class ChordQueryHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ChordQueryHandler.class);
     private ChannelPromise promise;
+    private final RmiClientHandler client;
+
+    public ChordQueryHandler(final RmiClientHandler client) {
+        this.client = requireNonNull(client);
+    }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
@@ -62,7 +68,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) throws Exception {
         if (msg instanceof ChordLookup) {
-            doLookup(ctx, ((ChordLookup) msg).getContact(), ((ChordLookup) msg).getId(), promise, ctx.pipeline().get(RmiClientHandler.class));
+            doLookup(ctx, ((ChordLookup) msg).getContact(), ((ChordLookup) msg).getId(), promise, client);
         }
         else {
             ctx.write(msg, promise);

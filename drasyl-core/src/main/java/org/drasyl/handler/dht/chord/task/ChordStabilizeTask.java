@@ -27,6 +27,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.dht.chord.ChordFingerTable;
 import org.drasyl.handler.dht.chord.ChordService;
+import org.drasyl.handler.dht.chord.DefaultChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.FutureComposer;
@@ -37,9 +38,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
-import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
-import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
-import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -55,15 +54,18 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordStabilizeTask.class);
     private final ChordFingerTable fingerTable;
     private final long checkIntervalMillis;
+    private final RmiClientHandler client;
+    private final DefaultChordService defaultChordService;
     private ScheduledFuture<?> stabilizeTaskFuture;
 
-    public ChordStabilizeTask(final ChordFingerTable fingerTable, final long checkIntervalMillis) {
+    public ChordStabilizeTask(final ChordFingerTable fingerTable,
+                              final long checkIntervalMillis,
+                              final RmiClientHandler client,
+                              final DefaultChordService defaultChordService) {
         this.fingerTable = requireNonNull(fingerTable);
         this.checkIntervalMillis = requirePositive(checkIntervalMillis);
-    }
-
-    public ChordStabilizeTask(final ChordFingerTable fingerTable) {
-        this(fingerTable, 500);
+        this.client = requireNonNull(client);
+        this.defaultChordService = requireNonNull(defaultChordService);
     }
 
     /*
@@ -107,10 +109,9 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
             final DrasylAddress successor = fingerTable.getSuccessor();
             final FutureComposer<Void> voidFuture;
-            final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
             if (successor == null || successor.equals(fingerTable.getLocalAddress())) {
                 // Try to fill successor with candidates in finger table or even predecessor
-                voidFuture = fillSuccessor(fingerTable, client);//fill
+                voidFuture = defaultChordService.fillSuccessor();//fill
             }
             else {
                 voidFuture = composeSucceededFuture();
@@ -127,7 +128,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                         DrasylAddress x = future2.getNow();
                         if (x == null) {
                             LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                            return deleteSuccessor(fingerTable, client, SERVICE_NAME);
+                            return defaultChordService.deleteSuccessor();
                         }
 
                         // else if successor's predecessor is not itself
