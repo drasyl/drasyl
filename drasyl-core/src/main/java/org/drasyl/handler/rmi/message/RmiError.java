@@ -25,12 +25,13 @@ import com.google.auto.value.AutoValue;
 
 import java.util.UUID;
 
+/**
+ * Indicates that a remote message invocation erroed.
+ *
+ * @see RmiRequest
+ */
 @AutoValue
 public abstract class RmiError implements RmiMessage {
-    public abstract UUID getId();
-
-    public abstract String getMessage();
-
     public static RmiError of(final UUID id, final String message) {
         return new AutoValue_RmiError(id, message);
     }
@@ -38,4 +39,8 @@ public abstract class RmiError implements RmiMessage {
     public static RmiError of(final UUID id, final Throwable cause) {
         return of(id, cause.toString());
     }
+
+    public abstract UUID getId();
+
+    public abstract String getMessage();
 }

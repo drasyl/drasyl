@@ -35,6 +35,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -199,10 +200,16 @@ class RmiIT {
     }
 
     private static class FlipEnvelopeAddressesHandler extends SimpleChannelInboundHandler<AddressedEnvelope<?, SocketAddress>> {
+        public FlipEnvelopeAddressesHandler() {
+            super(false);
+        }
+
         @Override
-        protected void channelRead0(ChannelHandlerContext ctx,
-                                    AddressedEnvelope<?, SocketAddress> msg) {
-            ctx.fireChannelRead(new DefaultAddressedEnvelope<>(msg.content(), msg.sender(), msg.recipient()));
+        protected void channelRead0(final ChannelHandlerContext ctx,
+                                    final AddressedEnvelope<?, SocketAddress> msg) {
+            DefaultAddressedEnvelope<?, SocketAddress> msg1 = new DefaultAddressedEnvelope<>(msg.content(), msg.sender(), msg.recipient());
+            System.out.println("msg1 = " + ReferenceCountUtil.refCnt(msg1));
+            ctx.fireChannelRead(msg1);
         }
     }
 }

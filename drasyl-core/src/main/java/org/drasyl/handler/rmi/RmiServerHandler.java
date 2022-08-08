@@ -67,6 +67,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
     public RmiServerHandler(final Map<Integer, Object> bindings,
                             final Map<Integer, Map<Integer, Method>> bindingsMethods,
                             final Map<Pair<SocketAddress, UUID>, Future<?>> invocations) {
+        super(false);
         this.bindings = requireNonNull(bindings);
         this.bindingsMethods = requireNonNull(bindingsMethods);
         this.invocations = requireNonNull(invocations);
@@ -109,6 +110,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
         final Object binding = bindings.get(name);
 
         if (binding == null) {
+            request.release();
             replyError(ctx, caller, id, new RmiException("Binding not found."));
             return;
         }
@@ -117,6 +119,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
         final Method method = bindingMethods.get(methodHash);
 
         if (method == null) {
+            request.release();
             replyError(ctx, caller, id, new RmiException("Method not found."));
             return;
         }
@@ -127,6 +130,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
             invokeMethod(ctx, caller, id, binding, method, args);
         }
         catch (final IOException e) {
+            request.release();
             replyError(ctx, caller, id, e);
         }
     }
