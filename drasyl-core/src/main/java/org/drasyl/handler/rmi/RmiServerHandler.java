@@ -255,6 +255,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
                                    final SocketAddress recipient,
                                    final UUID id,
                                    final Throwable cause) {
+        LOG.warn("Error:", cause);
         final RmiError response = RmiError.of(id, cause);
         final AddressedEnvelope<RmiError, SocketAddress> msg = new DefaultAddressedEnvelope<>(response, recipient);
         LOG.debug("Send `{}`.", msg);
