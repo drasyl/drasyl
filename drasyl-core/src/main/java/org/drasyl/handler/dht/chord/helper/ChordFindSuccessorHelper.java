@@ -63,8 +63,13 @@ public final class ChordFindSuccessorHelper {
                     final DrasylAddress pre = future.getNow();
                     // if other node found, ask it for its successor
                     if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
-                        final ChordService service = client.lookup("ChordService", ChordService.class, pre);
-                        return composeFuture().chain(service.yourSuccessor());
+                        if (pre != null) {
+                            final ChordService service = client.lookup("ChordService", ChordService.class, pre);
+                            return composeFuture().chain(service.yourSuccessor());
+                        }
+                        else {
+                            return composeFuture();
+                        }
                     }
                     else {
                         return composeFuture(ret);

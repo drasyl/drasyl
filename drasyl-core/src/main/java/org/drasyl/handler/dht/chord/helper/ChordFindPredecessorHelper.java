@@ -115,34 +115,40 @@ public final class ChordFindPredecessorHelper {
                                                                   final DrasylAddress mostRecentlyAlive,
                                                                   final ChordFingerTable fingerTable,
                                                                   final RmiClientHandler client) {
-        return composeFuture().chain(client.lookup("ChordService", ChordService.class, currentNode).closest(findId))
-                .chain(future -> {
-                    final DrasylAddress closest = future.getNow();
-                    // if fail to get response, set currentNode to most recently
-                    if (closest == null) {
-                        final ChordService service = client.lookup("ChordService", ChordService.class, mostRecentlyAlive);
-                        return composeFuture().chain(service.yourSuccessor())
-                                .chain(future1 -> {
-                                    final DrasylAddress mostRecentlysSuccessor = future1.getNow();
-                                    if (mostRecentlysSuccessor == null) {
-                                        return composeFuture(fingerTable.getLocalAddress());
-                                    }
-                                    return recursive(findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
-                                });
-                    }
+        final FutureComposer<DrasylAddress> lookupComposer;
+        if (currentNode != null) {
+            lookupComposer = composeFuture().chain(client.lookup("ChordService", ChordService.class, currentNode).closest(findId));
+        }
+        else {
+            lookupComposer = composeFuture();
+        }
+        return lookupComposer.chain(future -> {
+            final DrasylAddress closest = future.getNow();
+            // if fail to get response, set currentNode to most recently
+            if (closest == null) {
+                final ChordService service = client.lookup("ChordService", ChordService.class, mostRecentlyAlive);
+                return composeFuture().chain(service.yourSuccessor())
+                        .chain(future1 -> {
+                            final DrasylAddress mostRecentlysSuccessor = future1.getNow();
+                            if (mostRecentlysSuccessor == null) {
+                                return composeFuture(fingerTable.getLocalAddress());
+                            }
+                            return recursive(findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive, fingerTable, client);
+                        });
+            }
 
-                    // if currentNode's closest is itself, return currentNode
-                    else if (closest.equals(currentNode)) {
-                        return composeFuture(closest);
-                    }
+            // if currentNode's closest is itself, return currentNode
+            else if (closest.equals(currentNode)) {
+                return composeFuture(closest);
+            }
 
-                    // else currentNode's closest is other node "closest"
-                    else {
-                        // set currentNode as most recently alive
-                        // ask "closest" for its successor
-                        return requestClosestsSuccessor(findId, currentNode, fingerTable, closest, client);
-                    }
-                });
+            // else currentNode's closest is other node "closest"
+            else {
+                // set currentNode as most recently alive
+                // ask "closest" for its successor
+                return requestClosestsSuccessor(findId, currentNode, fingerTable, closest, client);
+            }
+        });
     }
 
     private static FutureComposer<DrasylAddress> requestClosestsSuccessor(final long findId,

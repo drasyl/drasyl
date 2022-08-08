@@ -28,4 +28,8 @@ public class ChordException extends Exception {
     public ChordException(final String message) {
         super(message);
     }
+
+    public ChordException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

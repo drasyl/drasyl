@@ -104,11 +104,12 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             final int i = counter + 2;
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
-            findSuccessor(id, fingerTable, ctx.pipeline().get(RmiClientHandler.class))
+            final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
+            findSuccessor(id, fingerTable, client)
                     .chain(future -> {
                         final DrasylAddress ithfinger = future.getNow();
                         LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithfinger);
-                        return fingerTable.updateIthFinger(i, ithfinger, ctx.pipeline().get(RmiClientHandler.class));
+                        return fingerTable.updateIthFinger(i, ithfinger, client);
                     })
                     .finish(ctx.executor())
                     .addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));

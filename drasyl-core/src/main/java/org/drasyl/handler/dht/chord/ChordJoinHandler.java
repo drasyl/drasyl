@@ -84,8 +84,8 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
                 fingerTable.setSuccessor(successor, client).finish(ctx.executor());
             }
             else {
-                LOG.error("Got no response from `{}` within 5000ms.", contact); // FIXME: 60000ms eigentlich. wäre cool, wenn man das ändern könnte!
-                ctx.pipeline().fireExceptionCaught(new ChordException("Cannot find node you are trying to contact. Please exit."));
+                LOG.error("Failed to join DHT ring `{}`:", contact, future.cause()); // FIXME: 60000ms eigentlich. wäre cool, wenn man das ändern könnte!
+                ctx.pipeline().fireExceptionCaught(new ChordException("Failed to join DHT ring.", future.cause()));
                 ctx.pipeline().close();
             }
         });

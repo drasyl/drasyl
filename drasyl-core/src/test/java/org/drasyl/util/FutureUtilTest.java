@@ -23,9 +23,7 @@ package org.drasyl.util;
 
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.EventExecutor;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,12 +34,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 
 import static org.drasyl.util.FutureUtil.synchronizeFutures;
 import static org.drasyl.util.FutureUtil.toFuture;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -162,83 +157,5 @@ class FutureUtilTest {
 
             assertThrows(ExecutionException.class, future::get);
         }
-    }
-
-    @Nested
-    class MapFuture {
-        @Test
-        void shouldApplyMapperFunctionWhenFutureSucceeds() {
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
-            promise.setSuccess(42);
-
-            assertEquals("42", mappedFuture.getNow());
-        }
-
-        @Test
-        void shouldApplyMapperFunctionOnSucceededFuture() {
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            promise.setSuccess(42);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
-
-            assertEquals("42", mappedFuture.getNow());
-        }
-
-        @Test
-        void shouldPassFailureWhenFutureFails(@Mock final Throwable cause) {
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
-            promise.setFailure(cause);
-
-            assertEquals(cause, mappedFuture.cause());
-        }
-
-        @Test
-        void shouldPassFailureOnFailedFuture(@Mock final Throwable cause) {
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            promise.setFailure(cause);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
-
-            assertEquals(cause, mappedFuture.cause());
-        }
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        @Test
-        void shouldCreateFailedFutureIfMapperFailsWhenFutureFails(@Mock final Function mapper) {
-            when(mapper.apply(any())).thenThrow(RuntimeException.class);
-
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, mapper);
-            promise.setSuccess(42);
-
-            assertThat(mappedFuture.cause(), instanceOf(RuntimeException.class));
-        }
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        @Test
-        void shouldCreateFailedFutureIfMapperFailsOnSucceededFuture(@Mock final Function mapper) {
-            when(mapper.apply(any())).thenThrow(RuntimeException.class);
-
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            promise.setSuccess(42);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, mapper);
-
-            assertThat(mappedFuture.cause(), instanceOf(RuntimeException.class));
-        }
-
-        @Test
-        void shouldCancelFutureIfMappedFutureIsCanceled() {
-            final Promise<Integer> promise = new DefaultPromise<>(ImmediateEventExecutor.INSTANCE);
-            promise.cancel(false);
-            final Future<String> mappedFuture = FutureUtil.mapFuture(promise, ImmediateEventExecutor.INSTANCE, Object::toString);
-            mappedFuture.cancel(false);
-
-            assertTrue(promise.isCancelled());
-        }
-    }
-
-    @Nested
-    class ChainFuture {
-
     }
 }

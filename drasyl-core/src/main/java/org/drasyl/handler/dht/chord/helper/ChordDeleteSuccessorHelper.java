@@ -92,7 +92,7 @@ public final class ChordDeleteSuccessorHelper {
                                                                    final int j,
                                                                    final RmiClientHandler client) {
         return fingerTable.updateIthFinger(j, null, client)
-                .chain(() -> {
+                .chain(future -> {
                     if (j > 1) {
                         return deleteFromIthToFirstFinger(fingerTable, j - 1, client);
                     }
