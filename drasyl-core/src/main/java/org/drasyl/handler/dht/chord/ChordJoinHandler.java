@@ -32,6 +32,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
+import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 
 /**
  * Joins the Chord distributed hash table.
@@ -75,7 +76,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     private void doJoinTask(final ChannelHandlerContext ctx) {
         LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, chordIdHex(ctx.channel().localAddress()));
         final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
-        final ChordService service = client.lookup("ChordService", ChordService.class, contact);
+        final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
         service.findSuccessor(chordId(ctx.channel().localAddress())).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
                 final DrasylAddress successor = future.getNow();

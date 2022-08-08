@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
@@ -38,7 +39,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 
 final class RmiUtil {
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectMapper OBJECT_MAPPER = new CBORMapper();
 
     static {
         OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
@@ -50,22 +51,12 @@ final class RmiUtil {
     }
 
     public static void marshalValue(final Object value, final OutputStream out) throws IOException {
-        try {
-            OBJECT_MAPPER.writeValue(out, value);
-        }
-        catch (final Exception e) {
-            throw e;
-        }
+        OBJECT_MAPPER.writeValue(out, value);
     }
 
     public static <T> T unmarshalValue(final Class<T> type,
                                        final InputStream in) throws IOException {
-        try {
-            return OBJECT_MAPPER.readValue(in, type);
-        }
-        catch (final Exception e) {
-            throw e;
-        }
+        return OBJECT_MAPPER.readValue(in, type);
     }
 
     public static ByteBuf marshalArgs(final Object[] args, final ByteBuf buf) throws IOException {

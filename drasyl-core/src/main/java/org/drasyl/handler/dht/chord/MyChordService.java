@@ -39,6 +39,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
 
 public class MyChordService implements ChordService {
+    public static final String SERVICE_NAME = "ChordService";
     private static final Logger LOG = LoggerFactory.getLogger(MyChordService.class);
     @RmiCaller
     private DrasylAddress caller;
@@ -100,11 +101,11 @@ public class MyChordService implements ChordService {
 
     @Override
     public Future<DrasylAddress> closest(final long id) {
-        return closestPrecedingFinger(id, fingerTable, client).finish(group.next());
+        return closestPrecedingFinger(id, fingerTable, client, SERVICE_NAME).finish(group.next());
     }
 
     @Override
     public Future<DrasylAddress> findSuccessor(long id) {
-        return ChordFindSuccessorHelper.findSuccessor(id, fingerTable, client).finish(group.next());
+        return ChordFindSuccessorHelper.findSuccessor(id, fingerTable, client, SERVICE_NAME).finish(group.next());
     }
 }

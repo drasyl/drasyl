@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -98,7 +99,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
-                final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup("ChordService", ChordService.class, fingerTable.getPredecessor());
+                final ChordService service = ctx.pipeline().get(RmiClientHandler.class).lookup(SERVICE_NAME, ChordService.class, fingerTable.getPredecessor());
                 service.keep().addListener((FutureListener<Void>) future -> {
                     if (!future.isSuccess()) {
                         // timeout

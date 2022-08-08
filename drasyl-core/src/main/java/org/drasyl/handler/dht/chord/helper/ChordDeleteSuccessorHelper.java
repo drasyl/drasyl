@@ -42,7 +42,8 @@ public final class ChordDeleteSuccessorHelper {
     }
 
     public static FutureComposer<Void> deleteSuccessor(final ChordFingerTable fingerTable,
-                                                       final RmiClientHandler client) {
+                                                       final RmiClientHandler client,
+                                                       final String serviceName) {
         final DrasylAddress successor = fingerTable.getSuccessor();
 
         // nothing to delete, just return
@@ -78,7 +79,7 @@ public final class ChordDeleteSuccessorHelper {
                     if ((successor2 == null || fingerTable.getLocalAddress().equals(successor2)) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
                         final DrasylAddress predecessor = fingerTable.getPredecessor();
 
-                        return findNewSuccessor(predecessor, successor2, fingerTable, client)
+                        return findNewSuccessor(predecessor, successor2, fingerTable, client, serviceName)
                                 // update successor
                                 .chain(() -> fingerTable.updateIthFinger(1, predecessor, client));
                     }
@@ -105,8 +106,9 @@ public final class ChordDeleteSuccessorHelper {
     private static FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
                                                                   final DrasylAddress successor,
                                                                   final ChordFingerTable fingerTable,
-                                                                  final RmiClientHandler client) {
-        final ChordService service = client.lookup("ChordService", ChordService.class, peer);
+                                                                  final RmiClientHandler client,
+                                                                  final String serviceName) {
+        final ChordService service = client.lookup(serviceName, ChordService.class, peer);
         return composeFuture().chain(service.yourPredecessor())
                 .chain(future -> {
                     DrasylAddress predecessor = future.getNow();
@@ -122,7 +124,7 @@ public final class ChordDeleteSuccessorHelper {
                     }
                     // else, keep asking
                     else {
-                        return findNewSuccessor(predecessor, successor, fingerTable, client);
+                        return findNewSuccessor(predecessor, successor, fingerTable, client, serviceName);
                     }
                 });
     }

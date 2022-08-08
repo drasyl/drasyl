@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
+import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper.findSuccessor;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -105,7 +106,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
             final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
-            findSuccessor(id, fingerTable, client)
+            findSuccessor(id, fingerTable, client, SERVICE_NAME)
                     .chain(future -> {
                         final DrasylAddress ithfinger = future.getNow();
                         LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithfinger);

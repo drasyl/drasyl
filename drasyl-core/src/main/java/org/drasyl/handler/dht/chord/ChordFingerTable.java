@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
+import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
 
 public class ChordFingerTable {
@@ -130,7 +131,7 @@ public class ChordFingerTable {
 
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
-            final ChordService service = client.lookup("ChordService", ChordService.class, value);
+            final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, value);
             return composeFuture().chain(service.iAmPre());
         }
         else {

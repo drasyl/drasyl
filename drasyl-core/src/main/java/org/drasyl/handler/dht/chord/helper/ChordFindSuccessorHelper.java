@@ -50,7 +50,8 @@ public final class ChordFindSuccessorHelper {
 
     public static FutureComposer<DrasylAddress> findSuccessor(final long id,
                                                               final ChordFingerTable fingerTable,
-                                                              final RmiClientHandler client) {
+                                                              final RmiClientHandler client,
+                                                              final String serviceName) {
         LOG.debug("Find successor of `{}`.", ChordUtil.chordIdHex(id));
 
         // initialize return value as this node's successor (might be null)
@@ -58,13 +59,13 @@ public final class ChordFindSuccessorHelper {
 
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", ChordUtil.chordIdHex(id));
 
-        return findPredecessor(id, fingerTable, client)
+        return findPredecessor(id, fingerTable, client, serviceName)
                 .chain(future -> {
                     final DrasylAddress pre = future.getNow();
                     // if other node found, ask it for its successor
                     if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
                         if (pre != null) {
-                            final ChordService service = client.lookup("ChordService", ChordService.class, pre);
+                            final ChordService service = client.lookup(serviceName, ChordService.class, pre);
                             return composeFuture().chain(service.yourSuccessor());
                         }
                         else {

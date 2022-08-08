@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
+import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
@@ -119,14 +120,14 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                     LOG.debug("Check if successor has still us a predecessor.");
 
                     // try to get my successor's predecessor
-                    final ChordService service = client.lookup("ChordService", ChordService.class, successor);
+                    final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, successor);
                     composeFuture().chain(service.yourPredecessor())
                             .chain(future2 -> {
                                 // if bad connection with successor! delete successor
                                 DrasylAddress x = future2.getNow();
                                 if (x == null) {
                                     LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                                    return deleteSuccessor(fingerTable, client);
+                                    return deleteSuccessor(fingerTable, client, SERVICE_NAME);
                                 }
 
                                 // else if successor's predecessor is not itself
@@ -153,8 +154,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 else {
                                     LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                                     if (!successor.equals(fingerTable.getLocalAddress())) {
-                                        final ChordService service2 = client.lookup("ChordService", ChordService.class, successor);
-                                        return composeFuture().chain(service2.iAmPre());
+                                        return composeFuture().chain(service.iAmPre());
                                     }
                                     return composeFuture();
                                 }
