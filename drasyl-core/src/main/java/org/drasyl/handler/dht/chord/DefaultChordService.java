@@ -29,8 +29,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
-import org.drasyl.handler.rmi.RmiCaller;
 import org.drasyl.handler.rmi.RmiClientHandler;
+import org.drasyl.handler.rmi.annotation.RmiCaller;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureComposer;
@@ -59,11 +59,11 @@ public class DefaultChordService implements ChordService {
 
     public static final String SERVICE_NAME = "ChordService";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultChordService.class);
-    @RmiCaller
-    private DrasylAddress caller;
     private final ChordFingerTable fingerTable;
     private final RmiClientHandler client;
     private final EventLoopGroup group = new NioEventLoopGroup();
+    @RmiCaller
+    private DrasylAddress caller;
 
     public DefaultChordService(final ChordFingerTable fingerTable, RmiClientHandler client) {
         this.fingerTable = requireNonNull(fingerTable);

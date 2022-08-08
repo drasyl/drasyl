@@ -22,8 +22,10 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.util.concurrent.Future;
+import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.drasyl.identity.DrasylAddress;
 
+@RmiTimeout(5_000L)
 public interface ChordService {
     Future<Void> keep();
 

@@ -51,20 +51,12 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
         this.client = requireNonNull(client);
     }
 
-    /*
-     * Handler Events
-     */
-
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
             doJoin(ctx);
         }
     }
-
-    /*
-     * Channel Events
-     */
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
@@ -87,7 +79,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
                 fingerTable.setSuccessor(successor, client).finish(ctx.executor());
             }
             else {
-                LOG.error("Failed to join DHT ring `{}`:", contact, future.cause()); // FIXME: 60000ms eigentlich. wäre cool, wenn man das ändern könnte!
+                LOG.error("Failed to join DHT ring `{}`:", contact, future.cause());
                 ctx.pipeline().fireExceptionCaught(new ChordException("Failed to join DHT ring.", future.cause()));
                 ctx.pipeline().close();
             }
