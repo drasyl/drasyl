@@ -27,7 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.PendingWriteQueue;
-import org.drasyl.util.ReferenceCountUtil;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
