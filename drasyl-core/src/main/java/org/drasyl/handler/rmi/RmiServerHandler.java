@@ -29,6 +29,7 @@ import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import org.drasyl.handler.rmi.annotation.RmiCaller;
 import org.drasyl.handler.rmi.message.RmiCancel;
 import org.drasyl.handler.rmi.message.RmiError;
 import org.drasyl.handler.rmi.message.RmiMessage;
