@@ -10,7 +10,7 @@ If you would like to learn mor about this protocl, please refer to this paper:
 > Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005)
 > . https://doi.org/10.1007/s10922-005-4441-x
 
-To use this protocol, you have to use the [bootstrapping interface](./bootstrapping.md) were you have to customize the server channel's ChannelInitializer.
+To use this protocol, you have to use the [bootstrapping interface](./bootstrapping.md), where you have to customize the server channel's ChannelInitializer.
 Below you find a code snippet with a customized initializer including the Chord related handlers.
 The `CyclonView` object passed to the handlers contains the local (partial) view of the network.
 By calling `view.getNeighbors()` you will get a list of currently known neighbors and their corresponding addresses.
