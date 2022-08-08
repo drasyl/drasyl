@@ -41,13 +41,13 @@ class ChordUtilTest {
     class ChordId {
         @Test
         void shouldReturnCorrectId() {
-            assertEquals(278773390, chordId("Hello"));
-            assertEquals(1441048492, chordId(true));
-            assertEquals(739913095, chordId(false));
-            assertEquals(2422852216L, chordId(0));
-            assertEquals(2144188888, chordId(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals(1473882460, chordId(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals(1848401582, chordId(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals(1_516_911_440L, chordId("Hello"));
+            assertEquals(3_612_140_399L, chordId(true));
+            assertEquals(2_905_308_945L, chordId(false));
+            assertEquals(3_745_472_920L, chordId(0));
+            assertEquals(377_492_079L, chordId(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals(4_260_286_807L, chordId(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals(2_071_435_803L, chordId(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -55,13 +55,13 @@ class ChordUtilTest {
     class ChordIdHex {
         @Test
         void shouldReturnCorrectHexString() {
-            assertEquals("109dbe8e", chordIdHex("Hello"));
-            assertEquals("55e4a7ac", chordIdHex(true));
-            assertEquals("2c1a2d87", chordIdHex(false));
-            assertEquals("9069ca78", chordIdHex((Object) 0));
-            assertEquals("7fcdb9d8", chordIdHex(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals("57d9a95c", chordIdHex(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals("6e2c5eae", chordIdHex(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals("5a6a3b50", chordIdHex("Hello"));
+            assertEquals("d74ce36f", chordIdHex(true));
+            assertEquals("ad2b7f11", chordIdHex(false));
+            assertEquals("df3f6198", chordIdHex((Object) 0));
+            assertEquals("1680126f", chordIdHex(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals("fdeed157", chordIdHex(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals("7b779a1b", chordIdHex(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -69,13 +69,13 @@ class ChordUtilTest {
     class ChordIdPosition {
         @Test
         void shouldReturnCorrectPosition() {
-            assertEquals("6%", chordIdPosition("Hello"));
-            assertEquals("33%", chordIdPosition(true));
-            assertEquals("17%", chordIdPosition(false));
-            assertEquals("56%", chordIdPosition((Object) 0));
-            assertEquals("49%", chordIdPosition(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals("34%", chordIdPosition(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals("43%", chordIdPosition(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals("35%", chordIdPosition("Hello"));
+            assertEquals("84%", chordIdPosition(true));
+            assertEquals("67%", chordIdPosition(false));
+            assertEquals("87%", chordIdPosition((Object) 0));
+            assertEquals("8%", chordIdPosition(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals("99%", chordIdPosition(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals("48%", chordIdPosition(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -98,15 +98,15 @@ class ChordUtilTest {
     class relativeChordId {
         @Test
         void shouldReturnCorrectPosition() {
-            long x = 3_132_692_194L + 1_162_275_102L;
+            long x = 2_199_738_337L + 1_162_275_102L;
             assertEquals(0, relativeChordId("Hello", "Hello"));
-            assertEquals(3_132_692_194L, relativeChordId("Hello", true));
-            assertEquals(4_294_967_296L - 3_132_692_194L, relativeChordId(true, "Hello"));
-            assertEquals(3_833_827_591L, relativeChordId("Hello", false));
-            assertEquals(2_150_888_470L, relativeChordId("Hello", (Object) 0));
-            assertEquals(2_429_551_798L, relativeChordId("Hello", IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals(3_099_858_226L, relativeChordId("Hello", IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals(2_725_339_104L, relativeChordId("Hello", IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals(2_199_738_337L, relativeChordId("Hello", true));
+            assertEquals(4_294_967_296L - 2_199_738_337L, relativeChordId(true, "Hello"));
+            assertEquals(2_906_569_791L, relativeChordId("Hello", false));
+            assertEquals(2_066_405_816L, relativeChordId("Hello", (Object) 0));
+            assertEquals(1_139_419_361L, relativeChordId("Hello", IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals(1_551_591_929L, relativeChordId("Hello", IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals(3_740_442_933L, relativeChordId("Hello", IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 }
