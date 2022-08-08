@@ -21,16 +21,11 @@
  */
 package org.drasyl.handler.rmi;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,13 +33,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-final class RmiUtil {
+public final class RmiUtil {
     public static final ObjectMapper OBJECT_MAPPER = new CBORMapper();
-
-    static {
-        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
-        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
-    }
 
     private RmiUtil() {
         // util class
@@ -151,20 +141,5 @@ final class RmiUtil {
         values[values.length - 1] = m.getReturnType().getName();
 
         return Arrays.hashCode(values);
-    }
-
-    public interface IdentityPublicKeyMixin {
-        @JsonValue
-        String toString();
-
-        @JsonCreator
-        static DrasylAddress of(final String bytes) {
-            // won't be called
-            return null;
-        }
-    }
-
-    @JsonDeserialize(as = IdentityPublicKey.class)
-    public interface DrasylAddressMixin {
     }
 }

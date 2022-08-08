@@ -27,9 +27,12 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
 import org.drasyl.handler.dht.chord.helper.ChordFindSuccessorHelper;
+import org.drasyl.handler.dht.chord.mixin.DrasylAddressMixin;
+import org.drasyl.handler.dht.chord.mixin.IdentityPublicKeyMixin;
 import org.drasyl.handler.rmi.RmiCaller;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -37,8 +40,14 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.handler.dht.chord.helper.ChordClosestPrecedingFingerHelper.closestPrecedingFinger;
+import static org.drasyl.handler.rmi.RmiUtil.OBJECT_MAPPER;
 
 public class MyChordService implements ChordService {
+    static {
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
+    }
+
     public static final String SERVICE_NAME = "ChordService";
     private static final Logger LOG = LoggerFactory.getLogger(MyChordService.class);
     @RmiCaller

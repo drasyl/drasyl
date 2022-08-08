@@ -164,7 +164,6 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
      */
     @SuppressWarnings("unchecked")
     public <T> T lookup(final String name, final Class<T> clazz, final SocketAddress address) {
-        // FIXME: cache result?
         return (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
                 clazz
         }, new RmiInvocationHandler(this, name, address, timeoutMillis));
