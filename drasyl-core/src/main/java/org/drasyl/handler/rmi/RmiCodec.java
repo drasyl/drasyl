@@ -54,6 +54,12 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
     // id: UUID 16 bytes
     public static final int MIN_MESSAGE_LENGTH = 20;
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean acceptOutboundMessage(Object msg) {
+        return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof RmiMessage;
+    }
+
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final AddressedEnvelope<RmiMessage, SocketAddress> msg,
@@ -107,6 +113,12 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
         else {
             throw new EncoderException("Unknown RmiMessage type: " + StringUtil.simpleClassName(msg.content()));
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public boolean acceptInboundMessage(Object msg) throws Exception {
+        return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ByteBuf;
     }
 
     @Override
