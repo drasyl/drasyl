@@ -19,36 +19,92 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.handler.rmi.message;
 
-import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
 
+import java.util.Objects;
 import java.util.UUID;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.UUID.randomUUID;
 
-@AutoValue
-public abstract class RmiRequest implements RmiMessage {
-    public abstract UUID getId();
+/**
+ * A invocation of a remote method.
+ *
+ * @see RmiResponse
+ * @see RmiCancel
+ * @see RmiError
+ */
+public class RmiRequest extends DefaultByteBufHolder implements RmiMessage {
+    private final UUID id;
+    private final int name;
+    private final int method;
 
-    public abstract int getName();
-
-    public abstract int getMethod();
-
-    public abstract ByteBuf getArguments();
+    private RmiRequest(UUID id, int name, int method, ByteBuf arguments) {
+        super(arguments);
+        this.id = requireNonNull(id);
+        this.name = name;
+        this.method = method;
+    }
 
     public static RmiRequest of(final UUID id,
                                 final int name,
                                 final int method,
                                 final ByteBuf arguments) {
-        return new AutoValue_RmiRequest(id, name, method, arguments);
+        return new RmiRequest(id, name, method, arguments);
     }
 
     public static RmiRequest of(final int name,
                                 final int method,
                                 final ByteBuf arguments) {
         return of(randomUUID(), name, method, arguments);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public int getName() {
+        return name;
+    }
+
+    public int getMethod() {
+        return method;
+    }
+
+    public ByteBuf getArguments() {
+        return content();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        RmiRequest that = (RmiRequest) o;
+        return name == that.name && method == that.method && Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, method, super.hashCode());
+    }
+
+    @Override
+    public String toString() {
+        return "RmiRequest{" +
+                "id=" + id +
+                ", name=" + name +
+                ", method=" + method +
+                ", arguments=" + getArguments() +
+                '}';
     }
 }

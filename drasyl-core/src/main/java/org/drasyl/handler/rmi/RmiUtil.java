@@ -33,6 +33,9 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
+/**
+ * Utility class for remote method invocation-related operations.
+ */
 public final class RmiUtil {
     public static final ObjectMapper OBJECT_MAPPER = new CBORMapper();
 
@@ -40,30 +43,33 @@ public final class RmiUtil {
         // util class
     }
 
-    public static void marshalValue(final Object value, final OutputStream out) throws IOException {
+    static void marshalValue(final Object value, final OutputStream out) throws IOException {
         OBJECT_MAPPER.writeValue(out, value);
     }
 
-    public static <T> T unmarshalValue(final Class<T> type,
-                                       final InputStream in) throws IOException {
+    static <T> T unmarshalValue(final Class<T> type,
+                                final InputStream in) throws IOException {
         return OBJECT_MAPPER.readValue(in, type);
     }
 
-    public static ByteBuf marshalArgs(final Object[] args, final ByteBuf buf) throws IOException {
+    static ByteBuf marshalArgs(final Object[] args, final ByteBuf buf) throws IOException {
         try (final OutputStream out = new ByteBufOutputStream(buf)) {
             marshalValue(args, out);
             return buf;
         }
     }
 
-    public static Object unmarshalResult(final Class<?> resultType,
-                                         final ByteBuf buf) throws IOException {
+    static Object unmarshalResult(final Class<?> resultType,
+                                  final ByteBuf buf) throws IOException {
         try (final InputStream in = new ByteBufInputStream(buf)) {
             return unmarshalValue(resultType, in);
         }
+        finally {
+            buf.release();
+        }
     }
 
-    public static ByteBuf marshalResult(final Object result, final ByteBuf buf) throws IOException {
+    static ByteBuf marshalResult(final Object result, final ByteBuf buf) throws IOException {
         try (final OutputStream out = new ByteBufOutputStream(buf)) {
             marshalValue(result, out);
             return buf;
@@ -91,6 +97,9 @@ public final class RmiUtil {
             }
 
             return args;
+        }
+        finally {
+            buf.release();
         }
     }
 

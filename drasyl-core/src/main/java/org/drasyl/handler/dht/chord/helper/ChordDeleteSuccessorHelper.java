@@ -31,6 +31,7 @@ import java.util.Objects;
 
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
@@ -48,7 +49,7 @@ public final class ChordDeleteSuccessorHelper {
 
         // nothing to delete, just return
         if (successor == null) {
-            return composeFuture();
+            return composeSucceededFuture();
         }
 
         // find the last existence of successor in the finger table
@@ -70,7 +71,7 @@ public final class ChordDeleteSuccessorHelper {
 
         // try to fill successor
         return fillSuccessor(fingerTable, client)
-                .chain(() -> {
+                .then(() -> {
                     final DrasylAddress successor2 = fingerTable.getSuccessor();
 
                     // if successor is still null or local node,
@@ -81,10 +82,10 @@ public final class ChordDeleteSuccessorHelper {
 
                         return findNewSuccessor(predecessor, successor2, fingerTable, client, serviceName)
                                 // update successor
-                                .chain(() -> fingerTable.updateIthFinger(1, predecessor, client));
+                                .then(() -> fingerTable.updateIthFinger(1, predecessor, client));
                     }
                     else {
-                        return composeFuture();
+                        return composeSucceededFuture();
                     }
                 });
     }
@@ -93,7 +94,7 @@ public final class ChordDeleteSuccessorHelper {
                                                                    final int j,
                                                                    final RmiClientHandler client) {
         return fingerTable.updateIthFinger(j, null, client)
-                .chain(future -> {
+                .then(future -> {
                     if (j > 1) {
                         return deleteFromIthToFirstFinger(fingerTable, j - 1, client);
                     }
@@ -109,18 +110,18 @@ public final class ChordDeleteSuccessorHelper {
                                                                   final RmiClientHandler client,
                                                                   final String serviceName) {
         final ChordService service = client.lookup(serviceName, ChordService.class, peer);
-        return composeFuture().chain(service.yourPredecessor())
-                .chain(future -> {
+        return composeFuture(service.yourPredecessor())
+                .then(future -> {
                     DrasylAddress predecessor = future.getNow();
                     if (predecessor == null) {
-                        return composeFuture(peer);
+                        return composeSucceededFuture(peer);
                     }
 
                     // if p's predecessor is node is just deleted,
                     // or itself (nothing found in predecessor), or local address,
                     // p is current node's new successor, break
                     if (predecessor.equals(peer) || predecessor.equals(fingerTable.getLocalAddress()) || predecessor.equals(successor)) {
-                        return composeFuture(peer);
+                        return composeSucceededFuture(peer);
                     }
                     // else, keep asking
                     else {

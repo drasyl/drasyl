@@ -29,6 +29,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
@@ -50,16 +51,16 @@ public final class ChordFillSuccessorHelper {
             future = findSuccessorStartingFromIthFinger(2, fingerTable, client);
         }
         else {
-            future = composeFuture();
+            future = composeSucceededFuture();
         }
 
-        return future.chain(() -> {
+        return future.then(() -> {
             final DrasylAddress successor2 = fingerTable.getSuccessor();
             if ((successor2 == null || successor2.equals(fingerTable.getLocalAddress())) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
                 return fingerTable.updateIthFinger(1, fingerTable.getPredecessor(), client);
             }
             else {
-                return composeFuture();
+                return composeSucceededFuture();
             }
         });
     }
@@ -77,7 +78,7 @@ public final class ChordFillSuccessorHelper {
             }
         }
         else {
-            return composeFuture();
+            return composeSucceededFuture();
         }
     }
 
@@ -87,10 +88,10 @@ public final class ChordFillSuccessorHelper {
                                                                           final RmiClientHandler client) {
         if (j >= 1) {
             return fingerTable.updateIthFinger(j, ithfinger, client)
-                    .chain(() -> updateFingersFromIthToFirstFinger(j - 1, ithfinger, fingerTable, client));
+                    .then(() -> updateFingersFromIthToFirstFinger(j - 1, ithfinger, fingerTable, client));
         }
         else {
-            return composeFuture();
+            return composeSucceededFuture();
         }
     }
 }

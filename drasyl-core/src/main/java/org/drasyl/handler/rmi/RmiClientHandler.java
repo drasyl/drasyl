@@ -57,6 +57,7 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
 
     public RmiClientHandler(final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests,
                             final long timeoutMillis) {
+        super(false);
         this.requests = requireNonNull(requests);
         this.timeoutMillis = requireNonNegative(timeoutMillis);
     }
@@ -123,29 +124,30 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
         }
     }
 
-    private void handleResponse(final RmiResponse content, final SocketAddress sender) {
-        final UUID id = content.getId();
+    private void handleResponse(final RmiResponse response, final SocketAddress sender) {
+        final UUID id = response.getId();
         final Pair<Promise<Object>, Class<?>> request = requests.remove(Pair.of(sender, id));
         if (request != null) {
             final Promise<Object> promise = request.first();
             final Class<?> resultType = request.second();
-            final ByteBuf result = content.getResult();
+            final ByteBuf result = response.getResult();
 
             try {
                 promise.trySuccess(RmiUtil.unmarshalResult(resultType, result));
             }
             catch (final IOException e) {
+                response.release();
                 promise.tryFailure(e);
             }
         }
     }
 
-    private void handleError(final RmiError content, final SocketAddress sender) {
-        final UUID id = content.getId();
+    private void handleError(final RmiError error, final SocketAddress sender) {
+        final UUID id = error.getId();
         final Pair<Promise<Object>, Class<?>> request = requests.remove(Pair.of(sender, id));
         if (request != null) {
             final Promise<Object> promise = request.first();
-            final String message = content.getMessage();
+            final String message = error.getMessage();
 
             promise.setFailure(new RmiException(message));
         }
@@ -158,8 +160,8 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
      * @param name    the name of the binding at the remote node
      * @param address the address where the remote object is served
      * @return a reference to a remote object
-     * @throws NullPointerException     if {@code name}, {@code clazz}, or {@code address} is
-     *                                  {@code null}
+     * @throws NullPointerException     if {@code name}, {@code clazz}, or {@code address} is {@code
+     *                                  null}
      * @throws IllegalArgumentException if {@code clazz} is not an java interface
      */
     @SuppressWarnings("unchecked")

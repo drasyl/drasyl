@@ -25,6 +25,11 @@ import com.google.auto.value.AutoValue;
 
 import java.util.UUID;
 
+/**
+ * Signals that a remove message invocation should be canceled.
+ *
+ * @see RmiRequest
+ */
 @AutoValue
 public abstract class RmiCancel implements RmiMessage {
     public abstract UUID getId();

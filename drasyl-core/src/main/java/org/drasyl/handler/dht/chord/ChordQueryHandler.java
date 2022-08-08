@@ -33,6 +33,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * This handler performs a lookup in the Chord table once an outbound {@link ChordLookup} message is
@@ -107,18 +108,18 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final ChordService service) {
         LOG.debug("checkContactStable?");
 
-        composeFuture().chain(service.yourPredecessor())
-                .chain(future -> composeFuture().chain(service.yourSuccessor())
-                        .chain(future1 -> {
+        composeFuture(service.yourPredecessor())
+                .then(future -> composeFuture(service.yourSuccessor())
+                        .then(future1 -> {
                             final DrasylAddress predecessor = future.getNow();
                             final DrasylAddress successor = future1.getNow();
                             if (predecessor == null || successor == null) {
                                 this.promise = null;
                                 promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
-                                return composeFuture(false);
+                                return composeSucceededFuture(false);
                             }
 
-                            return composeFuture(predecessor.equals(contact) == successor.equals(contact));
+                            return composeSucceededFuture(predecessor.equals(contact) == successor.equals(contact));
                         }))
                 .finish(ctx.executor())
                 .addListener((FutureListener<Boolean>) future -> {

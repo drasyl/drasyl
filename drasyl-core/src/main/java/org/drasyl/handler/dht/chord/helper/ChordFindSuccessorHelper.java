@@ -34,6 +34,7 @@ import java.util.Objects;
 
 import static org.drasyl.handler.dht.chord.helper.ChordFindPredecessorHelper.findPredecessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * Helper class providing {@code n.find_predecessor(id)} functionality.
@@ -60,28 +61,28 @@ public final class ChordFindSuccessorHelper {
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", ChordUtil.chordIdHex(id));
 
         return findPredecessor(id, fingerTable, client, serviceName)
-                .chain(future -> {
+                .then(future -> {
                     final DrasylAddress pre = future.getNow();
                     // if other node found, ask it for its successor
                     if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
                         if (pre != null) {
                             final ChordService service = client.lookup(serviceName, ChordService.class, pre);
-                            return composeFuture().chain(service.yourSuccessor());
+                            return composeFuture(service.yourSuccessor());
                         }
                         else {
-                            return composeFuture();
+                            return composeSucceededFuture((DrasylAddress) null);
                         }
                     }
                     else {
-                        return composeFuture(ret);
+                        return composeSucceededFuture(ret);
                     }
                 })
-                .chain(future -> {
+                .then(future -> {
                     final DrasylAddress ret1 = future.getNow();
                     if (ret1 == null) {
-                        return composeFuture(fingerTable.getLocalAddress());
+                        return composeSucceededFuture(fingerTable.getLocalAddress());
                     }
-                    return composeFuture(ret1);
+                    return composeSucceededFuture(ret1);
                 });
     }
 }

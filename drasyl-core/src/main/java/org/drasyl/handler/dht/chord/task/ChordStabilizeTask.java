@@ -41,6 +41,7 @@ import static org.drasyl.handler.dht.chord.MyChordService.SERVICE_NAME;
 import static org.drasyl.handler.dht.chord.helper.ChordDeleteSuccessorHelper.deleteSuccessor;
 import static org.drasyl.handler.dht.chord.helper.ChordFillSuccessorHelper.fillSuccessor;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -112,7 +113,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                 voidFuture = fillSuccessor(fingerTable, client);//fill
             }
             else {
-                voidFuture = composeFuture();
+                voidFuture = composeSucceededFuture();
             }
 
             voidFuture.finish(ctx.executor()).addListener((FutureListener<Void>) future -> {
@@ -121,8 +122,8 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
 
                     // try to get my successor's predecessor
                     final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, successor);
-                    composeFuture().chain(service.yourPredecessor())
-                            .chain(future2 -> {
+                    composeFuture(service.yourPredecessor())
+                            .then(future2 -> {
                                 // if bad connection with successor! delete successor
                                 DrasylAddress x = future2.getNow();
                                 if (x == null) {
@@ -146,7 +147,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                         return fingerTable.updateIthFinger(1, x, client);
                                     }
                                     else {
-                                        return composeFuture();
+                                        return composeSucceededFuture();
                                     }
                                 }
 
@@ -154,9 +155,9 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                                 else {
                                     LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                                     if (!successor.equals(fingerTable.getLocalAddress())) {
-                                        return composeFuture().chain(service.iAmPre());
+                                        return composeFuture(service.iAmPre());
                                     }
-                                    return composeFuture();
+                                    return composeSucceededFuture();
                                 }
                             })
                             .finish(ctx.executor())

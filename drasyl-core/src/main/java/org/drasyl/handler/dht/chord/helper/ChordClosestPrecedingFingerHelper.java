@@ -33,6 +33,7 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * Helper class providing {@code n.closest_preceding_finger(id)} functionality.
@@ -68,10 +69,10 @@ public final class ChordClosestPrecedingFingerHelper {
                                                              final String serviceName) {
         if (i == 0) {
             LOG.debug("We're closest to `{}`.", chordIdHex(findId));
-            return composeFuture(fingerTable.getLocalAddress());
+            return composeSucceededFuture(fingerTable.getLocalAddress());
         }
         else {
-            return composeFuture(fingerTable.get(i)).chain(future -> {
+            return composeSucceededFuture(fingerTable.get(i)).then(future -> {
                 final DrasylAddress ithFinger = future.getNow();
                 if (ithFinger != null) {
                     // if its relative id is the closest, check if its alive
@@ -83,12 +84,12 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("Check if it is still alive.");
 
                         final ChordService service = client.lookup(serviceName, ChordService.class, ithFinger);
-                        return composeFuture().chain(service.keep())
-                                .chain(future2 -> {
+                        return composeFuture(service.keep())
+                                .then(future2 -> {
                                     //it is alive, return it
                                     if (future2.isSuccess()) {
                                         LOG.debug("Peer is still alive.");
-                                        return composeFuture(ithFinger);
+                                        return composeSucceededFuture(ithFinger);
                                     }
                                     // else, remove its existence from finger table
                                     else {

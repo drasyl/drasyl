@@ -26,27 +26,34 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static io.netty.util.concurrent.ImmediateEventExecutor.INSTANCE;
+import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
+import static org.drasyl.util.FutureComposer.composeSucceededFuture;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(MockitoExtension.class)
 class FutureComposerTest {
     @Nested
-    class ChainWithFuture {
+    class ThenWithFuture {
         @Test
         void composedFutureShouldCompleteOnlyWhenChainIsCompleted() {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(promise2).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(promise2).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
         }
 
         @Test
@@ -54,30 +61,30 @@ class FutureComposerTest {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(promise2).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(promise2).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
         }
     }
 
     @Nested
-    class ChainWithMappedComposer {
+    class ThenWithMappedComposer {
         @Test
         void composedFutureShouldCompleteOnlyWhenChainIsCompleted() {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(f -> composeFuture().chain(promise2)).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(f -> composeSucceededFuture().then(promise2)).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
         }
 
         @Test
@@ -85,30 +92,30 @@ class FutureComposerTest {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(f -> composeFuture().chain(promise2)).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(f -> composeSucceededFuture().then(promise2)).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
         }
     }
 
     @Nested
-    class ChainWithSuppliedComposer {
+    class ThenWithSuppliedComposer {
         @Test
         void composedFutureShouldCompleteOnlyWhenChainIsCompleted() {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(() -> composeFuture().chain(promise2)).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(() -> composeSucceededFuture().then(promise2)).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
         }
 
         @Test
@@ -116,13 +123,25 @@ class FutureComposerTest {
             final Promise<Void> promise1 = new DefaultPromise<>(INSTANCE);
             final Promise<Void> promise2 = new DefaultPromise<>(INSTANCE);
 
-            final Future<Void> composedPromise = composeFuture().chain(promise1).chain(() -> composeFuture().chain(promise2)).finish(INSTANCE);
+            final Future<Void> composedFuture = composeFuture(promise1).then(() -> composeSucceededFuture().then(promise2)).finish(INSTANCE);
 
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise1.setSuccess(null);
-            assertFalse(composedPromise.isDone());
+            assertFalse(composedFuture.isDone());
             promise2.setSuccess(null);
-            assertTrue(composedPromise.isDone());
+            assertTrue(composedFuture.isDone());
+        }
+    }
+
+    @Nested
+    class ComposeFailedFuture {
+        @Test
+        void shouldReturnedFailedFuture(@Mock Throwable cause) {
+            final Future<Object> composedFuture = composeFailedFuture(cause).finish(INSTANCE);
+
+            assertTrue(composedFuture.isDone());
+            assertFalse(composedFuture.isSuccess());
+            assertEquals(cause, composedFuture.cause());
         }
     }
 }

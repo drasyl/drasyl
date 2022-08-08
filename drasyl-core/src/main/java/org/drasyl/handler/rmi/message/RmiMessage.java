@@ -22,5 +22,8 @@
 
 package org.drasyl.handler.rmi.message;
 
+/**
+ * Remote message invocation-related message.
+ */
 public interface RmiMessage {
 }

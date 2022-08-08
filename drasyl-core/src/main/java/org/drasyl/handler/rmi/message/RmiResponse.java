@@ -19,21 +19,66 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.handler.rmi.message;
 
-import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
 
+import java.util.Objects;
 import java.util.UUID;
 
-@AutoValue
-public abstract class RmiResponse implements RmiMessage {
-    public abstract UUID getId();
+import static java.util.Objects.requireNonNull;
 
-    public abstract ByteBuf getResult();
+/**
+ * The result of a remote message invocation.
+ *
+ * @see RmiRequest
+ */
+public class RmiResponse extends DefaultByteBufHolder implements RmiMessage {
+    private final UUID id;
+
+    private RmiResponse(final UUID id, final ByteBuf result) {
+        super(result);
+        this.id = requireNonNull(id);
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public ByteBuf getResult() {
+        return content();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        RmiResponse that = (RmiResponse) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), id);
+    }
+
+    @Override
+    public String toString() {
+        return "RmiResponse{" +
+                "id=" + id +
+                ", result=" + getResult() +
+                '}';
+    }
 
     public static RmiResponse of(final UUID id, final ByteBuf result) {
-        return new AutoValue_RmiResponse(id, result);
+        return new RmiResponse(id, result);
     }
 }
