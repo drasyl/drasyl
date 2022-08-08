@@ -40,6 +40,8 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
+import org.drasyl.handler.rmi.annotation.RmiCaller;
+import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.junit.jupiter.api.Test;
 
 import java.net.SocketAddress;
@@ -170,11 +172,14 @@ class RmiIT {
         }
     }
 
+    @RmiTimeout(2_000L)
     interface MyService {
+        @RmiTimeout(1_000L)
         void doNothing();
 
         Future<Integer> doAddition(final int a, final int b);
 
+        @RmiTimeout(1_700L)
         Future<String> whoAmI();
     }
 

@@ -30,6 +30,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.StringUtil;
+import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.drasyl.handler.rmi.message.RmiCancel;
 import org.drasyl.handler.rmi.message.RmiRequest;
 import org.drasyl.util.Pair;
@@ -47,23 +48,20 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.Preconditions.requireNonNegative;
+import static org.drasyl.handler.rmi.annotation.RmiTimeout.DEFAULT_INVOCATION_TIMEOUT;
 
 class RmiInvocationHandler implements InvocationHandler {
     private static final Logger LOG = LoggerFactory.getLogger(RmiInvocationHandler.class);
     private final RmiClientHandler handler;
     private final String name;
     private final SocketAddress address;
-    private final long timeoutMillis;
 
     public RmiInvocationHandler(final RmiClientHandler handler,
                                 final String name,
-                                final SocketAddress address,
-                                final long timeoutMillis) {
+                                final SocketAddress address) {
         this.handler = requireNonNull(handler);
         this.name = requireNonNull(name);
         this.address = requireNonNull(address);
-        this.timeoutMillis = requireNonNegative(timeoutMillis);
     }
 
     @SuppressWarnings("unchecked")
@@ -122,6 +120,7 @@ class RmiInvocationHandler implements InvocationHandler {
                 final Class<?> type = (Class<?>) ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments()[0];
                 handler.requests.put(Pair.of(address, request.getId()), Pair.of(promise, type));
                 promise.addListener(f -> handler.requests.remove(Pair.of(address, request.getId()))); // removes from map when future is done
+                final long timeoutMillis = getInvocationTimeout(method);
                 if (timeoutMillis > 0) {
                     ctx.executor().schedule(() -> promise.tryFailure(new RmiException("Timeout! Got no response within " + timeoutMillis + "ms.")), timeoutMillis, MILLISECONDS);
                 }
@@ -157,5 +156,17 @@ class RmiInvocationHandler implements InvocationHandler {
     @Override
     public String toString() {
         return name + "@" + address;
+    }
+
+    private static long getInvocationTimeout(final Method method) {
+        if (method.isAnnotationPresent(RmiTimeout.class)) {
+            return method.getAnnotation(RmiTimeout.class).value();
+        }
+        else if (method.getDeclaringClass().isAnnotationPresent(RmiTimeout.class)) {
+            return method.getDeclaringClass().getAnnotation(RmiTimeout.class).value();
+        }
+        else {
+            return DEFAULT_INVOCATION_TIMEOUT;
+        }
     }
 }

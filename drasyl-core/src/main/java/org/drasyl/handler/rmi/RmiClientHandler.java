@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * A {@link io.netty.channel.ChannelHandler} that can invoke methods of remote objects that are
@@ -52,32 +51,18 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvelope<RmiMessage, SocketAddress>> {
     private static final Logger LOG = LoggerFactory.getLogger(RmiClientHandler.class);
     final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests;
-    private final long timeoutMillis;
     ChannelHandlerContext ctx;
 
-    public RmiClientHandler(final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests,
-                            final long timeoutMillis) {
+    public RmiClientHandler(final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests) {
         super(false);
         this.requests = requireNonNull(requests);
-        this.timeoutMillis = requireNonNegative(timeoutMillis);
     }
 
     /**
-     * Creates a new {@link RmiClientHandler} with the given timeout.
-     * <br>
-     * {@code timeout = 0} means no timeout. The future can be failed manually.
-     *
-     * @param timeoutMillis timeout to wait for result until failure. 0 means no timeout
-     */
-    public RmiClientHandler(final long timeoutMillis) {
-        this(new HashMap<>(), timeoutMillis);
-    }
-
-    /**
-     * Creates a new {@link RmiClientHandler} with default timeout of 1 minute.
+     * Creates a new {@link RmiClientHandler}.
      */
     public RmiClientHandler() {
-        this(60_000);
+        this(new HashMap<>());
     }
 
     /*
@@ -160,14 +145,14 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
      * @param name    the name of the binding at the remote node
      * @param address the address where the remote object is served
      * @return a reference to a remote object
-     * @throws NullPointerException     if {@code name}, {@code clazz}, or {@code address} is {@code
-     *                                  null}
+     * @throws NullPointerException     if {@code name}, {@code clazz}, or {@code address} is
+     *                                  {@code null}
      * @throws IllegalArgumentException if {@code clazz} is not an java interface
      */
     @SuppressWarnings("unchecked")
     public <T> T lookup(final String name, final Class<T> clazz, final SocketAddress address) {
         return (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
                 clazz
-        }, new RmiInvocationHandler(this, name, address, timeoutMillis));
+        }, new RmiInvocationHandler(this, name, address));
     }
 }
