@@ -60,29 +60,27 @@ public final class ChordFindSuccessorHelper {
 
         LOG.debug("Find successor of {} by asking id's predecessor for its successor.", ChordUtil.chordIdHex(id));
 
-        return findPredecessor(id, fingerTable, client, serviceName)
-                .then(future -> {
-                    final DrasylAddress pre = future.getNow();
-                    // if other node found, ask it for its successor
-                    if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
-                        if (pre != null) {
-                            final ChordService service = client.lookup(serviceName, ChordService.class, pre);
-                            return composeFuture(service.yourSuccessor());
-                        }
-                        else {
-                            return composeSucceededFuture((DrasylAddress) null);
-                        }
-                    }
-                    else {
-                        return composeSucceededFuture(ret);
-                    }
-                })
-                .then(future -> {
-                    final DrasylAddress ret1 = future.getNow();
-                    if (ret1 == null) {
-                        return composeSucceededFuture(fingerTable.getLocalAddress());
-                    }
-                    return composeSucceededFuture(ret1);
-                });
+        return findPredecessor(id, fingerTable, client, serviceName).then(future -> {
+            final DrasylAddress pre = future.getNow();
+            // if other node found, ask it for its successor
+            if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
+                if (pre != null) {
+                    final ChordService service = client.lookup(serviceName, ChordService.class, pre);
+                    return composeFuture(service.yourSuccessor());
+                }
+                else {
+                    return composeSucceededFuture(null);
+                }
+            }
+            else {
+                return composeSucceededFuture(ret);
+            }
+        }).then(future -> {
+            final DrasylAddress ret1 = future.getNow();
+            if (ret1 == null) {
+                return composeSucceededFuture(fingerTable.getLocalAddress());
+            }
+            return composeSucceededFuture(ret1);
+        });
     }
 }

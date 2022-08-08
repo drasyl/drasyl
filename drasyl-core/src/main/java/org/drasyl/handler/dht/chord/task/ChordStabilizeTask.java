@@ -122,46 +122,43 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
 
                     // try to get my successor's predecessor
                     final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, successor);
-                    composeFuture(service.yourPredecessor())
-                            .then(future2 -> {
-                                // if bad connection with successor! delete successor
-                                DrasylAddress x = future2.getNow();
-                                if (x == null) {
-                                    LOG.debug("Bad connection with successor. Delete successor from finger table.");
-                                    return deleteSuccessor(fingerTable, client, SERVICE_NAME);
-                                }
+                    composeFuture(service.yourPredecessor()).then(future2 -> {
+                        // if bad connection with successor! delete successor
+                        DrasylAddress x = future2.getNow();
+                        if (x == null) {
+                            LOG.debug("Bad connection with successor. Delete successor from finger table.");
+                            return deleteSuccessor(fingerTable, client, SERVICE_NAME);
+                        }
 
-                                // else if successor's predecessor is not itself
-                                else if (!x.equals(successor)) {
-                                    if (x.equals(fingerTable.getLocalAddress())) {
-                                        LOG.debug("Successor has still us as predecessor. All fine.");
-                                    }
-                                    else {
-                                        LOG.debug("Successor's predecessor is {}.", x);
-                                    }
-                                    final long local_id = chordId(fingerTable.getLocalAddress());
-                                    final long successor_relative_id = relativeChordId(successor, local_id);
-                                    final long x_relative_id = relativeChordId(x, local_id);
-                                    if (x_relative_id > 0 && x_relative_id < successor_relative_id) {
-                                        LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
-                                        return fingerTable.updateIthFinger(1, x, client);
-                                    }
-                                    else {
-                                        return composeSucceededFuture();
-                                    }
-                                }
+                        // else if successor's predecessor is not itself
+                        else if (!x.equals(successor)) {
+                            if (x.equals(fingerTable.getLocalAddress())) {
+                                LOG.debug("Successor has still us as predecessor. All fine.");
+                            }
+                            else {
+                                LOG.debug("Successor's predecessor is {}.", x);
+                            }
+                            final long localId = chordId(fingerTable.getLocalAddress());
+                            final long successorRelativeId = relativeChordId(successor, localId);
+                            final long xRelativeId = relativeChordId(x, localId);
+                            if (xRelativeId > 0 && xRelativeId < successorRelativeId) {
+                                LOG.debug("Successor's predecessor {} is closer then me. Use successor's predecessor as our new successor.", x);
+                                return fingerTable.updateIthFinger(1, x, client);
+                            }
+                            else {
+                                return composeSucceededFuture();
+                            }
+                        }
 
-                                // successor's predecessor is successor itself, then notify successor
-                                else {
-                                    LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
-                                    if (!successor.equals(fingerTable.getLocalAddress())) {
-                                        return composeFuture(service.iAmPre());
-                                    }
-                                    return composeSucceededFuture();
-                                }
-                            })
-                            .finish(ctx.executor())
-                            .addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
+                        // successor's predecessor is successor itself, then notify successor
+                        else {
+                            LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
+                            if (!successor.equals(fingerTable.getLocalAddress())) {
+                                return composeFuture(service.iAmPre());
+                            }
+                            return composeSucceededFuture();
+                        }
+                    }).finish(ctx.executor()).addListener((FutureListener<Void>) future12 -> scheduleStabilizeTask(ctx));
                 }
                 else {
                     scheduleStabilizeTask(ctx);

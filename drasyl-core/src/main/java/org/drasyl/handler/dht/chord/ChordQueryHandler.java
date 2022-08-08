@@ -72,7 +72,8 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
     private void doLookup(final ChannelHandlerContext ctx,
                           final DrasylAddress contact,
                           final long id,
-                          final ChannelPromise promise, RmiClientHandler client) {
+                          final ChannelPromise promise,
+                          RmiClientHandler client) {
         if (this.promise == null) {
             this.promise = promise;
             checkContactAlive(ctx, contact, id, promise, client);
@@ -89,6 +90,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                    final RmiClientHandler client) {
         LOG.debug("checkContactAlive?");
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
+
         service.keep().addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
@@ -108,31 +110,27 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final ChordService service) {
         LOG.debug("checkContactStable?");
 
-        composeFuture(service.yourPredecessor())
-                .then(future -> composeFuture(service.yourSuccessor())
-                        .then(future1 -> {
-                            final DrasylAddress predecessor = future.getNow();
-                            final DrasylAddress successor = future1.getNow();
-                            if (predecessor == null || successor == null) {
-                                this.promise = null;
-                                promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
-                                return composeSucceededFuture(false);
-                            }
+        composeFuture(service.yourPredecessor()).then(future -> composeFuture(service.yourSuccessor()).then(future1 -> {
+            final DrasylAddress predecessor = future.getNow();
+            final DrasylAddress successor = future1.getNow();
+            if (predecessor == null || successor == null) {
+                this.promise = null;
+                promise.setFailure(new ChordException("Contact node " + contact + " is disconnected. Please try an other contact node."));
+                return composeSucceededFuture(false);
+            }
 
-                            return composeSucceededFuture(predecessor.equals(contact) == successor.equals(contact));
-                        }))
-                .finish(ctx.executor())
-                .addListener((FutureListener<Boolean>) future -> {
-                    if (future.isSuccess()) {
-                        LOG.debug("checkContactStable = true");
-                        // do actual lookup
-                        doActualLookup(ctx, id, promise, service);
-                    }
-                    else {
-                        this.promise = null;
-                        promise.tryFailure(new ChordException("Contact node " + contact + " is not stable. Please try again later."));
-                    }
-                });
+            return composeSucceededFuture(predecessor.equals(contact) == successor.equals(contact));
+        })).finish(ctx.executor()).addListener((FutureListener<Boolean>) future -> {
+            if (future.isSuccess()) {
+                LOG.debug("checkContactStable = true");
+                // do actual lookup
+                doActualLookup(ctx, id, promise, service);
+            }
+            else {
+                this.promise = null;
+                promise.tryFailure(new ChordException("Contact node " + contact + " is not stable. Please try again later."));
+            }
+        });
     }
 
     private void doActualLookup(final ChannelHandlerContext ctx,

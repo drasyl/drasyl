@@ -28,7 +28,6 @@ import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
@@ -83,12 +82,11 @@ public final class ChordFillSuccessorHelper {
     }
 
     private static FutureComposer<Void> updateFingersFromIthToFirstFinger(final int j,
-                                                                          final DrasylAddress ithfinger,
+                                                                          final DrasylAddress ithFinger,
                                                                           final ChordFingerTable fingerTable,
                                                                           final RmiClientHandler client) {
         if (j >= 1) {
-            return fingerTable.updateIthFinger(j, ithfinger, client)
-                    .then(() -> updateFingersFromIthToFirstFinger(j - 1, ithfinger, fingerTable, client));
+            return fingerTable.updateIthFinger(j, ithFinger, client).then(() -> updateFingersFromIthToFirstFinger(j - 1, ithFinger, fingerTable, client));
         }
         else {
             return composeSucceededFuture();

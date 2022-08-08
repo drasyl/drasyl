@@ -60,6 +60,7 @@ public final class ChordClosestPrecedingFingerHelper {
         return checkFinger(myId, findId, findIdRelativeId, Integer.SIZE, fingerTable, client, serviceName);
     }
 
+    @SuppressWarnings("java:S3776")
     private static FutureComposer<DrasylAddress> checkFinger(final long myId,
                                                              final long findId,
                                                              final long findIdRelative,
@@ -84,20 +85,19 @@ public final class ChordClosestPrecedingFingerHelper {
                         LOG.debug("Check if it is still alive.");
 
                         final ChordService service = client.lookup(serviceName, ChordService.class, ithFinger);
-                        return composeFuture(service.keep())
-                                .then(future2 -> {
-                                    //it is alive, return it
-                                    if (future2.isSuccess()) {
-                                        LOG.debug("Peer is still alive.");
-                                        return composeSucceededFuture(ithFinger);
-                                    }
-                                    // else, remove its existence from finger table
-                                    else {
-                                        LOG.warn("Peer `{}` is not alive. Remove it from finger table.", ithFinger);
-                                        fingerTable.removePeer(ithFinger);
-                                    }
-                                    return checkFinger(myId, findId, findIdRelative, i - 1, fingerTable, client, serviceName);
-                                });
+                        return composeFuture(service.keep()).then(future2 -> {
+                            //it is alive, return it
+                            if (future2.isSuccess()) {
+                                LOG.debug("Peer is still alive.");
+                                return composeSucceededFuture(ithFinger);
+                            }
+                            // else, remove its existence from finger table
+                            else {
+                                LOG.warn("Peer `{}` is not alive. Remove it from finger table.", ithFinger);
+                                fingerTable.removePeer(ithFinger);
+                            }
+                            return checkFinger(myId, findId, findIdRelative, i - 1, fingerTable, client, serviceName);
+                        });
                     }
                 }
                 return checkFinger(myId, findId, findIdRelative, i - 1, fingerTable, client, serviceName);

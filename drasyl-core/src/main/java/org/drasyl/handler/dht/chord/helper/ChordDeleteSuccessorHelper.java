@@ -70,38 +70,35 @@ public final class ChordDeleteSuccessorHelper {
         }
 
         // try to fill successor
-        return fillSuccessor(fingerTable, client)
-                .then(() -> {
-                    final DrasylAddress successor2 = fingerTable.getSuccessor();
+        return fillSuccessor(fingerTable, client).then(() -> {
+            final DrasylAddress successor2 = fingerTable.getSuccessor();
 
-                    // if successor is still null or local node,
-                    // and the predecessor is another node, keep asking
-                    // it's predecessor until find local node's new successor
-                    if ((successor2 == null || fingerTable.getLocalAddress().equals(successor2)) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
-                        final DrasylAddress predecessor = fingerTable.getPredecessor();
+            // if successor is still null or local node,
+            // and the predecessor is another node, keep asking
+            // it's predecessor until find local node's new successor
+            if ((successor2 == null || fingerTable.getLocalAddress().equals(successor2)) && fingerTable.hasPredecessor() && !fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
+                final DrasylAddress predecessor = fingerTable.getPredecessor();
 
-                        return findNewSuccessor(predecessor, successor2, fingerTable, client, serviceName)
-                                // update successor
-                                .then(() -> fingerTable.updateIthFinger(1, predecessor, client));
-                    }
-                    else {
-                        return composeSucceededFuture();
-                    }
-                });
+                // update successor
+                return findNewSuccessor(predecessor, successor2, fingerTable, client, serviceName).then(() -> fingerTable.updateIthFinger(1, predecessor, client));
+            }
+            else {
+                return composeSucceededFuture();
+            }
+        });
     }
 
     private static FutureComposer<Void> deleteFromIthToFirstFinger(final ChordFingerTable fingerTable,
                                                                    final int j,
                                                                    final RmiClientHandler client) {
-        return fingerTable.updateIthFinger(j, null, client)
-                .then(future -> {
-                    if (j > 1) {
-                        return deleteFromIthToFirstFinger(fingerTable, j - 1, client);
-                    }
-                    else {
-                        return fingerTable.updateIthFinger(j, null, client);
-                    }
-                });
+        return fingerTable.updateIthFinger(j, null, client).then(future -> {
+            if (j > 1) {
+                return deleteFromIthToFirstFinger(fingerTable, j - 1, client);
+            }
+            else {
+                return fingerTable.updateIthFinger(j, null, client);
+            }
+        });
     }
 
     private static FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
@@ -110,23 +107,22 @@ public final class ChordDeleteSuccessorHelper {
                                                                   final RmiClientHandler client,
                                                                   final String serviceName) {
         final ChordService service = client.lookup(serviceName, ChordService.class, peer);
-        return composeFuture(service.yourPredecessor())
-                .then(future -> {
-                    DrasylAddress predecessor = future.getNow();
-                    if (predecessor == null) {
-                        return composeSucceededFuture(peer);
-                    }
+        return composeFuture(service.yourPredecessor()).then(future -> {
+            DrasylAddress predecessor = future.getNow();
+            if (predecessor == null) {
+                return composeSucceededFuture(peer);
+            }
 
-                    // if p's predecessor is node is just deleted,
-                    // or itself (nothing found in predecessor), or local address,
-                    // p is current node's new successor, break
-                    if (predecessor.equals(peer) || predecessor.equals(fingerTable.getLocalAddress()) || predecessor.equals(successor)) {
-                        return composeSucceededFuture(peer);
-                    }
-                    // else, keep asking
-                    else {
-                        return findNewSuccessor(predecessor, successor, fingerTable, client, serviceName);
-                    }
-                });
+            // if p's predecessor is node is just deleted,
+            // or itself (nothing found in predecessor), or local address,
+            // p is current node's new successor, break
+            if (predecessor.equals(peer) || predecessor.equals(fingerTable.getLocalAddress()) || predecessor.equals(successor)) {
+                return composeSucceededFuture(peer);
+            }
+            // else, keep asking
+            else {
+                return findNewSuccessor(predecessor, successor, fingerTable, client, serviceName);
+            }
+        });
     }
 }

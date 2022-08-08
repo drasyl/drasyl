@@ -42,8 +42,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     private final ChordFingerTable fingerTable;
     private final DrasylAddress contact;
 
-    public ChordJoinHandler(final ChordFingerTable fingerTable,
-                            final DrasylAddress contact) {
+    public ChordJoinHandler(final ChordFingerTable fingerTable, final DrasylAddress contact) {
         this.fingerTable = requireNonNull(fingerTable);
         this.contact = requireNonNull(contact);
     }
@@ -55,7 +54,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
-            doJoinTask(ctx);
+            doJoin(ctx);
         }
     }
 
@@ -65,7 +64,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        doJoinTask(ctx);
+        doJoin(ctx);
         ctx.fireChannelActive();
     }
 
@@ -73,7 +72,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
      * Join Task
      */
 
-    private void doJoinTask(final ChannelHandlerContext ctx) {
+    private void doJoin(final ChannelHandlerContext ctx) {
         LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, chordIdHex(ctx.channel().localAddress()));
         final RmiClientHandler client = ctx.pipeline().get(RmiClientHandler.class);
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
