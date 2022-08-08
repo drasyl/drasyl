@@ -71,12 +71,12 @@ public class DefaultChordService implements ChordService {
     }
 
     @Override
-    public Future<Void> keep() {
+    public Future<Void> checkAlive() {
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
     }
 
     @Override
-    public Future<DrasylAddress> yourPredecessor() {
+    public Future<DrasylAddress> getPredecessor() {
         if (fingerTable.hasPredecessor()) {
             return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, fingerTable.getPredecessor());
         }
@@ -86,7 +86,7 @@ public class DefaultChordService implements ChordService {
     }
 
     @Override
-    public Future<DrasylAddress> yourSuccessor() {
+    public Future<DrasylAddress> getSuccessor() {
         if (fingerTable.hasSuccessor()) {
             return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, fingerTable.getSuccessor());
         }
@@ -96,30 +96,24 @@ public class DefaultChordService implements ChordService {
     }
 
     @Override
-    public Future<Void> iAmPre() {
-        final DrasylAddress newPredecessorCandidate = caller;
-        LOG.debug("Notified by `{}`.", newPredecessorCandidate);
+    public Future<Void> offerAsPredecessor() {
+        LOG.debug("Notified by `{}`.", caller);
         if (!fingerTable.hasPredecessor() || fingerTable.getLocalAddress().equals(fingerTable.getPredecessor())) {
-            LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
-            fingerTable.setPredecessor(newPredecessorCandidate);
+            LOG.info("Set predecessor `{}`.", caller);
+            fingerTable.setPredecessor(caller);
             // FIXME: wieso hier nicht checken, ob er als geeigneter fingers dient?
         }
         else {
             final long oldpre_id = chordId(fingerTable.getPredecessor());
             final long local_relative_id = relativeChordId(fingerTable.getLocalAddress(), oldpre_id);
-            final long newpre_relative_id = relativeChordId(newPredecessorCandidate, oldpre_id);
+            final long newpre_relative_id = relativeChordId(caller, oldpre_id);
             if (newpre_relative_id > 0 && newpre_relative_id < local_relative_id) {
-                LOG.info("Set predecessor `{}`.", newPredecessorCandidate);
-                fingerTable.setPredecessor(newPredecessorCandidate);
+                LOG.info("Set predecessor `{}`.", caller);
+                fingerTable.setPredecessor(caller);
             }
         }
 
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
-    }
-
-    @Override
-    public Future<DrasylAddress> closest(final long id) {
-        return closestPrecedingFinger(id).finish(group.next());
     }
 
     /*
@@ -128,10 +122,10 @@ public class DefaultChordService implements ChordService {
 
     @Override
     public Future<DrasylAddress> findSuccessor(long id) {
-        return composibleFindSuccessor(id).finish(group.next());
+        return composableFindSuccessor(id).finish(group.next());
     }
 
-    public FutureComposer<DrasylAddress> composibleFindSuccessor(final long id) {
+    public FutureComposer<DrasylAddress> composableFindSuccessor(final long id) {
         LOG.debug("Find successor of `{}`.", chordIdHex(id));
 
         // initialize return value as this node's successor (might be null)
@@ -145,7 +139,7 @@ public class DefaultChordService implements ChordService {
             if (!Objects.equals(pre, fingerTable.getLocalAddress())) {
                 if (pre != null) {
                     final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, pre);
-                    return composeFuture(service.yourSuccessor());
+                    return composeFuture(service.getSuccessor());
                 }
                 else {
                     return composeSucceededFuture(null);
@@ -225,7 +219,7 @@ public class DefaultChordService implements ChordService {
     private FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
                                                            final DrasylAddress successor) {
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, peer);
-        return composeFuture(service.yourPredecessor()).then(future -> {
+        return composeFuture(service.getPredecessor()).then(future -> {
             DrasylAddress predecessor = future.getNow();
             if (predecessor == null) {
                 return composeSucceededFuture(peer);
@@ -290,7 +284,7 @@ public class DefaultChordService implements ChordService {
                                                         final long findIdRelativeId,
                                                         final long currentNodeSuccessorsRelativeId,
                                                         final DrasylAddress mostRecentlyAlive) {
-        return closestPrecedingFinger(findId).then(future -> {
+        return composableClosestPrecedingFinger(findId).then(future -> {
             final DrasylAddress finger = future.getNow();
             if (currentNode.equals(finger)) {
                 return composeSucceededFuture(finger);
@@ -309,7 +303,7 @@ public class DefaultChordService implements ChordService {
                                                            final DrasylAddress mostRecentlyAlive) {
         final FutureComposer<DrasylAddress> lookupComposer;
         if (currentNode != null) {
-            lookupComposer = composeFuture(client.lookup(SERVICE_NAME, ChordService.class, currentNode).closest(findId));
+            lookupComposer = composeFuture(client.lookup(SERVICE_NAME, ChordService.class, currentNode).findClosestFingerPreceding(findId));
         }
         else {
             lookupComposer = composeSucceededFuture(null);
@@ -319,7 +313,7 @@ public class DefaultChordService implements ChordService {
             // if fail to get response, set currentNode to most recently
             if (closest == null) {
                 final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, mostRecentlyAlive);
-                return composeFuture(service.yourSuccessor()).then(future1 -> {
+                return composeFuture(service.getSuccessor()).then(future1 -> {
                     final DrasylAddress mostRecentlysSuccessor = future1.getNow();
                     if (mostRecentlysSuccessor == null) {
                         return composeSucceededFuture(fingerTable.getLocalAddress());
@@ -346,7 +340,7 @@ public class DefaultChordService implements ChordService {
                                                                    final DrasylAddress currentNode,
                                                                    final DrasylAddress closest) {
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, closest);
-        return composeFuture(service.yourSuccessor()).then(future -> {
+        return composeFuture(service.getSuccessor()).then(future -> {
             final DrasylAddress closestSuccessor = future.getNow();
             // if we can get its response, then "closest" must be our next currentNode
             if (closestSuccessor != null) {
@@ -363,7 +357,7 @@ public class DefaultChordService implements ChordService {
             // else currentNode sticks, ask currentNode's successor
             else {
                 final ChordService service2 = client.lookup(SERVICE_NAME, ChordService.class, currentNode);
-                return composeFuture(service2.yourSuccessor());
+                return composeFuture(service2.getSuccessor());
             }
         });
     }
@@ -372,7 +366,12 @@ public class DefaultChordService implements ChordService {
      * {@code n.closest_preceding_finger(id)}
      */
 
-    public FutureComposer<DrasylAddress> closestPrecedingFinger(final long findId) {
+    @Override
+    public Future<DrasylAddress> findClosestFingerPreceding(final long id) {
+        return composableClosestPrecedingFinger(id).finish(group.next());
+    }
+
+    public FutureComposer<DrasylAddress> composableClosestPrecedingFinger(final long findId) {
         LOG.debug("Find closest finger preceding `{}`.", chordIdHex(findId));
         final long myId = chordId(fingerTable.getLocalAddress());
         final long findIdRelativeId = relativeChordId(findId, myId);
@@ -403,7 +402,7 @@ public class DefaultChordService implements ChordService {
                         LOG.debug("Check if it is still alive.");
 
                         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, ithFinger);
-                        return composeFuture(service.keep()).then(future2 -> {
+                        return composeFuture(service.checkAlive()).then(future2 -> {
                             //it is alive, return it
                             if (future2.isSuccess()) {
                                 LOG.debug("Peer is still alive.");

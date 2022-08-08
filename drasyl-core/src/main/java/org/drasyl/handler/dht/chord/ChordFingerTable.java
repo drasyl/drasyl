@@ -133,7 +133,7 @@ public class ChordFingerTable {
         // if the updated one is successor, notify the new successor
         if (i == 1 && value != null && !value.equals(localAddress)) {
             final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, value);
-            return composeFuture(service.iAmPre());
+            return composeFuture(service.offerAsPredecessor());
         }
         else {
             return composeSucceededFuture();

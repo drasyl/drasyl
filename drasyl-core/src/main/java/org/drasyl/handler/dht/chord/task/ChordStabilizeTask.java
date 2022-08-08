@@ -104,6 +104,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
      * Stabilize Task
      */
 
+    @SuppressWarnings("java:S3776")
     private void scheduleStabilizeTask(final ChannelHandlerContext ctx) {
         stabilizeTaskFuture = ctx.executor().schedule(() -> {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
@@ -123,7 +124,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
 
                     // try to get my successor's predecessor
                     final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, successor);
-                    composeFuture(service.yourPredecessor()).then(future2 -> {
+                    composeFuture(service.getPredecessor()).then(future2 -> {
                         // if bad connection with successor! delete successor
                         DrasylAddress x = future2.getNow();
                         if (x == null) {
@@ -155,7 +156,7 @@ public class ChordStabilizeTask extends ChannelInboundHandlerAdapter {
                         else {
                             LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                             if (!successor.equals(fingerTable.getLocalAddress())) {
-                                return composeFuture(service.iAmPre());
+                                return composeFuture(service.offerAsPredecessor());
                             }
                             return composeSucceededFuture();
                         }

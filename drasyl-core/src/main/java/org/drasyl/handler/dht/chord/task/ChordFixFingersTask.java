@@ -107,7 +107,7 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
             final int i = counter + 2;
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
-            defaultChordService.composibleFindSuccessor(id).then(future -> {
+            defaultChordService.composableFindSuccessor(id).then(future -> {
                 final DrasylAddress ithFinger = future.getNow();
                 LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithFinger);
                 return fingerTable.updateIthFinger(i, ithFinger, client);

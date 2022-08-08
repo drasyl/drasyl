@@ -1,35 +1,30 @@
 package org.drasyl.example.chord;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
+import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordLookup;
 import org.drasyl.handler.dht.chord.ChordQueryHandler;
 import org.drasyl.handler.dht.chord.ChordResponse;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
@@ -69,6 +64,7 @@ public class ChordQuery {
 
                         final ChannelPipeline p = ch.pipeline();
 
+                        final RmiClientHandler client = new RmiClientHandler();
                         p.addLast(new ChordQueryHandler(client));
                         p.addLast(new SimpleChannelInboundHandler<ChordResponse>() {
                             @Override
@@ -78,23 +74,9 @@ public class ChordQuery {
                             }
                         });
 
-                        p.addLast(new MessageToMessageCodec<OverlayAddressedMessage<?>, AddressedEnvelope<?, ?>>() {
-                            @Override
-                            protected void encode(ChannelHandlerContext ctx,
-                                                  AddressedEnvelope<?, ?> msg,
-                                                  List<Object> out) {
-                                out.add(new OverlayAddressedMessage<>(msg.content(), (DrasylAddress) msg.recipient(), (DrasylAddress) msg.sender()).retain());
-                            }
-
-                            @Override
-                            protected void decode(ChannelHandlerContext ctx,
-                                                  OverlayAddressedMessage<?> msg,
-                                                  List<Object> out) {
-                                out.add(new DefaultAddressedEnvelope<>(msg.content(), msg.recipient(), msg.sender()).retain());
-                            }
-                        });
+                        p.addLast(new OverlayMessageToEnvelopeMessageCodec());
                         p.addLast(new RmiCodec());
-                        p.addLast(new RmiClientHandler());
+                        p.addLast(client);
                     }
                 })
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
@@ -127,7 +109,6 @@ public class ChordQuery {
                     System.out.println("String `" + s[1] + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
                     ch.write(ChordLookup.of(IdentityPublicKey.of(s[0]), hash)).addListener((ChannelFutureListener) future -> {
                         if (future.cause() != null) {
-                            System.err.println(future.cause());
                             future.cause().printStackTrace();
                         }
                     }).awaitUninterruptibly();

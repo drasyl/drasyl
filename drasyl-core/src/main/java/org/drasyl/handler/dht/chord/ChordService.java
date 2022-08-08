@@ -27,15 +27,33 @@ import org.drasyl.identity.DrasylAddress;
 
 @RmiTimeout(5_000L)
 public interface ChordService {
-    Future<Void> keep();
+    /**
+     * NOOP method used to check if callee is still alive.
+     */
+    Future<Void> checkAlive();
 
-    Future<DrasylAddress> yourPredecessor();
+    /**
+     * Returns the predecessor.
+     */
+    Future<DrasylAddress> getPredecessor();
 
-    Future<DrasylAddress> yourSuccessor();
+    /**
+     * Returns the successor.
+     */
+    Future<DrasylAddress> getSuccessor();
 
-    Future<Void> iAmPre();
+    /**
+     * Offers callee to set caller as new predecessor.
+     */
+    Future<Void> offerAsPredecessor();
 
-    Future<DrasylAddress> closest(final long id);
+    /**
+     * Find the closest finger preceding.
+     */
+    Future<DrasylAddress> findClosestFingerPreceding(final long id);
 
+    /**
+     * Find successor for {@code id}.
+     */
     Future<DrasylAddress> findSuccessor(final long id);
 }

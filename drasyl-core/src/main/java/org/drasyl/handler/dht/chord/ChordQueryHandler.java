@@ -97,7 +97,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
         LOG.debug("checkContactAlive?");
         final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
 
-        service.keep().addListener((FutureListener<Void>) future -> {
+        service.checkAlive().addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("checkContactAlive = true");
                 // now check
@@ -116,7 +116,7 @@ public class ChordQueryHandler extends ChannelDuplexHandler {
                                     final ChordService service) {
         LOG.debug("checkContactStable?");
 
-        composeFuture(service.yourPredecessor()).then(future -> composeFuture(service.yourSuccessor()).then(future1 -> {
+        composeFuture(service.getPredecessor()).then(future -> composeFuture(service.getSuccessor()).then(future1 -> {
             final DrasylAddress predecessor = future.getNow();
             final DrasylAddress successor = future1.getNow();
             if (predecessor == null || successor == null) {

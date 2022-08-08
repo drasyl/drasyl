@@ -99,7 +99,7 @@ public class ChordAskPredecessorTask extends ChannelInboundHandlerAdapter {
             if (fingerTable.hasPredecessor()) {
                 LOG.debug("Check if our predecessor is still alive.");
                 final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, fingerTable.getPredecessor());
-                service.keep().addListener((FutureListener<Void>) future -> {
+                service.checkAlive().addListener((FutureListener<Void>) future -> {
                     if (!future.isSuccess()) {
                         // timeout
                         LOG.info("Our predecessor is not longer alive. Clear predecessor.");
