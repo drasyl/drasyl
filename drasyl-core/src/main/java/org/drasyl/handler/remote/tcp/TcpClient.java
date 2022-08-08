@@ -178,8 +178,8 @@ public class TcpClient extends ChannelDuplexHandler {
         if (lastSuperPeersResolveTime < currentTimeMillis - RESOLVE_SUPER_PEER_ADDRESSES_INTERVAL) {
             lastSuperPeersResolveTime = currentTimeMillis;
             final Set<InetSocketAddress> newAddresses = new HashSet<>();
-            for (final InetSocketAddress address : superPeerAddresses) {
-                newAddresses.add(new InetSocketAddress(address.getHostString(), address.getPort()));
+            for (final InetSocketAddress superPeerAddress : superPeerAddresses) {
+                newAddresses.add(new InetSocketAddress(superPeerAddress.getHostString(), superPeerAddress.getPort()));
             }
             superPeerAddresses.clear();
             superPeerAddresses.addAll(newAddresses);
