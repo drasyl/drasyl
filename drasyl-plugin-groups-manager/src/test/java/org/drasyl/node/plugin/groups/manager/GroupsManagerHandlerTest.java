@@ -101,7 +101,7 @@ class GroupsManagerHandlerTest {
 
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
 
-            // NOOP
+            handler.handlerAdded(ctx);
 
             verify(scheduler).scheduleWithFixedDelay(any(), eq(1L), eq(1L), eq(TimeUnit.MINUTES));
         }
