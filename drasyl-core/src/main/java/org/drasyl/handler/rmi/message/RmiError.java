@@ -19,7 +19,6 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.handler.rmi.message;
 
 import com.google.auto.value.AutoValue;
@@ -37,6 +36,6 @@ public abstract class RmiError implements RmiMessage {
     }
 
     public static RmiError of(final UUID id, final Throwable cause) {
-        return of(id, cause.getMessage());
+        return of(id, cause.toString());
     }
 }
