@@ -19,7 +19,7 @@
     
     
       
-        <title>Logging - drasyl</title>
+        <title>Remote Message Invocation - drasyl</title>
       
     
     
@@ -66,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#logging" class="md-skip">
+        <a href="#remote-message-invocation" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +93,7 @@
           </span>
           <span class="md-header-nav__topic md-ellipsis">
             
-              Logging
+              Remote Message Invocation
             
           </span>
         </div>
@@ -214,10 +214,12 @@
       
       
 
+  
 
-  <li class="md-nav__item md-nav__item--nested">
+
+  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
     
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3">
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-3" type="checkbox" id="nav-3" checked>
     
     <label class="md-nav__link" for="nav-3">
       Advanced Usage
@@ -237,7 +239,7 @@
 
 
   <li class="md-nav__item">
-    <a href="../../advanced-usage/bootstrapping/" title="Bootstrapping" class="md-nav__link">
+    <a href="../bootstrapping/" title="Bootstrapping" class="md-nav__link">
       Bootstrapping
     </a>
   </li>
@@ -249,72 +251,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../../advanced-usage/membership-management/" title="Membership Management" class="md-nav__link">
+    <a href="../membership-management/" title="Membership Management" class="md-nav__link">
       Membership Management
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../../advanced-usage/remote-message-invocation/" title="Remote Message Invocation" class="md-nav__link">
-      Remote Message Invocation
-    </a>
-  </li>
-
-        
-      </ul>
-    </nav>
-  </li>
-
-    
-      
-      
-      
-
-  
-
-
-  <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-    
-      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4" checked>
-    
-    <label class="md-nav__link" for="nav-4">
-      Configuration
-      <span class="md-nav__icon md-icon"></span>
-    </label>
-    <nav class="md-nav" aria-label="Configuration" data-md-level="1">
-      <label class="md-nav__title" for="nav-4">
-        <span class="md-nav__icon md-icon"></span>
-        Configuration
-      </label>
-      <ul class="md-nav__list" data-md-scrollfix>
-        
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../" title="Overview" class="md-nav__link">
-      Overview
-    </a>
-  </li>
-
-        
-          
-          
-          
-
-
-  <li class="md-nav__item">
-    <a href="../serialization/" title="Serialization" class="md-nav__link">
-      Serialization
     </a>
   </li>
 
@@ -334,12 +272,12 @@
     
     
       <label class="md-nav__link md-nav__link--active" for="__toc">
-        Logging
+        Remote Message Invocation
         <span class="md-nav__icon md-icon"></span>
       </label>
     
-    <a href="./" title="Logging" class="md-nav__link md-nav__link--active">
-      Logging
+    <a href="./" title="Remote Message Invocation" class="md-nav__link md-nav__link--active">
+      Remote Message Invocation
     </a>
     
       
@@ -356,16 +294,103 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-dependency" class="md-nav__link">
-    Add Dependency
+  <a href="#creating-the-server" class="md-nav__link">
+    Creating the Server
   </a>
+  
+    <nav class="md-nav" aria-label="Creating the Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defining-the-contract" class="md-nav__link">
+    Defining the Contract
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    Implementation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-configuration" class="md-nav__link">
-    Example Configuration
+  <a href="#registering-the-service" class="md-nav__link">
+    Registering the Service
   </a>
+  
+    <nav class="md-nav" aria-label="Registering the Service">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-rmi-server" class="md-nav__link">
+    Creating a RMI Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding-the-remote-object" class="md-nav__link">
+    Binding the Remote Object
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-the-client" class="md-nav__link">
+    Creating the Client
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating the Client">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lookup-for-the-remote-object" class="md-nav__link">
+    Lookup for the Remote Object
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-reading" class="md-nav__link">
+    Further Reading
+  </a>
+  
+    <nav class="md-nav" aria-label="Further Reading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#who-called-me" class="md-nav__link">
+    Who Called Me?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjust-timeout" class="md-nav__link">
+    Adjust Timeout
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -373,6 +398,68 @@
   
 </nav>
     
+  </li>
+
+        
+      </ul>
+    </nav>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item md-nav__item--nested">
+    
+      <input class="md-nav__toggle md-toggle" data-md-toggle="nav-4" type="checkbox" id="nav-4">
+    
+    <label class="md-nav__link" for="nav-4">
+      Configuration
+      <span class="md-nav__icon md-icon"></span>
+    </label>
+    <nav class="md-nav" aria-label="Configuration" data-md-level="1">
+      <label class="md-nav__title" for="nav-4">
+        <span class="md-nav__icon md-icon"></span>
+        Configuration
+      </label>
+      <ul class="md-nav__list" data-md-scrollfix>
+        
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../configuration/" title="Overview" class="md-nav__link">
+      Overview
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../configuration/serialization/" title="Serialization" class="md-nav__link">
+      Serialization
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../../configuration/logging/" title="Logging" class="md-nav__link">
+      Logging
+    </a>
   </li>
 
         
@@ -491,16 +578,103 @@
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-dependency" class="md-nav__link">
-    Add Dependency
+  <a href="#creating-the-server" class="md-nav__link">
+    Creating the Server
   </a>
+  
+    <nav class="md-nav" aria-label="Creating the Server">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#defining-the-contract" class="md-nav__link">
+    Defining the Contract
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    Implementation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-configuration" class="md-nav__link">
-    Example Configuration
+  <a href="#registering-the-service" class="md-nav__link">
+    Registering the Service
   </a>
+  
+    <nav class="md-nav" aria-label="Registering the Service">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-rmi-server" class="md-nav__link">
+    Creating a RMI Server
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding-the-remote-object" class="md-nav__link">
+    Binding the Remote Object
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#creating-the-client" class="md-nav__link">
+    Creating the Client
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating the Client">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lookup-for-the-remote-object" class="md-nav__link">
+    Lookup for the Remote Object
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#further-reading" class="md-nav__link">
+    Further Reading
+  </a>
+  
+    <nav class="md-nav" aria-label="Further Reading">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#who-called-me" class="md-nav__link">
+    Who Called Me?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjust-timeout" class="md-nav__link">
+    Adjust Timeout
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -516,7 +690,7 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/drasyl-overlay/drasyl/edit/master/docs/content/configuration/logging.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/drasyl-overlay/drasyl/edit/master/docs/content/advanced-usage/remote-message-invocation.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
@@ -524,32 +698,142 @@
                   
                 
                 
-                <h1 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h1>
-<p>To use logging, you must configure it via the <a href="http://www.slf4j.org/">SLF4J</a> backend, such as
-<a href="http://logback.qos.ch/">Logback</a>:</p>
-<h2 id="add-dependency">Add Dependency<a class="headerlink" href="#add-dependency" title="Permanent link">&para;</a></h2>
-<p>Maven:
-<pre class="highlight"><code class="language-xml">&lt;dependency&gt;
-    &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
-    &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
-    &lt;version&gt;1.2.3&lt;/version&gt;
-&lt;/dependency&gt;</code></pre></p>
-<p>Other dependency managers:
-<pre class="highlight"><code class="language-java">Gradle : compile "ch.qos.logback:logback-classic:1.2.3" // build.gradle 
-   Ivy : &lt;dependency org="ch.qos.logback" name="logback-classic" rev="1.2.3" conf="build" /&gt; // ivy.xml
-   SBT : libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3" // build.sbt</code></pre></p>
-<h2 id="example-configuration">Example Configuration<a class="headerlink" href="#example-configuration" title="Permanent link">&para;</a></h2>
-<pre class="highlight"><code class="language-xml">&lt;configuration&gt;
-  &lt;appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender"&gt;
-    &lt;encoder&gt;
-      &lt;pattern&gt;%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n&lt;/pattern&gt;
-    &lt;/encoder&gt;
-  &lt;/appender&gt;
+                <h1 id="remote-message-invocation">Remote Message Invocation<a class="headerlink" href="#remote-message-invocation" title="Permanent link">&para;</a></h1>
+<p>This page shows you how to invoke remote objects served by other drasyl nodes.
+This feature is similar to <a href="https://en.wikipedia.org/wiki/Java_remote_method_invocation">Java Remote Message Invocation</a> but uses drasyl as the transport rather than TCP.</p>
+<p>To use this feature, you have to use the <a href="../bootstrapping/">bootstrapping interface</a>, where you have to customize the server channel's ChannelInitializer.</p>
+<h2 id="creating-the-server">Creating the Server<a class="headerlink" href="#creating-the-server" title="Permanent link">&para;</a></h2>
+<p>There are two steps needed to create a remote message invocation (RMI) server:</p>
+<ul>
+<li>Create an interface defining the client/server contract.</li>
+<li>Create an implementation of that interface.</li>
+</ul>
+<h3 id="defining-the-contract">Defining the Contract<a class="headerlink" href="#defining-the-contract" title="Permanent link">&para;</a></h3>
+<p>First of all, let's create the interface for the object want to invoke remotely.</p>
+<p>As drasyl is asynchronous, each method declared in the interface must have the return
+type <a href="https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html"><code>Future</code></a>
+or <code>void</code>.</p>
+<pre class="highlight"><code class="language-java">public interface MessengerService {
+    Future&lt;String&gt; sendMessage(String clientMessage);
+}</code></pre>
+<p>Note, though, that drasyl supports the full Java specification for method signatures, as long as the Java
+types are serializable by <a href="https://github.com/FasterXML/jackson-docs#tutorials">Jackson</a>. We'll see in
+future sections how both the client and the server will use this interface. For the server, we'll
+create the implementation, often referred to as the <em>Remote Object</em>. For the client, <strong>the we will
+dynamically create an implementation called a <em>Stub</em></strong>.</p>
+<h3 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h3>
+<p>Furthermore, let's implement the remote interface, again called the <em>Remote Object</em>:</p>
+<pre class="highlight"><code class="language-java">public class MessengerServiceImpl implements MessengerService {
+    @Override
+    public Future&lt;String&gt; sendMessage(String clientMessage) {
+        final String result = "Client Message".equals(clientMessage) ? "Server Message" : null;
+        return new SucceededFuture&lt;&gt;(ImmediateEventExecutor.INSTANCE, result);
+    }
 
-  &lt;root level="debug"&gt;
-    &lt;appender-ref ref="STDOUT" /&gt;
-  &lt;/root&gt;
-&lt;/configuration&gt;</code></pre>
+    public String unexposedMethod() { /* code */ }
+}</code></pre>
+<p>Notice that any additional methods defined in the remote object, but not in the interface, remain
+invisible for the client.</p>
+<h2 id="registering-the-service">Registering the Service<a class="headerlink" href="#registering-the-service" title="Permanent link">&para;</a></h2>
+<p>Once we created the remote implementation, we need to bind the remote object to a RMI server.</p>
+<h3 id="creating-a-rmi-server">Creating a RMI Server<a class="headerlink" href="#creating-a-rmi-server" title="Permanent link">&para;</a></h3>
+<p>First, we need to create a drasyl node that contains a RMI server serving our remote object:</p>
+<pre class="highlight"><code class="language-java">// create server
+final RmiServerHandler server = new RmiServerHandler();
+
+// bootstrap node with server added to the pipeline
+final ServerBootstrap b = new ServerBootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(DrasylServerChannel.class)
+    .handler(new TraversingDrasylServerChannelInitializer(identity) {
+        @Override
+        protected void initChannel(final DrasylServerChannel ch) {
+            super.initChannel(ch);
+
+            final ChannelPipeline p = ch.pipeline();
+
+            p.addLast(new RmiCodec());
+            p.addLast(server);
+        }
+    })
+    .childHandler(/* code */);</code></pre>
+<h3 id="binding-the-remote-object">Binding the Remote Object<a class="headerlink" href="#binding-the-remote-object" title="Permanent link">&para;</a></h3>
+<p>We can now create and bind our remote object to the RMI server. Each binding is identified by a unique
+key.</p>
+<pre class="highlight"><code class="language-java">// create remote object
+final MessengerService service = new MessengerServiceImpl();
+
+// bind to server
+server.bind("MessengerService", service);</code></pre>
+<h2 id="creating-the-client">Creating the Client<a class="headerlink" href="#creating-the-client" title="Permanent link">&para;</a></h2>
+<p>Finally, let's write the client to invoke the remote object's methods.</p>
+<pre class="highlight"><code class="language-java">// create client
+final RmiClientHandler client = new RmiClientHandler();
+
+// bootstrap node with client added to the pipeline
+final ServerBootstrap b = new ServerBootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(DrasylServerChannel.class)
+    .handler(new TraversingDrasylServerChannelInitializer(identity) {
+        @Override
+        protected void initChannel(final DrasylServerChannel ch) {
+            super.initChannel(ch);
+
+            final ChannelPipeline p = ch.pipeline();
+
+            p.addLast(new RmiCodec());
+            p.addLast(client);
+        }
+    })
+    .childHandler(/* code */);</code></pre>
+<h3 id="lookup-for-the-remote-object">Lookup for the Remote Object<a class="headerlink" href="#lookup-for-the-remote-object" title="Permanent link">&para;</a></h3>
+<p>We can now look up the remote object using the bounded unique key and the address of the RMI server's node.
+And finally, we'll invoke the <code>sendMessage</code> method:</p>
+<pre class="highlight"><code class="language-java">// lookup
+final MessengerService service = client.lookup("MessengerService", MessengerService.class, serverAddress);
+
+// invoke
+service.sendMessage("Client Message").addListener((FutureListener&lt;String&gt;) future -&gt; {
+    if (future.isSuccess()) {
+        System.out.println("Succeeded: " + future.getNow());
+    }
+    else {
+        System.err.println("Errored:");
+        future.cause().printStackTrace();
+    }
+});</code></pre>
+<p>A fully working example can be found <a href="https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/rmi">here</a>.</p>
+<h2 id="further-reading">Further Reading<a class="headerlink" href="#further-reading" title="Permanent link">&para;</a></h2>
+<h3 id="who-called-me">Who Called Me?<a class="headerlink" href="#who-called-me" title="Permanent link">&para;</a></h3>
+<p>You may be interested in getting to know who called you. For this, you must add a field of
+type <code>DrasylAddress</code> and annotate it with <code>RmiCaller</code>. drasyl will then inject the current caller to
+this variable before every invocation.</p>
+<pre class="highlight"><code class="language-java">public class MessengerServiceImpl implements MessengerService {
+    @RmiCaller
+    private DrasylAddress caller;
+
+    @Override
+    public Future&lt;String&gt; sendMessage(String clientMessage) {
+        System.out.println("Called by: " + caller);
+        /* code */
+    }
+}</code></pre>
+<p>Note to save the <code>caller</code> value when doing asynchronous operations. Otherwise, it might be possible
+that a subsequent invocation has already changed the <code>caller</code> field.</p>
+<h3 id="adjust-timeout">Adjust Timeout<a class="headerlink" href="#adjust-timeout" title="Permanent link">&para;</a></h3>
+<p>By default, all invocations will timeout after 60 seconds by completing the future exceptionally with a <code>RmiException</code>.
+But you can customize this value per class and method.
+To do so, just add the annotation <code>RmiTimeout</code> to your implementation class or method.
+A class annotation will override the default value, while a method annotation will override any class annotation.</p>
+<pre class="highlight"><code class="language-java">public class MessengerServiceImpl implements MessengerService {
+    @RmiTimeout(5_000L)
+    @Override
+    public Future&lt;String&gt; sendMessage(String clientMessage) {
+        /* code */
+    }
+}</code></pre>
+<hr />
+<p><em>This page is an adapted version of the <a href="https://www.baeldung.com/java-rmi">Java RMI tutorial by Baeldung</a>.</em></p>
                 
                   
                     
@@ -581,7 +865,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
         
-          <a href="../serialization/" title="Serialization" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../membership-management/" title="Membership Management" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-footer-nav__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
             </div>
@@ -590,19 +874,19 @@
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Serialization
+                Membership Management
               </div>
             </div>
           </a>
         
         
-          <a href="../../cli/" title="Command Line Tool" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../../configuration/" title="Overview" class="md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-footer-nav__title">
               <div class="md-ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Command Line Tool
+                Overview
               </div>
             </div>
             <div class="md-footer-nav__button md-icon">
