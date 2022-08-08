@@ -87,51 +87,11 @@ public final class RmiUtil {
                 throw new IOException("Expected " + parameterTypes.length + " arguments, but got " + args.length + " arguments.");
             }
 
-            // verify if unmarshalled arguments have correct types
-            for (int i = 0; i < parameterTypes.length; i++) {
-                Class<?> parameterType = getAutoboxedType(parameterTypes[i]);
-                final Class<?> argClazz = args[i].getClass();
-                if (!parameterType.equals(argClazz)) {
-                    throw new IOException("Expected argument " + i + " to be of type " + parameterType + ", but was " + argClazz + ".");
-                }
-            }
-
             return args;
         }
         finally {
             buf.release();
         }
-    }
-
-    private static Class<?> getAutoboxedType(final Class<?> parameterType) {
-        if (!parameterType.isPrimitive()) {
-            return parameterType;
-        }
-        else if (parameterType == byte.class) {
-            return Byte.class;
-        }
-        else if (parameterType == char.class) {
-            return Character.class;
-        }
-        else if (parameterType == short.class) {
-            return Short.class;
-        }
-        else if (parameterType == int.class) {
-            return Integer.class;
-        }
-        else if (parameterType == long.class) {
-            return Long.class;
-        }
-        else if (parameterType == float.class) {
-            return Float.class;
-        }
-        else if (parameterType == double.class) {
-            return Double.class;
-        }
-        else if (parameterType == boolean.class) {
-            return Boolean.class;
-        }
-        return parameterType;
     }
 
     public static int computeMethodHash(final Method m) {
