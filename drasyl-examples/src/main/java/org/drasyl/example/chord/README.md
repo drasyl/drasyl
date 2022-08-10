@@ -1,4 +1,10 @@
-# Chord - A Distributed Hash Table
+# Chord Distributed Lookup Protocol
+
+This example implements the Chord distributed lookup protocol.
+
+The protocol is described in:
+
+> I. Stoica et al., "Chord: a scalable peer-to-peer lookup protocol for Internet applications," in IEEE/ACM Transactions on Networking, vol. 11, no. 1, pp. 17-32, Feb. 2003. https://doi.org/10.1109/TNET.2002.808407
 
 ```bash
 mvn compile exec:java -Dexec.mainClass="org.drasyl.example.chord.ChordNode" -Didentity=/root/Identities/drasyl-1.identity -Dexec.args=""

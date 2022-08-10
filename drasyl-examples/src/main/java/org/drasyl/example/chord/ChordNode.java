@@ -23,6 +23,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.handler.rmi.RmiServerHandler;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -33,6 +34,7 @@ import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
+import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordNode {
@@ -53,7 +55,7 @@ public class ChordNode {
         System.out.println("My Id      : " + ChordUtil.chordIdHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
 
-        final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
+        final DrasylAddress contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
@@ -69,12 +71,13 @@ public class ChordNode {
                         final RmiServerHandler server = new RmiServerHandler();
                         final RmiClientHandler client = new RmiClientHandler();
                         final DefaultChordService defaultChordService = new DefaultChordService(fingerTable, client);
-                        server.bind("ChordService", defaultChordService);
+                        server.bind(SERVICE_NAME, defaultChordService);
 
                         p.addLast(new ChordStabilizeTask(fingerTable, 500, client, defaultChordService));
                         p.addLast(new ChordFixFingersTask(fingerTable, 500, client, defaultChordService));
                         p.addLast(new ChordAskPredecessorTask(fingerTable, 500, client));
 
+                        // FIXME: nach oben schieben?
                         p.addLast(new OverlayMessageToEnvelopeMessageCodec());
                         p.addLast(new RmiCodec());
                         p.addLast(client);
@@ -87,6 +90,7 @@ public class ChordNode {
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
+                                        // FIXME: addLast?
                                         p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact, client));
                                         ctx.pipeline().remove(ctx.name());
                                     }
