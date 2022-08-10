@@ -194,7 +194,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
         if (sendPatternFile != null) {
             try {
                 JACKSON_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
-                sendPatternActivities = JACKSON_MAPPER.readValue(sendPatternFile, new TypeReference<List<Activity>>() {
+                sendPatternActivities = JACKSON_MAPPER.readValue(sendPatternFile, new TypeReference<>() {
                 });
             }
             catch (final IOException e) {

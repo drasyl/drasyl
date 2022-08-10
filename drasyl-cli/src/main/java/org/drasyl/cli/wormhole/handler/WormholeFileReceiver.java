@@ -109,8 +109,8 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
 
         if (currentFileLength + readableBytes == length) {
             out.println("Received file written to " + file.getName());
-
             ctx.pipeline().close();
+            ctx.pipeline().remove(ctx.name());
         }
     }
 

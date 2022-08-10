@@ -213,10 +213,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
         }
 
-        private void passMessageToChannel(final ChannelHandlerContext ctx,
-                                          final Object o,
-                                          final IdentityPublicKey peer,
-                                          final boolean recreateClosedChannel) {
+        private static void passMessageToChannel(final ChannelHandlerContext ctx,
+                                                 final Object o,
+                                                 final IdentityPublicKey peer,
+                                                 final boolean recreateClosedChannel) {
             final Channel channel = getOrCreateChildChannel(ctx, peer);
 
             // pass message to channel

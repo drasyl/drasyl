@@ -55,7 +55,7 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     }
 
     public HashSetMultimap() {
-        this(new HashMap<>(), new HashSet<>(), () -> new HashSet<>());
+        this(new HashMap<>(), new HashSet<>(), HashSet::new);
     }
 
     @Override

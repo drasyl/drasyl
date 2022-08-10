@@ -38,8 +38,6 @@ import java.io.PrintStream;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Requests a perf session once the channel becomes active or this handler is added to an active
@@ -49,9 +47,7 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     private static final Logger LOG = LoggerFactory.getLogger(PerfSessionRequestorHandler.class);
     private final PrintStream out;
     private final SessionRequest request;
-    private final long requestTimeoutMillis;
     private final boolean waitForDirectConnection;
-    private Future<?> timeoutTask;
     private boolean sessionRequested;
     private boolean directConnectionRequested;
 
@@ -65,9 +61,7 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
                                 final boolean directConnectionRequested) {
         this.out = requireNonNull(out);
         this.request = requireNonNull(request);
-        this.requestTimeoutMillis = requirePositive(requestTimeoutMillis);
         this.waitForDirectConnection = waitForDirectConnection;
-        this.timeoutTask = timeoutTask;
         this.sessionRequested = sessionRequested;
         this.directConnectionRequested = directConnectionRequested;
     }
@@ -80,18 +74,16 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-        requestSession(ctx);
-        createTimeoutTask(ctx);
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            requestSession(ctx);
+        }
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        if (timeoutTask != null) {
-            timeoutTask.cancel(false);
-        }
-        ctx.fireChannelInactive();
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+        requestSession(ctx);
     }
 
     @Override
@@ -117,16 +109,6 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
         ctx.fireUserEventTriggered(evt);
     }
 
-    private void createTimeoutTask(final ChannelHandlerContext ctx) {
-        if (timeoutTask == null) {
-            timeoutTask = ctx.executor().schedule(() -> {
-                if (ctx.channel().isOpen()) {
-                    ctx.fireExceptionCaught(new PerfSessionRequestTimeoutException(requestTimeoutMillis));
-                }
-            }, requestTimeoutMillis, MILLISECONDS);
-        }
-    }
-
     private void requestSession(final ChannelHandlerContext ctx) {
         if (!sessionRequested && (!waitForDirectConnection || ((DrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
             out.println("Request session at " + ctx.channel().remoteAddress() + "...");
@@ -141,8 +123,6 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     }
 
     private void handleSessionConfirmation(final ChannelHandlerContext ctx) {
-        timeoutTask.cancel(false);
-
         out.println("Session has been confirmed by " + ctx.channel().remoteAddress() + "!");
 
         if (!request.isReverse()) {
@@ -157,8 +137,6 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
 
     @SuppressWarnings("java:S2325")
     private void handleSessionRejection(final ChannelHandlerContext ctx) {
-        timeoutTask.cancel(false);
-
         ctx.fireExceptionCaught(new PerfSessionRequestRejectedException());
     }
 

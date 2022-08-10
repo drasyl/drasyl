@@ -226,6 +226,12 @@
                 <version>${jackson.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-cbor</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+
             <!-- SLF4J -->
             <dependency>
                 <groupId>org.slf4j</groupId>

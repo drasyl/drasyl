@@ -109,9 +109,9 @@ class FutureUtilTest {
     @Nested
     class SynchronizeFutures {
         @Test
-        void shouldSucceedPromiseIfFutureHasBeenSucceeeded(@Mock EventExecutor executor) {
-            Promise<String> promise = new DefaultPromise<>(executor);
-            CompletableFuture<String> future = new CompletableFuture<>();
+        void shouldSucceedPromiseIfFutureHasBeenSucceeeded(@Mock final EventExecutor executor) {
+            final Promise<String> promise = new DefaultPromise<>(executor);
+            final CompletableFuture<String> future = new CompletableFuture<>();
             synchronizeFutures(promise, future);
 
             future.complete("Hello");
@@ -120,10 +120,10 @@ class FutureUtilTest {
         }
 
         @Test
-        void shouldFailPromiseIfFutureHasBeenFailed(@Mock EventExecutor executor,
-                                                    @Mock Throwable ex) {
-            Promise<String> promise = new DefaultPromise<>(executor);
-            CompletableFuture<String> future = new CompletableFuture<>();
+        void shouldFailPromiseIfFutureHasBeenFailed(@Mock final EventExecutor executor,
+                                                    @Mock final Throwable ex) {
+            final Promise<String> promise = new DefaultPromise<>(executor);
+            final CompletableFuture<String> future = new CompletableFuture<>();
             synchronizeFutures(promise, future);
 
             future.completeExceptionally(ex);
@@ -132,11 +132,11 @@ class FutureUtilTest {
         }
 
         @Test
-        void shouldSucceedFutureIfPromiseHasBeenSucceeeded(@Mock EventExecutor executor) {
+        void shouldSucceedFutureIfPromiseHasBeenSucceeeded(@Mock final EventExecutor executor) {
             when(executor.inEventLoop()).thenReturn(true);
 
-            Promise<String> promise = new DefaultPromise<>(executor);
-            CompletableFuture<String> future = new CompletableFuture<>();
+            final Promise<String> promise = new DefaultPromise<>(executor);
+            final CompletableFuture<String> future = new CompletableFuture<>();
             synchronizeFutures(promise, future);
 
             promise.setSuccess("Hello");
@@ -145,12 +145,12 @@ class FutureUtilTest {
         }
 
         @Test
-        void shouldFailFutureIfPromiseHasBeenFailed(@Mock EventExecutor executor,
-                                                    @Mock Throwable cause) {
+        void shouldFailFutureIfPromiseHasBeenFailed(@Mock final EventExecutor executor,
+                                                    @Mock final Throwable cause) {
             when(executor.inEventLoop()).thenReturn(true);
 
-            Promise<String> promise = new DefaultPromise<>(executor);
-            CompletableFuture<String> future = new CompletableFuture<>();
+            final Promise<String> promise = new DefaultPromise<>(executor);
+            final CompletableFuture<String> future = new CompletableFuture<>();
             synchronizeFutures(promise, future);
 
             promise.setFailure(cause);

@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S110")
 public class WormholeSendChannelInitializer extends AbstractChannelInitializer {
     public static final int MAX_PEERS = 10;
     private final PrintStream out;

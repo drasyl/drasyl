@@ -39,6 +39,7 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings("java:S110")
 public class TunChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream err;
     private final Worm<Integer> exitCode;

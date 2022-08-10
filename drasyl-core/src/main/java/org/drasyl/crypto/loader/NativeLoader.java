@@ -41,8 +41,8 @@ import java.nio.file.StandardCopyOption;
 public class NativeLoader {
     public static final String NATIVE_FOLDER_PATH_PREFIX = "nativeloader";
     /**
-     * The minimum length a prefix for a file has to have according to {@link
-     * File#createTempFile(String, String)}}.
+     * The minimum length a prefix for a file has to have according to
+     * {@link File#createTempFile(String, String)}}.
      */
     private static final int MIN_PREFIX_LENGTH = 3;
     private static File temporaryDir;
@@ -68,7 +68,7 @@ public class NativeLoader {
         }
 
         try {
-            final File temp = Native.extractFromResourcePath(path, clazz.getClassLoader());
+            final File temp = Native.extractFromResourcePath(path, Thread.currentThread().getContextClassLoader());
 
             Native.register(clazz, temp.getAbsolutePath());
         }
@@ -149,8 +149,8 @@ public class NativeLoader {
                     .contains("posix");
         }
         catch (final FileSystemNotFoundException
-                | ProviderNotFoundException
-                | SecurityException e) {
+                     | ProviderNotFoundException
+                     | SecurityException e) {
             return false;
         }
     }

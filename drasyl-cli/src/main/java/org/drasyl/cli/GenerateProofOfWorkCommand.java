@@ -102,7 +102,7 @@ public class GenerateProofOfWorkCommand implements Runnable {
             return argSpec.isOption() ? optionDefaultValue((OptionSpec) argSpec) : null;
         }
 
-        private String optionDefaultValue(final OptionSpec optionSpec) {
+        private static String optionDefaultValue(final OptionSpec optionSpec) {
             if ("--difficulty".equals(optionSpec.longestName())) {
                 return Integer.toString(POW_DIFFICULTY);
             }

@@ -60,7 +60,7 @@ public class GenerateIdentityCommand implements Runnable {
         this(
                 System.out, // NOSONAR
                 Identity::generateIdentity,
-                (myOut, identity) -> IdentityFile.writeTo(myOut, identity)
+                IdentityFile::writeTo
         );
     }
 

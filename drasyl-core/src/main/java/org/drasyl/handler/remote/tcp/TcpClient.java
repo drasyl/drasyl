@@ -140,7 +140,7 @@ public class TcpClient extends ChannelDuplexHandler {
         resolveSuperPeers();
 
         if (msg instanceof InetAddressedMessage &&
-                superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress((InetSocketAddress) socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
+                superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress(socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
             final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
 
@@ -148,7 +148,7 @@ public class TcpClient extends ChannelDuplexHandler {
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
                 LOG.trace("Send message `{}` for `{}` via TCP connection.", () -> byteBufMsg, ((InetAddressedMessage<ByteBuf>) msg)::recipient);
-                mySuperPeerChannel.channel().write(byteBufMsg).addListener(new PromiseNotifier<>(promise));
+                PromiseNotifier.cascade(mySuperPeerChannel.channel().write(byteBufMsg), promise);
             }
             else {
                 // pass through message
@@ -178,8 +178,8 @@ public class TcpClient extends ChannelDuplexHandler {
         if (lastSuperPeersResolveTime < currentTimeMillis - RESOLVE_SUPER_PEER_ADDRESSES_INTERVAL) {
             lastSuperPeersResolveTime = currentTimeMillis;
             final Set<InetSocketAddress> newAddresses = new HashSet<>();
-            for (final InetSocketAddress address : superPeerAddresses) {
-                newAddresses.add(new InetSocketAddress(address.getHostString(), address.getPort()));
+            for (final InetSocketAddress superPeerAddress : superPeerAddresses) {
+                newAddresses.add(new InetSocketAddress(superPeerAddress.getHostString(), superPeerAddress.getPort()));
             }
             superPeerAddresses.clear();
             superPeerAddresses.addAll(newAddresses);

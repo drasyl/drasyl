@@ -23,7 +23,6 @@ package org.drasyl.cli.perf.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler.PerfSessionRequestTimeoutException;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,9 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class PerfSessionRequestorHandlerTest {
@@ -46,23 +43,6 @@ class PerfSessionRequestorHandlerTest {
 
         try {
             assertEquals(request, channel.readOutbound());
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldThrowExceptionOnTimeout(@Mock final PrintStream out,
-                                       @Mock final SessionRequest request) {
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, false);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        try {
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
-                assertThrows(PerfSessionRequestTimeoutException.class, channel::checkException);
-            });
         }
         finally {
             channel.close();

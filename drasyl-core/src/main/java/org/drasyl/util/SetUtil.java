@@ -25,6 +25,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.drasyl.util.Preconditions.requireNonNegative;
+
 /**
  * Utility class for operations on {@link Set}s.
  */
@@ -92,8 +94,9 @@ public final class SetUtil {
     }
 
     /**
-     * Returns the {@code n}-th element from set {@code set}. Throws a {@link
-     * IndexOutOfBoundsException} if {@code n} is negative or greater than the set's cardinality.
+     * Returns the {@code n}-th element from set {@code set}. Throws a
+     * {@link IndexOutOfBoundsException} if {@code n} is negative or greater than the set's
+     * cardinality.
      *
      * @param set a set
      * @param n   specifies the element to be taken
@@ -134,6 +137,30 @@ public final class SetUtil {
         catch (final IndexOutOfBoundsException e) {
             return null;
         }
+    }
+
+    /**
+     * Returns the first {@code n} elements from set {@code set}.
+     *
+     * @param set a set
+     * @param n   elements to return
+     * @param <E> the {@link Set}'s element type
+     * @return first {@code n} elements from set {@code set}
+     * @throws IllegalArgumentException if {@code n} is negative
+     */
+    @SuppressWarnings({ "java:S881", "java:S1166", "java:S3242" })
+    public static <E> Set<E> firstElements(final Set<E> set, final int n) {
+        requireNonNegative(n);
+        final Set<E> subSet = new HashSet<>();
+        int count = 0;
+        for (final E element : set) {
+            if (n == count++) {
+                break;
+            }
+            subSet.add(element);
+        }
+
+        return subSet;
     }
 
     /**

@@ -24,7 +24,6 @@ package org.drasyl.cli.node;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 
 public interface IdentityPublicKeyMixin {
     @JsonValue
@@ -32,6 +31,7 @@ public interface IdentityPublicKeyMixin {
 
     @JsonCreator
     static DrasylAddress of(final String bytes) {
-        return IdentityPublicKey.of(bytes);
+        // won't be called
+        return null;
     }
 }

@@ -19,16 +19,22 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.crypto;
+package org.drasyl.handler.rmi.message;
 
-import org.junit.jupiter.api.Test;
+import com.google.auto.value.AutoValue;
 
-import java.io.IOException;
+import java.util.UUID;
 
-class HashingTest {
-    @Test
-    void name() throws IOException, CryptoException {
-        final byte[] a = Hashing.sha256("Heiko");
-        System.out.println(HexUtil.bytesToHex(a));
+/**
+ * Signals that a remove message invocation should be canceled.
+ *
+ * @see RmiRequest
+ */
+@AutoValue
+public abstract class RmiCancel implements RmiMessage {
+    public abstract UUID getId();
+
+    public static RmiCancel of(final UUID id) {
+        return new AutoValue_RmiCancel(id);
     }
 }

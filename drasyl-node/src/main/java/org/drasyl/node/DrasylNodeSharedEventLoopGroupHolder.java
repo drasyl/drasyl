@@ -22,19 +22,22 @@
 package org.drasyl.node;
 
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
+import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.util.FutureCombiner;
-import org.drasyl.util.FutureUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import static io.netty.util.concurrent.ImmediateEventExecutor.INSTANCE;
 
 /**
- * Holds parent and child {@link io.netty.channel.EventLoop}s that are shared across all {@link
- * DrasylNode}s.
+ * Holds parent and child {@link io.netty.channel.EventLoop}s that are shared across all
+ * {@link DrasylNode}s.
  * <p>
- * https://github.com/netty/netty/issues/639#issuecomment-9263566
+ * <a
+ * href="https://github.com/netty/netty/issues/639#issuecomment-9263566">https://github.com/netty/netty/issues/639#issuecomment-9263566</a>
  */
 public final class DrasylNodeSharedEventLoopGroupHolder {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeSharedEventLoopGroupHolder.class);
@@ -50,10 +53,10 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s {@link
-     * io.netty.channel.ServerChannel}. By default the group has {@link #PARENT_DEFAULT_THREADS}
-     * threads. This number can be changed by using the java system property {@code
-     * org.drasyl.event-loop.parent}.
+     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s
+     * {@link io.netty.channel.ServerChannel}. By default the group has
+     * {@link #PARENT_DEFAULT_THREADS} threads. This number can be changed by using the java system
+     * property {@code org.drasyl.event-loop.parent}.
      *
      * @return a {@link NioEventLoopGroup} for parent channels
      */
@@ -62,10 +65,10 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s {@link
-     * io.netty.channel.ServerChannel}. By default the group has {@link #CHILD_DEFAULT_THREADS}
-     * threads. This number can  be changed by using the java system property {@code
-     * org.drasyl.event-loop.child}.
+     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s
+     * {@link io.netty.channel.ServerChannel}. By default the group has
+     * {@link #CHILD_DEFAULT_THREADS} threads. This number can  be changed by using the java system
+     * property {@code org.drasyl.event-loop.child}.
      *
      * @return a {@link NioEventLoopGroup} for child channels
      */
@@ -81,18 +84,20 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
      * be submitted!</b>
      * </p>
      */
-    public static CompletableFuture<Void> shutdown() {
-        final FutureCombiner combiner = FutureCombiner.getInstance();
+    public static Future<Void> shutdown() {
+        final PromiseCombiner combiner = new PromiseCombiner(INSTANCE);
 
         if (childEventLoopGroupCreated) {
-            combiner.add(FutureUtil.toFuture(LazyChildHolder.INSTANCE.shutdownGracefully()));
+            combiner.add(LazyChildHolder.INSTANCE.shutdownGracefully());
         }
 
         if (parentEventLoopGroupCreated) {
-            combiner.add(FutureUtil.toFuture(LazyParentHolder.INSTANCE.shutdownGracefully()));
+            combiner.add(LazyParentHolder.INSTANCE.shutdownGracefully());
         }
 
-        return combiner.combine(new CompletableFuture<>());
+        final Promise<Void> aggregatePromise = new DefaultPromise<>(INSTANCE);
+        combiner.finish(aggregatePromise);
+        return aggregatePromise;
     }
 
     private static final class LazyParentHolder {
