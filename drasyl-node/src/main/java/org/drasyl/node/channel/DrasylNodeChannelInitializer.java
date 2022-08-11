@@ -92,7 +92,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     }
 
     /**
-     * This stages plits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
+     * This stage splits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
      * datagram.
      */
     protected void chunkingStage(final DrasylChannel ch) {

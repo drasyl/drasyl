@@ -28,9 +28,9 @@ import io.netty.handler.codec.MessageToMessageCodec;
 import java.util.List;
 
 /**
- * Encodes {@link ByteBuf}s to {@link AbstractGoBackNArqData}s and vice versa.
+ * Encodes {@link ByteBuf}s to {@link GoBackNArqData}s and vice versa.
  */
-public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<AbstractGoBackNArqData, ByteBuf> {
+public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<GoBackNArqData, ByteBuf> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final ByteBuf msg,
@@ -40,7 +40,7 @@ public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<AbstractGoB
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AbstractGoBackNArqData msg,
+                          final GoBackNArqData msg,
                           final List<Object> out) throws Exception {
         out.add(msg.content().retain());
     }

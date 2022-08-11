@@ -32,7 +32,8 @@ import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -98,7 +99,8 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
 
         // add ARQ to make sure messages arrive
         ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqHandler(windowSize, windowTimeout, windowTimeout.dividedBy(5)));
+        ch.pipeline().addLast(new GoBackNArqSenderHandler(windowSize, windowTimeout));
+        ch.pipeline().addLast(new GoBackNArqReceiverHandler(windowTimeout.dividedBy(5)));
         ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for WormholeMessages
