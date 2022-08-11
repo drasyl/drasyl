@@ -47,51 +47,11 @@ class GoBackNArqCodecTest {
     @Nested
     class Encode {
         @Test
-        void shouldEncodeFirstData() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final AbstractGoBackNArqData data = new GoBackNArqFirstData(Unpooled.copiedBuffer("Hallo", UTF_8));
-            channel.writeOutbound(data);
-
-            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -111, // magic number
-                    0, 0, 0, 0, // sequence no
-                    72, 97, 108, 108, 111 // payload
-            });
-            final ByteBuf actual = channel.readOutbound();
-            assertEquals(expected, actual);
-
-            expected.release();
-            actual.release();
-        }
-
-        @Test
-        void shouldEncodeLastData() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final AbstractGoBackNArqData data = new GoBackNArqLastData(UnsignedInteger.MIN_VALUE, Unpooled.copiedBuffer("Hallo", UTF_8));
-            channel.writeOutbound(data);
-
-            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -108, // magic number
-                    0, 0, 0, 0, // sequence no
-                    72, 97, 108, 108, 111 // payload
-            });
-            final ByteBuf actual = channel.readOutbound();
-            assertEquals(expected, actual);
-
-            expected.release();
-            actual.release();
-        }
-
-        @Test
         void shouldEncodeData() {
             final ChannelHandler handler = new GoBackNArqCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            final AbstractGoBackNArqData data = new GoBackNArqData(UnsignedInteger.MIN_VALUE, Unpooled.copiedBuffer("Hallo", UTF_8));
+            final GoBackNArqData data = new GoBackNArqData(UnsignedInteger.MIN_VALUE, Unpooled.copiedBuffer("Hallo", UTF_8));
             channel.writeOutbound(data);
 
             final ByteBuf expected = Unpooled.wrappedBuffer(new byte[]{
@@ -127,25 +87,6 @@ class GoBackNArqCodecTest {
         }
 
         @Test
-        void shouldEncodeRst() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final GoBackNArqRst data = new GoBackNArqRst();
-            channel.writeOutbound(data);
-
-            final ByteBuf expected = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -110, // magic number
-                    0, 0, 0, 0, // sequence no
-            });
-            final ByteBuf actual = channel.readOutbound();
-            assertEquals(expected, actual);
-
-            expected.release();
-            actual.release();
-        }
-
-        @Test
         void shouldRejectAllOther(@Mock final GoBackNArqMessage msg) {
             final ChannelHandler handler = new GoBackNArqCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -156,36 +97,6 @@ class GoBackNArqCodecTest {
 
     @Nested
     class Decode {
-        @Test
-        void shouldDecodeFirstData() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -111, // magic number
-                    0, 0, 0, 0, // sequence no
-                    72, 97, 108, 108, 111 // payload
-            });
-            channel.writeInbound(msg);
-
-            assertThat(channel.readInbound(), instanceOf(GoBackNArqFirstData.class));
-        }
-
-        @Test
-        void shouldDecodeLastData() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -108, // magic number
-                    0, 0, 0, 0, // sequence no
-                    72, 97, 108, 108, 111 // payload
-            });
-            channel.writeInbound(msg);
-
-            assertThat(channel.readInbound(), instanceOf(GoBackNArqLastData.class));
-        }
-
         @Test
         void shouldDecodeData() {
             final ChannelHandler handler = new GoBackNArqCodec();
@@ -213,20 +124,6 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             assertThat(channel.readInbound(), instanceOf(GoBackNArqAck.class));
-        }
-
-        @Test
-        void shouldDecodeRst() {
-            final ChannelHandler handler = new GoBackNArqCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-            final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{
-                    21, 117, -121, -110, // magic number
-                    0, 0, 0, 0, // sequence no
-            });
-            channel.writeInbound(msg);
-
-            assertThat(channel.readInbound(), instanceOf(GoBackNArqRst.class));
         }
 
         @Test

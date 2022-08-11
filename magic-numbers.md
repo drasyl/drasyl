@@ -15,7 +15,4 @@ This document contains a list of the magic numbers used by drasyl.
 | -578,611,197   | Groups failed      | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
 | -376,669,039   | Probe              | [ProbeCodec](drasyl-cli/src/main/java/org/drasyl/cli/perf/handler/ProbeCodec.java)                                                           |
 | 360,023,952    | GBN data           | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
-| 360,023,953    | GBN first data     | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
-| 360,023,954    | GBN reset          | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
 | 360,023,955    | GBN ACK            | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
-| 360,023,956    | GBN last data      | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
