@@ -37,6 +37,9 @@ import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
+/**
+ * Chord routing table.
+ */
 public class ChordFingerTable {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFingerTable.class);
     private final DrasylAddress[] entries;
