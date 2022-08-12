@@ -23,8 +23,8 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
@@ -80,7 +80,7 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + handshakeTimeoutMillis + "ms.");
+        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + handshakeTimeout.toMillis() + "ms.");
         ctx.close();
     }
 }

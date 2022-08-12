@@ -95,6 +95,7 @@ public abstract class DrasylConfig {
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.remote.local-host-discovery.lease-time";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED = "drasyl.remote.local-host-discovery.watch.enabled";
     public static final String REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED = "drasyl.remote.local-network-discovery.enabled";
+    public static final String REMOTE_HANDSHAKE_TIMEOUT = "drasyl.remote.handshake.timeout";
     public static final String REMOTE_MESSAGE_MTU = "drasyl.remote.message.mtu";
     public static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
     public static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
@@ -106,6 +107,10 @@ public abstract class DrasylConfig {
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_MAX_COUNT = "drasyl.remote.message.arm.application.agreement.max-count";
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_EXPIRE_AFTER = "drasyl.remote.message.arm.application.agreement.expire-after";
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_RETRY_INTERVAL = "drasyl.remote.message.arm.application.agreement.retry-interval";
+    public static final String REMOTE_MESSAGE_ARQ_ENABLED = "drasyl.remote.message.arq.enabled";
+    public static final String REMOTE_MESSAGE_ARQ_WINDOW_SIZE = "drasyl.remote.message.arq.window-size";
+    public static final String REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT = "drasyl.remote.message.arq.retry-timeout";
+    public static final String REMOTE_MESSAGE_ARQ_CLOCK = "drasyl.remote.message.arq.clock";
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
@@ -188,6 +193,9 @@ public abstract class DrasylConfig {
             builder.remoteTcpFallbackClientTimeout(config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT));
             builder.remoteTcpFallbackClientAddress(getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS));
 
+            // handshake
+            builder.remoteHandshakeTimeout(config.getDuration(REMOTE_HANDSHAKE_TIMEOUT));
+
             // arm
             builder.remoteMessageArmProtocolEnabled(config.getBoolean(REMOTE_MESSAGE_ARM_PROTOCOL_ENABLED));
             builder.remoteMessageArmProtocolSessionMaxCount(config.getInt(REMOTE_MESSAGE_ARM_PROTOCOL_SESSION_MAX_COUNT));
@@ -196,6 +204,12 @@ public abstract class DrasylConfig {
             builder.remoteMessageArmApplicationAgreementMaxCount(config.getInt(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_MAX_COUNT));
             builder.remoteMessageArmApplicationAgreementExpireAfter(config.getDuration(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_EXPIRE_AFTER));
             builder.remoteMessageArmApplicationAgreementRetryInterval(config.getDuration(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_RETRY_INTERVAL));
+
+            // arq
+            builder.remoteMessageArqEnabled(config.getBoolean(REMOTE_MESSAGE_ARQ_ENABLED));
+            builder.remoteMessageArqWindowSize(config.getInt(REMOTE_MESSAGE_ARQ_WINDOW_SIZE));
+            builder.remoteMessageArqRetryTimeout(config.getDuration(REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT));
+            builder.remoteMessageArqClock(config.getDuration(REMOTE_MESSAGE_ARQ_CLOCK));
 
             // intra vm discovery
             builder.intraVmDiscoveryEnabled(config.getBoolean(INTRA_VM_DISCOVERY_ENABLED));
@@ -482,7 +496,8 @@ public abstract class DrasylConfig {
 
             return constructor.newInstance(pluginConfig);
         }
-        catch (final ClassNotFoundException | NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        catch (final ClassNotFoundException | NoSuchMethodException | InstantiationException |
+                     InvocationTargetException | IllegalAccessException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -516,7 +531,8 @@ public abstract class DrasylConfig {
 
             return constructor.newInstance();
         }
-        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        catch (final ClassNotFoundException | InstantiationException | IllegalAccessException |
+                     InvocationTargetException | NoSuchMethodException e) {
             throw new DrasylConfigException(path, e);
         }
     }
@@ -621,8 +637,8 @@ public abstract class DrasylConfig {
 
     /**
      * Creates a new builder to build a custom {@link DrasylConfig}. The built configuration is
-     * derived from the default configuration. The builder must be finalized by calling {@link
-     * Builder#build()} to create the resulting {@link DrasylConfig}.
+     * derived from the default configuration. The builder must be finalized by calling
+     * {@link Builder#build()} to create the resulting {@link DrasylConfig}.
      *
      * @return the new builder
      */
@@ -646,15 +662,15 @@ public abstract class DrasylConfig {
     public abstract IdentitySecretKey getIdentitySecretKey();
 
     /**
-     * @return the identity specified in {@link #getIdentityPublicKey()}, {@link
-     * #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if some of
-     * these properties are not present.
+     * @return the identity specified in {@link #getIdentityPublicKey()},
+     * {@link #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if
+     * some of these properties are not present.
      * @throws IllegalStateException if the key pair returned by {@link #getIdentityPublicKey()} and
      *                               {@link #getIdentitySecretKey()} is not {@code null} and can not
-     *                               be converted to a key agreement key pair OR the {@link
-     *                               #getIdentityProofOfWork()} does not match to the identity key
-     *                               pair/required difficulty specified in {@link
-     *                               Identity#POW_DIFFICULTY}.
+     *                               be converted to a key agreement key pair OR the
+     *                               {@link #getIdentityProofOfWork()} does not match to the
+     *                               identity key pair/required difficulty specified in
+     *                               {@link Identity#POW_DIFFICULTY}.
      */
     public Identity getIdentity() {
         if (getIdentityProofOfWork() != null && getIdentityPublicKey() != null && getIdentitySecretKey() != null) {
@@ -710,6 +726,8 @@ public abstract class DrasylConfig {
 
     public abstract Map<DrasylAddress, InetSocketAddress> getRemoteStaticRoutes();
 
+    public abstract Duration getRemoteHandshakeTimeout();
+
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
     public abstract Path getRemoteLocalHostDiscoveryPath();
@@ -741,6 +759,14 @@ public abstract class DrasylConfig {
     public abstract Duration getRemoteMessageArmApplicationAgreementExpireAfter();
 
     public abstract Duration getRemoteMessageArmApplicationAgreementRetryInterval();
+
+    public abstract boolean isRemoteMessageArqEnabled();
+
+    public abstract int getRemoteMessageArqWindowSize();
+
+    public abstract Duration getRemoteMessageArqRetryTimeout();
+
+    public abstract Duration getRemoteMessageArqClock();
 
     public abstract boolean isRemoteTcpFallbackEnabled();
 
@@ -776,8 +802,9 @@ public abstract class DrasylConfig {
         public abstract Builder identitySecretKey(final IdentitySecretKey identitySecretKey);
 
         /**
-         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)}, {@link
-         * #identityProofOfWork(ProofOfWork)}, and {@link #identitySecretKey(IdentitySecretKey)}.
+         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)},
+         * {@link #identityProofOfWork(ProofOfWork)}, and
+         * {@link #identitySecretKey(IdentitySecretKey)}.
          */
         public Builder identity(final Identity identity) {
             return identityPublicKey(identity.getIdentityPublicKey()).identityProofOfWork(identity.getProofOfWork()).identitySecretKey(identity.getIdentitySecretKey());
@@ -813,6 +840,8 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteStaticRoutes(final Map<DrasylAddress, InetSocketAddress> remoteStaticRoutes);
 
+        public abstract Builder remoteHandshakeTimeout(final Duration remoteHandshakeTimeout);
+
         public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
 
         public abstract Builder remoteMessageMaxContentLength(final int remoteMessageMaxContentLength);
@@ -832,6 +861,14 @@ public abstract class DrasylConfig {
         public abstract Builder remoteMessageArmApplicationAgreementExpireAfter(final Duration remoteMessageArmApplicationAgreementExpireAfter);
 
         public abstract Builder remoteMessageArmApplicationAgreementRetryInterval(final Duration remoteMessageArmApplicationAgreementRetryInterval);
+
+        public abstract Builder remoteMessageArqEnabled(final boolean remoteMessageArqEnabled);
+
+        public abstract Builder remoteMessageArqWindowSize(final int remoteMessageArqWindowSize);
+
+        public abstract Builder remoteMessageArqRetryTimeout(final Duration remoteMessageArqRetryTimeout);
+
+        public abstract Builder remoteMessageArqClock(final Duration remoteMessageArqClock);
 
         public abstract Builder remoteMessageComposedMessageTransferTimeout(final Duration messageComposedMessageTransferTimeout);
 

@@ -229,7 +229,8 @@ public class ChatGui {
 
                     // perform handshake to ensure both connections are synchronized
                     p.addLast(new ConnectionHandshakeCodec());
-                    p.addLast(new ConnectionHandshakeHandler(10_000L, true));
+                    p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), true));
+                    p.addLast(new ConnectionHandshakePendWritesHandler());
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -242,7 +243,6 @@ public class ChatGui {
                             }
                         }
                     });
-                    p.addLast(new ConnectionHandshakePendWritesHandler());
 
                     // ensure that messages are delivered
                     p.addLast(new StopAndWaitArqCodec());
