@@ -24,7 +24,7 @@ package org.drasyl.cli.perf.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;

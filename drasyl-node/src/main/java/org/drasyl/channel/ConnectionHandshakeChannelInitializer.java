@@ -19,28 +19,28 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.channel;
+package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 
-import static org.drasyl.util.Preconditions.requirePositive;
+import java.time.Duration;
 
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    public static final long DEFAULT_HANDSHAKE_TIMEOUT = 10_000L;
-    protected final long handshakeTimeoutMillis;
+    public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
+    protected final Duration handshakeTimeout;
     protected final boolean initiateHandshake;
 
-    protected ConnectionHandshakeChannelInitializer(final long handshakeTimeoutMillis,
+    protected ConnectionHandshakeChannelInitializer(final Duration handshakeTimeout,
                                                     final boolean initiateHandshake) {
-        this.handshakeTimeoutMillis = requirePositive(handshakeTimeoutMillis);
+        this.handshakeTimeout = handshakeTimeout;
         this.initiateHandshake = initiateHandshake;
     }
 
@@ -54,7 +54,8 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(handshakeTimeoutMillis, initiateHandshake));
+        p.addLast(new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
+        p.addLast(new ConnectionHandshakePendWritesHandler());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,

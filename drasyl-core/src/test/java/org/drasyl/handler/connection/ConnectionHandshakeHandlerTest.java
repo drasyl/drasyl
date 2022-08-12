@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
+
+import static java.time.Duration.ZERO;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
@@ -57,7 +60,7 @@ class ConnectionHandshakeHandlerTest {
     class ThreeWayHandshakeConnectionSynchronization {
         @Test
         void asClient() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, true, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // channelActive should trigger SYNchronize of our SEG with peer
@@ -83,7 +86,7 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 300, false, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 300, false, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // channelActive should change state to LISTEN
@@ -115,7 +118,7 @@ class ConnectionHandshakeHandlerTest {
     // Both peers initiate handshake simultaneous
     @Test
     void simultaneousConnectionSynchronization() {
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, true, CLOSED, 0, 0, 0);
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 0, 0, 0);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         // channelActive should trigger SYNchronize of our SEG with peer
@@ -149,7 +152,7 @@ class ConnectionHandshakeHandlerTest {
 
     @Test
     void passiveServerSwitchToActiveOpenOnWrite() {
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, false, CLOSED, 0, 0, 0);
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, CLOSED, 0, 0, 0);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         // channelActive should change state to LISTEN
@@ -180,7 +183,7 @@ class ConnectionHandshakeHandlerTest {
     class HalfOpenConnectionDiscovery {
         @Test
         void weCrashed() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 400, true, CLOSED, 0, 0, 0);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 400, true, CLOSED, 0, 0, 0);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // channelActive should trigger SYNchronize of our SEG with peer
@@ -206,7 +209,7 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void otherCrashed() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, true, ESTABLISHED, 300, 300, 100);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, ESTABLISHED, 300, 300, 100);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // other wants to SYNchronize with us, ACK with our expected seq
@@ -234,7 +237,7 @@ class ConnectionHandshakeHandlerTest {
     class NormalCloseSequence {
         @Test
         void asClient() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // trigger close
@@ -272,7 +275,7 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void asServer() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, false, ESTABLISHED, 300, 300, 100);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 300, 300, 100);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             // peer triggers close
@@ -302,7 +305,7 @@ class ConnectionHandshakeHandlerTest {
     // Both peers initiate close simultaneous
     @Test
     void simultaneousClose() {
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(0, () -> 100, false, ESTABLISHED, 100, 100, 300);
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 100, 100, 300);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         // trigger close
@@ -341,7 +344,7 @@ class ConnectionHandshakeHandlerTest {
     class UserCallClose {
         @Test
         void shouldFailOnClosedChannel() throws Exception {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             final ChannelHandlerContext ctx = channel.pipeline().firstContext();
             final ChannelPromise closeFuture = ctx.newPromise();
@@ -374,7 +377,7 @@ class ConnectionHandshakeHandlerTest {
     class SegmentTextHandling {
         @Test
         void shouldPutOutboundDataIntoSegments() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf data = Unpooled.buffer();
@@ -386,7 +389,7 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void shouldExtractSegmentText() {
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(100L, () -> 100, false, ESTABLISHED, 100, 100, 300);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ByteBuf data = Unpooled.buffer();

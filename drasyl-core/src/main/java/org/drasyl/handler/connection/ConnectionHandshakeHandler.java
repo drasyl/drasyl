@@ -34,6 +34,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
 import java.util.function.LongSupplier;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
@@ -76,7 +77,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final int SEQ_NO_SPACE = 32;
-    private final long userTimeout;
+    private final Duration userTimeout;
     private final LongSupplier issProvider;
     private final boolean activeOpen;
     protected ScheduledFuture<?> userTimeoutFuture;
@@ -101,7 +102,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @param rcvNxt      Next expected sequence number
      */
     @SuppressWarnings("java:S107")
-    ConnectionHandshakeHandler(final long userTimeout,
+    ConnectionHandshakeHandler(final Duration userTimeout,
                                final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
@@ -123,7 +124,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
      *                    must initiate the handshake
      */
-    public ConnectionHandshakeHandler(final long userTimeout,
+    public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
         this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
     }
@@ -323,7 +324,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void applyUserTimeout(final ChannelHandlerContext ctx,
                                   final String userCall,
                                   final ChannelPromise promise) {
-        if (userTimeout > 0) {
+        if (userTimeout.toMillis() > 0) {
             if (userTimeoutFuture != null) {
                 userTimeoutFuture.cancel(false);
             }
@@ -332,7 +333,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, CLOSED);
                 promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
                 ctx.channel().close();
-            }, userTimeout, MILLISECONDS);
+            }, userTimeout.toMillis(), MILLISECONDS);
         }
     }
 
@@ -433,7 +434,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isSyn()) {
             LOG.trace("{}[{}] Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), state, seg);
 
-            if (userTimeout > 0) {
+            if (userTimeout.toMillis() > 0) {
                 // create handshake timeguard
                 ctx.executor().schedule(() -> {
                     if (state != ESTABLISHED && state != CLOSED) {
@@ -441,7 +442,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         switchToNewState(ctx, CLOSED);
                         ctx.channel().close();
                     }
-                }, userTimeout, MILLISECONDS);
+                }, userTimeout.toMillis(), MILLISECONDS);
             }
 
             // yay, peer SYNced with us
