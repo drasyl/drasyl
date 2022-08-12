@@ -30,6 +30,7 @@ import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.DefaultChordService;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +42,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
 /**
  * Handler class providing {@code n.fix_fingers()} functionality that periodically access a random
  * entry in finger table ensuring it is up-to-date.
- * <p>
- * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
- * Xia</a>.
  */
 public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFixFingersTask.class);
@@ -51,7 +49,6 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
     private final long checkIntervalMillis;
     private final RmiClientHandler client;
     private final DefaultChordService defaultChordService;
-    private int counter;
     private ScheduledFuture<?> fixFingersTask;
 
     public ChordFixFingersTask(final ChordFingerTable fingerTable,
@@ -103,15 +100,14 @@ public class ChordFixFingersTask extends ChannelInboundHandlerAdapter {
     private void scheduleFixFingersTask(final ChannelHandlerContext ctx) {
         fixFingersTask = ctx.executor().schedule(() -> {
             // no randomness for debugging
-            counter = ++counter % 31;
-            final int i = counter + 2;
+            final int i = RandomUtil.randomInt(2, 32);
             final long id = ChordUtil.ithFingerStart(chordId(fingerTable.getLocalAddress()), i);
             LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, ChordUtil.chordIdHex(id));
             defaultChordService.composableFindSuccessor(id).then(future -> {
                 final DrasylAddress ithFinger = future.getNow();
                 LOG.debug("Successor for id `{}` is `{}`.", ChordUtil.chordIdHex(id), ithFinger);
                 return fingerTable.updateIthFinger(i, ithFinger, client);
-            }).finish(ctx.executor()).addListener((FutureListener<Void>) future1 -> scheduleFixFingersTask(ctx));
+            }).finish(ctx.executor()).addListener((FutureListener<Void>) f -> scheduleFixFingersTask(ctx));
         }, checkIntervalMillis, MILLISECONDS);
     }
 
