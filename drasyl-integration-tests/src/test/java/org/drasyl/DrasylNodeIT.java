@@ -54,9 +54,11 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import static java.net.InetSocketAddress.createUnresolved;
@@ -347,7 +349,8 @@ class DrasylNodeIT {
         }
 
         /**
-         * This will test {@link org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler}.
+         * This will test
+         * {@link org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler}.
          * <p>
          * Network Layout:
          * <pre>
@@ -378,6 +381,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
@@ -397,6 +401,7 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
@@ -428,7 +433,7 @@ class DrasylNodeIT {
                 // first discovered on the server channel. Because the netty interface does not
                 // allow to pass that error to the child channel, this error is just written to the
                 // log
-                node1.send(node2.identity().getAddress(), "Hello").toCompletableFuture().join();
+                assertThrows(CompletionException.class, () -> node1.send(node2.identity().getAddress(), "Hello").toCompletableFuture().join());
                 // but we can check if node1 has received something!
                 Thread.sleep(100L);
                 assertNull(node2.readEvent());
@@ -736,8 +741,8 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link IntraVmDiscovery} emits the correct {@link
-             * PeerEvent}s.
+             * This test checks whether the {@link IntraVmDiscovery} emits the correct
+             * {@link PeerEvent}s.
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
@@ -829,8 +834,8 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link LocalHostDiscovery} emits the correct {@link
-             * PeerEvent}s and is able to route outgoing messages.
+             * This test checks whether the {@link LocalHostDiscovery} emits the correct
+             * {@link PeerEvent}s and is able to route outgoing messages.
              */
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)

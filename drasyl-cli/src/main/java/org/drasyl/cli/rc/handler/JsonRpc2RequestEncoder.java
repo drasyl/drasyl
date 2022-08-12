@@ -30,6 +30,7 @@ import io.netty.handler.codec.MessageToByteEncoder;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import static java.util.Objects.requireNonNull;
 
@@ -37,6 +38,7 @@ import static java.util.Objects.requireNonNull;
  * Encodes {@link JsonRpc2Request}s to bytes.
  */
 public class JsonRpc2RequestEncoder extends MessageToByteEncoder<JsonRpc2Request> {
+    private static final byte[] LINE_BREAK = "\n".getBytes(StandardCharsets.UTF_8);
     private final ObjectWriter writer;
 
     public JsonRpc2RequestEncoder(final ObjectWriter writer) {
@@ -57,6 +59,7 @@ public class JsonRpc2RequestEncoder extends MessageToByteEncoder<JsonRpc2Request
                           final ByteBuf out) throws Exception {
         try (final OutputStream outputStream = new ByteBufOutputStream(out)) {
             writer.writeValue(outputStream, msg);
+            outputStream.write(LINE_BREAK);
         }
     }
 }

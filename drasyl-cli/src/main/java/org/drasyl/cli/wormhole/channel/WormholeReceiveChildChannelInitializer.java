@@ -23,14 +23,15 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -101,7 +102,8 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
 
         // add ARQ to make sure messages arrive
         ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT), ackInterval));
+        ch.pipeline().addLast(new GoBackNArqSenderHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
+        ch.pipeline().addLast(new GoBackNArqReceiverHandler(ackInterval));
         ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for WormholeMessages
@@ -114,7 +116,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The sender did not respond within " + handshakeTimeoutMillis + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The sender did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }

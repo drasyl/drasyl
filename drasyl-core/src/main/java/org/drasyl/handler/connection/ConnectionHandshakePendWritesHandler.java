@@ -31,7 +31,7 @@ import java.nio.channels.ClosedChannelException;
 /**
  * This handler pends all channel writes in a {@link PendingWriteQueue} until a connection handshake
  * has been signaled by receiving a {@link ConnectionHandshakeCompleted} event. Once the handshake
- * is completed, this handler will removes itself from the channel pipeline.
+ * is completed, this handler will remove itself from the channel pipeline.
  */
 public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     private PendingWriteQueue pendingWrites;
@@ -53,6 +53,11 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     }
 
     @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        pendingWrites.removeAndFailAll(new Exception(ConnectionHandshakePendWritesHandler.class.getSimpleName() + " that has pend this write has been removed from channel before connection handshake was completed."));
+    }
+
+    @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
@@ -70,6 +75,7 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     public void channelInactive(final ChannelHandlerContext ctx) {
         // channel is closing, discard all pending writes
         pendingWrites.removeAndFailAll(new ClosedChannelException());
+        pendingWrites = null;
         ctx.fireChannelInactive();
     }
 

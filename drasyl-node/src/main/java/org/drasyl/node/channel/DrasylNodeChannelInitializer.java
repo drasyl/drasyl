@@ -23,12 +23,16 @@ package org.drasyl.node.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
+import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
 import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
 import org.drasyl.handler.stream.MessageChunkDecoder;
@@ -55,7 +59,7 @@ import static org.drasyl.node.Null.NULL;
 /**
  * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
  */
-public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInitializer {
     // SortedChunk: 6 bytes
     // PublicHeader: 98 bytes + 4 bytes MagicNumber
     // PrivateHeader: 3 byte + 16 bytes MAC
@@ -71,17 +75,41 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
 
     public DrasylNodeChannelInitializer(final DrasylConfig config,
                                         final DrasylNode node) {
+        super(config.getRemoteHandshakeTimeout(), true);
         this.config = requireNonNull(config);
         this.node = requireNonNull(node);
     }
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
+        super.initChannel(ch);
+
         firstStage(ch);
+        arqStage(ch);
         chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);
         lastStage(ch);
+    }
+
+    @Override
+    protected void handshakeCompleted(final DrasylChannel ch) {
+
+    }
+
+    private void arqStage(final DrasylChannel ch) {
+        if (config.isRemoteMessageArqEnabled()) {
+            ch.pipeline().addLast(new GoBackNArqCodec());
+            ch.pipeline().addLast(new GoBackNArqSenderHandler(config.getRemoteMessageArqWindowSize(), config.getRemoteMessageArqRetryTimeout()));
+            ch.pipeline().addLast(new GoBackNArqReceiverHandler(config.getRemoteMessageArqClock()));
+            ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+        }
+    }
+
+    @Override
+    protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
+        cause.printStackTrace();
+        ctx.channel().close();
     }
 
     protected void firstStage(final DrasylChannel ch) {
@@ -92,7 +120,7 @@ public class DrasylNodeChannelInitializer extends ChannelInitializer<DrasylChann
     }
 
     /**
-     * This stages plits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
+     * This stage splits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
      * datagram.
      */
     protected void chunkingStage(final DrasylChannel ch) {

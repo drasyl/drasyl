@@ -24,8 +24,8 @@ package org.drasyl.cli.tunnel.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
 import org.drasyl.cli.tunnel.handler.ExposeDrasylHandler;
@@ -33,7 +33,8 @@ import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -86,7 +87,8 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
 
         // add ARQ to make sure messages arrive
         p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(50)));
+        p.addLast(new GoBackNArqSenderHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
+        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(50)));
         p.addLast(new ByteToGoBackNArqDataCodec());
         p.addLast(new WriteTimeoutHandler(WRITE_TIMEOUT_SECONDS));
 
@@ -101,7 +103,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The exposing node did not respond within " + handshakeTimeoutMillis + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The exposing node did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }

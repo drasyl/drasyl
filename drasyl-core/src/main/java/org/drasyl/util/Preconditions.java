@@ -21,6 +21,8 @@
  */
 package org.drasyl.util;
 
+import java.time.Duration;
+
 /**
  * Static convenience methods that help a method or constructor check whether it was invoked
  * correctly (that is, whether its <i>preconditions</i> were met).
@@ -60,9 +62,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -105,9 +107,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -150,9 +152,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -195,9 +197,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -240,9 +242,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -285,9 +287,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is non-negative and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
@@ -302,6 +304,53 @@ public final class Preconditions {
      */
     public static double requireNonNegative(final double obj, final String message) {
         if (obj < 0) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is non-negative. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar);
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj the number to check for negativity
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     * @throws NullPointerException     if {@code obj} is {@code null}
+     */
+    public static Duration requireNonNegative(final Duration obj) {
+        if (obj.isNegative()) {
+            throw new IllegalArgumentException(MUST_BE_NON_NEGATIVE);
+        }
+
+        return obj;
+    }
+
+    /**
+     * Checks that the specified number is non-negative and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
+     * <blockquote><pre>
+     * public Foo(int bar) {
+     *     this.bar = Preconditions.requireNonNegative(bar, "bar must be non-negative");
+     * }
+     * </pre></blockquote>
+     *
+     * @param obj     the number to check for negativity
+     * @param message detail message to be used in the event that a {@code IllegalArgumentException}
+     *                is thrown
+     * @return {@code obj} if non-negative
+     * @throws IllegalArgumentException if {@code obj} is negative
+     * @throws NullPointerException     if {@code obj} is {@code null}
+     */
+    public static Duration requireNonNegative(final Duration obj, final String message) {
+        if (obj.isNegative()) {
             throw new IllegalArgumentException(message);
         }
 
@@ -330,9 +379,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -375,9 +424,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -420,9 +469,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -465,9 +514,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -510,9 +559,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -555,9 +604,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");

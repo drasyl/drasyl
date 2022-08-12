@@ -41,6 +41,7 @@ import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 
 /**
  * This node waits for connection handshake from other peers.
@@ -77,10 +78,10 @@ public class ConnectionServer {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(10_000L, false));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
-                            public void channelInactive(ChannelHandlerContext ctx) {
+                            public void channelInactive(final ChannelHandlerContext ctx) {
                                 System.out.println("Connection to " + ctx.channel().remoteAddress() + " closed.");
 
                                 ctx.fireChannelInactive();

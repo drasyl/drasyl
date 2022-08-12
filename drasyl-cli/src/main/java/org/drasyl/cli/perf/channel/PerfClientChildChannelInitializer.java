@@ -24,7 +24,7 @@ package org.drasyl.cli.perf.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
@@ -32,7 +32,8 @@ import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
 import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -93,7 +94,8 @@ public class PerfClientChildChannelInitializer extends ConnectionHandshakeChanne
 
         // add ARQ to make sure messages arrive
         p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT), Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
+        p.addLast(new GoBackNArqSenderHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
+        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
         p.addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages

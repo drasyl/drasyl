@@ -44,6 +44,7 @@ import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Scanner;
 
 /**
@@ -114,7 +115,7 @@ public class ConnectionClient {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(10_000L, true));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,

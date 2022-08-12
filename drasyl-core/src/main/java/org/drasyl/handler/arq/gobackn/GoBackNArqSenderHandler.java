@@ -39,7 +39,7 @@ import java.util.concurrent.ScheduledFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
- * Performs the Go-Back-N ARQ protocol.
+ * Performs the Go-Back-N ARQ sender protocol.
  * <p>
  * It also updates the {@linkplain Channel#isWritable() writability} of the associated
  * {@link Channel}. This update allows pending write operations to determine the writability.
@@ -55,37 +55,31 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * that message was manually aborted.
  * </b>
  * <p>
- * This handler tries to automatically synchronize the sequence numbers.
- * <p>
- * This handler should be used together with {@link GoBackNArqCodec} and
- * {@link ByteToGoBackNArqDataCodec}.
+ * This handler should be used together with {@link GoBackNArqCodec},
+ * {@link ByteToGoBackNArqDataCodec} and {@link GoBackNArqSenderHandler}.
  * <blockquote>
  * <pre>
  *  {@link ChannelPipeline} p = ...;
  *  ...
  *  p.addLast("arq_codec", <b>new {@link GoBackNArqCodec}()</b>);
- *  p.addLast("arq_handler", <b>new {@link GoBackNArqHandler}(150, Duration.ofMillis(100), Duration.ofMills(100).dividedBy(10))</b>);
+ *  p.addLast("arq_snd_handler", <b>new {@link GoBackNArqSenderHandler}(150, Duration.ofMillis(100))</b>);
+ *  p.addLast("arg_rec_handler", <b>new {@link GoBackNArqReceiverHandler}(Duration.ofMills(100).dividedBy(10))</b>);
  *  p.addLast("buf_codec", <b>new {@link ByteToGoBackNArqDataCodec}()</b>);
  *  ...
  *  p.addLast("handler", new HttpRequestHandler());
  *  </pre>
  * </blockquote>
  */
-public class GoBackNArqHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqHandler.class);
+public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqSenderHandler.class);
     private final int windowSize;
     private Window window;
     private PendingWriteQueue overflow;
-    private UnsignedInteger nextInboundSequenceNo;
     private UnsignedInteger base;
     private UnsignedInteger nextSeqNum;
     private final Duration retryTimeout;
-    private boolean firstOutbound;
     private ScheduledFuture<?> retryTask;
     private final boolean windowShouldAffectWritability;
-    private final Duration ackClock;
-    private ScheduledFuture<?> ackTask;
-    private boolean ackRequired;
 
     /**
      * Creates a new GoBackNArqHandler.
@@ -101,26 +95,19 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
      * @param retryTimeout                  the retry timeout
      * @param base                          the first unacknowledged sequence number
      * @param nextSeqNum                    the next sequence number, that was not already send
-     * @param nextInboundSequenceNo         the next expected inbound sequence number
      * @param windowShouldAffectWritability if the window should be added to the channels pending
      *                                      bytes
-     * @param ackClock                      the frequency of sending ACKs for received packages
      */
-    public GoBackNArqHandler(final int windowSize,
-                             final Duration retryTimeout,
-                             final UnsignedInteger base,
-                             final UnsignedInteger nextSeqNum,
-                             final UnsignedInteger nextInboundSequenceNo,
-                             final boolean windowShouldAffectWritability,
-                             final Duration ackClock) {
+    public GoBackNArqSenderHandler(final int windowSize,
+                                   final Duration retryTimeout,
+                                   final UnsignedInteger base,
+                                   final UnsignedInteger nextSeqNum,
+                                   final boolean windowShouldAffectWritability) {
         this.windowSize = windowSize;
         this.retryTimeout = retryTimeout;
         this.base = base;
         this.nextSeqNum = nextSeqNum;
-        this.nextInboundSequenceNo = nextInboundSequenceNo;
-        this.firstOutbound = true;
         this.windowShouldAffectWritability = windowShouldAffectWritability;
-        this.ackClock = ackClock;
     }
 
     /**
@@ -134,13 +121,11 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
      *
      * @param windowSize   the window size
      * @param retryTimeout the retry timeout
-     * @param ackClock     the frequency of sending ACKs for received packages
      */
-    public GoBackNArqHandler(final int windowSize,
-                             final Duration retryTimeout,
-                             final Duration ackClock) {
+    public GoBackNArqSenderHandler(final int windowSize,
+                                   final Duration retryTimeout) {
         this(windowSize, retryTimeout, UnsignedInteger.MIN_VALUE,
-                UnsignedInteger.MIN_VALUE, UnsignedInteger.MIN_VALUE, false, ackClock);
+                UnsignedInteger.MIN_VALUE, false);
     }
 
     /**
@@ -156,19 +141,16 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
      * @param retryTimeout                  the retry timeout
      * @param windowShouldAffectWritability if the window should be added to the channels pending
      *                                      bytes
-     * @param ackClock                      the frequency of sending ACKs for received packages
      */
-    public GoBackNArqHandler(final int windowSize,
-                             final Duration retryTimeout,
-                             final boolean windowShouldAffectWritability,
-                             final Duration ackClock) {
+    public GoBackNArqSenderHandler(final int windowSize,
+                                   final Duration retryTimeout,
+                                   final boolean windowShouldAffectWritability) {
         this(windowSize, retryTimeout, UnsignedInteger.MIN_VALUE,
-                UnsignedInteger.MIN_VALUE, UnsignedInteger.MIN_VALUE, windowShouldAffectWritability, ackClock);
+                UnsignedInteger.MIN_VALUE, windowShouldAffectWritability);
     }
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
-        //noinspection unchecked
         LOG.trace("[{}] Used windows size of {} and retry timeout of {}ms", ctx.channel()::id, () -> windowSize, retryTimeout::toMillis);
         if (windowShouldAffectWritability) {
             this.window = new PendingQueueWindow(ctx, windowSize);
@@ -177,23 +159,6 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             this.window = new SimpleWindow(windowSize);
         }
         this.overflow = new PendingWriteQueue(ctx);
-
-        if (ctx.channel().isActive()) {
-            // try to synchronize sequence numbers
-            synchronizeSequenceNumbers(ctx);
-        }
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        // try to synchronize sequence numbers
-        synchronizeSequenceNumbers(ctx);
-        ctx.fireChannelActive();
-    }
-
-    private void synchronizeSequenceNumbers(final ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(new GoBackNArqRst());
-        ackTask(ctx);
     }
 
     @Override
@@ -202,51 +167,12 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
         overflow.removeAndFailAll(new ClosedChannelException());
         ctx.fireChannelInactive();
         stopTimer();
-        stopAckTask();
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx,
                             final Object msg) {
-        // if we receive this message and our nextInboundSequenceNo > 0, then
-        // we have to synchronize/reset our nextInboundSequenceNo
-        if (msg instanceof GoBackNArqFirstData) {
-            if (nextInboundSequenceNo.getValue() > 0) {
-                LOG.trace("[{}] Got first data {}. Reset sequence number.", ctx.channel().id()::asShortText, () -> msg);
-
-                nextInboundSequenceNo = UnsignedInteger.MIN_VALUE;
-            }
-            // reply with ACK of current message
-            ctx.writeAndFlush(new GoBackNArqAck(UnsignedInteger.MIN_VALUE));
-        }
-
-        if (msg instanceof AbstractGoBackNArqData) {
-            final AbstractGoBackNArqData data = (AbstractGoBackNArqData) msg;
-
-            ackRequired = true;
-
-            if (!data.sequenceNo().equals(nextInboundSequenceNo)) {
-                //noinspection unchecked
-                LOG.trace("[{}] Got unexpected data {}. Expected {}. Drop it.", ctx.channel().id()::asShortText, () -> data, () -> nextInboundSequenceNo);
-                data.release();
-            }
-            else {
-                LOG.trace("[{}] Got expected {}. Pass through.", ctx.channel().id()::asShortText, () -> data);
-
-                // send explicit ACK on last message
-                if (msg instanceof GoBackNArqLastData) {
-                    // reply with ACK of current message
-                    ctx.writeAndFlush(new GoBackNArqAck(nextInboundSequenceNo));
-                }
-
-                // increase sequence no
-                nextInboundSequenceNo = nextInboundSequenceNo.safeIncrement();
-
-                // expected sequence no -> pass DATA inbound
-                ctx.fireChannelRead(msg);
-            }
-        }
-        else if (msg instanceof GoBackNArqAck) {
+        if (msg instanceof GoBackNArqAck) {
             final GoBackNArqAck ack = (GoBackNArqAck) msg;
             LOG.trace("[{}] Got {}", ctx.channel().id()::asShortText, () -> ack);
 
@@ -273,13 +199,6 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             else {
                 // unexpected, just drop, may do not even log this, do to cumulative acknowledgment
                 LOG.trace("[{}] Got unexpected (maybe out-of-order) {}. Drop it.", ctx.channel().id()::asShortText, () -> ack);
-            }
-        }
-        else if (msg instanceof GoBackNArqRst) {
-            // the receiver was started, maybe our sequence numbers are not synchronized anymore - reset
-            if (base.getValue() != 0) {
-                base = UnsignedInteger.MIN_VALUE;
-                nextSeqNum = UnsignedInteger.MIN_VALUE;
             }
         }
         else {
@@ -366,22 +285,9 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             window.removeAndFailAll(new ClosedChannelException());
             overflow.removeAndFailAll(new ClosedChannelException());
             stopTimer();
-            stopAckTask();
         }
         else {
-            final AbstractGoBackNArqData data;
-            if (firstOutbound) {
-                firstOutbound = false;
-                data = new GoBackNArqFirstData(msg.content().retainedSlice());
-            }
-            else {
-                if (overflow.isEmpty()) {
-                    data = new GoBackNArqLastData(seqNo, msg.content().retainedSlice());
-                }
-                else {
-                    data = new GoBackNArqData(seqNo, msg.content().retainedSlice());
-                }
-            }
+            final GoBackNArqData data = new GoBackNArqData(seqNo, msg.content().retainedSlice());
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> data);
             ctx.write(data);
         }
@@ -433,28 +339,6 @@ public class GoBackNArqHandler extends ChannelDuplexHandler {
             ctx.flush();
 
             resetTimer(ctx);
-        }
-    }
-
-    /**
-     * Acknowledge received packages. We do this as task to avoid congestion and save bandwidth.
-     */
-    private void ackTask(final ChannelHandlerContext ctx) {
-        if (ackRequired) {
-            ackRequired = false;
-            // reply with ACK of current inbound index
-            ctx.writeAndFlush(new GoBackNArqAck(nextInboundSequenceNo.safeDecrement()));
-        }
-
-        ackTask = ctx.executor().schedule(() -> ackTask(ctx), ackClock.toMillis(), MILLISECONDS);
-    }
-
-    /**
-     * Stops the ACK task.
-     */
-    private void stopAckTask() {
-        if (ackTask != null) {
-            ackTask.cancel(true);
         }
     }
 }
