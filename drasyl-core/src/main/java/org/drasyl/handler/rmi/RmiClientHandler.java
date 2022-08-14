@@ -25,15 +25,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Promise;
 import org.drasyl.handler.rmi.message.RmiError;
 import org.drasyl.handler.rmi.message.RmiMessage;
 import org.drasyl.handler.rmi.message.RmiResponse;
-import org.drasyl.util.Pair;
+import org.drasyl.util.InternPool;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.net.SocketAddress;
 import java.util.HashMap;
@@ -50,10 +48,11 @@ import static java.util.Objects.requireNonNull;
  */
 public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvelope<RmiMessage, SocketAddress>> {
     private static final Logger LOG = LoggerFactory.getLogger(RmiClientHandler.class);
-    final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests;
+    private final InternPool<Proxy> invocationHandlers = new InternPool<>();
+    final Map<UUID, RmiInvocationHandler> requests;
     ChannelHandlerContext ctx;
 
-    public RmiClientHandler(final Map<Pair<SocketAddress, UUID>, Pair<Promise<Object>, Class<?>>> requests) {
+    public RmiClientHandler(final Map<UUID, RmiInvocationHandler> requests) {
         super(false);
         this.requests = requireNonNull(requests);
     }
@@ -111,30 +110,21 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
 
     private void handleResponse(final RmiResponse response, final SocketAddress sender) {
         final UUID id = response.getId();
-        final Pair<Promise<Object>, Class<?>> request = requests.remove(Pair.of(sender, id));
-        if (request != null) {
-            final Promise<Object> promise = request.first();
-            final Class<?> resultType = request.second();
-            final ByteBuf result = response.getResult();
+        final ByteBuf result = response.getResult();
 
-            try {
-                promise.trySuccess(RmiUtil.unmarshalResult(resultType, result));
-            }
-            catch (final IOException e) {
-                response.release();
-                promise.tryFailure(e);
-            }
+        final RmiInvocationHandler invocationHandler = requests.remove(id);
+        if (invocationHandler != null && invocationHandler.getAddress().equals(sender)) {
+            invocationHandler.handleResult(id, result);
         }
     }
 
     private void handleError(final RmiError error, final SocketAddress sender) {
         final UUID id = error.getId();
-        final Pair<Promise<Object>, Class<?>> request = requests.remove(Pair.of(sender, id));
-        if (request != null) {
-            final Promise<Object> promise = request.first();
-            final String message = error.getMessage();
+        final String message = error.getMessage();
 
-            promise.setFailure(new RmiException(message));
+        final RmiInvocationHandler invocationHandler = requests.remove(id);
+        if (invocationHandler != null && invocationHandler.getAddress().equals(sender)) {
+            invocationHandler.handleError(id, message);
         }
     }
 
@@ -151,8 +141,9 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
      */
     @SuppressWarnings("unchecked")
     public <T> T lookup(final String name, final Class<T> clazz, final SocketAddress address) {
-        return (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
+        final T proxy = (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
                 clazz
-        }, new RmiInvocationHandler(this, name, address));
+        }, new RmiInvocationHandler(this, clazz, name, address));
+        return (T) invocationHandlers.intern((Proxy) proxy);
     }
 }

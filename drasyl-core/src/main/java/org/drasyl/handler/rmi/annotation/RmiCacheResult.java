@@ -27,17 +27,20 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Defines a timeout for all method invocations of this {@link Class} or methods.
+ * Defines a cache for method invocation results of this {@link Class} or methods.
+ * <p>
+ * Will pass all method parameters to {@link java.util.Objects#hash(Object...)} to generate a cache
+ * key.
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RmiTimeout {
-    long DEFAULT_INVOCATION_TIMEOUT = 60_000L;
+public @interface RmiCacheResult {
+    long DEFAULT_RESULT_EXPIRATION = 1_000L;
 
     /**
-     * The duration in milliseconds of this timeout.
+     * The duration in milliseconds before a cached result expires.
      *
-     * @return timeout duration in milliseconds; must be a non-negative number
+     * @return duration in milliseconds before a cached result expires
      */
-    long value() default DEFAULT_INVOCATION_TIMEOUT;
+    long value() default DEFAULT_RESULT_EXPIRATION;
 }
