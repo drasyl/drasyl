@@ -104,12 +104,13 @@ class RmiInvocationHandler implements InvocationHandler {
             final Optional<Object> cachedResult = getCachedResult(method, cacheKey);
 
             if (cachedResult != null) {
-                LOG.debug("Reuse cached result for invocation `{}({})` of remote object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(",")), () -> proxy);
-                return handler.ctx.executor().newSucceededFuture(cachedResult.orElse(null));
+                final Object result = cachedResult.orElse(null);
+                LOG.debug("Reuse cached result for invocation `{}({})` on remote object `{}`: `{}`", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(StringUtil::simpleClassName).collect(Collectors.joining(",")), this::toString, () -> StringUtil.simpleClassName(result));
+                return handler.ctx.executor().newSucceededFuture(result);
             }
 
             // perform remote invocation
-            LOG.debug("Invoke `{}({})` of remote object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(",")), () -> proxy);
+            LOG.debug("Invoke `{}({})` on remote object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(StringUtil::simpleClassName).collect(Collectors.joining(",")), () -> proxy);
             final Promise<Object> promise = handler.ctx.executor().newPromise();
             try {
                 final ByteBuf argsBuf = marshalArgs(args, handler.ctx.alloc().buffer());
@@ -129,11 +130,11 @@ class RmiInvocationHandler implements InvocationHandler {
                                          final int cacheKey) {
         final RmiRequest request = RmiRequest.of(name.hashCode(), computeMethodHash(method), argsBuf);
         final AddressedEnvelope<RmiRequest, SocketAddress> msg = new DefaultAddressedEnvelope<>(request, address);
-        LOG.debug("Send `{}`.", msg);
+        LOG.trace("Send `{}`.", msg);
         final ChannelHandlerContext ctx = handler.ctx;
         ctx.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.cause() != null) {
-                LOG.debug("Error", future.cause());
+                LOG.warn("Error", future.cause());
                 promise.tryFailure(future.cause());
             }
             else if (future.isCancelled()) {
@@ -162,7 +163,7 @@ class RmiInvocationHandler implements InvocationHandler {
             if (future.isCancelled()) {
                 final RmiCancel cancel = RmiCancel.of(request.getId());
                 final AddressedEnvelope<RmiCancel, SocketAddress> msg1 = new DefaultAddressedEnvelope<>(cancel, address);
-                LOG.debug("Send `{}`.", msg1);
+                LOG.trace("Send `{}`.", msg1);
                 ctx.writeAndFlush(msg1);
             }
         });
@@ -178,6 +179,8 @@ class RmiInvocationHandler implements InvocationHandler {
 
             try {
                 final Object result = unmarshalResult(resultType, buf);
+                //noinspection unchecked
+                LOG.debug("Invocation `{}({})` on remote object `{}` returned `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(StringUtil::simpleClassName).collect(Collectors.joining(",")), this::toString, () -> StringUtil.simpleClassName(result));
                 putCachedResult(method, cacheKey, result);
                 promise.trySuccess(result);
             }
@@ -191,6 +194,7 @@ class RmiInvocationHandler implements InvocationHandler {
         final RemoteInvocation invocation = requests.remove(id);
         if (invocation != null) {
             final Promise<Object> promise = invocation.getPromise();
+            LOG.warn("Got error: {}", message);
             promise.setFailure(new RmiException(message));
         }
     }

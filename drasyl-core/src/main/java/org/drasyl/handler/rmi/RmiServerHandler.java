@@ -29,6 +29,7 @@ import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.handler.rmi.annotation.RmiCaller;
 import org.drasyl.handler.rmi.message.RmiCancel;
 import org.drasyl.handler.rmi.message.RmiError;
@@ -89,7 +90,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final AddressedEnvelope<RmiMessage, SocketAddress> msg) {
-        LOG.debug("Got `{}`.", msg);
+        LOG.trace("Got `{}`.", msg);
         if (msg.content() instanceof RmiRequest) {
             handleRequest(ctx, (RmiRequest) msg.content(), msg.sender());
         }
@@ -158,7 +159,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
                 callerField.set(binding, caller);
             }
 
-            LOG.debug("Invoke `{}({})` of local object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(",")), () -> binding.getClass().getSimpleName());
+            LOG.debug("Invoke `{}({})` on local object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(StringUtil::simpleClassName).collect(Collectors.joining(",")), () -> StringUtil.simpleClassName(binding));
             final Object result = method.invoke(binding, args);
             if (result instanceof Future) {
                 invocations.put(Pair.of(caller, id), (Future<?>) result);
@@ -166,9 +167,11 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
                     invocations.remove(Pair.of(caller, id));
                     if (future.isSuccess()) {
                         try {
-                            final AddressedEnvelope<RmiResponse, SocketAddress> response = new DefaultAddressedEnvelope<>(RmiResponse.of(id, marshalResult(future.getNow(), ctx.alloc().buffer())), caller);
-                            LOG.debug("Send `{}`.", response);
-                            ctx.writeAndFlush(response).addListener((ChannelFutureListener) future2 -> {
+                            final Object response = future.getNow();
+                            LOG.debug("Invocation `{}({})` on local object `{}` returned `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(",")), () -> StringUtil.simpleClassName(binding), () -> StringUtil.simpleClassName(response));
+                            final AddressedEnvelope<RmiResponse, SocketAddress> msg = new DefaultAddressedEnvelope<>(RmiResponse.of(id, marshalResult(response, ctx.alloc().buffer())), caller);
+                            LOG.trace("Send `{}`.", msg);
+                            ctx.writeAndFlush(msg).addListener((ChannelFutureListener) future2 -> {
                                 if (future.cause() != null) {
                                     LOG.debug("Error", future.cause());
                                 }
@@ -260,10 +263,10 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
         LOG.warn("Error:", cause);
         final RmiError response = RmiError.of(id, cause);
         final AddressedEnvelope<RmiError, SocketAddress> msg = new DefaultAddressedEnvelope<>(response, recipient);
-        LOG.debug("Send `{}`.", msg);
+        LOG.trace("Send `{}`.", msg);
         ctx.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.cause() != null) {
-                LOG.debug("Error", future.cause());
+                LOG.warn("Error", future.cause());
             }
         });
     }
