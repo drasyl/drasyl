@@ -40,7 +40,15 @@ public abstract class ChordLookup {
 
     public abstract long getId();
 
+    public abstract boolean doStableCheck();
+
+    public static ChordLookup of(final DrasylAddress contact,
+                                 final long id,
+                                 final boolean doStableCheck) {
+        return new AutoValue_ChordLookup(contact, requireInRange(id, 0, MAX_ID), doStableCheck);
+    }
+
     public static ChordLookup of(final DrasylAddress contact, final long id) {
-        return new AutoValue_ChordLookup(contact, requireInRange(id, 0, MAX_ID));
+        return of(contact, id, true);
     }
 }

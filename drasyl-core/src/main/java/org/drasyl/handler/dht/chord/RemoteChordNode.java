@@ -25,10 +25,13 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.drasyl.identity.DrasylAddress;
 
+/**
+ * Remote interface of a Chord node.
+ */
 @RmiTimeout(5_000L)
-public interface ChordService {
+public interface RemoteChordNode {
     /**
-     * NOOP method used to check if callee is still alive.
+     * NOOP/ping method used to check if callee is still alive.
      */
     Future<Void> checkAlive();
 
@@ -49,11 +52,20 @@ public interface ChordService {
 
     /**
      * Find the closest finger preceding.
+     * <p>
+     * {@code n.closest_preceding_finger(id)}
      */
     Future<DrasylAddress> findClosestFingerPreceding(final long id);
 
     /**
      * Find successor for {@code id}.
+     * <p>
+     * {@code n.find_successor(id)}
      */
     Future<DrasylAddress> findSuccessor(final long id);
+
+    /**
+     * Check if node is stable (has successor and predecessor or neither).
+     */
+    Future<Boolean> isStable();
 }

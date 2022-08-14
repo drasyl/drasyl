@@ -23,32 +23,28 @@ package org.drasyl.handler.dht.chord;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
-import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
 
 /**
- * Joins the Chord distributed hash table.
+ * Joins the Chord circle or will close the {@link io.netty.channel.Channel}.
  */
 public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ChordJoinHandler.class);
-    private final ChordFingerTable fingerTable;
     private final DrasylAddress contact;
-    private final RmiClientHandler client;
+    private final LocalChordNode localNode;
+    private Future<Void> joinFuture;
 
-    public ChordJoinHandler(final ChordFingerTable fingerTable,
-                            final DrasylAddress contact,
-                            final RmiClientHandler client) {
-        this.fingerTable = requireNonNull(fingerTable);
+    public ChordJoinHandler(final DrasylAddress contact,
+                            final LocalChordNode localNode) {
         this.contact = requireNonNull(contact);
-        this.client = requireNonNull(client);
+        this.localNode = requireNonNull(localNode);
     }
 
     @Override
@@ -59,31 +55,43 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        cancelJoin();
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         doJoin(ctx);
+
         ctx.fireChannelActive();
     }
 
-    /*
-     * Join Task
-     */
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) {
+        cancelJoin();
+
+        ctx.fireChannelInactive();
+    }
 
     private void doJoin(final ChannelHandlerContext ctx) {
-        LOG.info("Join DHT ring by asking `{}` to find the successor for my id `{}`.", contact, chordIdHex(ctx.channel().localAddress()));
-        final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, contact);
-        service.findSuccessor(chordId(ctx.channel().localAddress())).addListener((FutureListener<DrasylAddress>) future -> {
+        LOG.debug("Try to join Chord circle by asking `{}` to find the successor for my id `{}`.", contact, chordIdHex(ctx.channel().localAddress()));
+        joinFuture = localNode.join(contact).addListener((FutureListener<Void>) future -> {
             if (future.isSuccess()) {
-                final DrasylAddress successor = future.getNow();
-                LOG.info("Successor for id `{}` is `{}`.", chordIdHex(ctx.channel().localAddress()), successor);
-                LOG.info("Set `{}` as our successor.", successor);
-                fingerTable.setSuccessor(successor, client).finish(ctx.executor());
+                LOG.debug("Joined Chord circle.");
+                ctx.pipeline().remove(ctx.name());
             }
             else {
-                LOG.error("Failed to join DHT ring `{}`:", contact, future.cause());
-                ctx.pipeline().fireExceptionCaught(new ChordException("Failed to join DHT ring.", future.cause()));
+                LOG.error("Failed to join Chord circle `{}`:", contact, future.cause());
+                ctx.pipeline().fireExceptionCaught(future.cause());
                 ctx.pipeline().close();
             }
-            ctx.pipeline().remove(ctx.name());
         });
+    }
+
+    private void cancelJoin() {
+        if (joinFuture != null) {
+            joinFuture.cancel(false);
+            joinFuture = null;
+        }
     }
 }

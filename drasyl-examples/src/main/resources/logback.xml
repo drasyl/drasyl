@@ -34,6 +34,9 @@
     <logger name="io.netty" level="warn">
     </logger>
 
+    <logger name="org.drasyl.handler.dht" level="debug">
+    </logger>
+
     <!-- available levels: off, error, warn, info, debug, trace -->
 
     <root level="warn">

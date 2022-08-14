@@ -14,7 +14,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordLookup;
-import org.drasyl.handler.dht.chord.ChordQueryHandler;
+import org.drasyl.handler.dht.chord.ChordLookupHandler;
 import org.drasyl.handler.dht.chord.ChordResponse;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.rmi.RmiClientHandler;
@@ -65,7 +65,7 @@ public class ChordQuery {
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiClientHandler client = new RmiClientHandler();
-                        p.addLast(new ChordQueryHandler(client));
+                        p.addLast(new ChordLookupHandler(client));
                         p.addLast(new SimpleChannelInboundHandler<ChordResponse>() {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,

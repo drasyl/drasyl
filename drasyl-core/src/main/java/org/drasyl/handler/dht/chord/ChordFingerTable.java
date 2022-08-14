@@ -21,9 +21,7 @@
  */
 package org.drasyl.handler.dht.chord;
 
-import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -33,18 +31,14 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
-import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
-import static org.drasyl.util.FutureComposer.composeFuture;
-import static org.drasyl.util.FutureComposer.composeSucceededFuture;
 
 /**
  * Chord routing table.
  */
 public class ChordFingerTable {
     private static final Logger LOG = LoggerFactory.getLogger(ChordFingerTable.class);
-    private final DrasylAddress[] entries;
+    protected final DrasylAddress[] entries;
     private final DrasylAddress localAddress;
-    private DrasylAddress predecessor;
 
     public ChordFingerTable(final DrasylAddress localAddress) {
         this.entries = new DrasylAddress[Integer.SIZE];
@@ -55,13 +49,6 @@ public class ChordFingerTable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-
-        sb.append("LOCAL:        " + localAddress + " " + chordIdHex(localAddress) + " (" + chordIdPosition(localAddress) + ")");
-        sb.append(System.lineSeparator());
-        sb.append("PREDECESSOR:  " + getPredecessor() + " " + (hasPredecessor() ? chordIdHex(getPredecessor()) + " (" + chordIdPosition(getPredecessor()) + ")" : ""));
-        sb.append(System.lineSeparator());
-        sb.append("FINGER TABLE:");
-        sb.append(System.lineSeparator());
 
         // header
         sb.append("No.\tStart\t\t\tAddress\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tId");
@@ -77,10 +64,6 @@ public class ChordFingerTable {
         return sb.toString();
     }
 
-    public DrasylAddress getLocalAddress() {
-        return localAddress;
-    }
-
     public DrasylAddress get(final int i) {
         return entries[i - 1];
     }
@@ -93,22 +76,6 @@ public class ChordFingerTable {
         return getSuccessor() != null;
     }
 
-    public DrasylAddress getPredecessor() {
-        return predecessor;
-    }
-
-    public boolean hasPredecessor() {
-        return getPredecessor() != null;
-    }
-
-    public void setPredecessor(final DrasylAddress predecessor) {
-        this.predecessor = predecessor;
-    }
-
-    public void removePredecessor() {
-        setPredecessor(null);
-    }
-
     public void removePeer(final DrasylAddress value) {
         LOG.info("Remove peer `{}` from finger table.", value);
         for (int i = Integer.SIZE; i > 0; i--) {
@@ -119,14 +86,15 @@ public class ChordFingerTable {
         }
     }
 
-    public FutureComposer<Void> setSuccessor(final DrasylAddress successor,
-                                             final RmiClientHandler client) {
-        return updateIthFinger(1, successor, client);
-    }
-
-    public FutureComposer<Void> updateIthFinger(final int i,
-                                                final DrasylAddress value,
-                                                final RmiClientHandler client) {
+    /**
+     * Updates the {@code i}th finger to point at {@code value}.
+     *
+     * @param i     finger to update
+     * @param value new value
+     * @return {@code true} if our successor (1st finger) was updated
+     */
+    public boolean updateIthFinger(final int i,
+                                   final DrasylAddress value) {
         final DrasylAddress oldValue = entries[i - 1];
         entries[i - 1] = value;
         if (!Objects.equals(value, oldValue)) {
@@ -134,12 +102,7 @@ public class ChordFingerTable {
         }
 
         // if the updated one is successor, notify the new successor
-        if (i == 1 && value != null && !value.equals(localAddress)) {
-            final ChordService service = client.lookup(SERVICE_NAME, ChordService.class, value);
-            return composeFuture(service.offerAsPredecessor());
-        }
-        else {
-            return composeSucceededFuture();
-        }
+        // FIXME: check for change? (not just update to same value)
+        return i == 1 && value != null && !value.equals(localAddress);
     }
 }

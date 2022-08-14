@@ -12,13 +12,10 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
-import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordHousekeepingHandler;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
-import org.drasyl.handler.dht.chord.DefaultChordService;
-import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
-import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
-import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
+import org.drasyl.handler.dht.chord.LocalChordNode;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
@@ -34,10 +31,10 @@ import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
-import static org.drasyl.handler.dht.chord.DefaultChordService.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.LocalChordNode.SERVICE_NAME;
 
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
-public class ChordNode {
+public class MyChordNode {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
 
     public static void main(final String[] args) throws IOException {
@@ -50,12 +47,14 @@ public class ChordNode {
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
         final long myId = chordId(identity.getAddress());
-        final ChordFingerTable fingerTable = new ChordFingerTable(identity.getIdentityPublicKey());
         System.out.println("My Address : " + identity.getAddress());
         System.out.println("My Id      : " + ChordUtil.chordIdHex(myId) + " (" + chordIdPosition(myId) + ")");
         System.out.println();
 
         final DrasylAddress contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
+
+        final RmiClientHandler client = new RmiClientHandler();
+        final LocalChordNode localService = new LocalChordNode(identity.getIdentityPublicKey(), client);
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
@@ -69,19 +68,13 @@ public class ChordNode {
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiServerHandler server = new RmiServerHandler();
-                        final RmiClientHandler client = new RmiClientHandler();
-                        final DefaultChordService defaultChordService = new DefaultChordService(fingerTable, client);
-                        server.bind(SERVICE_NAME, defaultChordService);
-
-                        p.addLast(new ChordStabilizeTask(fingerTable, 500, client, defaultChordService));
-                        p.addLast(new ChordFixFingersTask(fingerTable, 500, client, defaultChordService));
-                        p.addLast(new ChordAskPredecessorTask(fingerTable, 500, client));
-
-                        // FIXME: nach oben schieben?
                         p.addLast(new OverlayMessageToEnvelopeMessageCodec());
                         p.addLast(new RmiCodec());
                         p.addLast(client);
                         p.addLast(server);
+
+                        server.bind(SERVICE_NAME, localService);
+                        p.addLast(new ChordHousekeepingHandler(localService));
 
                         if (contact != null) {
                             p.addLast(new ChannelDuplexHandler() {
@@ -90,8 +83,7 @@ public class ChordNode {
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
-                                        // FIXME: addLast?
-                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact, client));
+                                        p.addLast(new ChordJoinHandler(contact, localService));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }
@@ -113,7 +105,7 @@ public class ChordNode {
             // begin to take user input, "info" or "quit"
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
-                System.out.println("\nType \"info\" to check this node's data or \n type \"quit\"to leave ring: ");
+                System.out.println("\nType \"info\" to check this node's data or \n type \"quit\" to leave ring: ");
                 String command = null;
                 command = userInput.next();
                 if (command.startsWith("quit")) {
@@ -124,7 +116,7 @@ public class ChordNode {
                 else if (command.startsWith("info")) {
                     System.out.println("==============================================================");
                     System.out.println();
-                    System.out.print(fingerTable);
+                    System.out.print(localService);
                     System.out.println();
                     System.out.println("==============================================================");
                 }

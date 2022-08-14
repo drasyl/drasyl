@@ -10,14 +10,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.dht.chord.ChordFingerTable;
+import org.drasyl.handler.dht.chord.ChordHousekeepingHandler;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
-import org.drasyl.handler.dht.chord.DefaultChordService;
-import org.drasyl.handler.dht.chord.task.ChordAskPredecessorTask;
-import org.drasyl.handler.dht.chord.task.ChordFixFingersTask;
-import org.drasyl.handler.dht.chord.task.ChordStabilizeTask;
+import org.drasyl.handler.dht.chord.LocalChordNode;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -44,15 +40,10 @@ public class ChordNodeMulti {
                         protected void initChannel(final DrasylServerChannel ch) {
                             super.initChannel(ch);
 
-                            final ChordFingerTable fingerTable = new ChordFingerTable(identity.getAddress());
-
                             final ChannelPipeline p = ch.pipeline();
 
-                            RmiClientHandler client = null;
-                            DefaultChordService myChordService = null;
-                            p.addLast(new ChordStabilizeTask(fingerTable, 500, client, myChordService));
-                            p.addLast(new ChordFixFingersTask(fingerTable, 500, client, myChordService));
-                            p.addLast(new ChordAskPredecessorTask(fingerTable, 500, client));
+                            LocalChordNode localService = null;
+                            p.addLast(new ChordHousekeepingHandler(localService));
 
                             p.addLast(new ChannelDuplexHandler() {
                                 @Override
@@ -61,7 +52,7 @@ public class ChordNodeMulti {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
                                         System.out.println(ctx.channel().localAddress());
-                                        p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact.get(), client));
+                                        p.addLast(new ChordJoinHandler(contact.get(), localService));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }
