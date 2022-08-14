@@ -536,7 +536,7 @@ public class LocalChordNode implements RemoteChordNode {
     private FutureComposer<Void> updateFingersFromIthToFirstFinger(final int j,
                                                                    final DrasylAddress ithFinger) {
         if (j >= 1) {
-            return composableUpdateIthFinger(j, ithFinger, client).then(() -> updateFingersFromIthToFirstFinger(j - 1, ithFinger));
+            return composableUpdateIthFinger(j, ithFinger, client).then(updateFingersFromIthToFirstFinger(j - 1, ithFinger));
         }
         else {
             return composeSucceededFuture();
