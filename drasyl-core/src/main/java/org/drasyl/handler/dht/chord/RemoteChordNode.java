@@ -22,7 +22,7 @@
 package org.drasyl.handler.dht.chord;
 
 import io.netty.util.concurrent.Future;
-import org.drasyl.handler.rmi.annotation.RmiResultCache;
+import org.drasyl.handler.rmi.annotation.RmiCacheResult;
 import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.drasyl.identity.DrasylAddress;
 
@@ -34,7 +34,7 @@ public interface RemoteChordNode {
     /**
      * NOOP/ping method used to check if callee is still alive.
      */
-    @RmiResultCache(5_000L)
+    @RmiCacheResult(5_000L)
     Future<Void> checkAlive();
 
     /**

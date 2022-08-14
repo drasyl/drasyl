@@ -61,7 +61,7 @@ class RmiIT {
 
         // server
         final RmiServerHandler server = new RmiServerHandler();
-        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final LocalAddress serverAddress = new LocalAddress("RmiIT");
         final Channel serverChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
@@ -123,7 +123,7 @@ class RmiIT {
 
         // server
         final RmiServerHandler server = new RmiServerHandler();
-        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final LocalAddress serverAddress = new LocalAddress("RmiIT");
         final Channel serverChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)

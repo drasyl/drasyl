@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
  */
 @Target({ ElementType.TYPE, ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RmiResultCache {
+public @interface RmiCacheResult {
     long DEFAULT_RESULT_EXPIRATION = 1_000L;
 
     /**

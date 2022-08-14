@@ -47,8 +47,8 @@ import static java.util.Objects.requireNonNull;
  * @see RmiServerHandler
  */
 public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvelope<RmiMessage, SocketAddress>> {
-    private static final InternPool<Proxy> POOL = new InternPool<>();
     private static final Logger LOG = LoggerFactory.getLogger(RmiClientHandler.class);
+    private final InternPool<Proxy> invocationHandlers = new InternPool<>();
     final Map<UUID, RmiInvocationHandler> requests;
     ChannelHandlerContext ctx;
 
@@ -144,6 +144,6 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
         final T proxy = (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
                 clazz
         }, new RmiInvocationHandler(this, clazz, name, address));
-        return (T) POOL.intern((Proxy) proxy);
+        return (T) invocationHandlers.intern((Proxy) proxy);
     }
 }

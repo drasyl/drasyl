@@ -145,7 +145,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
         }
     }
 
-    @SuppressWarnings({ "java:S3011", "java:S3776" })
+    @SuppressWarnings({ "java:S3011", "java:S3776", "unchecked" })
     private void invokeMethod(final ChannelHandlerContext ctx,
                               final SocketAddress caller,
                               final UUID id,

@@ -30,7 +30,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.StringUtil;
-import org.drasyl.handler.rmi.annotation.RmiResultCache;
+import org.drasyl.handler.rmi.annotation.RmiCacheResult;
 import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.drasyl.handler.rmi.message.RmiCancel;
 import org.drasyl.handler.rmi.message.RmiRequest;
@@ -220,8 +220,9 @@ class RmiInvocationHandler implements InvocationHandler {
         return address;
     }
 
+    @SuppressWarnings({ "OptionalAssignedToNull", "java:S2789" })
     private Optional<Object> getCachedResult(final Method method, final int key) {
-        final long expirationTime = getMethodResultCache(method);
+        final long expirationTime = getMethodCacheResultTime(method);
         if (expirationTime > 0) {
             final Map<Integer, Optional<Object>> resultCache = resultsCache.computeIfAbsent(method, m -> new ExpiringMap<>(1000, expirationTime, 0));
             return resultCache.get(key);
@@ -234,16 +235,16 @@ class RmiInvocationHandler implements InvocationHandler {
     private void putCachedResult(final Method method,
                                  final int key,
                                  final Object result) {
-        final long expirationTime = getMethodResultCache(method);
+        final long expirationTime = getMethodCacheResultTime(method);
         if (expirationTime > 0) {
             final Map<Integer, Optional<Object>> resultCache = resultsCache.computeIfAbsent(method, m -> new ExpiringMap<>(1000, expirationTime, 0));
             resultCache.put(key, Optional.ofNullable(result));
         }
     }
 
-    private static synchronized long getMethodResultCache(final Method method) {
+    private static synchronized long getMethodCacheResultTime(final Method method) {
         return methodResultCaches.computeIfAbsent(method, m -> {
-            final RmiResultCache annotation = getMethodAnnotation(RmiResultCache.class, m);
+            final RmiCacheResult annotation = getMethodAnnotation(RmiCacheResult.class, m);
             if (annotation != null) {
                 return annotation.value();
             }
