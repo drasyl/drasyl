@@ -44,10 +44,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.rmi.RmiUtil.marshalResult;
@@ -131,7 +133,6 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
             invokeMethod(ctx, caller, id, binding, method, args);
         }
         catch (final IOException e) {
-            request.release();
             replyError(ctx, caller, id, e);
         }
     }
@@ -157,6 +158,7 @@ public class RmiServerHandler extends SimpleChannelInboundHandler<AddressedEnvel
                 callerField.set(binding, caller);
             }
 
+            LOG.debug("Invoke `{}({})` of local object `{}`.", method::getName, () -> Arrays.stream(method.getParameterTypes()).map(Class::getName).collect(Collectors.joining(",")), () -> binding.getClass().getSimpleName());
             final Object result = method.invoke(binding, args);
             if (result instanceof Future) {
                 invocations.put(Pair.of(caller, id), (Future<?>) result);
