@@ -45,20 +45,17 @@ public class ChordFingerTable {
         this.localAddress = requireNonNull(localAddress);
     }
 
-    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
 
         // header
-        sb.append("No.\tStart\t\t\tAddress\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tId");
-        sb.append(System.lineSeparator());
+        sb.append(String.format("%-4s %-15s %-65s %-15s%n", "No.", "Start", "Address", "Id"));
 
         // body
         for (int i = 1; i <= entries.length; i++) {
             final long ithStart = ithFingerStart(localAddress, i);
-            sb.append(i + "\t" + ChordUtil.chordIdHex(ithStart) + " (" + chordIdPosition(ithStart) + ")" + "\t" + entries[i - 1] + "\t" + (entries[i - 1] != null ? chordIdHex(entries[i - 1]) + " (" + chordIdPosition(entries[i - 1]) + ")" : ""));
-            sb.append(System.lineSeparator());
+            sb.append(String.format("%2s   %-15s %-65s %-15s%n", i, chordIdHex(ithStart) + " (" + chordIdPosition(ithStart) + ")", entries[i - 1], entries[i - 1] != null ? chordIdHex(entries[i - 1]) + " (" + chordIdPosition(entries[i - 1]) + ")" : ""));
         }
 
         return sb.toString();
@@ -93,13 +90,13 @@ public class ChordFingerTable {
      * @param value new value
      * @return {@code true} if our successor (1st finger) was updated
      */
-    public boolean updateIthFinger(final int i,
-                                   final DrasylAddress value) {
+    public boolean updateIthFinger(final int i, final DrasylAddress value) {
         final DrasylAddress oldValue = entries[i - 1];
         entries[i - 1] = value;
         final boolean changed = !Objects.equals(value, oldValue);
         if (changed) {
-            LOG.info("Update {}th finger to `{}` ({} -> {} -> {}).", i, value, oldValue != null ? chordIdPosition(oldValue) : "null", value != null ? chordIdPosition(value) : "null", chordIdPosition(ithFingerStart(localAddress, i)));
+            //noinspection unchecked
+            LOG.info("Updated {}th finger to `{}` ({} -> {} -> {}).", () -> String.format("%2s", i), () -> value, () -> oldValue != null ? String.format("%4s", chordIdPosition(oldValue)) : "null", () -> value != null ? String.format("%4s", chordIdPosition(value)) : "null", () -> String.format("%4s", chordIdPosition(ithFingerStart(localAddress, i))));
         }
 
         // if the updated one is successor, notify the new successor

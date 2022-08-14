@@ -56,12 +56,13 @@ import static org.drasyl.util.FutureComposer.composeSucceededFuture;
  * This class is based on <a href="https://github.com/ChuanXia/Chord">Chord implementation of Chuan
  * Xia</a>.
  */
+@SuppressWarnings("unchecked")
 public class LocalChordNode implements RemoteChordNode {
     public static final String SERVICE_NAME = "ChordService";
     private static final Logger LOG = LoggerFactory.getLogger(LocalChordNode.class);
     private final ChordFingerTable fingerTable;
     private final RmiClientHandler client;
-    private final EventLoopGroup group = new NioEventLoopGroup();
+    private final EventLoopGroup group = new NioEventLoopGroup(1);
     @SuppressWarnings("unused")
     @RmiCaller
     private DrasylAddress caller;
@@ -93,10 +94,6 @@ public class LocalChordNode implements RemoteChordNode {
         sb.append("PREDECESSOR:  " + predecessor + " " + (predecessor != null ? chordIdHex(predecessor) + " (" + chordIdPosition(predecessor) + ")" : ""));
         sb.append(System.lineSeparator());
         sb.append("FINGER TABLE:");
-        sb.append(System.lineSeparator());
-
-        // header
-        sb.append("No.\tStart\t\t\tAddress\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tId");
         sb.append(System.lineSeparator());
         sb.append(fingerTable.toString());
 
@@ -137,9 +134,9 @@ public class LocalChordNode implements RemoteChordNode {
         // no blocking call necessary / return result immediately
         LOG.debug("Notified by `{}`.", caller);
         if (predecessor == null || localAddress.equals(predecessor)) {
-            LOG.info("Set predecessor `{}`.", caller);
+            LOG.info("Set predecessor to `{}`.", caller);
             predecessor = caller;
-            // FIXME: wieso hier nicht checken, ob er als geeigneter fingers dient?
+            // TODO: check if predecessor can improve our fingers?
         }
         else {
             final long localRelativeDd = relativeChordId(localAddress, predecessor);
@@ -153,25 +150,23 @@ public class LocalChordNode implements RemoteChordNode {
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
     }
 
-    @Override
-    public Future<DrasylAddress> findSuccessor(long id) {
-        LOG.debug("Find successor of `{}`.", chordIdHex(id));
+    private FutureComposer<DrasylAddress> composableFindSuccessor(long id) {
+        LOG.debug("Find successor of `{}` ({}) by asking id's predecessor for its successor.", () -> chordIdHex(id), () -> chordIdPosition(id));
 
         // initialize return value as this node's successor (might be null)
         final DrasylAddress ret = fingerTable.getSuccessor();
-
-        LOG.debug("Find successor of {} by asking id's predecessor for its successor.", chordIdHex(id));
 
         return findPredecessor(id).then(future -> {
             final DrasylAddress pre = future.getNow();
             // if other node found, ask it for its successor
             if (!Objects.equals(pre, localAddress)) {
                 if (pre != null) {
-                    final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, pre);
-                    return composeFuture(service.getSuccessor());
+                    LOG.debug("Predecessor of `{}` ({}) is `{}` ({}).", () -> chordIdHex(id), () -> chordIdPosition(id), () -> pre, () -> chordIdPosition(pre));
+                    return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, pre).getSuccessor());
                 }
                 else {
-                    return composeSucceededFuture(null);
+                    LOG.debug("Request predecessor of id `{}` ({}) failed. Fail back to `{}` ({}).", () -> chordIdHex(id), () -> chordIdPosition(id), () -> localAddress);
+                    return composeSucceededFuture(localAddress);
                 }
             }
             else {
@@ -180,10 +175,20 @@ public class LocalChordNode implements RemoteChordNode {
         }).then(future -> {
             final DrasylAddress ret1 = future.getNow();
             if (ret1 == null) {
+                LOG.debug("We're successor of `{}` ({}): `{}` ({})", () -> chordIdHex(id), () -> chordIdPosition(id), () -> localAddress, () -> chordIdPosition(localAddress));
                 return composeSucceededFuture(localAddress);
             }
-            return composeSucceededFuture(ret1);
-        }).finish(group.next());
+            else {
+                LOG.debug("Successor of `{}` ({}) is `{}` ({})", () -> chordIdHex(id), () -> chordIdPosition(id), () -> ret1, () -> chordIdPosition(ret1));
+                return composeSucceededFuture(ret1);
+            }
+        });
+    }
+
+    @Override
+    public Future<DrasylAddress> findSuccessor(long id) {
+        LOG.debug("findSuccessor({})", () -> chordIdHex(id));
+        return composableFindSuccessor(id).finish(group.next()); // FIXME: fine
     }
 
     @Override
@@ -198,7 +203,7 @@ public class LocalChordNode implements RemoteChordNode {
      * {@code n.find_predecessor(id)}
      */
     private FutureComposer<DrasylAddress> findPredecessor(final long id) {
-        LOG.debug("Find predecessor of `{}`", chordIdHex(id));
+        LOG.debug("Find predecessor of `{}` ({}).", () -> chordIdHex(id), () -> chordIdPosition(id));
         final DrasylAddress myAddress = localAddress;
         final DrasylAddress mySuccessor = fingerTable.getSuccessor();
         final long findIdRelativeId = relativeChordId(id, myAddress);
@@ -214,72 +219,80 @@ public class LocalChordNode implements RemoteChordNode {
     }
 
     @SuppressWarnings("java:S107")
-    private FutureComposer<DrasylAddress> findPredecessorRecursive(final long findId,
+    private FutureComposer<DrasylAddress> findPredecessorRecursive(final long id,
                                                                    final DrasylAddress currentNode,
                                                                    final long findIdRelativeId,
                                                                    final long currentNodeSuccessorsRelativeId,
                                                                    final DrasylAddress mostRecentlyAlive) {
         if (findIdRelativeId > 0 && findIdRelativeId <= currentNodeSuccessorsRelativeId) {
+            LOG.debug("Predecessor of `{}` ({}) is `{}` ({})", () -> chordIdHex(id), () -> chordIdPosition(id), () -> currentNode, () -> chordIdPosition(currentNode));
             return composeSucceededFuture(currentNode);
         }
 
         // if current node is local node, find my closest
         if (Objects.equals(currentNode, localAddress)) {
-            return findMyClosest(findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
+            return findMyClosest(id, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
         }
         // else current node is remote node, sent request to it for its closest
         else {
-            return findPeersClosest(findId, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
+            return findPeersClosest(id, currentNode, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
         }
     }
 
     @SuppressWarnings("java:S107")
-    private FutureComposer<DrasylAddress> findMyClosest(final long findId,
+    private FutureComposer<DrasylAddress> findMyClosest(final long id,
                                                         final DrasylAddress currentNode,
                                                         final long findIdRelativeId,
                                                         final long currentNodeSuccessorsRelativeId,
                                                         final DrasylAddress mostRecentlyAlive) {
-        LOG.debug("Find my closest.");
-        return composeFuture(findClosestFingerPreceding(findId)).then(future -> {
+        LOG.debug("Find predecessor of `{}` ({}) by looking up my finger table.", () -> chordIdHex(id), () -> chordIdPosition(id));
+        return composableFindClosestFingerPreceding(id).then(future -> {
             final DrasylAddress finger = future.getNow();
             if (currentNode.equals(finger)) {
                 return composeSucceededFuture(finger);
             }
             else {
-                return findPredecessorRecursive(findId, finger, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
+                LOG.debug("Closest finger preceding `{}` ({}) is `{}` ({}). Now ask finger to find predecessor.", () -> chordIdHex(id), () -> chordIdPosition(id), () -> finger, () -> chordIdPosition(finger));
+                return findPredecessorRecursive(id, finger, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
             }
         });
     }
 
     @SuppressWarnings("java:S107")
-    private FutureComposer<DrasylAddress> findPeersClosest(final long findId,
+    private FutureComposer<DrasylAddress> findPeersClosest(final long id,
                                                            final DrasylAddress currentNode,
                                                            final long findIdRelativeId,
                                                            final long currentNodeSuccessorsRelativeId,
                                                            final DrasylAddress mostRecentlyAlive) {
-        LOG.debug("Find peers closest.");
+        LOG.debug("Find predecessor of `{}` ({}) by looking up the finger table of `{}` ({}).", () -> chordIdHex(id), () -> chordIdPosition(id), () -> currentNode, () -> currentNode != null ? chordIdPosition(currentNode) : currentNode);
         final FutureComposer<DrasylAddress> lookupComposer;
         if (currentNode != null) {
-            lookupComposer = composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, currentNode).findClosestFingerPreceding(findId));
+            lookupComposer = composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, currentNode).findClosestFingerPreceding(id));
         }
         else {
             lookupComposer = composeSucceededFuture(null);
         }
         return lookupComposer.then(future -> {
             final DrasylAddress closest = future.getNow();
+            LOG.debug("`{}` ({}) returned `{}` ({}) as closest finger preceding `{}` ({}).", () -> currentNode, () -> currentNode != null ? chordIdPosition(currentNode) : currentNode, () -> closest, () -> closest != null ? chordIdPosition(closest) : null, () -> chordIdHex(id), () -> chordIdPosition(id));
+
             // if fail to get response, set currentNode to most recently
             if (closest == null) {
-                final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, mostRecentlyAlive);
-                return composeFuture(service.getSuccessor()).then(future1 -> {
-                    final DrasylAddress mostRecentlysSuccessor = future1.getNow();
-                    if (mostRecentlysSuccessor == null) {
+                LOG.debug("Got no response from `{}` ({}). Try to get successor of `{}` ({}).", () -> currentNode, () -> currentNode != null ? chordIdPosition(currentNode) : currentNode, () -> mostRecentlyAlive, () -> chordIdPosition(mostRecentlyAlive));
+                return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, mostRecentlyAlive).getSuccessor()).then(future1 -> {
+                    final DrasylAddress mostRecentlySuccessor = future1.getNow();
+                    if (mostRecentlySuccessor == null) {
+                        LOG.debug("Got no response from `{}` ({}). Return us.", () -> mostRecentlyAlive, () -> chordIdPosition(mostRecentlyAlive), () -> localAddress);
                         return composeSucceededFuture(localAddress);
                     }
-                    return findPredecessorRecursive(findId, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
+                    else {
+                        LOG.debug("Find predecessor of `{}` ({}) by asking `{}` ({}).", () -> chordIdHex(id), () -> chordIdPosition(id), () -> mostRecentlySuccessor, () -> chordIdPosition(mostRecentlySuccessor));
+                        return findPredecessorRecursive(id, mostRecentlyAlive, findIdRelativeId, currentNodeSuccessorsRelativeId, mostRecentlyAlive);
+                    }
                 });
             }
 
-            // if currentNode's closest is itself, return currentNode
+            // if currentNode's closest is itself, return closest
             else if (closest.equals(currentNode)) {
                 return composeSucceededFuture(closest);
             }
@@ -288,7 +301,7 @@ public class LocalChordNode implements RemoteChordNode {
             else {
                 // set currentNode as most recently alive
                 // ask "closest" for its successor
-                return requestClosestSuccessor(findId, currentNode, closest);
+                return requestClosestSuccessor(id, currentNode, closest);
             }
         });
     }
@@ -296,8 +309,7 @@ public class LocalChordNode implements RemoteChordNode {
     private FutureComposer<DrasylAddress> requestClosestSuccessor(final long findId,
                                                                   final DrasylAddress currentNode,
                                                                   final DrasylAddress closest) {
-        final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, closest);
-        return composeFuture(service.getSuccessor()).then(future -> {
+        return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, closest).getSuccessor()).then(future -> {
             final DrasylAddress closestSuccessor = future.getNow();
             // if we can get its response, then "closest" must be our next currentNode
             if (closestSuccessor != null) {
@@ -313,25 +325,26 @@ public class LocalChordNode implements RemoteChordNode {
             }
             // else currentNode sticks, ask currentNode's successor
             else {
-                final RemoteChordNode service2 = client.lookup(SERVICE_NAME, RemoteChordNode.class, currentNode);
-                return composeFuture(service2.getSuccessor());
+                return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, currentNode).getSuccessor());
             }
         });
     }
 
-    @Override
-    public Future<DrasylAddress> findClosestFingerPreceding(final long id) {
-        LOG.debug("Find closest finger preceding `{}`.", chordIdHex(id));
-
-        // check from last item in finger table
-        return checkFinger(id, Integer.SIZE).finish(group.next());
+    private FutureComposer<DrasylAddress> composableFindClosestFingerPreceding(final long id) {
+        LOG.debug("Find closest finger preceding `{}` ({}). Go down starting from {}th finger.", () -> chordIdHex(id), () -> chordIdPosition(id), () -> Integer.SIZE);
+        return findClosestFingerPrecedingRecursive(id, Integer.SIZE);
     }
 
-    @SuppressWarnings("java:S3776")
-    private FutureComposer<DrasylAddress> checkFinger(final long findId,
-                                                      final int i) {
+    @Override
+    public Future<DrasylAddress> findClosestFingerPreceding(final long id) {
+        return composableFindClosestFingerPreceding(id).finish(group.next());
+    }
+
+    @SuppressWarnings({ "java:S3776", "unchecked" })
+    private FutureComposer<DrasylAddress> findClosestFingerPrecedingRecursive(final long id,
+                                                                              final int i) {
         if (i == 0) {
-            LOG.debug("We're closest to `{}`.", chordIdHex(findId));
+            LOG.debug("Reached {}th finger. We're closest to `{}` ({}).", () -> i, () -> chordIdHex(id), () -> chordIdPosition(id));
             return composeSucceededFuture(localAddress);
         }
         else {
@@ -342,33 +355,42 @@ public class LocalChordNode implements RemoteChordNode {
                     final long ithFingerId = chordId(ithFinger);
                     final long ithFingerRelativeId = relativeChordId(ithFingerId, localAddress);
 
-                    final long findIdRelative = relativeChordId(findId, localAddress);
+                    final long findIdRelative = relativeChordId(id, localAddress);
                     if (ithFingerRelativeId > 0 && ithFingerRelativeId < findIdRelative) {
-                        LOG.debug("{}th finger `{}` is closest preceding finger of id `{}`.", i, chordIdHex(ithFingerId), chordIdHex(findId));
+                        LOG.debug("{}th finger `{}` ({}) is closest to precede `{}` ({}).", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id), () -> chordIdPosition(id));
 
                         if (localAddress.equals(ithFinger)) {
                             LOG.debug("That is me. Finger is for sure alive ;).");
                             return composeSucceededFuture(ithFinger);
                         }
 
-                        LOG.debug("Check if it is still alive.");
-                        final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, ithFinger);
-                        return composeFuture(service.checkAlive()).then(future2 -> {
+                        LOG.debug("Check if {}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id));
+                        return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, ithFinger).checkAlive()).then(future2 -> {
                             //it is alive, return it
                             if (future2.isSuccess()) {
-                                LOG.debug("Peer is still alive.");
+                                LOG.debug("{}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id));
                                 return composeSucceededFuture(ithFinger);
                             }
                             // else, remove its existence from finger table
                             else {
-                                LOG.warn("Peer `{}` is not alive. Remove it from finger table.", ithFinger);
+                                final int nextI = i - 1;
+                                LOG.debug("{}th finger `{}` ({}) is no longer alive. Remote it from finger table and go to {}th finger.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id), () -> nextI);
                                 fingerTable.removePeer(ithFinger);
+                                return findClosestFingerPrecedingRecursive(id, nextI);
                             }
-                            return checkFinger(findId, i - 1);
                         });
                     }
+                    else {
+                        final int nextI = i - 1;
+                        LOG.debug("{}th finger `{}` ({}) is not preceding `{}` ({}). Go to {}th finger.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id), () -> chordIdPosition(id), () -> nextI);
+                        return findClosestFingerPrecedingRecursive(id, nextI);
+                    }
                 }
-                return checkFinger(findId, i - 1);
+                else {
+                    final int nextI = i - 1;
+                    LOG.debug("{}th finger does not exist. Go to {}th finger.", () -> i, () -> nextI);
+                    return findClosestFingerPrecedingRecursive(id, nextI);
+                }
             });
         }
     }
@@ -384,8 +406,7 @@ public class LocalChordNode implements RemoteChordNode {
                                                            final RmiClientHandler client) {
         // if the updated one is successor, notify the new successor
         if (fingerTable.updateIthFinger(i, value)) {
-            final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, value);
-            return composeFuture(service.offerAsPredecessor());
+            return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, value).offerAsPredecessor());
         }
         else {
             return composeSucceededFuture();
@@ -396,19 +417,18 @@ public class LocalChordNode implements RemoteChordNode {
      * Join circle by contacting {@code contact}.
      */
     public Future<Void> join(final DrasylAddress contact) {
-        final RemoteChordNode contactService = client.lookup(SERVICE_NAME, RemoteChordNode.class, contact);
-        return composeFuture(contactService.findSuccessor(chordId(localAddress))).then(future -> {
+        return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, contact).findSuccessor(chordId(localAddress))).then(future -> {
             if (future.isSuccess()) {
                 final DrasylAddress successor = future.getNow();
-                LOG.info("Successor for id `{}` is `{}`.", chordIdHex(localAddress), successor);
-                LOG.info("Set `{}` as our successor.", successor);
+                LOG.debug("Successor for our id `{}` is `{}`.", chordIdHex(localAddress), successor);
+                LOG.info("Set successor to `{}`.", successor);
                 return composableUpdateIthFinger(1, successor, client);
             }
             else {
                 LOG.error("Failed to join DHT ring `{}`:", contact, future.cause());
                 return composeFailedFuture(new ChordException("Failed to join DHT ring.", future.cause()));
             }
-        }).finish(group.next());
+        }).finish(group.next()); // FIXME: fine
     }
 
     /**
@@ -426,7 +446,7 @@ public class LocalChordNode implements RemoteChordNode {
             });
         }
         else {
-            return group.next().newSucceededFuture(null);
+            return group.next().newSucceededFuture(null); // FIXME: fine
         }
     }
 
@@ -435,6 +455,7 @@ public class LocalChordNode implements RemoteChordNode {
      */
     @SuppressWarnings("java:S3776")
     public Future<Void> stabilize() {
+        LOG.debug("stabilize()");
         final DrasylAddress successor = fingerTable.getSuccessor();
         final FutureComposer<Void> voidFuture;
         if (successor == null || successor.equals(localAddress)) {
@@ -447,11 +468,10 @@ public class LocalChordNode implements RemoteChordNode {
 
         return voidFuture.then(future -> {
             if (successor != null && !successor.equals(localAddress)) {
-                LOG.debug("Check if successor has still us a predecessor.");
+                LOG.debug("Check if successor `{}` ({}) has still us a predecessor.", () -> successor, () -> chordIdPosition(successor));
 
                 // try to get my successor's predecessor
-                final RemoteChordNode service1 = client.lookup(SERVICE_NAME, RemoteChordNode.class, successor);
-                return composeFuture(service1.getPredecessor()).then(future2 -> {
+                return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, successor).getPredecessor()).then(future2 -> {
                     // if bad connection with successor! delete successor
                     DrasylAddress x = future2.getNow();
                     if (x == null) {
@@ -462,10 +482,10 @@ public class LocalChordNode implements RemoteChordNode {
                     // else if successor's predecessor is not itself
                     else if (!x.equals(successor)) {
                         if (x.equals(localAddress)) {
-                            LOG.debug("Successor has still us as predecessor. All fine.");
+                            LOG.debug("Successor `{}` ({}) has still us as predecessor. All fine.", () -> successor, () -> chordIdPosition(successor));
                         }
                         else {
-                            LOG.debug("Successor's predecessor is {}.", x);
+                            LOG.debug("Successor's predecessor is `{}` ({}).", () -> x, () -> chordIdPosition(x));
                         }
                         final long localId = chordId(localAddress);
                         final long successorRelativeId = relativeChordId(successor, localId);
@@ -483,8 +503,7 @@ public class LocalChordNode implements RemoteChordNode {
                     else {
                         LOG.debug("Successor's predecessor is successor itself, notify successor to set us as his predecessor.");
                         if (!successor.equals(localAddress)) {
-                            final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, successor);
-                            return composeFuture(service.offerAsPredecessor());
+                            return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, successor).offerAsPredecessor());
                         }
                         return composeSucceededFuture();
                     }
@@ -493,7 +512,7 @@ public class LocalChordNode implements RemoteChordNode {
             else {
                 return composeSucceededFuture();
             }
-        }).finish(group.next());
+        }).finish(group.next()); // FIXME: fine
     }
 
     private FutureComposer<Void> fillSuccessor() {
@@ -536,7 +555,7 @@ public class LocalChordNode implements RemoteChordNode {
     private FutureComposer<Void> updateFingersFromIthToFirstFinger(final int j,
                                                                    final DrasylAddress ithFinger) {
         if (j >= 1) {
-            return composableUpdateIthFinger(j, ithFinger, client).then(updateFingersFromIthToFirstFinger(j - 1, ithFinger));
+            return composableUpdateIthFinger(j, ithFinger, client).then(() -> updateFingersFromIthToFirstFinger(j - 1, ithFinger));
         }
         else {
             return composeSucceededFuture();
@@ -576,7 +595,7 @@ public class LocalChordNode implements RemoteChordNode {
                 // it's predecessor until find local node's new successor
                 if ((successor2 == null || localAddress.equals(successor2)) && predecessor != null && !localAddress.equals(predecessor)) {
                     // update successor
-                    return findNewSuccessor(predecessor, successor2).then(composableUpdateIthFinger(1, predecessor, client));
+                    return findNewSuccessor(predecessor, successor2).then(() -> composableUpdateIthFinger(1, predecessor, client));
                 }
                 else {
                     return composeSucceededFuture();
@@ -598,8 +617,7 @@ public class LocalChordNode implements RemoteChordNode {
 
     private FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
                                                            final DrasylAddress successor) {
-        final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, peer);
-        return composeFuture(service.getPredecessor()).then(future -> {
+        return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, peer).getPredecessor()).then(future -> {
             DrasylAddress predecessor = future.getNow();
             if (predecessor == null) {
                 return composeSucceededFuture(peer);
@@ -619,19 +637,20 @@ public class LocalChordNode implements RemoteChordNode {
     }
 
     public Future<Void> fixFinger(final int i) {
+        LOG.debug("fixFinger({})", i);
         final long id = ithFingerStart(localAddress, i);
-        LOG.debug("Refresh {}th finger: Find successor for id `{}` and check if it is still the same peer.", i, chordIdHex(id));
-        return composeFuture(findSuccessor(id)).then(future -> {
+        LOG.debug("Refresh {}th finger: Find successor for id `{}` ({}) and check if it is still the same peer.", () -> i, () -> chordIdHex(id), () -> chordIdPosition(id));
+        return composableFindSuccessor(id).then(future -> {
             if (future.isSuccess()) {
                 final DrasylAddress ithFinger = future.getNow();
-                LOG.debug("Successor for id `{}` is `{}`.", chordIdHex(id), ithFinger);
+                LOG.debug("Successor for id `{}` ({}) is `{}`.", () -> chordIdHex(id), () -> chordIdPosition(id), () -> ithFinger);
                 return composableUpdateIthFinger(i, ithFinger, client);
             }
             else {
                 // timeout
                 return composeSucceededFuture();
             }
-        }).finish(group.next());
+        }).finish(group.next()); // FIXME: fine
     }
 
     @JsonDeserialize(as = IdentityPublicKey.class)

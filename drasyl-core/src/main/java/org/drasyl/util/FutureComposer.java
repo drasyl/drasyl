@@ -95,14 +95,6 @@ public final class FutureComposer<T> {
         });
     }
 
-    /**
-     * Returns a new {@link FutureComposer} that will complete if all previous {@link Future}s and
-     * the {@link FutureComposer} returned by {@code mapper} have been completed.
-     */
-    public <R> FutureComposer<R> then(final FutureComposer<R> composer) {
-        return then(() -> composer);
-    }
-
     public <R> FutureComposer<R> then(final Supplier<FutureComposer<R>> mapper) {
         return new FutureComposer<>(executor -> {
             final Future<T> existingFuture = futureResolver.apply(executor);

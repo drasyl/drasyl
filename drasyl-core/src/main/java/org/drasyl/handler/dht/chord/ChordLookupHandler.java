@@ -32,6 +32,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
+import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.LocalChordNode.SERVICE_NAME;
 
 /**
@@ -61,6 +63,7 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
             final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, contact);
 
             if (doStableCheck) {
+                LOG.info("Check first if contact node `{}` is stable.", contact);
                 doStableCheck(ctx, id, promise, service);
             }
             else {
@@ -77,12 +80,10 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
                                final long id,
                                final ChannelPromise promise,
                                final RemoteChordNode service) {
-        LOG.error("Check if contact node is stable.");
-
         service.isStable().addListener((FutureListener<Boolean>) future -> {
             if (future.isSuccess()) {
                 if (future.getNow()) {
-                    LOG.debug("Contact node is stable.");
+                    LOG.info("Contact node is stable.");
                     if (!promise.isDone()) {
                         doLookup(ctx, id, promise, service);
                     }
@@ -106,11 +107,11 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
                           final long id,
                           final ChannelPromise promise,
                           final RemoteChordNode service) {
-        LOG.debug("Do lookup.");
+        LOG.info("Do lookup for id `{}` ({}).", chordIdHex(id), chordIdPosition(id));
 
         service.findSuccessor(id).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
-                LOG.debug("Lookup is done.");
+                LOG.debug("Lookup done. Id `{}` ({}) has resolved to address `{}` ({}).", chordIdHex(id), chordIdPosition(id), future.getNow(), chordIdPosition(future.getNow()));
                 ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
                 promise.trySuccess();
             }

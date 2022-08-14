@@ -111,12 +111,9 @@ public class ChordLookupNode {
                 // search
                 else if (command.length() > 0) {
                     final long hash = chordId(command);
-                    LOG.error("SUBMIT!");
                     System.out.println("String `" + command + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
                     group.next().submit(() -> {
-                        LOG.error("WRITE!");
                         ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
-                            LOG.error("WRITTEN!");
                             if (future.cause() != null) {
                                 future.cause().printStackTrace();
                             }
