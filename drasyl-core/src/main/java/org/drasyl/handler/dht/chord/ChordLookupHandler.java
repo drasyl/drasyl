@@ -77,7 +77,7 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
                                final long id,
                                final ChannelPromise promise,
                                final RemoteChordNode service) {
-        LOG.debug("Check if contact node is stable.");
+        LOG.error("Check if contact node is stable.");
 
         service.isStable().addListener((FutureListener<Boolean>) future -> {
             if (future.isSuccess()) {

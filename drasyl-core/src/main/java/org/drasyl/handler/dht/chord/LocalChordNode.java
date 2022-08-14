@@ -46,7 +46,6 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.ChordUtil.ithFingerStart;
 import static org.drasyl.handler.dht.chord.ChordUtil.relativeChordId;
-import static org.drasyl.handler.rmi.RmiUtil.OBJECT_MAPPER;
 import static org.drasyl.util.FutureComposer.composeFailedFuture;
 import static org.drasyl.util.FutureComposer.composeFuture;
 import static org.drasyl.util.FutureComposer.composeSucceededFuture;
@@ -58,11 +57,6 @@ import static org.drasyl.util.FutureComposer.composeSucceededFuture;
  * Xia</a>.
  */
 public class LocalChordNode implements RemoteChordNode {
-    static {
-        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
-        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
-    }
-
     public static final String SERVICE_NAME = "ChordService";
     private static final Logger LOG = LoggerFactory.getLogger(LocalChordNode.class);
     private final ChordFingerTable fingerTable;
@@ -111,6 +105,7 @@ public class LocalChordNode implements RemoteChordNode {
 
     @Override
     public Future<Void> checkAlive() {
+        LOG.debug("checkAlive {}", caller);
         // NOOP / return result immediately
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
     }
@@ -244,6 +239,7 @@ public class LocalChordNode implements RemoteChordNode {
                                                         final long findIdRelativeId,
                                                         final long currentNodeSuccessorsRelativeId,
                                                         final DrasylAddress mostRecentlyAlive) {
+        LOG.debug("Find my closest.");
         return composeFuture(findClosestFingerPreceding(findId)).then(future -> {
             final DrasylAddress finger = future.getNow();
             if (currentNode.equals(finger)) {
@@ -261,6 +257,7 @@ public class LocalChordNode implements RemoteChordNode {
                                                            final long findIdRelativeId,
                                                            final long currentNodeSuccessorsRelativeId,
                                                            final DrasylAddress mostRecentlyAlive) {
+        LOG.debug("Find peers closest.");
         final FutureComposer<DrasylAddress> lookupComposer;
         if (currentNode != null) {
             lookupComposer = composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, currentNode).findClosestFingerPreceding(findId));
@@ -347,7 +344,7 @@ public class LocalChordNode implements RemoteChordNode {
 
                     final long findIdRelative = relativeChordId(findId, localAddress);
                     if (ithFingerRelativeId > 0 && ithFingerRelativeId < findIdRelative) {
-                        LOG.debug("{}th finger {} is closest preceding finger of {}.", i, chordIdHex(ithFingerId), chordIdHex(findId));
+                        LOG.debug("{}th finger `{}` is closest preceding finger of id `{}`.", i, chordIdHex(ithFingerId), chordIdHex(findId));
 
                         if (localAddress.equals(ithFinger)) {
                             LOG.debug("That is me. Finger is for sure alive ;).");
@@ -422,8 +419,10 @@ public class LocalChordNode implements RemoteChordNode {
         if (predecessor != null) {
             final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, predecessor);
             return service.checkAlive().addListener((FutureListener<Void>) future -> {
-                LOG.debug("Our predecessor is not longer alive. Clear predecessor.");
-                predecessor = null;
+                if (!future.isSuccess()) {
+                    LOG.debug("Our predecessor `{}` is not longer alive. Clear predecessor.", predecessor);
+                    predecessor = null;
+                }
             });
         }
         else {

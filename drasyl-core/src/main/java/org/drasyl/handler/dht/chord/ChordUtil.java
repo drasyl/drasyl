@@ -23,15 +23,23 @@ package org.drasyl.handler.dht.chord;
 
 import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.nio.ByteBuffer;
 
+import static org.drasyl.handler.rmi.RmiUtil.OBJECT_MAPPER;
 import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * Utility class for Chord-related operations.
  */
 public final class ChordUtil {
+    static {
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, LocalChordNode.DrasylAddressMixin.class);
+    }
+
     private static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];
 
     static {
@@ -56,7 +64,11 @@ public final class ChordUtil {
         final ByteBuffer buf = ByteBuffer.allocate(Long.BYTES).putLong(id).position(Integer.BYTES);
         final byte[] a = new byte[buf.position()];
         buf.get(a);
-        return HexUtil.bytesToHex(a);
+        final String s = HexUtil.bytesToHex(a);
+        if ("00000000".equals(s)) {
+            System.out.printf("");
+        }
+        return s;
     }
 
     public static String chordIdHex(final Object o) {

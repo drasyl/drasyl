@@ -27,14 +27,18 @@ import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.LocalChordNode.SERVICE_NAME;
 
+/**
+ * Node that is part of the Chord ring.
+ */
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
-public class MyChordNode {
+public class ChordCircleNode {
     private static final String IDENTITY = System.getProperty("identity", "chord.identity");
 
     public static void main(final String[] args) throws IOException {
@@ -121,6 +125,9 @@ public class MyChordNode {
                     System.out.println("==============================================================");
                 }
             }
+        }
+        catch (final NoSuchElementException e) {
+            // ignore
         }
         finally {
             group.shutdownGracefully();

@@ -11,7 +11,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
+import org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordLookup;
 import org.drasyl.handler.dht.chord.ChordLookupHandler;
@@ -22,6 +22,8 @@ import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +32,12 @@ import java.util.Scanner;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 
+/**
+ * Node that lookups in the Chord cycle.
+ */
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
-public class ChordQuery {
+public class ChordLookupNode {
+    private static final Logger LOG = LoggerFactory.getLogger(ChordLookupNode.class);
     private static final String IDENTITY = System.getProperty("identity", "chord-query.identity");
 
     public static void main(final String[] args) throws IOException {
@@ -46,7 +52,7 @@ public class ChordQuery {
         final IdentityPublicKey contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
 
         if (contact == null) {
-            System.out.println("\nInvalid input. Now exit.\n");
+            System.err.println("Please provide ChordCircleNode address as first argument.");
             System.exit(1);
         }
         else {
@@ -57,7 +63,7 @@ public class ChordQuery {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 60_000) {
+                .handler(new RelayOnlyDrasylServerChannelInitializer(identity) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -104,14 +110,18 @@ public class ChordQuery {
 
                 // search
                 else if (command.length() > 0) {
-                    final String[] s = command.split(" ");
-                    final long hash = chordId(s[1]);
-                    System.out.println("String `" + s[1] + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
-                    ch.write(ChordLookup.of(IdentityPublicKey.of(s[0]), hash)).addListener((ChannelFutureListener) future -> {
-                        if (future.cause() != null) {
-                            future.cause().printStackTrace();
-                        }
-                    }).awaitUninterruptibly();
+                    final long hash = chordId(command);
+                    LOG.error("SUBMIT!");
+                    System.out.println("String `" + command + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
+                    group.next().submit(() -> {
+                        LOG.error("WRITE!");
+                        ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
+                            LOG.error("WRITTEN!");
+                            if (future.cause() != null) {
+                                future.cause().printStackTrace();
+                            }
+                        });
+                    });
                 }
             }
         }

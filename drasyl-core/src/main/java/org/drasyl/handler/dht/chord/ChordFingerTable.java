@@ -97,12 +97,12 @@ public class ChordFingerTable {
                                    final DrasylAddress value) {
         final DrasylAddress oldValue = entries[i - 1];
         entries[i - 1] = value;
-        if (!Objects.equals(value, oldValue)) {
+        final boolean changed = !Objects.equals(value, oldValue);
+        if (changed) {
             LOG.info("Update {}th finger to `{}` ({} -> {} -> {}).", i, value, oldValue != null ? chordIdPosition(oldValue) : "null", value != null ? chordIdPosition(value) : "null", chordIdPosition(ithFingerStart(localAddress, i)));
         }
 
         // if the updated one is successor, notify the new successor
-        // FIXME: check for change? (not just update to same value)
-        return i == 1 && value != null && !value.equals(localAddress);
+        return i == 1 && value != null && !value.equals(localAddress) && changed;
     }
 }
