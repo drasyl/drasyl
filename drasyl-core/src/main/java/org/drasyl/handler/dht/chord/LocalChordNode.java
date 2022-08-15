@@ -91,7 +91,7 @@ public class LocalChordNode implements RemoteChordNode {
 
         sb.append("LOCAL:        " + localAddress + " " + chordIdHex(localAddress) + " (" + chordIdPosition(localAddress) + ")");
         sb.append(System.lineSeparator());
-        sb.append("PREDECESSOR:  " + predecessor + " " + (predecessor != null ? chordIdHex(predecessor) + " (" + chordIdPosition(predecessor) + ")" : ""));
+        sb.append("PREDECESSOR:  " + predecessor + " " + (predecessor != null ? (chordIdHex(predecessor) + " (" + chordIdPosition(predecessor) + ")") : ""));
         sb.append(System.lineSeparator());
         sb.append("FINGER TABLE:");
         sb.append(System.lineSeparator());
@@ -194,7 +194,7 @@ public class LocalChordNode implements RemoteChordNode {
     @Override
     public Future<Boolean> isStable() {
         // no blocking call necessary / return result immediately
-        return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, predecessor == null && fingerTable.getSuccessor() == null || predecessor != null && fingerTable.getSuccessor() != null);
+        return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, (predecessor == null && fingerTable.getSuccessor() == null) || (predecessor != null && fingerTable.getSuccessor() != null));
     }
 
     /**
@@ -340,7 +340,7 @@ public class LocalChordNode implements RemoteChordNode {
         return composableFindClosestFingerPreceding(id).finish(group.next());
     }
 
-    @SuppressWarnings({ "java:S3776", "unchecked" })
+    @SuppressWarnings({ "java:S1142", "java:S3776", "unchecked" })
     private FutureComposer<DrasylAddress> findClosestFingerPrecedingRecursive(final long id,
                                                                               final int i) {
         if (i == 0) {
@@ -452,14 +452,14 @@ public class LocalChordNode implements RemoteChordNode {
     /**
      * verify my immediate successor, and tell the successor about me.
      */
-    @SuppressWarnings("java:S3776")
+    @SuppressWarnings({ "java:S1142", "java:S3776" })
     public Future<Void> stabilize() {
         LOG.debug("stabilize()");
         final DrasylAddress successor = fingerTable.getSuccessor();
         final FutureComposer<Void> voidFuture;
         if (successor == null || successor.equals(localAddress)) {
             // Try to fill successor with candidates in finger table or even predecessor
-            voidFuture = fillSuccessor();//fill
+            voidFuture = fillSuccessor();
         }
         else {
             voidFuture = composeSucceededFuture();
@@ -514,6 +514,7 @@ public class LocalChordNode implements RemoteChordNode {
         }).finish(group.next());
     }
 
+    @SuppressWarnings("java:S109")
     private FutureComposer<Void> fillSuccessor() {
         LOG.debug("Try to fill successor with candidates in finger table or even predecessor.");
         final DrasylAddress successor = fingerTable.getSuccessor();

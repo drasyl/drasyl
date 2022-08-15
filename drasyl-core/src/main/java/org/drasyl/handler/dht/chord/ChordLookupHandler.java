@@ -76,10 +76,10 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings("java:S5411")
-    private void doStableCheck(final ChannelHandlerContext ctx,
-                               final long id,
-                               final ChannelPromise promise,
-                               final RemoteChordNode service) {
+    private static void doStableCheck(final ChannelHandlerContext ctx,
+                                      final long id,
+                                      final ChannelPromise promise,
+                                      final RemoteChordNode service) {
         service.isStable().addListener((FutureListener<Boolean>) future -> {
             if (future.isSuccess()) {
                 if (future.getNow()) {
@@ -103,10 +103,10 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
         });
     }
 
-    private void doLookup(final ChannelHandlerContext ctx,
-                          final long id,
-                          final ChannelPromise promise,
-                          final RemoteChordNode service) {
+    private static void doLookup(final ChannelHandlerContext ctx,
+                                 final long id,
+                                 final ChannelPromise promise,
+                                 final RemoteChordNode service) {
         LOG.info("Do lookup for id `{}` ({}).", chordIdHex(id), chordIdPosition(id));
 
         service.findSuccessor(id).addListener((FutureListener<DrasylAddress>) future -> {

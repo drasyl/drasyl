@@ -34,6 +34,7 @@ import static org.drasyl.util.Preconditions.requireInRange;
 /**
  * Utility class for Chord-related operations.
  */
+@SuppressWarnings("java:S109")
 public final class ChordUtil {
     static {
         OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);

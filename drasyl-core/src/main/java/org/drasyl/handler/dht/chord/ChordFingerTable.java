@@ -55,7 +55,7 @@ public class ChordFingerTable {
         // body
         for (int i = 1; i <= entries.length; i++) {
             final long ithStart = ithFingerStart(localAddress, i);
-            sb.append(String.format("%2s   %-15s %-65s %-15s%n", i, chordIdHex(ithStart) + " (" + chordIdPosition(ithStart) + ")", entries[i - 1], entries[i - 1] != null ? chordIdHex(entries[i - 1]) + " (" + chordIdPosition(entries[i - 1]) + ")" : ""));
+            sb.append(String.format("%2s   %-15s %-65s %-15s%n", i, chordIdHex(ithStart) + " (" + chordIdPosition(ithStart) + ")", entries[i - 1], entries[i - 1] != null ? (chordIdHex(entries[i - 1]) + " (" + chordIdPosition(entries[i - 1]) + ")") : ""));
         }
 
         return sb.toString();

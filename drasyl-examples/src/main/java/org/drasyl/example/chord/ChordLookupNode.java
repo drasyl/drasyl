@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.example.chord;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -22,8 +43,6 @@ import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,9 +56,9 @@ import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
  */
 @SuppressWarnings({ "java:S106", "java:S110", "java:S2093" })
 public class ChordLookupNode {
-    private static final Logger LOG = LoggerFactory.getLogger(ChordLookupNode.class);
     private static final String IDENTITY = System.getProperty("identity", "chord-query.identity");
 
+    @SuppressWarnings({ "java:S1943", "java:S2096" })
     public static void main(final String[] args) throws IOException {
         // load/create identity
         final File identityFile = new File(IDENTITY);
@@ -100,24 +119,20 @@ public class ChordLookupNode {
                 // begin to take user input
                 final Scanner userInput = new Scanner(System.in);
                 System.out.println("\nPlease enter your search key (or type \"quit\" to leave): ");
-                String command = null;
-                command = userInput.nextLine();
+                String command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {
                     ch.close().awaitUninterruptibly();
                 }
-
                 // search
                 else if (command.length() > 0) {
                     final long hash = chordId(command);
                     System.out.println("String `" + command + "` results in hash " + ChordUtil.chordIdHex(hash) + " (" + chordIdPosition(hash) + ")");
-                    group.next().submit(() -> {
-                        ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
-                            if (future.cause() != null) {
-                                future.cause().printStackTrace();
-                            }
-                        });
+                    ch.write(ChordLookup.of(contact, hash)).addListener((ChannelFutureListener) future -> {
+                        if (future.cause() != null) {
+                            future.cause().printStackTrace();
+                        }
                     });
                 }
             }
