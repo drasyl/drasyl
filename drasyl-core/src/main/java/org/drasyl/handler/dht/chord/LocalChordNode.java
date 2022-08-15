@@ -188,7 +188,7 @@ public class LocalChordNode implements RemoteChordNode {
     @Override
     public Future<DrasylAddress> findSuccessor(long id) {
         LOG.debug("findSuccessor({})", () -> chordIdHex(id));
-        return composableFindSuccessor(id).finish(group.next()); // FIXME: fine
+        return composableFindSuccessor(id).finish(group.next());
     }
 
     @Override
@@ -258,7 +258,7 @@ public class LocalChordNode implements RemoteChordNode {
         });
     }
 
-    @SuppressWarnings("java:S107")
+    @SuppressWarnings({ "java:S107", "java:S3776" })
     private FutureComposer<DrasylAddress> findPeersClosest(final long id,
                                                            final DrasylAddress currentNode,
                                                            final long findIdRelativeId,
@@ -437,8 +437,7 @@ public class LocalChordNode implements RemoteChordNode {
      */
     public Future<Void> checkIfPredecessorIsAlive() {
         if (predecessor != null) {
-            final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, predecessor);
-            return service.checkAlive().addListener((FutureListener<Void>) future -> {
+            return client.lookup(SERVICE_NAME, RemoteChordNode.class, predecessor).checkAlive().addListener((FutureListener<Void>) future -> {
                 if (!future.isSuccess()) {
                     LOG.debug("Our predecessor `{}` is not longer alive. Clear predecessor.", predecessor);
                     predecessor = null;
@@ -620,20 +619,20 @@ public class LocalChordNode implements RemoteChordNode {
     private FutureComposer<DrasylAddress> findNewSuccessor(final DrasylAddress peer,
                                                            final DrasylAddress successor) {
         return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, peer).getPredecessor()).then(future -> {
-            DrasylAddress predecessor = future.getNow();
-            if (predecessor == null) {
+            final DrasylAddress myPredecessor = future.getNow();
+            if (myPredecessor == null) {
                 return composeSucceededFuture(peer);
             }
 
             // if p's predecessor is node is just deleted,
             // or itself (nothing found in predecessor), or local address,
             // p is current node's new successor, break
-            if (predecessor.equals(peer) || predecessor.equals(localAddress) || predecessor.equals(successor)) {
+            if (myPredecessor.equals(peer) || myPredecessor.equals(localAddress) || myPredecessor.equals(successor)) {
                 return composeSucceededFuture(peer);
             }
             // else, keep asking
             else {
-                return findNewSuccessor(predecessor, successor);
+                return findNewSuccessor(myPredecessor, successor);
             }
         });
     }
