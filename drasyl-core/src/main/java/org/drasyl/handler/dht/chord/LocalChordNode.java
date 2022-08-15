@@ -594,8 +594,10 @@ public class LocalChordNode implements RemoteChordNode {
                 // and the predecessor is another node, keep asking
                 // it's predecessor until find local node's new successor
                 if ((successor2 == null || localAddress.equals(successor2)) && predecessor != null && !localAddress.equals(predecessor)) {
+                    final DrasylAddress predecessor1 = predecessor;
+
                     // update successor
-                    return findNewSuccessor(predecessor, successor2).then(() -> composableUpdateIthFinger(1, predecessor, client));
+                    return findNewSuccessor(predecessor1, successor2).then(() -> composableUpdateIthFinger(1, predecessor1, client));
                 }
                 else {
                     return composeSucceededFuture();
