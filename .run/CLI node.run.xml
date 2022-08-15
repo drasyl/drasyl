@@ -21,23 +21,19 @@
   -->
 
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Unit and Integration Tests" type="JUnit" factoryName="JUnit">
-      <useClassPathOnly/>
-      <option name="PACKAGE_NAME" value=""/>
-      <option name="MAIN_CLASS_NAME" value=""/>
-      <option name="METHOD_NAME" value=""/>
-      <option name="TEST_OBJECT" value="pattern"/>
-      <option name="VM_PARAMETERS" value="-ea -XX:+ShowCodeDetailsInExceptionMessages -Dio.netty.leakDetectionLevel=PARANOID"/>
-      <option name="PARAMETERS" value=""/>
-      <option name="WORKING_DIRECTORY" value=""/>
-      <option name="TEST_SEARCH_SCOPE">
-          <value defaultName="wholeProject"/>
-      </option>
-      <patterns>
-          <pattern testClass="^.*(IT|Test)$"/>
-      </patterns>
-      <method v="2">
-          <option name="Make" enabled="true"/>
-      </method>
+  <configuration default="false" name="CLI: node" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
+    <module name="drasyl-cli" />
+    <option name="PROGRAM_PARAMETERS" value="node --verbose debug" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.drasyl.cli.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
   </configuration>
 </component>
