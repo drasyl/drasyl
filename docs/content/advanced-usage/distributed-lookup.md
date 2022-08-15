@@ -16,11 +16,10 @@ To use this feature, you have to use the [bootstrapping interface](./bootstrappi
 Chord constructs a distributed has table where each node is responsible for data items belonging to a partial keyspace.
 To this end, all nodes are arranged in an ordered circle, where each node is equipped with a finger table that accelerates the traversal of the circle.
 
-Below you see a bootstrap object that will either create a new circle, or if `contact` is set, tries to join an circle by contacting the given node:
+Below wee bootstrap a node that will either create a new circle, or if `contact` is set, tries to join an circle by contacting the given node:
 
 ```java
 final long myId = chordId(identity.getAddress());
-final ChordFingerTable fingerTable = new ChordFingerTable(identity.getAddress());
 System.out.println("My Address : " + identity.getAddress());
 System.out.println("My Id      : " + ChordUtil.chordIdHex(myId) + " (" + chordIdPosition(myId) + ")");
 System.out.println();
@@ -37,21 +36,18 @@ final ServerBootstrap b = new ServerBootstrap()
 
             final ChannelPipeline p = ch.pipeline();
 
-            // our chord implementation uses internally RMI
+            // add RMI as our chord implementation relies on it
             p.addLast(new OverlayMessageToEnvelopeMessageCodec());
             p.addLast(new RmiCodec());
             final RmiClientHandler client = new RmiClientHandler();
             final RmiServerHandler server = new RmiServerHandler();
             p.addLast(client);
             p.addLast(server);
-            
-            final DefaultChordService defaultChordService = new DefaultChordService(fingerTable, client);
-            server.bind(SERVICE_NAME, defaultChordService);
 
-            // some chord housekeeping tasks
-            p.addLast(new ChordStabilizeTask(fingerTable, 500, client, defaultChordService));
-            p.addLast(new ChordFixFingersTask(fingerTable, 500, client, defaultChordService));
-            p.addLast(new ChordAskPredecessorTask(fingerTable, 500, client));
+            // add chord            
+            final LocalChordNode localService = new LocalChordNode(identity.getIdentityPublicKey(), client);
+            server.bind(BIND_NAME, localService);
+            p.addLast(new ChordHousekeepingHandler(localNode));
 
             if (contact != null) {
                 p.addLast(new ChannelDuplexHandler() {
@@ -60,7 +56,7 @@ final ServerBootstrap b = new ServerBootstrap()
                                                    final Object evt) {
                         ctx.fireUserEventTriggered(evt);
                         if (evt instanceof AddPathAndSuperPeerEvent) {
-                            p.addAfter(p.context(ChordStabilizeTask.class).name(), null, new ChordJoinHandler(fingerTable, contact, client));
+                            p.addLast(new ChordJoinHandler(contact, localNode));
                             ctx.pipeline().remove(ctx.name());
                         }
                     }
@@ -73,9 +69,61 @@ final ServerBootstrap b = new ServerBootstrap()
 
 ## Lookup Node
 
-TODO
+Now its time to do lookups on the previously created chord circle.
+Below wee bootstrap a node that will perform a chord lookup:
 
+```java
+final long myId = chordId(identity.getAddress());
+System.out.println("My Address : " + identity.getAddress());
+System.out.println("My Id      : " + ChordUtil.chordIdHex(myId) + " (" + chordIdPosition(myId) + ")");
+System.out.println();
 
+final IdentityPublicKey contact = /* code */;
+
+final ServerBootstrap b = new ServerBootstrap()
+    .group(new NioEventLoopGroup())
+    .channel(DrasylServerChannel.class)
+    .handler(new TraversingDrasylServerChannelInitializer(identity) {
+        @Override
+        protected void initChannel(final DrasylServerChannel ch) {
+            super.initChannel(ch);
+
+            final ChannelPipeline p = ch.pipeline();
+
+            // add RMI as our chord implementation relies on it
+            p.addLast(new OverlayMessageToEnvelopeMessageCodec());
+            p.addLast(new RmiCodec());
+            final RmiClientHandler client = new RmiClientHandler();
+            final RmiServerHandler server = new RmiServerHandler();
+            p.addLast(client);
+            p.addLast(server);
+
+            // add chord            
+            p.addLast(new ChordLookupHandler(client));
+
+            p.addLast(new SimpleChannelInboundHandler<ChordResponse>() {
+                @Override
+                protected void channelRead0(final ChannelHandlerContext ctx,
+                                            final ChordResponse msg) {
+                    System.out.println("Hash " + ChordUtil.chordIdHex(msg.getId()) + " (" + chordIdPosition(msg.getId()) + ") belongs to node " + msg.getAddress() + " (" + chordIdPosition(msg.getAddress()) + ")");
+                }
+            });
+        }
+    })
+    .childHandler(/* code */);
+```
+
+We can now write `ChordLookup` messages to the channel. A response of such a lookup will be indicated by a `ChordResponse` message.
+Listen on the Future returned by `Channel#writeAndFlush` to get updates on the (sucessfull) completion of the lookup.
+
+Here's an snippet for that:
+```java
+channel.write(ChordLookup.of(contact, ChordUtil.chordId("ubuntu.iso"))).addListener((ChannelFutureListener) future -> {
+    if (future.cause() != null) {
+        future.cause().printStackTrace();
+    }
+});
+```
 
 ## Example
 
