@@ -28,13 +28,6 @@ import io.netty.handler.timeout.WriteTimeoutException;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec;
-import org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler;
-import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -91,7 +84,6 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
-    public static final int RETRY_MILLIS = 500;
     public static final int TIMEOUT_SECONDS = 5;
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
@@ -216,38 +208,19 @@ public class ChatGui {
         gui.run();
     }
 
+    @SuppressWarnings("java:S110")
     private class ChatGuiNode extends BehavioralDrasylNode {
         public ChatGuiNode() throws DrasylException {
             super(ChatGui.this.config);
 
             bootstrap.childHandler(new DrasylNodeChannelInitializer(ChatGui.this.config, this) {
                 @Override
-                protected void firstStage(final DrasylChannel ch) {
-                    super.firstStage(ch);
+                protected void arqStage(final DrasylChannel ch) {
+                    super.arqStage(ch);
 
                     final ChannelPipeline p = ch.pipeline();
 
-                    // perform handshake to ensure both connections are synchronized
-                    p.addLast(new ConnectionHandshakeCodec());
-                    p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), true));
-                    p.addLast(new ConnectionHandshakePendWritesHandler());
-                    p.addLast(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void exceptionCaught(final ChannelHandlerContext ctx,
-                                                    final Throwable cause) {
-                            if (cause instanceof ConnectionHandshakeException) {
-                                ctx.close();
-                            }
-                            else {
-                                ctx.fireExceptionCaught(cause);
-                            }
-                        }
-                    });
-
                     // ensure that messages are delivered
-                    p.addLast(new StopAndWaitArqCodec());
-                    p.addLast(new StopAndWaitArqHandler(RETRY_MILLIS));
-                    p.addLast(new ByteToStopAndWaitArqDataCodec());
                     p.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
                     p.addLast(new ChannelInboundHandlerAdapter() {
                         @Override
