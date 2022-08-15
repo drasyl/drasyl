@@ -364,17 +364,17 @@ public class LocalChordNode implements RemoteChordNode {
                             return composeSucceededFuture(ithFinger);
                         }
 
-                        LOG.debug("Check if {}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id));
+                        LOG.debug("Check if {}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger));
                         return composeFuture(client.lookup(SERVICE_NAME, RemoteChordNode.class, ithFinger).checkAlive()).then(future2 -> {
                             //it is alive, return it
                             if (future2.isSuccess()) {
-                                LOG.debug("{}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id));
+                                LOG.debug("{}th finger `{}` ({}) is still alive.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger));
                                 return composeSucceededFuture(ithFinger);
                             }
                             // else, remove its existence from finger table
                             else {
                                 final int nextI = i - 1;
-                                LOG.debug("{}th finger `{}` ({}) is no longer alive. Remote it from finger table and go to {}th finger.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> chordIdHex(id), () -> nextI);
+                                LOG.debug("{}th finger `{}` ({}) is no longer alive. Remote it from finger table and go to {}th finger.", () -> i, () -> ithFinger, () -> chordIdPosition(ithFinger), () -> nextI);
                                 fingerTable.removePeer(ithFinger);
                                 return findClosestFingerPrecedingRecursive(id, nextI);
                             }
@@ -428,7 +428,7 @@ public class LocalChordNode implements RemoteChordNode {
                 LOG.error("Failed to join DHT ring `{}`:", contact, future.cause());
                 return composeFailedFuture(new ChordException("Failed to join DHT ring.", future.cause()));
             }
-        }).finish(group.next()); // FIXME: fine
+        }).finish(group.next());
     }
 
     /**
@@ -446,7 +446,7 @@ public class LocalChordNode implements RemoteChordNode {
             });
         }
         else {
-            return group.next().newSucceededFuture(null); // FIXME: fine
+            return group.next().newSucceededFuture(null);
         }
     }
 
@@ -512,7 +512,7 @@ public class LocalChordNode implements RemoteChordNode {
             else {
                 return composeSucceededFuture();
             }
-        }).finish(group.next()); // FIXME: fine
+        }).finish(group.next());
     }
 
     private FutureComposer<Void> fillSuccessor() {
@@ -652,7 +652,7 @@ public class LocalChordNode implements RemoteChordNode {
                 // timeout
                 return composeSucceededFuture();
             }
-        }).finish(group.next()); // FIXME: fine
+        }).finish(group.next());
     }
 
     @JsonDeserialize(as = IdentityPublicKey.class)

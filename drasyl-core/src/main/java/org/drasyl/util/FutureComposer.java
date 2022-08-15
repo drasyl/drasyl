@@ -29,14 +29,14 @@ public final class FutureComposer<T> {
     }
 
     /**
-     * Binds all {@link Future}s in this {@link FutureComposer} to {@code executor}. Returns {@link
-     * Future} that completes if all previous {@link Future}s in this {@link FutureComposer} have
-     * been completed.
+     * Binds all {@link Future}s in this {@link FutureComposer} to {@code executor}. Returns
+     * {@link Future} that completes if all previous {@link Future}s in this {@link FutureComposer}
+     * have been completed.
      *
-     * @param executor {@link EventExecutor} to bind all {@link Future}s in this {@link
-     *                 FutureComposer} to
-     * @return {@link Future} that completes if all previous {@link Future}s in this {@link
-     * FutureComposer} have been completed
+     * @param executor {@link EventExecutor} to bind all {@link Future}s in this
+     *                 {@link FutureComposer} to
+     * @return {@link Future} that completes if all previous {@link Future}s in this
+     * {@link FutureComposer} have been completed
      */
     public Future<T> finish(final EventExecutor executor) {
         final Promise<T> composedPromise = executor.newPromise();
@@ -147,8 +147,8 @@ public final class FutureComposer<T> {
     }
 
     /**
-     * Creates a new {@link FutureComposer} whose first {@link Future} was failed with {@code
-     * cause}.
+     * Creates a new {@link FutureComposer} whose first {@link Future} was failed with
+     * {@code cause}.
      *
      * @param cause cause that failed the {@link Future}
      * @param <R>   type of {@link Future}
