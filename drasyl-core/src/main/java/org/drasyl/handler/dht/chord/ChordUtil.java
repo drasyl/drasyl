@@ -64,11 +64,7 @@ public final class ChordUtil {
         final ByteBuffer buf = ByteBuffer.allocate(Long.BYTES).putLong(id).position(Integer.BYTES);
         final byte[] a = new byte[buf.position()];
         buf.get(a);
-        final String s = HexUtil.bytesToHex(a);
-        if ("00000000".equals(s)) {
-            System.out.printf("");
-        }
-        return s;
+        return HexUtil.bytesToHex(a);
     }
 
     public static String chordIdHex(final Object o) {
