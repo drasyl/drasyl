@@ -29,14 +29,14 @@ public final class FutureComposer<T> {
     }
 
     /**
-     * Binds all {@link Future}s in this {@link FutureComposer} to {@code executor}. Returns {@link
-     * Future} that completes if all previous {@link Future}s in this {@link FutureComposer} have
-     * been completed.
+     * Binds all {@link Future}s in this {@link FutureComposer} to {@code executor}. Returns
+     * {@link Future} that completes if all previous {@link Future}s in this {@link FutureComposer}
+     * have been completed.
      *
-     * @param executor {@link EventExecutor} to bind all {@link Future}s in this {@link
-     *                 FutureComposer} to
-     * @return {@link Future} that completes if all previous {@link Future}s in this {@link
-     * FutureComposer} have been completed
+     * @param executor {@link EventExecutor} to bind all {@link Future}s in this
+     *                 {@link FutureComposer} to
+     * @return {@link Future} that completes if all previous {@link Future}s in this
+     * {@link FutureComposer} have been completed
      */
     public Future<T> finish(final EventExecutor executor) {
         final Promise<T> composedPromise = executor.newPromise();
@@ -78,7 +78,7 @@ public final class FutureComposer<T> {
     /**
      * Returns a new {@link FutureComposer} that will complete if all previous {@link Future}s and
      * the {@link FutureComposer} returned by {@code mapper} have been completed. {@link Future}
-     * will be passed to {@link mapper}.
+     * will be passed to {@code mapper}.
      */
     public <R> FutureComposer<R> then(final Function<Future<T>, FutureComposer<R>> mapper) {
         return new FutureComposer<>(executor -> {
@@ -95,10 +95,6 @@ public final class FutureComposer<T> {
         });
     }
 
-    /**
-     * Returns a new {@link FutureComposer} that will complete if all previous {@link Future}s and
-     * the {@link FutureComposer} returned by {@code mapper} have been completed.
-     */
     public <R> FutureComposer<R> then(final Supplier<FutureComposer<R>> mapper) {
         return new FutureComposer<>(executor -> {
             final Future<T> existingFuture = futureResolver.apply(executor);
@@ -142,7 +138,6 @@ public final class FutureComposer<T> {
      * Creates a new {@link FutureComposer} whose first {@link Future} was successfully completed
      * with {@code null}.
      *
-     * @param result result of the initial {@link Future}
      * @return new {@link FutureComposer} whose first {@link Future} was successfully completed with
      * {@code null}
      */
@@ -151,8 +146,8 @@ public final class FutureComposer<T> {
     }
 
     /**
-     * Creates a new {@link FutureComposer} whose first {@link Future} was failed with {@code
-     * cause}.
+     * Creates a new {@link FutureComposer} whose first {@link Future} was failed with
+     * {@code cause}.
      *
      * @param cause cause that failed the {@link Future}
      * @param <R>   type of {@link Future}
