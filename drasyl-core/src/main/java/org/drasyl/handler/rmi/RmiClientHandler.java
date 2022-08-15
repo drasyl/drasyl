@@ -41,7 +41,7 @@ import java.util.UUID;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link io.netty.channel.ChannelHandler} that can invoke methods of remote objects that are
+ * A {@link io.netty.channel.ChannelHandler} that can invoke methods on remote objects that are
  * served on other nodes by {@link RmiServerHandler}.
  *
  * @see RmiServerHandler
@@ -96,7 +96,7 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final AddressedEnvelope<RmiMessage, SocketAddress> msg) {
-        LOG.debug("Got `{}`.", msg);
+        LOG.trace("Got `{}`.", msg);
         if (msg.content() instanceof RmiResponse) {
             handleResponse((RmiResponse) msg.content(), msg.sender());
         }
