@@ -97,7 +97,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     }
 
-    private void arqStage(final DrasylChannel ch) {
+    protected void arqStage(final DrasylChannel ch) {
         if (config.isRemoteMessageArqEnabled()) {
             ch.pipeline().addLast(new GoBackNArqCodec());
             ch.pipeline().addLast(new GoBackNArqSenderHandler(config.getRemoteMessageArqWindowSize(), config.getRemoteMessageArqRetryTimeout()));
