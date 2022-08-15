@@ -259,9 +259,38 @@
       
     
     
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Membership Management
+        <span class="md-nav__icon md-icon"></span>
+      </label>
+    
     <a href="./" title="Membership Management" class="md-nav__link md-nav__link--active">
       Membership Management
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
     
   </li>
 
@@ -448,6 +477,21 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    Example
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -474,15 +518,15 @@ random walk).</p>
 <p>If you would like to learn mor about this protocl, please refer to this paper:</p>
 <blockquote>
 <p>Voulgaris, S., Gavidia, D. &amp; van Steen, M. CYCLON: Inexpensive Membership Management for
-Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005)
-. https://doi.org/10.1007/s10922-005-4441-x</p>
+Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005).</p>
+<p><a href="https://doi.org/10.1007/s10922-005-4441-x">https://doi.org/10.1007/s10922-005-4441-x</a></p>
 </blockquote>
 <p>To use this protocol, you have to use the <a href="../bootstrapping/">bootstrapping interface</a>, where you have to customize the server channel's ChannelInitializer.
 Below you find a code snippet with a customized initializer including the Chord related handlers.
 The <code>CyclonView</code> object passed to the handlers contains the local (partial) view of the network.
 By calling <code>view.getNeighbors()</code> you will get a list of currently known neighbors and their corresponding addresses.
 Please refer to the above-mentioned paper for choosing proper view size and shuffle size values.</p>
-<p><pre class="highlight"><code class="language-java">int viewSize = 8; // maximum size of peers in own view
+<pre class="highlight"><code class="language-java">int viewSize = 8; // maximum size of peers in own view
 int shuffleSize = 4; // maximum number of peers to shuffle
 int shuffleInterval = 10_000; // shuffle every 10 seconds
 Set&lt;DrasylAddress&gt; initialNeighbors = Set.of(...);
@@ -507,7 +551,8 @@ final ServerBootstrap b = new ServerBootstrap()
         }
     })
     .childHandler(...);</code></pre>
-A fully working example can be found
+<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
+<p>A fully working example can be found
 here: <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-examples/src/main/java/org/drasyl/example/cyclon/CyclonMembershipManagement.java">CyclonMembershipManagement</a></p>
                 
                   
@@ -517,7 +562,7 @@ here: <a href="https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-examp
 <div class="md-source-date">
   <small>
     
-      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 14, 2022</span>
+      Last update: <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">August 15, 2022</span>
     
   </small>
 </div>
