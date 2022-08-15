@@ -138,7 +138,6 @@ public final class FutureComposer<T> {
      * Creates a new {@link FutureComposer} whose first {@link Future} was successfully completed
      * with {@code null}.
      *
-     * @param result result of the initial {@link Future}
      * @return new {@link FutureComposer} whose first {@link Future} was successfully completed with
      * {@code null}
      */
