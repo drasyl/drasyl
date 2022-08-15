@@ -41,19 +41,19 @@ public class ChordHousekeepingHandler extends ChannelInboundHandlerAdapter {
     public static final long DEFAULT_CHECK_INTERVAL = 500;
     private static final Logger LOG = LoggerFactory.getLogger(ChordHousekeepingHandler.class);
     private final long checkIntervalMillis;
-    private final LocalChordNode localService;
+    private final LocalChordNode localNode;
     private Future<?> askPredecessorTaskFuture;
     private Future<?> fixFingersTask;
     private Future<?> stabilizeTaskFuture;
 
     public ChordHousekeepingHandler(final long checkIntervalMillis,
-                                    final LocalChordNode localService) {
+                                    final LocalChordNode localNode) {
         this.checkIntervalMillis = requirePositive(checkIntervalMillis);
-        this.localService = requireNonNull(localService);
+        this.localNode = requireNonNull(localNode);
     }
 
-    public ChordHousekeepingHandler(final LocalChordNode localService) {
-        this(DEFAULT_CHECK_INTERVAL, localService);
+    public ChordHousekeepingHandler(final LocalChordNode localNode) {
+        this(DEFAULT_CHECK_INTERVAL, localNode);
     }
 
     /*
@@ -108,7 +108,7 @@ public class ChordHousekeepingHandler extends ChannelInboundHandlerAdapter {
     private void scheduleAskPredecessorTask(final ChannelHandlerContext ctx) {
         askPredecessorTaskFuture = ctx.executor().schedule(() -> {
             LOG.trace("Check if our predecessor (if present) is still alive.");
-            localService.checkIfPredecessorIsAlive().addListener((FutureListener<Void>) future -> scheduleAskPredecessorTask(ctx));
+            localNode.checkIfPredecessorIsAlive().addListener((FutureListener<Void>) future -> scheduleAskPredecessorTask(ctx));
         }, checkIntervalMillis, MILLISECONDS);
     }
 
@@ -127,7 +127,7 @@ public class ChordHousekeepingHandler extends ChannelInboundHandlerAdapter {
         fixFingersTask = ctx.executor().schedule(() -> {
             // pick a random finger to test
             final int i = RandomUtil.randomInt(2, 32);
-            localService.fixFinger(i).addListener((FutureListener<Void>) future -> scheduleFixFingersTask(ctx));
+            localNode.fixFinger(i).addListener((FutureListener<Void>) future -> scheduleFixFingersTask(ctx));
         }, checkIntervalMillis, MILLISECONDS);
     }
 
@@ -145,7 +145,7 @@ public class ChordHousekeepingHandler extends ChannelInboundHandlerAdapter {
     private void scheduleStabilizeTask(final ChannelHandlerContext ctx) {
         stabilizeTaskFuture = ctx.executor().schedule(() -> {
             LOG.debug("Ask successor for its predecessor and determine if we should update or delete our successor.");
-            localService.stabilize().addListener((FutureListener<Void>) future -> scheduleStabilizeTask(ctx));
+            localNode.stabilize().addListener((FutureListener<Void>) future -> scheduleStabilizeTask(ctx));
         }, checkIntervalMillis, MILLISECONDS);
     }
 

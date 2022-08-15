@@ -53,7 +53,7 @@ import java.util.Scanner;
 
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
-import static org.drasyl.handler.dht.chord.LocalChordNode.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.LocalChordNode.BIND_NAME;
 
 /**
  * Node that is part of the Chord ring.
@@ -80,7 +80,7 @@ public class ChordCircleNode {
         final DrasylAddress contact = args.length > 0 ? IdentityPublicKey.of(args[0]) : null;
 
         final RmiClientHandler client = new RmiClientHandler();
-        final LocalChordNode localService = new LocalChordNode(identity.getIdentityPublicKey(), client);
+        final LocalChordNode localNode = new LocalChordNode(identity.getIdentityPublicKey(), client);
 
         final EventLoopGroup group = new NioEventLoopGroup();
         final ServerBootstrap b = new ServerBootstrap()
@@ -99,8 +99,8 @@ public class ChordCircleNode {
                         p.addLast(client);
                         p.addLast(server);
 
-                        server.bind(SERVICE_NAME, localService);
-                        p.addLast(new ChordHousekeepingHandler(localService));
+                        server.bind(BIND_NAME, localNode);
+                        p.addLast(new ChordHousekeepingHandler(localNode));
 
                         if (contact != null) {
                             p.addLast(new ChannelDuplexHandler() {
@@ -109,7 +109,7 @@ public class ChordCircleNode {
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
                                     if (evt instanceof AddPathAndSuperPeerEvent) {
-                                        p.addLast(new ChordJoinHandler(contact, localService));
+                                        p.addLast(new ChordJoinHandler(contact, localNode));
                                         ctx.pipeline().remove(ctx.name());
                                     }
                                 }
@@ -144,7 +144,7 @@ public class ChordCircleNode {
                 else if (command.startsWith("info")) {
                     System.out.println("==============================================================");
                     System.out.println();
-                    System.out.print(localService);
+                    System.out.print(localNode);
                     System.out.println();
                     System.out.println("==============================================================");
                 }

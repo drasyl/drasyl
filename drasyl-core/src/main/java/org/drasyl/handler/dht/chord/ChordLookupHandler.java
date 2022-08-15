@@ -34,7 +34,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdHex;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
-import static org.drasyl.handler.dht.chord.LocalChordNode.SERVICE_NAME;
+import static org.drasyl.handler.dht.chord.LocalChordNode.BIND_NAME;
 
 /**
  * This handler performs a lookup in the Chord table once an outbound {@link ChordLookup} message is
@@ -60,14 +60,14 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
             final DrasylAddress contact = ((ChordLookup) msg).getContact();
             final boolean doStableCheck = ((ChordLookup) msg).doStableCheck();
 
-            final RemoteChordNode service = client.lookup(SERVICE_NAME, RemoteChordNode.class, contact);
+            final RemoteChordNode contactNode = client.lookup(BIND_NAME, RemoteChordNode.class, contact);
 
             if (doStableCheck) {
                 LOG.info("Check first if contact node `{}` is stable.", contact);
-                doStableCheck(ctx, id, promise, service);
+                doStableCheck(ctx, id, promise, contactNode);
             }
             else {
-                doLookup(ctx, id, promise, service);
+                doLookup(ctx, id, promise, contactNode);
             }
         }
         else {
@@ -79,13 +79,13 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
     private static void doStableCheck(final ChannelHandlerContext ctx,
                                       final long id,
                                       final ChannelPromise promise,
-                                      final RemoteChordNode service) {
-        service.isStable().addListener((FutureListener<Boolean>) future -> {
+                                      final RemoteChordNode contactNode) {
+        contactNode.isStable().addListener((FutureListener<Boolean>) future -> {
             if (future.isSuccess()) {
                 if (future.getNow()) {
                     LOG.info("Contact node is stable.");
                     if (!promise.isDone()) {
-                        doLookup(ctx, id, promise, service);
+                        doLookup(ctx, id, promise, contactNode);
                     }
                     else {
                         LOG.debug("Abort as Promise has been cancelled.");
@@ -106,10 +106,10 @@ public class ChordLookupHandler extends ChannelDuplexHandler {
     private static void doLookup(final ChannelHandlerContext ctx,
                                  final long id,
                                  final ChannelPromise promise,
-                                 final RemoteChordNode service) {
+                                 final RemoteChordNode contactNode) {
         LOG.info("Do lookup for id `{}` ({}).", chordIdHex(id), chordIdPosition(id));
 
-        service.findSuccessor(id).addListener((FutureListener<DrasylAddress>) future -> {
+        contactNode.findSuccessor(id).addListener((FutureListener<DrasylAddress>) future -> {
             if (future.isSuccess()) {
                 LOG.debug("Lookup done. Id `{}` ({}) has resolved to address `{}` ({}).", chordIdHex(id), chordIdPosition(id), future.getNow(), chordIdPosition(future.getNow()));
                 ctx.fireChannelRead(ChordResponse.of(id, future.getNow()));
