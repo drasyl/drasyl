@@ -7,8 +7,9 @@ random walk).
 
 If you would like to learn mor about this protocl, please refer to this paper:
 > Voulgaris, S., Gavidia, D. & van Steen, M. CYCLON: Inexpensive Membership Management for
-> Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005)
-> . https://doi.org/10.1007/s10922-005-4441-x
+> Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005).
+> 
+> [https://doi.org/10.1007/s10922-005-4441-x](https://doi.org/10.1007/s10922-005-4441-x)
 
 To use this protocol, you have to use the [bootstrapping interface](./bootstrapping.md), where you have to customize the server channel's ChannelInitializer.
 Below you find a code snippet with a customized initializer including the Chord related handlers.
@@ -43,5 +44,8 @@ final ServerBootstrap b = new ServerBootstrap()
     })
     .childHandler(...);
 ```
+
+## Example
+
 A fully working example can be found
 here: [CyclonMembershipManagement](https://github.com/drasyl-overlay/drasyl/blob/master/drasyl-examples/src/main/java/org/drasyl/example/cyclon/CyclonMembershipManagement.java)
