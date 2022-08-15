@@ -100,6 +100,10 @@ public final class ChordUtil {
         return ret;
     }
 
+    public static long relativeChordId(final long a, final Object b) {
+        return relativeChordId(a, chordId(b));
+    }
+
     public static long relativeChordId(final Object a, final long b) {
         return relativeChordId(chordId(a), b);
     }
