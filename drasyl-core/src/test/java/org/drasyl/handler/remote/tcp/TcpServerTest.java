@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -54,6 +56,7 @@ import java.util.Map;
 import static io.netty.util.CharsetUtil.UTF_8;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.handler.remote.tcp.TcpServer.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
@@ -198,6 +201,8 @@ class TcpServerTest {
         private Map<SocketAddress, Channel> clients;
         @Mock(answer = RETURNS_DEEP_STUBS)
         private ChannelHandlerContext ctx;
+        @Captor
+        ArgumentCaptor<ByteBuf> outboundMsg;
 
         @Test
         void shouldAddClientOnNewConnection(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
@@ -233,13 +238,14 @@ class TcpServerTest {
         }
 
         @Test
-        void shouldCloseConnectionWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
+        void shouldRespondWithHTTPAndCloseWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
 
             final ByteBuf msg = Unpooled.copiedBuffer("Hallo Welt", UTF_8);
             new TcpServer.TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
 
-            verify(nettyCtx).close();
+            verify(nettyCtx).writeAndFlush(outboundMsg.capture());
+            assertEquals(outboundMsg.getValue(), Unpooled.buffer().writeBytes(HTTP_OK));
         }
 
         @Test

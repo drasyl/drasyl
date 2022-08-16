@@ -63,7 +63,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
-    private static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(StandardCharsets.UTF_8);
+    static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(StandardCharsets.UTF_8);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
     private final InetAddress bindHost;
