@@ -6,7 +6,7 @@
 [Contributing](CONTRIBUTING.md) |
 [Changelog](CHANGELOG.md)
 
-[![Build Status](https://git.informatik.uni-hamburg.de/sane-public/drasyl/badges/master/pipeline.svg)](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/pipelines)
+[![Test](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml/badge.svg)](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 [![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl-overlay/homebrew-tap/main/Info/drasyl.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl-overlay/homebrew-tap)
