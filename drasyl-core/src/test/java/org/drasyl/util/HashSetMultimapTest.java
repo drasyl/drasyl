@@ -103,4 +103,33 @@ class HashSetMultimapTest {
             assertEquals(Set.of("Foo", "Bar", "Baz"), multimap.keySet());
         }
     }
+
+    @Nested
+    class IsEmpty {
+        @Test
+        void shouldReturnIfMapIsEmpty() {
+            final SetMultimap<Object, Object> multimap = new HashSetMultimap<>();
+            multimap.put("Foo", "Bar");
+            multimap.put("Bar", "Baz");
+            multimap.put("Baz", "Foo");
+
+            assertFalse(multimap.isEmpty());
+            assertTrue(new HashSetMultimap<>().isEmpty());
+        }
+    }
+
+    @Nested
+    class Clear {
+        @Test
+        void shouldClearMap() {
+            final SetMultimap<Object, Object> multimap = new HashSetMultimap<>();
+            multimap.put("Foo", "Bar");
+            multimap.put("Bar", "Baz");
+            multimap.put("Baz", "Foo");
+
+            assertFalse(multimap.isEmpty());
+            multimap.clear();
+            assertTrue(multimap.isEmpty());
+        }
+    }
 }
