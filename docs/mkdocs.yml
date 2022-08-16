@@ -7,7 +7,7 @@ dev_addr: 0.0.0.0:8000
 repo_name: 'drasyl-overlay/drasyl'
 repo_url: 'https://github.com/drasyl-overlay/drasyl'
 
-edit_uri: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/edit/master/docs/content
+edit_uri: https://github.com/drasyl-overlay/drasyl/-/edit/master/docs/content
 
 docs_dir: 'content'
 
@@ -36,9 +36,6 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/drasyl-overlay/drasyl/
       name: GitHub repo of drasyl
-    - icon: fontawesome/brands/gitlab
-      link: https://git.informatik.uni-hamburg.de/sane-public/drasyl
-      name: GitLab repo of drasyl
     - icon: fontawesome/brands/docker
       link: https://hub.docker.com/r/drasyl/drasyl
       name: Docker repo of drasyl
