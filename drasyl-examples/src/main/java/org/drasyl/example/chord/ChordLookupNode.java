@@ -123,7 +123,9 @@ public class ChordLookupNode {
 
                 // quit
                 if (command.startsWith("quit")) {
+                    System.out.println("Quit node...");
                     ch.close().awaitUninterruptibly();
+                    System.exit(0);
                 }
                 // search
                 else if (command.length() > 0) {
