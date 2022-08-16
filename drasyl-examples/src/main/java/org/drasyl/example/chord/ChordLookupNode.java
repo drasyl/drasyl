@@ -115,9 +115,9 @@ public class ChordLookupNode {
         try {
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
 
+            // begin to take user input
+            final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
-                // begin to take user input
-                final Scanner userInput = new Scanner(System.in);
                 System.out.println("\nPlease enter your search key (or type \"quit\" to leave): ");
                 String command = userInput.nextLine();
 

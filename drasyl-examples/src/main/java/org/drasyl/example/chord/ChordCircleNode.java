@@ -128,7 +128,7 @@ public class ChordCircleNode {
         try {
             final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
 
-            // begin to take user input, "info" or "quit"
+            // begin to take user input
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"info\" to check this node's data or \n type \"quit\" to leave ring: ");
