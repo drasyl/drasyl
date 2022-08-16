@@ -87,4 +87,14 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     public Set<K> keySet() {
         return map.keySet();
     }
+
+    @Override
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    @Override
+    public void clear() {
+        map.clear();
+    }
 }
