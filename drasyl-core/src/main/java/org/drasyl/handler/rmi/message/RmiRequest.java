@@ -37,12 +37,12 @@ import static java.util.UUID.randomUUID;
  * @see RmiCancel
  * @see RmiError
  */
-public class RmiRequest extends DefaultByteBufHolder implements RmiMessage {
+public final class RmiRequest extends DefaultByteBufHolder implements RmiMessage {
     private final UUID id;
     private final int name;
     private final int method;
 
-    private RmiRequest(UUID id, int name, int method, ByteBuf arguments) {
+    private RmiRequest(final UUID id, final int name, final int method, final ByteBuf arguments) {
         super(arguments);
         this.id = requireNonNull(id);
         this.name = name;
