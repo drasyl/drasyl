@@ -77,6 +77,7 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
         return false;
     }
 
+    @SuppressWarnings("SuspiciousMethodCalls")
     @Override
     public Set<V> get(final Object key) {
         final Set<V> values = map.getOrDefault(key, defaultValue);
@@ -86,5 +87,15 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     @Override
     public Set<K> keySet() {
         return map.keySet();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return map.isEmpty();
+    }
+
+    @Override
+    public void clear() {
+        map.clear();
     }
 }
