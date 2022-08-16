@@ -137,7 +137,7 @@ public class ChordCircleNode {
                 // quit
                 if (command.startsWith("quit")) {
                     System.out.println("Leaving the ring...");
-                    ch.close();
+                    ch.close().awaitUninterruptibly();
                     System.exit(0);
                 }
                 // info
