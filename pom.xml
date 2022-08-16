@@ -96,14 +96,14 @@
 
     <scm>
         <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
+        <developerConnection>scm:git:git://github.com/drasyl-overlay/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
         <tag>v0.7.0</tag>
     </scm>
 
     <issueManagement>
-        <system>GitLab</system>
-        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
+        <system>GitHub</system>
+        <url>https://github.com/drasyl-overlay/drasyl/issues</url>
     </issueManagement>
 
     <distributionManagement>
