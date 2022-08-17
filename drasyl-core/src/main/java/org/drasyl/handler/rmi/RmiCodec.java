@@ -46,10 +46,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Sharable
 public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, SocketAddress>, AddressedEnvelope<RmiMessage, SocketAddress>> {
-    public static final int MAGIC_NUMBER_REQUEST = -760063585;
-    public static final int MAGIC_NUMBER_RESPONSE = -760063584;
-    public static final int MAGIC_NUMBER_ERROR = -760063583;
-    public static final int MAGIC_NUMBER_CANCEL = -760063582;
+    public static final int MAGIC_NUMBER_REQUEST = -760_063_585;
+    public static final int MAGIC_NUMBER_RESPONSE = -760_063_584;
+    public static final int MAGIC_NUMBER_ERROR = -760_063_583;
+    public static final int MAGIC_NUMBER_CANCEL = -760_063_582;
     // magic number: 4 bytes
     // id: UUID 16 bytes
     public static final int MIN_MESSAGE_LENGTH = 20;
@@ -117,10 +117,11 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean acceptInboundMessage(Object msg) throws Exception {
+    public boolean acceptInboundMessage(final Object msg) throws Exception {
         return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof ByteBuf;
     }
 
+    @SuppressWarnings("java:S1151")
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final AddressedEnvelope<ByteBuf, SocketAddress> msg,

@@ -55,12 +55,12 @@ public interface Multimap<K, V> {
     boolean remove(K key, V value);
 
     /**
-     * Returns the values that are associated to the specified {@code key}. Returns a empty {@link
-     * Collection} if currently no values are assosicated to the {@code key}.
+     * Returns the values that are associated to the specified {@code key}. Returns a empty
+     * {@link Collection} if currently no values are assosicated to the {@code key}.
      *
      * @param key the key whose associated values should be returned
-     * @return the values that are associated to the specified {@code key}. Returns a empty {@link
-     * Collection} if currently no values are assosicated to the {@code key}.
+     * @return the values that are associated to the specified {@code key}. Returns a empty
+     * {@link Collection} if currently no values are assosicated to the {@code key}.
      * @throws NullPointerException if {@code key} is {@code null}
      */
     Collection<V> get(Object key);
@@ -71,4 +71,16 @@ public interface Multimap<K, V> {
      * @return {@link Set} with all the keys contained in this map
      */
     Set<K> keySet();
+
+    /**
+     * Returns {@code true} if this multimap contains no entries.
+     *
+     * @return {@code true} if this multimap contains no entries
+     */
+    boolean isEmpty();
+
+    /**
+     * Removes all entries from this multimap.
+     */
+    void clear();
 }

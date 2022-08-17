@@ -4,8 +4,9 @@ This example implements the CYCLON membership protocol.
 
 The protocol is described in:
 > Voulgaris, S., Gavidia, D. & van Steen, M. CYCLON: Inexpensive Membership Management for
-> Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005)
-> . https://doi.org/10.1007/s10922-005-4441-x
+> Unstructured P2P Overlays. J Netw Syst Manage 13, 197–217 (2005).
+> 
+> [https://doi.org/10.1007/s10922-005-4441-x](https://doi.org/10.1007/s10922-005-4441-x)
 
 ## Usage
 
