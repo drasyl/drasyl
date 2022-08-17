@@ -84,10 +84,6 @@ of the different event types.
 For example, you should listen for `NodeOnlineEvent` before start sending messages, and pause
 when `NodeOfflineEvent` has been received.
 
-!!! info "Advanced References"
-    
-    If you are interested in the life cycle of the individual events, you can find a state diagram [here](../architecture/diagrams/#node-events).
-
 ## Sending Messages
 
 Every message that is to be sent requires a recipient address.
