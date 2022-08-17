@@ -113,14 +113,14 @@ application. The event contains a getters for the message's sender and payload.
 Example:
 
 ```java
-...
+/* code */
 public void onEvent(Event event){
     if(event instanceof MessageEvent){
-        MessageEvent message=(MessageEvent)event;
-        System.out.println("Message received from "+message.getSender()+" with payload "+new String(message.getPayload()));
+        MessageEvent message = (MessageEvent)event;
+        System.out.println("Message received from " + message.getSender() + " with payload " + new String(message.getPayload()));
     }
 }
-...
+/* code */
 ```
 
 ## Starting & Stopping the drasyl Node
