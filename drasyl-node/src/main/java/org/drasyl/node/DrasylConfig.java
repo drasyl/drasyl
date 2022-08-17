@@ -110,6 +110,7 @@ public abstract class DrasylConfig {
     public static final String REMOTE_MESSAGE_ARQ_ENABLED = "drasyl.remote.message.arq.enabled";
     public static final String REMOTE_MESSAGE_ARQ_WINDOW_SIZE = "drasyl.remote.message.arq.window-size";
     public static final String REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT = "drasyl.remote.message.arq.retry-timeout";
+    public static final String REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT = "drasyl.remote.message.arq.dead-peer-timeout";
     public static final String REMOTE_MESSAGE_ARQ_CLOCK = "drasyl.remote.message.arq.clock";
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
@@ -209,6 +210,7 @@ public abstract class DrasylConfig {
             builder.remoteMessageArqEnabled(config.getBoolean(REMOTE_MESSAGE_ARQ_ENABLED));
             builder.remoteMessageArqWindowSize(config.getInt(REMOTE_MESSAGE_ARQ_WINDOW_SIZE));
             builder.remoteMessageArqRetryTimeout(config.getDuration(REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT));
+            builder.remoteMessageArqDeadPeerTimeout(config.getDuration(REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT));
             builder.remoteMessageArqClock(config.getDuration(REMOTE_MESSAGE_ARQ_CLOCK));
 
             // intra vm discovery
@@ -766,6 +768,8 @@ public abstract class DrasylConfig {
 
     public abstract Duration getRemoteMessageArqRetryTimeout();
 
+    public abstract Duration getRemoteMessageArqDeadPeerTimeout();
+
     public abstract Duration getRemoteMessageArqClock();
 
     public abstract boolean isRemoteTcpFallbackEnabled();
@@ -867,6 +871,8 @@ public abstract class DrasylConfig {
         public abstract Builder remoteMessageArqWindowSize(final int remoteMessageArqWindowSize);
 
         public abstract Builder remoteMessageArqRetryTimeout(final Duration remoteMessageArqRetryTimeout);
+
+        public abstract Builder remoteMessageArqDeadPeerTimeout(final Duration remoteMessageArqDeadPeerTimeout);
 
         public abstract Builder remoteMessageArqClock(final Duration remoteMessageArqClock);
 
