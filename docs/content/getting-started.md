@@ -14,7 +14,6 @@ your [pom.xml](http://maven.apache.org/pom.html):
 Maven:
 
 ```xml
-
 <repositories>
     <repository>
         <id>oss.sonatype.org-snapshot</id>
@@ -30,7 +29,6 @@ Maven:
 ```
 
 ```xml
-
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-node</artifactId>
