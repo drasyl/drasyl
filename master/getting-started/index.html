@@ -672,14 +672,14 @@ The <a href="../plugins/groups/">Groups Plugin</a> can be used to get automatica
 an <a href="https://api.drasyl.org/master/org/drasyl/node/event/MessageEvent.html"><code>MessageEvent</code></a> to the
 application. The event contains a getters for the message's sender and payload.</p>
 <p>Example:</p>
-<pre class="highlight"><code class="language-java">...
+<pre class="highlight"><code class="language-java">/* code */
 public void onEvent(Event event){
     if(event instanceof MessageEvent){
-        MessageEvent message=(MessageEvent)event;
-        System.out.println("Message received from "+message.getSender()+" with payload "+new String(message.getPayload()));
+        MessageEvent message = (MessageEvent)event;
+        System.out.println("Message received from " + message.getSender() + " with payload " + new String(message.getPayload()));
     }
 }
-...</code></pre>
+/* code */</code></pre>
 <h2 id="starting-stopping-the-drasyl-node">Starting &amp; Stopping the drasyl Node<a class="headerlink" href="#starting-stopping-the-drasyl-node" title="Permanent link">&para;</a></h2>
 <p>Before you can use the drasyl node, you must start it
 using <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#start()"><code>node.start()</code></a>. For
