@@ -140,9 +140,7 @@
         <protobuf.version>3.21.5</protobuf.version>
         <auto-value.version>1.9</auto-value.version>
         <jna.version>5.12.1</jna.version>
-
         <sonar.organization>drasyl</sonar.organization>
-        <sonar.projectName>drasyl</sonar.projectName>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
             drasyl-examples/**/*,drasyl-performance-tests/**/*

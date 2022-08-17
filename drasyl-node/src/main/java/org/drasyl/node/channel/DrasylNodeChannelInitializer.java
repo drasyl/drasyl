@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.WriteTimeoutException;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
@@ -53,6 +55,8 @@ import org.drasyl.node.handler.timeout.IdleChannelCloser;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.Null.NULL;
 
@@ -70,6 +74,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
     private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder(CHUNK_NO_LENGTH);
     private static final ReassembledMessageDecoder REASSEMBLED_MESSAGE_DECODER = new ReassembledMessageDecoder();
     private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeChannelInitializer.class);
     private final DrasylConfig config;
     private final DrasylNode node;
 
@@ -99,6 +104,20 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     protected void arqStage(final DrasylChannel ch) {
         if (config.isRemoteMessageArqEnabled()) {
+            ch.pipeline().addLast(new WriteTimeoutHandler(config.getRemoteMessageArqDeadPeerTimeout().toMillis(), TimeUnit.MILLISECONDS));
+            ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void exceptionCaught(final ChannelHandlerContext ctx,
+                                            final Throwable cause) {
+                    if (cause instanceof WriteTimeoutException) {
+                        LOG.debug("Message to {} was not acknowledged. Maybe recipient is offline/unreachable?", ctx.channel()::remoteAddress);
+                        ctx.close();
+                    }
+                    else {
+                        ctx.fireExceptionCaught(cause);
+                    }
+                }
+            });
             ch.pipeline().addLast(new GoBackNArqCodec());
             ch.pipeline().addLast(new GoBackNArqSenderHandler(config.getRemoteMessageArqWindowSize(), config.getRemoteMessageArqRetryTimeout()));
             ch.pipeline().addLast(new GoBackNArqReceiverHandler(config.getRemoteMessageArqClock()));
