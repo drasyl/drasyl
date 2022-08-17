@@ -1,27 +1,27 @@
 stages:
   - build
-  - test
-  - visualize
-  - deploy
-  - review
-  - dast
-  - staging
-  - production
-  - cleanup
+  #- test
+  #- visualize
+  #- deploy
+  #- review
+  #- dast
+  #- staging
+  #- production
+  #- cleanup
 
 include:
   #  - template: SAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/SAST.gitlab-ci.yml
   #  - template: DAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/DAST.gitlab-ci.yml
-  - template: Dependency-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Dependency-Scanning.gitlab-ci.yml
-  - template: Container-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Container-Scanning.gitlab-ci.yml
-  - template: License-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/License-Scanning.gitlab-ci.yml
-  - template: Code-Quality.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Code-Quality.gitlab-ci.yml
+  #- template: Dependency-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Dependency-Scanning.gitlab-ci.yml
+  #- template: Container-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Container-Scanning.gitlab-ci.yml
+  #- template: License-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/License-Scanning.gitlab-ci.yml
+  #- template: Code-Quality.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Code-Quality.gitlab-ci.yml
   #  - template: Secret-Detection.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Secret-Detection.gitlab-ci.yml
-  - local: /.gitlab/ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
+  #- local: /.gitlab/ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
   #- local: /.gitlab/ci/Deployments.gitlab-ci.yml
   - local: /.gitlab/ci/Docker.gitlab-ci.yml
-  - local: /.gitlab/ci/VisualCoverage.gitlab-ci.yml
-  - local: /.gitlab/ci/CodeIntelligence.gitlab-ci.yml
+  #- local: /.gitlab/ci/VisualCoverage.gitlab-ci.yml
+  #- local: /.gitlab/ci/CodeIntelligence.gitlab-ci.yml
   # - local: /.gitlab/ci/Native-Image.gitlab-ci.yml
 
 #sast:
@@ -40,28 +40,28 @@ include:
 #      when: always
 #    - when: never
 
-gemnasium-maven-dependency_scanning:
-  rules:
-    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
-      when: always
-    - when: never
+#gemnasium-maven-dependency_scanning:
+#  rules:
+#    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+#      when: always
+#    - when: never
 
-gemnasium-python-dependency_scanning:
-  rules:
-    - when: never
+#gemnasium-python-dependency_scanning:
+#  rules:
+#    - when: never
 
-container_scanning:
-  rules:
-    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
-      when: always
-    - when: never
+#container_scanning:
+#  rules:
+#    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+#      when: always
+#    - when: never
 
-license_scanning:
-  stage: build
-  variables:
-    MAVEN_CLI_OPTS: -DskipTests
-    LM_JAVA_VERSION: 11
-  rules:
-    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
-      when: always
-    - when: never
+#license_scanning:
+#  stage: build
+#  variables:
+#    MAVEN_CLI_OPTS: -DskipTests
+#    LM_JAVA_VERSION: 11
+#  rules:
+#    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
+#      when: always
+#    - when: never
