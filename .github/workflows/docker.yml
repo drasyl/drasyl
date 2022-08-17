@@ -19,13 +19,13 @@ jobs:
           distribution: 'adopt'
       - name: Get actual patch version
         id: actual_patch_version
-        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
+        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d - -f 1 | sed 's/v//g' | cut -d "." -f 1,2,3)
       - name: Get actual minor version
         id: actual_minor_version
-        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2)
+        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d - -f 1 | sed 's/v//g' | cut -d "." -f 1,2)
       - name: Get actual major version
         id: actual_major_version
-        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1)
+        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d - -f 1 | sed 's/v//g' | cut -d "." -f 1)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
