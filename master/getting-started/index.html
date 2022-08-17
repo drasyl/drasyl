@@ -683,14 +683,12 @@ public void onEvent(Event event){
 <h2 id="starting-stopping-the-drasyl-node">Starting &amp; Stopping the drasyl Node<a class="headerlink" href="#starting-stopping-the-drasyl-node" title="Permanent link">&para;</a></h2>
 <p>Before you can use the drasyl node, you must start it
 using <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#start()"><code>node.start()</code></a>. For
-communication with other nodes in the local network, the node starts a server listening on port</p>
-<ol>
-<li>Make sure that the port is available. After the node has been successfully started, it emits
-       an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeUpEvent.html"><code>NodeUpEvent</code></a> to
-       the application. Then, once it has successfully connected to the overlay network,
-       an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeOnlineEvent.html"><code>NodeOnlineEvent</code></a>
-       is emitted.</li>
-</ol>
+communication with other nodes in the local network, the node starts a server listening on port 22527.
+Make sure that the port is available. After the node has been successfully started, it emits
+an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeUpEvent.html"><code>NodeUpEvent</code></a> to
+the application. Then, once it has successfully connected to the overlay network,
+an <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeOnlineEvent.html"><code>NodeOnlineEvent</code></a>
+is emitted.</p>
 <p>If the node is temporarily or permanently no longer needed, it can be shut down
 using <a href="https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#shutdown()"><code>node.shutdown()</code></a>.
 A <a href="https://api.drasyl.org/master/org/drasyl/node/event/NodeDownEvent.html"><code>NodeDownEvent</code></a> is
