@@ -127,13 +127,12 @@ public void onEvent(Event event){
 
 Before you can use the drasyl node, you must start it
 using [`node.start()`](https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#start()). For
-communication with other nodes in the local network, the node starts a server listening on port
-
-22527. Make sure that the port is available. After the node has been successfully started, it emits
-       an [`NodeUpEvent`](https://api.drasyl.org/master/org/drasyl/node/event/NodeUpEvent.html) to
-       the application. Then, once it has successfully connected to the overlay network,
-       an [`NodeOnlineEvent`](https://api.drasyl.org/master/org/drasyl/node/event/NodeOnlineEvent.html)
-       is emitted.
+communication with other nodes in the local network, the node starts a server listening on port 22527.
+Make sure that the port is available. After the node has been successfully started, it emits
+an [`NodeUpEvent`](https://api.drasyl.org/master/org/drasyl/node/event/NodeUpEvent.html) to
+the application. Then, once it has successfully connected to the overlay network,
+an [`NodeOnlineEvent`](https://api.drasyl.org/master/org/drasyl/node/event/NodeOnlineEvent.html)
+is emitted.
 
 If the node is temporarily or permanently no longer needed, it can be shut down
 using [`node.shutdown()`](https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html#shutdown()).
