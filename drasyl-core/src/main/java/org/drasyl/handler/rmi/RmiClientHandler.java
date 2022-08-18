@@ -141,7 +141,7 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
      */
     @SuppressWarnings("unchecked")
     public <T> T lookup(final String name, final Class<T> clazz, final SocketAddress address) {
-        final T proxy = (T) Proxy.newProxyInstance(RmiClientHandler.class.getClassLoader(), new Class[]{
+        final T proxy = (T) Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(), new Class[]{
                 clazz
         }, new RmiInvocationHandler(this, clazz, name, address));
         return (T) invocationHandlers.intern((Proxy) proxy);

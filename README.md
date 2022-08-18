@@ -1,4 +1,4 @@
-[<img src="https://docs.drasyl.org/master/assets/img/logo.svg" alt="drasyl" width="200"/>](https://drasyl.org)
+[<img src="https://docs.drasyl.org/img/logo-text.svg" alt="drasyl" width="200"/>](https://drasyl.org)
 
 [Website](https://drasyl.org) |
 [Documentation](https://docs.drasyl.org) |
@@ -24,7 +24,7 @@ boundaries between IP-based networks will be eliminated and secure communication
 any peers will be provided. Zero-configuration is required to use drasyl. Developers can run a new
 drasyl node without having to write configuration files or provide IP addresses of peers.
 
-<img src="https://docs.drasyl.org/master/assets/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
+<img src="https://docs.drasyl.org/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
 
 # Features
 
