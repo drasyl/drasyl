@@ -39,12 +39,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 @Sharable
 public class PubSubCodec extends MessageToMessageCodec<OverlayAddressedMessage<ByteBuf>, OverlayAddressedMessage<PubSubMessage>> {
-    private static final int MAGIC_NUMBER_PUBLISH = -616_382_829;
-    private static final int MAGIC_NUMBER_PUBLISHED = -616_382_828;
-    private static final int MAGIC_NUMBER_SUBSCRIBE = -616_382_827;
-    private static final int MAGIC_NUMBER_SUBSCRIBED = -616_382_826;
-    private static final int MAGIC_NUMBER_UNSUBSCRIBE = -616_382_825;
-    private static final int MAGIC_NUMBER_UNSUBSCRIBED = -616_382_824;
+    static final int MAGIC_NUMBER_PUBLISH = -616_382_829;
+    static final int MAGIC_NUMBER_PUBLISHED = -616_382_828;
+    static final int MAGIC_NUMBER_SUBSCRIBE = -616_382_827;
+    static final int MAGIC_NUMBER_SUBSCRIBED = -616_382_826;
+    static final int MAGIC_NUMBER_UNSUBSCRIBE = -616_382_825;
+    static final int MAGIC_NUMBER_UNSUBSCRIBED = -616_382_824;
     // magic number: 4 bytes
     // id: UUID 16 bytes
     public static final int MIN_MESSAGE_LENGTH = 20;
