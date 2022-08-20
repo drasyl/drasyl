@@ -88,8 +88,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <sonar.coverage.exclusions>**/*.*</sonar.coverage.exclusions>
-                <sonar.cpd.exclusions>**/*.*</sonar.cpd.exclusions>
+                <sonar.coverage.exclusions>src/main/java/**</sonar.coverage.exclusions>
+                <sonar.cpd.exclusions>src/main/java/**</sonar.cpd.exclusions>
             </properties>
         </profile>
     </profiles>
