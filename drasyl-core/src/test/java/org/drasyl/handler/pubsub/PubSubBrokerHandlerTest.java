@@ -156,4 +156,19 @@ class PubSubBrokerHandlerTest {
             assertTrue(subscriptions.isEmpty());
         }
     }
+
+    @Nested
+    class ShutDown {
+        @Test
+        void shouldInformAllSubscribers(@Mock final DrasylAddress subscriber1,
+                                        @Mock final DrasylAddress subscriber2,
+                                        @Mock final DrasylAddress subscriber3) {
+            final Multimap<String, DrasylAddress> subscriptions = new HashSetMultimap<>();
+            subscriptions.putAll("cat", Set.of(subscriber1, subscriber2));
+            subscriptions.put("dog", subscriber3);
+
+            final EmbeddedChannel channel = new EmbeddedChannel(new PubSubBrokerHandler(subscriptions));
+            assertTrue(channel.close().syncUninterruptibly().isSuccess());
+        }
+    }
 }
