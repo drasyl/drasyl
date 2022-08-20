@@ -143,8 +143,11 @@
         <sonar.organization>drasyl</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
-            drasyl-examples/**/*,drasyl-performance-tests/**/*
+            drasyl-cli/**/*,drasyl-examples/**/*,drasyl-performance-tests/**/*
         </sonar.coverage.exclusions>
+        <sonar.cpd.exclusions>
+            drasyl-examples/**/*
+        </sonar.cpd.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
