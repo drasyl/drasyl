@@ -34,6 +34,9 @@ import java.util.Collection;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * This handler handles subscribers and publications.
+ */
 public class PubSubBrokerHandler extends SimpleChannelInboundHandler<OverlayAddressedMessage<PubSubMessage>> {
     private static final Logger LOG = LoggerFactory.getLogger(PubSubBrokerHandler.class);
     private final Multimap<String, DrasylAddress> subscriptions;

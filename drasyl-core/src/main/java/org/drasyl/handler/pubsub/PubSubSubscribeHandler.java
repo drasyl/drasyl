@@ -43,6 +43,12 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
+/**
+ * This handler subscribes to topics.
+ * <p>
+ * If the broker not confirms withing {@link #subscribeTimeout}ms, the write {@link Promise} is
+ * failed.
+ */
 @SuppressWarnings({ "java:S1192", "DuplicatedCode" })
 public class PubSubSubscribeHandler extends ChannelDuplexHandler {
     public static final long DEFAULT_SUBSCRIBE_TIMEOUT = 5_000L;
@@ -180,7 +186,7 @@ public class PubSubSubscribeHandler extends ChannelDuplexHandler {
         }
         else {
             LOG.trace("Got publication for topic `{}` from broker `{}` we're not subscribed to. Discard publication: {}", topic, broker, msg.getContent());
-            msg.getContent().release();
+            msg.release();
         }
     }
 
