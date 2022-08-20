@@ -43,6 +43,27 @@ public interface Multimap<K, V> {
     boolean put(K key, V value);
 
     /**
+     * Associates the specified {@code values} with the specified {@code key} in this map.
+     *
+     * @param key    key with which the specified value is to be associated
+     * @param values values to be associated with the specified key
+     * @return {@code true} if the specified {@code values} have changed this multimap
+     * @throws NullPointerException if {@code key} is {@code null}
+     */
+    boolean putAll(K key, Collection<? extends V> values);
+
+    /**
+     * Associates the specified {@code values} with the specified {@code key} in this map.
+     *
+     * @param key    key with which the specified value is to be associated
+     * @param values values to be associated with the specified key
+     * @return {@code true} if the specified {@code values} have changed this multimap
+     * @throws NullPointerException if {@code key} is {@code null}
+     */
+    @SuppressWarnings("unchecked")
+    boolean putAll(K key, V... values);
+
+    /**
      * Removes the specified {@code value} from the specified {@code key}. If no value left, the
      * associated {@code key} will be removed from the map.
      *

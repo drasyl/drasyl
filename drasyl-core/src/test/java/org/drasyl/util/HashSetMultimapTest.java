@@ -50,6 +50,25 @@ class HashSetMultimapTest {
     }
 
     @Nested
+    class PutAll {
+        @Test
+        void shouldReturnTrueIfAtLeastOneValueIsNew() {
+            final SetMultimap<Object, Object> multimap = new HashSetMultimap<>();
+            multimap.put("Foo", "Bar");
+
+            assertTrue(multimap.putAll("Foo", "Bar", "Baz"));
+        }
+
+        @Test
+        void shouldReturnFalseIfValueIsNotNew() {
+            final SetMultimap<Object, Object> multimap = new HashSetMultimap<>();
+            multimap.put("Foo", "Bar");
+
+            assertFalse(multimap.put("Foo", "Bar"));
+        }
+    }
+
+    @Nested
     class Remove {
         @Test
         void shouldReturnTrueIfValueDoestExist() {
