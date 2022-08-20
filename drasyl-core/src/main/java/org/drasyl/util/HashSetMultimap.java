@@ -21,6 +21,8 @@
  */
 package org.drasyl.util;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -62,6 +64,23 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     public boolean put(final K key, final V value) {
         map.putIfAbsent(key, setSupplier.get());
         return map.get(key).add(value);
+    }
+
+    @Override
+    public boolean putAll(K key, Collection<? extends V> values) {
+        boolean changed = false;
+        for (final V value : values) {
+            if (put(key, value)) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    @SafeVarargs
+    @Override
+    public final boolean putAll(K key, V... values) {
+        return putAll(key, Arrays.asList(values));
     }
 
     @Override
