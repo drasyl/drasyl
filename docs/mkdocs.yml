@@ -83,15 +83,14 @@ markdown_extensions:
 nav:
   - 'Welcome': 'index.md'
   - 'Getting Started': 'getting-started.md'
-  - 'Advanced Usage':
-      - 'Bootstrapping': 'advanced-usage/bootstrapping.md'
-      - 'Membership Management': 'advanced-usage/membership-management.md'
-      - 'Remote Message Invocation': 'advanced-usage/remote-message-invocation.md'
-      - 'Distributed Lookup': 'advanced-usage/distributed-lookup.md'
   - 'Configuration':
       - 'Overview': 'configuration/index.md'
       - 'Serialization': 'configuration/serialization.md'
       - 'Logging': 'configuration/logging.md'
+  - 'Advanced Usage':
+      - 'Bootstrapping': 'advanced-usage/bootstrapping.md'
+      - 'Membership Management': 'advanced-usage/membership-management.md'
+      - 'Remote Message Invocation': 'advanced-usage/remote-message-invocation.md'
   - 'Command Line Tool': 'cli.md'
   - 'Public Super Peers': 'public-super-peers.md'
   - 'Insights': 'insights.md'
