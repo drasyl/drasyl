@@ -33,6 +33,7 @@ import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -51,14 +52,14 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  */
 @SuppressWarnings({ "java:S1192", "DuplicatedCode" })
 public class PubSubSubscribeHandler extends ChannelDuplexHandler {
-    public static final long DEFAULT_SUBSCRIBE_TIMEOUT = 5_000L;
+    public static final Duration DEFAULT_SUBSCRIBE_TIMEOUT = Duration.ofMillis(5_000L);
     private static final Logger LOG = LoggerFactory.getLogger(PubSubSubscribeHandler.class);
-    private final long subscribeTimeout;
+    private final Duration subscribeTimeout;
     private final Map<UUID, Pair<Promise<Void>, String>> requests;
     private final DrasylAddress broker;
     private final Set<String> subscriptions;
 
-    PubSubSubscribeHandler(final long subscribeTimeout,
+    PubSubSubscribeHandler(final Duration subscribeTimeout,
                            final Map<UUID, Pair<Promise<Void>, String>> requests,
                            final DrasylAddress broker,
                            final Set<String> subscriptions) {
@@ -68,7 +69,7 @@ public class PubSubSubscribeHandler extends ChannelDuplexHandler {
         this.subscriptions = requireNonNull(subscriptions);
     }
 
-    public PubSubSubscribeHandler(final long subscribeTimeout, final DrasylAddress broker) {
+    public PubSubSubscribeHandler(final Duration subscribeTimeout, final DrasylAddress broker) {
         this(subscribeTimeout, new HashMap<>(), broker, new HashSet<>());
     }
 
@@ -102,11 +103,11 @@ public class PubSubSubscribeHandler extends ChannelDuplexHandler {
                              final ChannelPromise promise) {
         LOG.trace("Send `{}` to broker `{}`.", msg, broker);
         ctx.write(new OverlayAddressedMessage<>(msg, broker)).addListener((FutureListener<Void>) future -> {
-            if (subscribeTimeout > 0 && future.isSuccess()) {
+            if (!subscribeTimeout.isZero() && future.isSuccess()) {
                 // create timeout guard
                 requests.put(msg.getId(), Pair.of(promise, msg.getTopic()));
                 promise.addListener((FutureListener<Void>) future1 -> requests.remove(msg.getId()));
-                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + subscribeTimeout + "ms.")), subscribeTimeout, MILLISECONDS);
+                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + subscribeTimeout.toMillis() + "ms.")), subscribeTimeout.toMillis(), MILLISECONDS);
             }
             else {
                 PromiseNotifier.cascade(future, promise);
@@ -119,11 +120,11 @@ public class PubSubSubscribeHandler extends ChannelDuplexHandler {
                                final ChannelPromise promise) {
         LOG.trace("Send `{}` to broker `{}`.", msg, broker);
         ctx.write(new OverlayAddressedMessage<>(msg, broker)).addListener((FutureListener<Void>) future -> {
-            if (subscribeTimeout > 0 && future.isSuccess()) {
+            if (!subscribeTimeout.isZero() && future.isSuccess()) {
                 // create timeout guard
                 requests.put(msg.getId(), Pair.of(promise, msg.getTopic()));
                 promise.addListener((FutureListener<Void>) future1 -> requests.remove(msg.getId()));
-                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + subscribeTimeout + "ms.")), subscribeTimeout, MILLISECONDS);
+                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + subscribeTimeout.toMillis() + "ms.")), subscribeTimeout.toMillis(), MILLISECONDS);
             }
             else {
                 PromiseNotifier.cascade(future, promise);

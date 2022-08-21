@@ -32,6 +32,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -47,13 +48,13 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * failed.
  */
 public class PubSubPublishHandler extends ChannelDuplexHandler {
-    public static final long DEFAULT_PUBLISH_TIMEOUT = 5_000L;
+    public static final Duration DEFAULT_PUBLISH_TIMEOUT = Duration.ofMillis(5_000L);
     private static final Logger LOG = LoggerFactory.getLogger(PubSubPublishHandler.class);
-    private final long publishTimeout;
+    private final Duration publishTimeout;
     private final Map<UUID, Promise<Void>> requests;
     private final DrasylAddress broker;
 
-    PubSubPublishHandler(final long publishTimeout,
+    PubSubPublishHandler(final Duration publishTimeout,
                          final Map<UUID, Promise<Void>> requests,
                          final DrasylAddress broker) {
         this.publishTimeout = requireNonNegative(publishTimeout);
@@ -61,7 +62,7 @@ public class PubSubPublishHandler extends ChannelDuplexHandler {
         this.broker = requireNonNull(broker);
     }
 
-    public PubSubPublishHandler(final long publishTimeout, final DrasylAddress broker) {
+    public PubSubPublishHandler(final Duration publishTimeout, final DrasylAddress broker) {
         this(publishTimeout, new HashMap<>(), broker);
     }
 
@@ -86,11 +87,11 @@ public class PubSubPublishHandler extends ChannelDuplexHandler {
                            final ChannelPromise promise) {
         LOG.trace("Send `{}` to broker `{}`.", msg, broker);
         ctx.write(new OverlayAddressedMessage<>(msg, broker)).addListener((FutureListener<Void>) future -> {
-            if (publishTimeout > 0 && future.isSuccess()) {
+            if (!publishTimeout.isZero() && future.isSuccess()) {
                 // create timeout guard
                 requests.put(msg.getId(), promise);
                 promise.addListener((FutureListener<Void>) future1 -> requests.remove(msg.getId()));
-                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + publishTimeout + "ms.")), publishTimeout, MILLISECONDS);
+                ctx.executor().schedule(() -> promise.tryFailure(new Exception("Got no confirmation from broker within " + publishTimeout.toMillis() + "ms.")), publishTimeout.toMillis(), MILLISECONDS);
             }
             else {
                 PromiseNotifier.cascade(future, promise);

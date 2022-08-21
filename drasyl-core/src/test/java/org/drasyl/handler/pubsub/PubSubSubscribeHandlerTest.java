@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +53,7 @@ class PubSubSubscribeHandlerTest {
     void shouldPassOutboundSubscribeRequestToBroker(@Mock final Map<UUID, Pair<Promise<Void>, String>> requests,
                                                     @Mock final DrasylAddress broker,
                                                     @Mock final Set<String> subscriptions) {
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubSubscribe subscribe = PubSubSubscribe.of("myTopic");
         channel.writeOutbound(subscribe);
@@ -65,7 +66,7 @@ class PubSubSubscribeHandlerTest {
     void shouldPassOutboundUnsubscribeRequestToBroker(@Mock final Map<UUID, Pair<Promise<Void>, String>> requests,
                                                       @Mock final DrasylAddress broker,
                                                       @Mock final Set<String> subscriptions) {
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubUnsubscribe unsubscribe = PubSubUnsubscribe.of("myTopic");
         channel.writeOutbound(unsubscribe);
@@ -81,7 +82,7 @@ class PubSubSubscribeHandlerTest {
                                                @Mock final Promise<Void> promise) {
         when(requests.remove(id)).thenReturn(Pair.of(promise, "myTopic"));
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubSubscribed subscribed = PubSubSubscribed.of(id);
         channel.writeInbound(new OverlayAddressedMessage<>(subscribed, null, broker));
@@ -97,7 +98,7 @@ class PubSubSubscribeHandlerTest {
                                                  @Mock final Promise<Void> promise) {
         when(requests.remove(id)).thenReturn(Pair.of(promise, "myTopic"));
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubUnsubscribed unsubscribed = PubSubUnsubscribed.of(id);
         channel.writeInbound(new OverlayAddressedMessage<>(unsubscribed, null, broker));
@@ -112,7 +113,7 @@ class PubSubSubscribeHandlerTest {
                                                                      @Mock final Set<String> subscriptions) {
         when(subscriptions.contains("myTopic")).thenReturn(true);
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubPublish publish = PubSubPublish.of(id, "myTopic", Unpooled.EMPTY_BUFFER);
         channel.writeInbound(new OverlayAddressedMessage<>(publish, null, broker));
@@ -126,7 +127,7 @@ class PubSubSubscribeHandlerTest {
                                                                         @Mock final Set<String> subscriptions) {
         when(subscriptions.contains("myTopic")).thenReturn(false);
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubPublish publish = PubSubPublish.of(id, "myTopic", Unpooled.buffer());
         channel.writeInbound(new OverlayAddressedMessage<>(publish, null, broker));
@@ -140,7 +141,7 @@ class PubSubSubscribeHandlerTest {
                                                     @Mock final Set<String> subscriptions) {
         when(subscriptions.remove("myTopic")).thenReturn(true);
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
 
         final PubSubUnsubscribe unsubscribe = PubSubUnsubscribe.of(id, "myTopic");
         channel.writeInbound(new OverlayAddressedMessage<>(unsubscribe, null, broker));
@@ -153,7 +154,7 @@ class PubSubSubscribeHandlerTest {
                                                   @Mock final DrasylAddress broker) {
         final Set<String> subscriptions = new HashSet<>(Set.of("foo", "bar"));
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(5_000L, requests, broker, subscriptions));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
         assertTrue(channel.close().awaitUninterruptibly().isSuccess());
     }
 }

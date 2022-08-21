@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Map;
 import java.util.UUID;
 
+import static java.time.Duration.ofMillis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,7 +48,7 @@ class PubSubPublishHandlerTest {
     @Test
     void shouldPassOutboundPublishRequestToBroker(@Mock final Map<UUID, Promise<Void>> requests,
                                                   @Mock final DrasylAddress broker) {
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubPublishHandler(5_000L, requests, broker));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubPublishHandler(ofMillis(5_000L), requests, broker));
 
         final PubSubPublish publish = PubSubPublish.of("myTopic", Unpooled.buffer());
         channel.writeOutbound(publish);
@@ -63,7 +64,7 @@ class PubSubPublishHandlerTest {
                                        @Mock final Promise<Void> promise) {
         when(requests.remove(any())).thenReturn(promise);
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubPublishHandler(5_000L, requests, broker));
+        final EmbeddedChannel channel = new EmbeddedChannel(new PubSubPublishHandler(ofMillis(5_000L), requests, broker));
 
         final PubSubPublished published = PubSubPublished.of(id);
         channel.writeInbound(new OverlayAddressedMessage<>(published, null, broker));
