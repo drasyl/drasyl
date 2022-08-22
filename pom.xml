@@ -133,7 +133,7 @@
         <awaitility.version>4.2.0</awaitility.version>
         <netty.version>4.1.79.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.0</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.35.0</json-unit-assertj.version>
