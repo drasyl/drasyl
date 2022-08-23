@@ -145,6 +145,9 @@
         <sonar.coverage.exclusions>
             drasyl-cli/**/*,drasyl-examples/**/*,drasyl-performance-tests/**/*
         </sonar.coverage.exclusions>
+        <sonar.cpd.exclusions>
+            drasyl-examples/**/*
+        </sonar.cpd.exclusions>
         <sonar.coverage.jacoco.xmlReportPaths>${project.artifactId}/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

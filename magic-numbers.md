@@ -16,3 +16,9 @@ This document contains a list of the magic numbers used by drasyl.
 | -376,669,039   | Probe              | [ProbeCodec](drasyl-cli/src/main/java/org/drasyl/cli/perf/handler/ProbeCodec.java)                                                           |
 | 360,023,952    | GBN data           | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
 | 360,023,955    | GBN ACK            | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
+| -616,382,829    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
+| -616,382,828    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
+| -616,382,827    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
+| -616,382,826    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
+| -616,382,825    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                            |
+| -616,382,824    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
