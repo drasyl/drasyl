@@ -18,6 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for decentralized membership managed using the CYCLON protocol.
   Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/membership-management/) for
   more information.
+- Added support for the publish/subscribe messaging pattern.
+  Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/publish-subscribe/) for
+  more information.
 -
 -
 -
