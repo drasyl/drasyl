@@ -3,7 +3,7 @@ name: Build CLI
 on:
   push:
     branches:
-      - master
+      - '*'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -61,6 +61,7 @@ jobs:
 
           - job_name: linux-arm64
             os: [ self-hosted, linux, ARM64 ]
+            if: github.ref == 'refs/heads/master'
 
           - job_name: macos-amd64
             os: macOS-latest
