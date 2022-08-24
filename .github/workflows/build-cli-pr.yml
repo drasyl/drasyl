@@ -1,11 +1,10 @@
-name: Build CLI
+name: Build CLI (Pull Request)
 
 on:
   push:
     branches:
-      - master
-    tags:
-      - 'v*'
+      - '*'
+  pull_request:
   workflow_dispatch:
 #  schedule:
 #    - cron:  '0 6 * * 1' # every monday 6am
@@ -51,16 +50,12 @@ jobs:
       matrix:
         job_name:
           - linux-amd64
-          - linux-arm64
           - macos-amd64
           - windows-amd64
 
         include:
           - job_name: linux-amd64
             os: ubuntu-latest
-
-          - job_name: linux-arm64
-            os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -116,17 +111,6 @@ jobs:
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'ubuntu-latest'
-
-      - name: Build Package on *nix ARM
-        run: |
-          sudo apt-get install zip -y
-          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
-          mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
-          mv ./drasyl drasyl-${VERSION}-${{ matrix.job_name }}/bin
-          cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
-          zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
-          for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.job_name == 'linux-arm64'
 
       - name: Build Package on Mac x86
         run: |
