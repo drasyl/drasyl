@@ -28,7 +28,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
- * Sent from the {@link PerfClientNode} to the {@link PerfServerNode} to request a new session.
+ * Sent from the {@link org.drasyl.cli.perf.handler.PerfSessionReceiverHandler} to the
+ * {@link org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler} to request a new session.
  */
 public class SessionRequest implements PerfMessage {
     private final int time;
@@ -37,8 +38,8 @@ public class SessionRequest implements PerfMessage {
     private final boolean reverse;
 
     /**
-     * @throws IllegalArgumentException if {@code time} or {@code size} is less than 1 or {@code
-     *                                  mps} is negative
+     * @throws IllegalArgumentException if {@code time} or {@code size} is less than 1 or
+     *                                  {@code mps} is negative
      */
     @JsonCreator
     public SessionRequest(@JsonProperty("time") final int time,

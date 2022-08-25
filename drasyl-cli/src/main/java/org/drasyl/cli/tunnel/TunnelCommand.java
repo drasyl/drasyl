@@ -31,7 +31,7 @@ import static picocli.CommandLine.Command;
  * <pre>
  * +-------------------+          +-----------------------------+                  +------------------------------+          +-------------------+
  * | local TCP service |  expose  |           local             |  drasyl overlay  |            remote            |  expose  |    exposed TCP    |
- * | (behind firewall) |--------->| {@link TunnelExposeCommand} |----------------->| {@link TunnelConsumeCommand} |--------->|  service (local)  |
+ * | (behind firewall) |---------&gt;| {@link TunnelExposeCommand} |-----------------&gt;| {@link TunnelConsumeCommand} |---------&gt;|  service (local)  |
  * +-------------------+          +-----------------------------+                  +------------------------------+          +-------------------+
  * </pre>
  */
