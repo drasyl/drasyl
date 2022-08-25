@@ -10,16 +10,19 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - It is now easier to create drasyl node through the bootstrap interface.
-  Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/bootstrapping/) for more
+  Refer [our documentation](https://docs.drasyl.org/advanced-usage/bootstrapping/) for more
   information.
 - Added support for remote message invocations over drasyl.
-  Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/remote-message-invocation/)
+  Refer [our documentation](https://docs.drasyl.org/advanced-usage/remote-message-invocation/)
   for more information.
 - Added support for decentralized membership managed using the CYCLON protocol.
-  Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/membership-management/) for
+  Refer [our documentation](https://docs.drasyl.org/advanced-usage/membership-management/) for
   more information.
 - Added support for the publish/subscribe messaging pattern.
-  Refer [our documentation](https://docs.drasyl.org/v0.9/advanced-usage/publish-subscribe/) for
+  Refer [our documentation](https://docs.drasyl.org/advanced-usage/publish-subscribe/) for
+  more information.
+- Added support for distributed lookup service using the Chord protocol.
+  Refer [our documentation](https://docs.drasyl.org/advanced-usage/distributed-lookup/) for
   more information.
 -
 -
