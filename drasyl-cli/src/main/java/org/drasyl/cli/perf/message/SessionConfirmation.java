@@ -22,7 +22,8 @@
 package org.drasyl.cli.perf.message;
 
 /**
- * Sent from the {@link PerfServerNode} to the {@link PerfClientNode} to confirm a requested session
+ * Sent from the {@link org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler} to the
+ * {@link org.drasyl.cli.perf.handler.PerfSessionReceiverHandler} to confirm a requested session
  * ({@link SessionRequest}).
  */
 public class SessionConfirmation implements PerfMessage {

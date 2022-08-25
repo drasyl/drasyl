@@ -255,7 +255,7 @@
                             <imageName>drasyl</imageName>
                             <mainClass>org.drasyl.cli.Cli</mainClass>
                             <outputDirectory>${project.parent.basedir}</outputDirectory>
-                            <buildArgs>--no-fallback --allow-incomplete-classpath --trace-class-initialization=io.netty.buffer.UnpooledHeapByteBuf</buildArgs>
+                            <buildArgs>--no-fallback --allow-incomplete-classpath</buildArgs>
                         </configuration>
                     </plugin>
                     <plugin>

@@ -21,7 +21,8 @@
  */
 
 /**
- * Contains messages that are sent between {@link org.drasyl.cli.perf.PerfClientNode} and {@link
- * org.drasyl.cli.perf.PerfServerNode}.
+ * Contains messages that are sent between
+ * {@link org.drasyl.cli.perf.handler.PerfSessionReceiverHandler} and
+ * {@link org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler}.
  */
 package org.drasyl.cli.perf.message;

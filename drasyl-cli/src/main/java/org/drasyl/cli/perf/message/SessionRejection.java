@@ -22,7 +22,8 @@
 package org.drasyl.cli.perf.message;
 
 /**
- * Sent from the {@link PerfServerNode} to the {@link PerfClientNode} to reject a requested session
+ * Sent from the {@link org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler} to the
+ * {@link org.drasyl.cli.perf.handler.PerfSessionReceiverHandler} to reject a requested session
  * ({@link SessionRequest}). Sessions are actually only rejected if the server already has an active
  * session with (another) client.
  */
