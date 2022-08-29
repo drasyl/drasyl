@@ -24,7 +24,7 @@ package org.drasyl.node.event;
 import com.google.auto.value.AutoValue;
 
 /**
- * This events signals that the node has terminated normally.
+ * This event signals that the node has terminated normally.
  * <p>
  * This is an immutable object.
  */
