@@ -4,7 +4,7 @@
 #include "libdrasyl.h"
 #include "test.h"
 
-void on_drasyl_event(graal_isolatethread_t * thread, drasyl_node_event* event) {
+void on_drasyl_event(graal_isolatethread_t* thread, drasyl_node_event* event) {
     switch (event->event_code) {
         case DRASYL_NODE_EVENT_NODE_UP:
             printf("Node `%.64s` started \n", event->node->address);
@@ -20,6 +20,7 @@ void on_drasyl_event(graal_isolatethread_t * thread, drasyl_node_event* event) {
             break;
         case DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR:
             printf("Node `%.64s` failed to start\n", event->node->address);
+            exit(1);
             break;
         case DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION:
             printf("Node `%.64s` shut down\n", event->node->address);
@@ -71,7 +72,7 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
-    printf("Wait for node to become online...");
+    printf("Wait for node to become online...\n");
     while (!drasyl_node_is_online(thread)) {
         drasyl_util_delay(thread, 50);
     }
