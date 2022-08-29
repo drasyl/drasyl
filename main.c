@@ -58,17 +58,17 @@ int main(int argc, char **argv) {
 
     if (graal_create_isolate(NULL, &isolate, &thread) != 0) {
         fprintf(stderr, "initialization error\n");
-        return 1;
+        goto clean_up;
     }
 
     if (drasyl_node_set_event_handler(thread, &on_drasyl_event) != 0) {
         fprintf(stderr, "could not set event handler\n");
-        return 1;
+        goto clean_up;
     }
 
     if (drasyl_node_start(thread) != 0) {
         fprintf(stderr, "could not start node\n");
-        return 1;
+        goto clean_up;
     }
 
     printf("Wait for node to become online...");
@@ -80,20 +80,27 @@ int main(int argc, char **argv) {
     char payload[] = "hello there";
     if (drasyl_node_send(thread, "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054", payload, sizeof(payload)) != 0) {
         fprintf(stderr, "could not send message\n");
-        return 1;
+        goto clean_up;
     }
 
     drasyl_util_delay(thread, 10000);
 
     if (drasyl_node_stop(thread) != 0) {
         fprintf(stderr, "could not stop node\n");
-        return 1;
+        goto clean_up;
     }
 
     if (drasyl_shutdown_event_loop(thread) != 0) {
         fprintf(stderr, "could not shutdown event loop\n");
-        return 1;
+        goto clean_up;
     }
-
+    
+    goto clean_up_2;
+    
+clean_up:
     graal_tear_down_isolate(thread);
+    return 1;
+clean_up_2:
+    graal_tear_down_isolate(thread);
+    return 0;
  }
