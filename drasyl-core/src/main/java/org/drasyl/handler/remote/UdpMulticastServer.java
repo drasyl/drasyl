@@ -40,6 +40,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
 
+import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -49,11 +50,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static io.netty.channel.socket.InternetProtocolFamily.IPv4;
+import static io.netty.channel.socket.InternetProtocolFamily.IPv6;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Starts an UDP server which joins a IP multicast group and together with the {@link
- * LocalNetworkDiscovery} is responsible for discovering other nodes in the local network.
+ * Starts an UDP server which joins a IP multicast group and together with the
+ * {@link LocalNetworkDiscovery} is responsible for discovering other nodes in the local network.
  *
  * @see LocalNetworkDiscovery
  */
@@ -127,10 +130,10 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             nodes.add(ctx);
 
             if (channel == null) {
-                LOG.debug("Start Multicast Server...");
+                LOG.debug("Start Multicast Server to bind to udp://{}:{}...", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort);
                 bootstrapSupplier.get()
                         .group((EventLoopGroup) ctx.executor().parent())
-                        .channel(NioDatagramChannel.class)
+                        .channelFactory(() -> new NioDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
                         .handler(new UdpMulticastServerHandler())
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())
                         .addListener(new UdpMulticastServerFutureListener(ctx));

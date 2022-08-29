@@ -73,7 +73,7 @@ class UdpMulticastServerTest {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
-            when(bootstrap.group(any()).channel(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channelFactory(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -89,7 +89,7 @@ class UdpMulticastServerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(anyString(), anyInt());
+                verify(bootstrap.group(any()).channelFactory(any()).handler(any()), times(2)).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(any(InetSocketAddress.class), any());
             }
             finally {
@@ -132,7 +132,7 @@ class UdpMulticastServerTest {
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                      @Mock final EventExecutor eventExecutor) {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
-            when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
+            when(bootstrap.group(any()).channelFactory(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(Unpooled.EMPTY_BUFFER, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;

@@ -1,9 +1,6 @@
 name: Build CLI (Pull Request)
 
 on:
-  push:
-    branches:
-      - '*'
   pull_request:
   workflow_dispatch:
 #  schedule:
@@ -73,7 +70,7 @@ jobs:
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
-        uses: ilammy/msvc-dev-cmd@v1.10.0
+        uses: ilammy/msvc-dev-cmd@v1.11.0
         if: matrix.os == 'windows-latest'
 
       - name: Configure MSBuild on Windows
