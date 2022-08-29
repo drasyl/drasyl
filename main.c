@@ -81,8 +81,9 @@ int main(int argc, char **argv) {
     }
     printf("online!\n");
 
+    char recipient[] = "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054";
     char payload[] = "hello there";
-    if (drasyl_node_send(thread, "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054", payload, sizeof(payload)) != 0) {
+    if (drasyl_node_send(thread, recipient, payload, sizeof(payload)) != 0) {
         fprintf(stderr, "could not send message\n");
         goto clean_up;
     }
