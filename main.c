@@ -39,7 +39,6 @@ void on_drasyl_event(graal_isolatethread_t* thread, drasyl_node_event* event) {
             printf("Perfect forward secrecy encryption to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_NODE_EVENT_MESSAGE:
-            // FIXME: get payload
             printf("Node received message `%.*s` from `%.64s`: `%d`\n", event->message_payload_len, event->message_payload, event->message_sender, event->message_payload_len);
             break;
         case DRASYL_NODE_EVENT_INBOUND_EXCEPTION:
