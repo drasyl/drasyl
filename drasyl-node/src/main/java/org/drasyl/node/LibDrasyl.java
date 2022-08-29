@@ -108,7 +108,7 @@ public class LibDrasyl {
 
         private static File[] findJNIHeaders() throws IllegalStateException {
             return new File[]{
-                    new File("/Users/kroeb/Documents/git/drasyl/test.h"),
+                    new File("/Users/heiko/Development/drasyl/test.h"),
                     };
         }
     }
@@ -205,7 +205,7 @@ public class LibDrasyl {
                 final DrasylNodeEvent drasylNodeEvent = StackValue.get(DrasylNodeEvent.class);
 
                 if (event instanceof NodeEvent) {
-                // node events
+                    // node events
                     final NodeEvent nodeEvent = (NodeEvent) event;
 
                     // build identity struct
@@ -223,25 +223,25 @@ public class LibDrasyl {
 
                     if (nodeEvent instanceof NodeUpEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_UP);
-                }
+                    }
                     else if (nodeEvent instanceof NodeDownEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_DOWN);
-                }
+                    }
                     else if (nodeEvent instanceof NodeOnlineEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_ONLINE);
-                }
+                    }
                     else if (nodeEvent instanceof NodeOfflineEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_OFFLINE);
-                }
+                    }
                     else if (nodeEvent instanceof NodeUnrecoverableErrorEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR);
                     }
                     else if (nodeEvent instanceof NodeNormalTerminationEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION);
-                }
+                    }
                 }
                 else if (event instanceof PeerEvent) {
-                // peer events
+                    // peer events
                     final PeerEvent peerEvent = (PeerEvent) event;
 
                     // build peer struct
@@ -251,16 +251,16 @@ public class LibDrasyl {
 
                     if (peerEvent instanceof PeerDirectEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PEER_DIRECT);
-                }
+                    }
                     else if (peerEvent instanceof PeerRelayEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PEER_RELAY);
-                }
+                    }
                     else if (peerEvent instanceof LongTimeEncryptionEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_LONG_TIME_ENCRYPTION);
                     }
                     else if (peerEvent instanceof PerfectForwardSecrecyEncryptionEvent) {
                         drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION);
-                }
+                    }
                 }
                 // message events
                 else if (event instanceof MessageEvent) {
