@@ -101,3 +101,11 @@ AutoValue_*
 /reports
 /drasyl-0.*
 /drasyl.build_artifacts.txt
+/graal_isolate_dynamic.h
+/graal_isolate.h
+/libdrasyl_dynamic.h
+/libdrasyl.build_artifacts.txt
+/libdrasyl.dylib
+/libdrasyl.h
+/main
+/main.dSYM

@@ -14,6 +14,12 @@ typedef enum {
 } drasyl_node_event_code;
 
 typedef struct {
+    int proof_of_work;
+    char identity_public_key[64];
+    char identity_secret_key[128];
+} drasyl_identity;
+
+typedef struct {
     char address[64];
 } drasyl_node;
 

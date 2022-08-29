@@ -207,48 +207,59 @@ public class LibDrasyl {
                 // node events
                 if (event instanceof NodeUpEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_UP;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof NodeDownEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_DOWN;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof NodeOnlineEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_ONLINE;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof NodeOfflineEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_OFFLINE;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof NodeUnrecoverableErrorEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof NodeNormalTerminationEvent) {
                     eventCode = DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION;
+                    drasylNodeEvent.setNode(drasylNodeInfo);
                     CTypeConversion.toCString(((NodeEvent)event).getNode().getIdentity().getAddress().toString(), drasylNodeInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 // peer events
                 else if (event instanceof PeerDirectEvent) {
                     eventCode = DRASYL_NODE_EVENT_PEER_DIRECT;
+                    drasylNodeEvent.setPeer(drasylPeerInfo);
                     CTypeConversion.toCString(((PeerEvent)event).getPeer().getAddress().toString(), drasylPeerInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof PeerRelayEvent) {
                     eventCode = DRASYL_NODE_EVENT_PEER_RELAY;
+                    drasylNodeEvent.setPeer(drasylPeerInfo);
                     CTypeConversion.toCString(((PeerEvent)event).getPeer().getAddress().toString(), drasylPeerInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof LongTimeEncryptionEvent) {
                     eventCode = DRASYL_NODE_EVENT_LONG_TIME_ENCRYPTION;
+                    drasylNodeEvent.setPeer(drasylPeerInfo);
                     CTypeConversion.toCString(((PeerEvent)event).getPeer().getAddress().toString(), drasylPeerInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 else if (event instanceof PerfectForwardSecrecyEncryptionEvent) {
                     eventCode = DRASYL_NODE_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION;
+                    drasylNodeEvent.setPeer(drasylPeerInfo);
                     CTypeConversion.toCString(((PeerEvent)event).getPeer().getAddress().toString(), drasylPeerInfo.getAddress(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                 }
                 // message events
                 else if (event instanceof MessageEvent) {
                     eventCode = DRASYL_NODE_EVENT_MESSAGE;
+                    drasylNodeEvent.setPeer(drasylPeerInfo);
                     CTypeConversion.toCString(((MessageEvent)event).getSender().toString(), drasylNodeEvent.getMessageSender(), WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING));
                     final String payload = ((MessageEvent) event).getPayload().toString();
                     drasylNodeEvent.setMessagePayloadLength(payload.length());
@@ -263,11 +274,6 @@ public class LibDrasyl {
                     eventCode = 0;
                 }
 
-                drasylNodeEvent.setNode(drasylNodeInfo);
-                drasylNodeEvent.setPeer(drasylPeerInfo);
-//                System.out.println("SizeOf " + SizeOf.get(DrasylNodeEvent.class));
-//                System.out.println("eventCode " + eventCode);
-//                System.out.println("drasylNodeEvent " + drasylNodeEvent);
                 drasylNodeEvent.setEventCode(eventCode);
 
                 pointer.invoke(thread, drasylNodeEvent);

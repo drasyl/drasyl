@@ -7,40 +7,43 @@
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_node_event* event) {
     switch (event->event_code) {
         case DRASYL_NODE_EVENT_NODE_UP:
-            printf("Node `%.64s` started \n", event->node->address);
+            printf("Node `%.64s` started.\n", event->node->address);
             break;
         case DRASYL_NODE_EVENT_NODE_DOWN:
-            printf("Node `%.64s` is shutting down\n", event->node->address);
+            printf("Node `%.64s` is shutting down.\n", event->node->address);
             break;
         case DRASYL_NODE_EVENT_NODE_ONLINE:
-            printf("Node `%.64s` is now online\n", event->node->address);
+            printf("Node `%.64s` is now online.\n", event->node->address);
             break;
         case DRASYL_NODE_EVENT_NODE_OFFLINE:
-            printf("Node `%.64s` is now offline\n", event->node->address);
+            printf("Node `%.64s` is now offline.\n", event->node->address);
             break;
         case DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR:
-            printf("Node `%.64s` failed to start\n", event->node->address);
-            exit(1);
+            // FIXME: get reason
+            printf("Node `%.64s` failed to start.\n", event->node->address);
+            exit(1)
             break;
         case DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION:
-            printf("Node `%.64s` shut down\n", event->node->address);
+            printf("Node `%.64s` shut down.\n", event->node->address);
             break;
         case DRASYL_NODE_EVENT_PEER_DIRECT:
-            printf("Node has direct connection to peer `%.64s`\n", event->peer->address);
+            printf("Direct connection to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_NODE_EVENT_PEER_RELAY:
-            printf("Node has relayed connection to peer `%.64s`\n", event->peer->address);
+            printf("Relayed connection to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_NODE_EVENT_LONG_TIME_ENCRYPTION:
-            printf("Node has long time encryption to peer `%.64s`\n", event->peer->address);
+            printf("Long time encryption to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_NODE_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION:
-            printf("Node has perfect forward secrecy encryption to peer `%.64s`\n", event->peer->address);
+            printf("Perfect forward secrecy encryption to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_NODE_EVENT_MESSAGE:
+            // FIXME: get payload
             printf("Node received message `%.*s` from `%.64s`: `%d`\n", event->message_payload_len, event->message_payload, event->message_sender, event->message_payload_len);
             break;
         case DRASYL_NODE_EVENT_INBOUND_EXCEPTION:
+            // FIXME: get error
             printf("Node faced error while receiving message\n");
             break;
         default:
