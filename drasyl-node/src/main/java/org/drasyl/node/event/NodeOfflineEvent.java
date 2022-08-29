@@ -28,7 +28,7 @@ import com.google.auto.value.AutoValue;
  * node cannot be discovered and contacted by remote peers. Existing direct connections are not
  * affected by this event. Lost direct connections may not be recovered
  * <p>
- * If the node has been configured with no super peer, this event will be never emitted.
+ * If the node has been configured with no super peer, this event will never be emitted.
  * <p>
  * This is an immutable object.
  *
