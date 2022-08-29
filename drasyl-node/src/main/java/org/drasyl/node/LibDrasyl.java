@@ -48,8 +48,10 @@ import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CFieldAddress;
 import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.type.CCharPointer;
+import org.graalvm.nativeimage.c.type.CIntPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.PointerBase;
+import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordFactory;
 
 import java.io.File;
@@ -103,7 +105,7 @@ public class LibDrasyl {
 
         private static File[] findJNIHeaders() throws IllegalStateException {
             return new File[]{
-                    new File("/Users/heiko/Development/drasyl/test.h"),
+                    new File("/Users/kroeb/Documents/git/drasyl/test.h"),
                     };
         }
     }
@@ -151,6 +153,7 @@ public class LibDrasyl {
             return 0;
         }
         catch (final Exception e) {
+            e.printStackTrace();
             return 1;
         }
     }
@@ -280,14 +283,15 @@ public class LibDrasyl {
     @CEntryPoint(name = "drasyl_node_send")
     private static int nodeSend(final IsolateThread thread,
                                 final CCharPointer recipientPointer,
-                                final CCharPointer payloadPointer) {
+                                final CCharPointer payloadPointer,
+                                final UnsignedWord payloadLength) {
         if (node == null) {
             return 1;
         }
 
         try {
-            final String recipient = CTypeConversion.toJavaString(recipientPointer);
-            final String payload = CTypeConversion.toJavaString(payloadPointer);
+            final String recipient = CTypeConversion.toJavaString(recipientPointer, WordFactory.unsigned(64));
+            final String payload = CTypeConversion.toJavaString(payloadPointer, payloadLength);
             node.send(recipient, payload).toCompletableFuture().join();
             return 0;
         }
