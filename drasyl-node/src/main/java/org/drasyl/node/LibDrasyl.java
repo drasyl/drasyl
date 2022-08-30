@@ -93,7 +93,6 @@ public class LibDrasyl {
     private static final short DRASYL_EVENT_INBOUND_EXCEPTION = 40;
     private static DrasylNode node;
     private static boolean online;
-    private static Consumer<Event> eventConsumer;
 
     static final class Directives implements CContext.Directives {
         @Override
@@ -116,8 +115,9 @@ public class LibDrasyl {
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
-    @CEntryPoint(name = "drasyl_node_start")
-    private static int nodeStart(final IsolateThread thread) {
+    @CEntryPoint(name = "drasyl_node_init")
+    private static int nodeInit(final IsolateThread thread,
+                                final EventListener pointer) {
         if (node != null) {
             return -1;
         }
@@ -132,11 +132,101 @@ public class LibDrasyl {
                     else if (event instanceof NodeOfflineEvent) {
                         online = false;
                     }
-                    if (eventConsumer != null) {
-                        eventConsumer.accept(event);
+
+                    final NodeEventType nodeEventType = StackValue.get(NodeEventType.class);
+
+                    if (event instanceof NodeEvent) {
+                        // node events
+                        final NodeEvent nodeEvent = (NodeEvent) event;
+
+                        // build identity struct
+                        final IdentityType identityType = StackValue.get(IdentityType.class);
+                        identityType.setProofOfWork(nodeEvent.getNode().getIdentity().getProofOfWork().intValue());
+                        CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentityPublicKey().toString(), identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
+                        CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentitySecretKey().toString(), identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
+
+                        // build node struct
+                        final DrasylNodeInfo drasylNodeInfo = StackValue.get(DrasylNodeInfo.class);
+                        drasylNodeInfo.setIdentity(identityType);
+
+                        // update event struct
+                        nodeEventType.setNode(drasylNodeInfo);
+
+                        if (nodeEvent instanceof NodeUpEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_UP);
+                        }
+                        else if (nodeEvent instanceof NodeDownEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_DOWN);
+                        }
+                        else if (nodeEvent instanceof NodeOnlineEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_ONLINE);
+                        }
+                        else if (nodeEvent instanceof NodeOfflineEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_OFFLINE);
+                        }
+                        else if (nodeEvent instanceof NodeUnrecoverableErrorEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR);
+                        }
+                        else if (nodeEvent instanceof NodeNormalTerminationEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_NODE_NORMAL_TERMINATION);
+                        }
                     }
+                    else if (event instanceof PeerEvent) {
+                        // peer events
+                        final PeerEvent peerEvent = (PeerEvent) event;
+
+                        // build peer struct
+                        final PeerType peerType = StackValue.get(PeerType.class);
+                        nodeEventType.setPeer(peerType);
+                        CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), peerType.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
+
+                        if (peerEvent instanceof PeerDirectEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_PEER_DIRECT);
+                        }
+                        else if (peerEvent instanceof PeerRelayEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_PEER_RELAY);
+                        }
+                        else if (peerEvent instanceof LongTimeEncryptionEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_LONG_TIME_ENCRYPTION);
+                        }
+                        else if (peerEvent instanceof PerfectForwardSecrecyEncryptionEvent) {
+                            nodeEventType.setEventCode(DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION);
+                        }
+                    }
+                    // message events
+                    else if (event instanceof MessageEvent) {
+                        CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
+                        final String payload = ((MessageEvent) event).getPayload().toString();
+                        nodeEventType.setMessagePayloadLength(payload.length());
+                        final CTypeConversion.CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
+                        nodeEventType.setMessagePayload(cCharPointerHolder.get());
+                        nodeEventType.setEventCode(DRASYL_EVENT_MESSAGE);
+                    }
+                    else if (event instanceof InboundExceptionEvent) {
+                        nodeEventType.setEventCode(DRASYL_EVENT_INBOUND_EXCEPTION);
+                    }
+                    else {
+                        nodeEventType.setEventCode((short) 0);
+                    }
+
+                    pointer.invoke(thread, nodeEventType);
                 }
             };
+            return 0;
+        }
+        catch (final Exception e) {
+            return -1;
+        }
+    }
+
+    @SuppressWarnings({ "java:S1166", "java:S2221" })
+    @CEntryPoint(name = "drasyl_node_start")
+    private static int nodeStart(final IsolateThread thread) {
+        if (node == null) {
+            return -1;
+        }
+
+        try {
             node.start().toCompletableFuture().join();
             return 0;
         }
@@ -173,97 +263,6 @@ public class LibDrasyl {
             if (!future.isSuccess()) {
                 return -1;
             }
-            return 0;
-        }
-        catch (final Exception e) {
-            return -1;
-        }
-    }
-
-    @SuppressWarnings({ "java:S1166", "java:S2221" })
-    @CEntryPoint(name = "drasyl_node_set_event_handler")
-    private static int nodeSetEventHandler(final IsolateThread thread,
-                                           final EventListener pointer) {
-        try {
-            eventConsumer = event -> {
-                final NodeEventType nodeEventType = StackValue.get(NodeEventType.class);
-
-                if (event instanceof NodeEvent) {
-                    // node events
-                    final NodeEvent nodeEvent = (NodeEvent) event;
-
-                    // build identity struct
-                    final IdentityType identityType = StackValue.get(IdentityType.class);
-                    identityType.setProofOfWork(nodeEvent.getNode().getIdentity().getProofOfWork().intValue());
-                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentityPublicKey().toString(), identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
-                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentitySecretKey().toString(), identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
-
-                    // build node struct
-                    final DrasylNodeInfo drasylNodeInfo = StackValue.get(DrasylNodeInfo.class);
-                    drasylNodeInfo.setIdentity(identityType);
-
-                    // update event struct
-                    nodeEventType.setNode(drasylNodeInfo);
-
-                    if (nodeEvent instanceof NodeUpEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_UP);
-                    }
-                    else if (nodeEvent instanceof NodeDownEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_DOWN);
-                    }
-                    else if (nodeEvent instanceof NodeOnlineEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_ONLINE);
-                    }
-                    else if (nodeEvent instanceof NodeOfflineEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_OFFLINE);
-                    }
-                    else if (nodeEvent instanceof NodeUnrecoverableErrorEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR);
-                    }
-                    else if (nodeEvent instanceof NodeNormalTerminationEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_NORMAL_TERMINATION);
-                    }
-                }
-                else if (event instanceof PeerEvent) {
-                    // peer events
-                    final PeerEvent peerEvent = (PeerEvent) event;
-
-                    // build peer struct
-                    final PeerType peerType = StackValue.get(PeerType.class);
-                    nodeEventType.setPeer(peerType);
-                    CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), peerType.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
-
-                    if (peerEvent instanceof PeerDirectEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_PEER_DIRECT);
-                    }
-                    else if (peerEvent instanceof PeerRelayEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_PEER_RELAY);
-                    }
-                    else if (peerEvent instanceof LongTimeEncryptionEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_LONG_TIME_ENCRYPTION);
-                    }
-                    else if (peerEvent instanceof PerfectForwardSecrecyEncryptionEvent) {
-                        nodeEventType.setEventCode(DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION);
-                    }
-                }
-                // message events
-                else if (event instanceof MessageEvent) {
-                    CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
-                    final String payload = ((MessageEvent) event).getPayload().toString();
-                    nodeEventType.setMessagePayloadLength(payload.length());
-                    final CTypeConversion.CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
-                    nodeEventType.setMessagePayload(cCharPointerHolder.get());
-                    nodeEventType.setEventCode(DRASYL_EVENT_MESSAGE);
-                }
-                else if (event instanceof InboundExceptionEvent) {
-                    nodeEventType.setEventCode(DRASYL_EVENT_INBOUND_EXCEPTION);
-                }
-                else {
-                    nodeEventType.setEventCode((short) 0);
-                }
-
-                pointer.invoke(thread, nodeEventType);
-            };
             return 0;
         }
         catch (final Exception e) {

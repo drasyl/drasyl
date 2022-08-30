@@ -62,8 +62,8 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
-    if (drasyl_node_set_event_handler(thread, &on_drasyl_event) != DRASYL_SUCCESS) {
-        fprintf(stderr, "could not set event handler\n");
+    if (drasyl_node_init(thread, &on_drasyl_event) != DRASYL_SUCCESS) {
+        fprintf(stderr, "could not init node\n");
         goto clean_up;
     }
 
