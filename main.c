@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "libdrasyl.h"
 #include "test.h"
+#include "libdrasyl.h"
 
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
     switch (event->event_code) {
@@ -66,6 +66,17 @@ int main(int argc, char **argv) {
         fprintf(stderr, "could not init node\n");
         goto clean_up;
     }
+
+    drasyl_identity_t *identity = NULL;
+    if (drasyl_node_identity(thread, &identity) != DRASYL_SUCCESS) {
+        fprintf(stderr, "could not retrieve node identity\n");
+        goto clean_up;
+    }
+    printf("My proof of work: %i\n", identity->proof_of_work);
+    printf("My public key sizeof: %i\n", sizeof(identity->identity_public_key));
+    printf("My public key: A%.64sZ\n", identity->identity_public_key); // FIXME: warum kaputt?
+    printf("My secret key sizeof: %i\n", sizeof(identity->identity_secret_key));
+    printf("My secret key: A%.128sZ\n", identity->identity_secret_key); // FIXME: warum kaputt?
 
     if (drasyl_node_start(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not start node\n");

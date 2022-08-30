@@ -68,8 +68,13 @@ def on_drasyl_event(thread, event):
 CMPFUNC = CFUNCTYPE(c_void_p, c_void_p, POINTER(drasyl_event_t))
 cmp_func = CMPFUNC(on_drasyl_event)
 
-if libdrasyl.drasyl_node_set_event_handler(thread, cmp_func) != 0:
-    print("could not set event handler")
+if libdrasyl.drasyl_node_init(thread, cmp_func) != 0:
+    print("could not init node")
+
+
+x = POINTER(drasyl_identity_t)()
+import code; code.interact(local=dict(globals(), **locals()))
+
 
 if libdrasyl.drasyl_node_start(thread) != 0:
     print("could not start node")

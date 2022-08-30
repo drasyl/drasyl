@@ -22,6 +22,7 @@
 package org.drasyl.node;
 
 import io.netty.util.concurrent.Future;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.node.event.Event;
@@ -48,6 +49,7 @@ import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
 import org.graalvm.nativeimage.c.struct.AllowNarrowingCast;
 import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CFieldAddress;
+import org.graalvm.nativeimage.c.struct.CPointerTo;
 import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
@@ -58,10 +60,11 @@ import org.graalvm.word.WordFactory;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SuppressWarnings("unused")
 @CContext(LibDrasyl.Directives.class)
@@ -141,9 +144,10 @@ public class LibDrasyl {
 
                         // build identity struct
                         final IdentityType identityType = StackValue.get(IdentityType.class);
-                        identityType.setProofOfWork(nodeEvent.getNode().getIdentity().getProofOfWork().intValue());
-                        CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentityPublicKey().toString(), identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
-                        CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentitySecretKey().toString(), identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
+                        final Identity identity = nodeEvent.getNode().getIdentity();
+                        identityType.setProofOfWork(identity.getProofOfWork().intValue());
+                        CTypeConversion.toCString(identity.getIdentityPublicKey().toString(), UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
+                        CTypeConversion.toCString(identity.getIdentitySecretKey().toUnmaskedString(), UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
 
                         // build node struct
                         final DrasylNodeInfo drasylNodeInfo = StackValue.get(DrasylNodeInfo.class);
@@ -178,7 +182,7 @@ public class LibDrasyl {
                         // build peer struct
                         final PeerType peerType = StackValue.get(PeerType.class);
                         nodeEventType.setPeer(peerType);
-                        CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), peerType.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
+                        CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), UTF_8, peerType.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
 
                         if (peerEvent instanceof PeerDirectEvent) {
                             nodeEventType.setEventCode(DRASYL_EVENT_PEER_DIRECT);
@@ -195,7 +199,7 @@ public class LibDrasyl {
                     }
                     // message events
                     else if (event instanceof MessageEvent) {
-                        CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
+                        CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), UTF_8, nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
                         final String payload = ((MessageEvent) event).getPayload().toString();
                         nodeEventType.setMessagePayloadLength(payload.length());
                         final CTypeConversion.CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
@@ -217,6 +221,31 @@ public class LibDrasyl {
         catch (final Exception e) {
             return -1;
         }
+    }
+
+    @SuppressWarnings({ "java:S1166", "java:S2221" })
+    @CEntryPoint(name = "drasyl_node_identity")
+    private static int nodeIdentity(final IsolateThread thread, final IdentityTypePointer identityTypePointer) {
+        if (node == null) {
+            return -1;
+        }
+
+        final Identity identity = node.identity();
+        final IdentityType identityType = StackValue.get(IdentityType.class);
+        identityType.setProofOfWork(identity.getProofOfWork().intValue());
+        final String pk = identity.getIdentityPublicKey().toString();
+        System.out.println("pk = " + pk);
+        System.out.println("pk.len = " + pk.length());
+        CTypeConversion.toCString(pk, UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
+        final String sk = identity.getIdentitySecretKey().toUnmaskedString();
+        System.out.println("sk = " + sk);
+        System.out.println("sk.len = " + sk.length());
+        CTypeConversion.toCString(sk, UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
+        System.out.println("pk read = '" +CTypeConversion.toJavaString(identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH, UTF_8) + "'");
+        System.out.println("sk read = '" +CTypeConversion.toJavaString(identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH, UTF_8) + "'");
+        identityTypePointer.write(identityType);
+
+        return 0;
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
@@ -281,8 +310,8 @@ public class LibDrasyl {
         }
 
         try {
-            final String recipient = CTypeConversion.toJavaString(recipientPointer, IDENTITY_PUBLIC_KEY_LENGTH);
-            final String payload = CTypeConversion.toJavaString(payloadPointer, payloadLength);
+            final String recipient = CTypeConversion.toJavaString(recipientPointer, IDENTITY_PUBLIC_KEY_LENGTH, UTF_8);
+            final String payload = CTypeConversion.toJavaString(payloadPointer, payloadLength, UTF_8);
             node.send(recipient, payload).toCompletableFuture().join();
             return 0;
         }
@@ -338,6 +367,13 @@ public class LibDrasyl {
 
         @CFieldAddress("identity_secret_key")
         CCharPointer getIdentitySecretKey();
+    }
+
+    @CPointerTo(IdentityType.class)
+    public interface IdentityTypePointer extends PointerBase {
+        IdentityType read();
+
+        void write(IdentityType identityType);
     }
 
     /**
