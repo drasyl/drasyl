@@ -127,7 +127,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        cause.printStackTrace();
         ctx.channel().close();
     }
 
