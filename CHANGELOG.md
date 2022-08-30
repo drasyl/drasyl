@@ -40,6 +40,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - CLI sub-command `tun`: Ensure that a route is fully removed upon request.
+- Fixed problem with UDP multicast server unable to join multicast group on dual stack systems (#215).
+- Future returned by `DrasylNode#shutdown` is no longer completed too early (#202).
 -
 -
 
