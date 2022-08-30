@@ -38,13 +38,13 @@ void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
             printf("Perfect forward secrecy encryption to peer `%.64s`.\n", event->peer->address);
             break;
         case DRASYL_EVENT_MESSAGE:
-            printf("Node received `%.64s` message `%.*s`.\n", event->message_sender, event->message_payload_len, event->message_payload);
+            printf("Node received from peer `%.64s` message `%.*s`.\n", event->message_sender, event->message_payload_len, event->message_payload);
             break;
         case DRASYL_EVENT_INBOUND_EXCEPTION:
             printf("Node faced error while receiving message.\n");
             break;
         default:
-            printf("event->event_code = %d\n", event->event_code);
+            printf("Unknown event code received: %d\n", event->event_code);
     }
 }
 
