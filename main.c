@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
     graal_isolate_t *isolate = NULL;
     graal_isolatethread_t *thread = NULL;
 
-    if (graal_create_isolate(NULL, &isolate, &thread) != DRASYL_SUCCESS) {
+    if (graal_create_isolate(NULL, &isolate, &thread) != 0) {
         fprintf(stderr, "initialization error\n");
         goto clean_up;
     }
@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 clean_up:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
-        goto clean_up;
+        return 1;
     }
 
     graal_tear_down_isolate(thread);
@@ -104,7 +104,7 @@ clean_up:
 clean_up_2:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
-        goto clean_up;
+        return 1;
     }
 
     graal_tear_down_isolate(thread);

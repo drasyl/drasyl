@@ -58,7 +58,6 @@ import org.graalvm.word.WordFactory;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -114,23 +113,6 @@ public class LibDrasyl {
                     new File("/Users/heiko/Development/drasyl/test.h"),
                     };
         }
-    }
-
-    @CEntryPoint(name = "filter_env")
-    private static int filterEnv(final IsolateThread thread, final CCharPointer cFilter) {
-        String filter = CTypeConversion.toJavaString(cFilter);
-        Map<String, String> env = System.getenv();
-        int count = 0;
-        for (String envName : env.keySet()) {
-            if (!envName.contains(filter)) {
-                continue;
-            }
-            System.out.format("%s=%s%n",
-                    envName,
-                    env.get(envName));
-            count++;
-        }
-        return count;
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
@@ -313,7 +295,7 @@ public class LibDrasyl {
     @CEntryPoint(name = "drasyl_node_is_online")
     private static int nodeIsOnline(final IsolateThread thread) {
         if (online) {
-            return -1;
+            return 1;
         }
         else {
             return 0;
