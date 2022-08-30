@@ -45,6 +45,7 @@ import org.graalvm.nativeimage.c.CContext;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
+import org.graalvm.nativeimage.c.struct.AllowNarrowingCast;
 import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CFieldAddress;
 import org.graalvm.nativeimage.c.struct.CStruct;
@@ -63,37 +64,39 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@SuppressWarnings("unused")
 @CContext(LibDrasyl.Directives.class)
 public class LibDrasyl {
-    public static final UnsignedWord IDENTITY_PUBLIC_KEY_LENGTH = WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING);
-    public static final UnsignedWord IDENTITY_SECRET_KEY_LENGTH = WordFactory.unsigned(IdentitySecretKey.KEY_LENGTH_AS_STRING);
+    private static final UnsignedWord IDENTITY_PUBLIC_KEY_LENGTH = WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING);
+    private static final UnsignedWord IDENTITY_SECRET_KEY_LENGTH = WordFactory.unsigned(IdentitySecretKey.KEY_LENGTH_AS_STRING);
 
     static {
-        Logger root = Logger.getLogger("");
-        root.setLevel(Level.OFF);
-        for (Handler handler : root.getHandlers()) {
-            handler.setLevel(Level.OFF);
+        // disable all logging
+        final Level level = Level.OFF;
+        final Logger logger = Logger.getLogger("");
+        logger.setLevel(level);
+        for (Handler handler : logger.getHandlers()) {
+            handler.setLevel(level);
         }
-        System.out.println("level set: " + Level.OFF);
     }
 
-    public static final int DRASYL_NODE_EVENT_NODE_UP = 100;
-    public static final int DRASYL_NODE_EVENT_NODE_DOWN = 101;
-    public static final int DRASYL_NODE_EVENT_NODE_ONLINE = 102;
-    public static final int DRASYL_NODE_EVENT_NODE_OFFLINE = 103;
-    public static final int DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR = 104;
-    public static final int DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION = 105;
-    public static final int DRASYL_NODE_EVENT_PEER_DIRECT = 200;
-    public static final int DRASYL_NODE_EVENT_PEER_RELAY = 201;
-    public static final int DRASYL_NODE_EVENT_LONG_TIME_ENCRYPTION = 202;
-    public static final int DRASYL_NODE_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION = 203;
-    public static final int DRASYL_NODE_EVENT_MESSAGE = 300;
-    public static final int DRASYL_NODE_EVENT_INBOUND_EXCEPTION = 400;
+    private static final short DRASYL_EVENT_NODE_UP = 10;
+    private static final short DRASYL_EVENT_NODE_DOWN = 11;
+    private static final short DRASYL_EVENT_NODE_ONLINE = 12;
+    private static final short DRASYL_EVENT_NODE_OFFLINE = 13;
+    private static final short DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR = 14;
+    private static final short DRASYL_EVENT_NODE_NORMAL_TERMINATION = 15;
+    private static final short DRASYL_EVENT_PEER_DIRECT = 20;
+    private static final short DRASYL_EVENT_PEER_RELAY = 21;
+    private static final short DRASYL_EVENT_LONG_TIME_ENCRYPTION = 22;
+    private static final short DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION = 23;
+    private static final short DRASYL_EVENT_MESSAGE = 30;
+    private static final short DRASYL_EVENT_INBOUND_EXCEPTION = 40;
     private static DrasylNode node;
     private static boolean online;
     private static Consumer<Event> eventConsumer;
 
-    public static final class Directives implements CContext.Directives {
+    static final class Directives implements CContext.Directives {
         @Override
         public List<String> getOptions() {
             File[] jnis = findJNIHeaders();
@@ -134,7 +137,7 @@ public class LibDrasyl {
     @CEntryPoint(name = "drasyl_node_start")
     private static int nodeStart(final IsolateThread thread) {
         if (node != null) {
-            return 1;
+            return -1;
         }
 
         try {
@@ -156,8 +159,7 @@ public class LibDrasyl {
             return 0;
         }
         catch (final Exception e) {
-            e.printStackTrace();
-            return 1;
+            return -1;
         }
     }
 
@@ -165,7 +167,7 @@ public class LibDrasyl {
     @CEntryPoint(name = "drasyl_node_stop")
     private static int nodeStop(final IsolateThread thread) {
         if (node == null) {
-            return 1;
+            return -1;
         }
 
         try {
@@ -174,7 +176,7 @@ public class LibDrasyl {
             return 0;
         }
         catch (final Exception e) {
-            return 1;
+            return -1;
         }
     }
 
@@ -187,57 +189,57 @@ public class LibDrasyl {
                 Thread.sleep(50);
             }
             if (!future.isSuccess()) {
-                return 1;
+                return -1;
             }
             return 0;
         }
         catch (final Exception e) {
-            return 1;
+            return -1;
         }
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
     @CEntryPoint(name = "drasyl_node_set_event_handler")
     private static int nodeSetEventHandler(final IsolateThread thread,
-                                           final DrasylNodeEventListener pointer) {
+                                           final EventListener pointer) {
         try {
             eventConsumer = event -> {
-                final DrasylNodeEvent drasylNodeEvent = StackValue.get(DrasylNodeEvent.class);
+                final NodeEventType nodeEventType = StackValue.get(NodeEventType.class);
 
                 if (event instanceof NodeEvent) {
                     // node events
                     final NodeEvent nodeEvent = (NodeEvent) event;
 
                     // build identity struct
-                    final DrasylIdentityInfo drasylIdentityInfo = StackValue.get(DrasylIdentityInfo.class);
-                    drasylIdentityInfo.setProofOfWork(nodeEvent.getNode().getIdentity().getProofOfWork().intValue());
-                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentityPublicKey().toString(), drasylIdentityInfo.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
-                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentitySecretKey().toString(), drasylIdentityInfo.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
+                    final IdentityType identityType = StackValue.get(IdentityType.class);
+                    identityType.setProofOfWork(nodeEvent.getNode().getIdentity().getProofOfWork().intValue());
+                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentityPublicKey().toString(), identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
+                    CTypeConversion.toCString(nodeEvent.getNode().getIdentity().getIdentitySecretKey().toString(), identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
 
                     // build node struct
                     final DrasylNodeInfo drasylNodeInfo = StackValue.get(DrasylNodeInfo.class);
-                    drasylNodeInfo.setIdentity(drasylIdentityInfo);
+                    drasylNodeInfo.setIdentity(identityType);
 
                     // update event struct
-                    drasylNodeEvent.setNode(drasylNodeInfo);
+                    nodeEventType.setNode(drasylNodeInfo);
 
                     if (nodeEvent instanceof NodeUpEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_UP);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_UP);
                     }
                     else if (nodeEvent instanceof NodeDownEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_DOWN);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_DOWN);
                     }
                     else if (nodeEvent instanceof NodeOnlineEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_ONLINE);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_ONLINE);
                     }
                     else if (nodeEvent instanceof NodeOfflineEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_OFFLINE);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_OFFLINE);
                     }
                     else if (nodeEvent instanceof NodeUnrecoverableErrorEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_UNRECOVERABLE_ERROR);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR);
                     }
                     else if (nodeEvent instanceof NodeNormalTerminationEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_NODE_NORMAL_TERMINATION);
+                        nodeEventType.setEventCode(DRASYL_EVENT_NODE_NORMAL_TERMINATION);
                     }
                 }
                 else if (event instanceof PeerEvent) {
@@ -245,45 +247,45 @@ public class LibDrasyl {
                     final PeerEvent peerEvent = (PeerEvent) event;
 
                     // build peer struct
-                    final DrasylPeerInfo drasylPeerInfo = StackValue.get(DrasylPeerInfo.class);
-                    drasylNodeEvent.setPeer(drasylPeerInfo);
-                    CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), drasylPeerInfo.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
+                    final PeerType peerType = StackValue.get(PeerType.class);
+                    nodeEventType.setPeer(peerType);
+                    CTypeConversion.toCString(peerEvent.getPeer().getAddress().toString(), peerType.getAddress(), IDENTITY_PUBLIC_KEY_LENGTH);
 
                     if (peerEvent instanceof PeerDirectEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PEER_DIRECT);
+                        nodeEventType.setEventCode(DRASYL_EVENT_PEER_DIRECT);
                     }
                     else if (peerEvent instanceof PeerRelayEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PEER_RELAY);
+                        nodeEventType.setEventCode(DRASYL_EVENT_PEER_RELAY);
                     }
                     else if (peerEvent instanceof LongTimeEncryptionEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_LONG_TIME_ENCRYPTION);
+                        nodeEventType.setEventCode(DRASYL_EVENT_LONG_TIME_ENCRYPTION);
                     }
                     else if (peerEvent instanceof PerfectForwardSecrecyEncryptionEvent) {
-                        drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION);
+                        nodeEventType.setEventCode(DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION);
                     }
                 }
                 // message events
                 else if (event instanceof MessageEvent) {
-                    CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), drasylNodeEvent.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
+                    CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
                     final String payload = ((MessageEvent) event).getPayload().toString();
-                    drasylNodeEvent.setMessagePayloadLength(payload.length());
+                    nodeEventType.setMessagePayloadLength(payload.length());
                     final CTypeConversion.CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
-                    drasylNodeEvent.setMessagePayload(cCharPointerHolder.get());
-                    drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_MESSAGE);
+                    nodeEventType.setMessagePayload(cCharPointerHolder.get());
+                    nodeEventType.setEventCode(DRASYL_EVENT_MESSAGE);
                 }
                 else if (event instanceof InboundExceptionEvent) {
-                    drasylNodeEvent.setEventCode(DRASYL_NODE_EVENT_INBOUND_EXCEPTION);
+                    nodeEventType.setEventCode(DRASYL_EVENT_INBOUND_EXCEPTION);
                 }
                 else {
-                    drasylNodeEvent.setEventCode(0);
+                    nodeEventType.setEventCode((short) 0);
                 }
 
-                pointer.invoke(thread, drasylNodeEvent);
+                pointer.invoke(thread, nodeEventType);
             };
             return 0;
         }
         catch (final Exception e) {
-            return 1;
+            return -1;
         }
     }
 
@@ -294,24 +296,24 @@ public class LibDrasyl {
                                 final CCharPointer payloadPointer,
                                 final UnsignedWord payloadLength) {
         if (node == null) {
-            return 1;
+            return -1;
         }
 
         try {
-            final String recipient = CTypeConversion.toJavaString(recipientPointer, WordFactory.unsigned(64));
+            final String recipient = CTypeConversion.toJavaString(recipientPointer, IDENTITY_PUBLIC_KEY_LENGTH);
             final String payload = CTypeConversion.toJavaString(payloadPointer, payloadLength);
             node.send(recipient, payload).toCompletableFuture().join();
             return 0;
         }
         catch (final Exception e) {
-            return 1;
+            return -1;
         }
     }
 
     @CEntryPoint(name = "drasyl_node_is_online")
     private static int nodeIsOnline(final IsolateThread thread) {
         if (online) {
-            return 1;
+            return -1;
         }
         else {
             return 0;
@@ -329,23 +331,21 @@ public class LibDrasyl {
         }
     }
 
-    public interface DrasylNodeEventListener extends CFunctionPointer {
+    /**
+     * C function with parameters {@code (graal_isolatethread_t*, drasyl_event_t*)} that consumes
+     * {@link Event}s.
+     */
+    private interface EventListener extends CFunctionPointer {
         @SuppressWarnings("UnusedReturnValue")
         @InvokeCFunctionPointer
-        int invoke(IsolateThread thread, DrasylNodeEvent event);
+        int invoke(IsolateThread thread, NodeEventType event);
     }
 
-    @CStruct(value = "drasyl_node")
-    public interface DrasylNodeInfo extends PointerBase {
-        @CField("identity")
-        PointerBase getIdentity();
-
-        @CField("identity")
-        void setIdentity(PointerBase value);
-    }
-
-    @CStruct(value = "drasyl_identity")
-    public interface DrasylIdentityInfo extends PointerBase {
+    /**
+     * C struct representing {@link org.drasyl.identity.Identity}.
+     */
+    @CStruct(value = "drasyl_identity_t")
+    private interface IdentityType extends PointerBase {
         @CField("proof_of_work")
         int getProofOfWork();
 
@@ -359,19 +359,35 @@ public class LibDrasyl {
         CCharPointer getIdentitySecretKey();
     }
 
-    @CStruct(value = "drasyl_peer")
-    public interface DrasylPeerInfo extends PointerBase {
+    /**
+     * C struct representing {@link org.drasyl.node.event.Node}.
+     */
+    @CStruct(value = "drasyl_node_t")
+    private interface DrasylNodeInfo extends PointerBase {
+        @CField("identity")
+        PointerBase getIdentity();
+
+        @CField("identity")
+        void setIdentity(PointerBase value);
+    }
+
+    /**
+     * C struct representing {@link org.drasyl.node.event.Peer}.
+     */
+    @CStruct(value = "drasyl_peer_t")
+    private interface PeerType extends PointerBase {
         @CFieldAddress("address")
         CCharPointer getAddress();
     }
 
-    @CStruct(value = "drasyl_node_event")
-    public interface DrasylNodeEvent extends PointerBase {
+    /**
+     * C struct representing {@link org.drasyl.node.event.NodeEvent}.
+     */
+    @CStruct(value = "drasyl_event_t")
+    private interface NodeEventType extends PointerBase {
+        @AllowNarrowingCast
         @CField("event_code")
-        int getEventCode();
-
-        @CField("event_code")
-        void setEventCode(int value);
+        void setEventCode(short value);
 
         @CField("node")
         PointerBase getNode();
@@ -389,14 +405,9 @@ public class LibDrasyl {
         CCharPointer getMessageSender();
 
         @CField("message_payload")
-        CCharPointer getMessagePayload();
-
-        @CField("message_payload")
         void setMessagePayload(CCharPointer value);
 
-        @CField("message_payload_len")
-        int getMessagePayloadLength();
-
+        @AllowNarrowingCast
         @CField("message_payload_len")
         void setMessagePayloadLength(int value);
     }
