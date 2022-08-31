@@ -72,11 +72,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "could not retrieve node identity\n");
         goto clean_up;
     }
-    printf("My proof of work: %i\n", identity->proof_of_work);
-    printf("My public key sizeof: %i\n", sizeof(identity->identity_public_key));
-    printf("My public key: %.64s\n", identity->identity_public_key);
-    printf("My secret key sizeof: %i\n", sizeof(identity->identity_secret_key));
-    printf("My secret key: %.128s\n", identity->identity_secret_key);
+    printf("My address: %.64s\n", identity->identity_public_key);
 
     // try to free memory
     free(identity);
@@ -111,7 +107,7 @@ clean_up:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
         graal_tear_down_isolate(thread);
-        
+
         return 1;
     }
 
@@ -121,7 +117,7 @@ clean_up_2:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
         graal_tear_down_isolate(thread);
-        
+
         return 1;
     }
 

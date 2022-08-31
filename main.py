@@ -1,4 +1,5 @@
 from ctypes import *
+import time
 
 libdrasyl = cdll.LoadLibrary("libdrasyl.dylib")
 
@@ -71,25 +72,27 @@ cmp_func = CMPFUNC(on_drasyl_event)
 if libdrasyl.drasyl_node_init(thread, cmp_func) != 0:
     print("could not init node")
 
+identity = POINTER(drasyl_identity_t)()
+if libdrasyl.drasyl_node_identity(thread, byref(identity)) != 0:
+    print("could not retrieve identity")
 
-x = POINTER(drasyl_identity_t)()
-import code; code.interact(local=dict(globals(), **locals()))
-
+print("My address: %s" % identity[0].identity_public_key.decode('UTF-8'))
 
 if libdrasyl.drasyl_node_start(thread) != 0:
     print("could not start node")
 
 print("Wait for node to become online...")
 while libdrasyl.drasyl_node_is_online(thread) != 0:
-    libdrasyl.drasyl_util_delay(thread, 50)
+    #libdrasyl.drasyl_util_delay(thread, 50)
+    time.sleep(0.05)
 
 recipient = "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054".encode("UTF-8")
 payload = "hello there".encode("UTF-8")
 if libdrasyl.drasyl_node_send(thread, recipient, payload, len(payload)) != 0:
     print("could not send message")
 
-
-libdrasyl.drasyl_util_delay(thread, 10000)
+#libdrasyl.drasyl_util_delay(thread, 10000)
+time.sleep(10)
 
 if libdrasyl.drasyl_node_stop(thread) != 0:
     print("could not stop node")
