@@ -58,7 +58,6 @@ import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordFactory;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -77,7 +76,7 @@ public class LibDrasyl {
         final Level level = Level.OFF;
         final Logger logger = Logger.getLogger("");
         logger.setLevel(level);
-        for (Handler handler : logger.getHandlers()) {
+        for (final Handler handler : logger.getHandlers()) {
             handler.setLevel(level);
         }
     }
@@ -223,9 +222,44 @@ public class LibDrasyl {
         }
     }
 
+    @CEntryPoint(name = "free_event")
+    protected static void freeEvent(@SuppressWarnings("unused") final IsolateThread thread,
+                                    final NodeEventType event) {
+//        switch (event.getEventCode()) {
+//            case DRASYL_EVENT_NODE_UP:
+//            case DRASYL_EVENT_NODE_DOWN:
+//            case DRASYL_EVENT_NODE_ONLINE:
+//            case DRASYL_EVENT_NODE_OFFLINE:
+//            case DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR:
+//            case DRASYL_EVENT_NODE_NORMAL_TERMINATION: {
+//                UnmanagedMemory.free(event.getNode().getIdentity().getIdentityPublicKey());
+//                UnmanagedMemory.free(event.getNode().getIdentity().getIdentitySecretKey());
+//                UnmanagedMemory.free(event.getNode());
+//                break;
+//            }
+//            case DRASYL_EVENT_PEER_DIRECT:
+//            case DRASYL_EVENT_PEER_RELAY:
+//            case DRASYL_EVENT_LONG_TIME_ENCRYPTION:
+//            case DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION: {
+//                UnmanagedMemory.free(event.getPeer().getAddress());
+//                UnmanagedMemory.free(event.getPeer());
+//                break;
+//            }
+//            case DRASYL_EVENT_MESSAGE:
+//                UnmanagedMemory.free(event.getMessagePayload());
+//                UnmanagedMemory.free(event);
+//                break;
+//            default:
+//                break;
+//        }
+//
+//        UnmanagedMemory.free(event);
+    }
+
     @SuppressWarnings({ "java:S1166", "java:S2221" })
     @CEntryPoint(name = "drasyl_node_identity")
-    private static int nodeIdentity(final IsolateThread thread, final IdentityTypePointer identityTypePointer) {
+    private static int nodeIdentity(final IsolateThread thread,
+                                    final IdentityTypePointer identityTypePointer) {
         if (node == null) {
             return -1;
         }
@@ -241,8 +275,8 @@ public class LibDrasyl {
         System.out.println("sk = " + sk);
         System.out.println("sk.len = " + sk.length());
         CTypeConversion.toCString(sk, UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
-        System.out.println("pk read = '" +CTypeConversion.toJavaString(identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH, UTF_8) + "'");
-        System.out.println("sk read = '" +CTypeConversion.toJavaString(identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH, UTF_8) + "'");
+        System.out.println("pk read = '" + CTypeConversion.toJavaString(identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH, UTF_8) + "'");
+        System.out.println("sk read = '" + CTypeConversion.toJavaString(identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH, UTF_8) + "'");
         identityTypePointer.write(identityType);
 
         return 0;
