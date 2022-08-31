@@ -4,7 +4,7 @@ gu install llvm
 gu install llvm-toolchain
 
 # build libdrasyl.h
-./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-node --also-make package
+./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-shared-library --also-make package
 
 # build example
 $GRAALVM_HOME/languages/llvm/native/bin/clang -I ./ -L ./ -l drasyl -Wl,-rpath ./ -o main main.c

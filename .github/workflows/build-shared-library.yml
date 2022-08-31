@@ -1,0 +1,167 @@
+name: Build CLI
+
+on:
+  push:
+    branches:
+      - '*'
+#      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+#  schedule:
+#    - cron:  '0 6 * * 1' # every monday 6am
+
+jobs:
+  java:
+    name: Java
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 11
+          distribution: 'adopt'
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build with Maven
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true -Dmaven.javadoc.skip=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-shared-library --also-make package
+      - name: Build hash
+        run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+      - name: Publish artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Java
+          path: drasyl-*.zip
+      - name: Publish artifact hash
+        uses: actions/upload-artifact@v3
+        with:
+          name: Java-Hash
+          path: drasyl-*.zip.sha256
+
+  native-image:
+    strategy:
+      fail-fast: false
+      matrix:
+        job_name:
+          - linux-amd64
+#          - linux-arm64
+          - macos-amd64
+          - windows-amd64
+
+        include:
+          - job_name: linux-amd64
+            os: ubuntu-latest
+
+#          - job_name: linux-arm64
+#            os: [ self-hosted, linux, ARM64 ]
+
+          - job_name: macos-amd64
+            os: macOS-latest
+
+          - job_name: windows-amd64
+            os: windows-latest
+
+    name: ${{ matrix.job_name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # git checkout
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      # install build dependencies (windows only)
+      - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
+        uses: ilammy/msvc-dev-cmd@v1.11.0
+        if: matrix.os == 'windows-latest'
+
+      - name: Configure MSBuild on Windows
+        uses: microsoft/setup-msbuild@v1
+        if: matrix.os == 'windows-latest'
+
+      # set up graalvm
+      - name: Set up GraalVM environment
+        uses: ayltai/setup-graalvm@v1
+        with:
+          java-version: 11
+          graalvm-version: 22.2.0
+          native-image: true
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      # build native image
+      - name: Build Native Image
+        env:
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true -Dmaven.javadoc.skip=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+
+      # package native image
+      - name: Build Package on *nix x86
+        run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
+          cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
+          for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+        if: success() && matrix.os == 'ubuntu-latest'
+
+      - name: Build Package on *nix ARM
+        run: |
+          sudo apt-get install zip -y
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
+          cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
+          for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+        if: success() && matrix.job_name == 'linux-arm64'
+
+      - name: Build Package on Mac x86
+        run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
+          mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          mv ./graal_isolate.h ./libdrasyl.dylib ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
+          cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
+          zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
+          for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+        if: success() && matrix.os == 'macOS-latest'
+
+      - name: Build Package on Windows
+        run: |
+          $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
+          New-Item "./libdrasyl-${VERSION}-${{ matrix.job_name }}/" -ItemType Directory -ea 0
+          Move-Item -Path ./graal_isolate.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Move-Item -Path ./libdrasyl.dll -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Move-Item -Path ./libdrasyl.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Move-Item -Path ./drasyl-shared-library/src/main/c/drasyl.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Copy-Item "./LICENSE" -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Compress-Archive -Path "./libdrasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip
+          CertUtil -hashfile "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
+        if: success() && matrix.os == 'windows-latest'
+
+      # publish artifact
+      - name: Publish artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.job_name }}
+          path: libdrasyl-*-${{ matrix.job_name }}.zip
+
+      # publish artifact hash
+      - name: Publish artifact hash
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.job_name }}-Hash
+          path: libdrasyl-*-${{ matrix.job_name }}.zip.sha256
