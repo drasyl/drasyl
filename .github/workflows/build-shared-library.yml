@@ -71,7 +71,7 @@ jobs:
       - name: Build Native Image
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true -Dmaven.javadoc.skip=true"
-        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-shared-library --also-make package
 
       # package native image
       - name: Build Package on *nix x86
@@ -112,6 +112,7 @@ jobs:
         run: |
           $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
           New-Item "./libdrasyl-${VERSION}-${{ matrix.job_name }}/" -ItemType Directory -ea 0
+          Get-ChildItem -Path .
           Move-Item -Path ./graal_isolate.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.dll -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
