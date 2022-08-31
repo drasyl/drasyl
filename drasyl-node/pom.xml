@@ -160,6 +160,7 @@
                             <imageName>libdrasyl</imageName>
                             <sharedLibrary>true</sharedLibrary>
                             <outputDirectory>${project.parent.basedir}</outputDirectory>
+                            <buildArgs>-DheaderPath=${project.basedir}/src/main/c</buildArgs>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -107,6 +107,8 @@ int main(int argc, char **argv) {
 clean_up:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
+        graal_tear_down_isolate(thread);
+        
         return 1;
     }
 
@@ -115,6 +117,8 @@ clean_up:
 clean_up_2:
     if (drasyl_shutdown_event_loop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not shutdown event loop\n");
+        graal_tear_down_isolate(thread);
+        
         return 1;
     }
 

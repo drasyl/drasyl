@@ -100,19 +100,19 @@ public class LibDrasyl {
     static final class Directives implements CContext.Directives {
         @Override
         public List<String> getOptions() {
-            File[] jnis = findJNIHeaders();
-            return Arrays.asList("-I" + jnis[0].getParent());
+            final File[] jnis = findJNIHeaders();
+            return List.of("-I" + jnis[0].getParent());
         }
 
         @Override
         public List<String> getHeaderFiles() {
-            File[] jnis = findJNIHeaders();
-            return Arrays.asList("<" + jnis[0] + ">");
+            final File[] jnis = findJNIHeaders();
+            return List.of("<" + jnis[0] + ">");
         }
 
         private static File[] findJNIHeaders() throws IllegalStateException {
             return new File[]{
-                    new File("/Users/heiko/Development/drasyl/test.h"),
+                    new File(System.getProperty("headerPath") + "/drasyl.h"),
                     };
         }
     }
