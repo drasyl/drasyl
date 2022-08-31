@@ -79,7 +79,7 @@ jobs:
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
           ls -l .
-          mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
+          mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
@@ -90,7 +90,6 @@ jobs:
           sudo apt-get install zip -y
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
-          ls -l .
           mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
@@ -101,11 +100,10 @@ jobs:
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
-          ls -l .
           mv ./graal_isolate.h ./libdrasyl.dylib ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
-          for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
+          for file in libdrasyl-*.zip; do shasum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'macOS-latest'
 
       - name: Build Package on Windows
@@ -115,6 +113,7 @@ jobs:
           Get-ChildItem -Path .
           Move-Item -Path ./graal_isolate.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.dll -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
+          Move-Item -Path ./libdrasyl.lib -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./drasyl-shared-library/src/main/c/drasyl.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Copy-Item "./LICENSE" -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
