@@ -269,16 +269,8 @@ public class LibDrasyl {
         final Identity identity = node.identity();
         final IdentityType identityType = UnmanagedMemory.calloc(SizeOf.get(IdentityType.class));
         identityType.setProofOfWork(identity.getProofOfWork().intValue());
-        final String pk = identity.getIdentityPublicKey().toString();
-        System.out.println("pk = " + pk);
-        System.out.println("pk.len = " + pk.length());
-        CTypeConversion.toCString(pk, UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
-        final String sk = identity.getIdentitySecretKey().toUnmaskedString();
-        System.out.println("sk = " + sk);
-        System.out.println("sk.len = " + sk.length());
-        CTypeConversion.toCString(sk, UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
-        System.out.println("pk read = '" + CTypeConversion.toJavaString(identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH, UTF_8) + "'");
-        System.out.println("sk read = '" + CTypeConversion.toJavaString(identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH, UTF_8) + "'");
+        CTypeConversion.toCString(identity.getIdentityPublicKey().toString(), UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
+        CTypeConversion.toCString(identity.getIdentitySecretKey().toUnmaskedString(), UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
         identityTypePointer.write(identityType);
 
         return 0;
