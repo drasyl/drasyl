@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "test.h"
+#include "drasyl.h"
 #include "libdrasyl.h"
 
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
