@@ -462,4 +462,8 @@ public class LibDrasyl {
         @CField("message_payload_len")
         void setMessagePayloadLength(int value);
     }
+
+    private LibDrasyl() {
+
+    }
 }
