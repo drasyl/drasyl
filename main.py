@@ -72,9 +72,11 @@ if libdrasyl.drasyl_node_init(thread, cmp_func) != 0:
     print("could not init node")
 
 
-x = POINTER(drasyl_identity_t)()
-import code; code.interact(local=dict(globals(), **locals()))
+identity = POINTER(drasyl_identity_t)()
+if libdrasyl.drasyl_node_identity(thread, byref(identity)) != 0:
+    print("could not retrieve identity")
 
+print("My address: %s" % identity[0].identity_public_key.decode('UTF-8'))
 
 if libdrasyl.drasyl_node_start(thread) != 0:
     print("could not start node")
