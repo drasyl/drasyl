@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "drasyl.h"
+#include "./drasyl-node/src/main/c/drasyl.h"
 #include "libdrasyl.h"
 
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
@@ -49,11 +49,6 @@ void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <filter>\n", argv[0]);
-        exit(1);
-    }
-
     graal_isolate_t *isolate = NULL;
     graal_isolatethread_t *thread = NULL;
 
