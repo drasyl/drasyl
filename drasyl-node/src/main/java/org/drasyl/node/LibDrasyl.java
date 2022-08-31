@@ -42,6 +42,7 @@ import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.node.event.PerfectForwardSecrecyEncryptionEvent;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.StackValue;
+import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.CContext;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -51,6 +52,7 @@ import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CFieldAddress;
 import org.graalvm.nativeimage.c.struct.CPointerTo;
 import org.graalvm.nativeimage.c.struct.CStruct;
+import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.PointerBase;
@@ -265,7 +267,7 @@ public class LibDrasyl {
         }
 
         final Identity identity = node.identity();
-        final IdentityType identityType = StackValue.get(IdentityType.class);
+        final IdentityType identityType = UnmanagedMemory.calloc(SizeOf.get(IdentityType.class));
         identityType.setProofOfWork(identity.getProofOfWork().intValue());
         final String pk = identity.getIdentityPublicKey().toString();
         System.out.println("pk = " + pk);
