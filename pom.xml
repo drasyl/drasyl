@@ -90,6 +90,7 @@
         <module>drasyl-performance-tests</module>
         <module>drasyl-plugin-groups-client</module>
         <module>drasyl-plugin-groups-manager</module>
+        <module>drasyl-shared-library</module>
         <module>drasyl-all</module>
         <module>drasyl-node</module>
     </modules>
