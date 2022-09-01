@@ -40,6 +40,7 @@ import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerEvent;
 import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.node.event.PerfectForwardSecrecyEncryptionEvent;
+import org.drasyl.util.Version;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.c.CContext;
@@ -62,12 +63,15 @@ import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @SuppressWarnings("unused")
 @CContext(LibDrasyl.Directives.class)
-public class LibDrasyl {
+final class LibDrasyl {
+    public static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+).(\\d+).(\\d+)");
     private static final UnsignedWord IDENTITY_PUBLIC_KEY_LENGTH = WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING);
     private static final UnsignedWord IDENTITY_SECRET_KEY_LENGTH = WordFactory.unsigned(IdentitySecretKey.KEY_LENGTH_AS_STRING);
 
@@ -114,6 +118,10 @@ public class LibDrasyl {
                     new File(System.getProperty("headerPath") + "/drasyl.h"),
                     };
         }
+    }
+
+    private LibDrasyl() {
+
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
@@ -320,6 +328,35 @@ public class LibDrasyl {
         }
     }
 
+    @SuppressWarnings({
+            "java:S109",
+            "java:S112",
+            "java:S2142",
+            "SameParameterValue",
+            "UnusedReturnValue"
+    })
+    @CEntryPoint(name = "drasyl_node_version")
+    private static int nodeVersion(final IsolateThread thread) {
+        final Version version = Version.identify().get("drasyl-node");
+        if (version != null) {
+            final String versionString = version.version();
+            Matcher matcher = VERSION_PATTERN.matcher(versionString);
+            if (matcher.find()) {
+                // we assume that each version will never exceed 1 byte
+                final int majorVersion = Integer.parseInt(matcher.group(1)) & 0xff;
+                final int minorVersion = Integer.parseInt(matcher.group(2)) & 0xff;
+                final int patchVersion = Integer.parseInt(matcher.group(3)) & 0xff;
+
+                // most significant byte -> major version
+                // 2nd most significant byte -> minor version
+                // 3rd most significant byte -> patch version
+                // least significant byte -> unused
+                return (majorVersion << 24) | (minorVersion << 16) | (patchVersion << 8);
+            }
+        }
+        return -1;
+    }
+
     @SuppressWarnings({ "java:S112", "java:S2142" })
     @CEntryPoint(name = "drasyl_util_delay")
     private static void utilDelay(final IsolateThread thread, final long millis) {
@@ -417,9 +454,5 @@ public class LibDrasyl {
         @AllowNarrowingCast
         @CField("message_payload_len")
         void setMessagePayloadLength(int value);
-    }
-
-    private LibDrasyl() {
-
     }
 }

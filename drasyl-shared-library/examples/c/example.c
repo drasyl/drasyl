@@ -57,6 +57,9 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
+    int version = drasyl_node_version(thread);
+    printf("drasyl node version: %i.%i.%i\n", (version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff);
+
     if (drasyl_node_init(thread, &on_drasyl_event) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not init node\n");
         goto clean_up;
