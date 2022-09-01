@@ -231,7 +231,6 @@ public class LibDrasyl {
         }
 
         final Identity identity = node.identity();
-        //final IdentityType identityType = identityTypePointer.read();
         identityType.setProofOfWork(identity.getProofOfWork().intValue());
         CTypeConversion.toCString(identity.getIdentityPublicKey().toString(), UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
         CTypeConversion.toCString(identity.getIdentitySecretKey().toUnmaskedString(), UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
