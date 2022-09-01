@@ -119,14 +119,14 @@ def drasyl_node_identity():
     global _thread
     _ensure_thread_created()
 
-    identity = POINTER(drasyl_identity_t)()
+    identity = drasyl_identity_t()
     if _libdrasyl.drasyl_node_identity(_thread, byref(identity)) != 0:
         raise BaseException("could not retrieve identity")
 
     return _dotdict({
-        'proof_of_work': identity[0].proof_of_work,
-        'identity_public_key': identity[0].identity_public_key.decode('UTF-8'),
-        'identity_secret_key': identity[0].identity_secret_key.decode('UTF-8')
+        'proof_of_work': identity.proof_of_work,
+        'identity_public_key': identity.identity_public_key.decode('UTF-8'),
+        'identity_secret_key': identity.identity_secret_key.decode('UTF-8')
     })
 
 def drasyl_node_start():

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "./drasyl-node/src/main/c/drasyl.h"
+#include "./drasyl-shared-library/src/main/c/drasyl.h"
 #include "libdrasyl.h"
 
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
@@ -62,8 +62,8 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
-    drasyl_identity_t *identity = NULL;
-    if (drasyl_node_identity(thread, &identity) != DRASYL_SUCCESS) {
+    drasyl_identity_t *identity = calloc(1, sizeof(drasyl_identity_t));
+    if (drasyl_node_identity(thread, identity) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not retrieve node identity\n");
         goto clean_up;
     }

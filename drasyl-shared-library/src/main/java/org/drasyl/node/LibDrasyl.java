@@ -42,7 +42,6 @@ import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.node.event.PerfectForwardSecrecyEncryptionEvent;
 import org.graalvm.nativeimage.IsolateThread;
 import org.graalvm.nativeimage.StackValue;
-import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.CContext;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
@@ -52,7 +51,6 @@ import org.graalvm.nativeimage.c.struct.CField;
 import org.graalvm.nativeimage.c.struct.CFieldAddress;
 import org.graalvm.nativeimage.c.struct.CPointerTo;
 import org.graalvm.nativeimage.c.struct.CStruct;
-import org.graalvm.nativeimage.c.struct.SizeOf;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.word.PointerBase;
@@ -224,54 +222,19 @@ public class LibDrasyl {
         }
     }
 
-    @CEntryPoint(name = "free_event")
-    protected static void freeEvent(@SuppressWarnings("unused") final IsolateThread thread,
-                                    final NodeEventType event) {
-//        switch (event.getEventCode()) {
-//            case DRASYL_EVENT_NODE_UP:
-//            case DRASYL_EVENT_NODE_DOWN:
-//            case DRASYL_EVENT_NODE_ONLINE:
-//            case DRASYL_EVENT_NODE_OFFLINE:
-//            case DRASYL_EVENT_NODE_UNRECOVERABLE_ERROR:
-//            case DRASYL_EVENT_NODE_NORMAL_TERMINATION: {
-//                UnmanagedMemory.free(event.getNode().getIdentity().getIdentityPublicKey());
-//                UnmanagedMemory.free(event.getNode().getIdentity().getIdentitySecretKey());
-//                UnmanagedMemory.free(event.getNode());
-//                break;
-//            }
-//            case DRASYL_EVENT_PEER_DIRECT:
-//            case DRASYL_EVENT_PEER_RELAY:
-//            case DRASYL_EVENT_LONG_TIME_ENCRYPTION:
-//            case DRASYL_EVENT_PERFECT_FORWARD_SECRECY_ENCRYPTION: {
-//                UnmanagedMemory.free(event.getPeer().getAddress());
-//                UnmanagedMemory.free(event.getPeer());
-//                break;
-//            }
-//            case DRASYL_EVENT_MESSAGE:
-//                UnmanagedMemory.free(event.getMessagePayload());
-//                UnmanagedMemory.free(event);
-//                break;
-//            default:
-//                break;
-//        }
-//
-//        UnmanagedMemory.free(event);
-    }
-
     @SuppressWarnings({ "java:S1166", "java:S2221" })
     @CEntryPoint(name = "drasyl_node_identity")
     private static int nodeIdentity(final IsolateThread thread,
-                                    final IdentityTypePointer identityTypePointer) {
+                                    final IdentityType identityType) {
         if (node == null) {
             return -1;
         }
 
         final Identity identity = node.identity();
-        final IdentityType identityType = UnmanagedMemory.calloc(SizeOf.get(IdentityType.class));
+        //final IdentityType identityType = identityTypePointer.read();
         identityType.setProofOfWork(identity.getProofOfWork().intValue());
         CTypeConversion.toCString(identity.getIdentityPublicKey().toString(), UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
         CTypeConversion.toCString(identity.getIdentitySecretKey().toUnmaskedString(), UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
-        identityTypePointer.write(identityType);
 
         return 0;
     }
