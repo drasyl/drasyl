@@ -99,7 +99,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     @Override
     protected void handshakeCompleted(final DrasylChannel ch) {
-
+        // noop
     }
 
     protected void arqStage(final DrasylChannel ch) {
@@ -127,7 +127,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        cause.printStackTrace();
+        LOG.debug("Handshake failed: ", cause);
         ctx.channel().close();
     }
 
