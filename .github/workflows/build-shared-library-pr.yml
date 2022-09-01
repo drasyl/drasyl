@@ -1,11 +1,7 @@
 name: Build Shared Library
 
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - 'v*'
+  pull_request:
   workflow_dispatch:
 #  schedule:
 #    - cron:  '0 6 * * 1' # every monday 6am
@@ -17,16 +13,12 @@ jobs:
       matrix:
         job_name:
           - linux-amd64
-          - linux-arm64
           - macos-amd64
           - windows-amd64
 
         include:
           - job_name: linux-amd64
             os: ubuntu-latest
-
-          - job_name: linux-arm64
-            os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -83,17 +75,6 @@ jobs:
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.os == 'ubuntu-latest'
-
-      - name: Build Package on *nix ARM
-        run: |
-          sudo apt-get install zip -y
-          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
-          mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
-          mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
-          cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
-          zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
-          for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.job_name == 'linux-arm64'
 
       - name: Build Package on Mac x86
         run: |
