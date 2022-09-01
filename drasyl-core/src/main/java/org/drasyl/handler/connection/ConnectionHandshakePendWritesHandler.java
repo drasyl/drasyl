@@ -54,7 +54,9 @@ public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
 
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
-        pendingWrites.removeAndFailAll(new Exception(ConnectionHandshakePendWritesHandler.class.getSimpleName() + " that has pend this write has been removed from channel before connection handshake was completed."));
+        if (pendingWrites != null) {
+            pendingWrites.removeAndFailAll(new Exception(ConnectionHandshakePendWritesHandler.class.getSimpleName() + " that has pend this write has been removed from channel before connection handshake was completed."));
+        }
     }
 
     @Override
