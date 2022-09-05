@@ -482,7 +482,7 @@ class DrasylConfigTest {
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteLocalHostDiscoveryLeaseTime(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMtu(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMaxContentLength(-1)::build);
-            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageComposedMessageTransferTimeout(Duration.ZERO)::build);
+            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageComposedMessageTransferTimeout(Duration.ofSeconds(-1))::build);
         }
     }
 }
