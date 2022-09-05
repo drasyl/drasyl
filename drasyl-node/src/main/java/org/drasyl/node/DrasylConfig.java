@@ -953,7 +953,7 @@ public abstract class DrasylConfig {
             if (config.getRemoteMessageMaxContentLength() < 0) {
                 throw new DrasylConfigException(REMOTE_MESSAGE_MAX_CONTENT_LENGTH, "Must be a non-negative value.");
             }
-            if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative() || config.getRemoteMessageComposedMessageTransferTimeout().isZero()) {
+            if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative()) {
                 throw new DrasylConfigException(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT, "Must be a positive value.");
             }
             if (config.getChannelInactivityTimeout().isNegative()) {
