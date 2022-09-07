@@ -28,14 +28,10 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
-import org.drasyl.cli.converter.IdentitySecretKeyConverter;
-import org.drasyl.cli.converter.ProofOfWorkConverter;
 import org.drasyl.cli.node.ActivityPattern.Activity;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverTcpServerInitializer;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
@@ -104,20 +100,6 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
             defaultValue = "1000"
     )
     protected int rcEventsBufferSize;
-    @Option(
-            names = { "-sk", "--secret-key" },
-            description = "Secret part of the identity. This option also requires the proof-of-work option!",
-            paramLabel = "<secret key>",
-            converter = IdentitySecretKeyConverter.class
-    )
-    protected IdentitySecretKey secretKey;
-    @Option(
-            names = { "-pow", "--proof-of-work" },
-            description = "Proof-of-Work of the identity. This option also requires the secret-key option!",
-            paramLabel = "<proof-of-work>",
-            converter = ProofOfWorkConverter.class
-    )
-    protected ProofOfWork proofOfWork;
 
     @Override
     public Integer call() throws DrasylException {
@@ -127,17 +109,11 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
         DrasylNode node = null;
         Channel rcChannel = null;
         try {
-            final DrasylConfig.Builder config = getDrasylConfig();
-
-            if (secretKey != null && proofOfWork != null) {
-                config.identitySecretKey(secretKey)
-                        .identityPublicKey(secretKey.derivePublicKey())
-                        .identityProofOfWork(proofOfWork);
-            }
+            final DrasylConfig config = getDrasylConfig();
 
             final Queue<Event> events = new ArrayDeque();
             final CompletableFuture<Void> running = new CompletableFuture<>();
-            node = new DrasylNode(config.build()) {
+            node = new DrasylNode(config) {
                 @Override
                 public void onEvent(final @NonNull Event event) {
                     LOG.info("Event received: {}", event);
@@ -237,17 +213,17 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     }
 
     /**
-     * Tries to load a {@link DrasylConfig.Builder} from file defined in {@link #configFile}. If the
-     * does not exist, the default configuration will be used.
+     * Tries to load a {@link DrasylConfig} from file defined in {@link #configFile}. If the does
+     * not exist, the default configuration will be used.
      */
-    protected DrasylConfig.Builder getDrasylConfig() {
+    protected DrasylConfig getDrasylConfig() {
         if (configFile.exists()) {
             log().info("Using config file from `{}`.", configFile);
-            return DrasylConfig.newBuilder(DrasylConfig.parseFile(configFile));
+            return DrasylConfig.parseFile(configFile);
         }
         else {
             log().info("Config file `{}` not found - using defaults.", configFile);
-            return DrasylConfig.newBuilder();
+            return DrasylConfig.of();
         }
     }
 
