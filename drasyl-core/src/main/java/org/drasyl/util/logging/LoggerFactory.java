@@ -24,7 +24,7 @@ package org.drasyl.util.logging;
 /**
  * Provides loggers. If available, <a href="https://www.slf4j.org/">SLF4J</a> loggers are used.
  * Otherwise, <a href="https://java.sun.com/javase/6/docs/technotes/guides/logging/index.html">java.util.logging</a>
- * loggers are used..
+ * loggers are used.
  */
 @SuppressWarnings("java:S118")
 public abstract class LoggerFactory {
