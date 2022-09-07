@@ -91,7 +91,6 @@ public class StartNodes {
                         final Identity identity = identityProvider.obtain();
                         final DrasylConfig config = DrasylConfig.newBuilder()
                                 .identitySecretKey(identity.getIdentitySecretKey())
-                                .identityPublicKey(identity.getIdentityPublicKey())
                                 .identityProofOfWork(identity.getProofOfWork())
                                 .remoteExposeEnabled(false)
                                 .intraVmDiscoveryEnabled(false)
