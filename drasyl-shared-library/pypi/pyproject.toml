@@ -6,18 +6,36 @@ build-backend = "hatchling.build"
 name = "drasyl"
 version = "0.9.0"
 authors = [
-  { name="Example Author", email="author@example.com" },
+  { name="Heiko Bornholdt", email="bornholdt@informatik.uni-hamburg.de" },
+  { name="Kevin Röbert", email="roebert@informatik.uni-hamburg.de" },
 ]
-description = "A small example package"
+description = "drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications"
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.7"
 classifiers = [
-    "Programming Language :: Python :: 3",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Communications",
+    "Topic :: Internet",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Security :: Cryptography",
+    "Topic :: System :: Networking",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Programming Language :: C",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C",
+    "Programming Language :: Python",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/pypa/sampleproject"
-"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+"Documentation" = "https://docs.drasyl.org/"
+"Source" = "https://github.com/drasyl-overlay/drasyl"
+"Changelog" = "https://github.com/drasyl-overlay/drasyl/blob/master/CHANGELOG.md"
+"Homepage" = "https://drasyl.org"
+"Issue Tracker" = "https://github.com/drasyl-overlay/drasyl/issues"
