@@ -68,7 +68,7 @@ jobs:
           - job_name: windows-amd64
             os: windows-latest
 
-    name: ${{ matrix.job_name }}
+    name: Build CLI on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
 
     steps:
