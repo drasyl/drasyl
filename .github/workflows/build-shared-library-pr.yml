@@ -105,14 +105,14 @@ jobs:
       - name: Publish artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.job_name }}
+          name: shared-library-${{ matrix.job_name }}
           path: libdrasyl-*-${{ matrix.job_name }}.zip
 
       # publish artifact hash
       - name: Publish artifact hash
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.job_name }}-Hash
+          name: shared-library-${{ matrix.job_name }}-Hash
           path: libdrasyl-*-${{ matrix.job_name }}.zip.sha256
 
   wheels:

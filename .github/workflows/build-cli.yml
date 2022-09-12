@@ -152,14 +152,14 @@ jobs:
       - name: Publish artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.job_name }}
+          name: cli-${{ matrix.job_name }}
           path: drasyl-*-${{ matrix.job_name }}.zip
 
       # publish artifact hash
       - name: Publish artifact hash
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.job_name }}-Hash
+          name: cli-${{ matrix.job_name }}-Hash
           path: drasyl-*-${{ matrix.job_name }}.zip.sha256
 
   docker:
