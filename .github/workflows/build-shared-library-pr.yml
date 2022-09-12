@@ -148,10 +148,10 @@ jobs:
 
       - name: Build wheels
         working-directory: ./drasyl-shared-library/pypi
-        run: python -m cibuildwheel --output-dir wheelhouse
-        # to supply options, put them in 'env', like:
-        # env:
-        #   CIBW_SOME_OPTION: value
+        run: python -m cibuildwheel --output-dir ../../wheelhouse/
+        env:
+          CIBW_ARCHS: auto
+          CIBW_BUILD: cp310-*
 
       - uses: actions/upload-artifact@v3
         with:
