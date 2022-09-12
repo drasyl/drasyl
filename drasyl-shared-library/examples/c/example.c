@@ -8,12 +8,6 @@
 void console_logger(graal_isolatethread_t* thread, int level, unsigned long time, char* message) {
     char level_marker[6];
     switch (level) {
-        case DRASYL_LOG_TRACE:
-            strcpy(level_marker, "TRACE");
-            break;
-        case DRASYL_LOG_DEBUG:
-            strcpy(level_marker, "DEBUG");
-            break;
         case DRASYL_LOG_INFO:
             strcpy(level_marker, "INFO ");
             break;
@@ -82,7 +76,10 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
-    drasyl_set_logger(thread, &console_logger);
+    if (drasyl_set_logger(thread, &console_logger) != 0) {
+        fprintf(stderr, "could net set logger\n");
+        goto clean_up;
+    }
 
     int version = drasyl_node_version(thread);
     printf("drasyl node version: %i.%i.%i\n", (version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff);

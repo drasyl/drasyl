@@ -25,7 +25,21 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.node.event.*;
+import org.drasyl.node.event.Event;
+import org.drasyl.node.event.InboundExceptionEvent;
+import org.drasyl.node.event.LongTimeEncryptionEvent;
+import org.drasyl.node.event.MessageEvent;
+import org.drasyl.node.event.NodeDownEvent;
+import org.drasyl.node.event.NodeEvent;
+import org.drasyl.node.event.NodeNormalTerminationEvent;
+import org.drasyl.node.event.NodeOfflineEvent;
+import org.drasyl.node.event.NodeOnlineEvent;
+import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.node.event.PeerDirectEvent;
+import org.drasyl.node.event.PeerEvent;
+import org.drasyl.node.event.PeerRelayEvent;
+import org.drasyl.node.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -35,7 +49,11 @@ import org.graalvm.nativeimage.c.CContext;
 import org.graalvm.nativeimage.c.function.CEntryPoint;
 import org.graalvm.nativeimage.c.function.CFunctionPointer;
 import org.graalvm.nativeimage.c.function.InvokeCFunctionPointer;
-import org.graalvm.nativeimage.c.struct.*;
+import org.graalvm.nativeimage.c.struct.AllowNarrowingCast;
+import org.graalvm.nativeimage.c.struct.CField;
+import org.graalvm.nativeimage.c.struct.CFieldAddress;
+import org.graalvm.nativeimage.c.struct.CPointerTo;
+import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
 import org.graalvm.nativeimage.c.type.CTypeConversion.CCharPointerHolder;
@@ -116,6 +134,93 @@ final class LibDrasyl {
 
     private LibDrasyl() {
 
+    }
+
+    @SuppressWarnings({
+            "java:S109",
+            "java:S112",
+            "java:S2142",
+            "SameParameterValue",
+            "UnusedReturnValue"
+    })
+    @CEntryPoint(name = "drasyl_node_version")
+    private static int nodeVersion(final IsolateThread thread) {
+        final Version version = Version.identify().get("drasyl-node");
+        if (version != null) {
+            final String versionString = version.version();
+            Matcher matcher = VERSION_PATTERN.matcher(versionString);
+            if (matcher.find()) {
+                // we assume that each version will never exceed 1 byte
+                final int majorVersion = Integer.parseInt(matcher.group(1)) & 0xff;
+                final int minorVersion = Integer.parseInt(matcher.group(2)) & 0xff;
+                final int patchVersion = Integer.parseInt(matcher.group(3)) & 0xff;
+
+                // most significant byte -> major version
+                // 2nd most significant byte -> minor version
+                // 3rd most significant byte -> patch version
+                // least significant byte -> unused
+                return (majorVersion << 24) | (minorVersion << 16) | (patchVersion << 8);
+            }
+        }
+        return DRASYL_ERROR_GENERAL;
+    }
+
+    @CEntryPoint(name = "drasyl_set_logger")
+    private static int setLogger(final IsolateThread thread,
+                                 final LogMessageListener listenerPointer) {
+        java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
+        logger.setLevel(Level.FINEST);
+        logger.addHandler(new Handler() {
+            @SuppressWarnings("java:S6213")
+            @Override
+            public void publish(final LogRecord record) {
+                final int level;
+                if (record.getLevel() == Level.FINEST) {
+                    level = DRASYL_LOG_TRACE;
+                }
+                else if (record.getLevel() == Level.FINER) {
+                    level = DRASYL_LOG_DEBUG;
+                }
+                else if (record.getLevel() == Level.INFO) {
+                    level = DRASYL_LOG_INFO;
+                }
+                else if (record.getLevel() == Level.WARNING) {
+                    level = DRASYL_LOG_WARN;
+                }
+                else if (record.getLevel() == Level.SEVERE) {
+                    level = DRASYL_LOG_ERROR;
+                }
+                else {
+                    level = 0;
+                }
+
+                if (level != 0) {
+                    String message = record.getMessage();
+                    if (record.getThrown() != null) {
+                        final StringWriter stringWriter = new StringWriter();
+                        final PrintWriter printWriter = new PrintWriter(stringWriter);
+                        record.getThrown().printStackTrace(printWriter);
+                        message = message + System.lineSeparator() + stringWriter;
+                    }
+
+                    final CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(message);
+
+                    listenerPointer.invoke(thread, level, record.getMillis(), cCharPointerHolder.get());
+                }
+            }
+
+            @Override
+            public void flush() {
+                // unused
+            }
+
+            @Override
+            public void close() throws SecurityException {
+                // unused
+            }
+        });
+
+        return DRASYL_SUCCESS;
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221", "java:S3776" })
@@ -342,35 +447,6 @@ final class LibDrasyl {
         }
     }
 
-    @SuppressWarnings({
-            "java:S109",
-            "java:S112",
-            "java:S2142",
-            "SameParameterValue",
-            "UnusedReturnValue"
-    })
-    @CEntryPoint(name = "drasyl_node_version")
-    private static int nodeVersion(final IsolateThread thread) {
-        final Version version = Version.identify().get("drasyl-node");
-        if (version != null) {
-            final String versionString = version.version();
-            Matcher matcher = VERSION_PATTERN.matcher(versionString);
-            if (matcher.find()) {
-                // we assume that each version will never exceed 1 byte
-                final int majorVersion = Integer.parseInt(matcher.group(1)) & 0xff;
-                final int minorVersion = Integer.parseInt(matcher.group(2)) & 0xff;
-                final int patchVersion = Integer.parseInt(matcher.group(3)) & 0xff;
-
-                // most significant byte -> major version
-                // 2nd most significant byte -> minor version
-                // 3rd most significant byte -> patch version
-                // least significant byte -> unused
-                return (majorVersion << 24) | (minorVersion << 16) | (patchVersion << 8);
-            }
-        }
-        return DRASYL_ERROR_GENERAL;
-    }
-
     @SuppressWarnings({ "java:S112", "java:S2142" })
     @CEntryPoint(name = "drasyl_sleep")
     private static void sleep(final IsolateThread thread, final long millis) {
@@ -380,64 +456,6 @@ final class LibDrasyl {
         catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @CEntryPoint(name = "drasyl_set_logger")
-    private static int setLogger(final IsolateThread thread,
-                                 final LogMessageListener listenerPointer) {
-        java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
-        logger.setLevel(Level.FINEST);
-        logger.addHandler(new Handler() {
-            @SuppressWarnings("java:S6213")
-            @Override
-            public void publish(final LogRecord record) {
-                final int level;
-                if (record.getLevel() == Level.FINEST) {
-                    level = DRASYL_LOG_TRACE;
-                }
-                else if (record.getLevel() == Level.FINER) {
-                    level = DRASYL_LOG_DEBUG;
-                }
-                else if (record.getLevel() == Level.INFO) {
-                    level = DRASYL_LOG_INFO;
-                }
-                else if (record.getLevel() == Level.WARNING) {
-                    level = DRASYL_LOG_WARN;
-                }
-                else if (record.getLevel() == Level.SEVERE) {
-                    level = DRASYL_LOG_ERROR;
-                }
-                else {
-                    level = 0;
-                }
-
-                if (level != 0) {
-                    String message = record.getMessage();
-                    if (record.getThrown() != null) {
-                        final StringWriter stringWriter = new StringWriter();
-                        final PrintWriter printWriter = new PrintWriter(stringWriter);
-                        record.getThrown().printStackTrace(printWriter);
-                        message = message + System.lineSeparator() + stringWriter;
-                    }
-
-                    final CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(message);
-
-                    listenerPointer.invoke(thread, level, record.getMillis(), cCharPointerHolder.get());
-                }
-            }
-
-            @Override
-            public void flush() {
-                // unused
-            }
-
-            @Override
-            public void close() throws SecurityException {
-                // unused
-            }
-        });
-
-        return DRASYL_SUCCESS;
     }
 
     /**
