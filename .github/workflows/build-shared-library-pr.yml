@@ -148,8 +148,8 @@ jobs:
 
       - name: Extract shared library on *nix/Mac
         run: |
-          ls -l .
-          unzip libdrasyl-*-${{ matrix.job_name }}.zip ./drasyl-shared-library/pypi/src/drasyl/
+          ls -R ./drasyl-shared-library
+          unzip libdrasyl-*.zip ./drasyl-shared-library/pypi/src/drasyl/
           ls -l ./drasyl-shared-library/pypi/src/drasyl/
         if: success() && matrix.os != 'windows-latest'
 
