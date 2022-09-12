@@ -145,10 +145,10 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: shared-library-${{ matrix.job_name }}
-          path: libdrasyl-*-${{ matrix.job_name }}.zip
 
       - name: Extract shared library on *nix/Mac
         run: |
+          ls -l .
           unzip libdrasyl-*-${{ matrix.job_name }}.zip ./drasyl-shared-library/pypi/src/drasyl/
           ls -l ./drasyl-shared-library/pypi/src/drasyl/
         if: success() && matrix.os != 'windows-latest'
