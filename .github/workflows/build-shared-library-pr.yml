@@ -122,7 +122,7 @@ jobs:
         job_name:
 #          - linux-amd64
           - macos-amd64
-          - windows-amd64
+#          - windows-amd64
 
         include:
 #          - job_name: linux-amd64
@@ -131,16 +131,28 @@ jobs:
           - job_name: macos-amd64
             os: macOS-latest
 
-          - job_name: windows-amd64
-            os: windows-latest
+#          - job_name: windows-amd64
+#            os: windows-latest
 
     name: Build wheels on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
+    needs: native-image
 
     steps:
       - uses: actions/checkout@v3
 
-      # Used to host cibuildwheel
+      - name: Download shared library artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: shared-library-${{ matrix.job_name }}
+          path: libdrasyl-*-${{ matrix.job_name }}.zip
+
+      - name: Extract shared library on *nix/Mac
+        run: |
+          unzip libdrasyl-*-${{ matrix.job_name }}.zip ./drasyl-shared-library/pypi/src/drasyl/
+          ls -l ./drasyl-shared-library/pypi/src/drasyl/
+        if: success() && matrix.os != 'windows-latest'
+
       - uses: actions/setup-python@v3
 
       - name: Install cibuildwheel
@@ -155,4 +167,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: shared-library-wheel-${{ matrix.job_name }}
           path: ./wheelhouse/*.whl
