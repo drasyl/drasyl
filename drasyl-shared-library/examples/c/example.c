@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "./drasyl-shared-library/src/main/c/drasyl.h"
 #include "libdrasyl.h"
@@ -7,6 +8,12 @@
 void console_logger(graal_isolatethread_t* thread, int level, unsigned long time, char* message) {
     char level_marker[6];
     switch (level) {
+        case DRASYL_LOG_TRACE:
+            strcpy(level_marker, "TRACE");
+            break;
+        case DRASYL_LOG_DEBUG:
+            strcpy(level_marker, "DEBUG");
+            break;
         case DRASYL_LOG_INFO:
             strcpy(level_marker, "INFO ");
             break;
@@ -80,7 +87,8 @@ int main(int argc, char **argv) {
     int version = drasyl_node_version(thread);
     printf("drasyl node version: %i.%i.%i\n", (version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff);
 
-    if (drasyl_node_init(thread, &on_drasyl_event) != DRASYL_SUCCESS) {
+    char config[] = "my-node.conf"; // TODO: memory never released?
+    if (drasyl_node_init(thread, config, sizeof(config), &on_drasyl_event) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not init node\n");
         goto clean_up;
     }
@@ -105,8 +113,8 @@ int main(int argc, char **argv) {
         drasyl_sleep(thread, 50);
     }
 
-    char recipient[] = "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054";
-    char payload[] = "hello there";
+    char recipient[] = "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054"; // TODO: memory never released?
+    char payload[] = "hello there"; // TODO: memory never released?
     if (drasyl_node_send(thread, recipient, payload, sizeof(payload)) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not send message\n");
         goto clean_up;
