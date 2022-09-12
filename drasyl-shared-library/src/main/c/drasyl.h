@@ -25,10 +25,18 @@
 #define IDENTITY_PRIVATE_KEY_LENGTH_AS_STRING   128
 
 typedef enum {
+    DRASYL_LOG_TRACE = 300,
+    DRASYL_LOG_DEBUG = 500,
+    DRASYL_LOG_INFO = 800,
+    DRASYL_LOG_WARN = 900,
+    DRASYL_LOG_ERROR = 1000
+} drasyl_log_level_t;
+
+typedef enum {
     /** No error */
     DRASYL_SUCCESS = 0,
-    /** Unknown error */
-    DRASYL_ERROR_UNKNOWN = -99
+    /** General error */
+    DRASYL_ERROR_GENERAL = -1
 } drasyl_error_code_t;
 
 typedef enum {

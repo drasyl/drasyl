@@ -4,6 +4,24 @@
 #include "./drasyl-shared-library/src/main/c/drasyl.h"
 #include "libdrasyl.h"
 
+void console_logger(graal_isolatethread_t* thread, int level, unsigned long time, char* message) {
+    char level_marker[6];
+    switch (level) {
+        case DRASYL_LOG_INFO:
+            strcpy(level_marker, "INFO ");
+            break;
+        case DRASYL_LOG_WARN:
+            strcpy(level_marker, "WARN ");
+            break;
+        case DRASYL_LOG_ERROR:
+            strcpy(level_marker, "ERROR");
+        break;
+            default:
+            return;
+    }
+    printf("%ld %s : %s\n", time, level_marker, message);
+}
+
 void on_drasyl_event(graal_isolatethread_t* thread, drasyl_event_t* event) {
     switch (event->event_code) {
         case DRASYL_EVENT_NODE_UP:
@@ -57,6 +75,8 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
+    drasyl_set_logger(thread, &console_logger);
+
     int version = drasyl_node_version(thread);
     printf("drasyl node version: %i.%i.%i\n", (version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff);
 
@@ -82,7 +102,7 @@ int main(int argc, char **argv) {
 
     printf("Wait for node to become online...\n");
     while (!drasyl_node_is_online(thread)) {
-        drasyl_util_delay(thread, 50);
+        drasyl_sleep(thread, 50);
     }
 
     char recipient[] = "78483253e5dbbe8f401dd1bd1ef0b6f1830c46e411f611dc93a664c1e44cc054";
@@ -92,7 +112,7 @@ int main(int argc, char **argv) {
         goto clean_up;
     }
 
-    drasyl_util_delay(thread, 10000);
+    drasyl_sleep(thread, 10000);
 
     if (drasyl_node_stop(thread) != DRASYL_SUCCESS) {
         fprintf(stderr, "could not stop node\n");

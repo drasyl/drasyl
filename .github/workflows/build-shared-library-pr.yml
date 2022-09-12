@@ -1,4 +1,4 @@
-name: Build Shared Library
+name: Build Shared Library (Pull Request)
 
 on:
   pull_request:

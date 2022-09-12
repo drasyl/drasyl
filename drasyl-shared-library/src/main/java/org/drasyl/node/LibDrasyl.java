@@ -54,6 +54,7 @@ import org.graalvm.nativeimage.c.struct.CPointerTo;
 import org.graalvm.nativeimage.c.struct.CStruct;
 import org.graalvm.nativeimage.c.type.CCharPointer;
 import org.graalvm.nativeimage.c.type.CTypeConversion;
+import org.graalvm.nativeimage.c.type.CTypeConversion.CCharPointerHolder;
 import org.graalvm.word.PointerBase;
 import org.graalvm.word.UnsignedWord;
 import org.graalvm.word.WordFactory;
@@ -62,6 +63,7 @@ import java.io.File;
 import java.util.List;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,20 +73,26 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 @SuppressWarnings("unused")
 @CContext(LibDrasyl.Directives.class)
 final class LibDrasyl {
-    public static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+).(\\d+).(\\d+)");
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+).(\\d+).(\\d+)");
     private static final UnsignedWord IDENTITY_PUBLIC_KEY_LENGTH = WordFactory.unsigned(IdentityPublicKey.KEY_LENGTH_AS_STRING);
     private static final UnsignedWord IDENTITY_SECRET_KEY_LENGTH = WordFactory.unsigned(IdentitySecretKey.KEY_LENGTH_AS_STRING);
+    private static final short DRASYL_SUCCESS = 0;
+    private static final short DRASYL_ERROR_GENERAL = -1;
 
     static {
         // disable all logging
-        final Level level = Level.OFF;
         final Logger logger = Logger.getLogger("");
-        logger.setLevel(level);
+        logger.setLevel(Level.OFF);
         for (final Handler handler : logger.getHandlers()) {
-            handler.setLevel(level);
+            logger.removeHandler(handler);
         }
     }
 
+    private static final short DRASYL_LOG_TRACE = 300;
+    private static final short DRASYL_LOG_DEBUG = 500;
+    private static final short DRASYL_LOG_INFO = 800;
+    private static final short DRASYL_LOG_WARN = 900;
+    private static final short DRASYL_LOG_ERROR = 1000;
     private static final short DRASYL_EVENT_NODE_UP = 10;
     private static final short DRASYL_EVENT_NODE_DOWN = 11;
     private static final short DRASYL_EVENT_NODE_ONLINE = 12;
@@ -129,7 +137,7 @@ final class LibDrasyl {
     private static int nodeInit(final IsolateThread thread,
                                 final EventListener pointer) {
         if (node != null) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
 
         try {
@@ -209,7 +217,7 @@ final class LibDrasyl {
                         CTypeConversion.toCString(((MessageEvent) event).getSender().toString(), UTF_8, nodeEventType.getMessageSender(), IDENTITY_PUBLIC_KEY_LENGTH);
                         final String payload = ((MessageEvent) event).getPayload().toString();
                         nodeEventType.setMessagePayloadLength(payload.length());
-                        final CTypeConversion.CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
+                        final CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(payload);
                         nodeEventType.setMessagePayload(cCharPointerHolder.get());
                         nodeEventType.setEventCode(DRASYL_EVENT_MESSAGE);
                     }
@@ -223,10 +231,10 @@ final class LibDrasyl {
                     pointer.invoke(thread, nodeEventType);
                 }
             };
-            return 0;
+            return DRASYL_SUCCESS;
         }
         catch (final Exception e) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
     }
 
@@ -235,7 +243,7 @@ final class LibDrasyl {
     private static int nodeIdentity(final IsolateThread thread,
                                     final IdentityType identityType) {
         if (node == null) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
 
         final Identity identity = node.identity();
@@ -243,22 +251,22 @@ final class LibDrasyl {
         CTypeConversion.toCString(identity.getIdentityPublicKey().toString(), UTF_8, identityType.getIdentityPublicKey(), IDENTITY_PUBLIC_KEY_LENGTH);
         CTypeConversion.toCString(identity.getIdentitySecretKey().toUnmaskedString(), UTF_8, identityType.getIdentitySecretKey(), IDENTITY_SECRET_KEY_LENGTH);
 
-        return 0;
+        return DRASYL_SUCCESS;
     }
 
     @SuppressWarnings({ "java:S1166", "java:S2221" })
     @CEntryPoint(name = "drasyl_node_start")
     private static int nodeStart(final IsolateThread thread) {
         if (node == null) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
 
         try {
             node.start().toCompletableFuture().join();
-            return 0;
+            return DRASYL_SUCCESS;
         }
         catch (final Exception e) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
     }
 
@@ -266,16 +274,16 @@ final class LibDrasyl {
     @CEntryPoint(name = "drasyl_node_stop")
     private static int nodeStop(final IsolateThread thread) {
         if (node == null) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
 
         try {
             node.shutdown().toCompletableFuture().join();
             node = null;
-            return 0;
+            return DRASYL_SUCCESS;
         }
         catch (final Exception e) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
     }
 
@@ -288,12 +296,12 @@ final class LibDrasyl {
                 Thread.sleep(50);
             }
             if (!future.isSuccess()) {
-                return -1;
+                return DRASYL_ERROR_GENERAL;
             }
-            return 0;
+            return DRASYL_SUCCESS;
         }
         catch (final Exception e) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
     }
 
@@ -304,17 +312,17 @@ final class LibDrasyl {
                                 final CCharPointer payloadPointer,
                                 final UnsignedWord payloadLength) {
         if (node == null) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
 
         try {
             final String recipient = CTypeConversion.toJavaString(recipientPointer, IDENTITY_PUBLIC_KEY_LENGTH, UTF_8);
             final String payload = CTypeConversion.toJavaString(payloadPointer, payloadLength, UTF_8);
             node.send(recipient, payload).toCompletableFuture().join();
-            return 0;
+            return DRASYL_SUCCESS;
         }
         catch (final Exception e) {
-            return -1;
+            return DRASYL_ERROR_GENERAL;
         }
     }
 
@@ -354,18 +362,78 @@ final class LibDrasyl {
                 return (majorVersion << 24) | (minorVersion << 16) | (patchVersion << 8);
             }
         }
-        return -1;
+        return DRASYL_ERROR_GENERAL;
     }
 
     @SuppressWarnings({ "java:S112", "java:S2142" })
-    @CEntryPoint(name = "drasyl_util_delay")
-    private static void utilDelay(final IsolateThread thread, final long millis) {
+    @CEntryPoint(name = "drasyl_sleep")
+    private static void sleep(final IsolateThread thread, final long millis) {
         try {
             Thread.sleep(millis);
         }
         catch (final InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @CEntryPoint(name = "drasyl_set_logger")
+    private static int setLogger(final IsolateThread thread,
+                                 final LogMessageListener pointer) {
+        Logger logger = Logger.getLogger("");
+        logger.setLevel(Level.FINEST);
+        logger.addHandler(new Handler() {
+            @SuppressWarnings("java:S6213")
+            @Override
+            public void publish(final LogRecord record) {
+                final int level;
+                if (record.getLevel() == Level.FINEST) {
+                    level = DRASYL_LOG_TRACE;
+                }
+                else if (record.getLevel() == Level.FINER) {
+                    level = DRASYL_LOG_DEBUG;
+                }
+                else if (record.getLevel() == Level.INFO) {
+                    level = DRASYL_LOG_INFO;
+                }
+                else if (record.getLevel() == Level.WARNING) {
+                    level = DRASYL_LOG_WARN;
+                }
+                else if (record.getLevel() == Level.SEVERE) {
+                    level = DRASYL_LOG_ERROR;
+                }
+                else {
+                    level = 0;
+                }
+
+                if (level != 0) {
+                    final CCharPointerHolder cCharPointerHolder = CTypeConversion.toCString(record.getMessage());
+
+                    pointer.invoke(thread, level, record.getMillis(), cCharPointerHolder.get());
+                }
+            }
+
+            @Override
+            public void flush() {
+                // unused
+            }
+
+            @Override
+            public void close() throws SecurityException {
+                // unused
+            }
+        });
+
+        return DRASYL_SUCCESS;
+    }
+
+    /**
+     * C function with parameters {@code (graal_isolatethread_t*, drasyl_event_t*)} that consumes
+     * log messages.
+     */
+    private interface LogMessageListener extends CFunctionPointer {
+        @SuppressWarnings("UnusedReturnValue")
+        @InvokeCFunctionPointer
+        int invoke(IsolateThread thread, int level, long time, CCharPointer message);
     }
 
     /**
