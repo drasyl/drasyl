@@ -1,3 +1,5 @@
+from setuptools import setup
+
 try:
     from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
     class bdist_wheel(_bdist_wheel):
@@ -8,6 +10,5 @@ except ImportError:
     bdist_wheel = None
 
 setup(
-    # ...
     cmdclass={'bdist_wheel': bdist_wheel},
 )
