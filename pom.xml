@@ -71,7 +71,7 @@
         <developer>
             <id>roebert</id>
             <name>Kevin Röbert</name>
-            <email>6roebert@informatik.uni-hamburg.de</email>
+            <email>roebert@informatik.uni-hamburg.de</email>
             <organization>Heiko Bornholdt and Kevin Röbert</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
 			<roles>
@@ -127,11 +127,11 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.11</logback.version>
         <junit.version>5.9.0</junit.version>
-        <mockito.version>4.7.0</mockito.version>
-        <jackson.version>2.13.3</jackson.version>
+        <mockito.version>4.8.0</mockito.version>
+        <jackson.version>2.13.4</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.80.Final</netty.version>
+        <netty.version>4.1.81.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>1.7.36</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
@@ -365,7 +365,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.1.1</version>
+                    <version>4.7.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -558,7 +558,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.1.1</version>
+                <version>4.7.2.0</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>

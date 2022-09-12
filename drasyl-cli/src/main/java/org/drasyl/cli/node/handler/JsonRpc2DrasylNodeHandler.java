@@ -94,19 +94,17 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
         if (requestId != null) {
             future.toCompletableFuture().whenComplete((unused, e) -> {
                 LOG.trace("Node started.");
-                if (ctx.channel().isActive()) {
-                    final JsonRpc2Response response;
-                    if (e == null) {
-                        response = new JsonRpc2Response("", requestId);
-                    }
-                    else {
-                        final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
-                        response = new JsonRpc2Response(error, requestId);
-                    }
-
-                    LOG.trace("Send response `{}`.", response);
-                    ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                final JsonRpc2Response response;
+                if (e == null) {
+                    response = new JsonRpc2Response("", requestId);
                 }
+                else {
+                    final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
+                    response = new JsonRpc2Response(error, requestId);
+                }
+
+                LOG.trace("Send response `{}`.", response);
+                ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
             });
         }
     }
@@ -119,19 +117,17 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
         if (requestId != null) {
             future.toCompletableFuture().whenComplete((unused, e) -> {
                 LOG.trace("Node shut down.");
-                if (ctx.channel().isActive()) {
-                    final JsonRpc2Response response;
-                    if (e == null) {
-                        response = new JsonRpc2Response("", requestId);
-                    }
-                    else {
-                        final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
-                        response = new JsonRpc2Response(error, requestId);
-                    }
-
-                    LOG.trace("Send response `{}`.", response);
-                    ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                final JsonRpc2Response response;
+                if (e == null) {
+                    response = new JsonRpc2Response("", requestId);
                 }
+                else {
+                    final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
+                    response = new JsonRpc2Response(error, requestId);
+                }
+
+                LOG.trace("Send response `{}`.", response);
+                ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
             });
         }
     }
@@ -176,19 +172,17 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
         if (requestId != null) {
             future.toCompletableFuture().whenComplete((unused, e) -> {
                 LOG.trace("Message to `{}` sent", recipient);
-                if (ctx.channel().isActive()) {
-                    final JsonRpc2Response response;
-                    if (e == null) {
-                        response = new JsonRpc2Response("", requestId);
-                    }
-                    else {
-                        final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
-                        response = new JsonRpc2Response(error, requestId);
-                    }
-
-                    LOG.trace("Send response `{}`.", response);
-                    ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                final JsonRpc2Response response;
+                if (e == null) {
+                    response = new JsonRpc2Response("", requestId);
                 }
+                else {
+                    final JsonRpc2Error error = new JsonRpc2Error(1, e.getMessage());
+                    response = new JsonRpc2Response(error, requestId);
+                }
+
+                LOG.trace("Send response `{}`.", response);
+                ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
             });
         }
     }

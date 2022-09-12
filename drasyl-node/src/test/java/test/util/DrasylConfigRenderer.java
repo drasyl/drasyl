@@ -25,7 +25,6 @@ import org.drasyl.node.DrasylConfig;
 
 import static java.util.stream.Collectors.toSet;
 import static org.drasyl.node.DrasylConfig.IDENTITY_PROOF_OF_WORK;
-import static org.drasyl.node.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.node.DrasylConfig.IDENTITY_SECRET_KEY;
 import static org.drasyl.node.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.node.DrasylConfig.NETWORK_ID;
@@ -46,9 +45,6 @@ public final class DrasylConfigRenderer {
         builder.append(NETWORK_ID + " = ").append(config.getNetworkId()).append("\n");
         if (config.getIdentityProofOfWork() != null) {
             builder.append(IDENTITY_PROOF_OF_WORK + " = ").append(config.getIdentityProofOfWork().intValue()).append("\n");
-        }
-        if (config.getIdentityPublicKey() != null) {
-            builder.append(IDENTITY_PUBLIC_KEY + " = ").append(config.getIdentityPublicKey().toString()).append("\n");
         }
         if (config.getIdentitySecretKey() != null) {
             builder.append(IDENTITY_SECRET_KEY + " = ").append(config.getIdentitySecretKey().toUnmaskedString()).append("\n");
