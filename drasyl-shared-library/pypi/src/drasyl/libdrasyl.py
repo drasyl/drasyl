@@ -24,7 +24,8 @@ import time
 import os
 import sys
 
-_libdrasyl = cdll.LoadLibrary(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libdrasyl.dylib"))
+_dir = os.path.dirname(os.path.realpath(__file__))
+_libdrasyl = cdll.LoadLibrary(os.path.join(_dir, "libdrasyl", "libdrasyl.dylib"))
 
 #
 # structs

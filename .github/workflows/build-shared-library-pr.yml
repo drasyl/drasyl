@@ -148,9 +148,8 @@ jobs:
 
       - name: Extract shared library on *nix/Mac
         run: |
-          ls -R ./drasyl-shared-library
-          unzip libdrasyl-*.zip ./drasyl-shared-library/pypi/src/drasyl/
-          ls -l ./drasyl-shared-library/pypi/src/drasyl/
+          unzip libdrasyl-*.zip -d ./drasyl-shared-library/pypi/src/drasyl/
+          mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl
         if: success() && matrix.os != 'windows-latest'
 
       - uses: actions/setup-python@v3
