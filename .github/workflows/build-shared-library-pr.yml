@@ -148,14 +148,14 @@ jobs:
       - name: Extract shared library on *nix/Mac
         run: |
           unzip libdrasyl-*.zip -d ./drasyl-shared-library/pypi/src/drasyl/
-          mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl
+          mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl/
         if: success() && matrix.os != 'windows-latest'
 
       - name: Extract shared library on Windows
         run: |
           Expand-Archive -Path .\libdrasyl-*.zip -DestinationPath .\drasyl-shared-library\pypi\src\drasyl\
-          Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl
-          Get-ChildItem -Path .\drasyl-shared-library\pypi
+          Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl\
+          Get-ChildItem -Path .\drasyl-shared-library\pypi\src\drasyl\
         if: success() && matrix.os == 'windows-latest'
 
       - uses: actions/setup-python@v3
