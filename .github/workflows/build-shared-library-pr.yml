@@ -150,6 +150,7 @@ jobs:
         run: |
           unzip libdrasyl-*.zip -d ./drasyl-shared-library/pypi/src/drasyl/
           mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl
+          ls -R ./drasyl-shared-library/pypi
         if: success() && matrix.os != 'windows-latest'
 
       - uses: actions/setup-python@v3
@@ -166,5 +167,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: shared-library-wheel-${{ matrix.job_name }}
+          name: wheel-${{ matrix.job_name }}
           path: ./wheelhouse/*.whl
