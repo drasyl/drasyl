@@ -9,7 +9,12 @@ try:
 except ImportError:
     bdist_wheel = None
 
+class BinaryDistribution (setuptools.Distribution):
+    def has_ext_modules(self):
+        return True
+
 setup(
     cmdclass = { 'bdist_wheel': bdist_wheel },
-    package_data = { '': ['*'] }
+    package_data = { '': ['*'] },
+    distclass = BinaryDistribution,
 )
