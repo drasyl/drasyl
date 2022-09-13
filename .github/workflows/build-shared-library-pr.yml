@@ -12,13 +12,13 @@ jobs:
       fail-fast: false
       matrix:
         job_name:
-#          - linux-amd64
+          - linux-amd64
           - macos-amd64
-#          - windows-amd64
+          - windows-amd64
 
         include:
-#          - job_name: linux-amd64
-#            os: ubuntu-latest
+          - job_name: linux-amd64
+            os: ubuntu-latest
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -119,13 +119,13 @@ jobs:
       fail-fast: false
       matrix:
         job_name:
-#          - linux-amd64
+          - linux-amd64
           - macos-amd64
           - windows-amd64
 
         include:
-#          - job_name: linux-amd64
-#            os: ubuntu-latest
+          - job_name: linux-amd64
+            os: ubuntu-latest
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -195,3 +195,4 @@ jobs:
           packages_dir: ./wheelhouse/
           repository_url: https://test.pypi.org/legacy/
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          skip_existing: true
