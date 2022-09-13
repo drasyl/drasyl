@@ -169,6 +169,7 @@ jobs:
         env:
           CIBW_ARCHS: auto
           CIBW_BUILD: cp310-*
+          CIBW_BUILD_VERBOSITY: 3
 
       - uses: actions/upload-artifact@v3
         with:
