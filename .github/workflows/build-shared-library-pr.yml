@@ -167,7 +167,7 @@ jobs:
         working-directory: ./drasyl-shared-library/pypi
         run: python -m cibuildwheel --output-dir ../../wheelhouse/
         env:
-          CIBW_ARCHS: auto
+          CIBW_ARCHS: auto64
           CIBW_BUILD: cp310-*
           CIBW_BUILD_VERBOSITY: 3
 
