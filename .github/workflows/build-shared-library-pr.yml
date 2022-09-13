@@ -169,3 +169,10 @@ jobs:
         with:
           name: wheel-${{ matrix.job_name }}
           path: ./wheelhouse/*.whl
+
+      - name: Publish package to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: ./wheelhouse/
+          repository_url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
