@@ -12,19 +12,19 @@ jobs:
       fail-fast: false
       matrix:
         job_name:
-          - linux-amd64
+#          - linux-amd64
           - macos-amd64
-          - windows-amd64
+#          - windows-amd64
 
         include:
-          - job_name: linux-amd64
-            os: ubuntu-latest
+#          - job_name: linux-amd64
+#            os: ubuntu-latest
 
           - job_name: macos-amd64
             os: macOS-latest
 
-          - job_name: windows-amd64
-            os: windows-latest
+#          - job_name: windows-amd64
+#            os: windows-latest
 
     name: Build Shared Library on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}

@@ -10,5 +10,6 @@ except ImportError:
     bdist_wheel = None
 
 setup(
-    cmdclass={'bdist_wheel': bdist_wheel},
+    cmdclass = { 'bdist_wheel': bdist_wheel },
+    package_data = { '': ['*'] }
 )
