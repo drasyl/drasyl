@@ -23,8 +23,8 @@ jobs:
           - job_name: macos-amd64
             os: macOS-latest
 
-#          - job_name: windows-amd64
-#            os: windows-latest
+          - job_name: windows-amd64
+            os: windows-latest
 
     name: Build Shared Library on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
@@ -90,7 +90,6 @@ jobs:
         run: |
           $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
           New-Item "./libdrasyl-${VERSION}-${{ matrix.job_name }}/" -ItemType Directory -ea 0
-          Get-ChildItem -Path .
           Move-Item -Path ./graal_isolate.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.dll -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.lib -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
@@ -122,7 +121,7 @@ jobs:
         job_name:
 #          - linux-amd64
           - macos-amd64
-#          - windows-amd64
+          - windows-amd64
 
         include:
 #          - job_name: linux-amd64
@@ -131,8 +130,8 @@ jobs:
           - job_name: macos-amd64
             os: macOS-latest
 
-#          - job_name: windows-amd64
-#            os: windows-latest
+          - job_name: windows-amd64
+            os: windows-latest
 
     name: Build wheels on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
@@ -150,8 +149,14 @@ jobs:
         run: |
           unzip libdrasyl-*.zip -d ./drasyl-shared-library/pypi/src/drasyl/
           mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl
-          ls -R ./drasyl-shared-library/pypi
         if: success() && matrix.os != 'windows-latest'
+
+      - name: Extract shared library on Windows
+        run: |
+          Expand-Archive -Path .\libdrasyl-*.zip -DestinationPath .\drasyl-shared-library\pypi\src\drasyl\
+          Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl
+          Get-ChildItem -Path .\drasyl-shared-library\pypi
+        if: success() && matrix.os == 'windows-latest'
 
       - uses: actions/setup-python@v3
 

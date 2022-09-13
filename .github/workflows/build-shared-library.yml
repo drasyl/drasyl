@@ -109,7 +109,6 @@ jobs:
         run: |
           $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
           New-Item "./libdrasyl-${VERSION}-${{ matrix.job_name }}/" -ItemType Directory -ea 0
-          Get-ChildItem -Path .
           Move-Item -Path ./graal_isolate.h -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.dll -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Move-Item -Path ./libdrasyl.lib -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
