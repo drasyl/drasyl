@@ -23,9 +23,17 @@ from ctypes import *
 import time
 import os
 import sys
+import platform
 
 _dir = os.path.dirname(os.path.realpath(__file__))
-_libdrasyl = cdll.LoadLibrary(os.path.join(_dir, "libdrasyl", "libdrasyl.dylib"))
+# get the right filename
+if platform.uname()[0] == "Windows":
+    _name = "libdrasyl.dll"
+elif platform.uname()[0] == "Linux":
+    _name = "libdrasyl.so"
+else:
+    _name = "libdrasyl.dylib"
+_libdrasyl = cdll.LoadLibrary(os.path.join(_dir, "libdrasyl", _name))
 
 #
 # structs
