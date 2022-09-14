@@ -170,6 +170,7 @@ jobs:
           CIBW_ARCHS: auto64
           CIBW_BUILD: cp310-*
           CIBW_BUILD_VERBOSITY: 3
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
       - uses: actions/upload-artifact@v3
         with:
