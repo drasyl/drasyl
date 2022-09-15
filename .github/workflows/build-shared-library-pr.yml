@@ -185,8 +185,6 @@ jobs:
     steps:
       - name: Download wheel artifacts
         uses: actions/download-artifact@v3
-        with:
-          name: wheel-*
 
       - name: Consolidate wheel artifacts
         run: |
