@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drasyl"
-version = "0.9.0"
+version = "0.9.0.2"
 authors = [
   { name="Heiko Bornholdt", email="bornholdt@informatik.uni-hamburg.de" },
   { name="Kevin Röbert", email="roebert@informatik.uni-hamburg.de" },
