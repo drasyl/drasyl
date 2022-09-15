@@ -186,17 +186,17 @@ jobs:
       - name: Download wheel artifacts
         uses: actions/download-artifact@v3
 
+      - name: Consolidate wheel artifacts
+        run: |
+          mkdir ./wheelhouse/
+          mv ./wheel-*/*.whl ./wheelhouse/
+
       - name: xx
         working-directory: ./wheelhouse/
         run: >
           for file in *linux_x86_64.whl; do
             mv "$file" "${file//linux_x86_64/manylinux_2_17_x86_64.manylinux2014_x86_64}";
           done
-
-      - name: Consolidate wheel artifacts
-        run: |
-          mkdir ./wheelhouse/
-          mv ./wheel-*/*.whl ./wheelhouse/
 
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
