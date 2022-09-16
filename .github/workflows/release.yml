@@ -39,7 +39,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  shared-library:
+  cli-native-image:
     strategy:
       fail-fast: false
       matrix:
