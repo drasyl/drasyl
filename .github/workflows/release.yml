@@ -156,13 +156,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # publish artifact
-      - name: Publish artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: shared-library-${{ matrix.job_name }}
-          path: libdrasyl-*-${{ matrix.job_name }}.zip
-
   cli-native-image:
     strategy:
       fail-fast: false
