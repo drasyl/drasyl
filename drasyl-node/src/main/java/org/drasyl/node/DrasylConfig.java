@@ -27,19 +27,34 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.annotation.Nullable;
-import org.drasyl.identity.*;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.identity.KeyAgreementSecretKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.serialization.Serializer;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 
@@ -607,28 +622,6 @@ public abstract class DrasylConfig {
 
     /**
      * Parses a file path into a Config instance.
-     *
-     * @param path the path to file to parse
-     * @return the parsed configuration
-     * @throws DrasylConfigException on IO or parse errors
-     */
-    public static DrasylConfig parseFile(final String path) {
-        return parseFile(Path.of(path));
-    }
-
-    /**
-     * Parses a string into a Config instance.
-     *
-     * @param path the path to file to parse
-     * @return the parsed configuration
-     * @throws DrasylConfigException on IO or parse errors
-     */
-    public static DrasylConfig parseFile(final Path path) {
-        return parseFile(path.toFile());
-    }
-
-    /**
-     * Parses a file into a Config instance as with
      *
      * @param path the path to file to parse
      * @return the parsed configuration
