@@ -47,4 +47,4 @@ drasyl node without having to write configuration files or provide IP addresses 
 
 # License
 
-This is free software under the terms of the [MIT License](LICENSE).
+This is free software under the terms of the [MIT License](https://github.com/drasyl-overlay/drasyl/blob/master/LICENSE).
