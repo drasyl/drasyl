@@ -13,12 +13,16 @@ jobs:
       matrix:
         job_name:
           - linux-amd64
+          - linux-arm64
           - macos-amd64
           - windows-amd64
 
         include:
           - job_name: linux-amd64
             os: ubuntu-latest
+
+          - job_name: linux-arm64
+            os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -120,12 +124,16 @@ jobs:
       matrix:
         job_name:
           - linux-amd64
+          - linux-arm64
           - macos-amd64
           - windows-amd64
 
         include:
           - job_name: linux-amd64
             os: ubuntu-latest
+
+          - job_name: linux-arm64
+            os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
             os: macOS-latest
@@ -168,7 +176,9 @@ jobs:
         run: python -m cibuildwheel --output-dir ../../wheelhouse/
         env:
           CIBW_ARCHS: auto64
-          CIBW_BUILD_VERBOSITY: 3
+          #CIBW_BUILD_VERBOSITY: 3
+          # "auditwheel repair" fails despite the fact that our python package runs
+          # under many linux distributions. So we just deactivate it.
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
       - uses: actions/upload-artifact@v3
@@ -190,7 +200,11 @@ jobs:
           mkdir ./wheelhouse/
           mv ./wheel-*/*.whl ./wheelhouse/
 
-      - name: xx
+      # As "auditwheel repair" has been deativated under linux, we need to manually
+      # "mark" the package to be compatible with many linux distributions. Otherwise
+      # PyPI will reject it. This behavior is definitely not intended, but I don't
+      # want to bother with auditwheel anymore 🙃.
+      - name: Rename Linux packages so that they are accepted by PyPI
         working-directory: ./wheelhouse/
         run: >
           for file in *linux_x86_64.whl; do
