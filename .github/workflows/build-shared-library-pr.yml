@@ -134,7 +134,8 @@ jobs:
       matrix:
         job_name:
           - linux-amd64
-          - linux-arm64
+          # actions/setup-python does not support arm64 (yet): https://github.com/actions/setup-python
+          # - linux-arm64
           - macos-amd64
           - windows-amd64
 
@@ -142,8 +143,8 @@ jobs:
           - job_name: linux-amd64
             os: ubuntu-latest
 
-          - job_name: linux-arm64
-            os: [ self-hosted, linux, ARM64 ]
+          # - job_name: linux-arm64
+          #   os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
             os: macOS-latest
