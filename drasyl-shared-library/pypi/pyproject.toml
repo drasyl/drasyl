@@ -4,10 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drasyl"
-version = "0.9.0.4"
 authors = [
   { name="Heiko Bornholdt", email="bornholdt@informatik.uni-hamburg.de" },
-  { name="Kevin Röbert", email="roebert@informatik.uni-hamburg.de" },
+  { name="Kevin Röbert", email="kevin.roebert@uni-hamburg.de" },
 ]
 description = "drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications"
 readme = "README.md"
