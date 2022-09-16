@@ -105,7 +105,6 @@ jobs:
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p libdrasyl-${VERSION}-${{ matrix.job_name }}/
-          ls -l .
           mv ./graal_isolate.h ./libdrasyl.so ./libdrasyl.h ./drasyl-shared-library/src/main/c/drasyl.h libdrasyl-${VERSION}-${{ matrix.job_name }}
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
