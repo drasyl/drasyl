@@ -632,7 +632,7 @@ public abstract class DrasylConfig {
     }
 
     /**
-     * Parses a file into a Config instance as with
+     * Parses a string into a Config instance.
      *
      * @param s string to parse
      * @return the parsed configuration
