@@ -594,7 +594,7 @@ public abstract class DrasylConfig {
     abstract Builder toBuilder();
 
     /**
-     * Parses a file into a Config instance as with
+     * Parses a file into a Config instance.
      *
      * @param file the file to parse
      * @return the parsed configuration
@@ -610,7 +610,29 @@ public abstract class DrasylConfig {
     }
 
     /**
-     * Parses a file into a Config instance as with
+     * Parses a file path into a Config instance.
+     *
+     * @param path the path to file to parse
+     * @return the parsed configuration
+     * @throws DrasylConfigException on IO or parse errors
+     */
+    public static DrasylConfig parseFile(final Path path) {
+        return parseFile(path.toFile());
+    }
+
+    /**
+     * Parses a file path into a Config instance.
+     *
+     * @param path the path to file to parse
+     * @return the parsed configuration
+     * @throws DrasylConfigException on IO or parse errors
+     */
+    public static DrasylConfig parseFile(final String path) {
+        return parseFile(Path.of(path));
+    }
+
+    /**
+     * Parses a string into a Config instance.
      *
      * @param s string to parse
      * @return the parsed configuration
