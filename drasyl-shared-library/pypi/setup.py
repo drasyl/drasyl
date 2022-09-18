@@ -1,9 +1,14 @@
 import setuptools
+import os
 from lxml import etree as ET
 
-# read version from pom.xml
-pom = ET.parse('pom.xml', parser=ET.XMLParser(remove_comments=False))
-version = pom.find("./{*}parent/{*}version").text
+try:
+    # read version from pom.xml
+    pom = ET.parse('../pom.xml', parser=ET.XMLParser(remove_comments=False))
+    version = pom.find("./{*}parent/{*}version").text
+    version = version.replace("-SNAPSHOT", ".dev0")
+except:
+    version = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
 # binary package
 try:

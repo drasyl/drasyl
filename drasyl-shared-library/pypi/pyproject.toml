@@ -1,9 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "lxml"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "drasyl"
+dynamic = ["version"]
 authors = [
   { name="Heiko Bornholdt", email="bornholdt@informatik.uni-hamburg.de" },
   { name="Kevin Röbert", email="kevin.roebert@uni-hamburg.de" },
