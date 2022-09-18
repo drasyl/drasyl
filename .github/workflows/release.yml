@@ -156,7 +156,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # publish artifact
+      # publish artifact (required by build-wheels job)
       - name: Publish artifact
         uses: actions/upload-artifact@v3
         with:
