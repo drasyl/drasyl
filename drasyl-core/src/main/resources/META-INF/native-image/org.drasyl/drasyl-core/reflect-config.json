@@ -260,5 +260,23 @@
     "allPublicConstructors" : true,
     "allDeclaredMethods" : true,
     "allPublicMethods" : true
+  },
+  {
+    "name":"java.net.SocketOption"
+  },
+  {
+    "name":"java.net.StandardSocketOptions",
+    "fields":[
+      {"name":"IP_MULTICAST_IF"},
+      {"name":"IP_MULTICAST_LOOP"},
+      {"name":"IP_MULTICAST_TTL"}
+    ]
+  },
+  {
+    "name":"java.nio.channels.NetworkChannel",
+    "queriedMethods":[
+      {"name":"getOption","parameterTypes":["java.net.SocketOption"] },
+      {"name":"setOption","parameterTypes":["java.net.SocketOption","java.lang.Object"] }
+    ]
   }
 ]
