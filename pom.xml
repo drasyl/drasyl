@@ -672,5 +672,11 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>native</id>
+            <modules>
+                <module>drasyl-shared-library</module>
+            </modules>
+        </profile>
     </profiles>
 </project>

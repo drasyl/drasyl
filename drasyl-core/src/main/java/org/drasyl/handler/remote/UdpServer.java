@@ -28,6 +28,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
@@ -45,7 +46,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 
-import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -54,6 +54,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
+    private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
     private final Bootstrap bootstrap;
     private final InetSocketAddress bindAddress;
     private PendingWriteQueue pendingWrites;
@@ -83,7 +84,7 @@ public class UdpServer extends ChannelDuplexHandler {
      * @param bindAddress the address the UDP server will bind to
      */
     public UdpServer(final InetSocketAddress bindAddress) {
-        this(new Bootstrap().option(SO_BROADCAST, false), bindAddress);
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR), bindAddress);
     }
 
     /**
