@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "./drasyl-shared-library/src/main/c/drasyl.h"
+#include "drasyl.h"
 #include "libdrasyl.h"
 
 void console_logger(graal_isolatethread_t* thread, int level, unsigned long time, char* message) {
