@@ -1,17 +1,17 @@
 [build-system]
-requires = ["setuptools>=61.0", "lxml"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "drasyl"
 dynamic = ["version"]
 authors = [
-  { name="Heiko Bornholdt", email="bornholdt@informatik.uni-hamburg.de" },
-  { name="Kevin Röbert", email="kevin.roebert@uni-hamburg.de" },
+  { name = "Heiko Bornholdt",   email = "bornholdt@informatik.uni-hamburg.de" },
+  { name = "Kevin Röbert",      email = "kevin.roebert@uni-hamburg.de" },
 ]
 description = "drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications"
 readme = "README.md"
-license = { file="LICENSE" }
+license = { file = "LICENSE" }
 requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -40,3 +40,7 @@ classifiers = [
 "Changelog" = "https://github.com/drasyl-overlay/drasyl/blob/master/CHANGELOG.md"
 "Homepage" = "https://drasyl.org"
 "Issue Tracker" = "https://github.com/drasyl-overlay/drasyl/issues"
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
+
