@@ -18,4 +18,5 @@ class DrasylDistribution(Distribution):
 setup(
     # force platform specific package wheel
     distclass = DrasylDistribution,
+    package_data = { '': ['*'] },
 )
