@@ -108,3 +108,9 @@ AutoValue_*
 /graal_isolate.h
 /graal_isolate_dynamic.h
 /libdrasyl.build_artifacts.txt
+
+# Python Package
+/drasyl-shared-library/pypi/dist
+/drasyl-shared-library/pypi/src/drasyl.egg-info
+/drasyl-shared-library/pypi/src/drasyl/libdrasyl
+/drasyl-shared-library/pypi/VERSION
