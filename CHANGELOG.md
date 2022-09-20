@@ -24,9 +24,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Added support for distributed lookup service using the Chord protocol.
   Refer [our documentation](https://docs.drasyl.org/advanced-usage/distributed-lookup/) for
   more information.
--
--
--
+- Created shared C library `libdrasyl` for the `DrasylNode` interface.
+- Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/).
+- 
 
 ### Changed
 
