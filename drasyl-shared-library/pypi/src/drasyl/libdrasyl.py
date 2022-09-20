@@ -147,7 +147,8 @@ def drasyl_node_version():
     global _thread
     _ensure_thread_created()
 
-    return _libdrasyl.drasyl_node_version(_thread)
+    version = _libdrasyl.drasyl_node_version(_thread)
+    return "{}.{}.{}".format((version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff)
 
 _on_log_message_func = None
 def drasyl_set_logger(on_log_message):

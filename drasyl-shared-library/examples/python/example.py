@@ -17,8 +17,7 @@ def console_logger(level, time, message):
 
 drasyl.drasyl_set_logger(console_logger)
 
-version = drasyl.drasyl_node_version()
-print("drasyl node version: %i.%i.%i" % ((version >> 24) & 0xff, (version >> 16) & 0xff, (version >> 8) & 0xff))
+print("drasyl node version: %s" % drasyl.drasyl_node_version())
 
 def on_event(event):
     # node events
