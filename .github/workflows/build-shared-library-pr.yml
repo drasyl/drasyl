@@ -144,19 +144,27 @@ jobs:
         with:
           name: shared-library-${{ matrix.job_name }}
 
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 11
+          distribution: 'adopt'
+
       - name: Extract shared library on *nix/Mac
         run: |
+          VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           unzip libdrasyl-*.zip -d ./drasyl-shared-library/pypi/src/drasyl/
           mv ./drasyl-shared-library/pypi/src/drasyl/libdrasyl-* ./drasyl-shared-library/pypi/src/drasyl/libdrasyl/
-          echo "0.9.0.dev0" > ./drasyl-shared-library/pypi/VERSION
+          echo "${VERSION/-SNAPSHOT/.dev0}" > ./drasyl-shared-library/pypi/VERSION
         if: success() && matrix.os != 'windows-latest'
 
       - name: Extract shared library on Windows
         run: |
+          $VERSION = .\mvnw.cmd help:evaluate "-Dexpression=project.version" -q -DforceStdout
           Expand-Archive -Path .\libdrasyl-*.zip -DestinationPath .\drasyl-shared-library\pypi\src\drasyl\
           Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl\
           Get-ChildItem -Path .\drasyl-shared-library\pypi\src\drasyl\
-          "0.9.0.dev0" > .\drasyl-shared-library\pypi\VERSION
+          $VERSION.replace('-SNAPSHOT', '.dev0') > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
       - uses: actions/setup-python@v3
