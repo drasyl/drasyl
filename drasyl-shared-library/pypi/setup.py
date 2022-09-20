@@ -22,6 +22,6 @@ setup(
     # setup will probably only find the one library downloaded by the build
     # script or placed here manually.
     package_data = {
-        'drasyl': ['*.so*', '*.dll', '*.dylib']
+        'drasyl': ['libdrasyl/*.so*', 'libdrasyl/*.dll', 'libdrasyl/*.dylib']
     },
 )
