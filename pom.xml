@@ -92,6 +92,7 @@
         <module>drasyl-plugin-groups-manager</module>
         <module>drasyl-all</module>
         <module>drasyl-node</module>
+        <module>drasyl-extras</module>
     </modules>
 
     <scm>
