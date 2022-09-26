@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+  ~ Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,8 @@
   ~ OR OTHER DEALINGS IN THE SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>drasyl-parent</artifactId>
@@ -29,25 +30,17 @@
         <version>0.9.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>drasyl-node</artifactId>
+    <artifactId>drasyl-extras</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Node Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Extras Package</name>
     <description>
-        This package contains the easy-to-use zero configuration node interface for embedding the overlay network.
+        This packages contains the optional components for drasyl.
     </description>
-    <url>https://drasyl.org/</url>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-extras</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -59,28 +52,18 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- configuration library -->
-        <dependency>
-            <groupId>com.typesafe</groupId>
-            <artifactId>config</artifactId>
-        </dependency>
-
-        <!-- binary data (de)serializer -->
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-        </dependency>
-
-        <!-- Classpath Scanner (used by MessageSerializer) -->
-        <dependency>
-            <groupId>io.github.classgraph</groupId>
-            <artifactId>classgraph</artifactId>
-        </dependency>
-
-        <!-- JSON (de)serialization -->
+        <!-- JSON (de)serialization (required by JacksonCodec handler) -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- CBOR (de)serialization (required by RmiUtil) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Test Dependencies -->
@@ -93,33 +76,23 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- JSON assertions -->
+        <!-- unit tests frameworks -->
         <dependency>
-            <groupId>net.javacrumbs.json-unit</groupId>
-            <artifactId>json-unit-assertj</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- asynchronous systems testing -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

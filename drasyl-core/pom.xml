@@ -69,24 +69,10 @@
 
         <!-- Optional Dependencies -->
 
-        <!-- Loggin via SLF4J -->
+        <!-- Logging via SLF4J -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- JSON (de)serialization (required by JacksonCodec handler) -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- CBOR (de)serialization (required by RmiUtil) -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-cbor</artifactId>
             <optional>true</optional>
         </dependency>
 

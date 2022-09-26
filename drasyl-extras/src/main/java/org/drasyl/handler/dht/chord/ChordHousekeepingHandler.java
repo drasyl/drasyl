@@ -25,8 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.util.RandomUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.Future;
 
