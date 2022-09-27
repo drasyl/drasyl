@@ -24,9 +24,9 @@ package org.drasyl.cli.perf.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.cli.perf.message.SessionRejection;
@@ -67,7 +67,7 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
 
     public PerfSessionSenderHandler(final SessionRequest session,
                                     final PrintStream printStream) {
-        this(session, printStream, System::nanoTime, new NioEventLoopGroup(1).next());
+        this(session, printStream, System::nanoTime, new DefaultEventLoop());
     }
 
     @Override
