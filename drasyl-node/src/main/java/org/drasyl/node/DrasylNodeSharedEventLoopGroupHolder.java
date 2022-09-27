@@ -23,6 +23,7 @@ package org.drasyl.node;
 
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
@@ -108,7 +109,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Parent event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = parentEventLoopGroupCreated = true;
     }
@@ -121,7 +122,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Child event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = childEventLoopGroupCreated = true;
     }

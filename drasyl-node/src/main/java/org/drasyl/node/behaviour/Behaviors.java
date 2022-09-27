@@ -23,6 +23,7 @@ package org.drasyl.node.behaviour;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.node.DrasylNode;
@@ -178,7 +179,7 @@ public final class Behaviors {
             SIZE = SystemPropertyUtil.getInt("org.drasyl.behavior.event-loop", DEFAULT_THREADS);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(Behaviors.class.getSimpleName(), true));
         @SuppressWarnings("unused")
         static final boolean LOCK = eventLoopGroupCreated = true;
     }
