@@ -32,6 +32,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -182,7 +183,7 @@ public class TunCommand extends ChannelOptions {
                     .channel(TunChannel.class)
                     .option(AUTO_READ, true)
                     .option(TUN_MTU, mtu)
-                    .group(new NioEventLoopGroup(1))
+                    .group(new DefaultEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
