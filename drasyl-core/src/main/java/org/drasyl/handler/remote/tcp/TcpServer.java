@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.tcp;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -46,11 +45,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -63,7 +62,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
-    static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(StandardCharsets.UTF_8);
+    static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
     private final InetAddress bindHost;
@@ -255,7 +254,7 @@ public class TcpServer extends ChannelDuplexHandler {
                     LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", nettyCtx.channel()::remoteAddress);
                     msg.release();
                     if (STATUS_ENABLED) {
-                        nettyCtx.writeAndFlush(Unpooled.buffer().writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
+                        nettyCtx.writeAndFlush(ctx.alloc().buffer(HTTP_OK.length).writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
                     }
                     else {
                         nettyCtx.close();
@@ -266,7 +265,7 @@ public class TcpServer extends ChannelDuplexHandler {
                 LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (too short).", nettyCtx.channel()::remoteAddress);
                 msg.release();
                 if (STATUS_ENABLED) {
-                    nettyCtx.writeAndFlush(Unpooled.buffer().writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
+                    nettyCtx.writeAndFlush(ctx.alloc().buffer(HTTP_OK.length).writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
                 }
                 else {
                     nettyCtx.close();

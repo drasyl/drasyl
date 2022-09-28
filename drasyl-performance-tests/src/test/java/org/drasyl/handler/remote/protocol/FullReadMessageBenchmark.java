@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -65,7 +66,7 @@ public class FullReadMessageBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void arm(final Blackhole blackhole) {
         try {
-            final ArmedProtocolMessage armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx()));
+            final ArmedProtocolMessage armedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx()));
             blackhole.consume(armedMessage);
         }
         catch (final IOException e) {

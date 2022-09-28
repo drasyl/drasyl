@@ -23,8 +23,8 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -41,8 +41,8 @@ import java.io.IOException;
  * Describes a protocol message whose contents has been armed by using authenticated encryption with
  * associated data.
  * <p>
- * Only the message recipient can decrypt and authenticate the message by calling {@link
- * #disarm(Crypto, SessionPair)}.
+ * Only the message recipient can decrypt and authenticate the message by calling
+ * {@link #disarm(ByteBufAllocator, Crypto, SessionPair)}.
  * <p>
  * This is an immutable object.
  */
@@ -114,19 +114,21 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
      * agreement id, and decrypt all remaining bytes.
      * <p>
      *
+     * @param alloc
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    the {@link SessionPair} to decrypt this message
      * @return the disarmed version of this message
      * @throws InvalidMessageFormatException if disarming was not possible
      */
     @SuppressWarnings({ "java:S1151", "java:S1172", "java:S1452" })
-    public FullReadMessage<?> disarm(final Crypto cryptoInstance,
+    public FullReadMessage<?> disarm(final ByteBufAllocator alloc,
+                                     final Crypto cryptoInstance,
                                      final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
-                final PrivateHeader privateHeader = PrivateHeader.of(Unpooled.wrappedBuffer(decryptedPrivateHeader));
+                final PrivateHeader privateHeader = PrivateHeader.of(alloc.buffer(decryptedPrivateHeader.length).writeBytes(decryptedPrivateHeader));
                 final UnsignedShort armedLength = privateHeader.getArmedLength();
                 final byte[] decryptedBytes;
                 final byte[] undecryptedRemainder;
@@ -148,7 +150,8 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
                         getRecipient(),
                         getSender(),
                         getProofOfWork(),
-                        Unpooled.wrappedBuffer(decryptedPrivateHeader, decryptedBytes, undecryptedRemainder)).read();
+                        alloc.buffer(decryptedPrivateHeader.length + decryptedBytes.length + undecryptedRemainder.length).writeBytes(decryptedPrivateHeader).writeBytes(decryptedBytes).writeBytes(undecryptedRemainder)
+                ).read();
             }
         }
         catch (final IOException | CryptoException e) {
@@ -167,16 +170,18 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
      * agreement id, and decrypt all remaining bytes.
      * <p>
      *
+     * @param alloc
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    the {@link SessionPair} to decrypt this message
      * @return the disarmed version of this message
      * @throws InvalidMessageFormatException if disarming was not possible
      */
     @SuppressWarnings("java:S1452")
-    public FullReadMessage<?> disarmAndRelease(final Crypto cryptoInstance,
+    public FullReadMessage<?> disarmAndRelease(final ByteBufAllocator alloc,
+                                               final Crypto cryptoInstance,
                                                final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
-            return disarm(cryptoInstance, sessionPair);
+            return disarm(alloc, cryptoInstance, sessionPair);
         }
         finally {
             release();

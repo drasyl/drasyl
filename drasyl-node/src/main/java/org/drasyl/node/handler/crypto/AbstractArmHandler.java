@@ -23,7 +23,6 @@ package org.drasyl.node.handler.crypto;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.crypto.Crypto;
@@ -84,7 +83,9 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
             onNonAgreement(ctx);
         }
 
-        out.add(arm(agreement, ArmMessage.fromApplication(msg)));
+        final ByteBuf byteBuf = ctx.alloc().buffer();
+        ArmMessage.fromApplication(msg, byteBuf);
+        out.add(arm(ctx, agreement, byteBuf));
         LOG.trace("[{}] Armed msg: {}", ctx.channel()::id, () -> msg);
     }
 
@@ -102,7 +103,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
             return;
         }
 
-        plaintext = unarm(agreement, msg.getNonce(), msg.content());
+        plaintext = unarm(ctx, agreement, msg.getNonce(), msg.content());
 
         removeStaleAgreement(ctx, agreement);
 
@@ -119,30 +120,29 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
 
     protected abstract void onNonAgreement(ChannelHandlerContext ctx);
 
-    protected Object unarm(final Agreement agreement,
+    protected Object unarm(final ChannelHandlerContext ctx,
+                           final Agreement agreement,
                            final Nonce nonce,
                            final ByteBuf byteBuf) throws CryptoException {
         try {
-            return ArmMessage.of(
-                    Unpooled.wrappedBuffer(
-                            crypto.decrypt(ByteBufUtil.getBytes(byteBuf), new byte[0], nonce, agreement.getSessionPair())));
+            final byte[] bytes = crypto.decrypt(ByteBufUtil.getBytes(byteBuf), new byte[0], nonce, agreement.getSessionPair());
+            return ArmMessage.of(ctx.alloc().buffer(bytes.length).writeBytes(bytes));
         }
         catch (final InvalidMessageFormatException e) {
             throw new CryptoException("Can't unarm message: ", e);
         }
     }
 
-    protected ArmHeader arm(final Agreement agreement, final ByteBuf msg) throws CryptoException {
+    protected ArmHeader arm(final ChannelHandlerContext ctx,
+                            final Agreement agreement,
+                            final ByteBuf msg) throws CryptoException {
         final Nonce nonce = Nonce.randomNonce();
+        final byte[] bytes = crypto.encrypt(ByteBufUtil.getBytes(msg), new byte[0], nonce, agreement.getSessionPair());
         return ArmHeader.of(
                 agreement.getAgreementId(),
                 nonce,
-                Unpooled.wrappedBuffer(
-                        crypto.encrypt(
-                                ByteBufUtil.getBytes(msg),
-                                new byte[0],
-                                nonce,
-                                agreement.getSessionPair())));
+                ctx.alloc().buffer(bytes.length).writeBytes(bytes)
+        );
     }
 
     protected abstract void removeStaleAgreement(final ChannelHandlerContext ctx,

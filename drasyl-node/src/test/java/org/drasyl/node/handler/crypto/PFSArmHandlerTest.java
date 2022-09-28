@@ -24,6 +24,7 @@ package org.drasyl.node.handler.crypto;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.crypto.Crypto;
@@ -214,13 +215,16 @@ class PFSArmHandlerTest {
             final PFSArmHandler handler = new PFSArmHandler(Crypto.INSTANCE, sessionExpireTime, sessionRetryInterval, maxAgreements, IdentityTestUtil.ID_2, IdentityTestUtil.ID_1.getIdentityPublicKey());
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                channel.writeInbound(handler.arm(agreementSenderLongTime, msg.toByteBuf()));
+                final ChannelHandlerContext ctx = channel.pipeline().context(handler);
+                final ByteBuf byteBuf = ctx.alloc().buffer();
+                msg.writeTo(byteBuf);
+                channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf));
 
                 final ArmHeader actual1 = channel.readOutbound();
                 final ArmHeader actual2 = channel.readOutbound();
 
-                assertThat(handler.unarm(agreementSenderLongTime, actual1.getNonce(), actual1.content()), instanceOf(KeyExchangeMessage.class));
-                assertThat(handler.unarm(agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
+                assertThat(handler.unarm(ctx, agreementSenderLongTime, actual1.getNonce(), actual1.content()), instanceOf(KeyExchangeMessage.class));
+                assertThat(handler.unarm(ctx, agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
             }
             finally {
                 channel.close();
@@ -234,18 +238,23 @@ class PFSArmHandlerTest {
             final PFSArmHandler handler = new PFSArmHandler(Crypto.INSTANCE, sessionExpireTime, sessionRetryInterval, maxAgreements, IdentityTestUtil.ID_2, IdentityTestUtil.ID_1.getIdentityPublicKey());
             final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             try {
-                channel.writeInbound(handler.arm(agreementSenderLongTime, msg.toByteBuf()));
+                final ChannelHandlerContext ctx = channel.pipeline().context(handler);
+                final ByteBuf byteBuf = ctx.alloc().buffer();
+                msg.writeTo(byteBuf);
+                channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf));
 
                 final ArmHeader actual1 = channel.readOutbound();
                 final ArmHeader actual2 = channel.readOutbound();
 
-                assertThat(handler.unarm(agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
+                assertThat(handler.unarm(ctx, agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
 
-                final KeyExchangeMessage keyExchangeMessage = (KeyExchangeMessage) handler.unarm(agreementSenderLongTime, actual1.getNonce(), actual1.content());
+                final KeyExchangeMessage keyExchangeMessage = (KeyExchangeMessage) handler.unarm(ctx, agreementSenderLongTime, actual1.getNonce(), actual1.content());
 
                 // Send ACK
                 final AcknowledgementMessage ack = AcknowledgementMessage.of(AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), keyExchangeMessage.getSessionKey()));
-                channel.writeInbound(handler.arm(agreementSenderLongTime, ack.toByteBuf()));
+                final ByteBuf byteBuf2 = ctx.alloc().buffer();
+                ack.writeTo(byteBuf2);
+                channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf2));
 
                 assertThat(channel.readEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
             }

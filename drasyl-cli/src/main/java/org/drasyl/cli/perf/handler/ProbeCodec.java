@@ -40,19 +40,15 @@ public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
      * measurements.
      */
     static final int MAGIC_NUMBER_PROBE = -376_669_039;
-    static final ByteBuf MAGIC_NUMBER_PROBE_BUF = Unpooled.buffer(Integer.BYTES)
-            .writeInt(MAGIC_NUMBER_PROBE).asReadOnly();
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Probe msg,
                           final List<Object> out) {
-        final ByteBuf buf = ctx.alloc().compositeBuffer(3).addComponents(
-                true,
-                MAGIC_NUMBER_PROBE_BUF.retainedDuplicate(),
-                ctx.alloc().buffer(Long.BYTES).writeLong(msg.getMessageNo()),
-                msg.getPayload()
-        );
+        final ByteBuf buf = ctx.alloc().buffer();
+        buf.writeInt(MAGIC_NUMBER_PROBE);
+        buf.writeLong(msg.getMessageNo());
+        buf.writeBytes(msg.getPayload());
         out.add(buf);
     }
 

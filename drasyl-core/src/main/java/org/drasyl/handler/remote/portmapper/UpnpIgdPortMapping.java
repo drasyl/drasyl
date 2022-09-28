@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
@@ -213,7 +212,7 @@ public class UpnpIgdPortMapping implements PortMapping {
     private void doSsdpDiscovery(final ChannelHandlerContext ctx) {
         LOG.debug("Send SSDP discovery message to broadcast address `{}`.", SSDP_MULTICAST_ADDRESS);
         final byte[] content = UpnpIgdUtil.buildSsdpDiscoveryMessage();
-        final ByteBuf msg = Unpooled.wrappedBuffer(content);
+        final ByteBuf msg = ctx.alloc().buffer(content.length).writeBytes(content);
         ssdpServices.clear();
         ssdpDiscoveryActive.set(true);
         // failed

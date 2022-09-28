@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -53,7 +54,7 @@ public class PartialReadMessageBenchmark extends AbstractBenchmark {
         try {
             message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(1024)));
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            final ArmedProtocolMessage armedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+            final ArmedProtocolMessage armedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
             byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
             armedMessage.writeTo(byteBuf);
         }

@@ -30,7 +30,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -43,11 +42,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
-public class ActivityPattern {
+public final class ActivityPattern {
+    private static final Logger LOG = LoggerFactory.getLogger(ActivityPattern.class);
+
     private ActivityPattern() {
     }
-
-    private static final Logger LOG = LoggerFactory.getLogger(ActivityPattern.class);
 
     @JsonTypeInfo(use = Id.NAME, property = "type")
     @JsonSubTypes({
@@ -110,7 +109,8 @@ public class ActivityPattern {
 
         @Override
         public void perform(final ChannelHandlerContext ctx, final ActivityPatternHandler handler) {
-            final ByteBuf byteBuf = Unpooled.copiedBuffer(getPayload(), UTF_8);
+            final ByteBuf byteBuf = ctx.alloc().buffer(getPayload().length());
+            byteBuf.writeCharSequence(getPayload(), UTF_8);
             final int activityIndex = handler.index - 1;
             LOG.info("[{}] Send peer `{}` message `{}`.", activityIndex, getRecipient(), byteBuf);
             ctx.pipeline().writeAndFlush(new OverlayAddressedMessage<>(byteBuf, getRecipient(), (DrasylAddress) ctx.channel().localAddress())).addListener(future -> {

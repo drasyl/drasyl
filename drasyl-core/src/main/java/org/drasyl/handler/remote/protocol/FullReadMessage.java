@@ -21,7 +21,7 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
@@ -53,12 +53,13 @@ public interface FullReadMessage<T extends FullReadMessage<?>> extends RemoteMes
      * Returns an armed version ({@link ArmedProtocolMessage}) of this message for sending it
      * through untrustworthy channels.
      *
-     * @param byteBuf        the {@link ByteBuf} to write through
+     * @param alloc
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    will be used for encryption
      * @return the armed version of this message
      * @throws InvalidMessageFormatException if arming was not possible
      */
-    ArmedProtocolMessage arm(ByteBuf byteBuf, Crypto cryptoInstance,
+    ArmedProtocolMessage arm(ByteBufAllocator alloc,
+                             Crypto cryptoInstance,
                              SessionPair sessionPair) throws InvalidMessageFormatException;
 }

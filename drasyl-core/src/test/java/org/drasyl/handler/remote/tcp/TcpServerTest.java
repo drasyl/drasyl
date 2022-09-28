@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.tcp;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -240,6 +241,7 @@ class TcpServerTest {
         @Test
         void shouldRespondWithHTTPAndCloseWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
+            when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
             final ByteBuf msg = Unpooled.copiedBuffer("Hallo Welt", UTF_8);
             new TcpServer.TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
