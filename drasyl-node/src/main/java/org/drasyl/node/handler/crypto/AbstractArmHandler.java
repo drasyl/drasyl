@@ -85,7 +85,9 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
 
         final ByteBuf byteBuf = ctx.alloc().buffer();
         ArmMessage.fromApplication(msg, byteBuf);
-        out.add(arm(ctx, agreement, byteBuf));
+        final ArmHeader arm = arm(ctx, agreement, byteBuf);
+        byteBuf.release();
+        out.add(arm);
         LOG.trace("[{}] Armed msg: {}", ctx.channel()::id, () -> msg);
     }
 

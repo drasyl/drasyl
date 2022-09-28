@@ -128,7 +128,9 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
-                final PrivateHeader privateHeader = PrivateHeader.of(alloc.buffer(decryptedPrivateHeader.length).writeBytes(decryptedPrivateHeader));
+                final ByteBuf byteBuf = alloc.buffer(decryptedPrivateHeader.length).writeBytes(decryptedPrivateHeader);
+                final PrivateHeader privateHeader = PrivateHeader.of(byteBuf);
+                byteBuf.release();
                 final UnsignedShort armedLength = privateHeader.getArmedLength();
                 final byte[] decryptedBytes;
                 final byte[] undecryptedRemainder;
