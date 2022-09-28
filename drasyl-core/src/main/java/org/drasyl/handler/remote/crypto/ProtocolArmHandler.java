@@ -51,7 +51,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
                               final int maxSessionsCount,
                               final Duration expireAfter) {
         this.myIdentity = myIdentity;
-        this.sessions = new ExpiringMap<>(maxSessionsCount, -1, expireAfter.toMillis());
+        this.sessions = new ExpiringMap<>(maxSessionsCount, -1, expireAfter.toMillis() > 0 ? expireAfter.toMillis() : Long.MAX_VALUE);
         this.crypto = crypto;
     }
 
