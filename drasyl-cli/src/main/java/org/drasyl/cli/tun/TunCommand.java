@@ -138,10 +138,10 @@ public class TunCommand extends ChannelOptions {
                     "MTU of the tun device.",
                     "Not supported on windows. You can manually adjust the MTU size by running command 'netsh interface ipv4 set subinterface <name> mtu=<mtu> store=active'."
             },
-            defaultValue = "1220"
+            defaultValue = "1225"
     )
     private int mtu;
-    @ArgGroup(exclusive = true, multiplicity = "0..1")
+    @ArgGroup
     private RemoteControl rc;
 
     protected TunCommand() {
