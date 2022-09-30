@@ -3,7 +3,7 @@ name: Build CLI
 on:
   push:
     branches:
-      - master
+      - '*'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -60,7 +60,7 @@ jobs:
             os: ubuntu-latest
 
           - job_name: linux-arm64
-            os: [ self-hosted, linux, ARM64 ]
+            os: buildjet-2vcpu-ubuntu-2204-arm
 
           - job_name: macos-amd64
             os: macOS-latest
