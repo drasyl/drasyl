@@ -28,8 +28,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -72,6 +72,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
+    private final NioEventLoopGroup group;
     private DatagramChannel channel;
 
     static {
@@ -102,20 +103,37 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         MULTICAST_INTERFACE = multicastInterface;
     }
 
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     */
     @SuppressWarnings("java:S2384")
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
+                       final NioEventLoopGroup group,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
+        this.group = requireNonNull(group);
         this.channel = channel;
     }
 
-    public UdpMulticastServer() {
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     */
+    UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
+                       final Supplier<Bootstrap> bootstrapSupplier,
+                       final NioEventLoopGroup group) {
+        this(nodes, bootstrapSupplier, group, null);
+    }
+
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     */
+    public UdpMulticastServer(final NioEventLoopGroup group) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
-                null
+                group
         );
     }
 
@@ -132,7 +150,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             if (channel == null) {
                 LOG.debug("Start Multicast Server to bind to udp://{}:{}...", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort);
                 bootstrapSupplier.get()
-                        .group((EventLoopGroup) ctx.executor().parent())
+                        .group(group)
                         .channelFactory(() -> new NioDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
                         .handler(new UdpMulticastServerHandler())
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())

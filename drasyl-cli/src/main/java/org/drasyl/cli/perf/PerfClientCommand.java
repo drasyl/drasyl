@@ -23,6 +23,7 @@ package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
@@ -92,6 +93,7 @@ public class PerfClientCommand extends ChannelOptions {
                       final PrintStream err,
                       final EventLoopGroup parentGroup,
                       final EventLoopGroup childGroup,
+                      final NioEventLoopGroup udpServerGroup,
                       final Level logLevel,
                       final File identityFile,
                       final InetSocketAddress bindAddress,
@@ -104,7 +106,7 @@ public class PerfClientCommand extends ChannelOptions {
                       final int testDuration,
                       final int messagesPerSecond,
                       final int messageSize) {
-        super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.server = server;
         this.waitForDirectConnection = waitForDirectConnection;
         this.reverseMode = reverseMode;
@@ -115,7 +117,7 @@ public class PerfClientCommand extends ChannelOptions {
 
     @SuppressWarnings("unused")
     PerfClientCommand() {
-        super(new NioEventLoopGroup(1));
+        super(new DefaultEventLoopGroup(1));
     }
 
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
@@ -126,7 +128,7 @@ public class PerfClientCommand extends ChannelOptions {
 
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new PerfClientChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
+        return new PerfClientChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
     }
 
     @Override

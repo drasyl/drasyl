@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -62,11 +63,12 @@ public class EchoServerBootstrap {
             }
             final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
-            final EventLoopGroup group = new NioEventLoopGroup();
+            final EventLoopGroup group = new DefaultEventLoopGroup();
+            final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
             final ServerBootstrap b = new ServerBootstrap()
                     .group(group)
                     .channel(DrasylServerChannel.class)
-                    .handler(new TraversingDrasylServerChannelInitializer(identity))
+                    .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup))
                     .childHandler(new ChannelInitializer<DrasylChannel>() {
                         @Override
                         protected void initChannel(final DrasylChannel ch) {
@@ -95,6 +97,7 @@ public class EchoServerBootstrap {
                 ch.closeFuture().awaitUninterruptibly();
             }
             finally {
+                udpServerGroup.shutdownGracefully();
                 group.shutdownGracefully();
             }
         }

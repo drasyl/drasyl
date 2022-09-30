@@ -58,18 +58,24 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
     private final int port;
     private final IdentityPublicKey exposer;
     private final String password;
+    private final EventLoopGroup group;
     private final Map<String, ChannelHandlerContext> tcpClients = new HashMap<>();
     private final ServerBootstrap bootstrap;
     private Channel channel;
 
+    /**
+     * @param group the {@link EventLoopGroup} the underlying tcp server should run on
+     */
     public ConsumeDrasylHandler(final PrintStream out,
                                 final int port,
                                 final IdentityPublicKey exposer,
-                                final String password) {
+                                final String password,
+                                final EventLoopGroup group) {
         this.out = requireNonNull(out);
         this.port = requireNonNegative(port);
         this.exposer = requireNonNull(exposer);
         this.password = requireNonNull(password);
+        this.group = requireNonNull(group);
         this.bootstrap = new ServerBootstrap();
     }
 
@@ -92,7 +98,7 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
 
     private void startServer(final ChannelHandlerContext ctx) {
         // prepare TCP server for binding TCP clients
-        bootstrap.group((EventLoopGroup) ctx.executor().parent())
+        bootstrap.group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new BindingDrasylHandlerChannelInitializer(ctx))
                 // important to synchronize frontend and backend channels

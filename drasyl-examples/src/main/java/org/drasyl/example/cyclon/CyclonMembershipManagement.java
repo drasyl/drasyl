@@ -25,6 +25,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
@@ -87,11 +88,12 @@ public class CyclonMembershipManagement {
 
         final CyclonView view = CyclonView.ofKeys(VIEW_SIZE, Arrays.stream(args).map(IdentityPublicKey::of).collect(Collectors.toSet()));
 
-        final EventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 0) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 0) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -154,6 +156,7 @@ public class CyclonMembershipManagement {
             ch.closeFuture().addListener(future -> keepRunning.set(false));
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }

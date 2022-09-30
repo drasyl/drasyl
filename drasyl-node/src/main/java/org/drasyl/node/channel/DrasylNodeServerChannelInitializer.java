@@ -24,6 +24,7 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
@@ -57,6 +58,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
+import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.PeerEndpoint;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
@@ -88,7 +90,7 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
  */
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
-    private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer();
+    private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup());
     private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
     private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
@@ -109,15 +111,18 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     private final DrasylConfig config;
-    private final DrasylNode node;
     private final Identity identity;
+    private final DrasylNode node;
+    private final NioEventLoopGroup udpServerGroup;
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
                                               final Identity identity,
-                                              final DrasylNode node) {
+                                              final DrasylNode node,
+                                              final NioEventLoopGroup udpServerGroup) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);
+        this.udpServerGroup = requireNonNull(udpServerGroup);
     }
 
     @SuppressWarnings("java:S1188")
@@ -149,7 +154,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private void ipStage(final DrasylServerChannel ch) {
         // udp server
-        ch.pipeline().addLast(new UdpServer(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
+        ch.pipeline().addLast(new UdpServer(udpServerGroup, config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
 
         // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
         if (config.isRemoteExposeEnabled()) {
@@ -160,14 +165,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteTcpFallbackEnabled()) {
             if (!config.isRemoteSuperPeerEnabled()) {
                 ch.pipeline().addLast(new TcpServer(
-                        config.getRemoteTcpFallbackServerBindHost(),
+                        new NioEventLoopGroup(1), config.getRemoteTcpFallbackServerBindHost(),
                         config.getRemoteTcpFallbackServerBindPort(),
                         config.getRemotePingTimeout()
                 ));
             }
             else {
                 ch.pipeline().addLast(new TcpClient(
-                        config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
+                        new NioEventLoopGroup(1), config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
                         config.getRemoteTcpFallbackClientTimeout(),
                         config.getRemoteTcpFallbackClientAddress()
                 ));
@@ -304,9 +309,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
     /**
      * Emits {@link NodeNormalTerminationEvent} on {@link #channelActive(ChannelHandlerContext)} and
-     * {@link NodeUnrecoverableErrorEvent} or {@link InboundExceptionEvent} on {@link
-     * #exceptionCaught(ChannelHandlerContext, Throwable)}. This handler must be placed at the tail
-     * of the pipeline.
+     * {@link NodeUnrecoverableErrorEvent} or {@link InboundExceptionEvent} on
+     * {@link #exceptionCaught(ChannelHandlerContext, Throwable)}. This handler must be placed at
+     * the tail of the pipeline.
      */
     private static class NodeLifecycleTailHandler extends ChannelInboundHandlerAdapter {
         private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleTailHandler.class);
@@ -372,9 +377,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     /**
-     * Emits {@link NodeUpEvent} on {@link #channelActive(ChannelHandlerContext)} and {@link
-     * NodeDownEvent} on {@link #channelInactive(ChannelHandlerContext)}. This handler must be
-     * placed at the head of the pipeline.
+     * Emits {@link NodeUpEvent} on {@link #channelActive(ChannelHandlerContext)} and
+     * {@link NodeDownEvent} on {@link #channelInactive(ChannelHandlerContext)}. This handler must
+     * be placed at the head of the pipeline.
      */
     private static class NodeLifecycleHeadHandler extends ChannelInboundHandlerAdapter {
         private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHeadHandler.class);

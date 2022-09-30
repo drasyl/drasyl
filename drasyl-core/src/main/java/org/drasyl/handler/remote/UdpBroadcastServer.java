@@ -28,8 +28,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -63,6 +63,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     private static final String BROADCAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
+    private final NioEventLoopGroup group;
     private DatagramChannel channel;
 
     static {
@@ -78,19 +79,29 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
         BROADCAST_BIND_HOST = SystemPropertyUtil.get(BROADCAST_BIND_HOST_PROPERTY, "0.0.0.0");
     }
 
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     */
     @SuppressWarnings("java:S2384")
     UdpBroadcastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
+                       final NioEventLoopGroup group,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
+        this.group = requireNonNull(group);
         this.channel = channel;
     }
 
-    public UdpBroadcastServer() {
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     */
+    @SuppressWarnings("unused")
+    public UdpBroadcastServer(final NioEventLoopGroup group) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
+                group,
                 null
         );
     }
@@ -109,7 +120,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
         if (channel == null) {
             LOG.debug("Start Broadcast Server...");
             bootstrapSupplier.get()
-                    .group((EventLoopGroup) ctx.executor().parent())
+                    .group(group)
                     .channel(NioDatagramChannel.class)
                     .handler(new UdpBroadcastServerHandler())
                     .bind(BROADCAST_BIND_HOST, BROADCAST_ADDRESS.getPort())

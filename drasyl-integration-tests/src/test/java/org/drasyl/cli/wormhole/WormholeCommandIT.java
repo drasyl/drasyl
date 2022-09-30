@@ -22,6 +22,7 @@
 package org.drasyl.cli.wormhole;
 
 import ch.qos.logback.classic.Level;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.EmbeddedNode;
@@ -121,12 +122,14 @@ class WormholeCommandIT {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
-        final EventLoopGroup senderGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup senderGroup = new DefaultEventLoopGroup(1);
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
                 senderGroup,
                 senderGroup,
+                udpServerGroup,
                 Level.WARN,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -154,12 +157,13 @@ class WormholeCommandIT {
         // create receiving node
         final Path receiverPath = path.resolve("receiver.identity");
         IdentityManager.writeIdentityFile(receiverPath, ID_3);
-        final EventLoopGroup receiverGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup receiverGroup = new DefaultEventLoopGroup(1);
         receiverThread = new Thread(() -> new WormholeReceiveCommand(
                 new PrintStream(receiverOut, true),
                 System.err,
                 receiverGroup,
                 receiverGroup,
+                udpServerGroup,
                 Level.WARN,
                 receiverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -188,13 +192,15 @@ class WormholeCommandIT {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
-        final EventLoopGroup senderParentGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup senderParentGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup senderChildGroup = senderParentGroup;
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
                 senderParentGroup,
                 senderChildGroup,
+                udpServerGroup,
                 Level.WARN,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -223,13 +229,14 @@ class WormholeCommandIT {
             // create receiving node
             final Path receiverPath = path.resolve("receiver.identity");
             IdentityManager.writeIdentityFile(receiverPath, ID_3);
-            final EventLoopGroup receiverParentGroup = new NioEventLoopGroup(1);
+            final EventLoopGroup receiverParentGroup = new DefaultEventLoopGroup(1);
             final EventLoopGroup receiverChildGroup = receiverParentGroup;
             receiverThread = new Thread(() -> new WormholeReceiveCommand(
                     new PrintStream(receiverOut, true),
                     System.err,
                     receiverParentGroup,
                     receiverChildGroup,
+                    udpServerGroup,
                     Level.WARN,
                     receiverPath.toFile(),
                     new InetSocketAddress("127.0.0.1", 0),

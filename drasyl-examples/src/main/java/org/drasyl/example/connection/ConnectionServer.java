@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
@@ -67,11 +68,12 @@ public class ConnectionServer {
 
         System.out.println("My address = " + identity.getAddress());
 
-        final EventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 22527))
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527))
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {
@@ -122,6 +124,7 @@ public class ConnectionServer {
             ch.closeFuture().awaitUninterruptibly();
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }
