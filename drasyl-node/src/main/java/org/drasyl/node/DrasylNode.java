@@ -87,7 +87,6 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 @Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    private static String version;
     protected final Identity identity;
     protected final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
@@ -149,6 +148,20 @@ public abstract class DrasylNode {
     }
 
     /**
+     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
+     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
+     * <p>
+     * Note: This is a blocking method, because when a node is started for the first time, its
+     * identity must be created. This can take up to a minute because of the proof of work.
+     *
+     * @throws DrasylException       if identity could not be loaded or created
+     * @throws DrasylConfigException if config is invalid
+     */
+    protected DrasylNode() throws DrasylException {
+        this(DrasylConfig.of());
+    }
+
+    /**
      * Generates an identity or uses the already generated identity from the given {@code config}.
      *
      * @param config custom configuration used for this identity
@@ -176,20 +189,6 @@ public abstract class DrasylNode {
         catch (final IllegalStateException | IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
         }
-    }
-
-    /**
-     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
-     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
-     * <p>
-     * Note: This is a blocking method, because when a node is started for the first time, its
-     * identity must be created. This can take up to a minute because of the proof of work.
-     *
-     * @throws DrasylException       if identity could not be loaded or created
-     * @throws DrasylConfigException if config is invalid
-     */
-    protected DrasylNode() throws DrasylException {
-        this(DrasylConfig.of());
     }
 
     /**
@@ -365,7 +364,7 @@ public abstract class DrasylNode {
     @NonNull
     @SuppressWarnings("java:S1905")
     public synchronized CompletionStage<Void> shutdown() {
-        if (channelFuture != null) {
+        if (channelFuture != null && !(channelFuture.isDone() && !channelFuture.isSuccess())) {
             try {
                 // The future returned by Channel#close is completed before the ChannelPipeline
                 // has been cleaned up (see https://github.com/netty/netty/issues/9291). But we want
