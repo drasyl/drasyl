@@ -60,7 +60,7 @@ jobs:
             os: ubuntu-latest
 
           - job_name: linux-arm64
-            os: buildjet-2vcpu-ubuntu-2204-arm
+            os: buildjet-4vcpu-ubuntu-2204-arm
 
           - job_name: macos-amd64
             os: macOS-latest
