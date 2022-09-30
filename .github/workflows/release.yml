@@ -189,7 +189,7 @@ jobs:
 
     name: Build wheels on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
-    needs: native-image
+    needs: shared-library
 
     steps:
       - uses: actions/checkout@v3
