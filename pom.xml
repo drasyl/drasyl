@@ -674,6 +674,12 @@
             </build>
         </profile>
         <profile>
+            <id>release-prepare</id>
+            <modules>
+                <module>drasyl-shared-library</module>
+            </modules>
+        </profile>
+        <profile>
             <id>native</id>
             <modules>
                 <module>drasyl-shared-library</module>

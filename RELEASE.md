@@ -12,7 +12,7 @@ This file describes how to make the various kinds of releases.
 * Build software and push to maven repository:
 ```bash
 rm -f release.properties
-mvn clean release:prepare
+mvn clean release:prepare -Prelease-prepare
 ```
 
 An additional call of `mvn release:perform` is not necessary! A GitHub Action workflow performs this
