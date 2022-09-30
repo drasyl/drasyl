@@ -6,8 +6,7 @@ This file describes how to make the various kinds of releases.
 
 * Verify that all [Github Action workflows](https://github.com/drasyl-overlay/drasyl/actions) succeed on master.
 * Update version
-  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
-  and [getting-started.md](docs/content/getting-started.md).
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Commit changes.
 * Build software and push to maven repository:

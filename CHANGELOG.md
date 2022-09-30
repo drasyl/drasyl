@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.0] - 2022-0X-XX
+## [0.9.0] - 2022-09-30
 
 ### Added
 
@@ -26,24 +26,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   more information.
 - Created shared C library `libdrasyl` for the `DrasylNode` interface.
 - Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/).
-- 
 
 ### Changed
 
 - Dependencies have been updated.
 - `DrasylNode` now provides guareented and in-order message delivery by default. Can be disabled
   through configuration parameter `drasyl.remote.message.arq.enabled`.
--
--
--
+- Moved optional classes from Maven module `org.drasyl:drasyl-core` to `org.drasyl:drasyl-extras`.
+- `DrasylChannel` and `DrasylServerChannel` are now running on `DefaultEventLoopGroup` that provide
+  a better performance compared to `NioEventLoopGroup`.
 
 ### Fixed
 
 - CLI sub-command `tun`: Ensure that a route is fully removed upon request.
 - Fixed problem with UDP multicast server unable to join multicast group on dual stack systems (#215).
 - Future returned by `DrasylNode#shutdown` is no longer completed too early (#202).
--
--
 
 ## [0.8.0] - 2022-07-10
 
