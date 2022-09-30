@@ -80,7 +80,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
             paramLabel = "<file>"
     )
     private File sendPatternFile;
-    @ArgGroup(exclusive = true, multiplicity = "0..1")
+    @ArgGroup
     private RemoteControl rc;
     @Option(
             names = { "--rc-bind" },
@@ -101,6 +101,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     )
     protected int rcEventsBufferSize;
 
+    @SuppressWarnings({ "java:S138", "java:S1188", "java:S3776" })
     @Override
     public Integer call() throws DrasylException {
         setLogLevel();
@@ -111,7 +112,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
         try {
             final DrasylConfig config = getDrasylConfig();
 
-            final Queue<Event> events = new ArrayDeque();
+            final Queue<Event> events = new ArrayDeque<>();
             final CompletableFuture<Void> running = new CompletableFuture<>();
             node = new DrasylNode(config) {
                 @Override
@@ -153,8 +154,10 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());
             }
             else {
-                rcChannel = null;
-                node.start();
+                node.start().toCompletableFuture().exceptionally(e -> {
+                    running.completeExceptionally(e);
+                    return null;
+                });
             }
 
             if (sendPatternActivities != null) {
@@ -168,10 +171,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                     LOG.info("Shutdown remote control server.");
                     finalRcChannel.close().syncUninterruptibly();
                 }
-                if (finalNode != null) {
-                    LOG.info("Shutdown drasyl node.");
-                    finalNode.shutdown().toCompletableFuture().join();
-                }
+                LOG.info("Shutdown drasyl node.");
+                finalNode.shutdown().toCompletableFuture().join();
             }));
 
             // block while node is running (only completed if rc is disabled)
