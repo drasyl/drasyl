@@ -26,7 +26,7 @@
     <parent>
         <artifactId>drasyl-parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>0.9.0-SNAPSHOT</version>
+        <version>0.9.0</version>
     </parent>
 
     <artifactId>drasyl-core</artifactId>
