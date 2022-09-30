@@ -96,10 +96,10 @@
     </modules>
 
     <scm>
-        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:git://github.com/drasyl-overlay/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>v0.7.0</tag>
+        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/drasyl-overlay/drasyl.git</developerConnection>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
