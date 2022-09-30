@@ -415,7 +415,7 @@ jobs:
 
   homebrew:
     name: Update Homebrew cask
-    needs: [java]
+    needs: cli-java
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
@@ -446,7 +446,7 @@ jobs:
 
   chocolatey:
     name: Update Chocolatey package
-    needs: [java]
+    needs: cli-java
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl-overlay/drasyl-choco
