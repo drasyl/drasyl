@@ -26,7 +26,7 @@
 
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-parent</artifactId>
-    <version>0.9.0</version>
+    <version>0.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
@@ -99,7 +99,7 @@
         <url>https://github.com/drasyl-overlay/drasyl</url>
         <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/drasyl-overlay/drasyl.git</developerConnection>
-        <tag>v0.9.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
