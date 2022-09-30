@@ -29,7 +29,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
@@ -46,6 +45,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -57,12 +57,19 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
     public static final int MAX_FRAME_LENGTH = 1200;
     private final String password;
     private final InetSocketAddress service;
+    private final EventLoopGroup group;
     private final Map<String, ChannelHandlerContext> tcpClients = new HashMap<>();
     private final Bootstrap bootstrap;
 
-    public ExposeDrasylHandler(final String password, final InetSocketAddress service) {
+    /**
+     * @param group the {@link EventLoopGroup} the underlying tcp client should run on
+     */
+    public ExposeDrasylHandler(final String password,
+                               final InetSocketAddress service,
+                               final EventLoopGroup group) {
         this.password = requireNonNull(password);
         this.service = requireNonNull(service);
+        this.group = requireNonNull(group);
         bootstrap = new Bootstrap();
     }
 
@@ -85,10 +92,10 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
 
     private void completeBootstrap(final ChannelHandlerContext ctx) {
         // prepare TCP clients for connecting to exposing service
-        bootstrap.group((EventLoopGroup) ctx.executor().parent())
+        bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 // important to synchronize frontend and backend channels
-                .option(ChannelOption.AUTO_READ, false);
+                .option(AUTO_READ, false);
     }
 
     @SuppressWarnings("ForLoopReplaceableByForEach")

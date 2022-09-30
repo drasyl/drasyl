@@ -24,6 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
@@ -68,7 +69,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(InetAddress.getLocalHost(), 0);
+            final UdpServer handler = new UdpServer(new NioEventLoopGroup(1), InetAddress.getLocalHost(), 0);
 
             channel = new UserEventAwareEmbeddedChannel(
                     handler,

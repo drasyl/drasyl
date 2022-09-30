@@ -23,6 +23,7 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Worm;
@@ -48,6 +49,7 @@ class WormholeSendChannelInitializerTest {
     class InitChannel {
         @Test
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress bindAddress,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
@@ -56,7 +58,7 @@ class WormholeSendChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode) throws Exception {
             when(ctx.channel()).thenReturn(channel);
 
-            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
+            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(12)).addLast(any());

@@ -27,6 +27,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.annotation.Beta;
@@ -142,7 +144,10 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         identity = DrasylNode.generateIdentity(config);
 
-        bootstrap = new ServerBootstrap().group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup()).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this)).childHandler(new DrasylNodeChannelInitializer(config, this));
+        final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
+        final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
+        final NioEventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
+        bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
     }

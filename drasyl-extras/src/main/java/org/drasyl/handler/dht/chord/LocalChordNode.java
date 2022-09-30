@@ -24,8 +24,8 @@ package org.drasyl.handler.dht.chord;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -62,7 +62,7 @@ public class LocalChordNode implements RemoteChordNode {
     private static final Logger LOG = LoggerFactory.getLogger(LocalChordNode.class);
     private final ChordFingerTable fingerTable;
     private final RmiClientHandler client;
-    private final EventLoopGroup group = new NioEventLoopGroup(1);
+    private final EventLoopGroup group = new DefaultEventLoopGroup(1);
     @SuppressWarnings("unused")
     @RmiCaller
     private DrasylAddress caller;

@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.channel.InetAddressedMessage;
@@ -78,7 +79,8 @@ public class TcpClientTest {
         void shouldStopClientOnChannelInactive() {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -87,6 +89,7 @@ public class TcpClientTest {
             }
             finally {
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
     }
@@ -96,7 +99,8 @@ public class TcpClientTest {
         @Test
         void shouldPassTroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -108,6 +112,7 @@ public class TcpClientTest {
             }
             finally {
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
 
@@ -119,7 +124,8 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -134,13 +140,15 @@ public class TcpClientTest {
             }
             finally {
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
 
         @Test
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -152,6 +160,7 @@ public class TcpClientTest {
             }
             finally {
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
 
@@ -163,7 +172,8 @@ public class TcpClientTest {
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
             when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
 
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -173,6 +183,7 @@ public class TcpClientTest {
             }
             finally {
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
 
@@ -191,7 +202,8 @@ public class TcpClientTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, noResponseFromSuperPeerSince, timeout, address, null);
+            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -202,6 +214,7 @@ public class TcpClientTest {
             finally {
                 channel.releaseOutbound();
                 channel.close();
+                clientGroup.shutdownGracefully();
             }
         }
     }

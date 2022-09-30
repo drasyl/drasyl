@@ -30,6 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.identity.Identity;
@@ -81,13 +82,15 @@ class UdpServerTest {
                 return null;
             });
 
-            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, null);
+            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(bindAddress);
             }
             finally {
                 channel.close();
+                serverGroup.shutdownGracefully();
             }
         }
     }
@@ -98,7 +101,8 @@ class UdpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, channel);
+            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -107,6 +111,7 @@ class UdpServerTest {
             }
             finally {
                 channel.close();
+                serverGroup.shutdownGracefully();
             }
         }
     }
@@ -119,7 +124,8 @@ class UdpServerTest {
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
-            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, channel);
+            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -128,6 +134,7 @@ class UdpServerTest {
             }
             finally {
                 channel.close();
+                serverGroup.shutdownGracefully();
             }
         }
 
@@ -144,7 +151,8 @@ class UdpServerTest {
             when(bootstrap.group(any()).channel(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final UdpServer handler = new UdpServer(bootstrap, bindAddress, pendingWrites, null);
+            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, null);
 
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -157,6 +165,7 @@ class UdpServerTest {
             }
             finally {
                 channel.close();
+                serverGroup.shutdownGracefully();
             }
         }
     }

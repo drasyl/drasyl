@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.concurrent.EventExecutor;
@@ -84,7 +85,8 @@ class UdpBroadcastServerTest {
                 return null;
             });
 
-            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, null);
+            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
@@ -92,6 +94,7 @@ class UdpBroadcastServerTest {
             }
             finally {
                 channel.close();
+                broadcastServerGroup.shutdownGracefully();
             }
         }
     }
@@ -102,7 +105,8 @@ class UdpBroadcastServerTest {
         void shouldStopServerOnChannelInactive() {
             when(nodes.isEmpty()).thenReturn(true);
 
-            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, channel);
+            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -112,6 +116,7 @@ class UdpBroadcastServerTest {
             }
             finally {
                 channel.close();
+                broadcastServerGroup.shutdownGracefully();
             }
         }
     }
@@ -136,7 +141,8 @@ class UdpBroadcastServerTest {
             }).when(eventExecutor).execute(any());
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, null);
+            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(ctx).fireChannelRead(any());
@@ -144,6 +150,7 @@ class UdpBroadcastServerTest {
             finally {
                 channel.releaseInbound();
                 channel.close();
+                broadcastServerGroup.shutdownGracefully();
             }
         }
     }

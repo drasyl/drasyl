@@ -25,6 +25,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
@@ -66,11 +67,12 @@ public class PubSubBroker {
 
         System.out.println("Broker listening on address " + identity.getAddress());
 
-        final EventLoopGroup group = new NioEventLoopGroup(1);
+        final EventLoopGroup group = new DefaultEventLoopGroup(1);
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 22527) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -105,6 +107,7 @@ public class PubSubBroker {
             }
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             // give teardown messages of PubSubBrokerHandler chance to be sent
             group.next().submit(() -> {
                 // noop

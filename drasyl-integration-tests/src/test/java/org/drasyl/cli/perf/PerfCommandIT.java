@@ -22,6 +22,7 @@
 package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.EmbeddedNode;
@@ -118,13 +119,15 @@ class PerfCommandIT {
         // create server
         final Path serverPath = path.resolve("server.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_2);
-        final EventLoopGroup serverParentGroup = new NioEventLoopGroup(1);
-        final EventLoopGroup serverChildGroup = new NioEventLoopGroup();
+        final EventLoopGroup serverParentGroup = new DefaultEventLoopGroup(1);
+        final EventLoopGroup serverChildGroup = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,
                 serverParentGroup,
                 serverChildGroup,
+                udpServerGroup,
                 Level.WARN,
                 serverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -148,13 +151,14 @@ class PerfCommandIT {
         // create client
         final Path clientPath = path.resolve("client.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_3);
-        final EventLoopGroup clientParentGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup clientParentGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup clientChildGroup = clientParentGroup;
         clientThread = new Thread(() -> new PerfClientCommand(
                 new PrintStream(clientOut, true),
                 System.err,
                 clientParentGroup,
                 clientChildGroup,
+                udpServerGroup,
                 Level.WARN,
                 clientPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),

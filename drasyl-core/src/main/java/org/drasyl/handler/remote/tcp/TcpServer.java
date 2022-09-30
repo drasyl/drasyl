@@ -32,6 +32,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -68,20 +69,15 @@ public class TcpServer extends ChannelDuplexHandler {
     private final InetAddress bindHost;
     private final int bindPort;
     private final Duration pingTimeout;
+    private final EventLoopGroup group;
     private Channel serverChannel;
 
-    public TcpServer(final InetAddress bindHost, final int bindPort, final Duration pingTimeout) {
-        this(
-                new ServerBootstrap(),
-                new ConcurrentHashMap<>(),
-                bindHost,
-                bindPort,
-                pingTimeout,
-                null
-        );
-    }
-
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     */
+    @SuppressWarnings("java:S107")
     TcpServer(final ServerBootstrap bootstrap,
+              final NioEventLoopGroup group,
               final Map<SocketAddress, Channel> clientChannels,
               final InetAddress bindHost,
               final int bindPort,
@@ -92,7 +88,26 @@ public class TcpServer extends ChannelDuplexHandler {
         this.bindHost = bindHost;
         this.bindPort = bindPort;
         this.pingTimeout = pingTimeout;
+        this.group = requireNonNull(group);
         this.serverChannel = serverChannel;
+    }
+
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     */
+    public TcpServer(final NioEventLoopGroup group,
+                     final InetAddress bindHost,
+                     final int bindPort,
+                     final Duration pingTimeout) {
+        this(
+                new ServerBootstrap(),
+                group,
+                new ConcurrentHashMap<>(),
+                bindHost,
+                bindPort,
+                pingTimeout,
+                null
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -125,7 +140,7 @@ public class TcpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
-                .group((EventLoopGroup) ctx.executor().parent())
+                .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
                 .bind(bindHost, bindPort)
