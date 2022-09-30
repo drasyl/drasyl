@@ -31,7 +31,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCounted;
@@ -98,7 +98,7 @@ class TcpServerTest {
                 return null;
             });
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -117,7 +117,7 @@ class TcpServerTest {
         void shouldStopServerOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             try {
                 handler.channelInactive(ctx);
@@ -139,7 +139,7 @@ class TcpServerTest {
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -160,7 +160,7 @@ class TcpServerTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -177,7 +177,7 @@ class TcpServerTest {
         @Test
         void shouldPassThroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, serverChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

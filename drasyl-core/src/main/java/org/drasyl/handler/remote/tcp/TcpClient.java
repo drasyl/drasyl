@@ -31,8 +31,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.logging.Logger;
@@ -75,12 +75,12 @@ public class TcpClient extends ChannelDuplexHandler {
     private long lastSuperPeersResolveTime;
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     * @param group the {@link KQueueEventLoopGroup} the underlying tcp client should run on
      */
     @SuppressWarnings("java:S107")
     TcpClient(final Set<InetSocketAddress> superPeerAddresses,
               final Bootstrap bootstrap,
-              final NioEventLoopGroup group,
+              final KQueueEventLoopGroup group,
               final AtomicLong noResponseFromSuperPeerSince,
               final Duration timeout,
               final InetSocketAddress address,
@@ -95,9 +95,9 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     * @param group the {@link KQueueEventLoopGroup} the underlying tcp client should run on
      */
-    public TcpClient(final NioEventLoopGroup group,
+    public TcpClient(final KQueueEventLoopGroup group,
                      final Set<InetSocketAddress> superPeerAddresses,
                      final Duration timeout,
                      final InetSocketAddress address) {
@@ -233,7 +233,7 @@ public class TcpClient extends ChannelDuplexHandler {
         ctx.fireChannelActive();
 
         bootstrap.group(group)
-                .channel(NioSocketChannel.class)
+                .channel(KQueueSocketChannel.class)
                 .handler(new TcpClientHandler(ctx));
     }
 

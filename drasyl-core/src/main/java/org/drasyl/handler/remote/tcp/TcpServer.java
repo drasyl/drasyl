@@ -32,8 +32,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.PromiseNotifier;
@@ -73,11 +73,11 @@ public class TcpServer extends ChannelDuplexHandler {
     private Channel serverChannel;
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     * @param group the {@link KQueueEventLoopGroup} the underlying tcp server should run on
      */
     @SuppressWarnings("java:S107")
     TcpServer(final ServerBootstrap bootstrap,
-              final NioEventLoopGroup group,
+              final KQueueEventLoopGroup group,
               final Map<SocketAddress, Channel> clientChannels,
               final InetAddress bindHost,
               final int bindPort,
@@ -93,9 +93,9 @@ public class TcpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     * @param group the {@link KQueueEventLoopGroup} the underlying tcp server should run on
      */
-    public TcpServer(final NioEventLoopGroup group,
+    public TcpServer(final KQueueEventLoopGroup group,
                      final InetAddress bindHost,
                      final int bindPort,
                      final Duration pingTimeout) {
@@ -141,7 +141,7 @@ public class TcpServer extends ChannelDuplexHandler {
         LOG.debug("Start Server...");
         bootstrap
                 .group(group)
-                .channel(NioServerSocketChannel.class)
+                .channel(KQueueServerSocketChannel.class)
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
                 .bind(bindHost, bindPort)
                 .addListener(new TcpServerFutureListener(ctx));

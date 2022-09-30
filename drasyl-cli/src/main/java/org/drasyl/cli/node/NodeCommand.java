@@ -24,7 +24,7 @@ package org.drasyl.cli.node;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
@@ -148,7 +148,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 }
                 final ServerBootstrap rcBootstrap = new ServerBootstrap()
                         .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                        .channel(NioServerSocketChannel.class)
+                        .channel(KQueueServerSocketChannel.class)
                         .childHandler(channelInitializer);
                 rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());

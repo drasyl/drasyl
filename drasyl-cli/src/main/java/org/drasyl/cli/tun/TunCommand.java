@@ -34,7 +34,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -204,7 +204,7 @@ public class TunCommand extends ChannelOptions {
                 }
                 final ServerBootstrap rcBootstrap = new ServerBootstrap()
                         .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                        .channel(NioServerSocketChannel.class)
+                        .channel(KQueueServerSocketChannel.class)
                         .childHandler(channelInitializer);
                 rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());

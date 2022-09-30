@@ -24,7 +24,7 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
@@ -113,12 +113,12 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private final DrasylConfig config;
     private final Identity identity;
     private final DrasylNode node;
-    private final NioEventLoopGroup udpServerGroup;
+    private final KQueueEventLoopGroup udpServerGroup;
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
                                               final Identity identity,
                                               final DrasylNode node,
-                                              final NioEventLoopGroup udpServerGroup) {
+                                              final KQueueEventLoopGroup udpServerGroup) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);
@@ -165,14 +165,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteTcpFallbackEnabled()) {
             if (!config.isRemoteSuperPeerEnabled()) {
                 ch.pipeline().addLast(new TcpServer(
-                        new NioEventLoopGroup(1), config.getRemoteTcpFallbackServerBindHost(),
+                        new KQueueEventLoopGroup(1), config.getRemoteTcpFallbackServerBindHost(),
                         config.getRemoteTcpFallbackServerBindPort(),
                         config.getRemotePingTimeout()
                 ));
             }
             else {
                 ch.pipeline().addLast(new TcpClient(
-                        new NioEventLoopGroup(1), config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
+                        new KQueueEventLoopGroup(1), config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
                         config.getRemoteTcpFallbackClientTimeout(),
                         config.getRemoteTcpFallbackClientAddress()
                 ));

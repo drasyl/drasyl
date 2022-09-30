@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -49,7 +49,7 @@ class DrasylNodeServerChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final KQueueEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);

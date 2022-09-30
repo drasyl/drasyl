@@ -24,7 +24,7 @@ package org.drasyl.cli.wormhole;
 import ch.qos.logback.classic.Level;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
 import org.drasyl.identity.IdentityPublicKey;
@@ -123,7 +123,7 @@ class WormholeCommandIT {
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
         final EventLoopGroup senderGroup = new DefaultEventLoopGroup(1);
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final KQueueEventLoopGroup udpServerGroup = new KQueueEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
@@ -194,7 +194,7 @@ class WormholeCommandIT {
         IdentityManager.writeIdentityFile(senderPath, ID_2);
         final EventLoopGroup senderParentGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup senderChildGroup = senderParentGroup;
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final KQueueEventLoopGroup udpServerGroup = new KQueueEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,

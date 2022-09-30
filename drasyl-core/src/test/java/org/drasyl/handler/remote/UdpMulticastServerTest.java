@@ -28,7 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.concurrent.EventExecutor;
@@ -86,7 +86,7 @@ class UdpMulticastServerTest {
                 return null;
             });
 
-            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup multicastServerGroup = new KQueueEventLoopGroup(1);
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -112,7 +112,7 @@ class UdpMulticastServerTest {
                 return null;
             });
 
-            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup multicastServerGroup = new KQueueEventLoopGroup(1);
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -149,7 +149,7 @@ class UdpMulticastServerTest {
             }).when(eventExecutor).execute(any());
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup multicastServerGroup = new KQueueEventLoopGroup(1);
             final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

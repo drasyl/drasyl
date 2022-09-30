@@ -28,7 +28,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -82,7 +82,7 @@ public class PubSubPublisher {
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final KQueueEventLoopGroup udpServerGroup = new KQueueEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)

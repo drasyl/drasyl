@@ -32,7 +32,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import org.drasyl.cli.tunnel.message.TunnelMessage;
 import org.drasyl.handler.codec.MaxLengthFrameDecoder;
 import org.drasyl.identity.IdentityPublicKey;
@@ -99,7 +99,7 @@ public class ConsumeDrasylHandler extends ChannelDuplexHandler {
     private void startServer(final ChannelHandlerContext ctx) {
         // prepare TCP server for binding TCP clients
         bootstrap.group(group)
-                .channel(NioServerSocketChannel.class)
+                .channel(KQueueServerSocketChannel.class)
                 .childHandler(new BindingDrasylHandlerChannelInitializer(ctx))
                 // important to synchronize frontend and backend channels
                 .childOption(AUTO_READ, false)

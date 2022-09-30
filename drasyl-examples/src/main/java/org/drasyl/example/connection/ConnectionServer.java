@@ -29,7 +29,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
@@ -69,7 +69,7 @@ public class ConnectionServer {
         System.out.println("My address = " + identity.getAddress());
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final KQueueEventLoopGroup udpServerGroup = new KQueueEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)

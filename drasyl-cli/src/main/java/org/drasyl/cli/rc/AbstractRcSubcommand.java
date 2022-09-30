@@ -27,8 +27,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
@@ -54,11 +54,11 @@ public abstract class AbstractRcSubcommand extends GlobalOptions implements Call
         setLogLevel();
 
         final Worm<Integer> exitCode = Worm.of();
-        final EventLoopGroup group = new NioEventLoopGroup(1);
+        final EventLoopGroup group = new KQueueEventLoopGroup(1);
         try {
             final Bootstrap b = new Bootstrap()
                     .group(group)
-                    .channel(NioSocketChannel.class)
+                    .channel(KQueueSocketChannel.class)
                     .handler(new RcJsonRpc2OverTcpClientInitializer(getRequest(), response -> exitCode.trySet(onResponse(response))));
             final ChannelFuture future = b.connect(rcAddress).syncUninterruptibly();
 

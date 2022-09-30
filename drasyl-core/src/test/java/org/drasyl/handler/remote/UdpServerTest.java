@@ -30,7 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.identity.Identity;
@@ -82,7 +82,7 @@ class UdpServerTest {
                 return null;
             });
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -101,7 +101,7 @@ class UdpServerTest {
         void shouldStopServerOnChannelInactive() {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -124,7 +124,7 @@ class UdpServerTest {
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -151,7 +151,7 @@ class UdpServerTest {
             when(bootstrap.group(any()).channel(any()).bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup serverGroup = new KQueueEventLoopGroup(1);
             final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, pendingWrites, null);
 
             final EmbeddedChannel channel = new EmbeddedChannel(handler);

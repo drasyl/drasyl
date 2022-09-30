@@ -24,7 +24,7 @@ package org.drasyl.cli.perf;
 import ch.qos.logback.classic.Level;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.identity.IdentityPublicKey;
@@ -121,7 +121,7 @@ class PerfCommandIT {
         IdentityManager.writeIdentityFile(serverPath, ID_2);
         final EventLoopGroup serverParentGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup serverChildGroup = new DefaultEventLoopGroup();
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final KQueueEventLoopGroup udpServerGroup = new KQueueEventLoopGroup(1);
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,

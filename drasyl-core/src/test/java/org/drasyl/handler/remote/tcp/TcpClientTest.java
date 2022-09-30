@@ -28,7 +28,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.channel.InetAddressedMessage;
@@ -79,7 +79,7 @@ public class TcpClientTest {
         void shouldStopClientOnChannelInactive() {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -99,7 +99,7 @@ public class TcpClientTest {
         @Test
         void shouldPassTroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -124,7 +124,7 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -147,7 +147,7 @@ public class TcpClientTest {
         @Test
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -172,7 +172,7 @@ public class TcpClientTest {
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
             when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
 
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -202,7 +202,7 @@ public class TcpClientTest {
             when(channelFuture.isSuccess()).thenReturn(true);
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
-            final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup clientGroup = new KQueueEventLoopGroup(1);
             final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

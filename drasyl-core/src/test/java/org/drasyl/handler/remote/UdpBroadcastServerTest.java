@@ -28,7 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.concurrent.EventExecutor;
@@ -85,7 +85,7 @@ class UdpBroadcastServerTest {
                 return null;
             });
 
-            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup broadcastServerGroup = new KQueueEventLoopGroup(1);
             final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -105,7 +105,7 @@ class UdpBroadcastServerTest {
         void shouldStopServerOnChannelInactive() {
             when(nodes.isEmpty()).thenReturn(true);
 
-            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup broadcastServerGroup = new KQueueEventLoopGroup(1);
             final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
@@ -141,7 +141,7 @@ class UdpBroadcastServerTest {
             }).when(eventExecutor).execute(any());
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final NioEventLoopGroup broadcastServerGroup = new NioEventLoopGroup(1);
+            final KQueueEventLoopGroup broadcastServerGroup = new KQueueEventLoopGroup(1);
             final UdpBroadcastServer handler = new UdpBroadcastServer(nodes, bootstrapSupplier, broadcastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

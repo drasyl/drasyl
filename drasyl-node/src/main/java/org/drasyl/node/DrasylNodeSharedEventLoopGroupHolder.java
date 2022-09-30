@@ -23,7 +23,7 @@ package org.drasyl.node;
 
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
@@ -83,14 +83,14 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s network based
+     * Use this {@link KQueueEventLoopGroup} for the {@link DrasylNode}'s network based
      * {@link io.netty.channel.Channel}s (udp server, tcp client, etc.). By default the group has
      * {@link #NETWORK_DEFAULT_THREADS} threads. This number can  be changed by using the java
      * system property {@code org.drasyl.event-loop.network}.
      *
-     * @return a {@link NioEventLoopGroup} for child channels
+     * @return a {@link KQueueEventLoopGroup} for child channels
      */
-    public static NioEventLoopGroup getNetworkGroup() {
+    public static KQueueEventLoopGroup getNetworkGroup() {
         return LazyNetworkHolder.INSTANCE;
     }
 
@@ -156,7 +156,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Network event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
+        static final KQueueEventLoopGroup INSTANCE = new KQueueEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = networkEventLoopGroupCreated = true;
     }

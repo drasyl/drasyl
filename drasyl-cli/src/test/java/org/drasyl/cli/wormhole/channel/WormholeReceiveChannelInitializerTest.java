@@ -23,7 +23,7 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -50,7 +50,7 @@ class WormholeReceiveChannelInitializerTest {
     class InitChannel {
         @Test
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final KQueueEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress bindAddress,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,

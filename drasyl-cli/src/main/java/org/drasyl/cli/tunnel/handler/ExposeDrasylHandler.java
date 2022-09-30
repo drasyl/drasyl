@@ -32,7 +32,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import org.drasyl.cli.tunnel.message.Connect;
 import org.drasyl.cli.tunnel.message.ConnectFailed;
 import org.drasyl.cli.tunnel.message.TunnelMessage;
@@ -93,7 +93,7 @@ public class ExposeDrasylHandler extends ChannelDuplexHandler {
     private void completeBootstrap(final ChannelHandlerContext ctx) {
         // prepare TCP clients for connecting to exposing service
         bootstrap.group(group)
-                .channel(NioSocketChannel.class)
+                .channel(KQueueSocketChannel.class)
                 // important to synchronize frontend and backend channels
                 .option(AUTO_READ, false);
     }

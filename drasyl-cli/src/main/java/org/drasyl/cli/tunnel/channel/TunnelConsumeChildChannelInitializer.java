@@ -23,7 +23,7 @@ package org.drasyl.cli.tunnel.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
@@ -115,7 +115,7 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionHandshakeCha
         p.addLast(new TunnelWriteCodec());
         p.addLast(new JacksonCodec<>(JacksonCodecTunnelMessage.class));
 
-        p.addLast(new ConsumeDrasylHandler(out, port, exposer, password, new NioEventLoopGroup(1)));
+        p.addLast(new ConsumeDrasylHandler(out, port, exposer, password, new KQueueEventLoopGroup(1)));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }

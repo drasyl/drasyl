@@ -33,8 +33,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
@@ -138,7 +138,7 @@ public class UdpServer extends ChannelDuplexHandler {
         LOG.debug("Start Server...");
         bootstrap
                 .group(group)
-                .channel(NioDatagramChannel.class)
+                .channel(KQueueDatagramChannel.class)
                 .handler(new UdpServerHandler(ctx))
                 .bind(bindAddress)
                 .addListener(new UdpServerBindListener(ctx));
