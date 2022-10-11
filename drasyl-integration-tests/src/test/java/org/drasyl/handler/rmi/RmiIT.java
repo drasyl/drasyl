@@ -98,8 +98,22 @@ class RmiIT {
             MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
             stub.doNothing();
-            final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> latch.countDown());
-            final Future<String> whoAmIFuture = stub.whoAmI().addListener((FutureListener<String>) f -> latch.countDown());
+            final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> {
+                if (f.isSuccess()) {
+                    latch.countDown();
+                }
+                else {
+                    throw new RuntimeException(f.cause());
+                }
+            });
+            final Future<String> whoAmIFuture = stub.whoAmI().addListener((FutureListener<String>) f -> {
+                if (f.isSuccess()) {
+                    latch.countDown();
+                }
+                else {
+                    throw new RuntimeException(f.cause());
+                }
+            });
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
