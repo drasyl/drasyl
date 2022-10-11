@@ -23,12 +23,11 @@ package org.drasyl.node.handler.serialization;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.UnsignedShort;
 
-import java.nio.charset.StandardCharsets;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * This class models the serialized payload of a drasyl application message.
@@ -48,19 +47,15 @@ public abstract class SerializedPayload {
      * @param byteBuf writes this message to the given buffer
      */
     public void writeTo(final ByteBuf byteBuf) {
-        final ByteBuf typeBuffer = Unpooled.buffer();
-
         if (getType() == null) {
             byteBuf.writeBytes(UnsignedShort.of(0).toBytes())
                     .writeBytes(getPayload());
         }
         else {
-            byteBuf.writeBytes(UnsignedShort.of(typeBuffer.writeCharSequence(getType(), StandardCharsets.UTF_8)).toBytes())
-                    .writeBytes(typeBuffer)
-                    .writeBytes(getPayload());
+            byteBuf.writeBytes(UnsignedShort.of(getType().length()).toBytes());
+            byteBuf.writeCharSequence(getType(), UTF_8);
+            byteBuf.writeBytes(getPayload());
         }
-
-        typeBuffer.release();
     }
 
     public static SerializedPayload of(final String type, final byte[] payload) {
@@ -78,7 +73,7 @@ public abstract class SerializedPayload {
 
         stringLength = byteBuf.readUnsignedShort();
         if (stringLength > 0) {
-            type = byteBuf.readCharSequence(stringLength, StandardCharsets.UTF_8).toString();
+            type = byteBuf.readCharSequence(stringLength, UTF_8).toString();
         }
         payload = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(payload);

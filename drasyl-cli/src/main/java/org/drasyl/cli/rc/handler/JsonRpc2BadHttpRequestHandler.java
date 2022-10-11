@@ -31,6 +31,7 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 
+import static io.netty.buffer.Unpooled.unreleasableBuffer;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONNECTION;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -45,7 +46,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * request within a certain time.
  */
 public class JsonRpc2BadHttpRequestHandler extends ChannelInboundHandlerAdapter {
-    private static final ByteBuf BAD_REQUEST_BUF = Unpooled.copiedBuffer("{\"jsonrpc\": \"2.0\", \"error\": {\"code\": 400, \"message\": \"Bad Request\"}, \"id\": null}\n", UTF_8).asReadOnly();
+    private static final ByteBuf BAD_REQUEST_BUF = unreleasableBuffer(Unpooled.copiedBuffer("{\"jsonrpc\": \"2.0\", \"error\": {\"code\": 400, \"message\": \"Bad Request\"}, \"id\": null}\n", UTF_8)).asReadOnly();
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,

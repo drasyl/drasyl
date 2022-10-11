@@ -23,8 +23,8 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import org.drasyl.annotation.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -182,12 +182,14 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     /**
      * Returns an armed version ({@link ArmedProtocolMessage}) of this message.
      *
+     * @param alloc
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    will be used for encryption
      * @return the armed version ({@link ArmedProtocolMessage}) of this message
      * @throws InvalidMessageFormatException if arming was not possible
      */
-    public ArmedProtocolMessage arm(final Crypto cryptoInstance,
+    public ArmedProtocolMessage arm(final ByteBufAllocator alloc,
+                                    final Crypto cryptoInstance,
                                     final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
             getBytes().markReaderIndex();
@@ -211,7 +213,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                         getHopCount(), getNetworkId(),
                         getRecipient(), getSender(),
                         getProofOfWork(),
-                        Unpooled.wrappedBuffer(encryptedPrivateHeader, encryptedBytes, unencryptedRemainder)
+                        alloc.buffer(encryptedPrivateHeader.length + encryptedBytes.length + unencryptedRemainder.length).writeBytes(encryptedPrivateHeader).writeBytes(encryptedBytes).writeBytes(unencryptedRemainder)
                 );
             }
         }
@@ -227,15 +229,17 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
      * Returns an armed version ({@link ArmedProtocolMessage}) of this message and then releases
      * this message.
      *
+     * @param alloc
      * @param cryptoInstance the crypto instance that should be used
      * @param sessionPair    will be used for encryption
      * @return the armed version ({@link ArmedProtocolMessage}) of this message
      * @throws InvalidMessageFormatException if arming was not possible
      */
-    public ArmedProtocolMessage armAndRelease(final Crypto cryptoInstance,
+    public ArmedProtocolMessage armAndRelease(final ByteBufAllocator alloc,
+                                              final Crypto cryptoInstance,
                                               final SessionPair sessionPair) throws InvalidMessageFormatException {
         try {
-            return arm(cryptoInstance, sessionPair);
+            return arm(alloc, cryptoInstance, sessionPair);
         }
         finally {
             release();

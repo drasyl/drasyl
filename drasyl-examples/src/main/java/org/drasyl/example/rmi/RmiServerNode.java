@@ -26,6 +26,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
@@ -59,11 +60,12 @@ public class RmiServerNode {
         server.bind("MessengerService", service);
         System.out.println("Object `" + service + "` bound to `MessengerService` and can now be accessed by other nodes.");
 
-        final EventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 22527) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -88,6 +90,7 @@ public class RmiServerNode {
             ch.closeFuture().awaitUninterruptibly();
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }

@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -59,7 +60,7 @@ public class ArmedProtocolMessageTest {
         @BeforeEach
         void setUp() throws IOException, CryptoException {
             final FullReadMessage<?> fullReadMessage = ApplicationMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
-            armedMessage = fullReadMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
+            armedMessage = fullReadMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
         }
 
         @AfterEach
@@ -94,7 +95,7 @@ public class ArmedProtocolMessageTest {
         void setUp() throws IOException, CryptoException {
             fullReadMessage = ApplicationMessage.of(HopCount.of(), true, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.copiedBuffer("Heiko", UTF_8));
             sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            armedMessage = fullReadMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
+            armedMessage = fullReadMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
         }
 
         @AfterEach
@@ -104,27 +105,27 @@ public class ArmedProtocolMessageTest {
 
         @Test
         void shouldReturnDisarmedMessage() throws IOException {
-            final FullReadMessage<?> fullReadMessage = armedMessage.disarm(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> fullReadMessage = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(this.fullReadMessage, fullReadMessage);
         }
 
         @Test
         void shouldThrowExceptionOnWrongSessionPair() {
-            assertThrows(IOException.class, () -> armedMessage.disarm(Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())));
+            assertThrows(IOException.class, () -> armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())));
         }
 
         @Test
         void disarmWithWrongSessionPairShouldNotCorruptMessage() throws IOException {
-            assertThrows(IOException.class, () -> armedMessage.disarm(Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())));
+            assertThrows(IOException.class, () -> armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())));
 
-            armedMessage.disarm(Crypto.INSTANCE, SessionPair.of(sessionPair.getRx(), sessionPair.getTx()));
+            armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getRx(), sessionPair.getTx()));
         }
 
         @Test
         void shouldNotChangeByteBufOfArmedMessage() throws IOException {
-            final FullReadMessage<?> a = armedMessage.disarm(Crypto.INSTANCE, sessionPair);
-            final FullReadMessage<?> b = armedMessage.disarm(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> a = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> b = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(a, b);
         }
@@ -133,7 +134,7 @@ public class ArmedProtocolMessageTest {
         void shouldBeAbleToDisarmToAcknowledgementMessage() throws CryptoException, InvalidMessageFormatException {
             final FullReadMessage<?> message = AcknowledgementMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), System.currentTimeMillis());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
         }
@@ -142,7 +143,7 @@ public class ArmedProtocolMessageTest {
         void shouldBeAbleToDisarmToApplicationMessage() throws CryptoException, InvalidMessageFormatException {
             final FullReadMessage<?> message = ApplicationMessage.of(HopCount.of(), true, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
         }
@@ -151,7 +152,7 @@ public class ArmedProtocolMessageTest {
         void shouldBeAbleToDisarmToDiscoveryMessage() throws CryptoException, InvalidMessageFormatException {
             final FullReadMessage<?> message = HelloMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), 0, System.currentTimeMillis(), ID_1.getIdentitySecretKey(), Set.of());
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
         }
@@ -160,7 +161,7 @@ public class ArmedProtocolMessageTest {
         void shouldBeAbleToDisarmToUniteMessage() throws CryptoException, InvalidMessageFormatException {
             final FullReadMessage<?> message = UniteMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), ID_1.getIdentityPublicKey(), Set.of(new InetSocketAddress(80)));
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
-            final FullReadMessage<?> disarmedMessage = message.arm(Unpooled.buffer(), Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(Crypto.INSTANCE, sessionPair);
+            final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
         }
@@ -171,7 +172,7 @@ public class ArmedProtocolMessageTest {
         @Test
         void shouldNotModifyMessageByteBuf() throws IOException, CryptoException {
             final ApplicationMessage applicationMessage = ApplicationMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
-            final ArmedProtocolMessage armedMessage = applicationMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
+            final ArmedProtocolMessage armedMessage = applicationMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
             final int readableBytes = armedMessage.getBytes().readableBytes();
             final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
@@ -185,7 +186,7 @@ public class ArmedProtocolMessageTest {
         @Test
         void multipleCallsShouldWriteSameBytes() throws IOException, CryptoException {
             final ApplicationMessage applicationMessage = ApplicationMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
-            final PartialReadMessage armedMessage = applicationMessage.arm(Unpooled.buffer(), Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
+            final PartialReadMessage armedMessage = applicationMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
             final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
             armedMessage.writeTo(byteBuf);

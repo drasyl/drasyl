@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
@@ -198,7 +197,7 @@ public class NatPmpPortMapping implements PortMapping {
         LOG.debug("Request external address from gateway `{}`.", defaultGateway::getHostString);
 
         final byte[] content = NatPmpUtil.buildExternalAddressRequestMessage();
-        final ByteBuf msg = Unpooled.wrappedBuffer(content);
+        final ByteBuf msg = ctx.alloc().buffer(content.length).writeBytes(content);
         externalAddressRequested.set(true);
 
         ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future -> {
@@ -229,7 +228,7 @@ public class NatPmpPortMapping implements PortMapping {
         LOG.debug("Request mapping for `{}:{}/UDP` to `{}/UDP` with lifetime of {}s from gateway `{}`.", externalAddress::getHostAddress, () -> port, () -> port, lifetime::toSeconds, defaultGateway::getHostString);
 
         final byte[] content = NatPmpUtil.buildMappingRequestMessage(port, port, lifetime);
-        final ByteBuf msg = Unpooled.wrappedBuffer(content);
+        final ByteBuf msg = ctx.alloc().buffer(content.length).writeBytes(content);
         mappingRequested.set(true);
 
         ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future -> {

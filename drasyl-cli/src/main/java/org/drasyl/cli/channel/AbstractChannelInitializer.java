@@ -22,6 +22,7 @@
 package org.drasyl.cli.channel;
 
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
@@ -39,12 +40,13 @@ public abstract class AbstractChannelInitializer extends TraversingDrasylServerC
 
     @SuppressWarnings("java:S107")
     protected AbstractChannelInitializer(final Identity identity,
+                                         final NioEventLoopGroup udpServerGroup,
                                          final InetSocketAddress bindAddress,
                                          final int networkId,
                                          final long onlineTimeoutMillis,
                                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                          final boolean protocolArmEnabled) {
-        super(identity, bindAddress, networkId, superPeers, protocolArmEnabled);
+        super(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled);
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
     }
 

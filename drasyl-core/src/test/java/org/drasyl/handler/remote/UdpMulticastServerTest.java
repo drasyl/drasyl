@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.concurrent.EventExecutor;
@@ -73,7 +74,7 @@ class UdpMulticastServerTest {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
-            when(bootstrap.group(any()).channel(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.group(any()).channelFactory(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -85,15 +86,17 @@ class UdpMulticastServerTest {
                 return null;
             });
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);
+            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(anyString(), anyInt());
+                verify(bootstrap.group(any()).channelFactory(any()).handler(any()), times(2)).bind(anyString(), anyInt());
                 verify(datagramChannel).joinGroup(any(InetSocketAddress.class), any());
             }
             finally {
                 channel.close();
+                multicastServerGroup.shutdownGracefully();
             }
         }
     }
@@ -109,7 +112,8 @@ class UdpMulticastServerTest {
                 return null;
             });
 
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, channel);
+            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -120,6 +124,7 @@ class UdpMulticastServerTest {
             }
             finally {
                 channel.close();
+                multicastServerGroup.shutdownGracefully();
             }
         }
     }
@@ -132,7 +137,7 @@ class UdpMulticastServerTest {
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                      @Mock final EventExecutor eventExecutor) {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
-            when(bootstrap.group(any()).channel(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
+            when(bootstrap.group(any()).channelFactory(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
                 final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
                 handler.channelRead(channelCtx, new DatagramPacket(Unpooled.EMPTY_BUFFER, new InetSocketAddress(22527), new InetSocketAddress(25421)));
                 return bootstrap;
@@ -144,7 +149,8 @@ class UdpMulticastServerTest {
             }).when(eventExecutor).execute(any());
 
             final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, null);
+            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(ctx).fireChannelRead(any());
@@ -152,6 +158,7 @@ class UdpMulticastServerTest {
             finally {
                 channel.releaseInbound();
                 channel.close();
+                multicastServerGroup.shutdownGracefully();
             }
         }
     }

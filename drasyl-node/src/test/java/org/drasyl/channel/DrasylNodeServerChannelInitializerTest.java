@@ -23,6 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -48,6 +49,7 @@ class DrasylNodeServerChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
@@ -64,7 +66,7 @@ class DrasylNodeServerChannelInitializerTest {
             when(config.getRemoteUniteMinInterval()).thenReturn(ofSeconds(20L));
             when(config.getRemoteMessageArmProtocolSessionMaxCount()).thenReturn(100);
 
-            final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node);
+            final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node, udpServerGroup);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(22)).addLast(any());

@@ -22,7 +22,6 @@
 package org.drasyl.node.handler.crypto;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 
 public abstract class ArmMessage {
@@ -32,19 +31,14 @@ public abstract class ArmMessage {
 
     public abstract void writeBody(ByteBuf byteBuf);
 
-    public ByteBuf toByteBuf() {
-        final ByteBuf byteBuf = Unpooled.buffer();
-        byteBuf.writeByte(getType().value);
-        writeBody(byteBuf);
-
-        return byteBuf;
+    public void writeTo(final ByteBuf out) {
+        out.writeByte(getType().value);
+        writeBody(out);
     }
 
-    public static ByteBuf fromApplication(final ByteBuf msg) {
-        final ByteBuf byteBuf = Unpooled.buffer();
-        byteBuf.writeByte(MessageType.APPLICATION.value);
-
-        return Unpooled.wrappedBuffer(byteBuf, msg);
+    public static void fromApplication(final ByteBuf msg, final ByteBuf out) {
+        out.writeByte(MessageType.APPLICATION.value);
+        out.writeBytes(msg);
     }
 
     public static Object of(final ByteBuf byteBuf) throws InvalidMessageFormatException {

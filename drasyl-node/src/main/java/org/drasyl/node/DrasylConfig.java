@@ -71,10 +71,7 @@ public abstract class DrasylConfig {
     //======================================== Config Paths ========================================
     public static final String NETWORK_ID = "drasyl.network.id";
     public static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
-    public static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     public static final String IDENTITY_SECRET_KEY = "drasyl.identity.secret-key";
-    public static final String IDENTITY_KEY_AGREEMENT_PUBLIC_KEY = "drasyl.identity.key-agreement.public-key";
-    public static final String IDENTITY_KEY_AGREEMENT_SECRET_KEY = "drasyl.identity.key-agreement.secret-key";
     public static final String IDENTITY_PATH = "drasyl.identity.path";
     public static final String MESSAGE_BUFFER_SIZE = "drasyl.message.buffer-size";
     public static final String REMOTE_ENABLED = "drasyl.remote.enabled";
@@ -142,17 +139,8 @@ public abstract class DrasylConfig {
             if (!config.getIsNull(IDENTITY_PROOF_OF_WORK)) {
                 builder.identityProofOfWork(getProofOfWork(config, IDENTITY_PROOF_OF_WORK));
             }
-            if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
-                builder.identityPublicKey(getIdentityPublicKey(config, IDENTITY_PUBLIC_KEY));
-            }
             if (!config.getString(IDENTITY_SECRET_KEY).isEmpty()) {
                 builder.identitySecretKey(getIdentitySecretKey(config, IDENTITY_SECRET_KEY));
-            }
-            if (!config.getString(IDENTITY_KEY_AGREEMENT_PUBLIC_KEY).isEmpty()) {
-                builder.keyAgreementPublicKey(getKeyAgreementPublicKey(config, IDENTITY_KEY_AGREEMENT_PUBLIC_KEY));
-            }
-            if (!config.getString(IDENTITY_KEY_AGREEMENT_SECRET_KEY).isEmpty()) {
-                builder.keyAgreementSecretKey(getKeyAgreementSecretKey(config, IDENTITY_KEY_AGREEMENT_SECRET_KEY));
             }
             builder.identityPath(getPath(config, IDENTITY_PATH));
 
@@ -606,7 +594,7 @@ public abstract class DrasylConfig {
     abstract Builder toBuilder();
 
     /**
-     * Parses a file into a Config instance as with
+     * Parses a file into a Config instance.
      *
      * @param file the file to parse
      * @return the parsed configuration
@@ -622,7 +610,29 @@ public abstract class DrasylConfig {
     }
 
     /**
-     * Parses a file into a Config instance as with
+     * Parses a file path into a Config instance.
+     *
+     * @param path the path to file to parse
+     * @return the parsed configuration
+     * @throws DrasylConfigException on IO or parse errors
+     */
+    public static DrasylConfig parseFile(final Path path) {
+        return parseFile(path.toFile());
+    }
+
+    /**
+     * Parses a file path into a Config instance.
+     *
+     * @param path the path to file to parse
+     * @return the parsed configuration
+     * @throws DrasylConfigException on IO or parse errors
+     */
+    public static DrasylConfig parseFile(final String path) {
+        return parseFile(Path.of(path));
+    }
+
+    /**
+     * Parses a string into a Config instance.
      *
      * @param s string to parse
      * @return the parsed configuration
@@ -658,26 +668,22 @@ public abstract class DrasylConfig {
     public abstract ProofOfWork getIdentityProofOfWork();
 
     @Nullable
-    public abstract IdentityPublicKey getIdentityPublicKey();
-
-    @Nullable
     public abstract IdentitySecretKey getIdentitySecretKey();
 
     /**
-     * @return the identity specified in {@link #getIdentityPublicKey()},
-     * {@link #getIdentitySecretKey()}, and {@link #getIdentityProofOfWork()} or {@code null} if
-     * some of these properties are not present.
-     * @throws IllegalStateException if the key pair returned by {@link #getIdentityPublicKey()} and
-     *                               {@link #getIdentitySecretKey()} is not {@code null} and can not
-     *                               be converted to a key agreement key pair OR the
-     *                               {@link #getIdentityProofOfWork()} does not match to the
-     *                               identity key pair/required difficulty specified in
+     * @return the identity specified in {@link #getIdentitySecretKey()}, and
+     * {@link #getIdentityProofOfWork()} or {@code null} if some of these properties are not
+     * present.
+     * @throws IllegalStateException if the key pair returned by {@link #getIdentitySecretKey()} is
+     *                               not {@code null} and can not be converted to a key agreement
+     *                               key pair OR the {@link #getIdentityProofOfWork()} does not
+     *                               match to the identity key pair/required difficulty specified in
      *                               {@link Identity#POW_DIFFICULTY}.
      */
     public Identity getIdentity() {
-        if (getIdentityProofOfWork() != null && getIdentityPublicKey() != null && getIdentitySecretKey() != null) {
+        if (getIdentityProofOfWork() != null && getIdentitySecretKey() != null) {
             try {
-                final Identity identity = Identity.of(getIdentityProofOfWork(), getIdentityPublicKey(), getIdentitySecretKey());
+                final Identity identity = Identity.of(getIdentityProofOfWork(), getIdentitySecretKey());
                 if (!identity.isValid()) {
                     throw new IllegalStateException("Proof of work does not match to the identity key pair/required difficulty of " + Identity.POW_DIFFICULTY + ".");
                 }
@@ -691,12 +697,6 @@ public abstract class DrasylConfig {
             return null;
         }
     }
-
-    @Nullable
-    public abstract KeyAgreementPublicKey getKeyAgreementPublicKey();
-
-    @Nullable
-    public abstract KeyAgreementSecretKey getKeyAgreementSecretKey();
 
     public abstract Path getIdentityPath();
 
@@ -799,24 +799,17 @@ public abstract class DrasylConfig {
     public abstract static class Builder {
         public abstract Builder networkId(final int networkId);
 
-        public abstract Builder identityPublicKey(final IdentityPublicKey identityPublicKey);
-
         public abstract Builder identityProofOfWork(final ProofOfWork identityProofOfWork);
 
         public abstract Builder identitySecretKey(final IdentitySecretKey identitySecretKey);
 
         /**
-         * Shortcut for calling {@link #identityPublicKey(IdentityPublicKey)},
-         * {@link #identityProofOfWork(ProofOfWork)}, and
+         * Shortcut for calling {@link #identityProofOfWork(ProofOfWork)}, and
          * {@link #identitySecretKey(IdentitySecretKey)}.
          */
         public Builder identity(final Identity identity) {
-            return identityPublicKey(identity.getIdentityPublicKey()).identityProofOfWork(identity.getProofOfWork()).identitySecretKey(identity.getIdentitySecretKey());
+            return identityProofOfWork(identity.getProofOfWork()).identitySecretKey(identity.getIdentitySecretKey());
         }
-
-        public abstract Builder keyAgreementPublicKey(final KeyAgreementPublicKey keyAgreementPublicKey);
-
-        public abstract Builder keyAgreementSecretKey(final KeyAgreementSecretKey keyAgreementSecretKey);
 
         public abstract Builder identityPath(final Path identityPath);
 
@@ -953,7 +946,7 @@ public abstract class DrasylConfig {
             if (config.getRemoteMessageMaxContentLength() < 0) {
                 throw new DrasylConfigException(REMOTE_MESSAGE_MAX_CONTENT_LENGTH, "Must be a non-negative value.");
             }
-            if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative() || config.getRemoteMessageComposedMessageTransferTimeout().isZero()) {
+            if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative()) {
                 throw new DrasylConfigException(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT, "Must be a positive value.");
             }
             if (config.getChannelInactivityTimeout().isNegative()) {

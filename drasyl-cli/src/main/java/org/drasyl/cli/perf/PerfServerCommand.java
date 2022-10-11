@@ -23,6 +23,7 @@ package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
@@ -52,24 +53,25 @@ public class PerfServerCommand extends ChannelOptions {
                       final PrintStream err,
                       final EventLoopGroup parentGroup,
                       final EventLoopGroup childGroup,
+                      final NioEventLoopGroup udpServerGroup,
                       final Level logLevel,
                       final File identityFile,
                       final InetSocketAddress bindAddress,
                       final int onlineTimeoutMillis,
                       final int networkId,
                       final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
-        super(out, err, parentGroup, childGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
     }
 
     @SuppressWarnings("unused")
     PerfServerCommand() {
-        super(new NioEventLoopGroup(1), new NioEventLoopGroup());
+        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new PerfServerChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+        return new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
     }
 
     @Override

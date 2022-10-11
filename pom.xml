@@ -26,7 +26,7 @@
 
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-parent</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.10.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
@@ -71,7 +71,7 @@
         <developer>
             <id>roebert</id>
             <name>Kevin Röbert</name>
-            <email>6roebert@informatik.uni-hamburg.de</email>
+            <email>kevin.roebert@uni-hamburg.de</email>
             <organization>Heiko Bornholdt and Kevin Röbert</organization>
             <organizationUrl>https://drasyl.org/</organizationUrl>
 			<roles>
@@ -92,13 +92,14 @@
         <module>drasyl-plugin-groups-manager</module>
         <module>drasyl-all</module>
         <module>drasyl-node</module>
+        <module>drasyl-extras</module>
     </modules>
 
     <scm>
-        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:git://github.com/drasyl-overlay/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>v0.7.0</tag>
+        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/drasyl-overlay/drasyl.git</developerConnection>
+        <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
@@ -126,19 +127,19 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.11</logback.version>
-        <junit.version>5.9.0</junit.version>
-        <mockito.version>4.7.0</mockito.version>
-        <jackson.version>2.13.3</jackson.version>
+        <junit.version>5.9.1</junit.version>
+        <mockito.version>4.8.0</mockito.version>
+        <jackson.version>2.13.4</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.80.Final</netty.version>
+        <netty.version>4.1.82.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>2.0.0</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <json-unit-assertj.version>2.35.0</json-unit-assertj.version>
-        <protobuf.version>3.21.5</protobuf.version>
-        <auto-value.version>1.9</auto-value.version>
+        <json-unit-assertj.version>2.36.0</json-unit-assertj.version>
+        <protobuf.version>3.21.7</protobuf.version>
+        <auto-value.version>1.10</auto-value.version>
         <jna.version>5.12.1</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -330,7 +331,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.2.2</version>
+                    <version>3.3.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -365,7 +366,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.1.1</version>
+                    <version>4.7.2.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -558,7 +559,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.1.1</version>
+                <version>4.7.2.1</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -671,6 +672,18 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>release-prepare</id>
+            <modules>
+                <module>drasyl-shared-library</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>native</id>
+            <modules>
+                <module>drasyl-shared-library</module>
+            </modules>
         </profile>
     </profiles>
 </project>

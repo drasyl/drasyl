@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.portmapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
@@ -221,7 +220,7 @@ public class PcpPortMapping implements PortMapping {
         LOG.debug("Send MAP opcode request for `{}:{}/UDP` to `{}:{}/UDP` with lifetime of {}s to gateway `{}`.", externalAddress::getHostAddress, () -> port, clientAddress::getHostAddress, () -> port, lifetime::toSeconds, defaultGateway::getHostString);
 
         final byte[] content = PcpPortUtil.buildMappingRequestMessage(lifetime, clientAddress, nonce, protocol, port, externalAddress);
-        final ByteBuf msg = Unpooled.wrappedBuffer(content);
+        final ByteBuf msg = ctx.alloc().buffer(content.length).writeBytes(content);
         mappingRequested.incrementAndGet();
 
         ctx.writeAndFlush(new InetAddressedMessage<>(msg, defaultGateway)).addListener(future1 -> {

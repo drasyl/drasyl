@@ -21,15 +21,10 @@
  */
 package org.drasyl.cli.tun.handler;
 
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.tun.Tun4Packet;
-import org.drasyl.crypto.HexUtil;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,7 +34,6 @@ import static java.util.Objects.requireNonNull;
  * This handler has to be placed in a {@link org.drasyl.channel.DrasylChannel}.
  */
 public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylToTunHandler.class);
     private final Channel tun;
 
     public DrasylToTunHandler(final Channel tun) {
@@ -50,12 +44,6 @@ public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final Tun4Packet packet) {
-        LOG.trace("Got packet `{}` from peer `{}`. Pass to TUN device `{}`", () -> packet, ctx.channel()::remoteAddress, tun::localAddress);
-        LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
-        tun.writeAndFlush(packet.retain()).addListener((ChannelFutureListener) f -> {
-            if (!f.isSuccess()) {
-                ctx.pipeline().fireExceptionCaught(f.cause());
-            }
-        });
+        tun.writeAndFlush(packet.retain());
     }
 }

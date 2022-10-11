@@ -23,6 +23,7 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -49,6 +50,7 @@ class PerfClientChannelInitializerTest {
     class InitChannel {
         @Test
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress bindAddress,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
@@ -57,7 +59,7 @@ class PerfClientChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
 
-            final ChannelInboundHandler handler = new PerfClientChannelInitializer(identity, bindAddress, 0, 1, Map.of(), err, exitCode, server, true);
+            final ChannelInboundHandler handler = new PerfClientChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), err, exitCode, server, true);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(12)).addLast(any());

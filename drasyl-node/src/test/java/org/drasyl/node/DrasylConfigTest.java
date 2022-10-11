@@ -85,31 +85,10 @@ class DrasylConfigTest {
         }
 
         @Test
-        void shouldReadNonNullIdentityPublicKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.public-key = " + ID_1.getIdentityPublicKey()).withFallback(ConfigFactory.load());
-
-            assertEquals(ID_1.getIdentityPublicKey(), DrasylConfig.of(config).getIdentityPublicKey());
-        }
-
-        @Test
         void shouldReadNonNullIdentitySecretKeyFromConfig() {
             final Config config = ConfigFactory.parseString("drasyl.identity.secret-key = " + ID_1.getIdentitySecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
 
             assertEquals(ID_1.getIdentitySecretKey(), DrasylConfig.of(config).getIdentitySecretKey());
-        }
-
-        @Test
-        void shouldReadNonNullKeyAgreementPublicKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.public-key = " + ID_1.getKeyAgreementPublicKey()).withFallback(ConfigFactory.load());
-
-            assertEquals(ID_1.getKeyAgreementPublicKey(), DrasylConfig.of(config).getKeyAgreementPublicKey());
-        }
-
-        @Test
-        void shouldReadNonNullKeyAgreementSecretKeyFromConfig() {
-            final Config config = ConfigFactory.parseString("drasyl.identity.key-agreement.secret-key = " + ID_1.getKeyAgreementSecretKey().toUnmaskedString()).withFallback(ConfigFactory.load());
-
-            assertEquals(ID_1.getKeyAgreementSecretKey(), DrasylConfig.of(config).getKeyAgreementSecretKey());
         }
 
         @Test
@@ -446,10 +425,9 @@ class DrasylConfigTest {
     @Nested
     class GetIdentity {
         @Test
-        void shouldLoadValidIdentityFromConfig(@Mock final DrasylConfig config) throws IOException {
+        void shouldLoadValidIdentityFromConfig(@Mock final DrasylConfig config) {
             when(config.getIdentity()).thenCallRealMethod();
 
-            when(config.getIdentityPublicKey()).thenReturn(ID_1.getIdentityPublicKey());
             when(config.getIdentityProofOfWork()).thenReturn(ID_1.getProofOfWork());
             when(config.getIdentitySecretKey()).thenReturn(ID_1.getIdentitySecretKey());
 
@@ -457,10 +435,9 @@ class DrasylConfigTest {
         }
 
         @Test
-        void shouldThrowExceptionIfIdentityFromConfigIsInvalid(@Mock final DrasylConfig config) throws IOException {
+        void shouldThrowExceptionIfIdentityFromConfigIsInvalid(@Mock final DrasylConfig config) {
             when(config.getIdentity()).thenCallRealMethod();
 
-            when(config.getIdentityPublicKey()).thenReturn(ID_1.getIdentityPublicKey());
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
             when(config.getIdentitySecretKey()).thenReturn(ID_1.getIdentitySecretKey());
 
@@ -482,7 +459,7 @@ class DrasylConfigTest {
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteLocalHostDiscoveryLeaseTime(Duration.ZERO)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMtu(-1)::build);
             assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageMaxContentLength(-1)::build);
-            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageComposedMessageTransferTimeout(Duration.ZERO)::build);
+            assertThrows(DrasylConfigException.class, DrasylConfig.newBuilder().remoteMessageComposedMessageTransferTimeout(Duration.ofSeconds(-1))::build);
         }
     }
 }

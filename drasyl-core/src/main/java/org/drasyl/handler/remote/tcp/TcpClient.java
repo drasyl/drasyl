@@ -31,6 +31,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
@@ -66,32 +67,44 @@ public class TcpClient extends ChannelDuplexHandler {
     private static final long RESOLVE_SUPER_PEER_ADDRESSES_INTERVAL = 60_000L;
     private final Set<InetSocketAddress> superPeerAddresses;
     private final Bootstrap bootstrap;
+    private final EventLoopGroup group;
     private final AtomicLong noResponseFromSuperPeerSince;
     private final Duration timeout;
     private final InetSocketAddress address;
     private ChannelFuture superPeerChannel;
     private long lastSuperPeersResolveTime;
 
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     */
+    @SuppressWarnings("java:S107")
     TcpClient(final Set<InetSocketAddress> superPeerAddresses,
               final Bootstrap bootstrap,
+              final NioEventLoopGroup group,
               final AtomicLong noResponseFromSuperPeerSince,
               final Duration timeout,
               final InetSocketAddress address,
               final ChannelFuture superPeerChannel) {
         this.superPeerAddresses = requireNonNull(superPeerAddresses);
         this.bootstrap = requireNonNull(bootstrap);
+        this.group = requireNonNull(group);
         this.noResponseFromSuperPeerSince = requireNonNull(noResponseFromSuperPeerSince);
         this.timeout = requireNonNull(timeout);
         this.address = requireNonNull(address);
         this.superPeerChannel = superPeerChannel;
     }
 
-    public TcpClient(final Set<InetSocketAddress> superPeerAddresses,
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     */
+    public TcpClient(final NioEventLoopGroup group,
+                     final Set<InetSocketAddress> superPeerAddresses,
                      final Duration timeout,
                      final InetSocketAddress address) {
         this(
                 superPeerAddresses,
                 new Bootstrap(),
+                group,
                 new AtomicLong(),
                 timeout,
                 address,
@@ -219,7 +232,7 @@ public class TcpClient extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
 
-        bootstrap.group((EventLoopGroup) ctx.executor().parent())
+        bootstrap.group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new TcpClientHandler(ctx));
     }

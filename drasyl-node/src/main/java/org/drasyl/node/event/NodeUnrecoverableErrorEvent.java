@@ -24,7 +24,7 @@ package org.drasyl.node.event;
 import com.google.auto.value.AutoValue;
 
 /**
- * This events signals that the node encountered an unrecoverable error.
+ * This event signals that the node encountered an unrecoverable error.
  * <p>
  * This is an immutable object.
  *

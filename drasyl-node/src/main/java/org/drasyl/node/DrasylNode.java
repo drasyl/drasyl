@@ -26,6 +26,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.annotation.Beta;
 import org.drasyl.annotation.NonNull;
 import org.drasyl.annotation.Nullable;
@@ -41,7 +46,6 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.FutureUtil;
-import org.drasyl.util.Version;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -85,7 +89,6 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 @Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    private static String version;
     protected final Identity identity;
     protected final ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
@@ -141,14 +144,26 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         identity = DrasylNode.generateIdentity(config);
 
-        bootstrap = new ServerBootstrap()
-                .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                .localAddress(identity.getAddress())
-                .channel(DrasylServerChannel.class)
-                .handler(new DrasylNodeServerChannelInitializer(config, identity, this))
-                .childHandler(new DrasylNodeChannelInitializer(config, this));
+        final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
+        final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
+        final NioEventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
+        bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
+    }
+
+    /**
+     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
+     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
+     * <p>
+     * Note: This is a blocking method, because when a node is started for the first time, its
+     * identity must be created. This can take up to a minute because of the proof of work.
+     *
+     * @throws DrasylException       if identity could not be loaded or created
+     * @throws DrasylConfigException if config is invalid
+     */
+    protected DrasylNode() throws DrasylException {
+        this(DrasylConfig.of());
     }
 
     /**
@@ -179,20 +194,6 @@ public abstract class DrasylNode {
         catch (final IllegalStateException | IOException e) {
             throw new DrasylException("Couldn't load or create identity", e);
         }
-    }
-
-    /**
-     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
-     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
-     * <p>
-     * Note: This is a blocking method, because when a node is started for the first time, its
-     * identity must be created. This can take up to a minute because of the proof of work.
-     *
-     * @throws DrasylException       if identity could not be loaded or created
-     * @throws DrasylConfigException if config is invalid
-     */
-    protected DrasylNode() throws DrasylException {
-        this(DrasylConfig.of());
     }
 
     /**
@@ -300,9 +301,9 @@ public abstract class DrasylNode {
     /**
      * Creates a future containing a {@link Channel} for communication with {@code address}.
      * <p>
-     * Note: be aware that the returned channel can be closed on inactivity according to {@link
-     * DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used. However,
-     * a new channel can be created via this method.
+     * Note: be aware that the returned channel can be closed on inactivity according to
+     * {@link DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used.
+     * However, a new channel can be created via this method.
      *
      * @param address peer address used for {@link Channel} creation
      * @return future containing {@link Channel} for {@code address} on completion
@@ -315,7 +316,7 @@ public abstract class DrasylNode {
             channelFuture.channel().eventLoop().execute(() -> {
                 Channel channel = ((DrasylServerChannel) channelFuture.channel()).channels.get(address);
                 if (channel == null) {
-                    channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), (IdentityPublicKey) address);
+                    channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), address);
                     channelFuture.channel().pipeline().fireChannelRead(channel);
                 }
 
@@ -334,9 +335,9 @@ public abstract class DrasylNode {
     /**
      * Creates a future containing a {@link Channel} for communication with {@code address}.
      * <p>
-     * Note: be aware that the returned channel can be closed on inactivity according to {@link
-     * DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used. However,
-     * a new channel can be created via this method.
+     * Note: be aware that the returned channel can be closed on inactivity according to
+     * {@link DrasylConfig#getChannelInactivityTimeout()}. A closed channel can no longer be used.
+     * However, a new channel can be created via this method.
      *
      * @param address peer address used for {@link Channel} creation
      * @return future containing {@link Channel} for {@code address} on completion
@@ -368,9 +369,26 @@ public abstract class DrasylNode {
     @NonNull
     @SuppressWarnings("java:S1905")
     public synchronized CompletionStage<Void> shutdown() {
-        if (channelFuture != null) {
+        if (channelFuture != null && !(channelFuture.isDone() && !channelFuture.isSuccess())) {
             try {
-                return FutureUtil.toFuture(channelFuture.channel().close());
+                // The future returned by Channel#close is completed before the ChannelPipeline
+                // has been cleaned up (see https://github.com/netty/netty/issues/9291). But we want
+                // to wait until the channel is fully dismantled. This is why we add a NOOP task to
+                // the channel's executor that is processed just after the close is fully processed.
+                final Channel channel = channelFuture.channel();
+                final EventLoop executor = channel.eventLoop();
+                final PromiseCombiner combiner = new PromiseCombiner(executor);
+                final ChannelPromise combinedFuture = channel.newPromise();
+                executor.submit(() -> {
+                    final ChannelFuture closeFuture = channel.close();
+                    final Future<?> noopFuture = executor.submit(() -> {
+                        // NOOP
+                    });
+                    combiner.add(closeFuture);
+                    combiner.add(noopFuture);
+                    combiner.finish(combinedFuture);
+                });
+                return FutureUtil.toFuture(combinedFuture);
             }
             finally {
                 channelFuture = null;

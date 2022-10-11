@@ -23,6 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.handler.LoopbackHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
@@ -57,6 +58,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
     protected final Identity identity;
+    private final NioEventLoopGroup udpServerGroup;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -68,6 +70,8 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
     /**
      * @param identity            own identity
+     * @param udpServerGroup      the {@link NioEventLoopGroup} the underlying udp server should run
+     *                            on
      * @param bindAddress         address the UDP server will bind to. Default value:
      *                            0.0.0.0:{@link #BIND_PORT}
      * @param networkId           the network we belong to. Default value: {@link #NETWORK_ID}
@@ -86,6 +90,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("java:S107")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -95,6 +100,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                                                    final int maxTimeOffsetMillis,
                                                    final int maxPeers) {
         this.identity = requireNonNull(identity);
+        this.udpServerGroup = requireNonNull(udpServerGroup);
         this.bindAddress = requireNonNull(bindAddress);
         this.networkId = networkId;
         this.superPeers = requireNonNull(superPeers);
@@ -110,6 +116,8 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * {@code pingTimeoutMillis}, {@code maxTimeOffsetMillis}, and {@code maxPeers}.
      *
      * @param identity           own identity
+     * @param udpServerGroup     the {@link NioEventLoopGroup} the underlying udp server should run
+     *                           on
      * @param bindAddress        address the UDP server will bind to. Default value:
      *                           0.0.0.0:{@link #BIND_PORT}
      * @param networkId          the network we belong to. Default value: {@link #NETWORK_ID}
@@ -120,11 +128,12 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                                    final boolean protocolArmEnabled) {
-        this(identity, bindAddress, networkId, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
+        this(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -132,18 +141,21 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * {@code pingTimeoutMillis}, {@code maxTimeOffsetMillis}, {@code maxPeers}, and enabled control
      * plane message arming.
      *
-     * @param identity    own identity
-     * @param bindAddress address the UDP server will bind to. Default value:
-     *                    0.0.0.0:{@link #BIND_PORT}
-     * @param networkId   the network we belong to. Default value: {@link #NETWORK_ID}
-     * @param superPeers  list of super peers we register to. Default value: {@link #SUPER_PEERS}
+     * @param identity       own identity
+     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param bindAddress    address the UDP server will bind to. Default value:
+     *                       0.0.0.0:{@link #BIND_PORT}
+     * @param networkId      the network we belong to. Default value: {@link #NETWORK_ID}
+     * @param superPeers     list of super peers we register to. Default value:
+     *                       {@link #SUPER_PEERS}
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
-        this(identity, bindAddress, networkId, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
+        this(identity, udpServerGroup, bindAddress, networkId, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -151,14 +163,16 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * {@code superPeers}, {@code pingIntervalMillis}, {@code pingTimeoutMillis},
      * {@code maxTimeOffsetMillis}, {@code maxPeers}, and enabled control plane message arming.
      *
-     * @param identity    own identity
-     * @param bindAddress address the UDP server will bind to. Default value:
-     *                    0.0.0.0:{@link #BIND_PORT}
+     * @param identity       own identity
+     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param bindAddress    address the UDP server will bind to. Default value:
+     *                       0.0.0.0:{@link #BIND_PORT}
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress) {
-        this(identity, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
+        this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -166,13 +180,15 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * {@code superPeers}, {@code pingIntervalMillis}, {@code pingTimeoutMillis},
      * {@code maxTimeOffsetMillis}, {@code maxPeers}, and enabled control plane message arming.
      *
-     * @param identity own identity
-     * @param bindPort port the UDP server will bind to. Default value: {@link #BIND_PORT}
+     * @param identity       own identity
+     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param bindPort       port the UDP server will bind to. Default value: {@link #BIND_PORT}
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup,
                                                    final int bindPort) {
-        this(identity, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
+        this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -180,18 +196,20 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * {@code networkId}, {@code superPeers}, {@code pingIntervalMillis}, {@code pingTimeoutMillis},
      * {@code maxTimeOffsetMillis}, {@code maxPeers}, and enabled control plane message arming.
      *
-     * @param identity own identity
+     * @param identity       own identity
+     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("unused")
-    public RelayOnlyDrasylServerChannelInitializer(final Identity identity) {
-        this(identity, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
+    public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
+                                                   final NioEventLoopGroup udpServerGroup) {
+        this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer(bindAddress));
+        p.addLast(new UdpServer(udpServerGroup, bindAddress));
         p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new OtherNetworkFilter(networkId));
         p.addLast(new InvalidProofOfWorkFilter());

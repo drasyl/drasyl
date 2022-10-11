@@ -22,7 +22,6 @@
 package org.drasyl.node.handler.crypto;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -40,8 +39,9 @@ public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
         final ByteBuf byteBuf = ctx.alloc().ioBuffer();
         byteBuf.writeBytes(msg.getAgreementId().toBytes())
                 .writeBytes(msg.getNonce().toByteArray());
+        byteBuf.writeBytes(msg.content());
 
-        out.add(Unpooled.wrappedBuffer(byteBuf, msg.content().retain()));
+        out.add(byteBuf);
     }
 
     @Override

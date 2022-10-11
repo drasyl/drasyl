@@ -27,6 +27,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
@@ -82,11 +83,12 @@ public class ChordCircleNode {
         final RmiClientHandler client = new RmiClientHandler();
         final LocalChordNode localNode = new LocalChordNode(identity.getIdentityPublicKey(), client);
 
-        final EventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 50000 + (int) (myId % 10000)) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 50000 + (int) (myId % 10000)) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -154,6 +156,7 @@ public class ChordCircleNode {
             // ignore
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }

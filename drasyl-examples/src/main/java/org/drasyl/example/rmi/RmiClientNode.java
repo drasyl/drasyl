@@ -19,7 +19,6 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.example.rmi;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -28,6 +27,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
@@ -45,7 +45,7 @@ import org.drasyl.node.identity.IdentityManager;
 import java.io.File;
 import java.io.IOException;
 
-@SuppressWarnings({ "java:S106", "java:S110", "java:S125" })
+@SuppressWarnings({ "java:S106", "java:S110", "java:S125", "java:S1188", "java:S2096" })
 public class RmiClientNode {
     private static final String IDENTITY = System.getProperty("identity", "rmi-client.identity");
 
@@ -71,11 +71,12 @@ public class RmiClientNode {
         final MessengerService service = client.lookup("MessengerService", MessengerService.class, server);
         System.out.println("Created stub for remote object of type `" + MessengerService.class.getSimpleName() + "` bound to name `MessengerService` at node `" + server + "`.");
 
-        final EventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, 22528) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22528) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -126,6 +127,7 @@ public class RmiClientNode {
             ch.closeFuture().awaitUninterruptibly();
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }

@@ -25,8 +25,6 @@ import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
 
 import java.io.PrintStream;
@@ -75,25 +73,10 @@ public class MessagesThroughputHandler extends ChannelDuplexHandler {
      *
      * @param consumeOutbound predicate that consumes outbound messages on match
      * @param consumeInbound  predicate that consumes inbound messages on match
-     * @param eventLoopGroup  eventLoopGroup on which this handler is executed
-     */
-    public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
-                                     final BiPredicate<SocketAddress, Object> consumeInbound,
-                                     final EventLoopGroup eventLoopGroup) {
-        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), System.out, null);
-    }
-
-    /**
-     * Creates a new handler which visualizes the number of inbound and outbound messages per
-     * second, consumes outbound message matching {@code consumeOutbound}, and inbound messages
-     * matching {@code consumeInbound}.
-     *
-     * @param consumeOutbound predicate that consumes outbound messages on match
-     * @param consumeInbound  predicate that consumes inbound messages on match
      */
     public MessagesThroughputHandler(final BiPredicate<SocketAddress, Object> consumeOutbound,
                                      final BiPredicate<SocketAddress, Object> consumeInbound) {
-        this(consumeOutbound, consumeInbound, new NioEventLoopGroup(1));
+        this(consumeOutbound, consumeInbound, new LongAdder(), new LongAdder(), System.out, null);
     }
 
     /**

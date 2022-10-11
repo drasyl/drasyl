@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.tcp;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -33,6 +32,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -46,11 +46,11 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -63,26 +63,21 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     private static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
-    static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(StandardCharsets.UTF_8);
+    static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
     private final ServerBootstrap bootstrap;
     private final Map<SocketAddress, Channel> clientChannels;
     private final InetAddress bindHost;
     private final int bindPort;
     private final Duration pingTimeout;
+    private final EventLoopGroup group;
     private Channel serverChannel;
 
-    public TcpServer(final InetAddress bindHost, final int bindPort, final Duration pingTimeout) {
-        this(
-                new ServerBootstrap(),
-                new ConcurrentHashMap<>(),
-                bindHost,
-                bindPort,
-                pingTimeout,
-                null
-        );
-    }
-
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     */
+    @SuppressWarnings("java:S107")
     TcpServer(final ServerBootstrap bootstrap,
+              final NioEventLoopGroup group,
               final Map<SocketAddress, Channel> clientChannels,
               final InetAddress bindHost,
               final int bindPort,
@@ -93,7 +88,26 @@ public class TcpServer extends ChannelDuplexHandler {
         this.bindHost = bindHost;
         this.bindPort = bindPort;
         this.pingTimeout = pingTimeout;
+        this.group = requireNonNull(group);
         this.serverChannel = serverChannel;
+    }
+
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     */
+    public TcpServer(final NioEventLoopGroup group,
+                     final InetAddress bindHost,
+                     final int bindPort,
+                     final Duration pingTimeout) {
+        this(
+                new ServerBootstrap(),
+                group,
+                new ConcurrentHashMap<>(),
+                bindHost,
+                bindPort,
+                pingTimeout,
+                null
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -126,7 +140,7 @@ public class TcpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
-                .group((EventLoopGroup) ctx.executor().parent())
+                .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
                 .bind(bindHost, bindPort)
@@ -255,7 +269,7 @@ public class TcpServer extends ChannelDuplexHandler {
                     LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", nettyCtx.channel()::remoteAddress);
                     msg.release();
                     if (STATUS_ENABLED) {
-                        nettyCtx.writeAndFlush(Unpooled.buffer().writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
+                        nettyCtx.writeAndFlush(ctx.alloc().buffer(HTTP_OK.length).writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
                     }
                     else {
                         nettyCtx.close();
@@ -266,7 +280,7 @@ public class TcpServer extends ChannelDuplexHandler {
                 LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (too short).", nettyCtx.channel()::remoteAddress);
                 msg.release();
                 if (STATUS_ENABLED) {
-                    nettyCtx.writeAndFlush(Unpooled.buffer().writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
+                    nettyCtx.writeAndFlush(ctx.alloc().buffer(HTTP_OK.length).writeBytes(HTTP_OK)).addListener(l -> nettyCtx.close());
                 }
                 else {
                     nettyCtx.close();

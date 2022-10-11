@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.sodium.SessionPair;
 
@@ -32,8 +33,10 @@ import java.io.IOException;
  */
 abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements FullReadMessage<T> {
     @Override
-    public ArmedProtocolMessage arm(final ByteBuf byteBuf, final Crypto cryptoInstance,
+    public ArmedProtocolMessage arm(final ByteBufAllocator alloc,
+                                    final Crypto cryptoInstance,
                                     final SessionPair sessionPair) throws InvalidMessageFormatException {
+        final ByteBuf byteBuf = alloc.ioBuffer();
         try {
             writePrivateHeaderTo(byteBuf);
             writeBodyTo(byteBuf);
@@ -43,7 +46,7 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
                     getRecipient(), getSender(),
                     getProofOfWork(),
                     byteBuf);
-            return unarmedMessage.armAndRelease(cryptoInstance, sessionPair);
+            return unarmedMessage.armAndRelease(alloc, cryptoInstance, sessionPair);
         }
         catch (final IOException e) {
             byteBuf.release();

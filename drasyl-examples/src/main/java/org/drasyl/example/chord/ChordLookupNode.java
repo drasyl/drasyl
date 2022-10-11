@@ -27,6 +27,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -78,11 +79,12 @@ public class ChordLookupNode {
             System.out.println("My contact node: " + contact);
         }
 
-        final EventLoopGroup group = new NioEventLoopGroup(1);
+        final EventLoopGroup group = new DefaultEventLoopGroup(1);
+        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new RelayOnlyDrasylServerChannelInitializer(identity) {
+                .handler(new RelayOnlyDrasylServerChannelInitializer(identity, udpServerGroup) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -140,6 +142,7 @@ public class ChordLookupNode {
             }
         }
         finally {
+            udpServerGroup.shutdownGracefully();
             group.shutdownGracefully();
         }
     }

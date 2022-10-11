@@ -32,8 +32,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
@@ -137,14 +137,14 @@ public class TunCommand extends ChannelOptions {
                     "MTU of the tun device.",
                     "Not supported on windows. You can manually adjust the MTU size by running command 'netsh interface ipv4 set subinterface <name> mtu=<mtu> store=active'."
             },
-            defaultValue = "1220"
+            defaultValue = "1225"
     )
     private int mtu;
-    @ArgGroup(exclusive = true, multiplicity = "0..1")
+    @ArgGroup
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new NioEventLoopGroup(1), new NioEventLoopGroup());
+        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
@@ -182,7 +182,7 @@ public class TunCommand extends ChannelOptions {
                     .channel(TunChannel.class)
                     .option(AUTO_READ, true)
                     .option(TUN_MTU, mtu)
-                    .group(new NioEventLoopGroup(1))
+                    .group(new DefaultEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
@@ -340,7 +340,7 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // create drasyl channel
-            final ChannelHandler handler = new TunChannelInitializer(identity, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
+            final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
             final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels);
 
             final ServerBootstrap b = new ServerBootstrap()

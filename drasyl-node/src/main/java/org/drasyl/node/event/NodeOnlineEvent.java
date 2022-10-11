@@ -28,7 +28,7 @@ import com.google.auto.value.AutoValue;
  * be contacted by other peers connected to the same super peer. In addition, the super peer can
  * assist in establishing direct connections to other peers.
  * <p>
- * If the node has been configured with no super peer, this event will be never emitted.
+ * If the node has been configured with no super peer, this event will never be emitted.
  * <p>
  * This is an immutable object.
  *

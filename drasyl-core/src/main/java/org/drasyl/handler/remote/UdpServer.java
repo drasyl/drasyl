@@ -28,6 +28,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
@@ -45,7 +46,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 
-import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -54,25 +54,31 @@ import static java.util.Objects.requireNonNull;
  */
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
+    private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
     private final Bootstrap bootstrap;
+    private final EventLoopGroup group;
     private final InetSocketAddress bindAddress;
     private PendingWriteQueue pendingWrites;
     private Channel channel;
 
     UdpServer(final Bootstrap bootstrap,
+              final EventLoopGroup group,
               final InetSocketAddress bindAddress,
               final PendingWriteQueue pendingWrites,
               final Channel channel) {
         this.bootstrap = requireNonNull(bootstrap);
+        this.group = requireNonNull(group);
         this.bindAddress = requireNonNull(bindAddress);
         this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
     public UdpServer(final Bootstrap bootstrap,
+                     final EventLoopGroup group,
                      final InetSocketAddress bindAddress) {
         this(
                 bootstrap,
+                group,
                 bindAddress,
                 null,
                 null
@@ -80,37 +86,45 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     /**
+     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress the address the UDP server will bind to
      */
-    public UdpServer(final InetSocketAddress bindAddress) {
-        this(new Bootstrap().option(SO_BROADCAST, false), bindAddress);
+    public UdpServer(final EventLoopGroup group,
+                     final InetSocketAddress bindAddress) {
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR), group, bindAddress);
     }
 
     /**
+     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindHost the host the UDP server will bind to
      * @param bindPort the port the UDP server will bind to
      */
-    public UdpServer(final InetAddress bindHost,
+    public UdpServer(final EventLoopGroup group,
+                     final InetAddress bindHost,
                      final int bindPort) {
-        this(new InetSocketAddress(bindHost, bindPort));
+        this(group, new InetSocketAddress(bindHost, bindPort));
     }
 
     /**
+     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindHost the host the UDP server will bind to
      * @param bindPort the port the UDP server will bind to
      */
-    public UdpServer(final String bindHost,
+    public UdpServer(final EventLoopGroup group,
+                     final String bindHost,
                      final int bindPort) {
-        this(new InetSocketAddress(bindHost, bindPort));
+        this(group, new InetSocketAddress(bindHost, bindPort));
     }
 
     /**
      * Create UDP server that will bind to host {@code 0.0.0.0} and port {@code bindPort}.
      *
+     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindPort the port the UDP server will bind to
      */
-    public UdpServer(final int bindPort) {
-        this(new InetSocketAddress(bindPort));
+    public UdpServer(final EventLoopGroup group,
+                     final int bindPort) {
+        this(group, new InetSocketAddress(bindPort));
     }
 
     @Override
@@ -123,7 +137,7 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
-                .group((EventLoopGroup) ctx.executor().parent())
+                .group(group)
                 .channel(NioDatagramChannel.class)
                 .handler(new UdpServerHandler(ctx))
                 .bind(bindAddress)

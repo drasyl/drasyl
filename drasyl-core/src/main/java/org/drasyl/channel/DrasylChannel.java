@@ -29,8 +29,8 @@ import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
+import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
-import io.netty.channel.nio.NioEventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
@@ -86,7 +86,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected boolean isCompatible(final EventLoop loop) {
-        return loop instanceof NioEventLoop;
+        return loop instanceof DefaultEventLoop;
     }
 
     @Override

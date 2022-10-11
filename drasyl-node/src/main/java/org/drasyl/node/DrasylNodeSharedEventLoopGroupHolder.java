@@ -21,8 +21,11 @@
  */
 package org.drasyl.node;
 
+import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
@@ -45,35 +48,50 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
     public static final int PARENT_DEFAULT_THREADS = Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
     // pool should have at least 2 and max 10% of available processors
     public static final int CHILD_DEFAULT_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors() - 2);
+    // pool should have at least 2 and max 10% of available processors
+    public static final int NETWORK_DEFAULT_THREADS = Math.max(2, (int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.1));
     static volatile boolean parentEventLoopGroupCreated;
     static volatile boolean childEventLoopGroupCreated;
+    static volatile boolean networkEventLoopGroupCreated;
 
     private DrasylNodeSharedEventLoopGroupHolder() {
         // util class
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s
+     * Use this {@link EventLoopGroup} for the {@link DrasylNode}'s
      * {@link io.netty.channel.ServerChannel}. By default the group has
      * {@link #PARENT_DEFAULT_THREADS} threads. This number can be changed by using the java system
      * property {@code org.drasyl.event-loop.parent}.
      *
-     * @return a {@link NioEventLoopGroup} for parent channels
+     * @return a {@link EventLoopGroup} for parent channels
      */
-    public static NioEventLoopGroup getParentGroup() {
+    public static EventLoopGroup getParentGroup() {
         return LazyParentHolder.INSTANCE;
     }
 
     /**
-     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s
+     * Use this {@link EventLoopGroup} for the {@link DrasylNode}'s
      * {@link io.netty.channel.ServerChannel}. By default the group has
      * {@link #CHILD_DEFAULT_THREADS} threads. This number can  be changed by using the java system
      * property {@code org.drasyl.event-loop.child}.
      *
+     * @return a {@link EventLoopGroup} for child channels
+     */
+    public static EventLoopGroup getChildGroup() {
+        return LazyChildHolder.INSTANCE;
+    }
+
+    /**
+     * Use this {@link NioEventLoopGroup} for the {@link DrasylNode}'s network based
+     * {@link io.netty.channel.Channel}s (udp server, tcp client, etc.). By default the group has
+     * {@link #NETWORK_DEFAULT_THREADS} threads. This number can  be changed by using the java
+     * system property {@code org.drasyl.event-loop.network}.
+     *
      * @return a {@link NioEventLoopGroup} for child channels
      */
-    public static NioEventLoopGroup getChildGroup() {
-        return LazyChildHolder.INSTANCE;
+    public static NioEventLoopGroup getNetworkGroup() {
+        return LazyNetworkHolder.INSTANCE;
     }
 
     /**
@@ -95,6 +113,10 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             combiner.add(LazyParentHolder.INSTANCE.shutdownGracefully());
         }
 
+        if (networkEventLoopGroupCreated) {
+            combiner.add(LazyNetworkHolder.INSTANCE.shutdownGracefully());
+        }
+
         final Promise<Void> aggregatePromise = new DefaultPromise<>(INSTANCE);
         combiner.finish(aggregatePromise);
         return aggregatePromise;
@@ -108,7 +130,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Parent event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        static final EventLoopGroup INSTANCE = new DefaultEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = parentEventLoopGroupCreated = true;
     }
@@ -121,8 +143,21 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Child event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE);
+        static final EventLoopGroup INSTANCE = new DefaultEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = childEventLoopGroupCreated = true;
+    }
+
+    private static final class LazyNetworkHolder {
+        static final int SIZE;
+
+        static {
+            SIZE = SystemPropertyUtil.getInt("org.drasyl.node.event-loop.network", NETWORK_DEFAULT_THREADS);
+            LOG.debug("Network event loop group size: {}", SIZE);
+        }
+
+        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
+        @SuppressWarnings("unused")
+        static final boolean LOCK = networkEventLoopGroupCreated = true;
     }
 }

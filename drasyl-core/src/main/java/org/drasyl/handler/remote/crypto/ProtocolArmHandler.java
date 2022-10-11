@@ -51,7 +51,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
                               final int maxSessionsCount,
                               final Duration expireAfter) {
         this.myIdentity = myIdentity;
-        this.sessions = new ExpiringMap<>(maxSessionsCount, -1, expireAfter.toMillis());
+        this.sessions = new ExpiringMap<>(maxSessionsCount, -1, expireAfter.toMillis() > 0 ? expireAfter.toMillis() : Long.MAX_VALUE);
         this.crypto = crypto;
     }
 
@@ -104,7 +104,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
                           final InetAddressedMessage<FullReadMessage<?>> msg,
                           final List<Object> out) throws Exception {
         final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.content().getRecipient());
-        final ArmedProtocolMessage armedMessage = msg.content().arm(ctx.alloc().ioBuffer(), crypto, session);
+        final ArmedProtocolMessage armedMessage = msg.content().arm(ctx.alloc(), crypto, session);
         out.add(msg.replace(armedMessage));
         LOG.trace("Armed protocol msg: {}", armedMessage);
     }
@@ -114,7 +114,7 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
                           final InetAddressedMessage<ArmedProtocolMessage> msg,
                           final List<Object> out) throws Exception {
         final SessionPair session = getOrComputeSession((IdentityPublicKey) msg.content().getSender());
-        final FullReadMessage<?> disarmedMessage = msg.content().disarm(crypto, session);
+        final FullReadMessage<?> disarmedMessage = msg.content().disarm(ctx.alloc(), crypto, session);
         out.add(msg.replace(disarmedMessage));
         LOG.trace("Disarmed protocol msg: {}", disarmedMessage);
     }
