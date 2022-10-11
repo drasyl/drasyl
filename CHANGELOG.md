@@ -45,12 +45,15 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Refer [our documentation](https://docs.drasyl.org/advanced-usage/distributed-lookup/) for
   more information.
 - Created shared C library `libdrasyl` for the `DrasylNode` interface.
-- Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/).
+  Refer [our documentation](https://docs.drasyl.org/language-bindings/c) for
+  more information.
+- Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/). Refer [our documentation](https://docs.drasyl.org/language-bindings/python) for
+  more information.
 
 ### Changed
 
 - Dependencies have been updated.
-- `DrasylNode` now provides guareented and in-order message delivery by default. Can be disabled
+- `DrasylNode` now provides guaranteed and in-order message delivery by default. Can be disabled
   through configuration parameter `drasyl.remote.message.arq.enabled`.
 - Moved optional classes from Maven module `org.drasyl:drasyl-core` to `org.drasyl:drasyl-extras`.
 - `DrasylChannel` and `DrasylServerChannel` are now running on `DefaultEventLoopGroup` that provide
