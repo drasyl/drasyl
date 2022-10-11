@@ -169,7 +169,7 @@ jobs:
           name: shared-library-${{ matrix.job_name }}
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v3.5.1
         with:
           java-version: 11
           distribution: 'adopt'
@@ -191,7 +191,7 @@ jobs:
           $VERSION.replace('-SNAPSHOT', '.dev0') > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v3.1.0
 
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.9.0
