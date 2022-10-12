@@ -40,12 +40,6 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>drasyl-node</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-plugin-groups-manager</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
