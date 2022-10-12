@@ -61,10 +61,9 @@ public abstract class GlobalOptions {
      */
     @SuppressWarnings("java:S1312")
     protected void setLogLevel() {
-        final Logger logger = LoggerFactory.getLogger("org.drasyl");
-        if (logger instanceof Slf4JLogger && ((Slf4JLogger) logger).delegate() instanceof ch.qos.logback.classic.Logger) {
-            ((ch.qos.logback.classic.Logger) ((Slf4JLogger) logger).delegate()).setLevel(logLevel);
-        }
+        final Slf4JLogger logger = (Slf4JLogger) LoggerFactory.getLogger("org.drasyl");
+        final ch.qos.logback.classic.Logger delegate = (ch.qos.logback.classic.Logger) logger.delegate();
+        delegate.setLevel(logLevel);
     }
 
     protected abstract Logger log();
