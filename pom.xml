@@ -129,7 +129,7 @@
         <logback.version>1.4.4</logback.version>
         <junit.version>5.9.1</junit.version>
         <mockito.version>4.8.0</mockito.version>
-        <jackson.version>2.13.4</jackson.version>
+        <jackson.version>2.13.4.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
         <netty.version>4.1.84.Final</netty.version>
@@ -551,7 +551,7 @@
                 <version>3.1.0</version>
                 <configuration>
                     <rules>
-                        <dependencyConvergence />
+                        <dependencyConvergence/>
                     </rules>
                 </configuration>
             </plugin>
