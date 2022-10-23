@@ -21,8 +21,6 @@
  */
 package org.drasyl.cli.tun;
 
-import com.sun.jna.Memory;
-import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufUtil;
@@ -34,14 +32,15 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueTunChannel;
+import io.netty.channel.socket.Tun4Packet;
+import io.netty.channel.socket.TunAddress;
+import io.netty.channel.socket.TunChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.tun.Tun4Packet;
-import org.drasyl.channel.tun.TunAddress;
-import org.drasyl.channel.tun.TunChannel;
-import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.converter.SubnetConverter;
@@ -49,7 +48,6 @@ import org.drasyl.cli.tun.channel.TunChannelInitializer;
 import org.drasyl.cli.tun.channel.TunChildChannelInitializer;
 import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
@@ -77,9 +75,6 @@ import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
-import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
-import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static picocli.CommandLine.Command;
 
 @Command(
@@ -179,10 +174,9 @@ public class TunCommand extends ChannelOptions {
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
-                    .channel(TunChannel.class)
+                    .channel(KQueueTunChannel.class)
                     .option(AUTO_READ, true)
-                    .option(TUN_MTU, mtu)
-                    .group(new DefaultEventLoopGroup(1))
+                    .group(new KQueueEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
@@ -297,16 +291,6 @@ public class TunCommand extends ChannelOptions {
                 exec("/sbin/ifconfig", name, "add", addressStr, addressStr);
                 exec("/sbin/ifconfig", name, "up");
                 exec("/sbin/route", "add", "-net", subnet.toString(), "-iface", name);
-            }
-            else if (PlatformDependent.isWindows()) {
-                // Windows
-                final WINTUN_ADAPTER_HANDLE adapter = ((WindowsTunDevice) channel.device()).adapter();
-
-                final Pointer interfaceLuid = new Memory(8);
-                WintunGetAdapterLUID(adapter, interfaceLuid);
-                AddressAndNetmaskHelper.setIPv4AndNetmask(interfaceLuid, addressStr, subnet.netmaskLength());
-
-                exec("netsh", "interface", "ipv4", "set", "subinterface", name, "mtu=" + mtu, "store=active");
             }
             else {
                 // Linux
