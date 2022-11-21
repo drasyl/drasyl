@@ -55,7 +55,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: `node-rc` sub-command added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `tun` added.
 - CLI: `tun-rc` sub-command added.
-- CLI: `tun` command will not work within docker.
+- CLI: `tun` command will now work within docker.
 
 ### Changed
 
