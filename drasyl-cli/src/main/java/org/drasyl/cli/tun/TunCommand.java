@@ -258,6 +258,30 @@ public class TunCommand extends ChannelOptions {
         }
     }
 
+    public static void printRoutingTable(final PrintStream out,
+                                         final Identity identity,
+                                         final InetAddress address,
+                                         final Map<InetAddress, DrasylAddress> routes) {
+        out.println("My routing table:");
+
+        final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>(routes);
+        routingTable.put(address, identity.getAddress());
+        final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
+        inetAddresses.sort(new InetAddressComparator());
+
+        for (final InetAddress inetAddress : inetAddresses) {
+            out.print("  ");
+            out.printf("%1$-14s", inetAddress.getHostAddress());
+            out.print(" <-> ");
+            out.print(routingTable.get(inetAddress));
+            if (address.equals(inetAddress)) {
+                out.print(" (this is me)");
+            }
+            out.println();
+        }
+        out.println();
+    }
+
     /**
      * Assign IP address and subnet to the tun device.
      */
@@ -435,29 +459,5 @@ public class TunCommand extends ChannelOptions {
         public RemoveRoute(final IdentityPublicKey publicKey) {
             this.publicKey = requireNonNull(publicKey);
         }
-    }
-
-    public static void printRoutingTable(final PrintStream out,
-                                         final Identity identity,
-                                         final InetAddress address,
-                                         final Map<InetAddress, DrasylAddress> routes) {
-        out.println("My routing table:");
-
-        final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>(routes);
-        routingTable.put(address, identity.getAddress());
-        final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
-        inetAddresses.sort(new InetAddressComparator());
-
-        for (final InetAddress inetAddress : inetAddresses) {
-            out.print("  ");
-            out.printf("%1$-14s", inetAddress.getHostAddress());
-            out.print(" <-> ");
-            out.print(routingTable.get(inetAddress));
-            if (address.equals(inetAddress)) {
-                out.print(" (this is me)");
-            }
-            out.println();
-        }
-        out.println();
     }
 }

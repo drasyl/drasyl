@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see RmiRequest
  */
-public class RmiResponse extends DefaultByteBufHolder implements RmiMessage {
+public final class RmiResponse extends DefaultByteBufHolder implements RmiMessage {
     private final UUID id;
 
     private RmiResponse(final UUID id, final ByteBuf result) {
@@ -61,7 +61,7 @@ public class RmiResponse extends DefaultByteBufHolder implements RmiMessage {
         if (!super.equals(o)) {
             return false;
         }
-        RmiResponse that = (RmiResponse) o;
+        final RmiResponse that = (RmiResponse) o;
         return Objects.equals(id, that.id);
     }
 

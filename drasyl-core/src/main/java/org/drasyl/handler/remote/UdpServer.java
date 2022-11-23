@@ -202,7 +202,7 @@ public class UdpServer extends ChannelDuplexHandler {
     private class UdpServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         private final ChannelHandlerContext drasylServerChannelCtx;
 
-        public UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
+        UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
             super(false);
             this.drasylServerChannelCtx = drasylServerChannelCtx;
         }
@@ -247,7 +247,7 @@ public class UdpServer extends ChannelDuplexHandler {
     private class UdpServerBindListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public UdpServerBindListener(final ChannelHandlerContext ctx) {
+        UdpServerBindListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 

@@ -55,7 +55,7 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
 
 /**
  * Run a drasyl node.

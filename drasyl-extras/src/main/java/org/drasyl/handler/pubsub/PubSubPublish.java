@@ -38,7 +38,7 @@ public final class PubSubPublish extends DefaultByteBufHolder implements PubSubM
     private final UUID id;
     private final String topic;
 
-    private PubSubPublish(UUID id, String topic, ByteBuf content) {
+    private PubSubPublish(final UUID id, final String topic, final ByteBuf content) {
         super(content);
         this.id = requireNonNull(id);
         this.topic = requireNonNull(topic);
@@ -58,7 +58,7 @@ public final class PubSubPublish extends DefaultByteBufHolder implements PubSubM
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }

@@ -150,7 +150,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     }
 
     private class UdpBroadcastServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        public UdpBroadcastServerHandler() {
+        UdpBroadcastServerHandler() {
             super(false);
         }
 
@@ -174,7 +174,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     private class UdpBroadcastServerFutureListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public UdpBroadcastServerFutureListener(final ChannelHandlerContext ctx) {
+        UdpBroadcastServerFutureListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 

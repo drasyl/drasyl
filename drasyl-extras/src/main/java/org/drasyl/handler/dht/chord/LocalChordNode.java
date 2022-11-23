@@ -77,7 +77,7 @@ public class LocalChordNode implements RemoteChordNode {
         this.client = requireNonNull(client);
     }
 
-    public LocalChordNode(final DrasylAddress address, RmiClientHandler client) {
+    public LocalChordNode(final DrasylAddress address, final RmiClientHandler client) {
         this(address, new ChordFingerTable(address), client);
     }
 
@@ -150,7 +150,7 @@ public class LocalChordNode implements RemoteChordNode {
         return new SucceededFuture<>(ImmediateEventExecutor.INSTANCE, null);
     }
 
-    private FutureComposer<DrasylAddress> composableFindSuccessor(long id) {
+    private FutureComposer<DrasylAddress> composableFindSuccessor(final long id) {
         LOG.debug("Find successor of `{}` ({}) by asking id's predecessor for its successor.", () -> chordIdHex(id), () -> chordIdPosition(id));
 
         // initialize return value as this node's successor (might be null)
@@ -186,7 +186,7 @@ public class LocalChordNode implements RemoteChordNode {
     }
 
     @Override
-    public Future<DrasylAddress> findSuccessor(long id) {
+    public Future<DrasylAddress> findSuccessor(final long id) {
         LOG.debug("findSuccessor({})", () -> chordIdHex(id));
         return composableFindSuccessor(id).finish(group.next());
     }
@@ -207,7 +207,7 @@ public class LocalChordNode implements RemoteChordNode {
         final DrasylAddress myAddress = localAddress;
         final DrasylAddress mySuccessor = fingerTable.getSuccessor();
         final long findIdRelativeId = relativeChordId(id, myAddress);
-        long mySuccessorRelativeId;
+        final long mySuccessorRelativeId;
         if (mySuccessor == null) {
             mySuccessorRelativeId = 0;
         }
@@ -472,7 +472,7 @@ public class LocalChordNode implements RemoteChordNode {
                 // try to get my successor's predecessor
                 return composeFuture(client.lookup(BIND_NAME, RemoteChordNode.class, successor).getPredecessor()).then(future2 -> {
                     // if bad connection with successor! delete successor
-                    DrasylAddress x = future2.getNow();
+                    final DrasylAddress x = future2.getNow();
                     if (x == null) {
                         LOG.debug("Bad connection with successor `{}`. Delete successor from finger table.", successor);
                         return deleteSuccessor();

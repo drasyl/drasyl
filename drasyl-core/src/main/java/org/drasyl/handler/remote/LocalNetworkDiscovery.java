@@ -235,7 +235,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             this.lastInboundPingTime = lastInboundPingTime;
         }
 
-        public Peer(final InetSocketAddress address, final long pingTimeoutMillis) {
+        Peer(final InetSocketAddress address, final long pingTimeoutMillis) {
             this(pingTimeoutMillis, address, 0L);
         }
 

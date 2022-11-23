@@ -75,7 +75,7 @@ public abstract class PublicHeader {
         final IdentityPublicKey sender;
         final ProofOfWork proofOfWork;
 
-        byte flags = byteBuf.readByte();
+        final byte flags = byteBuf.readByte();
         // 000. ....
         hopCount = HopCount.of(flags >> 5);
         // ...0 ....

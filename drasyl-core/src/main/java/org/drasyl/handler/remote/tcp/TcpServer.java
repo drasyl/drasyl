@@ -164,7 +164,7 @@ public class TcpServer extends ChannelDuplexHandler {
     private class TcpServerFutureListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public TcpServerFutureListener(final ChannelHandlerContext ctx) {
+        TcpServerFutureListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 
@@ -191,9 +191,9 @@ public class TcpServer extends ChannelDuplexHandler {
         private final ChannelHandlerContext ctx;
         private final Duration pingTimeout;
 
-        public TcpServerChannelInitializer(final Map<SocketAddress, Channel> clients,
-                                           final ChannelHandlerContext ctx,
-                                           final Duration pingTimeout) {
+        TcpServerChannelInitializer(final Map<SocketAddress, Channel> clients,
+                                    final ChannelHandlerContext ctx,
+                                    final Duration pingTimeout) {
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);
             this.pingTimeout = pingTimeout;
@@ -214,8 +214,8 @@ public class TcpServer extends ChannelDuplexHandler {
         private final Map<SocketAddress, Channel> clients;
         private final ChannelHandlerContext ctx;
 
-        public TcpServerHandler(final Map<SocketAddress, Channel> clients,
-                                final ChannelHandlerContext ctx) {
+        TcpServerHandler(final Map<SocketAddress, Channel> clients,
+                         final ChannelHandlerContext ctx) {
             super(false);
             this.clients = requireNonNull(clients);
             this.ctx = requireNonNull(ctx);

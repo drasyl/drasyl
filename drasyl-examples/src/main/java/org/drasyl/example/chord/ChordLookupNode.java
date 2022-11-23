@@ -121,7 +121,7 @@ public class ChordLookupNode {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nPlease enter your search key (or type \"quit\" to leave): ");
-                String command = userInput.nextLine();
+                final String command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {

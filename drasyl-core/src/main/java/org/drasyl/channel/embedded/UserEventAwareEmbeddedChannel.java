@@ -83,7 +83,7 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
     private static class UserEventAcceptor extends ChannelInboundHandlerAdapter {
         private final Queue<Object> userEvents;
 
-        public UserEventAcceptor() {
+        UserEventAcceptor() {
             this.userEvents = new ArrayDeque<>();
         }
 

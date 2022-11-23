@@ -111,7 +111,7 @@ public class PubSubPublisher {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"publish <topic> <content>\" or \"quit\": ");
-                String command = userInput.nextLine();
+                final String command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {

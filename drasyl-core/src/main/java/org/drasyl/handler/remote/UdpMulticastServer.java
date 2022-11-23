@@ -184,7 +184,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     private class UdpMulticastServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        public UdpMulticastServerHandler() {
+        UdpMulticastServerHandler() {
             super(false);
         }
 
@@ -208,7 +208,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private class UdpMulticastServerFutureListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public UdpMulticastServerFutureListener(final ChannelHandlerContext ctx) {
+        UdpMulticastServerFutureListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 

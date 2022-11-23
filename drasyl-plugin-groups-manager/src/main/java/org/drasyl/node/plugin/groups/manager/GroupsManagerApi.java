@@ -40,8 +40,8 @@ import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.node.JSONUtil.JACKSON_READER;
-import static org.drasyl.node.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.node.JsonUtil.JACKSON_READER;
+import static org.drasyl.node.JsonUtil.JACKSON_WRITER;
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
 import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.eclipse.jetty.http.HttpStatus.NO_CONTENT_204;

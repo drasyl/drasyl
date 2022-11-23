@@ -19,7 +19,29 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.node.plugin.groups.client.message;
+package org.drasyl.node;
 
-import org.drasyl.node.plugin.groups.client.Group;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
+/**
+ * Holder for the JSON serializer and JSON deserializer.
+ */
+public final class JsonUtil {
+    public static final ObjectMapper JACKSON_MAPPER;
+    public static final ObjectWriter JACKSON_WRITER;
+    public static final ObjectReader JACKSON_READER;
+
+    static {
+        JACKSON_MAPPER = new ObjectMapper();
+        JACKSON_MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        JACKSON_WRITER = JACKSON_MAPPER.writer();
+        JACKSON_READER = JACKSON_MAPPER.reader();
+    }
+
+    private JsonUtil() {
+        // util class
+    }
+}

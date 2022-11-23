@@ -46,7 +46,7 @@ class PendingQueueWindow implements Window {
      * @param ctx      the handler context
      * @param capacity the window size/capacity
      */
-    public PendingQueueWindow(final ChannelHandlerContext ctx, final int capacity) {
+    PendingQueueWindow(final ChannelHandlerContext ctx, final int capacity) {
         this.capacity = requirePositive(capacity);
         this.pendingWriteQueue = new PendingWriteQueue(ctx);
         this.queue = new LinkedList<>();

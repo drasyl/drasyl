@@ -134,7 +134,7 @@ public class ChordCircleNode {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"info\" to check this node's data or \n type \"quit\" to leave ring: ");
-                String command = userInput.next();
+                final String command = userInput.next();
 
                 // quit
                 if (command.startsWith("quit")) {

@@ -336,10 +336,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             this.lastHelloTime = lastHelloTime;
         }
 
-        public ChildrenPeer(final LongSupplier currentTime,
-                            final long pingTimeoutMillis,
-                            final InetSocketAddress publicInetAddress,
-                            final Set<InetSocketAddress> privateInetAddresses) {
+        ChildrenPeer(final LongSupplier currentTime,
+                     final long pingTimeoutMillis,
+                     final InetSocketAddress publicInetAddress,
+                     final Set<InetSocketAddress> privateInetAddresses) {
             this(currentTime, pingTimeoutMillis, publicInetAddress, privateInetAddresses, 0L);
         }
 
