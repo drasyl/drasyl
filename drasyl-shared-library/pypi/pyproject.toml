@@ -36,10 +36,10 @@ classifiers = [
 
 [project.urls]
 "Documentation" = "https://docs.drasyl.org/"
-"Source" = "https://github.com/drasyl-overlay/drasyl"
-"Changelog" = "https://github.com/drasyl-overlay/drasyl/blob/master/CHANGELOG.md"
+"Source" = "https://github.com/drasyl/drasyl"
+"Changelog" = "https://github.com/drasyl/drasyl/blob/master/CHANGELOG.md"
 "Homepage" = "https://drasyl.org"
-"Issue Tracker" = "https://github.com/drasyl-overlay/drasyl/issues"
+"Issue Tracker" = "https://github.com/drasyl/drasyl/issues"
 
 [tool.setuptools.dynamic]
 version = { file = "VERSION" }

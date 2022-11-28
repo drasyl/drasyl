@@ -5,10 +5,10 @@
 [Contributing](CONTRIBUTING.md) |
 [Changelog](CHANGELOG.md)
 
-[![Test](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml/badge.svg)](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml)
+[![Test](https://github.com/drasyl/drasyl/actions/workflows/test.yml/badge.svg)](https://github.com/drasyl/drasyl/actions/workflows/test.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 [![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
-[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl-overlay/homebrew-tap/main/Info/drasyl.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl-overlay/homebrew-tap)
+[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl/homebrew-tap/main/Info/drasyl.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl/homebrew-tap)
 [![Chocolatey](https://img.shields.io/chocolatey/v/drasyl)](https://chocolatey.org/packages/drasyl)
 [![Python Package Index](https://img.shields.io/pypi/v/drasyl.svg)](https://pypi.org/project/drasyl)
 [![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/r/drasyl/drasyl)
@@ -16,7 +16,7 @@
 
 # drasyl
 
-[drasyl](https://github.com/drasyl-overlay/drasyl) [dʁazy:l] is a general-purpose overlay network framework for rapid development of distributed
+[drasyl](https://github.com/drasyl/drasyl) [dʁazy:l] is a general-purpose overlay network framework for rapid development of distributed
 P2P applications.
 
 By using drasyl developers can fully concentrate on creating distributed applications. With drasyl,
@@ -48,4 +48,4 @@ drasyl node without having to write configuration files or provide IP addresses 
 
 # License
 
-This is free software under the terms of the [MIT License](https://github.com/drasyl-overlay/drasyl/blob/master/LICENSE).
+This is free software under the terms of the [MIT License](https://github.com/drasyl/drasyl/blob/master/LICENSE).

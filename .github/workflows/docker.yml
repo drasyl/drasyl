@@ -42,5 +42,5 @@ jobs:
         with:
           push: true
           context: .
-          tags: ghcr.io/drasyl-overlay/drasyl:latest,ghcr.io/drasyl-overlay/drasyl:${{ steps.actual_patch_version.outputs.ACTUAL_PATCH_VERSION }},ghcr.io/drasyl-overlay/drasyl:${{ steps.actual_minor_version.outputs.ACTUAL_MINOR_VERSION }},ghcr.io/drasyl-overlay/drasyl:${{ steps.actual_major_version.outputs.ACTUAL_MAJOR_VERSION }} 
+          tags: ghcr.io/drasyl/drasyl:latest,ghcr.io/drasyl/drasyl:${{ steps.actual_patch_version.outputs.ACTUAL_PATCH_VERSION }},ghcr.io/drasyl/drasyl:${{ steps.actual_minor_version.outputs.ACTUAL_MINOR_VERSION }},ghcr.io/drasyl/drasyl:${{ steps.actual_major_version.outputs.ACTUAL_MAJOR_VERSION }} 
           platforms: linux/amd64,linux/arm/v7,linux/arm64

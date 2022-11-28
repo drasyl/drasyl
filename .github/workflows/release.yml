@@ -421,13 +421,13 @@ jobs:
     needs: [java]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout https://github.com/drasyl-overlay/homebrew-tap
+      - name: Checkout https://github.com/drasyl/homebrew-tap
         uses: actions/checkout@v3.1.0
         with:
           token: ${{ secrets.GH_TOKEN }}
-          repository: drasyl-overlay/homebrew-tap
+          repository: drasyl/homebrew-tap
       - name: Download ZIP
-        run: wget https://github.com/drasyl-overlay/drasyl/releases/download/${{ github.event.release.tag_name }}/drasyl-$(echo ${{ github.event.release.tag_name }} | sed 's/v//').zip -O drasyl.zip
+        run: wget https://github.com/drasyl/drasyl/releases/download/${{ github.event.release.tag_name }}/drasyl-$(echo ${{ github.event.release.tag_name }} | sed 's/v//').zip -O drasyl.zip
       - name: Calculate SHA256
         id: sha
         run: |
@@ -452,18 +452,18 @@ jobs:
     needs: [java]
     runs-on: windows-latest
     steps:
-      - name: Checkout https://github.com/drasyl-overlay/drasyl-choco
+      - name: Checkout https://github.com/drasyl/drasyl-choco
         uses: actions/checkout@v3.1.0
         with:
           token: ${{ secrets.GH_TOKEN }}
-          repository: drasyl-overlay/drasyl-choco
+          repository: drasyl/drasyl-choco
       - name: Download ZIP, update versions and checksum
         id: choco
         run: |
           $Version = "${{ github.event.release.tag_name }}".substring(1)
           echo $Version
 
-          $SHA = (Invoke-RestMethod -Uri https://github.com/drasyl-overlay/drasyl/releases/download/${{ github.event.release.tag_name }}/drasyl-$($Version).zip.sha256).Trim().ToUpper()
+          $SHA = (Invoke-RestMethod -Uri https://github.com/drasyl/drasyl/releases/download/${{ github.event.release.tag_name }}/drasyl-$($Version).zip.sha256).Trim().ToUpper()
           echo $SHA
 
           (Get-Content ./drasyl.nuspec) -replace '<version>.*</version>', "<version>$Version</version>" | Set-Content ./drasyl.nuspec

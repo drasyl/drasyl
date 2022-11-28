@@ -38,11 +38,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout https://github.com/drasyl-overlay/api.drasyl.org
+      - name: Checkout https://github.com/drasyl/api.drasyl.org
         uses: actions/checkout@v3.1.0
         with:
           token: ${{ secrets.GH_TOKEN }}
-          repository: drasyl-overlay/api.drasyl.org
+          repository: drasyl/api.drasyl.org
       - name: Get branch name
         id: vars
         run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}

@@ -263,9 +263,9 @@ ProofOfWork = -2144920491
   automatically be used. If one or more super peers fail (temporarily), one of the remaining super
   peers will automatically be used. By default, each node will use two of our super peers.
 - New examples have been added:
-  https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example
+  https://github.com/drasyl/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example
 - Nodes can now be implemented as finite state machines (see our example of the philosopher
-  problem: https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers)
+  problem: https://github.com/drasyl/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers)
   .
 
 ### Changed
