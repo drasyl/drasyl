@@ -369,10 +369,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             this.lastApplicationTime = lastApplicationTime;
         }
 
-        public TraversingPeer(final LongSupplier currentTime,
-                              final long pingTimeoutMillis,
-                              final long pingCommunicationTimeoutMillis,
-                              final Set<InetSocketAddress> inetAddressCandidates) {
+        TraversingPeer(final LongSupplier currentTime,
+                       final long pingTimeoutMillis,
+                       final long pingCommunicationTimeoutMillis,
+                       final Set<InetSocketAddress> inetAddressCandidates) {
             this(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddressCandidates, 0L, 0L, 0L);
         }
 

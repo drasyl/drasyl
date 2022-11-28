@@ -56,7 +56,7 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
 
     @SuppressWarnings("unchecked")
     @Override
-    public boolean acceptOutboundMessage(Object msg) {
+    public boolean acceptOutboundMessage(final Object msg) {
         return msg instanceof AddressedEnvelope && ((AddressedEnvelope<?, SocketAddress>) msg).content() instanceof RmiMessage;
     }
 

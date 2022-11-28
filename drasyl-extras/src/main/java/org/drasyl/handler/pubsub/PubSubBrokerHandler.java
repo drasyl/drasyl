@@ -50,10 +50,10 @@ public class PubSubBrokerHandler extends SimpleChannelInboundHandler<OverlayAddr
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         // inform all subscribers that we're shutting down
         for (final String topic : subscriptions.keySet()) {
-            Collection<DrasylAddress> subscribers = subscriptions.get(topic);
+            final Collection<DrasylAddress> subscribers = subscriptions.get(topic);
             for (final DrasylAddress subscriber : subscribers) {
                 ctx.writeAndFlush(new OverlayAddressedMessage<>(PubSubUnsubscribe.of(topic), subscriber));
             }
@@ -72,8 +72,8 @@ public class PubSubBrokerHandler extends SimpleChannelInboundHandler<OverlayAddr
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                OverlayAddressedMessage<PubSubMessage> msg) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final OverlayAddressedMessage<PubSubMessage> msg) throws Exception {
         LOG.trace("Got `{}` from `{}`.", msg.content(), msg.sender());
         if (msg.content() instanceof PubSubPublish) {
             handlePublish(ctx, (PubSubPublish) msg.content(), msg.sender());

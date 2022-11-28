@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,29 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.node;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
 /**
- * Holder for the JSON serializer and JSON deserializer.
+ * Handlers used to run a drasyl node.
  */
-public final class JSONUtil {
-    public static final ObjectMapper JACKSON_MAPPER;
-    public static final ObjectWriter JACKSON_WRITER;
-    public static final ObjectReader JACKSON_READER;
-
-    static {
-        JACKSON_MAPPER = new ObjectMapper();
-        JACKSON_MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        JACKSON_WRITER = JACKSON_MAPPER.writer();
-        JACKSON_READER = JACKSON_MAPPER.reader();
-    }
-
-    private JSONUtil() {
-        // util class
-    }
-}
+package org.drasyl.handler;

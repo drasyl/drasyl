@@ -114,14 +114,14 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doRegister() throws Exception {
         super.doRegister();
 
-        pipeline().addLast((new ChannelInitializer<>() {
+        pipeline().addLast(new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter(paths));
                 ch.pipeline().addLast(new DuplicateChannelFilter());
                 ch.pipeline().addLast(new PendingWritesFlusher());
             }
-        }));
+        });
     }
 
     @Override

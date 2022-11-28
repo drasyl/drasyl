@@ -57,8 +57,8 @@ public final class UrlUtil {
         try {
             return new URL(str);
         }
-        catch (final MalformedURLException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
+        catch (final MalformedURLException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 }

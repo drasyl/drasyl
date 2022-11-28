@@ -112,6 +112,16 @@ public final class Behaviors {
         return withScheduler(factory, eventLoopGroup());
     }
 
+    /**
+     * Returns a default, shared {@link EventLoopGroup} instance intended for {@link Behavior}
+     * scheduling.
+     *
+     * @return a {@code EventLoopGroup} meant for {@link Behavior}-bound work
+     */
+    public static EventLoopGroup eventLoopGroup() {
+        return LazyEventLoopGroupHolder.INSTANCE;
+    }
+
     public static class EventScheduler {
         private final Consumer<Event> consumer;
         private final EventLoopGroup eventLoopGroup;
@@ -159,16 +169,6 @@ public final class Behaviors {
                                                    final Duration period) {
             return eventLoopGroup.scheduleAtFixedRate(() -> consumer.accept(event), initialDelay.toMillis(), period.toMillis(), MILLISECONDS);
         }
-    }
-
-    /**
-     * Returns a default, shared {@link EventLoopGroup} instance intended for {@link Behavior}
-     * scheduling.
-     *
-     * @return a {@code EventLoopGroup} meant for {@link Behavior}-bound work
-     */
-    public static EventLoopGroup eventLoopGroup() {
-        return LazyEventLoopGroupHolder.INSTANCE;
     }
 
     private static final class LazyEventLoopGroupHolder {

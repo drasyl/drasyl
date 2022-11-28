@@ -66,12 +66,12 @@ public final class Version {
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 
         // collect properties
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         try {
-            Enumeration<URL> resources = classLoader.getResources("META-INF/org.drasyl.versions.properties");
+            final Enumeration<URL> resources = classLoader.getResources("META-INF/org.drasyl.versions.properties");
             while (resources.hasMoreElements()) {
-                URL url = resources.nextElement();
-                InputStream in = url.openStream();
+                final URL url = resources.nextElement();
+                final InputStream in = url.openStream();
                 try {
                     properties.load(in);
                 }
@@ -79,25 +79,25 @@ public final class Version {
                     try {
                         in.close();
                     }
-                    catch (Exception e) {
+                    catch (final Exception e) {
                         // ignore
                     }
                 }
             }
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             // ignore
         }
 
         // collect artifact ids
-        Set<String> artifactIds = new HashSet<>();
-        for (String key : (Set<String>) (Set) properties.keySet()) {
+        final Set<String> artifactIds = new HashSet<>();
+        for (final String key : (Set<String>) (Set) properties.keySet()) {
             final int index = key.indexOf('.');
             if (index <= 0) {
                 continue;
             }
 
-            String artifactId = key.substring(0, index);
+            final String artifactId = key.substring(0, index);
 
             // all properties present?
             if (!properties.containsKey(artifactId + PROPERTY_VERSION)) {
@@ -108,8 +108,8 @@ public final class Version {
         }
 
         // collect information
-        Map<String, Version> versions = new TreeMap<>();
-        for (String artifactId : artifactIds) {
+        final Map<String, Version> versions = new TreeMap<>();
+        for (final String artifactId : artifactIds) {
             versions.put(
                     artifactId,
                     new Version(artifactId, properties.getProperty(artifactId + PROPERTY_VERSION))
@@ -120,8 +120,8 @@ public final class Version {
     }
 
     @SuppressWarnings("java:S106")
-    public static void main(String[] args) {
-        for (Version version : identify().values()) {
+    public static void main(final String[] args) {
+        for (final Version version : identify().values()) {
             System.out.println(version);
         }
     }

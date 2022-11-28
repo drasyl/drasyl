@@ -82,9 +82,9 @@ public final class InetSocketAddressUtil {
         final int ix = str.indexOf('/');
         if (ix >= 0) {
             if (ix == 0) { // missing host name; use address
-                str = addr instanceof Inet6Address
-                        ? "[" + str.substring(1) + "]" // bracket IPv6 addresses with
-                        : str.substring(1);
+                str = addr instanceof Inet6Address ?
+                        "[" + str.substring(1) + "]" : // bracket IPv6 addresses with
+                        str.substring(1);
             }
             else { // otherwise use name
                 str = str.substring(0, ix);

@@ -100,8 +100,8 @@ public class PubSubSubscriber {
                         p.addLast(new PubSubSubscribeHandler(broker));
                         p.addLast(new SimpleChannelInboundHandler<PubSubPublish>() {
                             @Override
-                            protected void channelRead0(ChannelHandlerContext ctx,
-                                                        PubSubPublish msg) {
+                            protected void channelRead0(final ChannelHandlerContext ctx,
+                                                        final PubSubPublish msg) {
                                 System.out.println("Got publication for topic `" + msg.getTopic() + "`: " + new String(ByteBufUtil.getBytes(msg.getContent()), UTF_8));
                             }
                         });
@@ -122,7 +122,7 @@ public class PubSubSubscriber {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"subscribe <topic>\", \"unsubscribe <topic>\", or \"quit\": ");
-                String command = userInput.nextLine();
+                final String command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {

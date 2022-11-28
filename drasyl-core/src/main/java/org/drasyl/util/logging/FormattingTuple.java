@@ -35,7 +35,7 @@ final class FormattingTuple {
         this.throwable = throwable;
     }
 
-    public FormattingTuple(final String message) {
+    FormattingTuple(final String message) {
         this(message, null);
     }
 

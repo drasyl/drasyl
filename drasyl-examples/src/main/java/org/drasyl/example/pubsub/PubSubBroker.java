@@ -97,7 +97,7 @@ public class PubSubBroker {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"quit\" to stop the broker: ");
-                String command = userInput.next();
+                final String command = userInput.next();
 
                 // quit
                 if (command.startsWith("quit")) {

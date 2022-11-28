@@ -46,10 +46,10 @@ public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
      * @return key pair with unmasked secret key
      */
     public String toUnmaskedString() {
-        return "KeyPair{"
-                + "publicKey=" + getPublicKey() + ", "
-                + "secretKey=" + getSecretKey().toUnmaskedString()
-                + "}";
+        return "KeyPair{" +
+                "publicKey=" + getPublicKey() + ", " +
+                "secretKey=" + getSecretKey().toUnmaskedString() +
+                "}";
     }
 
     /**

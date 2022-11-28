@@ -440,9 +440,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             this.rtt = rtt;
         }
 
-        public SuperPeer(final LongSupplier currentTime,
-                         final long pingTimeoutMillis,
-                         final InetSocketAddress inetAddress) {
+        SuperPeer(final LongSupplier currentTime,
+                  final long pingTimeoutMillis,
+                  final InetSocketAddress inetAddress) {
             this(currentTime, pingTimeoutMillis, inetAddress, 0L, 0L);
         }
 

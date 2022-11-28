@@ -50,7 +50,7 @@ public class PubSubCodec extends MessageToMessageCodec<OverlayAddressedMessage<B
     public static final int MIN_MESSAGE_LENGTH = 20;
 
     @Override
-    public boolean acceptOutboundMessage(Object msg) {
+    public boolean acceptOutboundMessage(final Object msg) {
         return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof PubSubMessage;
     }
 

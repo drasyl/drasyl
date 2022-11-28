@@ -37,16 +37,16 @@ import java.util.List;
 @Sharable
 public class OverlayMessageToEnvelopeMessageCodec extends MessageToMessageCodec<OverlayAddressedMessage<?>, AddressedEnvelope<?, ?>> {
     @Override
-    protected void encode(ChannelHandlerContext ctx,
-                          AddressedEnvelope<?, ?> msg,
-                          List<Object> out) {
+    protected void encode(final ChannelHandlerContext ctx,
+                          final AddressedEnvelope<?, ?> msg,
+                          final List<Object> out) {
         out.add(new OverlayAddressedMessage<>(msg.content(), (DrasylAddress) msg.recipient(), (DrasylAddress) msg.sender()).retain());
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx,
-                          OverlayAddressedMessage<?> msg,
-                          List<Object> out) {
+    protected void decode(final ChannelHandlerContext ctx,
+                          final OverlayAddressedMessage<?> msg,
+                          final List<Object> out) {
         out.add(new DefaultAddressedEnvelope<>(msg.content(), msg.recipient(), msg.sender()).retain());
     }
 }

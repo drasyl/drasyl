@@ -812,16 +812,16 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         private final ConnectionHandshakeSegment seg;
         private final long srtt;
 
-        public RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
-                                            final ConnectionHandshakeSegment seg,
-                                            final long srtt) {
+        RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
+                                     final ConnectionHandshakeSegment seg,
+                                     final long srtt) {
             this.ctx = requireNonNull(ctx);
             this.seg = requireNonNull(seg);
             this.srtt = requirePositive(srtt);
         }
 
-        public RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
-                                            final ConnectionHandshakeSegment seg) {
+        RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
+                                     final ConnectionHandshakeSegment seg) {
             this(ctx, seg, RTT);
         }
 

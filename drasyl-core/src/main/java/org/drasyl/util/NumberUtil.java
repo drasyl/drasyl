@@ -51,9 +51,9 @@ public final class NumberUtil {
      * @throws IllegalArgumentException if precision is less than {@code -1}
      */
     @SuppressWarnings({ "java:S109", "java:S1541" })
-    public static String numberToHumanData(final Number number,
+    public static String numberToHumanData(Number number,
                                            short precision,
-                                           final Locale locale) {
+                                           Locale locale) {
         if (precision < -1) {
             throw new IllegalArgumentException("precision must not be less than -1");
         }

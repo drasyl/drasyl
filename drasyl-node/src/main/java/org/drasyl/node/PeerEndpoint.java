@@ -188,8 +188,8 @@ public abstract class PeerEndpoint {
         try {
             return of(new URI(endpoint));
         }
-        catch (final URISyntaxException x) {
-            throw new IllegalArgumentException("Invalid uri", x);
+        catch (final URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid uri", e);
         }
     }
 
