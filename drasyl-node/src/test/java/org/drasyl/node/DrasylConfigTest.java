@@ -315,6 +315,11 @@ class DrasylConfigTest {
         }
 
         @Override
+        public int hashCode() {
+            return super.hashCode();
+        }
+
+        @Override
         public byte[] toByteArray(final Object o) {
             return new byte[0];
         }

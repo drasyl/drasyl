@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class Murmur3Test {
     @Nested
-    class Murmur3_x86_32 {
+    class Murmur3x8632 {
         @Test
         void shouldReturnCorrectHashes() {
             assertThrows(NullPointerException.class, () -> murmur3_x86_32(null));
@@ -45,7 +45,7 @@ class Murmur3Test {
     }
 
     @Nested
-    class Murmur3_x86_32LE {
+    class Murmur3x8632LE {
         @Test
         void shouldReturnCorrectHashes() {
             assertThrows(NullPointerException.class, () -> murmur3_x86_32LE(null));
@@ -57,7 +57,7 @@ class Murmur3Test {
     }
 
     @Nested
-    class Murmur3_x86_32BytesLE {
+    class Murmur3x8632BytesLE {
         @Test
         void shouldReturnCorrectHashes() {
             assertThrows(NullPointerException.class, () -> murmur3_x86_32BytesLE(null));

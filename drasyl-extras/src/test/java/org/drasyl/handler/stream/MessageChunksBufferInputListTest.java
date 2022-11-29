@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MessageChunksBufferInputListTest {
     @Test
     void size(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
         list.set(1, chunk);
         list.set(1, chunk);
@@ -50,7 +50,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void isEmpty(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
 
         assertTrue(list.isEmpty());
 
@@ -60,7 +60,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void iterator(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
         list.set(1, chunk);
         list.set(1, chunk);
@@ -75,7 +75,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void toArray(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
         list.set(1, chunk);
         list.set(1, chunk);
@@ -85,7 +85,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void clear(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
 
         list.clear();
@@ -96,7 +96,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void get(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
 
         assertEquals(chunk, list.get(0));
@@ -104,7 +104,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void set(@Mock MessageChunk chunk) {
-        List<MessageChunk> list = new MessageChunksBufferInputList(3);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(3);
         list.set(0, chunk);
 
         assertThrows(ArrayIndexOutOfBoundsException.class, () -> {
@@ -114,7 +114,7 @@ class MessageChunksBufferInputListTest {
 
     @Test
     void unsupportedOperations() {
-        List<MessageChunk> list = new MessageChunksBufferInputList(1);
+        final List<MessageChunk> list = new MessageChunksBufferInputList(1);
         assertThrows(UnsupportedOperationException.class, () -> list.contains(null));
         assertThrows(UnsupportedOperationException.class, () -> list.toArray(new Object[0]));
         assertThrows(UnsupportedOperationException.class, () -> list.add(null));

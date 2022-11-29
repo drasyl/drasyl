@@ -69,8 +69,8 @@ class PerfCommandIT {
     private EmbeddedNode superPeer;
     private ByteArrayOutputStream serverOut;
     private ByteArrayOutputStream clientOut;
-    private Thread serverThread = null;
-    private Thread clientThread = null;
+    private Thread serverThread;
+    private Thread clientThread;
 
     @BeforeEach
     void setUp(final TestInfo info) throws DrasylException {

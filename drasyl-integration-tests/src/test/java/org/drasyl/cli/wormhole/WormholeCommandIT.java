@@ -73,8 +73,8 @@ class WormholeCommandIT {
     private EmbeddedNode superPeer;
     private ByteArrayOutputStream senderOut;
     private ByteArrayOutputStream receiverOut;
-    private Thread senderThread = null;
-    private Thread receiverThread = null;
+    private Thread senderThread;
+    private Thread receiverThread;
 
     @BeforeEach
     void setUp(final TestInfo info) throws DrasylException {

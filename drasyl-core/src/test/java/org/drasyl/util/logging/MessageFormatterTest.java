@@ -280,10 +280,10 @@ class MessageFormatterTest {
                 multiOA
         }));
 
-        final Object[][][] _3DOA = { multiOA, multiOA };
+        final Object[][][] threeDimensionalOA = { multiOA, multiOA };
         assertEquals(new FormattingTuple("a[[[1, 2, 3], [10, 20, 30]], [[1, 2, 3], [10, 20, 30]]]"), arrayFormat("{}{}", new Object[]{
                 "a",
-                _3DOA
+                threeDimensionalOA
         }));
 
         final Byte[] ba0 = { 0, Byte.MAX_VALUE, Byte.MIN_VALUE };

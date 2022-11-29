@@ -95,10 +95,9 @@ class ChordUtilTest {
     }
 
     @Nested
-    class relativeChordId {
+    class RelativeChordId {
         @Test
         void shouldReturnCorrectPosition() {
-            long x = 2_199_738_337L + 1_162_275_102L;
             assertEquals(0, relativeChordId("Hello", "Hello"));
             assertEquals(2_199_738_337L, relativeChordId("Hello", true));
             assertEquals(4_294_967_296L - 2_199_738_337L, relativeChordId(true, "Hello"));

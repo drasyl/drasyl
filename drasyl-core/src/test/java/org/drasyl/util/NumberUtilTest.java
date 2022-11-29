@@ -36,21 +36,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class NumberUtilTest {
-    final double ALLOWED_ERROR = 1e-10;
-    final double[] TWO_VALUES = new double[]{ 12.34, -56.78 };
-    final double TWO_VALUES_MEAN = (12.34 - 56.78) / 2;
-    final double TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS =
-            (12.34 - TWO_VALUES_MEAN) * (12.34 - TWO_VALUES_MEAN)
-                    + (-56.78 - TWO_VALUES_MEAN) * (-56.78 - TWO_VALUES_MEAN);
-    final double[] MANY_VALUES = new double[]{ 1.1, -44.44, 33.33, 555.555, -2.2 };
-    final int MANY_VALUES_COUNT = 5;
-    final double MANY_VALUES_MEAN = (1.1 - 44.44 + 33.33 + 555.555 - 2.2) / 5;
-    final double MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS =
-            (1.1 - MANY_VALUES_MEAN) * (1.1 - MANY_VALUES_MEAN)
-                    + (-44.44 - MANY_VALUES_MEAN) * (-44.44 - MANY_VALUES_MEAN)
-                    + (33.33 - MANY_VALUES_MEAN) * (33.33 - MANY_VALUES_MEAN)
-                    + (555.555 - MANY_VALUES_MEAN) * (555.555 - MANY_VALUES_MEAN)
-                    + (-2.2 - MANY_VALUES_MEAN) * (-2.2 - MANY_VALUES_MEAN);
+    static final double ALLOWED_ERROR = 1e-10;
+    static final double[] TWO_VALUES = new double[]{ 12.34, -56.78 };
+    static final double TWO_VALUES_MEAN = (12.34 - 56.78) / 2;
+    static final double TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS =
+            (12.34 - TWO_VALUES_MEAN) * (12.34 - TWO_VALUES_MEAN) +
+                    (-56.78 - TWO_VALUES_MEAN) * (-56.78 - TWO_VALUES_MEAN);
+    static final double[] MANY_VALUES = new double[]{ 1.1, -44.44, 33.33, 555.555, -2.2 };
+    static final int MANY_VALUES_COUNT = 5;
+    static final double MANY_VALUES_MEAN = (1.1 - 44.44 + 33.33 + 555.555 - 2.2) / 5;
+    static final double MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS =
+            (1.1 - MANY_VALUES_MEAN) * (1.1 - MANY_VALUES_MEAN) +
+                    (-44.44 - MANY_VALUES_MEAN) * (-44.44 - MANY_VALUES_MEAN) +
+                    (33.33 - MANY_VALUES_MEAN) * (33.33 - MANY_VALUES_MEAN) +
+                    (555.555 - MANY_VALUES_MEAN) * (555.555 - MANY_VALUES_MEAN) +
+                    (-2.2 - MANY_VALUES_MEAN) * (-2.2 - MANY_VALUES_MEAN);
 
     @Nested
     class NumberToHumanData {

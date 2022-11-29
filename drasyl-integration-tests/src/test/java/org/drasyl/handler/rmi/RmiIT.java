@@ -35,7 +35,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
@@ -95,7 +94,7 @@ class RmiIT {
 
         try {
             server.bind("MyService", new MyServiceImpl());
-            MyService stub = client.lookup("MyService", MyService.class, serverAddress);
+            final MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
             stub.doNothing();
             final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> {
@@ -170,7 +169,7 @@ class RmiIT {
                 .connect(serverAddress).sync().channel();
 
         try {
-            MyService stub = client.lookup("MyService", MyService.class, serverAddress);
+            final MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
             final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> latch.countDown());
 
@@ -226,8 +225,7 @@ class RmiIT {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final AddressedEnvelope<?, SocketAddress> msg) {
-            DefaultAddressedEnvelope<?, SocketAddress> msg1 = new DefaultAddressedEnvelope<>(msg.content(), msg.sender(), msg.recipient());
-            System.out.println("msg1 = " + ReferenceCountUtil.refCnt(msg1));
+            final DefaultAddressedEnvelope<?, SocketAddress> msg1 = new DefaultAddressedEnvelope<>(msg.content(), msg.sender(), msg.recipient());
             ctx.fireChannelRead(msg1);
         }
     }

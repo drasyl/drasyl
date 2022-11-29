@@ -79,7 +79,7 @@
 
         <!-- Class Design -->
 <!--        <module name="FinalClass"/>-->
-        <module name="InnerTypeLast"/>
+<!--        <module name="InnerTypeLast"/>-->
         <module name="InterfaceIsType"/>
         <module name="MutableException"/>
         <module name="OneTopLevelClass"/>

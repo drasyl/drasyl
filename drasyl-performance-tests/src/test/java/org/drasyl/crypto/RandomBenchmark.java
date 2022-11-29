@@ -39,7 +39,7 @@ public class RandomBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void ownRandomCSPRNG(final Blackhole blackhole) {
+    public void ownRandomBytes(final Blackhole blackhole) {
         blackhole.consume(Crypto.randomBytes(size));
     }
 }
