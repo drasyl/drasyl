@@ -37,7 +37,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletableFuture;
 
-@SuppressWarnings({ "java:S106", "java:S1845", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S1845",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class QuoteOfTheMomentClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "qotm-client.identity");
     private static final Duration pullTimeout = Duration.ofSeconds(3);
@@ -89,5 +96,9 @@ public class QuoteOfTheMomentClient extends DrasylNode {
                 node.send(recipient, null);
             }
         }, 0L, pullTimeout.toMillis());
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

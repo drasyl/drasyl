@@ -37,7 +37,15 @@ import java.nio.file.Path;
  * @see EchoClient
  * @see EchoServerBootstrap
  */
-@SuppressWarnings({ "java:S106", "java:S125", "java:S112", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S125",
+        "java:S112",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class EchoServerNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "echo-server.identity");
 
@@ -64,5 +72,9 @@ public class EchoServerNode extends DrasylNode {
 
         node.start().toCompletableFuture().join();
         System.out.println("EchoServer listening on address " + node.identity().getAddress());
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

@@ -40,7 +40,16 @@ import static org.drasyl.util.RandomUtil.randomString;
  *
  * @see EchoServerNode
  */
-@SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S126", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S112",
+        "java:S125",
+        "java:S126",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class EchoClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "echo-client.identity");
     private static final int SIZE = Integer.parseInt(System.getProperty("size", "256"));
@@ -86,5 +95,9 @@ public class EchoClient extends DrasylNode {
         node.send(recipient, payload).exceptionally(e -> {
             throw new RuntimeException("Unable to process message.", e);
         });
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

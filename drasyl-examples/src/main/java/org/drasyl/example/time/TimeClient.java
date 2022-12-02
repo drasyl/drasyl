@@ -48,7 +48,10 @@ import static org.drasyl.example.time.TimeServer.UNIX_TIME_OFFSET;
         "java:S125",
         "java:S126",
         "java:S2096",
-        "java:S2143"
+        "java:S2143",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
 })
 public class TimeClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "time-client.identity");
@@ -90,5 +93,9 @@ public class TimeClient extends DrasylNode {
         node.send(recipient, null).exceptionally(e -> {
             throw new RuntimeException("Unable to process message.", e);
         });
+
+        while (true) {
+            // node should run until shut down
+        }
     }
 }

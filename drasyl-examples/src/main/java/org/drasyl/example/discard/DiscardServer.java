@@ -36,7 +36,16 @@ import java.nio.file.Path;
  *
  * @see DiscardClient
  */
-@SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S1845", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S112",
+        "java:S125",
+        "java:S1845",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class DiscardServer extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "discard-server.identity");
 
@@ -60,5 +69,9 @@ public class DiscardServer extends DrasylNode {
 
         node.start().toCompletableFuture().join();
         System.out.println("DiscardServer listening on address " + node.identity().getAddress());
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

@@ -43,7 +43,16 @@ import java.util.Set;
  * This example starts a drasyl node with activated {@link GroupsClientNode}. The node joins a given
  * group and then tracks the members of the group.
  */
-@SuppressWarnings({ "squid:S106", "squid:S126", "java:S1845", "java:S1943", "java:S2096" })
+@SuppressWarnings({
+        "squid:S106",
+        "squid:S126",
+        "java:S1845",
+        "java:S1943",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class GroupsClientNode extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "groups-client.identity");
     private final Set<IdentityPublicKey> members = new HashSet<>();
@@ -88,5 +97,9 @@ public class GroupsClientNode extends DrasylNode {
 
         final DrasylNode node = new GroupsClientNode(group);
         node.start().toCompletableFuture().join();
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

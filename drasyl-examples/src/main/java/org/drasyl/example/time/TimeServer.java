@@ -37,7 +37,15 @@ import java.nio.file.Path;
  *
  * @see TimeClient
  */
-@SuppressWarnings({ "java:S106", "java:S112", "java:S125", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S112",
+        "java:S125",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class TimeServer extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "time-server.identity");
     public static final long UNIX_TIME_OFFSET = 2_208_988_800L;
@@ -64,5 +72,9 @@ public class TimeServer extends DrasylNode {
 
         node.start().toCompletableFuture().join();
         System.out.println("TimeServer listening on address " + node.identity().getIdentityPublicKey());
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

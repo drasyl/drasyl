@@ -41,7 +41,14 @@ import static org.drasyl.util.RandomUtil.randomString;
  *
  * @see DiscardServer
  */
-@SuppressWarnings({ "java:S106", "java:S112", "java:S2096", "StatementWithEmptyBody" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S112",
+        "java:S2096",
+        "java:S2189",
+        "StatementWithEmptyBody",
+        "InfiniteLoopStatement"
+})
 public class DiscardClient extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "discard-client.identity");
     private static final int SIZE = Integer.parseInt(System.getProperty("size", "256"));
@@ -89,5 +96,9 @@ public class DiscardClient extends DrasylNode {
                 });
             }
         }, PERIOD, PERIOD);
+
+        while (true) {
+            // node should run forever
+        }
     }
 }

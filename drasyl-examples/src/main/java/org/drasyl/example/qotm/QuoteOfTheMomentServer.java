@@ -32,7 +32,13 @@ import org.drasyl.util.RandomUtil;
 import java.nio.file.Path;
 import java.util.Map;
 
-@SuppressWarnings({ "java:S106", "java:S2096" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S2096",
+        "java:S2189",
+        "InfiniteLoopStatement",
+        "StatementWithEmptyBody"
+})
 public class QuoteOfTheMomentServer extends DrasylNode {
     private static final String IDENTITY = System.getProperty("identity", "qotm-server.identity");
     private static final Quote[] QUOTES = {
@@ -64,6 +70,10 @@ public class QuoteOfTheMomentServer extends DrasylNode {
         final DrasylNode node = new QuoteOfTheMomentServer();
         node.start().toCompletableFuture().join();
         System.out.println("QuoteOfTheMomentServer address is: " + node.identity().getIdentityPublicKey());
+
+        while (true) {
+            // node should run forever
+        }
     }
 
     public static Quote getQuoteOfTheMoment() {
