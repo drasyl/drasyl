@@ -22,7 +22,7 @@
 package org.drasyl.identity;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 
 /**
  * This class is a simple holder for a key pair (a {@link IdentityPublicKey} and a {@link

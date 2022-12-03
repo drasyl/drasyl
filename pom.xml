@@ -574,6 +574,33 @@
                     </rules>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-maven-plugin</artifactId>
+                <version>0.14.6</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.revapi</groupId>
+                        <artifactId>revapi-java</artifactId>
+                        <version>0.26.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <analysisConfigurationFiles>
+                        <configurationFile>
+                            <path>${project.parent.basedir}/api-changes.json</path>
+                        </configurationFile>
+                    </analysisConfigurationFiles>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>api-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -708,6 +735,16 @@
             <modules>
                 <module>drasyl-shared-library</module>
             </modules>
+        </profile>
+        <profile>
+            <!-- Skip many checks for faster turn-around in local builds. -->
+            <id>fast</id>
+            <properties>
+                <checkstyle.skip>true</checkstyle.skip>
+                <revapi.skip>true</revapi.skip>
+                <skipDeploy>true</skipDeploy>
+                <skipTests>true</skipTests>
+            </properties>
         </profile>
     </profiles>
 </project>

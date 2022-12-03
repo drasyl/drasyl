@@ -25,7 +25,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;

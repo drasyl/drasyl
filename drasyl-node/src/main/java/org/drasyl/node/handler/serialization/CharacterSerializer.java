@@ -30,13 +30,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class CharacterSerializer extends BoundedSerializer<Character> {
     @Override
-    protected byte[] matchedToByArray(final Character o) {
+    byte[] matchedToByArray(final Character o) {
         return new String(new char[]{ o }).getBytes(UTF_8);
     }
 
     @Override
-    protected Character matchedFromByteArray(final byte[] bytes,
-                                             final Class<Character> type) throws IOException {
+    Character matchedFromByteArray(final byte[] bytes,
+                                   final Class<Character> type) throws IOException {
         if (bytes.length == 1) {
             return (char) bytes[0];
         }

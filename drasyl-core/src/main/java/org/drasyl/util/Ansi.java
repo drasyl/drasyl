@@ -21,6 +21,8 @@
  */
 package org.drasyl.util;
 
+import org.drasyl.util.internal.UnstableApi;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +44,7 @@ import static org.drasyl.util.Ansi.Color.YELLOW;
  * String msg2 = ansi().color(MAGENTA).background(GREEN).format("Hello World");
  * </code></pre>
  */
+@UnstableApi
 public final class Ansi {
     private static final int COLOR_BASE = 30;
     private static final int BACKGROUND_BASE = 40;

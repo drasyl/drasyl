@@ -28,13 +28,13 @@ import java.io.IOException;
  */
 public class ByteSerializer extends BoundedSerializer<Byte> {
     @Override
-    protected byte[] matchedToByArray(final Byte o) throws IOException {
+    byte[] matchedToByArray(final Byte o) throws IOException {
         return new byte[]{ o };
     }
 
     @Override
-    protected Byte matchedFromByteArray(final byte[] bytes,
-                                        final Class<Byte> type) throws IOException {
+    Byte matchedFromByteArray(final byte[] bytes,
+                              final Class<Byte> type) throws IOException {
         if (bytes.length == 1) {
             return bytes[0];
         }

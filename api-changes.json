@@ -1,0 +1,204 @@
+[
+  {
+    "extension": "revapi.filter",
+    "configuration": {
+      "elements": {
+        "exclude": [
+          {
+            "matcher": "java-package",
+            "match": "/.*\\.internal\\..*/"
+          },
+          {
+            "matcher": "java",
+            "match": "@org.drasyl.util.internal.UnstableApi ^*;"
+          },
+          {
+            "matcher": "java-package",
+            "match": "/com\\.fasterxml\\.jackson\\..*/"
+          },
+          {
+            "matcher": "java-package",
+            "match": "/org\\.drasyl\\.cli(\\..*)?/"
+          }
+        ]
+      },
+      "annotated": {
+        "exclude": {
+          "item": "@org.drasyl.util.internal.UnstableApi"
+        }
+      }
+    }
+  },
+  {
+    "extension": "revapi.differences",
+    "configuration": {
+      "differences": [
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "package": "org.drasyl.annotation",
+          "justification": "Internal element that is not intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.removed",
+          "annotation": "@org.drasyl.annotation.Beta",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.added",
+          "annotation": "@org.drasyl.util.internal.UnstableApi",
+          "justification": "Internal element that is not intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.removed",
+          "annotation": "@org.drasyl.annotation.NonNull",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.added",
+          "annotation": "@org.drasyl.util.internal.NonNull",
+          "justification": "Internal element that is not intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.removed",
+          "annotation": "@org.drasyl.annotation.Nullable",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.annotation.added",
+          "annotation": "@org.drasyl.util.internal.Nullable",
+          "justification": "Internal element that is not intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.Ansi",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.logging.JdkLogger",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.logging.Slf4JLogger",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.method.removed",
+          "old": "method void org.drasyl.channel.DrasylChannel::<init>(io.netty.channel.Channel, org.drasyl.channel.DrasylChannel.State, org.drasyl.identity.DrasylAddress, org.drasyl.identity.DrasylAddress)",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "package": "org.drasyl.crypto",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "package": "org.drasyl.crypto.loader",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": "true",
+          "code": "java.class.removed",
+          "package": "org.drasyl.crypto.sodium",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.nowFinal",
+          "old": "class org.drasyl.handler.rmi.message.RmiResponse",
+          "new": "class org.drasyl.handler.rmi.message.RmiResponse",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.drasyl.handler.rmi.RmiClientHandler::<init>(java.util.Map<java.util.UUID, org.drasyl.handler.rmi.RmiInvocationHandler>)",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void org.drasyl.handler.codec.JacksonCodec<T>::<init>(com.fasterxml.jackson.databind.ObjectMapper, java.lang.Class<T>)",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removed",
+          "old": "field org.drasyl.handler.rmi.RmiUtil.OBJECT_MAPPER",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.visibilityReduced",
+          "package": "org.drasyl.node.handler.serialization",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.visibilityReduced",
+          "package": "org.drasyl.node.handler.crypto",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.handler.crypto.ArmMessage",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.JSONUtil",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.plugin.groups.manager.database.jdbc.JDBCDatabaseAdapter",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.added",
+          "annotation": "@com.google.auto.value.AutoValue$Builder",
+          "justification": "False positive due to auto-generated sources"
+
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.added",
+          "annotation": "@com.google.auto.value.AutoValue.Builder",
+          "justification": "False positive due to auto-generated sources"
+
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "annotation": "@com.google.auto.value.AutoValue.Builder",
+          "justification": "False positive due to auto-generated sources"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "annotation": "@com.google.auto.value.AutoValue$Builder",
+          "justification": "False positive due to auto-generated sources"
+        }
+      ]
+    }
+  }
+]

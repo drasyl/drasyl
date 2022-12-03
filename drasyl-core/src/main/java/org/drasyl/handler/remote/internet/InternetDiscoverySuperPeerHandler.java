@@ -317,7 +317,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.release(msg);
     }
 
-    static class ChildrenPeer {
+    protected static class ChildrenPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private InetSocketAddress publicInetAddress;

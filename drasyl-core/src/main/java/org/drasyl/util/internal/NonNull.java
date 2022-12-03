@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.annotation;
+package org.drasyl.util.internal;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -28,24 +28,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Signifies that a public API (public class, method or field) is subject to incompatible changes,
- * or even removal, in a future release. An API bearing this annotation is exempt from any
- * compatibility guarantees made by its containing library. Note that the presence of this
- * annotation implies nothing about the quality or performance of the API in question, only the fact
- * that it is not "API-frozen."
+ * A common annotation to declare that annotated elements cannot be {@code null}. Leverages JSR 305
+ * meta-annotations to indicate nullability in Java to common tools with JSR 305 support and used by
+ * Kotlin to infer nullability of the API.
  *
- * <p>It is generally safe for <i>applications</i> to depend on beta APIs, at the cost of some
- * extra work during upgrades. However it is generally inadvisable for <i>libraries</i> (which get
- * included on users' CLASSPATHs, outside the library developers' control) to do so.
+ * <p>Should be used at parameter, return value, and field level. Method overrides should
+ * repeat parent {@code @NonNull} annotations unless they behave differently.
+ *
+ * @see Nullable
  */
-@Retention(RetentionPolicy.CLASS)
-@Target({
-        ElementType.ANNOTATION_TYPE,
-        ElementType.CONSTRUCTOR,
-        ElementType.FIELD,
-        ElementType.METHOD,
-        ElementType.TYPE
-})
+@Target({ ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD })
+@Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface Beta {
+public @interface NonNull {
 }

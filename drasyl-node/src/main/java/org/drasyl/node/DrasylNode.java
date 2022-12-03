@@ -31,9 +31,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.PromiseCombiner;
-import org.drasyl.annotation.Beta;
-import org.drasyl.annotation.NonNull;
-import org.drasyl.annotation.Nullable;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.DrasylAddress;
@@ -46,6 +43,8 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.FutureUtil;
+import org.drasyl.util.internal.NonNull;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -86,7 +85,6 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
  * </code></pre>
  */
 @SuppressWarnings({ "java:S107", "java:S118" })
-@Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     protected final Identity identity;

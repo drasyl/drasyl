@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;

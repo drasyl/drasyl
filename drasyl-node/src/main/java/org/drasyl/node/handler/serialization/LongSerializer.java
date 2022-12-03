@@ -30,13 +30,13 @@ import java.nio.ByteBuffer;
  */
 public class LongSerializer extends BoundedSerializer<Long> {
     @Override
-    protected byte[] matchedToByArray(final Long o) {
+    byte[] matchedToByArray(final Long o) {
         return ByteBuffer.allocate(Long.BYTES).putLong(o).array();
     }
 
     @Override
-    protected Long matchedFromByteArray(final byte[] bytes,
-                                        final Class<Long> type) throws IOException {
+    Long matchedFromByteArray(final byte[] bytes,
+                              final Class<Long> type) throws IOException {
         try {
             return ByteBuffer.wrap(bytes).getLong();
         }

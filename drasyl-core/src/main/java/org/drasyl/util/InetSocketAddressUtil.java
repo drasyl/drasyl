@@ -21,7 +21,7 @@
  */
 package org.drasyl.util;
 
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;

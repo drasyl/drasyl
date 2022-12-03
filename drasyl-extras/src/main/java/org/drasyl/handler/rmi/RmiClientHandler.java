@@ -52,7 +52,7 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
     final Map<UUID, RmiInvocationHandler> requests;
     ChannelHandlerContext ctx;
 
-    public RmiClientHandler(final Map<UUID, RmiInvocationHandler> requests) {
+    RmiClientHandler(final Map<UUID, RmiInvocationHandler> requests) {
         super(false);
         this.requests = requireNonNull(requests);
     }

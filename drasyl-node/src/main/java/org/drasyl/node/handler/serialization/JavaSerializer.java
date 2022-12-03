@@ -33,7 +33,7 @@ import java.io.Serializable;
  */
 public class JavaSerializer extends BoundedSerializer<Serializable> {
     @Override
-    protected byte[] matchedToByArray(final Serializable o) throws IOException {
+    byte[] matchedToByArray(final Serializable o) throws IOException {
         final ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (final ObjectOutputStream out = new ObjectOutputStream(bos)) {
             out.writeObject(o);
@@ -42,8 +42,8 @@ public class JavaSerializer extends BoundedSerializer<Serializable> {
     }
 
     @Override
-    protected Serializable matchedFromByteArray(final byte[] bytes,
-                                                final Class<Serializable> type) throws IOException {
+    Serializable matchedFromByteArray(final byte[] bytes,
+                                      final Class<Serializable> type) throws IOException {
         final ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
         try (final ObjectInputStream in = new ObjectInputStream(bis)) {
             try {

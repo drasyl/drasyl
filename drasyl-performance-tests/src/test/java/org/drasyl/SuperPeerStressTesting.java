@@ -21,7 +21,7 @@
  */
 package org.drasyl;
 
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;

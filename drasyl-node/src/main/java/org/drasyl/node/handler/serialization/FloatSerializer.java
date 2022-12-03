@@ -32,13 +32,13 @@ public class FloatSerializer extends BoundedSerializer<Float> {
     private static final short FLOAT_LENGTH = 4;
 
     @Override
-    protected byte[] matchedToByArray(final Float o) {
+    byte[] matchedToByArray(final Float o) {
         return ByteBuffer.allocate(FLOAT_LENGTH).putFloat(o).array();
     }
 
     @Override
-    protected Float matchedFromByteArray(final byte[] bytes,
-                                         final Class<Float> type) throws IOException {
+    Float matchedFromByteArray(final byte[] bytes,
+                               final Class<Float> type) throws IOException {
         try {
             return ByteBuffer.wrap(bytes).getFloat();
         }

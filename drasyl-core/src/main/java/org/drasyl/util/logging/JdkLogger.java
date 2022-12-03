@@ -56,6 +56,7 @@
 package org.drasyl.util.logging;
 
 import io.netty.util.internal.logging.AbstractInternalLogger;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -66,6 +67,7 @@ import java.util.logging.Logger;
  * logger.
  */
 @SuppressWarnings("java:S1312")
+@UnstableApi
 public class JdkLogger extends AbstractLogger {
     static final String SELF = JdkLogger.class.getName();
     static final String SUPER = AbstractInternalLogger.class.getName();

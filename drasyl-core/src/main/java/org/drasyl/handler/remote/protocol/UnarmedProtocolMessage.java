@@ -25,7 +25,7 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;

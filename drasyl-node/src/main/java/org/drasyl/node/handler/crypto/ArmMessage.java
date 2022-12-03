@@ -24,10 +24,10 @@ package org.drasyl.node.handler.crypto;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 
-public abstract class ArmMessage {
+abstract class ArmMessage {
     public static final int LENGTH = 1;
 
-    public abstract MessageType getType();
+    abstract MessageType getType();
 
     public abstract void writeBody(ByteBuf byteBuf);
 

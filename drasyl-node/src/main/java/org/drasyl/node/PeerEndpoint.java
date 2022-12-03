@@ -22,8 +22,8 @@
 package org.drasyl.node;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.annotation.NonNull;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.NonNull;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.UriUtil;
 

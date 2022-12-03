@@ -22,7 +22,7 @@
 package org.drasyl.test;
 
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;

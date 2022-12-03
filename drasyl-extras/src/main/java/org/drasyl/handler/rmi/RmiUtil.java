@@ -26,6 +26,7 @@ import com.fasterxml.jackson.dataformat.cbor.databind.CBORMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import java.util.Arrays;
  * Utility class for remote method invocation-related operations.
  */
 public final class RmiUtil {
+    @UnstableApi
     public static final ObjectMapper OBJECT_MAPPER = new CBORMapper();
 
     private RmiUtil() {

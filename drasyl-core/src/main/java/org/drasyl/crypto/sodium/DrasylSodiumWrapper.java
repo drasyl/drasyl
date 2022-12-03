@@ -24,12 +24,14 @@ package org.drasyl.crypto.sodium;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Simple wrapper class that make native class easier.
  */
+@UnstableApi
 public class DrasylSodiumWrapper {
     public static final short SHA256_BYTES = 32;
     public static final short ED25519_PUBLICKEYBYTES = 32;
