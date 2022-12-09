@@ -26,7 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.kqueue.KQueueChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.util.ReferenceCountUtil;
@@ -34,49 +34,54 @@ import io.netty.util.ReferenceCountUtil;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.LongAdder;
 
+import static io.netty.channel.unix.UnixChannelOption.SO_REUSEPORT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class UdpReceiver {
-    public static void main(String[] args) throws InterruptedException {
-        for (int i = 0; i < 2; i++) {
-            final Channel ch = new Bootstrap()
-                    .option(KQueueChannelOption.SO_REUSEPORT, true)
-                    .group(new KQueueEventLoopGroup())
-                    .channel(KQueueDatagramChannel.class)
-                    .handler(new ChannelInitializer<>() {
-                        @Override
-                        protected void initChannel(Channel ch) {
-                            ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                                private final LongAdder adder = new LongAdder();
+    public static void main(String[] args) {
+        final InetSocketAddress address = new InetSocketAddress("0.0.0.0", 10_000);
+        final int count = 2;
 
-                                @Override
-                                public void channelActive(ChannelHandlerContext ctx) throws Exception {
-                                    super.channelActive(ctx);
+        final EventLoopGroup group = new KQueueEventLoopGroup();
+        try {
+            for (int i = 0; i < count; i++) {
+                final Channel channel = new Bootstrap()
+                        .option(SO_REUSEPORT, true)
+                        .group(group)
+                        .channel(KQueueDatagramChannel.class)
+                        .handler(new ChannelInitializer<>() {
+                            @Override
+                            protected void initChannel(Channel ch) {
+                                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                                    private final LongAdder adder = new LongAdder();
 
-                                    ctx.channel().eventLoop().scheduleAtFixedRate(() -> {
-                                        System.out.println(ctx.channel() + " " + adder.sum());
-                                    }, 5_000, 5_000, MILLISECONDS);
-                                }
+                                    @Override
+                                    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+                                        super.channelActive(ctx);
 
-                                @Override
-                                public void channelRead(ChannelHandlerContext ctx,
-                                                        Object msg) throws InterruptedException {
-//                                    System.out.println("UdpReceiver.channelRead");
-                                    adder.increment();
-                                    ReferenceCountUtil.release(msg);
-                                    Thread.sleep(1);
-                                }
-                            });
-                        }
-                    })
-                    .bind(new InetSocketAddress("192.168.188.124", 10_000))
-                    .syncUninterruptibly()
-                    .channel();
-            System.out.println("UdpReceiver.main " + ch);
+                                        ctx.channel().eventLoop().scheduleAtFixedRate(() -> {
+                                            System.out.println(ctx.channel() + " " + adder.sum());
+                                        }, 5_000, 5_000, MILLISECONDS);
+                                    }
+
+                                    @Override
+                                    public void channelRead(ChannelHandlerContext ctx,
+                                                            Object msg) {
+                                        adder.increment();
+                                        ReferenceCountUtil.release(msg);
+                                    }
+                                });
+                            }
+                        })
+                        .bind(address).syncUninterruptibly().channel();
+                System.out.println("UdpReceiver.main " + channel);
+            }
+
+            while (true) {
+            }
         }
-
-        while (true) {
-            Thread.sleep(100);
+        finally {
+            group.shutdownGracefully().awaitUninterruptibly();
         }
     }
 }

@@ -24,37 +24,75 @@ package org.drasyl.cli;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
-import org.drasyl.util.RandomUtil;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.LongAdder;
+
+import static org.drasyl.util.RandomUtil.randomBytes;
 
 public class UdpSender {
-    public static void main(String[] args) throws InterruptedException {
-        final Channel ch = new Bootstrap()
-                .group(new NioEventLoopGroup())
-                .channel(NioDatagramChannel.class)
-                .handler(new ChannelInitializer<>() {
-                    @Override
-                    protected void initChannel(Channel ch) {
+    public static void main(String[] args) {
+        final InetSocketAddress address = new InetSocketAddress("127.0.0.1", 10_000);
+        final int count = 10;
 
-                    }
-                })
-                .bind(0)
-                .syncUninterruptibly()
-                .channel();
-        System.out.println("UdpReceiver.main " + ch);
+        final EventLoopGroup group = new KQueueEventLoopGroup();
+        try {
+            for (int i = 0; i < count; i++) {
+                final Channel channel = new Bootstrap()
+                        .group(group)
+                        .channel(KQueueDatagramChannel.class)
+                        .handler(new ChannelInitializer<>() {
+                            @Override
+                            protected void initChannel(Channel ch) {
+                                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                                    private final LongAdder adder = new LongAdder();
+                                    private DatagramPacket msg;
 
-        final InetSocketAddress recipient = new InetSocketAddress("192.168.188.124", 10_000);
-        while (true) {
-            final ByteBuf buf = ch.alloc().buffer(1000).writeBytes(RandomUtil.randomBytes(1000));
-            final ChannelFuture channelFuture = ch.writeAndFlush(new DatagramPacket(buf, recipient));
-            //final ChannelFuture future = channelFuture.syncUninterruptibly();
-            //System.out.println("UdpSender.main " + future);
+                                    @Override
+                                    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+                                        super.channelActive(ctx);
+
+//                                        ctx.channel().eventLoop().scheduleAtFixedRate(() -> {
+//                                            System.out.println(ctx.channel() + " " + adder.sum());
+//                                        }, 5_000, 5_000, MILLISECONDS);
+
+                                        final ByteBuf buf = ctx.alloc().buffer(1000).writeBytes(randomBytes(1400));
+                                        msg = new DatagramPacket(buf, address);
+
+                                        while (ch.isWritable()) {
+//                                            adder.increment();
+                                            ctx.writeAndFlush(msg.retain());
+                                        }
+                                    }
+
+                                    @Override
+                                    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+                                        super.channelWritabilityChanged(ctx);
+
+                                        while (ch.isWritable()) {
+//                                            adder.increment();
+                                            ctx.writeAndFlush(msg.retain());
+                                        }
+                                    }
+                                });
+                            }
+                        })
+                        .bind(0).syncUninterruptibly().channel();
+                System.out.println("UdpSender.main " + channel);
+            }
+
+            while (true) {
+            }
+        }
+        finally {
+            group.shutdownGracefully().awaitUninterruptibly();
         }
     }
 }
