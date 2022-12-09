@@ -24,7 +24,7 @@ package org.drasyl.node.behaviour;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;

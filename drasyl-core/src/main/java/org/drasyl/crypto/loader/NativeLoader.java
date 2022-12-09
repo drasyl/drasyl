@@ -22,6 +22,7 @@
 package org.drasyl.crypto.loader;
 
 import com.sun.jna.Native;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,6 +39,7 @@ import java.nio.file.StandardCopyOption;
  * <p>
  * Based on: <a href="https://github.com/adamheinrich/native-utils">native-utils</a>
  */
+@UnstableApi
 public final class NativeLoader {
     public static final String NATIVE_FOLDER_PATH_PREFIX = "nativeloader";
     /**

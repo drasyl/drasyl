@@ -21,7 +21,7 @@
  */
 package org.drasyl.example.qotm;
 
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.example.qotm.QuoteOfTheMomentServer.Quote;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;

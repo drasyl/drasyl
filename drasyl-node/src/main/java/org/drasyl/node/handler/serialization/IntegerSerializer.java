@@ -30,13 +30,13 @@ import java.nio.ByteBuffer;
  */
 public class IntegerSerializer extends BoundedSerializer<Integer> {
     @Override
-    protected byte[] matchedToByArray(final Integer o) {
+    byte[] matchedToByArray(final Integer o) {
         return ByteBuffer.allocate(Integer.BYTES).putInt(o).array();
     }
 
     @Override
-    protected Integer matchedFromByteArray(final byte[] bytes,
-                                           final Class<Integer> type) throws IOException {
+    Integer matchedFromByteArray(final byte[] bytes,
+                                 final Class<Integer> type) throws IOException {
         try {
             return ByteBuffer.wrap(bytes).getInt();
         }

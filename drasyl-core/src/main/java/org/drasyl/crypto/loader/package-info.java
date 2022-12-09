@@ -22,4 +22,7 @@
 /**
  * Helper to load resources from (nested) JARs or file system
  */
+@UnstableApi
 package org.drasyl.crypto.loader;
+
+import org.drasyl.util.internal.UnstableApi;

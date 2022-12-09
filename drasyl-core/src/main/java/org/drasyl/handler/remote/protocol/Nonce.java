@@ -21,7 +21,7 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;

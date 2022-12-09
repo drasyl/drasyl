@@ -23,6 +23,6 @@ package org.drasyl.handler.pubsub;
 
 import java.util.UUID;
 
-interface PubSubMessage {
+public interface PubSubMessage {
     UUID getId();
 }

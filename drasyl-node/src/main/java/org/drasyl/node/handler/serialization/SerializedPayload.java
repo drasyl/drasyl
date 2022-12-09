@@ -23,7 +23,7 @@ package org.drasyl.node.handler.serialization;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.util.UnsignedShort;
 

@@ -421,7 +421,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         LOG.trace("Got unexpected message `{}`. Drop it.", msg);
     }
 
-    static class SuperPeer {
+    protected static class SuperPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         long lastAcknowledgementTime;

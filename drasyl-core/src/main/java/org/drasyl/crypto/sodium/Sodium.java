@@ -22,11 +22,13 @@
 package org.drasyl.crypto.sodium;
 
 import com.sun.jna.Pointer;
+import org.drasyl.util.internal.UnstableApi;
 
 /**
  * This class presents a restricted view to the native sodium library. Only the required functions
  * for drasyl are considered.
  */
+@UnstableApi
 public class Sodium {
     protected Sodium() {
     }

@@ -22,4 +22,7 @@
 /**
  * Libsodium wrappers for the crypto operations of drasyl
  */
+@UnstableApi
 package org.drasyl.crypto.sodium;
+
+import org.drasyl.util.internal.UnstableApi;

@@ -23,7 +23,7 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;

@@ -21,7 +21,7 @@
  */
 package org.drasyl.example.echo;
 
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
