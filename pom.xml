@@ -744,6 +744,8 @@
                 <revapi.skip>true</revapi.skip>
                 <skipDeploy>true</skipDeploy>
                 <skipTests>true</skipTests>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+                <jacoco.skip>true</jacoco.skip>
             </properties>
         </profile>
     </profiles>
