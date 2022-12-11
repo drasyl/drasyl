@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,7 @@
  */
 package org.drasyl.handler.remote;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -50,59 +48,35 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.infra.Blackhole;
 import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 
 @Fork(1)
 @Warmup(iterations = 1)
 @Measurement(iterations = 1)
 @State(Scope.Benchmark)
-public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
+public class OtherNetworkFilterBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;
     private InetSocketAddress sender;
-    private InetSocketAddress recipient;
-    private ByteBuf byteBuf;
     private ApplicationMessage message;
-    private ByteToRemoteMessageCodec instance;
+    private OtherNetworkFilter instance;
 
     @Setup
     public void setup() {
         ctx = new MyHandlerContext();
         sender = new InetSocketAddress("127.0.0.1", 25527);
-        recipient = new InetSocketAddress("127.0.0.1", 25527);
         final byte[] payload = RandomUtil.randomBytes(1024);
         message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
-        byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-        message.writeTo(byteBuf);
-        instance = new ByteToRemoteMessageCodec();
+        instance = new OtherNetworkFilter(0);
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
-    public void decode(final Blackhole blackhole) {
+    public void channelRead() {
         try {
-            final List<Object> out = new ArrayList<>();
-            instance.decode(ctx, new InetAddressedMessage<>(byteBuf.slice(), null, sender), out);
-            blackhole.consume(out);
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void encode(final Blackhole blackhole) {
-        try {
-            final List<Object> out = new ArrayList<>();
-            instance.encode(ctx, new InetAddressedMessage<>(message, null, recipient), out);
-            byteBuf.release();
-            blackhole.consume(out);
+            instance.channelRead(ctx, new InetAddressedMessage<>(message, null, sender));
         }
         catch (final Exception e) {
             handleUnexpectedException(e);
@@ -181,6 +155,36 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
+        public ChannelHandlerContext read() {
+            return null;
+        }
+
+        @Override
+        public ChannelHandlerContext flush() {
+            return null;
+        }
+
+        @Override
+        public ChannelPipeline pipeline() {
+            return null;
+        }
+
+        @Override
+        public ByteBufAllocator alloc() {
+            return null;
+        }
+
+        @Override
+        public <T> Attribute<T> attr(final AttributeKey<T> key) {
+            return null;
+        }
+
+        @Override
+        public <T> boolean hasAttr(final AttributeKey<T> key) {
+            return false;
+        }
+
+        @Override
         public ChannelFuture bind(final SocketAddress localAddress) {
             return null;
         }
@@ -245,22 +249,12 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public ChannelHandlerContext read() {
-            return null;
-        }
-
-        @Override
         public ChannelFuture write(final Object msg) {
             return null;
         }
 
         @Override
         public ChannelFuture write(final Object msg, final ChannelPromise promise) {
-            return null;
-        }
-
-        @Override
-        public ChannelHandlerContext flush() {
             return null;
         }
 
@@ -297,26 +291,6 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
         @Override
         public ChannelPromise voidPromise() {
             return null;
-        }
-
-        @Override
-        public ChannelPipeline pipeline() {
-            return null;
-        }
-
-        @Override
-        public ByteBufAllocator alloc() {
-            return PooledByteBufAllocator.DEFAULT;
-        }
-
-        @Override
-        public <T> Attribute<T> attr(final AttributeKey<T> key) {
-            return null;
-        }
-
-        @Override
-        public <T> boolean hasAttr(final AttributeKey<T> key) {
-            return false;
         }
     }
 }
