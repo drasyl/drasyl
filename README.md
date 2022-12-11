@@ -17,35 +17,27 @@
 
 # drasyl
 
-[drasyl](https://github.com/drasyl/drasyl) [dʁazy:l] is a general-purpose overlay network framework for rapid development of distributed
-P2P applications.
+[drasyl](https://github.com/drasyl/drasyl) [dʁazy:l] is a high-performance framework for rapid development of distributed applications.
 
-By using drasyl developers can fully concentrate on creating distributed applications. With drasyl,
-boundaries between IP-based networks will be eliminated and secure communication channels between
-any peers will be provided. Zero-configuration is required to use drasyl. Developers can run a new
-drasyl node without having to write configuration files or provide IP addresses of peers.
+drasyl enables quick and easy development of high-performance distributed applications. Driven by a secure and low-latency overlay network protocol, drasyl provides any-to-any connectivity between all Internet-enabled devices.
+
+To prevent developers from reinventing the wheel, drasyl provides extensions that address common challenges for distributed systems like identity/key management, resource discovery, and locality-aware message routing. By using drasyl, developers are unburdened of many usual tasks and can proceed directly with building their distributed application.
 
 <img src="https://docs.drasyl.org/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
 
 # Features
 
-* Provides Communication Channels between any two Nodes (on the Internet).
-* Automatic Discovery of Peers running within same Process, Computer, LAN, or the Internet.
-* Automatic Handover to most local Route.
-* Overcomes Network Barriers (Stateful Firewalls, NATs).
-* UDP Hole Punching.
-* Port Mapping (UPnP-IGD, NAT-PMP, PCP).
-* Communication is (PFS) encrypted.
-* Reacts to Network Connection Changes.
-* Asynchronous and Event-Driven.
-* Lightweight.
-* Extensible.
+* Any-to-any connectivity between all Internet-enabled devices.
+* Locality-aware message routing.
+* Middlebox traversal (like firewalls or network address translators).
+* Driven by a secure & low-latency overlay network protocol.
+* Cryptographic identity & key management.
+* Rich set of extensions for perfect forward secrecy communication, service & resource discovery, reliable transport, error control, traffic shaping, etc.
 
 # Usage & Documentation
 
 * [Getting Started](https://docs.drasyl.org/getting-started/)
-* [Configuration](https://docs.drasyl.org/configuration/)
-* [Command Line Interface](https://docs.drasyl.org/cli/)
+* [Examples](https://github.com/drasyl/drasyl/tree/master/drasyl-examples)
 
 # License
 
