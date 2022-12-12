@@ -277,7 +277,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.151</version>
+                <version>4.8.152</version>
             </dependency>
 
             <!-- Crypto -->
@@ -744,6 +744,8 @@
                 <revapi.skip>true</revapi.skip>
                 <skipDeploy>true</skipDeploy>
                 <skipTests>true</skipTests>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+                <jacoco.skip>true</jacoco.skip>
             </properties>
         </profile>
     </profiles>
