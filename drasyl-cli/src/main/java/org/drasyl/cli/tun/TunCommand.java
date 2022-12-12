@@ -35,6 +35,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -57,6 +58,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopBacklogMonitor;
+import org.drasyl.util.SlowAwareDefaultEventLoopGroup;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -144,11 +147,19 @@ public class TunCommand extends ChannelOptions {
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
+        super(new SlowAwareDefaultEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new SlowAwareDefaultEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
     }
 
     @Override
     public Integer call() {
+        EventLoopBacklogMonitor.monitorBacklog(
+                parentGroup,
+                childGroup,
+                udpServerGroup,
+                DrasylNodeSharedEventLoopGroupHolder.getParentGroup(),
+                DrasylNodeSharedEventLoopGroupHolder.getChildGroup()
+        );
+
         setLogLevel();
 
         if (routes != null) {
