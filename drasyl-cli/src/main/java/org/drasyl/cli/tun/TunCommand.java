@@ -162,6 +162,8 @@ public class TunCommand extends ChannelOptions {
 
         setLogLevel();
 
+        log().warn("Process ID: {}", ProcessHandle.current().pid());
+
         if (routes != null) {
             routes = routes.stream().map(p -> p.ensureInetAddress(subnet)).collect(Collectors.toList());
         }
