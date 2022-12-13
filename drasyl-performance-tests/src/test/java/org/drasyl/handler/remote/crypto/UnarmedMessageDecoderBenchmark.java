@@ -83,8 +83,8 @@ public class UnarmedMessageDecoderBenchmark extends AbstractBenchmark {
 
     @Setup(Level.Invocation)
     public void setupDecode() {
-        InetSocketAddress peerAddress = new InetSocketAddress("127.0.0.1", 25527);
-        UnarmedProtocolMessage message = UnarmedProtocolMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), buf.slice());
+        final InetSocketAddress peerAddress = new InetSocketAddress("127.0.0.1", 25527);
+        final UnarmedProtocolMessage message = UnarmedProtocolMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), buf.slice());
         inboundMsg = new InetAddressedMessage<>(message, null, peerAddress);
     }
 
