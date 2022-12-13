@@ -11,7 +11,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@v3.2.0
       - name: Set up JDK
         uses: actions/setup-java@v3.8.0
         with:
@@ -39,7 +39,7 @@ jobs:
     needs: build
     steps:
       - name: Checkout https://github.com/drasyl/api.drasyl.org
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.2.0
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/api.drasyl.org
