@@ -78,12 +78,12 @@ public class ProtocolArmHandlerBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() throws InvalidMessageFormatException, CryptoException {
         ctx = new MyHandlerContext();
-        InetSocketAddress peerAddress = new InetSocketAddress("127.0.0.1", 25527);
+        final InetSocketAddress peerAddress = new InetSocketAddress("127.0.0.1", 25527);
         final byte[] payload = RandomUtil.randomBytes(1024);
-        ApplicationMessage message = ApplicationMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), Unpooled.wrappedBuffer(payload));
-        ArmedProtocolMessage armedMsg = message.arm(PooledByteBufAllocator.DEFAULT, INSTANCE, INSTANCE.generateSessionKeyPair(ID_2.getKeyAgreementKeyPair(), ID_1.getIdentityPublicKey().getLongTimeKeyAgreementKey()));
+        final ApplicationMessage message = ApplicationMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), Unpooled.wrappedBuffer(payload));
+        final ArmedProtocolMessage armedMsg = message.arm(PooledByteBufAllocator.DEFAULT, INSTANCE, INSTANCE.generateSessionKeyPair(ID_2.getKeyAgreementKeyPair(), ID_1.getIdentityPublicKey().getLongTimeKeyAgreementKey()));
         inboundMsg = new InetAddressedMessage<>(armedMsg, null, peerAddress);
-        ApplicationMessage message2 = ApplicationMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
+        final ApplicationMessage message2 = ApplicationMessage.of(HopCount.of(), true, 0, Nonce.randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
         outboundMsg = new InetAddressedMessage<>(message2, peerAddress, null);
         instance = new ProtocolArmHandler(ID_1, INSTANCE, 100, ofHours(1));
     }

@@ -60,7 +60,7 @@ import static test.util.IdentityTestUtil.ID_3;
 @State(Scope.Benchmark)
 public class InternetDiscoveryChildrenHandlerBenchmark extends AbstractBenchmark {
     private static final int NETWORK_ID = 0;
-    private static int MSG_LEN = 1380;
+    private static final int MSG_LEN = 1380;
     private InternetDiscoveryChildrenHandler handler;
     private InetAddressedMessage<ApplicationMessage> msg;
     private ChannelHandlerContext ctx = new ChannelHandlerContext() {
