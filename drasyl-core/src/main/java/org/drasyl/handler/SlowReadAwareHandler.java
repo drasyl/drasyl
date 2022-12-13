@@ -58,7 +58,7 @@ public class SlowReadAwareHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void addHandlers(final ChannelHandlerContext ctx) {
-        if (true || THRESHOLD > 0.0) {
+        if (THRESHOLD > 0.0) {
             final ChannelPipeline p = ctx.pipeline();
             final List<String> handlers = p.names();
             for (final String handler : handlers) {
