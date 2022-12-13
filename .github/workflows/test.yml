@@ -33,7 +33,9 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
       - name: Build with Maven
-        run: ./mvnw --batch-mode --update-snapshots verify
+        run: ./mvnw --batch-mode --update-snapshots verify | tee build.output
+      - name: Checking for detected leak
+        run: ./.github/scripts/check_leak.sh build.output
 #      - name: Cache SonarCloud packages
 #        uses: actions/cache@v1
 #        with:
