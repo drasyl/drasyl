@@ -26,7 +26,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
-import org.drasyl.util.internal.Nullable;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -36,6 +36,7 @@ import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.serialization.Serializer;
+import org.drasyl.util.internal.Nullable;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -54,6 +55,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
@@ -455,7 +457,7 @@ public abstract class DrasylConfig {
     public static Set<DrasylPlugin> getPlugins(final Config config, final String path) {
         try {
             final Set<DrasylPlugin> plugins = new HashSet<>();
-            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            for (final Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final String clazzName = entry.getKey();
                 /*
                  * Here a key is intentionally used and immediately deleted. atPath() could throw an
@@ -498,7 +500,7 @@ public abstract class DrasylConfig {
         try {
             final Map<String, Serializer> serializers = new HashMap<>();
 
-            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            for (final Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final String binding = entry.getKey();
                 final String clazzName = entry.getValue().atKey("clazzName").getString("clazzName");
                 final Serializer serializer = initiateSerializer(path, clazzName);
@@ -533,7 +535,7 @@ public abstract class DrasylConfig {
                                                                  final Collection<String> serializers) {
         try {
             final Map<Class<?>, String> bindings = new HashMap<>();
-            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            for (final Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final String binding = entry.getKey();
                 final String serializer = entry.getValue().atKey("serializer").getString("serializer");
                 if (serializers.contains(serializer)) {
@@ -575,7 +577,7 @@ public abstract class DrasylConfig {
                                                                         final String path) {
         try {
             final Map<DrasylAddress, InetSocketAddress> routes = new HashMap<>();
-            for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            for (final Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
                 final IdentityPublicKey publicKey = IdentityPublicKey.of(entry.getKey());
                 final InetSocketAddress address = socketAddressFromString(entry.getValue().atKey("address").getString("address"));
                 if (address.getPort() < 1) {
@@ -951,6 +953,22 @@ public abstract class DrasylConfig {
             }
             if (config.getChannelInactivityTimeout().isNegative()) {
                 throw new DrasylConfigException(REMOTE_UNITE_MIN_INTERVAL, "Must be a non-negative value.");
+            }
+            for (final Entry<Class<?>, String> entry : config.getSerializationsBindingsInbound().entrySet()) {
+                final Class<?> clazz = entry.getKey();
+                final String serializerName = entry.getValue();
+
+                if (!config.getSerializationSerializers().containsKey(serializerName)) {
+                    throw new DrasylConfigException(SERIALIZATION_BINDINGS_INBOUND, "Inbound binding for class `" + StringUtil.simpleClassName(clazz) + "` points to non-existing serializer `" + serializerName + "`.");
+                }
+            }
+            for (final Entry<Class<?>, String> entry : config.getSerializationsBindingsOutbound().entrySet()) {
+                final Class<?> clazz = entry.getKey();
+                final String serializerName = entry.getValue();
+
+                if (!config.getSerializationSerializers().containsKey(serializerName)) {
+                    throw new DrasylConfigException(SERIALIZATION_BINDINGS_OUTBOUND, "Outbound binding for class `" + StringUtil.simpleClassName(clazz) + "` points to non-existing serializer `" + serializerName + "`.");
+                }
             }
             return config;
         }
