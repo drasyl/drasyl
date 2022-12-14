@@ -57,7 +57,9 @@ class UnarmedProtocolMessageTest {
 
         @AfterEach
         void tearDown() {
-            ReferenceCountUtil.safeRelease(unarmedMessage);
+            if (ReferenceCountUtil.refCnt(unarmedMessage) < 0) {
+                ReferenceCountUtil.safeRelease(unarmedMessage);
+            }
         }
 
         @Test

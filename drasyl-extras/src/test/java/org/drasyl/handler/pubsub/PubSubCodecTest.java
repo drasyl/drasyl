@@ -70,6 +70,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedPublish, encodedId, encodedTopicWithLength, content.resetReaderIndex());
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -83,6 +86,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedPublished, encodedId);
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -96,6 +102,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedSubscribe, encodedId, encodedTopic);
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -109,6 +118,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedSubscribed, encodedId);
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -122,6 +134,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedUnsubscribe, encodedId, encodedTopic);
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -135,6 +150,9 @@ class PubSubCodecTest {
             assertEquals(recipient, actual.recipient());
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedUnsubscribed, encodedId);
             assertEquals(expected, actual.content());
+
+            expected.release();
+            actual.release();
         }
 
         @Test
@@ -155,6 +173,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubPublish.class));
+
+            actual.release();
         }
 
         @Test
@@ -165,6 +185,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubPublished.class));
+
+            actual.release();
         }
 
         @Test
@@ -175,6 +197,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubSubscribe.class));
+
+            actual.release();
         }
 
         @Test
@@ -185,6 +209,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubSubscribed.class));
+
+            actual.release();
         }
 
         @Test
@@ -205,6 +231,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubUnsubscribed.class));
+
+            actual.release();
         }
 
         @Test
@@ -217,6 +245,7 @@ class PubSubCodecTest {
             final ByteBuf actual = channel.readInbound();
 
             assertEquals(actual, msg);
+
             actual.release();
         }
 
@@ -230,6 +259,7 @@ class PubSubCodecTest {
             final ByteBuf actual = channel.readInbound();
 
             assertEquals(actual, msg);
+
             actual.release();
         }
     }

@@ -47,13 +47,18 @@ abstract class ArmMessage {
         }
         final MessageType type = MessageType.forNumber(byteBuf.readByte());
 
-        switch (type) {
-            case ACKNOWLEDGEMENT:
-                return AcknowledgementMessage.of(byteBuf);
-            case KEY_EXCHANGE:
-                return KeyExchangeMessage.of(byteBuf);
-            default:
-                return byteBuf.slice();
+        try {
+            switch (type) {
+                case ACKNOWLEDGEMENT:
+                    return AcknowledgementMessage.of(byteBuf);
+                case KEY_EXCHANGE:
+                    return KeyExchangeMessage.of(byteBuf);
+                default:
+                    return byteBuf.retainedSlice();
+            }
+        }
+        finally {
+            byteBuf.release();
         }
     }
 

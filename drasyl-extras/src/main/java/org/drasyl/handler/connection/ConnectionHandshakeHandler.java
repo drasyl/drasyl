@@ -217,6 +217,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                               final ChannelPromise promise) {
         switch (state) {
             case CLOSED:
+                data.release();
                 promise.setFailure(new ConnectionHandshakeException("Connection does not exist"));
                 break;
 
@@ -241,7 +242,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
             case SYN_RECEIVED:
-                ReferenceCountUtil.release(data);
+                data.release();
                 promise.setFailure(new ConnectionHandshakeException("Handshake in progress"));
                 break;
 
@@ -260,7 +261,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // CLOSING
                 // LAST-ACK
                 LOG.trace("{}[{}] Channel is in process of being closed. Drop write `{}`.", ctx.channel(), state, data);
-                ReferenceCountUtil.release(data);
+                data.release();
                 promise.setFailure(CONNECTION_CLOSING_ERROR);
                 break;
         }
@@ -683,6 +684,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     else {
                         ctx.channel().close();
                     }
+                    ReferenceCountUtil.release(seg);
                     return;
 
                 default:
@@ -701,7 +703,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // normally we would add the segment text to the RECEIVE buffer until a PSH will be triggered.
         // As this implementation is currently still message-oriented and not byte-oriented, we will
         // pass every received message directly.
-        ctx.fireChannelRead(seg.content());
+        if (seg.content().isReadable()) {
+            // do not pass empty ByteBufs
+            ctx.fireChannelRead(seg.content());
+        }
+        else if (!seg.isFin()) {
+            seg.release();
+        }
 
         // check FIN
         if (seg.isFin()) {
@@ -732,6 +740,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] As we're already waiting for this. We're sending our last Segment `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
                     ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
                     switchToNewState(ctx, LAST_ACK);
+                    ReferenceCountUtil.release(seg);
                     break;
 
                 case FIN_WAIT_1:
@@ -743,6 +752,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     else {
                         switchToNewState(ctx, CLOSING);
                     }
+                    ReferenceCountUtil.release(seg);
                     break;
 
                 case FIN_WAIT_2:
@@ -760,6 +770,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         userCallFuture = null;
                         future.channel().close();
                     });
+                    ReferenceCountUtil.release(seg);
                     break;
 
                 default:
