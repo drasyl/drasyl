@@ -27,7 +27,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
@@ -65,19 +64,26 @@ class StopAndWaitArqIT {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new DropEveryNthInboundMessageHandler(3));
-                        p.addLast(new ChannelInboundHandlerAdapter() {
-                            private Object prevMsg;
+                        p.addLast(new SimpleChannelInboundHandler<ByteBuf>() {
+                            private ByteBuf prevMsg;
 
                             @Override
-                            public void channelRead(final ChannelHandlerContext ctx,
-                                                    final Object msg) {
+                            public void channelInactive(final ChannelHandlerContext ctx) {
+                                ctx.fireChannelInactive();
+
+                                prevMsg.release();
+                            }
+
+                            @Override
+                            protected void channelRead0(ChannelHandlerContext ctx,
+                                                        ByteBuf msg) {
                                 if (prevMsg == null) {
                                     prevMsg = msg;
-                                    ctx.fireChannelRead(prevMsg);
+                                    ctx.fireChannelRead(msg.retainedSlice());
                                 }
                                 else {
                                     // replay previous message
-                                    ctx.fireChannelRead(prevMsg);
+                                    ctx.fireChannelRead(prevMsg.retainedSlice());
                                     ctx.pipeline().remove(this);
                                 }
                             }
@@ -90,7 +96,9 @@ class StopAndWaitArqIT {
                             protected void channelRead0(final ChannelHandlerContext ctx,
                                                         final ByteBuf msg) {
                                 latch.countDown();
-                                received.add(msg.readByte());
+                                final byte e = msg.readByte();
+                                System.out.println("e = " + e);
+                                received.add(e);
                             }
                         });
                     }

@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -84,7 +85,11 @@ class PFSArmHandlerTest {
 
                 channel.writeAndFlush(msg);
 
-                assertThat(channel.readOutbound(), instanceOf(ArmHeader.class));
+                final Object actual = channel.readOutbound();
+                assertThat(actual, instanceOf(ArmHeader.class));
+
+                ReferenceCountUtil.release(actual);
+                ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
                 channel.close();
@@ -115,6 +120,8 @@ class PFSArmHandlerTest {
                 assertArrayEquals(enc, ByteBufUtil.getBytes(actual.content()));
 
                 verify(session, never()).getLongTimeAgreement();
+
+                actual.release();
             }
             finally {
                 channel.close();
@@ -157,7 +164,11 @@ class PFSArmHandlerTest {
 
                 channel.writeInbound(msg);
 
-                assertThat(channel.readInbound(), instanceOf(ByteBuf.class));
+                final Object actual = channel.readInbound();
+                assertThat(actual, instanceOf(ByteBuf.class));
+
+                ReferenceCountUtil.release(actual);
+                ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
                 channel.close();
@@ -198,7 +209,11 @@ class PFSArmHandlerTest {
 
                 channel.writeInbound(msg);
 
-                assertThat(channel.readInbound(), instanceOf(ByteBuf.class));
+                final Object actual = channel.readInbound();
+                assertThat(actual, instanceOf(ByteBuf.class));
+
+                ReferenceCountUtil.release(actual);
+                ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
                 channel.close();
@@ -219,12 +234,16 @@ class PFSArmHandlerTest {
                 final ByteBuf byteBuf = ctx.alloc().buffer();
                 msg.writeTo(byteBuf);
                 channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf));
+                byteBuf.release();
 
                 final ArmHeader actual1 = channel.readOutbound();
                 final ArmHeader actual2 = channel.readOutbound();
 
                 assertThat(handler.unarm(ctx, agreementSenderLongTime, actual1.getNonce(), actual1.content()), instanceOf(KeyExchangeMessage.class));
                 assertThat(handler.unarm(ctx, agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
+
+                actual1.release();
+                actual2.release();
             }
             finally {
                 channel.close();
@@ -241,12 +260,15 @@ class PFSArmHandlerTest {
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
                 final ByteBuf byteBuf = ctx.alloc().buffer();
                 msg.writeTo(byteBuf);
-                channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf));
+                final ArmHeader armedMessage = handler.arm(ctx, agreementSenderLongTime, byteBuf);
+                channel.writeInbound(armedMessage);
+                byteBuf.release();
 
                 final ArmHeader actual1 = channel.readOutbound();
                 final ArmHeader actual2 = channel.readOutbound();
 
-                assertThat(handler.unarm(ctx, agreementSenderLongTime, actual2.getNonce(), actual2.content()), instanceOf(AcknowledgementMessage.class));
+                final Object unarmedMessage = handler.unarm(ctx, agreementSenderLongTime, actual2.getNonce(), actual2.content());
+                assertThat(unarmedMessage, instanceOf(AcknowledgementMessage.class));
 
                 final KeyExchangeMessage keyExchangeMessage = (KeyExchangeMessage) handler.unarm(ctx, agreementSenderLongTime, actual1.getNonce(), actual1.content());
 
@@ -254,9 +276,16 @@ class PFSArmHandlerTest {
                 final AcknowledgementMessage ack = AcknowledgementMessage.of(AgreementId.of(IdentityTestUtil.ID_3.getKeyAgreementPublicKey(), keyExchangeMessage.getSessionKey()));
                 final ByteBuf byteBuf2 = ctx.alloc().buffer();
                 ack.writeTo(byteBuf2);
-                channel.writeInbound(handler.arm(ctx, agreementSenderLongTime, byteBuf2));
+                final ArmHeader armedMessage2 = handler.arm(ctx, agreementSenderLongTime, byteBuf2);
+                channel.writeInbound(armedMessage2);
 
                 assertThat(channel.readEvent(), instanceOf(PerfectForwardSecrecyEncryptionEvent.class));
+
+                byteBuf2.release();
+                actual1.release();
+                actual2.release();
+                ReferenceCountUtil.release(unarmedMessage);
+                System.out.println();
             }
             finally {
                 channel.close();

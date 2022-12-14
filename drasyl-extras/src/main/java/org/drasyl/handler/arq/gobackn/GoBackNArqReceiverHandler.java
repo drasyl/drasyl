@@ -116,6 +116,9 @@ public class GoBackNArqReceiverHandler extends ChannelDuplexHandler {
                 ctx.fireChannelRead(msg);
             }
         }
+        else {
+            ctx.fireChannelRead(msg);
+        }
     }
 
     /**

@@ -262,7 +262,11 @@ class TcpServerTest {
             new TcpServer.TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
 
             verify(nettyCtx).writeAndFlush(outboundMsg.capture());
-            assertEquals(outboundMsg.getValue(), Unpooled.buffer().writeBytes(HTTP_OK));
+            final ByteBuf httpOk = Unpooled.buffer().writeBytes(HTTP_OK);
+            assertEquals(outboundMsg.getValue(), httpOk);
+
+            httpOk.release();
+            outboundMsg.getValue().release();
         }
 
         @Test

@@ -23,6 +23,7 @@ package test;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -40,6 +41,9 @@ public class DropEveryNthInboundMessageHandler extends ChannelInboundHandlerAdap
         if (!(++i % n == 0)) {
             // drop every 2nd message
             ctx.fireChannelRead(msg);
+        }
+        else {
+            ReferenceCountUtil.release(msg);
         }
     }
 }

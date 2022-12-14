@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.crypto;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.Crypto;
@@ -88,9 +89,11 @@ class ProtocolArmHandlerTest {
 
                 final InetAddressedMessage<ArmedProtocolMessage> actual1 = channel.readOutbound();
 
-                assertEquals(applicationMessage, actual1.content().disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPairReceiver));
+                final FullReadMessage<?> disarmedMessage = actual1.content().disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPairReceiver);
+                assertEquals(applicationMessage, disarmedMessage);
 
                 actual1.release();
+                ReferenceCountUtil.release(disarmedMessage);
             }
             finally {
                 channel.close();

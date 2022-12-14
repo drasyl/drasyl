@@ -108,6 +108,8 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> fullReadMessage = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(this.fullReadMessage, fullReadMessage);
+
+            ReferenceCountUtil.release(fullReadMessage);
         }
 
         @Test
@@ -119,7 +121,9 @@ public class ArmedProtocolMessageTest {
         void disarmWithWrongSessionPairShouldNotCorruptMessage() throws IOException {
             assertThrows(IOException.class, () -> armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())));
 
-            armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getRx(), sessionPair.getTx()));
+            final FullReadMessage<?> message = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getRx(), sessionPair.getTx()));
+
+            ReferenceCountUtil.release(message);
         }
 
         @Test
@@ -128,6 +132,9 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> b = armedMessage.disarm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(a, b);
+
+            ReferenceCountUtil.release(a);
+            ReferenceCountUtil.release(b);
         }
 
         @Test
@@ -137,6 +144,9 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
+
+            ReferenceCountUtil.release(message);
+            ReferenceCountUtil.release(disarmedMessage);
         }
 
         @Test
@@ -146,6 +156,9 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
+
+            ReferenceCountUtil.release(message);
+            ReferenceCountUtil.release(disarmedMessage);
         }
 
         @Test
@@ -155,6 +168,9 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
+
+            ReferenceCountUtil.release(message);
+            ReferenceCountUtil.release(disarmedMessage);
         }
 
         @Test
@@ -164,6 +180,9 @@ public class ArmedProtocolMessageTest {
             final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 
             assertEquals(message, disarmedMessage);
+
+            ReferenceCountUtil.release(message);
+            ReferenceCountUtil.release(disarmedMessage);
         }
     }
 
@@ -181,6 +200,7 @@ public class ArmedProtocolMessageTest {
             assertEquals(readableBytes, armedMessage.getBytes().readableBytes());
 
             byteBuf.release();
+            armedMessage.release();
         }
 
         @Test
@@ -198,6 +218,9 @@ public class ArmedProtocolMessageTest {
 
             byteBuf.release();
             byteBuf2.release();
+
+            applicationMessage.release();
+            armedMessage.release();
         }
     }
 

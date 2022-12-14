@@ -208,6 +208,7 @@ public class PFSArmHandler extends AbstractArmHandler {
                 final ByteBuf byteBuf = ctx.alloc().buffer();
                 AcknowledgementMessage.of(pendingAgreement.getAgreementId()).writeTo(byteBuf);
                 ctx.writeAndFlush(arm(ctx, session.getLongTimeAgreement(), byteBuf));
+                byteBuf.release();
                 LOG.trace("[{}] Send ack message for session {}", ctx.channel()::id, pendingAgreement::getAgreementId);
             }
             catch (final CryptoException e) {
@@ -230,6 +231,7 @@ public class PFSArmHandler extends AbstractArmHandler {
                 final ByteBuf byteBuf = ctx.alloc().buffer();
                 KeyExchangeMessage.of(pendingAgreement.getKeyPair().getPublicKey()).writeTo(byteBuf);
                 ctx.writeAndFlush(arm(ctx, session.getLongTimeAgreement(), byteBuf));
+                byteBuf.release();
             }
             catch (final CryptoException e) {
                 LOG.debug("Can't arm key exchange message: ", e);
