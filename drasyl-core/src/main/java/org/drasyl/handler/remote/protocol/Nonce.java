@@ -21,11 +21,11 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import org.drasyl.util.internal.NonNull;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
 import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.util.RandomUtil;
+import org.drasyl.util.internal.NonNull;
 
 import java.util.Objects;
 
@@ -84,7 +84,7 @@ public class Nonce {
      * @return A randomly generated {@link Nonce}
      */
     public static Nonce randomNonce() {
-        return Nonce.of(Crypto.randomBytes(NONCE_LENGTH));
+        return Nonce.of(RandomUtil.randomBytes(NONCE_LENGTH));
     }
 
     /**
