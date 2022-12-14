@@ -24,7 +24,7 @@ package org.drasyl.cli.tun.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.tun.Tun4Packet;
+import io.netty.channel.socket.Tun4Packet;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,6 +44,12 @@ public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final Tun4Packet packet) {
-        tun.writeAndFlush(packet.retain());
+        tun.write(packet.retain());
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        tun.flush();
+        ctx.fireChannelReadComplete();
     }
 }
