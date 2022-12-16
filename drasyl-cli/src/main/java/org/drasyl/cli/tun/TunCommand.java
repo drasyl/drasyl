@@ -21,8 +21,6 @@
  */
 package org.drasyl.cli.tun;
 
-import com.sun.jna.Memory;
-import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufUtil;
@@ -32,17 +30,20 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollTunChannel;
+import io.netty.channel.kqueue.KQueue;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueTunChannel;
+import io.netty.channel.socket.Tun4Packet;
+import io.netty.channel.socket.TunAddress;
+import io.netty.channel.socket.TunChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.tun.Tun4Packet;
-import org.drasyl.channel.tun.TunAddress;
-import org.drasyl.channel.tun.TunChannel;
-import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.converter.SubnetConverter;
@@ -50,7 +51,6 @@ import org.drasyl.cli.tun.channel.TunChannelInitializer;
 import org.drasyl.cli.tun.channel.TunChildChannelInitializer;
 import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
@@ -78,11 +78,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static io.netty.channel.ChannelOption.AUTO_READ;
+import static io.netty.channel.socket.TunChannelOption.TUN_MTU;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
-import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
-import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static picocli.CommandLine.Command;
 
 @Command(
@@ -131,7 +128,7 @@ public class TunCommand extends ChannelOptions {
                     "On Linux: Must be shorter than 16 characters.",
                     "On macOS: Must be 'utun' followed by a number (e.g., tun0)."
             },
-            defaultValue = "utun0"
+            defaultValue = ""
     )
     private String name;
     @Option(
@@ -192,10 +189,9 @@ public class TunCommand extends ChannelOptions {
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
-                    .channel(TunChannel.class)
-                    .option(AUTO_READ, true)
+                    .channel(KQueue.isAvailable() ? KQueueTunChannel.class : EpollTunChannel.class)
                     .option(TUN_MTU, mtu)
-                    .group(new DefaultEventLoopGroup(1))
+                    .group(KQueue.isAvailable() ? new KQueueEventLoopGroup(1) : new EpollEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
@@ -205,7 +201,7 @@ public class TunCommand extends ChannelOptions {
                             p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap));
                         }
                     });
-            final Channel ch = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
+            final Channel ch = b.bind(new TunAddress(null)).syncUninterruptibly().channel();
 
             if (rc != null) {
                 final TunRcJsonRpc2OverTcpServerInitializer channelInitializer;
@@ -314,7 +310,7 @@ public class TunCommand extends ChannelOptions {
 
             // configurate network device
             out.print("Created network device '" + ctx.channel().localAddress() + "'. Now assign address " + address.getHostAddress() + " with netmask " + subnet.netmaskLength() + " to it...");
-            configurateTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
+            configurateTun((TunChannel) ctx.channel(), ((TunAddress) ctx.channel().localAddress()).ifName());
             out.println("done!");
 
             out.println("Network device is ready!");
@@ -334,16 +330,6 @@ public class TunCommand extends ChannelOptions {
                 exec("/sbin/ifconfig", name, "add", addressStr, addressStr);
                 exec("/sbin/ifconfig", name, "up");
                 exec("/sbin/route", "add", "-net", subnet.toString(), "-iface", name);
-            }
-            else if (PlatformDependent.isWindows()) {
-                // Windows
-                final WINTUN_ADAPTER_HANDLE adapter = ((WindowsTunDevice) channel.device()).adapter();
-
-                final Pointer interfaceLuid = new Memory(8);
-                WintunGetAdapterLUID(adapter, interfaceLuid);
-                AddressAndNetmaskHelper.setIPv4AndNetmask(interfaceLuid, addressStr, subnet.netmaskLength());
-
-                exec("netsh", "interface", "ipv4", "set", "subinterface", name, "mtu=" + mtu, "store=active");
             }
             else {
                 // Linux

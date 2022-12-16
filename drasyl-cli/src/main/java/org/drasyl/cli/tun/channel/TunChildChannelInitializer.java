@@ -32,8 +32,6 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -43,7 +41,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.channel.AbstractChannelInitializer.MAX_PEERS;
 
 public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private static final Logger LOG = LoggerFactory.getLogger(TunChildChannelInitializer.class);
@@ -79,8 +76,8 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+//        p.addLast(new ArmHeaderCodec());
+//        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
 
         p.addLast(new TunPacketCodec());
         p.addLast(new DrasylToTunHandler(tun));
