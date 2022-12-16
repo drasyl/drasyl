@@ -44,6 +44,8 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
     private final transient Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
     public static final IdentityPublicKey ZERO_ID = IdentityPublicKey.of(new byte[KEY_LENGTH_AS_BYTES]);
+    private boolean hashCodeSet;
+    private int hashCode;
 
     /**
      * @return this public key as key agreement key (curve25519)
@@ -82,7 +84,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      */
     public static IdentityPublicKey of(final ImmutableByteArray bytes) {
         if (bytes.size() != KEY_LENGTH_AS_BYTES) {
-            throw new IllegalArgumentException("key has wrong size.");
+            throw new IllegalArgumentException("key has wrong size: " + bytes.size());
         }
         return new AutoValue_IdentityPublicKey(bytes).intern();
     }
@@ -92,7 +94,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      *
      * @param bytes public key
      * @return {@link IdentityPublicKey}
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
     public static IdentityPublicKey of(final byte[] bytes) {
@@ -110,5 +112,14 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      */
     public static IdentityPublicKey of(final String bytes) {
         return of(HexUtil.fromString(bytes));
+    }
+
+    @Override
+    public int hashCode() {
+        if (!hashCodeSet) {
+            hashCodeSet = true;
+            hashCode = getBytes().hashCode();
+        }
+        return hashCode;
     }
 }
