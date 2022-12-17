@@ -134,25 +134,4 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     public static IdentityPublicKey of(final String bytes) {
         return of(HexUtil.fromString(bytes));
     }
-
-    @Override
-    public int hashCode() {
-        if (!hashCodeSet) {
-            hashCodeSet = true;
-            hashCode = getBytes().hashCode();
-        }
-        return hashCode;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof IdentityPublicKey) {
-            IdentityPublicKey that = (IdentityPublicKey) o;
-            return hashCode() == that.hashCode();
-        }
-        return false;
-    }
 }
