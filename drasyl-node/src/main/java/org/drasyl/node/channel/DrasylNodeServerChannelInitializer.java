@@ -24,6 +24,7 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.internal.SystemPropertyUtil;
@@ -113,12 +114,12 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private final DrasylConfig config;
     private final Identity identity;
     private final DrasylNode node;
-    private final NioEventLoopGroup udpServerGroup;
+    private final EventLoopGroup udpServerGroup;
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
                                               final Identity identity,
                                               final DrasylNode node,
-                                              final NioEventLoopGroup udpServerGroup) {
+                                              final EventLoopGroup udpServerGroup) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);

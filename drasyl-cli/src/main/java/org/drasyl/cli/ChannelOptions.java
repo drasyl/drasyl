@@ -54,7 +54,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected final PrintStream err;
     protected final EventLoopGroup parentGroup;
     protected final EventLoopGroup childGroup;
-    protected final NioEventLoopGroup udpServerGroup;
+    protected final EventLoopGroup udpServerGroup;
     @Option(
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
@@ -102,7 +102,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                              final PrintStream err,
                              final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup,
+                             final EventLoopGroup udpServerGroup,
                              final Level logLevel,
                              final File identityFile,
                              final InetSocketAddress bindAddress,
@@ -124,7 +124,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup) {
+                             final EventLoopGroup udpServerGroup) {
         this.out = System.out; // NOSONAR
         this.err = System.err; // NOSONAR
         this.parentGroup = requireNonNull(parentGroup);
