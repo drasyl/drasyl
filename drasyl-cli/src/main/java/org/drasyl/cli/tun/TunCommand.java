@@ -394,20 +394,31 @@ public class TunCommand extends ChannelOptions {
 
             if (address.equals(dst)) {
                 // loopback
-                ctx.writeAndFlush(msg.retain());
+                ctx.write(msg.retain());
             }
             else {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst) && channels.containsKey(publicKey)) {
                     LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
                     final Channel peerChannel = channels.get(publicKey);
-                    peerChannel.writeAndFlush(msg.retain());
+                    peerChannel.write(msg.retain());
                 }
                 else {
                     LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
                     // TODO: reply with ICMP host unreachable message?
                 }
             }
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            ctx.flush();
+            for (Channel peerChannel : channels.values()) {
+                peerChannel.flush();
+            }
+            // TODO: just flush channels we have written to?
+
+            ctx.fireChannelReadComplete();
         }
 
         @Override

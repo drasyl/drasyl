@@ -44,6 +44,12 @@ public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final Tun4Packet packet) {
-        tun.writeAndFlush(packet.retain());
+        tun.write(packet.retain());
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) {
+        tun.flush();
+        ctx.fireChannelReadComplete();
     }
 }
