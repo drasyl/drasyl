@@ -71,7 +71,7 @@ public class WormholeReceiveCommand extends ChannelOptions {
                            final PrintStream err,
                            final EventLoopGroup parentGroup,
                            final EventLoopGroup childGroup,
-                           final NioEventLoopGroup udpServerGroup,
+                           final EventLoopGroup udpServerGroup,
                            final Level logLevel,
                            final File identityFile,
                            final InetSocketAddress bindAddress,

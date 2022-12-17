@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,22 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.tun.handler;
+package org.drasyl.handler;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.socket.Tun4Packet;
-import io.netty.channel.socket.TunPacket;
-import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.jupiter.api.Test;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * This codec converts {@link TunPacket}s to {@link ByteBuf}s and vice versa.
- */
-public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
-    @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final TunPacket packet,
-                          final List<Object> out) throws Exception {
-        out.add(packet.content().retain());
-    }
+class SlowReadAwareHandlerTest {
+    @Test
+    void name() throws InterruptedException {
+        final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
+        channel.pipeline().addLast(new SlowReadAwareHandler());
 
-    @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final ByteBuf byteBuf,
-                          final List<Object> out) throws Exception {
-        out.add(new Tun4Packet(byteBuf).retain());
+        Thread.sleep(1000);
+
+        channel.writeInbound("huhu");
     }
 }

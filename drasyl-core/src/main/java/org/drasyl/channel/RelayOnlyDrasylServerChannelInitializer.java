@@ -23,17 +23,14 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.handler.LoopbackHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
-import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
-import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
-import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -59,7 +56,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
     protected final Identity identity;
-    private final NioEventLoopGroup udpServerGroup;
+    private final EventLoopGroup udpServerGroup;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -74,24 +71,24 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * @param udpServerGroup      the {@link NioEventLoopGroup} the underlying udp server should run
      *                            on
      * @param bindAddress         address the UDP server will bind to. Default value:
-     *                            0.0.0.0:{@link #BIND_PORT}
+ *                            0.0.0.0:{@link #BIND_PORT}
      * @param networkId           the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers          list of super peers we register to. Default value:
-     *                            {@link #SUPER_PEERS}
+*                            {@link #SUPER_PEERS}
      * @param protocolArmEnabled  if {@code true} all control plane messages will be
-     *                            encrypted/authenticated. Default value: {@code true}
+*                            encrypted/authenticated. Default value: {@code true}
      * @param pingIntervalMillis  interval in millis between a ping. Default value:
-     *                            {@link #PING_INTERVAL_MILLIS}
+*                            {@link #PING_INTERVAL_MILLIS}
      * @param pingTimeoutMillis   time in millis without ping response before a peer is assumed as
-     *                            unreachable. Default value: {@link #PING_TIMEOUT_MILLIS}
+*                            unreachable. Default value: {@link #PING_TIMEOUT_MILLIS}
      * @param maxTimeOffsetMillis time millis offset of received messages' timestamp before
-     *                            discarding them. Default value: {@link #MAX_TIME_OFFSET_MILLIS}
+*                            discarding them. Default value: {@link #MAX_TIME_OFFSET_MILLIS}
      * @param maxPeers            maximum number of peers to which a traversed connection should be
-     *                            maintained at the same time. Default value: {@link #MAX_PEERS}
+*                            maintained at the same time. Default value: {@link #MAX_PEERS}
      */
     @SuppressWarnings("java:S107")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -129,7 +126,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -152,7 +149,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
@@ -171,7 +168,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress) {
         this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
@@ -187,7 +184,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final int bindPort) {
         this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
@@ -202,7 +199,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup) {
+                                                   final EventLoopGroup udpServerGroup) {
         this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
@@ -212,15 +209,15 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
         p.addLast(new UdpServer(udpServerGroup, bindAddress));
         p.addLast(new ByteToRemoteMessageCodec());
-        p.addLast(new OtherNetworkFilter(networkId));
-        p.addLast(new InvalidProofOfWorkFilter());
+//        p.addLast(new OtherNetworkFilter(networkId));
+//        p.addLast(new InvalidProofOfWorkFilter());
         if (protocolArmEnabled) {
             p.addLast(new ProtocolArmHandler(identity, maxPeers));
         }
         else {
             p.addLast(new UnarmedMessageDecoder());
         }
-        p.addLast(new UnconfirmedAddressResolveHandler());
+//        p.addLast(new UnconfirmedAddressResolveHandler());
         p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
         p.addLast(new LoopbackHandler());

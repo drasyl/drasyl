@@ -23,11 +23,13 @@ package org.drasyl.cli.tun.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
+import org.drasyl.handler.SlowReadAwareHandler;
+import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -49,7 +51,7 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
 
     @SuppressWarnings("java:S107")
     public TunChannelInitializer(final Identity identity,
-                                 final NioEventLoopGroup udpServerGroup,
+                                 final EventLoopGroup udpServerGroup,
                                  final InetSocketAddress bindAddress,
                                  final int networkId,
                                  final long onlineTimeoutMillis,
@@ -76,5 +78,7 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
 
         // close tun device as well
         ch.closeFuture().addListener(f -> tun.close());
+
+        ch.pipeline().addLast(new SlowReadAwareHandler(UdpServer.class));
     }
 }

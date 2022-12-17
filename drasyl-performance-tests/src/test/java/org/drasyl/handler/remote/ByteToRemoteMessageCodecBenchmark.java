@@ -55,8 +55,6 @@ import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.List;
 
 @Fork(1)
 @Warmup(iterations = 1)
@@ -83,31 +81,31 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
     }
 
     @Benchmark
-    @BenchmarkMode(Mode.Throughput)
+    @BenchmarkMode(Mode.SampleTime)
     public void decode(final Blackhole blackhole) {
         try {
-            final List<Object> out = new ArrayList<>();
-            instance.decode(ctx, new InetAddressedMessage<>(byteBuf.slice(), null, sender), out);
-            blackhole.consume(out);
+//            final List<Object> out = new ArrayList<>();
+            instance.channelRead(ctx, new InetAddressedMessage<>(byteBuf.slice(), null, sender));
+//            blackhole.consume(out);
         }
         catch (final Exception e) {
             handleUnexpectedException(e);
         }
     }
 
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void encode(final Blackhole blackhole) {
-        try {
-            final List<Object> out = new ArrayList<>();
-            instance.encode(ctx, new InetAddressedMessage<>(message, null, recipient), out);
-            byteBuf.release();
-            blackhole.consume(out);
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
+//    @Benchmark
+//    @BenchmarkMode(Mode.Throughput)
+//    public void encode(final Blackhole blackhole) {
+//        try {
+//            final List<Object> out = new ArrayList<>();
+//            instance.encode(ctx, new InetAddressedMessage<>(message, null, recipient), out);
+//            byteBuf.release();
+//            blackhole.consume(out);
+//        }
+//        catch (final Exception e) {
+//            handleUnexpectedException(e);
+//        }
+//    }
 
     private static class MyHandlerContext implements ChannelHandlerContext {
         @Override

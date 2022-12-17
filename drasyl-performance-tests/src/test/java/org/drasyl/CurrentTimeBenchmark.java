@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,37 +19,41 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.tun.handler;
+package org.drasyl;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.Tun4Packet;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.infra.Blackhole;
 
-import static java.util.Objects.requireNonNull;
+import java.time.Instant;
 
-/**
- * Routes inbound messages to the given tun-based channel.
- * <p>
- * This handler has to be placed in a {@link org.drasyl.channel.DrasylChannel}.
- */
-public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-    private final Channel tun;
-
-    public DrasylToTunHandler(final Channel tun) {
-        this.tun = requireNonNull(tun);
+//@Fork(1)
+//@Warmup(iterations = 1)
+//@Measurement(iterations = 1)
+@State(Scope.Benchmark)
+public class CurrentTimeBenchmark extends AbstractBenchmark {
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void currentTimeMillis(final Blackhole blackhole) {
+        blackhole.consume(System.currentTimeMillis());
     }
 
-    @SuppressWarnings("java:S1905")
-    @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final Tun4Packet packet) {
-        tun.write(packet.retain());
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void nanoTime(final Blackhole blackhole) {
+        blackhole.consume(System.nanoTime());
     }
 
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
-        tun.flush();
-        ctx.fireChannelReadComplete();
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void instantNow(final Blackhole blackhole) {
+        blackhole.consume(Instant.now().toEpochMilli());
     }
 }

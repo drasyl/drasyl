@@ -105,7 +105,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      */
     public static IdentityPublicKey of(final ImmutableByteArray bytes) {
         if (bytes.size() != KEY_LENGTH_AS_BYTES) {
-            throw new IllegalArgumentException("key has wrong size.");
+            throw new IllegalArgumentException("key has wrong size: " + bytes.size());
         }
         return new AutoValue_IdentityPublicKey(bytes).intern();
     }
@@ -115,7 +115,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      *
      * @param bytes public key
      * @return {@link IdentityPublicKey}
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
     public static IdentityPublicKey of(final byte[] bytes) {
@@ -133,5 +133,26 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      */
     public static IdentityPublicKey of(final String bytes) {
         return of(HexUtil.fromString(bytes));
+    }
+
+    @Override
+    public int hashCode() {
+        if (!hashCodeSet) {
+            hashCodeSet = true;
+            hashCode = getBytes().hashCode();
+        }
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdentityPublicKey) {
+            IdentityPublicKey that = (IdentityPublicKey) o;
+            return hashCode() == that.hashCode();
+        }
+        return false;
     }
 }
