@@ -140,6 +140,11 @@ public class TunCommand extends ChannelOptions {
             defaultValue = "1225"
     )
     private int mtu;
+    @Option(
+            names = { "--no-application-arming" },
+            description = "Disables arming (authenticating/encrypting) of all application messages. Ensure other nodes have arming disabled as well."
+    )
+    protected boolean applicationArmDisabled;
     @ArgGroup
     private RemoteControl rc;
 
@@ -365,7 +370,7 @@ public class TunCommand extends ChannelOptions {
 
             // create drasyl channel
             final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels);
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
