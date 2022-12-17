@@ -21,10 +21,15 @@
  */
 package org.drasyl.util;
 
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.lang.reflect.Field;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * Utility class that can be used to detect properties specific to the current runtime environment,
@@ -60,6 +65,18 @@ public final class PlatformDependent {
     @SuppressWarnings("UnusedReturnValue")
     public static boolean unsafeStaticFieldOffsetSupported() {
         return !RUNNING_IN_NATIVE_IMAGE;
+    }
+
+    public static EventLoopGroup getBestEventLoopGroup(final int nThreads, final ThreadFactory threadFactory) {
+        return new NioEventLoopGroup(nThreads, threadFactory);
+    }
+
+    public static EventLoopGroup getBestEventLoopGroup(final int nThreads) {
+        return getBestEventLoopGroup(nThreads, null);
+    }
+
+    public static Class<? extends DatagramChannel> getBestDatagramChannel() {
+        return NioDatagramChannel.class;
     }
 
     static float javaSpecificationVersion() {

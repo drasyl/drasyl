@@ -22,7 +22,7 @@
 package org.drasyl.channel;
 
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.Identity;
@@ -41,7 +41,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
 
     /**
      * @param identity                       own identity
-     * @param udpServerGroup                 the {@link NioEventLoopGroup} the underlying udp server
+     * @param udpServerGroup                 the {@link EventLoopGroup} the underlying udp server
      *                                       should run on
      * @param bindAddress                    address the UDP server will bind to. Default value:
      *                                       0.0.0.0:{@link #BIND_PORT}
@@ -68,7 +68,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      */
     @SuppressWarnings("java:S107")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup,
+                                                    final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
                                                     final int networkId,
                                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -88,7 +88,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * {@code pingCommunicationTimeoutMillis}.
      *
      * @param identity           own identity
-     * @param udpServerGroup     the {@link NioEventLoopGroup} the underlying udp server should run
+     * @param udpServerGroup     the {@link EventLoopGroup} the underlying udp server should run
      *                           on
      * @param bindAddress        address the UDP server will bind to. Default value:
      *                           0.0.0.0:{@link #BIND_PORT}
@@ -99,7 +99,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      *                           encrypted/authenticated. Default value: {@code true}
      */
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup,
+                                                    final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
                                                     final int networkId,
                                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -113,7 +113,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * {@code pingCommunicationTimeoutMillis}, and enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
      * @param networkId      the network we belong to. Default value: {@link #NETWORK_ID}
@@ -122,7 +122,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup,
+                                                    final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
                                                     final int networkId,
                                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
@@ -136,13 +136,13 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup,
+                                                    final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress) {
         this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
@@ -154,12 +154,12 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindPort       port the UDP server will bind to. Default value: {@link #BIND_PORT}
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup,
+                                                    final EventLoopGroup udpServerGroup,
                                                     final int bindPort) {
         this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
@@ -171,11 +171,11 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
-                                                    final NioEventLoopGroup udpServerGroup) {
+                                                    final EventLoopGroup udpServerGroup) {
         this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
