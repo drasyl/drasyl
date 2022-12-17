@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.handler.LoopbackHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
@@ -59,7 +59,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
     protected final Identity identity;
-    private final NioEventLoopGroup udpServerGroup;
+    private final EventLoopGroup udpServerGroup;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -91,7 +91,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("java:S107")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -129,7 +129,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
@@ -152,7 +152,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
@@ -171,7 +171,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress) {
         this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
@@ -187,7 +187,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup,
+                                                   final EventLoopGroup udpServerGroup,
                                                    final int bindPort) {
         this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
@@ -202,7 +202,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      */
     @SuppressWarnings("unused")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
-                                                   final NioEventLoopGroup udpServerGroup) {
+                                                   final EventLoopGroup udpServerGroup) {
         this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 

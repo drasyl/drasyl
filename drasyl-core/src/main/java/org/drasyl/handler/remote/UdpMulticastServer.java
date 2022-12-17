@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
@@ -72,7 +73,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
-    private final NioEventLoopGroup group;
+    private final EventLoopGroup group;
     private DatagramChannel channel;
 
     static {
@@ -109,7 +110,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     @SuppressWarnings("java:S2384")
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
-                       final NioEventLoopGroup group,
+                       final EventLoopGroup group,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
@@ -122,14 +123,14 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
      */
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
-                       final NioEventLoopGroup group) {
+                       final EventLoopGroup group) {
         this(nodes, bootstrapSupplier, group, null);
     }
 
     /**
      * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
      */
-    public UdpMulticastServer(final NioEventLoopGroup group) {
+    public UdpMulticastServer(final EventLoopGroup group) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
