@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
@@ -40,6 +39,7 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.ArgGroup;
@@ -104,6 +104,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     @SuppressWarnings({ "java:S138", "java:S1188", "java:S3776" })
     @Override
     public Integer call() throws DrasylException {
+//        final Instant instant = Instant.now();
+//        final long milli = instant.toEpochMilli();
         setLogLevel();
         final List<Activity> sendPatternActivities = getActivities();
 

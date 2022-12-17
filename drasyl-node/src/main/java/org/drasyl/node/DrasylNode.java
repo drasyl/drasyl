@@ -144,7 +144,7 @@ public abstract class DrasylNode {
 
         final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
         final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
-        final NioEventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
+        final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
         bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);

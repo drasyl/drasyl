@@ -22,6 +22,9 @@
 package org.drasyl.node;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueue;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -29,7 +32,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.util.SlowAwareDefaultEventLoopGroup;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -90,7 +92,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
      *
      * @return a {@link NioEventLoopGroup} for child channels
      */
-    public static NioEventLoopGroup getNetworkGroup() {
+    public static EventLoopGroup getNetworkGroup() {
         return LazyNetworkHolder.INSTANCE;
     }
 
@@ -130,7 +132,13 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Parent event loop group size: {}", SIZE);
         }
 
-        static final EventLoopGroup INSTANCE = new SlowAwareDefaultEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true));
+        static final EventLoopGroup INSTANCE;
+
+        static {
+            final DefaultThreadFactory threadFactory = new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true);
+            INSTANCE = KQueue.isAvailable() ? new KQueueEventLoopGroup(SIZE, threadFactory) : new EpollEventLoopGroup(SIZE, threadFactory);
+        }
+
         @SuppressWarnings("unused")
         static final boolean LOCK = parentEventLoopGroupCreated = true;
     }
@@ -143,7 +151,13 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Child event loop group size: {}", SIZE);
         }
 
-        static final EventLoopGroup INSTANCE = new SlowAwareDefaultEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
+        static final EventLoopGroup INSTANCE;
+
+        static {
+            final DefaultThreadFactory threadFactory = new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true);
+            INSTANCE = KQueue.isAvailable() ? new KQueueEventLoopGroup(SIZE, threadFactory) : new EpollEventLoopGroup(SIZE, threadFactory);
+        }
+
         @SuppressWarnings("unused")
         static final boolean LOCK = childEventLoopGroupCreated = true;
     }
@@ -156,7 +170,13 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Network event loop group size: {}", SIZE);
         }
 
-        static final NioEventLoopGroup INSTANCE = new NioEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
+        static final EventLoopGroup INSTANCE;
+
+        static {
+            final DefaultThreadFactory threadFactory = new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true);
+            INSTANCE = KQueue.isAvailable() ? new KQueueEventLoopGroup(SIZE, threadFactory) : new EpollEventLoopGroup(SIZE, threadFactory);
+        }
+
         @SuppressWarnings("unused")
         static final boolean LOCK = networkEventLoopGroupCreated = true;
     }

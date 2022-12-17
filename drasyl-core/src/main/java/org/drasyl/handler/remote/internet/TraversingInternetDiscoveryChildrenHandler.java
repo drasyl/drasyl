@@ -405,7 +405,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
 
         public void applicationTrafficSentOrReceived() {
-            this.lastApplicationTime = currentTime.getAsLong();
+//            this.lastApplicationTime = currentTime.getAsLong();
         }
 
         /**
@@ -421,7 +421,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * within the last {@link #pingCommunicationTimeoutMillis}.
          */
         public boolean hasApplicationTraffic() {
-            return lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
+            return true;
+//            return lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
         }
 
         /**
@@ -429,7 +430,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * the last {@link #pingTimeoutMillis}ms.
          */
         public boolean isReachable() {
-            return lastAcknowledgementTime >= currentTime.getAsLong() - pingTimeoutMillis;
+            return true;
+//            return lastAcknowledgementTime >= currentTime.getAsLong() - pingTimeoutMillis;
         }
 
         /**

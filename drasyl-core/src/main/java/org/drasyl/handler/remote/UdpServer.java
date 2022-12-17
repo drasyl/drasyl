@@ -230,16 +230,13 @@ public class UdpServer extends ChannelDuplexHandler {
             LOG.trace("Datagram received {}", packet);
 
             final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(packet.content(), null, packet.sender());
-            if (drasylServerChannelCtx.executor().inEventLoop()) {
-                drasylServerChannelCtx.fireChannelRead(msg);
-                drasylServerChannelCtx.fireChannelReadComplete();
-            }
-            else {
-                drasylServerChannelCtx.executor().execute(() -> {
-                    drasylServerChannelCtx.fireChannelRead(msg);
-                    drasylServerChannelCtx.fireChannelReadComplete();
-                });
-            }
+            drasylServerChannelCtx.fireChannelRead(msg);
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            drasylServerChannelCtx.fireChannelReadComplete();
+            ctx.fireChannelReadComplete();
         }
     }
 

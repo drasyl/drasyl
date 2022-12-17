@@ -463,14 +463,16 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
          * Triggers a new resolve of the hostname into an {@link java.net.InetAddress}.
          */
         public InetSocketAddress resolveInetAddress() {
-            try {
-                final InetAddress resolvedAddress = DnsResolver.resolve(inetAddress.getHostString());
-                inetAddress = new InetSocketAddress(resolvedAddress, inetAddress.getPort());
-            }
-            catch (final UnknownHostException e) {
-                // keep existing address
-                if (inetAddress.isUnresolved()) {
-                    LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
+            if (inetAddress.isUnresolved()) {
+                try {
+                    final InetAddress resolvedAddress = DnsResolver.resolve(inetAddress.getHostString());
+                    inetAddress = new InetSocketAddress(resolvedAddress, inetAddress.getPort());
+                }
+                catch (final UnknownHostException e) {
+                    // keep existing address
+                    if (inetAddress.isUnresolved()) {
+                        LOG.warn("Unable to resolve super peer address `{}`", inetAddress, e);
+                    }
                 }
             }
             return inetAddress;

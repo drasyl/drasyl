@@ -36,6 +36,7 @@ import io.netty.channel.epoll.EpollTunChannel;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueTunChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.Tun4Packet;
 import io.netty.channel.socket.TunAddress;
 import io.netty.channel.socket.TunChannel;
@@ -59,7 +60,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopBacklogMonitor;
-import org.drasyl.util.SlowAwareDefaultEventLoopGroup;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -144,7 +144,7 @@ public class TunCommand extends ChannelOptions {
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new SlowAwareDefaultEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new SlowAwareDefaultEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
+        super(new NioEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new NioEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
     }
 
     @Override
@@ -391,20 +391,31 @@ public class TunCommand extends ChannelOptions {
 
             if (address.equals(dst)) {
                 // loopback
-                ctx.writeAndFlush(msg.retain());
+                ctx.write(msg.retain());
             }
             else {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst) && channels.containsKey(publicKey)) {
                     LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
                     final Channel peerChannel = channels.get(publicKey);
-                    peerChannel.writeAndFlush(msg.retain());
+                    peerChannel.write(msg.retain());
                 }
                 else {
                     LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
                     // TODO: reply with ICMP host unreachable message?
                 }
             }
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            ctx.flush();
+            for (Channel peerChannel : channels.values()) {
+                peerChannel.flush();
+            }
+            // TODO: nur flushen wo wir auch reingeschrieben haben?
+
+            ctx.fireChannelReadComplete();
         }
 
         @Override
