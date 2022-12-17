@@ -168,7 +168,12 @@ public class UdpServer extends ChannelDuplexHandler {
             final InetSocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
             final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
 
-            pendingWrites.add(packet, promise);
+            if (channel.isWritable()) {
+                channel.write(packet).addListener(new PromiseNotifier<>(promise));
+            }
+            else {
+                pendingWrites.add(packet, promise);
+            }
         }
         else {
             ctx.write(msg, promise);
@@ -177,7 +182,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        writePendingWrites();
+        channel.flush();
         ctx.flush();
     }
 
@@ -213,12 +218,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
             if (ctx.channel().isWritable()) {
                 // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                if (drasylServerChannelCtx.executor().inEventLoop()) {
-                    writePendingWrites();
-                }
-                else {
-                    drasylServerChannelCtx.executor().execute(UdpServer.this::writePendingWrites);
-                }
+                writePendingWrites();
             }
         }
 
@@ -228,16 +228,13 @@ public class UdpServer extends ChannelDuplexHandler {
             LOG.trace("Datagram received {}", packet);
 
             final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(packet.content(), null, packet.sender());
-            if (drasylServerChannelCtx.executor().inEventLoop()) {
-                drasylServerChannelCtx.fireChannelRead(msg);
-                drasylServerChannelCtx.fireChannelReadComplete();
-            }
-            else {
-                drasylServerChannelCtx.executor().execute(() -> {
-                    drasylServerChannelCtx.fireChannelRead(msg);
-                    drasylServerChannelCtx.fireChannelReadComplete();
-                });
-            }
+            drasylServerChannelCtx.fireChannelRead(msg);
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            drasylServerChannelCtx.fireChannelReadComplete();
+            ctx.fireChannelReadComplete();
         }
     }
 
