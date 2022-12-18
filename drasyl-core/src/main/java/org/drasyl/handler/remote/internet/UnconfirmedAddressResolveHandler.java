@@ -28,32 +28,57 @@ import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.ExpiringMap;
+import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Re-uses address from messages with unconfirmed peers as last-resort.
  */
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    private final ExpiringMap<DrasylAddress, InetSocketAddress> addressCache;
+    private final Map<DrasylAddress, Pair<InetSocketAddress, Long>> addressCache;
+    private final int maximumCacheSize;
+    private final long expireCacheAfter;
+    private long now;
 
     public UnconfirmedAddressResolveHandler() {
-        this(100, Duration.ofSeconds(60));
+        this(100, 60_000L);
     }
 
-    public UnconfirmedAddressResolveHandler(final long maximumSize, final Duration expireAfter) {
-        this.addressCache = new ExpiringMap<>(maximumSize, -1, expireAfter.toMillis());
+    public UnconfirmedAddressResolveHandler(final int maximumCacheSize,
+                                            final long expireCacheAfter) {
+        this.maximumCacheSize = requirePositive(maximumCacheSize);
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
+        this.addressCache = new HashMap<>();
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (ctx.channel().isActive()) {
+            scheduleHousekeepingTask(ctx);
+        }
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+        scheduleHousekeepingTask(ctx);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            addressCache.put(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender(), ((InetAddressedMessage<?>) msg).sender());
+        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage && addressCache.size() < maximumCacheSize) {
+            addressCache.put(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender(), Pair.of(((InetAddressedMessage<?>) msg).sender(), now));
         }
 
         // pass through
@@ -65,10 +90,11 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage) {
-            final InetSocketAddress address = addressCache.get(((OverlayAddressedMessage<?>) msg).recipient());
+            final Pair<InetSocketAddress, Long> pair = addressCache.get(((OverlayAddressedMessage<?>) msg).recipient());
 
             // route to the unconfirmed address
-            if (address != null) {
+            if (pair != null) {
+                final InetSocketAddress address = pair.first();
                 LOG.trace("Message `{}` was resolved to unconfirmed address `{}`.", () -> msg, () -> address);
                 ctx.write(((OverlayAddressedMessage<?>) msg).resolve(address), promise);
                 return;
@@ -77,5 +103,27 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
 
         // pass through
         ctx.write(msg, promise);
+    }
+
+    private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {
+        // requesting the time triggers a system call and is therefore considered to be expensive.
+        // This is why we cache the current time
+        now = System.currentTimeMillis();
+
+        ctx.executor().schedule(() -> {
+            // remove all entries from cache where we do not have received a message since "expireAfter"
+            final Iterator<Entry<DrasylAddress, Pair<InetSocketAddress, Long>>> iterator = addressCache.entrySet().iterator();
+            while (iterator.hasNext()) {
+                final Entry<DrasylAddress, Pair<InetSocketAddress, Long>> entry = iterator.next();
+                final long lastTime = entry.getValue().second();
+                if (lastTime < now) {
+                    iterator.remove();
+                }
+            }
+
+            if (ctx.channel().isActive()) {
+                scheduleHousekeepingTask(ctx);
+            }
+        }, expireCacheAfter, MILLISECONDS);
     }
 }
