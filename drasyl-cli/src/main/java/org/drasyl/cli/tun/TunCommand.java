@@ -31,9 +31,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.epoll.EpollTunChannel;
-import io.netty.channel.kqueue.KQueue;
-import io.netty.channel.kqueue.KQueueTunChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.Tun4Packet;
 import io.netty.channel.socket.TunAddress;
@@ -193,7 +190,7 @@ public class TunCommand extends ChannelOptions {
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
-                    .channel(KQueue.isAvailable() ? KQueueTunChannel.class : EpollTunChannel.class)
+                    .channel(org.drasyl.util.PlatformDependent.getBestTunChannel())
                     .option(TUN_MTU, mtu)
                     .group(org.drasyl.util.PlatformDependent.getBestEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
