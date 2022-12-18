@@ -27,12 +27,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.ExpiringSet;
 
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
-import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
@@ -40,15 +43,31 @@ import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 @SuppressWarnings("java:S110")
 @Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
-    private final Set<DrasylAddress> senderCache;
+    private final Map<DrasylAddress, Long> senderCache;
+    private final long expireAfter;
+    private long now;
 
     public InvalidProofOfWorkFilter() {
-        this(new ExpiringSet<>(100, 3600_000));
+        this(3_600_000);
     }
 
-    public InvalidProofOfWorkFilter(final Set<DrasylAddress> senderCache) {
+    public InvalidProofOfWorkFilter(final long expireAfter) {
         super(false);
-        this.senderCache = requireNonNull(senderCache);
+        this.expireAfter = requirePositive(expireAfter);
+        this.senderCache = new HashMap<>();
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (ctx.channel().isActive()) {
+            scheduleHousekeepingTask(ctx);
+        }
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+        scheduleHousekeepingTask(ctx);
     }
 
     @Override
@@ -71,14 +90,36 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     }
 
     private boolean hasValidProofOfWork(final RemoteMessage remoteMsg) {
-        if (senderCache.contains(remoteMsg.getSender())) {
+        if (senderCache.containsKey(remoteMsg.getSender())) {
             return true;
         }
         else if (remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY)) {
-            senderCache.add(remoteMsg.getSender());
+            senderCache.put(remoteMsg.getSender(), now);
             return true;
         }
         return false;
+    }
+
+    private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {
+        // requesting the time triggers a system call and is therefore considered to be expensive.
+        // This is why we cache the current time
+        now = System.currentTimeMillis();
+
+        ctx.executor().schedule(() -> {
+            // remove all entries from cache after "expireAfter"
+            final Iterator<Entry<DrasylAddress, Long>> iterator = senderCache.entrySet().iterator();
+            while (iterator.hasNext()) {
+                final Entry<DrasylAddress, Long> entry = iterator.next();
+                final long lastTime = entry.getValue();
+                if (lastTime < now) {
+                    iterator.remove();
+                }
+            }
+
+            if (ctx.channel().isActive()) {
+                scheduleHousekeepingTask(ctx);
+            }
+        }, expireAfter, MILLISECONDS);
     }
 
     /**
