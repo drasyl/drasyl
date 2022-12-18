@@ -21,20 +21,46 @@
  */
 package org.drasyl.handler;
 
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SlowReadAwareHandlerTest {
+    @BeforeEach
+    void setUp() {
+        System.setProperty("org.drasyl.channel.handler.slowReadThreshold", "1.0");
+    }
+
+    @AfterEach
+    void tearDown() {
+        System.setProperty("org.drasyl.channel.handler.slowReadThreshold", "0.0");
+    }
+
     @Test
-    void name() throws InterruptedException {
+    void shouldAddMeasurementHandlers() throws InterruptedException {
         final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter());
         channel.pipeline().addLast(new SlowReadAwareHandler());
 
-        Thread.sleep(1000);
+        final List<String> names = new ArrayList<>();
+        final Iterator<Entry<String, ChannelHandler>> iterator = channel.pipeline().iterator();
+        while (iterator.hasNext()) {
+            names.add(iterator.next().getKey());
+        }
 
-        channel.writeInbound("huhu");
+        assertEquals(List.of(
+                "SlowReadAwareHandler$SlowReadAwareBeforeHandler#0",
+                "ChannelInboundHandlerAdapter#0",
+                "SlowReadAwareHandler$SlowReadAwareAfterHandler#0"
+        ), names);
     }
 }
