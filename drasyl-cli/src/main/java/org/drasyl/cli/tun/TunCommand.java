@@ -31,10 +31,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollTunChannel;
 import io.netty.channel.kqueue.KQueue;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueTunChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.Tun4Packet;
@@ -197,7 +195,7 @@ public class TunCommand extends ChannelOptions {
             final Bootstrap b = new Bootstrap()
                     .channel(KQueue.isAvailable() ? KQueueTunChannel.class : EpollTunChannel.class)
                     .option(TUN_MTU, mtu)
-                    .group(KQueue.isAvailable() ? new KQueueEventLoopGroup(1) : new EpollEventLoopGroup(1))
+                    .group(org.drasyl.util.PlatformDependent.getBestEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {

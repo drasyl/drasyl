@@ -26,14 +26,12 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueue;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.Murmur3;
+import org.drasyl.util.PlatformDependent;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
 import picocli.CommandLine.Option;
@@ -136,11 +134,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup) {
-        this(parentGroup, childGroup, KQueue.isAvailable() ? new KQueueEventLoopGroup(1) : new EpollEventLoopGroup(1));
+        this(parentGroup, childGroup, PlatformDependent.getBestEventLoopGroup(1));
     }
 
     protected ChannelOptions(final EventLoopGroup group) {
-        this(group, group, KQueue.isAvailable() ? new KQueueEventLoopGroup(1) : new EpollEventLoopGroup(1));
+        this(group, group, PlatformDependent.getBestEventLoopGroup(1));
     }
 
     @Override
