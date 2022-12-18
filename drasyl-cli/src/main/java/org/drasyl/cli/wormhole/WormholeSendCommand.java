@@ -25,7 +25,6 @@ import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer;

@@ -86,8 +86,8 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * Creates a new channel initializer with default values for {@code pingIntervalMillis},
      * {@code pingTimeoutMillis}, {@code maxTimeOffsetMillis}, {@code maxPeers}, and
      * {@code pingCommunicationTimeoutMillis}.
-     *  @param identity           own identity
-     * @param udpServerGroup     the {@link NioEventLoopGroup} the underlying udp server should run
+     * @param identity           own identity
+     * @param udpServerGroup     the {@link EventLoopGroup} the underlying udp server should run
      *                           on
      * @param bindAddress        address the UDP server will bind to. Default value:
  *                           0.0.0.0:{@link #BIND_PORT}
@@ -112,7 +112,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * {@code pingCommunicationTimeoutMillis}, and enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
      * @param networkId      the network we belong to. Default value: {@link #NETWORK_ID}
@@ -135,7 +135,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
      */
@@ -153,7 +153,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindPort       port the UDP server will bind to. Default value: {@link #BIND_PORT}
      */
     @SuppressWarnings("unused")
@@ -170,7 +170,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * enabled control plane message arming.
      *
      * @param identity       own identity
-     * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
