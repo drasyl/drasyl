@@ -150,6 +150,7 @@ public class TunCommand extends ChannelOptions {
 
     protected TunCommand() {
         super(new NioEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new NioEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
+//        super(KQueue.isAvailable() ? new KQueueEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)) : new EpollEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new NioEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
     }
 
     @Override
