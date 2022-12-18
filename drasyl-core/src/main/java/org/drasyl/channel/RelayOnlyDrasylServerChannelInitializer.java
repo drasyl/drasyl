@@ -27,6 +27,8 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.handler.LoopbackHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
+import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
@@ -209,8 +211,8 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
         p.addLast(new UdpServer(udpServerGroup, bindAddress));
         p.addLast(new ByteToRemoteMessageCodec());
-//        p.addLast(new OtherNetworkFilter(networkId));
-//        p.addLast(new InvalidProofOfWorkFilter());
+        p.addLast(new OtherNetworkFilter(networkId));
+        p.addLast(new InvalidProofOfWorkFilter());
         if (protocolArmEnabled) {
             p.addLast(new ProtocolArmHandler(identity, maxPeers));
         }
