@@ -26,6 +26,7 @@ import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
@@ -51,7 +52,7 @@ public class ExpiringMapBenchmark extends AbstractBenchmark {
     private HashMap<String, String> nonEmptyHashMap;
     private Map<Object, Object> nonEmptyGuavaCache;
 
-    @Setup
+    @Setup(Level.Invocation)
     public void setup() {
         // empty
         emptyExpiringMap = new ExpiringMap<>(100, 3600_000, -1);
@@ -66,6 +67,8 @@ public class ExpiringMapBenchmark extends AbstractBenchmark {
         nonEmptyGuavaCache = CacheBuilder.newBuilder().maximumSize(100).expireAfterWrite(ofHours(1)).build().asMap();
         nonEmptyGuavaCache.put("Hello", "World");
     }
+
+    // containsKey
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
@@ -101,5 +104,43 @@ public class ExpiringMapBenchmark extends AbstractBenchmark {
     @BenchmarkMode(Mode.Throughput)
     public void nonEmptyContainsKeyGuavaCache(final Blackhole blackhole) {
         blackhole.consume(nonEmptyGuavaCache.containsKey("Hello"));
+    }
+
+    // put
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void newEntryPut(final Blackhole blackhole) {
+        blackhole.consume(emptyExpiringMap.put("Hello", "World"));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void newEntryPutHashSet(final Blackhole blackhole) {
+        blackhole.consume(emptyHashMap.put("Hello", "World"));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void newEntryPutGuavaCache(final Blackhole blackhole) {
+        blackhole.consume(emptyGuavaCache.put("Hello", "World"));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void existingEntryPut(final Blackhole blackhole) {
+        blackhole.consume(nonEmptyExpiringMap.put("Hello", "World"));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void existingEntryPutHashSet(final Blackhole blackhole) {
+        blackhole.consume(nonEmptyHashMap.put("Hello", "World"));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.Throughput)
+    public void existingEntryPutGuavaCache(final Blackhole blackhole) {
+        blackhole.consume(nonEmptyGuavaCache.put("Hello", "World"));
     }
 }
