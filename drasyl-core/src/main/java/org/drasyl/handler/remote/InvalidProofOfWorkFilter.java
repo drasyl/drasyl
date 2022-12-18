@@ -26,7 +26,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.ExpiringSet;
 
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
 /**
@@ -35,8 +40,15 @@ import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 @SuppressWarnings("java:S110")
 @Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
+    private final Set<DrasylAddress> senderCache;
+
     public InvalidProofOfWorkFilter() {
+        this(new ExpiringSet<>(100, 3600_000));
+    }
+
+    public InvalidProofOfWorkFilter(final Set<DrasylAddress> senderCache) {
         super(false);
+        this.senderCache = requireNonNull(senderCache);
     }
 
     @Override
@@ -48,14 +60,25 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final InetAddressedMessage<RemoteMessage> msg) throws InvalidProofOfWorkException {
         final RemoteMessage remoteMsg = msg.content();
-        final boolean validProofOfWork = !ctx.channel().localAddress().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
-        if (validProofOfWork) {
+        final boolean passThroughMessage = !ctx.channel().localAddress().equals(remoteMsg.getRecipient()) || hasValidProofOfWork(remoteMsg);
+        if (passThroughMessage) {
             ctx.fireChannelRead(msg);
         }
         else {
             msg.release();
             throw new InvalidProofOfWorkException(remoteMsg);
         }
+    }
+
+    private boolean hasValidProofOfWork(final RemoteMessage remoteMsg) {
+        if (senderCache.contains(remoteMsg.getSender())) {
+            return true;
+        }
+        else if (remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY)) {
+            senderCache.add(remoteMsg.getSender());
+            return true;
+        }
+        return false;
     }
 
     /**
