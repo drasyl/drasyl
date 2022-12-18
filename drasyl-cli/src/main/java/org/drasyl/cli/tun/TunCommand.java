@@ -30,6 +30,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.Tun4Packet;
@@ -144,7 +145,7 @@ public class TunCommand extends ChannelOptions {
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new NioEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new NioEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
+        super(new NioEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new DefaultEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
 //        super(KQueue.isAvailable() ? new KQueueEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)) : new EpollEventLoopGroup(1, new DefaultThreadFactory("TunCommand-parent", true)), new NioEventLoopGroup(new DefaultThreadFactory("TunCommand-child", true)));
     }
 
