@@ -197,6 +197,12 @@
           "code": "java.annotation.removed",
           "annotation": "@com.google.auto.value.AutoValue$Builder",
           "justification": "False positive due to auto-generated sources"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.InvalidProofOfWorkFilter",
+          "justification": "Internal element that was never intended to be used outside drasyl"
         }
       ]
     }
