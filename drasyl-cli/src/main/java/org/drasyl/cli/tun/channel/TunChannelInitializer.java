@@ -34,6 +34,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
+import org.drasyl.util.logging.LogLevel;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -79,6 +80,6 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
         // close tun device as well
         ch.closeFuture().addListener(f -> tun.close());
 
-        ch.pipeline().addLast(new SlowReadAwareHandler(UdpServer.class));
+        ch.pipeline().addLast(new SlowReadAwareHandler(LogLevel.ERROR, UdpServer.class));
     }
 }
