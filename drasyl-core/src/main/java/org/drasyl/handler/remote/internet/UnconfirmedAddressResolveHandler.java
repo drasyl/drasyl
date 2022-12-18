@@ -34,13 +34,14 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Map;
 
 /**
  * Re-uses address from messages with unconfirmed peers as last-resort.
  */
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    private final ExpiringMap<DrasylAddress, InetSocketAddress> addressCache;
+    private final Map<DrasylAddress, InetSocketAddress> addressCache;
 
     public UnconfirmedAddressResolveHandler() {
         this(100, Duration.ofSeconds(60));
