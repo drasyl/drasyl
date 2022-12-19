@@ -21,22 +21,10 @@
  */
 package org.drasyl.util;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollDatagramChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueue;
-import io.netty.channel.kqueue.KQueueDatagramChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.InternetProtocolFamily;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.lang.reflect.Field;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * Utility class that can be used to detect properties specific to the current runtime environment,
@@ -72,46 +60,6 @@ public final class PlatformDependent {
     @SuppressWarnings("UnusedReturnValue")
     public static boolean unsafeStaticFieldOffsetSupported() {
         return !RUNNING_IN_NATIVE_IMAGE;
-    }
-
-    public static EventLoopGroup getBestEventLoopGroup(final int nThreads, final ThreadFactory threadFactory) {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup(nThreads, threadFactory);
-        }
-        else if (KQueue.isAvailable()) {
-            return new KQueueEventLoopGroup(nThreads, threadFactory);
-        }
-        else {
-            return new NioEventLoopGroup(nThreads, threadFactory);
-        }
-    }
-
-    public static EventLoopGroup getBestEventLoopGroup(final int nThreads) {
-        return getBestEventLoopGroup(nThreads, null);
-    }
-
-    public static Class<? extends DatagramChannel> getBestDatagramChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollDatagramChannel.class;
-        }
-        else if (KQueue.isAvailable()) {
-            return KQueueDatagramChannel.class;
-        }
-        else {
-            return NioDatagramChannel.class;
-        }
-    }
-
-    public static DatagramChannel getBestDatagramChannel(final InternetProtocolFamily family) {
-        if (Epoll.isAvailable()) {
-            return new EpollDatagramChannel(family);
-        }
-        else if (KQueue.isAvailable()) {
-            return new KQueueDatagramChannel(family);
-        }
-        else {
-            return new NioDatagramChannel(family);
-        }
     }
 
     static float javaSpecificationVersion() {

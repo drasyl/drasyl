@@ -35,7 +35,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.util.PlatformDependent;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -121,7 +121,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
             LOG.debug("Start Broadcast Server...");
             bootstrapSupplier.get()
                     .group(group)
-                    .channel(PlatformDependent.getBestDatagramChannel())
+                    .channel(EventLoopGroupUtil.getBestDatagramChannel())
                     .handler(new UdpBroadcastServerHandler())
                     .bind(BROADCAST_BIND_HOST, BROADCAST_ADDRESS.getPort())
                     .addListener(new UdpBroadcastServerFutureListener(ctx));
