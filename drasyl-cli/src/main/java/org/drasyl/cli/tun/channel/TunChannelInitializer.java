@@ -28,13 +28,10 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
-import org.drasyl.handler.SlowReadAwareHandler;
-import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
-import org.drasyl.util.logging.LogLevel;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -79,7 +76,5 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
 
         // close tun device as well
         ch.closeFuture().addListener(f -> tun.close());
-
-        ch.pipeline().addLast(new SlowReadAwareHandler(LogLevel.ERROR, UdpServer.class));
     }
 }

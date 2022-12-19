@@ -44,27 +44,27 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * @param udpServerGroup                 the {@link EventLoopGroup} the underlying udp server
      *                                       should run on
      * @param bindAddress                    address the UDP server will bind to. Default value:
- *                                       0.0.0.0:{@link #BIND_PORT}
+     *                                       0.0.0.0:{@link #BIND_PORT}
      * @param networkId                      the network we belong to. Default value:
-*                                       {@link #NETWORK_ID}
+     *                                       {@link #NETWORK_ID}
      * @param superPeers                     list of super peers we register to. Default value:
-*                                       {@link #SUPER_PEERS}
+     *                                       {@link #SUPER_PEERS}
      * @param protocolArmEnabled             if {@code true} all control plane messages will be
-*                                       encrypted/authenticated. Default value: {@code true}
+     *                                       encrypted/authenticated. Default value: {@code true}
      * @param pingIntervalMillis             interval in millis between a ping. Default value:
-*                                       {@link #PING_INTERVAL_MILLIS}
+     *                                       {@link #PING_INTERVAL_MILLIS}
      * @param pingTimeoutMillis              time in millis without ping response before a peer is
-*                                       assumed as unreachable. Default value:
-*                                       {@link #PING_TIMEOUT_MILLIS}
+     *                                       assumed as unreachable. Default value:
+     *                                       {@link #PING_TIMEOUT_MILLIS}
      * @param maxTimeOffsetMillis            time millis offset of received messages' timestamp
-*                                       before discarding them. Default value:
-*                                       {@link #MAX_TIME_OFFSET_MILLIS}
+     *                                       before discarding them. Default value:
+     *                                       {@link #MAX_TIME_OFFSET_MILLIS}
      * @param maxPeers                       maximum number of peers to which a traversed connection
-*                                       should be maintained at the same time. Default value:
-*                                       {@link #MAX_PEERS}
+     *                                       should be maintained at the same time. Default value:
+     *                                       {@link #MAX_PEERS}
      * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
-*                                       discarded without application traffic. Default value:
-*                                       {@link #PING_COMMUNICATION_TIMEOUT_MILLIS}
+     *                                       discarded without application traffic. Default value:
+     *                                       {@link #PING_COMMUNICATION_TIMEOUT_MILLIS}
      */
     @SuppressWarnings("java:S107")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
@@ -86,16 +86,17 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * Creates a new channel initializer with default values for {@code pingIntervalMillis},
      * {@code pingTimeoutMillis}, {@code maxTimeOffsetMillis}, {@code maxPeers}, and
      * {@code pingCommunicationTimeoutMillis}.
+     *
      * @param identity           own identity
      * @param udpServerGroup     the {@link EventLoopGroup} the underlying udp server should run
      *                           on
      * @param bindAddress        address the UDP server will bind to. Default value:
- *                           0.0.0.0:{@link #BIND_PORT}
+     *                           0.0.0.0:{@link #BIND_PORT}
      * @param networkId          the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers         list of super peers we register to. Default value:
-*                           {@link #SUPER_PEERS}
+     *                           {@link #SUPER_PEERS}
      * @param protocolArmEnabled if {@code true} all control plane messages will be
-*                           encrypted/authenticated. Default value: {@code true}
+     *                           encrypted/authenticated. Default value: {@code true}
      */
     public TraversingDrasylServerChannelInitializer(final Identity identity,
                                                     final EventLoopGroup udpServerGroup,

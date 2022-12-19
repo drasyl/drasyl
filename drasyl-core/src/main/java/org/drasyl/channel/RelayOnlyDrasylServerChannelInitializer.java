@@ -74,20 +74,20 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * @param udpServerGroup      the {@link NioEventLoopGroup} the underlying udp server should run
      *                            on
      * @param bindAddress         address the UDP server will bind to. Default value:
- *                            0.0.0.0:{@link #BIND_PORT}
+     *                            0.0.0.0:{@link #BIND_PORT}
      * @param networkId           the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers          list of super peers we register to. Default value:
-*                            {@link #SUPER_PEERS}
+     *                            {@link #SUPER_PEERS}
      * @param protocolArmEnabled  if {@code true} all control plane messages will be
-*                            encrypted/authenticated. Default value: {@code true}
+     *                            encrypted/authenticated. Default value: {@code true}
      * @param pingIntervalMillis  interval in millis between a ping. Default value:
-*                            {@link #PING_INTERVAL_MILLIS}
+     *                            {@link #PING_INTERVAL_MILLIS}
      * @param pingTimeoutMillis   time in millis without ping response before a peer is assumed as
-*                            unreachable. Default value: {@link #PING_TIMEOUT_MILLIS}
+     *                            unreachable. Default value: {@link #PING_TIMEOUT_MILLIS}
      * @param maxTimeOffsetMillis time millis offset of received messages' timestamp before
-*                            discarding them. Default value: {@link #MAX_TIME_OFFSET_MILLIS}
+     *                            discarding them. Default value: {@link #MAX_TIME_OFFSET_MILLIS}
      * @param maxPeers            maximum number of peers to which a traversed connection should be
-*                            maintained at the same time. Default value: {@link #MAX_PEERS}
+     *                            maintained at the same time. Default value: {@link #MAX_PEERS}
      */
     @SuppressWarnings("java:S107")
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
