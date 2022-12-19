@@ -169,6 +169,30 @@ public class Crypto {
     }
 
     /**
+     * Generates a secure random bytes with the given {@code entropy}.
+     *
+     * <p>
+     * Recommendation:
+     *     <ul>
+     *         <li>4 byte for small sets</li>
+     *         <li>8 bytes for unique internal strings, e.g. hash tables</li>
+     *         <li>16 bytes for global uniqueness, e.g. auth token</li>
+     *         <li>24 bytes for cryptographic operations, e.g. nonce's</li>
+     *     </ul>
+     * <p>
+     * You can also use the following probability table for the "Birthday problem", as a starting point for a suitable
+     * entropy size:
+     * <a href="https://en.wikipedia.org/wiki/Birthday_problem#Probability_table">Birthday problem probability table</a>
+     * </p>
+     *
+     * @param entropy entropy in bytes
+     * @return a secure random bytes
+     */
+    public byte[] randomBytesLibsodium(final int entropy) {
+        return sodium.randomBytes(entropy);
+    }
+
+    /**
      * Generates a random number with the static {@link SecureRandom} of this class. Avoids overhead
      * of generating a new instance of {@link SecureRandom}.
      *

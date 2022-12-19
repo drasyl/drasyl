@@ -220,6 +220,21 @@ public class DrasylSodiumWrapper {
     }
 
     /**
+     * Returns {@code len} bytes long unpredictable sequence of bytes.
+     *
+     * @param len number of bytes
+     * @return {@code len} bytes long unpredictable sequence of bytes or {@code null} on failure.
+     */
+    public byte[] randomBytes(final int len) {
+        byte[] bytes = new byte[len];
+        if (successful(getSodium().randombytes_buf(bytes, bytes.length))) {
+            return bytes;
+        }
+
+        return null; // NOSONAR
+    }
+
+    /**
      * Evaluates the return value of a native sodium function call.
      *
      * @param res the result of the function call

@@ -124,4 +124,6 @@ public class Sodium {
             byte[] nPub,
             byte[] k
     );
+
+    public native int randombytes_buf(byte[] buf, long size);
 }

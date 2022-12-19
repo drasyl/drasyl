@@ -22,7 +22,6 @@
 package org.drasyl.crypto;
 
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -40,7 +39,8 @@ import org.openjdk.jmh.infra.Blackhole;
 @Measurement(iterations = 1)
 @State(Scope.Benchmark)
 public class RandomBenchmark extends AbstractBenchmark {
-    @Param({ "4", "8", "16", "24", "32", "64" })
+    // nonce length = 24
+    @Param({ "4", "8", "16", "24", "32", "64", "128" })
     private int size;
 
     @Benchmark
@@ -53,7 +53,7 @@ public class RandomBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void pseudoRandomBytes(final Blackhole blackhole) {
-        blackhole.consume(RandomUtil.randomBytes(size));
+    public void libsodiumRandomBytes(final Blackhole blackhole) {
+        blackhole.consume(Crypto.INSTANCE.randomBytesLibsodium(size));
     }
 }
