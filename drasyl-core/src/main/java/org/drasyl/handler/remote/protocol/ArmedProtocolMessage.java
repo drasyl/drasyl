@@ -194,7 +194,7 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
-        out.writeBytes(getBytes().slice());
+        out.writeBytes(getBytes());
     }
 
     private PublicHeader buildPublicHeader() {

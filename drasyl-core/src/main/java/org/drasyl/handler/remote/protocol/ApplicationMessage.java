@@ -137,8 +137,7 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
-        final ByteBuf slice = getPayload().slice();
-        out.writeBytes(slice, slice.readerIndex(), slice.readableBytes());
+        out.writeBytes(getPayload(), getPayload().readerIndex(), getPayload().readableBytes());
     }
 
     @Override

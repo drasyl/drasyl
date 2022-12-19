@@ -131,7 +131,7 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
         }
 
         try {
-            return of(PublicHeader.of(bytes), bytes.discardSomeReadBytes().slice());
+            return of(PublicHeader.of(bytes), bytes);
         }
         catch (final IOException e) {
             throw new InvalidMessageFormatException("Can't read public header.", e);
