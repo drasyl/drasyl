@@ -35,24 +35,24 @@ public class SlowAwareDefaultEventLoopGroup extends DefaultEventLoopGroup {
         super();
     }
 
-    public SlowAwareDefaultEventLoopGroup(int nThreads) {
+    public SlowAwareDefaultEventLoopGroup(final int nThreads) {
         super(nThreads);
     }
 
-    public SlowAwareDefaultEventLoopGroup(ThreadFactory threadFactory) {
+    public SlowAwareDefaultEventLoopGroup(final ThreadFactory threadFactory) {
         super(threadFactory);
     }
 
-    public SlowAwareDefaultEventLoopGroup(int nThreads, ThreadFactory threadFactory) {
+    public SlowAwareDefaultEventLoopGroup(final int nThreads, final ThreadFactory threadFactory) {
         super(nThreads, threadFactory);
     }
 
-    public SlowAwareDefaultEventLoopGroup(int nThreads, Executor executor) {
+    public SlowAwareDefaultEventLoopGroup(final int nThreads, final Executor executor) {
         super(nThreads, executor);
     }
 
     @Override
-    protected EventLoop newChild(Executor executor, Object... args) throws Exception {
+    protected EventLoop newChild(final Executor executor, final Object... args) throws Exception {
         return new SlowAwareDefaultEventLoop(this, executor);
     }
 }

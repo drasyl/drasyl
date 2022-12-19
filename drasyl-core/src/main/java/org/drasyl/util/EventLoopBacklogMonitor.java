@@ -28,7 +28,12 @@ import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * This utility class can be used to monitor the number of pending tasks of {@link
@@ -46,7 +51,7 @@ public final class EventLoopBacklogMonitor {
         // util class
     }
 
-    public static synchronized void monitorBacklog(EventLoopGroup... groups) {
+    public static synchronized void monitorBacklog(final EventLoopGroup... groups) {
         if (THRESHOLD < 1) {
             return;
         }
@@ -56,18 +61,18 @@ public final class EventLoopBacklogMonitor {
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
-                    Iterator<EventLoopGroup> groupsIterator = GROUPS.iterator();
+                    final Iterator<EventLoopGroup> groupsIterator = GROUPS.iterator();
                     while (groupsIterator.hasNext()) {
-                        EventLoopGroup group = groupsIterator.next();
+                        final EventLoopGroup group = groupsIterator.next();
                         if (group.isTerminated()) {
                             groupsIterator.remove();
                             continue;
                         }
 
-                        Iterator<EventExecutor> loopsIterator = group.iterator();
+                        final Iterator<EventExecutor> loopsIterator = group.iterator();
                         while (loopsIterator.hasNext()) {
-                            SingleThreadEventExecutor loop = (SingleThreadEventExecutor) loopsIterator.next();
-                            int pendingTasks = loop.pendingTasks();
+                            final SingleThreadEventExecutor loop = (SingleThreadEventExecutor) loopsIterator.next();
+                            final int pendingTasks = loop.pendingTasks();
                             if (pendingTasks >= THRESHOLD) {
                                 LOG.warn("BACKLOG: EventLoop `{}` has {} pending tasks.", loop.threadProperties().name(), pendingTasks);
                             }

@@ -47,28 +47,28 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
         super();
     }
 
-    public SlowAwareDefaultEventLoop(ThreadFactory threadFactory) {
+    public SlowAwareDefaultEventLoop(final ThreadFactory threadFactory) {
         super(threadFactory);
     }
 
-    public SlowAwareDefaultEventLoop(Executor executor) {
+    public SlowAwareDefaultEventLoop(final Executor executor) {
         super(executor);
     }
 
-    public SlowAwareDefaultEventLoop(EventLoopGroup parent) {
+    public SlowAwareDefaultEventLoop(final EventLoopGroup parent) {
         super(parent);
     }
 
-    public SlowAwareDefaultEventLoop(EventLoopGroup parent, ThreadFactory threadFactory) {
+    public SlowAwareDefaultEventLoop(final EventLoopGroup parent, final ThreadFactory threadFactory) {
         super(parent, threadFactory);
     }
 
-    public SlowAwareDefaultEventLoop(EventLoopGroup parent, Executor executor) {
+    public SlowAwareDefaultEventLoop(final EventLoopGroup parent, final Executor executor) {
         super(parent, executor);
     }
 
     @Override
-    public void execute(Runnable task) {
+    public void execute(final Runnable task) {
         if (THRESHOLD == 0.0) {
             super.execute(task);
         }
@@ -78,7 +78,7 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
     }
 
     @Override
-    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+    public ScheduledFuture<?> schedule(final Runnable command, final long delay, final TimeUnit unit) {
         if (THRESHOLD == 0.0) {
             return super.schedule(command, delay, unit);
         }
@@ -88,10 +88,10 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
     }
 
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
-                                                  long initialDelay,
-                                                  long period,
-                                                  TimeUnit unit) {
+    public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command,
+                                                  final long initialDelay,
+                                                  final long period,
+                                                  final TimeUnit unit) {
         if (THRESHOLD == 0.0) {
             return super.scheduleAtFixedRate(command, initialDelay, period, unit);
         }
@@ -101,10 +101,10 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
     }
 
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command,
-                                                     long initialDelay,
-                                                     long delay,
-                                                     TimeUnit unit) {
+    public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command,
+                                                     final long initialDelay,
+                                                     final long delay,
+                                                     final TimeUnit unit) {
         if (THRESHOLD == 0.0) {
             return super.scheduleWithFixedDelay(command, initialDelay, delay, unit);
         }
@@ -113,7 +113,7 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
         }
     }
 
-    private void report(SlowAwareTask task) {
+    private void report(final SlowAwareTask task) {
         if (task.executionTime >= THRESHOLD) {
             LOG.warn("SLOW TASK: {}", task.toString());
         }
@@ -124,15 +124,15 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
         private Runnable task;
         private double executionTime = -1;
 
-        public SlowAwareTask(Runnable task) {
+        public SlowAwareTask(final Runnable task) {
             final StringBuilder buf = new StringBuilder(2048);
             // task type / task class
             buf.append(StringUtil.simpleClassName(task));
             buf.append(" ");
             // task caller
-            StackTraceElement[] array = getStackTrace();
+            final StackTraceElement[] array = getStackTrace();
             if (array.length > 1) {
-                StackTraceElement element = array[1];
+                final StackTraceElement element = array[1];
                 buf.append(element.toString());
             }
             hint = buf.toString();
@@ -141,12 +141,12 @@ public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
 
         @Override
         public void run() {
-            long startTime = System.nanoTime();
+            final long startTime = System.nanoTime();
             try {
                 task.run();
             }
             finally {
-                long endTime = System.nanoTime();
+                final long endTime = System.nanoTime();
                 executionTime = (endTime - startTime) / 1_000_000.0;
                 task = null;
                 SlowAwareDefaultEventLoop.this.report(this);
