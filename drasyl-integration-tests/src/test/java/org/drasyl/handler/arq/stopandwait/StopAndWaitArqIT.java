@@ -97,7 +97,6 @@ class StopAndWaitArqIT {
                                                         final ByteBuf msg) {
                                 latch.countDown();
                                 final byte e = msg.readByte();
-                                System.out.println("e = " + e);
                                 received.add(e);
                             }
                         });
