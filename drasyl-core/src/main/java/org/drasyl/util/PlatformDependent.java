@@ -30,6 +30,7 @@ import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -98,6 +99,18 @@ public final class PlatformDependent {
         }
         else {
             return NioDatagramChannel.class;
+        }
+    }
+
+    public static DatagramChannel getBestDatagramChannel(final InternetProtocolFamily family) {
+        if (Epoll.isAvailable()) {
+            return new EpollDatagramChannel(family);
+        }
+        else if (KQueue.isAvailable()) {
+            return new KQueueDatagramChannel(family);
+        }
+        else {
+            return new NioDatagramChannel(family);
         }
     }
 

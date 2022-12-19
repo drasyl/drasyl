@@ -24,13 +24,13 @@ package org.drasyl.cli.perf;
 import ch.qos.logback.classic.Level;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -121,7 +121,7 @@ class PerfCommandIT {
         IdentityManager.writeIdentityFile(serverPath, ID_2);
         final EventLoopGroup serverParentGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup serverChildGroup = new DefaultEventLoopGroup();
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,

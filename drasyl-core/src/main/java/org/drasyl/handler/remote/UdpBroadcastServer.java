@@ -28,14 +28,14 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.util.PlatformDependent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     private static final String BROADCAST_BIND_HOST;
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
-    private final NioEventLoopGroup group;
+    private final EventLoopGroup group;
     private DatagramChannel channel;
 
     static {
@@ -80,12 +80,12 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param group the {@link EventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("java:S2384")
     UdpBroadcastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
-                       final NioEventLoopGroup group,
+                       final EventLoopGroup group,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
@@ -94,10 +94,10 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying udp server should run on
+     * @param group the {@link EventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("unused")
-    public UdpBroadcastServer(final NioEventLoopGroup group) {
+    public UdpBroadcastServer(final EventLoopGroup group) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
@@ -121,7 +121,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
             LOG.debug("Start Broadcast Server...");
             bootstrapSupplier.get()
                     .group(group)
-                    .channel(NioDatagramChannel.class)
+                    .channel(PlatformDependent.getBestDatagramChannel())
                     .handler(new UdpBroadcastServerHandler())
                     .bind(BROADCAST_BIND_HOST, BROADCAST_ADDRESS.getPort())
                     .addListener(new UdpBroadcastServerFutureListener(ctx));

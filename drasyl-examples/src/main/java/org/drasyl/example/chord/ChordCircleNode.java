@@ -29,7 +29,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
@@ -46,6 +45,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,7 +84,7 @@ public class ChordCircleNode {
         final LocalChordNode localNode = new LocalChordNode(identity.getIdentityPublicKey(), client);
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
