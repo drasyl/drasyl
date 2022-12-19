@@ -29,7 +29,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.util.PlatformDependent;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -130,7 +130,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Parent event loop group size: {}", SIZE);
         }
 
-        static final EventLoopGroup INSTANCE = PlatformDependent.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true));
+        static final EventLoopGroup INSTANCE = EventLoopGroupUtil.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-parent", true));
 
         @SuppressWarnings("unused")
         static final boolean LOCK = parentEventLoopGroupCreated = true;
@@ -144,7 +144,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Child event loop group size: {}", SIZE);
         }
 
-        static final EventLoopGroup INSTANCE = PlatformDependent.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
+        static final EventLoopGroup INSTANCE = EventLoopGroupUtil.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = childEventLoopGroupCreated = true;
     }
@@ -157,7 +157,7 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
             LOG.debug("Network event loop group size: {}", SIZE);
         }
 
-        static final EventLoopGroup INSTANCE = PlatformDependent.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
+        static final EventLoopGroup INSTANCE = EventLoopGroupUtil.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
         @SuppressWarnings("unused")
         static final boolean LOCK = networkEventLoopGroupCreated = true;
     }

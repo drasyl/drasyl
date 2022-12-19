@@ -37,7 +37,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.util.PlatformDependent;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -138,7 +138,7 @@ public class UdpServer extends ChannelDuplexHandler {
         LOG.debug("Start Server...");
         bootstrap
                 .group(group)
-                .channel(PlatformDependent.getBestDatagramChannel())
+                .channel(EventLoopGroupUtil.getBestDatagramChannel())
                 .handler(new UdpServerHandler(ctx))
                 .bind(bindAddress)
                 .addListener(new UdpServerBindListener(ctx));

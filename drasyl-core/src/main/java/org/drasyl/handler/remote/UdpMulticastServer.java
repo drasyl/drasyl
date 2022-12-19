@@ -35,7 +35,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.util.PlatformDependent;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -151,7 +151,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 LOG.debug("Start Multicast Server to bind to udp://{}:{}...", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort);
                 bootstrapSupplier.get()
                         .group(group)
-                        .channelFactory(() -> PlatformDependent.getBestDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
+                        .channelFactory(() -> EventLoopGroupUtil.getBestDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
                         .handler(new UdpMulticastServerHandler())
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())
                         .addListener(new UdpMulticastServerFutureListener(ctx));

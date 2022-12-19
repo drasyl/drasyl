@@ -30,8 +30,8 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Murmur3;
-import org.drasyl.util.PlatformDependent;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
 import picocli.CommandLine.Option;
@@ -134,11 +134,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup) {
-        this(parentGroup, childGroup, PlatformDependent.getBestEventLoopGroup(1));
+        this(parentGroup, childGroup, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     protected ChannelOptions(final EventLoopGroup group) {
-        this(group, group, PlatformDependent.getBestEventLoopGroup(1));
+        this(group, group, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     @Override
