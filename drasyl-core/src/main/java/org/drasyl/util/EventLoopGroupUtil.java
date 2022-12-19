@@ -25,12 +25,15 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollTunChannel;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueTunChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.InternetProtocolFamily;
+import io.netty.channel.socket.TunChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.util.concurrent.ThreadFactory;
@@ -80,6 +83,18 @@ public final class EventLoopGroupUtil {
         }
         else {
             return new NioDatagramChannel(family);
+        }
+    }
+
+    public static Class<? extends TunChannel> getBestTunChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollTunChannel.class;
+        }
+        else if (KQueue.isAvailable()) {
+            return KQueueTunChannel.class;
+        }
+        else {
+            return null;
         }
     }
 }

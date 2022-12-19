@@ -32,7 +32,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Murmur3;
-import org.drasyl.util.PlatformDependent;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
 import picocli.CommandLine.Option;

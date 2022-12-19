@@ -38,6 +38,7 @@ import io.netty.channel.socket.TunAddress;
 import io.netty.channel.socket.TunChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.ChannelOptions;
@@ -54,7 +55,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.PlatformDependent;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -182,9 +183,9 @@ public class TunCommand extends ChannelOptions {
             final Worm<Integer> exitCode = Worm.of();
 
             final Bootstrap b = new Bootstrap()
-                    .channel(PlatformDependent.getBestTunChannel())
+                    .channel(EventLoopGroupUtil.getBestTunChannel())
                     .option(TUN_MTU, mtu)
-                    .group(PlatformDependent.getBestEventLoopGroup(1))
+                    .group(EventLoopGroupUtil.getBestEventLoopGroup(1))
                     .handler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
@@ -318,7 +319,7 @@ public class TunCommand extends ChannelOptions {
         private void configurateTun(final TunChannel channel,
                                     final String name) throws IOException {
             final String addressStr = address.getHostAddress();
-            if (io.netty.util.internal.PlatformDependent.isOsx()) {
+            if (PlatformDependent.isOsx()) {
                 // macOS
                 exec("/sbin/ifconfig", name, "add", addressStr, addressStr);
                 exec("/sbin/ifconfig", name, "up");
