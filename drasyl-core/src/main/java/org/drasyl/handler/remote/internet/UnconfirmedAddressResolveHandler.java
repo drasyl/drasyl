@@ -47,15 +47,18 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
     private final Map<DrasylAddress, Pair<InetSocketAddress, Long>> addressCache;
-    private final long expireAfter;
+    private final int maximumCacheSize;
+    private final long expireCacheAfter;
     private long now;
 
     public UnconfirmedAddressResolveHandler() {
-        this(60_000L);
+        this(100, 60_000L);
     }
 
-    public UnconfirmedAddressResolveHandler(final long expireAfter) {
-        this.expireAfter = requirePositive(expireAfter);
+    public UnconfirmedAddressResolveHandler(final int maximumCacheSize,
+                                            final long expireCacheAfter) {
+        this.maximumCacheSize = requirePositive(maximumCacheSize);
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
         this.addressCache = new HashMap<>();
     }
 
@@ -74,7 +77,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage && addressCache.size() < maximumCacheSize) {
             addressCache.put(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender(), Pair.of(((InetAddressedMessage<?>) msg).sender(), now));
         }
 
@@ -121,6 +124,6 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
             if (ctx.channel().isActive()) {
                 scheduleHousekeepingTask(ctx);
             }
-        }, expireAfter, MILLISECONDS);
+        }, expireCacheAfter, MILLISECONDS);
     }
 }

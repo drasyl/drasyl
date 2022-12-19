@@ -119,8 +119,8 @@ public class SlowReadAwareHandler extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             if (beforeHandler.readStartMsg != null) {
-                long readEndTime = System.nanoTime();
-                double readTime = (readEndTime - beforeHandler.readStartTime) / 1_000_000.0;
+                final long readEndTime = System.nanoTime();
+                final double readTime = (readEndTime - beforeHandler.readStartTime) / 1_000_000.0;
                 if (readTime > THRESHOLD) {
                     LOG.log(level, "SLOW READ: {} took {}ms", handler, readTime);
                 }

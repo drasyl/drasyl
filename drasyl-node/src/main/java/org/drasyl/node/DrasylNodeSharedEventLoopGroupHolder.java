@@ -145,7 +145,6 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
         }
 
         static final EventLoopGroup INSTANCE = PlatformDependent.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-child", true));
-
         @SuppressWarnings("unused")
         static final boolean LOCK = childEventLoopGroupCreated = true;
     }
@@ -159,7 +158,6 @@ public final class DrasylNodeSharedEventLoopGroupHolder {
         }
 
         static final EventLoopGroup INSTANCE = PlatformDependent.getBestEventLoopGroup(SIZE, new DefaultThreadFactory(DrasylNodeSharedEventLoopGroupHolder.class.getSimpleName() + "-network", true));
-
         @SuppressWarnings("unused")
         static final boolean LOCK = networkEventLoopGroupCreated = true;
     }

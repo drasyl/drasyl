@@ -44,16 +44,19 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @Sharable
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
     private final Map<DrasylAddress, Long> senderCache;
-    private final long expireAfter;
+    private final int maximumCacheSize;
+    private final long expireCacheAfter;
     private long now;
 
     public InvalidProofOfWorkFilter() {
-        this(3_600_000);
+        this(100, 3_600_000L);
     }
 
-    public InvalidProofOfWorkFilter(final long expireAfter) {
+    public InvalidProofOfWorkFilter(final int maximumCacheSize,
+                                    final long expireCacheAfter) {
         super(false);
-        this.expireAfter = requirePositive(expireAfter);
+        this.maximumCacheSize = requirePositive(maximumCacheSize);
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
         this.senderCache = new HashMap<>();
     }
 
@@ -93,7 +96,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
         if (senderCache.containsKey(remoteMsg.getSender())) {
             return true;
         }
-        else if (remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY)) {
+        else if (remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY) && senderCache.size() < maximumCacheSize) {
             senderCache.put(remoteMsg.getSender(), now);
             return true;
         }
@@ -119,7 +122,7 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
             if (ctx.channel().isActive()) {
                 scheduleHousekeepingTask(ctx);
             }
-        }, expireAfter, MILLISECONDS);
+        }, expireCacheAfter, MILLISECONDS);
     }
 
     /**
