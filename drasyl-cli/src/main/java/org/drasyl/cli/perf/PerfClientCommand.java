@@ -25,7 +25,6 @@ import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.perf.channel.PerfClientChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfClientChildChannelInitializer;
@@ -93,7 +92,7 @@ public class PerfClientCommand extends ChannelOptions {
                       final PrintStream err,
                       final EventLoopGroup parentGroup,
                       final EventLoopGroup childGroup,
-                      final NioEventLoopGroup udpServerGroup,
+                      final EventLoopGroup udpServerGroup,
                       final Level logLevel,
                       final File identityFile,
                       final InetSocketAddress bindAddress,
