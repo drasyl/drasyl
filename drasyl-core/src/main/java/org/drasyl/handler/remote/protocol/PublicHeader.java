@@ -23,12 +23,12 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
-import org.drasyl.util.internal.Nullable;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.internal.Nullable;
 
 /**
  * This class models the public header of a drasyl protocol message. The header is structured as
@@ -124,8 +124,8 @@ public abstract class PublicHeader {
      *
      * @return the authentication tag
      */
-    public byte[] buildAuthTag() {
-        final ByteBuf byteBuf = Unpooled.buffer(LENGTH);
+    public byte[] buildAuthTag(final ByteBufAllocator alloc) {
+        final ByteBuf byteBuf = alloc.buffer(LENGTH);
 
         try {
             writeTo(byteBuf, false);
