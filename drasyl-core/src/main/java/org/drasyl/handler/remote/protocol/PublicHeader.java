@@ -125,7 +125,7 @@ public abstract class PublicHeader {
      * @return the authentication tag
      */
     public byte[] buildAuthTag() {
-        final ByteBuf byteBuf = Unpooled.buffer(LENGTH - 1);
+        final ByteBuf byteBuf = Unpooled.buffer(LENGTH);
 
         try {
             writeTo(byteBuf, false);
