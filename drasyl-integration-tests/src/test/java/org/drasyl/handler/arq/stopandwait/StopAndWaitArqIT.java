@@ -79,11 +79,11 @@ class StopAndWaitArqIT {
                                                         ByteBuf msg) {
                                 if (prevMsg == null) {
                                     prevMsg = msg;
-                                    ctx.fireChannelRead(msg.retainedSlice());
+                                    ctx.fireChannelRead(msg.retain());
                                 }
                                 else {
                                     // replay previous message
-                                    ctx.fireChannelRead(prevMsg.retainedSlice());
+                                    ctx.fireChannelRead(prevMsg.retain());
                                     ctx.pipeline().remove(this);
                                 }
                             }

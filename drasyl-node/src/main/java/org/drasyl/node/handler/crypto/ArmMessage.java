@@ -54,7 +54,7 @@ abstract class ArmMessage {
                 case KEY_EXCHANGE:
                     return KeyExchangeMessage.of(byteBuf);
                 default:
-                    return byteBuf.retainedSlice();
+                    return byteBuf.retain();
             }
         }
         finally {
