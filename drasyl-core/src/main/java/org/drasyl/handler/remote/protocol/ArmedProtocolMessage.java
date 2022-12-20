@@ -127,7 +127,7 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
         try {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
-                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(alloc), getNonce(), sessionPair);
                 final ByteBuf byteBuf = alloc.buffer(decryptedPrivateHeader.length).writeBytes(decryptedPrivateHeader);
                 final PrivateHeader privateHeader = PrivateHeader.of(byteBuf);
                 byteBuf.release();
@@ -194,15 +194,18 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
-        out.writeBytes(getBytes().slice());
+        final ByteBuf bytes = getBytes();
+        bytes.markReaderIndex();
+        out.writeBytes(bytes);
+        bytes.resetReaderIndex();
     }
 
     private PublicHeader buildPublicHeader() {
         return PublicHeader.of(this);
     }
 
-    private byte[] buildAuthTag() {
-        return buildPublicHeader().buildAuthTag();
+    private byte[] buildAuthTag(final ByteBufAllocator alloc) {
+        return buildPublicHeader().buildAuthTag(alloc);
     }
 
     /**
