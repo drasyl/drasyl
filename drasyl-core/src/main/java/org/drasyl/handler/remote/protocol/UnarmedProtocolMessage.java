@@ -108,7 +108,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
-        out.writeBytes(getBytes());
+        final ByteBuf bytes = getBytes();
+        bytes.markReaderIndex();
+        out.writeBytes(bytes);
+        bytes.resetReaderIndex();
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + getBytes().readableBytes();
     }
 
     /**

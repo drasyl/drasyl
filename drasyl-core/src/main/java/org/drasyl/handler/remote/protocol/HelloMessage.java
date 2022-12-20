@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
@@ -34,6 +33,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ArrayUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
@@ -64,6 +64,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     public static final int MIN_UNSIGNED_LENGTH = 16;
     public static final int MIN_SIGNED_LENGTH = MIN_UNSIGNED_LENGTH + SIGN_BYTES;
     private static final int IPV6_LENGTH = 16;
+    private static final int ADDRESS_LENGTH = Short.BYTES + IPV6_LENGTH;
 
     /**
      * Creates a new {@link HelloMessage}.
@@ -318,7 +319,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
         }
         final Set<InetSocketAddress> privateInetAddresses = new HashSet<>();
         try {
-            while (body.readableBytes() >= 18) {
+            while (body.readableBytes() >= ADDRESS_LENGTH) {
                 final int port = body.readUnsignedShort();
                 final byte[] addressBuffer = new byte[IPV6_LENGTH];
                 body.readBytes(addressBuffer);
@@ -393,7 +394,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
         int length = getChildrenTime() > 0 ? MIN_SIGNED_LENGTH : MIN_UNSIGNED_LENGTH;
-        length += getPrivateInetAddresses().size() * (IPV6_LENGTH + 2);
+        length += getPrivateInetAddresses().size() * ADDRESS_LENGTH;
         PrivateHeader.of(HELLO, UnsignedShort.of(length)).writeTo(out);
     }
 
@@ -406,6 +407,11 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
             out.writeShort(address.getPort());
             out.writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(address.getAddress()));
         }
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + MIN_SIGNED_LENGTH + ADDRESS_LENGTH * getPrivateInetAddresses().size();
     }
 
     private static byte[] signedAttributes(final DrasylAddress recipient,

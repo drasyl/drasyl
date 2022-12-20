@@ -52,6 +52,7 @@ import org.drasyl.identity.ProofOfWork;
 @SuppressWarnings("java:S2047")
 public interface RemoteMessage {
     int MAGIC_NUMBER = 22527 * 22527;
+    int MAGIC_NUMBER_LEN = Integer.BYTES;
 
     Nonce getNonce();
 
@@ -82,4 +83,6 @@ public interface RemoteMessage {
      * @param out writes this envelope to this buffer
      */
     void writeTo(final ByteBuf out);
+
+    int getLength();
 }

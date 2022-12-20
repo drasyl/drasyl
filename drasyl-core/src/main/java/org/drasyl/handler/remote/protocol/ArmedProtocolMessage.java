@@ -53,6 +53,11 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     public static final int ARMED_HEADER_LENGTH = 16;
 
     @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + getBytes().readableBytes();
+    }
+
+    @Override
     public void close() {
         release();
     }
