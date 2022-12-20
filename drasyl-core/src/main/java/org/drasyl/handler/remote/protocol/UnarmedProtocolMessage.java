@@ -108,7 +108,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
-        out.writeBytes(getBytes().slice());
+        final ByteBuf bytes = getBytes();
+        bytes.markReaderIndex();
+        out.writeBytes(bytes);
+        bytes.resetReaderIndex();
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + getBytes().readableBytes();
     }
 
     /**
@@ -195,7 +203,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final UnsignedShort armedLength = PrivateHeader.getArmedLength(getBytes());
-                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(alloc), getNonce(), sessionPair);
                 final byte[] encryptedBytes;
                 final byte[] unencryptedRemainder;
 
@@ -246,8 +254,8 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
         }
     }
 
-    private byte[] buildAuthTag() {
-        return buildPublicHeader().buildAuthTag();
+    private byte[] buildAuthTag(final ByteBufAllocator alloc) {
+        return buildPublicHeader().buildAuthTag(alloc);
     }
 
     /**

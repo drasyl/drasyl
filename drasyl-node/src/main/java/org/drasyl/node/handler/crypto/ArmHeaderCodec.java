@@ -36,7 +36,7 @@ public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
     protected void encode(final ChannelHandlerContext ctx,
                           final ArmHeader msg,
                           final List<Object> out) throws Exception {
-        final ByteBuf byteBuf = ctx.alloc().buffer();
+        final ByteBuf byteBuf = ctx.alloc().buffer(msg.getLength());
         msg.writeTo(byteBuf);
         out.add(byteBuf);
     }
