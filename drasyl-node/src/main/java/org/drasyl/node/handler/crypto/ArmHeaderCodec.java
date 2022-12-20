@@ -37,10 +37,7 @@ public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
                           final ArmHeader msg,
                           final List<Object> out) throws Exception {
         final ByteBuf byteBuf = ctx.alloc().buffer();
-        byteBuf.writeBytes(msg.getAgreementId().toBytes())
-                .writeBytes(msg.getNonce().toByteArray());
-        byteBuf.writeBytes(msg.content());
-
+        msg.writeTo(byteBuf);
         out.add(byteBuf);
     }
 
