@@ -19,7 +19,7 @@ Source: https://www.graalvm.org/reference-manual/native-image/
 1. [Install GraalVM](https://www.graalvm.org/docs/getting-started/)
 1. [Install Native Image and meet the prerequisites](https://www.graalvm.org/dev/reference-manual/native-image/guides/build-native-shared-library/)
 1. Make sure that `JAVA_HOME` points to the GraalVM and `native-image` exists in `PATH`.
-1. Execute `./mvnw -DskipTests -Dmaven.javadoc.skip=true -Pnative --projects drasyl-shared-library --also-make package` from the drasyl
+1. Execute `./mvnw --activate-profiles native,fast --projects drasyl-shared-library --also-make package` from the drasyl
    root directory.
 1. If everything went well, you should now find a `libdrasyl.dylib`, `libdrasyl.so`, or `libdrasyl.dll` shared library in the root
    directory.
