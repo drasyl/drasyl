@@ -27,6 +27,7 @@ import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -35,6 +36,7 @@ import java.util.Map;
  * A {@link ChannelInitializer} for {@link DrasylServerChannel}s that tries to traverse (if any)
  * NATs with a fallback to relaying all messages through super peers.
  */
+@UnstableApi
 public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylServerChannelInitializer {
     public static final int PING_COMMUNICATION_TIMEOUT_MILLIS = 60_000;
     private final int pingCommunicationTimeoutMillis;

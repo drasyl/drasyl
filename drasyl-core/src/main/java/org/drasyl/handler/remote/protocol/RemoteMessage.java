@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.protocol;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.internal.UnstableApi;
 
 /**
  * Describes a message that is sent to remote peers via UDP/TCP.
@@ -50,6 +51,7 @@ import org.drasyl.identity.ProofOfWork;
  * </pre>
  */
 @SuppressWarnings("java:S2047")
+@UnstableApi
 public interface RemoteMessage {
     int MAGIC_NUMBER = 22527 * 22527;
     int MAGIC_NUMBER_LEN = Integer.BYTES;

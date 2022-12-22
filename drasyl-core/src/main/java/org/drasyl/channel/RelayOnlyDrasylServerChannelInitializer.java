@@ -36,6 +36,7 @@ import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -46,6 +47,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link ChannelInitializer} for {@link DrasylServerChannel}s that relays all messages through
  * super peers.
  */
+@UnstableApi
 public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final int BIND_PORT = 22527;
     public static final int NETWORK_ID = 1;

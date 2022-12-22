@@ -29,6 +29,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -44,6 +45,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
 /**
  * Re-uses address from messages with unconfirmed peers as last-resort.
  */
+@UnstableApi
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
     private final Map<DrasylAddress, Pair<InetSocketAddress, Long>> addressCache;

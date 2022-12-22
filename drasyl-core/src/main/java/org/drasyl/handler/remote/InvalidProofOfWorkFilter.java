@@ -27,6 +27,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings("java:S110")
 @Sharable
+@UnstableApi
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
     private final Map<DrasylAddress, Long> senderCache;
     private final int maximumCacheSize;

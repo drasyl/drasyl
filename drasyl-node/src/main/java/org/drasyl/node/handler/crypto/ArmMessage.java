@@ -24,7 +24,9 @@ package org.drasyl.node.handler.crypto;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.util.internal.UnstableApi;
 
+@UnstableApi
 abstract class ArmMessage {
     public static final int LENGTH = 1;
 
