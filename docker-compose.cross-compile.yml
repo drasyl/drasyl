@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  cross_compile_linux_aarch_64:
+    image: drasyl/drasyl-build-images:cross_compile_linux_aarch_64
+    volumes:
+      - ./cache-m2:/root/.m2
+      #- ~/.m2:/root/.m2
+      - .:/drasyl
+    working_dir: /drasyl
+    environment:
+#      - MAVEN_OPTS
+      MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+    command: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles fast --projects drasyl-cli --also-make package
