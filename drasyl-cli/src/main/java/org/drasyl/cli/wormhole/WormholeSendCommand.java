@@ -27,6 +27,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer;
 import org.drasyl.crypto.Crypto;
@@ -49,7 +50,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "send",
-        header = "Sends a text message or file"
+        header = "Sends a text message or file",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class WormholeSendCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeSendCommand.class);
