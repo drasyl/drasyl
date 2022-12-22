@@ -4,7 +4,7 @@ COPY . /build
 
 WORKDIR /build/
 
-RUN ./mvnw --quiet --projects drasyl-cli --also-make -DskipTests -Dmaven.javadoc.skip=true package
+RUN ./mvnw --quiet --projects drasyl-cli --also-make --activate-profiles fast package
 
 FROM crazymax/7zip AS unzip
 
