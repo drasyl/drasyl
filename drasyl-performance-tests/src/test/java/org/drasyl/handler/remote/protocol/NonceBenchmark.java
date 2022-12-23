@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,16 +19,14 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.crypto;
+package org.drasyl.handler.remote.protocol;
 
 import org.drasyl.AbstractBenchmark;
-import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
@@ -39,21 +37,20 @@ import org.openjdk.jmh.infra.Blackhole;
 @Warmup(iterations = 1)
 @Measurement(iterations = 1)
 @State(Scope.Benchmark)
-public class RandomBenchmark extends AbstractBenchmark {
-    @Param({ "4", "8", "16", "24", "32", "64" })
-    private int size;
-
+public class NonceBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void cryptoRandomBytes(final Blackhole blackhole) {
-        blackhole.consume(Crypto.randomBytes(size));
+    public void randomNonce(final Blackhole blackhole) {
+        System.setProperty("org.drasyl.nonce.pseudorandom", "false");
+        blackhole.consume(Nonce.randomNonce());
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void pseudoRandomBytes(final Blackhole blackhole) {
-        blackhole.consume(RandomUtil.randomBytes(size));
+    public void pseudorandomNonce(final Blackhole blackhole) {
+        System.setProperty("org.drasyl.nonce.pseudorandom", "true");
+        blackhole.consume(Nonce.randomNonce());
     }
 }

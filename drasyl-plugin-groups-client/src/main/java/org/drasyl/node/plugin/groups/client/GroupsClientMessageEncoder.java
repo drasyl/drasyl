@@ -47,7 +47,7 @@ public class GroupsClientMessageEncoder extends MessageToMessageEncoder<OverlayA
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<GroupsClientMessage> msg,
                           final List<Object> out) {
-        final ByteBuf byteBuf = ctx.alloc().ioBuffer();
+        final ByteBuf byteBuf = ctx.alloc().buffer();
         if (msg.content() instanceof GroupJoinMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_JOIN);
         }
