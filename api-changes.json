@@ -251,7 +251,13 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.node.channel.DrasylNodeServerChannelInitializer",
           "justification": "Internal element that was never intended to be used outside drasyl"
-        }
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
       ]
     }
   }
