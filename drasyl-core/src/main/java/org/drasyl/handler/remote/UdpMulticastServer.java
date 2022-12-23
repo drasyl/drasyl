@@ -64,6 +64,7 @@ import static java.util.Objects.requireNonNull;
 @Sharable
 @UnstableApi
 @SuppressWarnings({ "java:S112", "java:S2974" })
+@UnstableApi
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_ADDRESS_PROPERTY = "org.drasyl.remote.multicast.address";
     private static final String MULTICAST_BIND_HOST_PROPERTY = "org.drasyl.remote.multicast.bind-host";
