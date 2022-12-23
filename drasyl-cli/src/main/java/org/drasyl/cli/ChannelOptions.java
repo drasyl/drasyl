@@ -26,11 +26,11 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
@@ -58,7 +58,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected final PrintStream err;
     protected final EventLoopGroup parentGroup;
     protected final EventLoopGroup childGroup;
-    protected final NioEventLoopGroup udpServerGroup;
+    protected final EventLoopGroup udpServerGroup;
     @Option(
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
@@ -106,7 +106,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                              final PrintStream err,
                              final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup,
+                             final EventLoopGroup udpServerGroup,
                              final Level logLevel,
                              final File identityFile,
                              final InetSocketAddress bindAddress,
@@ -128,7 +128,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup) {
+                             final EventLoopGroup udpServerGroup) {
         this.out = System.out; // NOSONAR
         this.err = System.err; // NOSONAR
         this.parentGroup = requireNonNull(parentGroup);
@@ -138,11 +138,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup) {
-        this(parentGroup, childGroup, new NioEventLoopGroup(1));
+        this(parentGroup, childGroup, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     protected ChannelOptions(final EventLoopGroup group) {
-        this(group, group, new NioEventLoopGroup(1));
+        this(group, group, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     @Override
