@@ -177,12 +177,14 @@
           "code": "java.annotation.added",
           "annotation": "@com.google.auto.value.AutoValue$Builder",
           "justification": "False positive due to auto-generated sources"
+
         },
         {
           "ignore": true,
           "code": "java.annotation.added",
           "annotation": "@com.google.auto.value.AutoValue.Builder",
           "justification": "False positive due to auto-generated sources"
+
         },
         {
           "ignore": true,
@@ -211,12 +213,6 @@
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.InvalidProofOfWorkFilter",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
           "old": "class org.drasyl.handler.remote.UdpBroadcastServer",
           "justification": "Internal element that was never intended to be used outside drasyl"
         },
@@ -225,42 +221,6 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.remote.UdpMulticastServer",
           "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.FullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.PartialReadMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.PublicHeader",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.RemoteMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.ChannelInboundHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
@@ -295,13 +255,13 @@
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.KeyExchangeMessage",
+          "old": "class org.drasyl.handler.remote.InvalidProofOfWorkFilter",
           "justification": "Internal element that was never intended to be used outside drasyl"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.AcknowledgementMessage",
+          "old": "class org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler",
           "justification": "Internal element that was never intended to be used outside drasyl"
         }
       ]
