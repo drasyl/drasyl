@@ -25,6 +25,7 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -32,7 +33,6 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.InputStreamHelper;
 import org.drasyl.util.UnsignedShort;
-import org.drasyl.util.internal.Nullable;
 
 import java.io.IOException;
 

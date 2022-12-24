@@ -62,7 +62,6 @@ import static java.util.Objects.requireNonNull;
  * @see LocalNetworkDiscovery
  */
 @Sharable
-@UnstableApi
 @SuppressWarnings({ "java:S112", "java:S2974" })
 @UnstableApi
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
