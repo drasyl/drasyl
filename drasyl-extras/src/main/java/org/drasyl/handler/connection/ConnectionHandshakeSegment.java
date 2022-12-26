@@ -144,11 +144,17 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             controlBitLabels.add("ACK");
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + content().readableBytes() + ">";
     }
 
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment ack(final long seq,
+                                                 final long ack,
+                                                 final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, data);
     }
 
     public static ConnectionHandshakeSegment rst(final long seq) {
