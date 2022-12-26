@@ -107,7 +107,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1200); // FIXME: besseren wert nehmen!
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1254);
     }
 
     /**
@@ -171,7 +171,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             case LISTEN:
-                // FIXME: Data associated with SEND may be sent with SYN segment or queued for transmission after entering ESTABLISHED state
 
                 // channel was in passive OPEN mode. Now switch to active OPEN handshake
                 LOG.trace("{}[{}] Write was performed while we're in passive OPEN mode. Switch to active OPEN mode, enqueue write operation, and initiate OPEN process.", ctx.channel(), state);
@@ -179,7 +178,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // save promise for later, as it we need ACKnowledgment from remote peer
                 userCallFuture = ctx.newPromise();
 
-                // enqueue our write
+                // enqueue our write for transmission after entering ESTABLISHED state
                 sendBuffer.add(data, promise);
                 performActiveOpen(ctx);
                 break;
