@@ -74,14 +74,14 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
+    public static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
+    public static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final int SEQ_NO_SPACE = 32;
-    public static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
-    public static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     private final Duration userTimeout;
     private final LongSupplier issProvider;
     private final boolean activeOpen;
@@ -241,6 +241,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             else {
                 seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
             }
+            sndNxt += data.readableBytes();
             LOG.trace("{}[{}] Write `{}` to network.", ctx.channel(), state, seg);
             ctx.write(seg, writePromise);
         }
@@ -326,7 +327,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture.addListener(new FutureListener() {
                 @Override
                 public void operationComplete(Future future) {
-                    if (future.isCancelled() && !ctx.channel().isOpen()) {
+                    if (future.isCancelled() && "CLOSE".equals(userCall)) {
                         LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, userCall, userTimeout);
                         switchToNewState(ctx, CLOSED);
                         ctx.channel().close();
@@ -438,7 +439,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isAck()) {
             // we are on a state were we have never sent anything that must be ACKed
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-            LOG.trace("{}[{}] We are on a state were we have never sent ansythink that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
+            LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             ReferenceCountUtil.release(seg);
             return;
@@ -728,26 +729,35 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // check URG here...
 
-        // check segment text here...
+        // process the segment text
+        final int readableBytes = seg.content().readableBytes();
+        if (readableBytes > 0) {
+            switch (state) {
+                case ESTABLISHED:
+                case FIN_WAIT_1:
+                case FIN_WAIT_2:
+                    receiveBuffer.add(seg.content());
+                    rcvNxt = add(rcvNxt, readableBytes, SEQ_NO_SPACE);
 
-        // normally we would add the segment text to the RECEIVE buffer until a PSH will be triggered.
-        // As this implementation is currently still message-oriented and not byte-oriented, we will
-        // pass every received message directly.
-        if (seg.content().isReadable()) {
-            receiveBuffer.add(seg.content());
+                    if (seg.isPsh()) {
+                        final ByteBuf byteBuf = receiveBuffer.remove(receiveBuffer.readableBytes(), ctx.newPromise());
+                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and pass `{}` inbound to channel.", ctx.channel(), state, seg, byteBuf);
+                        ctx.fireChannelRead(byteBuf);
+                    }
+                    else {
+                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and wait for next segment.", ctx.channel(), state, seg);
+                    }
 
-            if (seg.isPsh()) {
-                final ByteBuf byteBuf = receiveBuffer.remove(receiveBuffer.readableBytes(), ctx.newPromise());
-                LOG.trace("{}[{}] Got `{}`. Add to receive buffer and pass `{}` inbound to channel.", ctx.channel(), state, seg, byteBuf);
-                ctx.fireChannelRead(byteBuf);
+                    // Ack receival of segment text
+                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
+                    LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+                    ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
+
+                    break;
+                default:
+                    LOG.trace("{}[{}] Got `{}`. This should not occur. Ignore the segment text.", ctx.channel(), state, seg);
+                    seg.release();
             }
-            else {
-                LOG.trace("{}[{}] Got `{}`. Add to receive buffer and wait for next segment.", ctx.channel(), state, seg);
-            }
-        }
-        else if (!seg.isFin()) {
-            // do not pass empty ByteBufs
-            seg.release();
         }
 
         // check FIN

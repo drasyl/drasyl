@@ -107,7 +107,7 @@ class ConnectionHandshakeHandlerTest {
 
             assertEquals(301, handler.sndUna);
             assertEquals(301, handler.sndNxt);
-            assertEquals(101, handler.rcvNxt);
+            assertEquals(111, handler.rcvNxt);
             assertEquals(data, channel.readInbound());
 
             assertTrue(channel.isOpen());
@@ -383,8 +383,8 @@ class ConnectionHandshakeHandlerTest {
             final ByteBuf data = Unpooled.buffer(250).writeBytes(randomBytes(250));
             channel.writeOutbound(data);
             assertEquals(ConnectionHandshakeSegment.ack(100, 300, data.slice(0, 100)), channel.readOutbound());
-            assertEquals(ConnectionHandshakeSegment.ack(100, 300, data.slice(100, 100)), channel.readOutbound());
-            assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data.slice(200, 50)), channel.readOutbound());
+            assertEquals(ConnectionHandshakeSegment.ack(200, 300, data.slice(100, 100)), channel.readOutbound());
+            assertEquals(ConnectionHandshakeSegment.pshAck(300, 300, data.slice(200, 50)), channel.readOutbound());
 
             channel.close();
 
