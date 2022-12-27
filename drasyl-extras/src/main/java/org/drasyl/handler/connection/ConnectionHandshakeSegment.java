@@ -102,6 +102,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return (ctl & FIN) != 0;
     }
 
+    public int len() {
+        return content().readableBytes();
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -144,7 +148,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             controlBitLabels.add("ACK");
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + content().readableBytes() + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + ">";
+    }
+
+    @Override
+    public ConnectionHandshakeSegment copy() {
+        return new ConnectionHandshakeSegment(seq, ack, ctl, content().copy());
     }
 
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
