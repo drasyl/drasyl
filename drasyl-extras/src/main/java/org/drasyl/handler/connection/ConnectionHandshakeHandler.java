@@ -112,7 +112,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1254, 3000); // FIXME: good default values?
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1254, 65_536); // FIXME: good default values?
     }
 
     /**
@@ -169,6 +169,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void flush(ChannelHandlerContext ctx) {
         tryFlushingSendBuffer(ctx, true);
+        outgoingSegmentQueue.writeAndFlushAny();
     }
 
     private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, boolean newFlush) {
@@ -205,11 +206,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.sndNxt = add(tcb.sndNxt, data.readableBytes(), SEQ_NO_SPACE);
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
             retransmissionQueue.add(seg, ackPromise);
-            ctx.write(seg.copy()).addListener(CLOSE_ON_FAILURE);
-        }
-
-        if (newFlush || somethingWritten) {
-            ctx.flush();
+            outgoingSegmentQueue.add(seg.copy());
         }
     }
 
@@ -268,8 +265,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // send SYN
         final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss);
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-        outgoingSegmentQueue.add(seg);
-        outgoingSegmentQueue.writeAndFlushAny(ctx);
+        outgoingSegmentQueue.addAndFlush(seg);
 
         switchToNewState(ctx, SYN_SENT);
 
@@ -315,8 +311,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(tcb.sndNxt, tcb.rcvNxt);
                 tcb.sndNxt++;
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
-                outgoingSegmentQueue.add(seg);
-                outgoingSegmentQueue.writeAndFlushAny(ctx);
+                outgoingSegmentQueue.addAndFlush(seg);
 
                 switchToNewState(ctx, FIN_WAIT_1);
 
@@ -415,7 +410,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        System.out.println("ConnectionHandshakeHandler.channelRead " + ctx.channel());
         if (msg instanceof ConnectionHandshakeSegment) {
             segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
         }
@@ -426,8 +420,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        outgoingSegmentQueue.writeAndFlushAny(ctx);
         tryFlushingSendBuffer(ctx, false);
+        outgoingSegmentQueue.writeAndFlushAny();
 
         ctx.fireChannelReadComplete();
     }
@@ -992,7 +986,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             this.ctx = requireNonNull(ctx);
         }
 
-        public ChannelPromise add(final ConnectionHandshakeSegment seg, final ChannelPromise promise) {
+        public ChannelPromise add(final ConnectionHandshakeSegment seg,
+                                  final ChannelPromise promise) {
             queue.add(Pair.of(seg, promise));
             return promise;
         }
@@ -1001,7 +996,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return add(seg, ctx.newPromise());
         }
 
-        public void writeAndFlushAny(final ChannelHandlerContext ctx) {
+        public ChannelPromise addAndFlush(ConnectionHandshakeSegment seg) {
+            ChannelPromise promise = add(seg);
+            writeAndFlushAny();
+            return promise;
+        }
+
+        public void writeAndFlushAny() {
             if (queue.isEmpty()) {
                 return;
             }
@@ -1012,12 +1013,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final Pair<ConnectionHandshakeSegment, ChannelPromise> entry = queue.remove();
                 final ConnectionHandshakeSegment seg = entry.first();
                 final ChannelPromise promise = entry.second();
+                final boolean mustBeAcked = mustBeAcked(seg);
                 ctx.writeAndFlush(seg, promise).addListener(CLOSE_ON_FAILURE);
-                if (!seg.isOnlyAck() && !seg.isRst()) {
+                if (mustBeAcked) {
                     promise.addListener(new RetransmissionTimeoutApplier(ctx, seg));
-                }
-                else {
-                    System.out.println();
                 }
                 return;
             }
@@ -1044,12 +1043,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     nextPromise.addListener(new PromiseNotifier<>(currentPromise));
                 }
                 else {
+                    final boolean mustBeAcked = mustBeAcked(current);
                     ctx.write(current, currentPromise).addListener(CLOSE_ON_FAILURE);
-                    if (!current.isOnlyAck() && !current.isRst()) {
+                    if (mustBeAcked) {
                         currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
-                    }
-                    else {
-                        System.out.println();
                     }
                 }
 
@@ -1057,13 +1054,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 currentPromise = nextPromise;
             }
 
+            final boolean mustBeAcked = mustBeAcked(current);
             ctx.writeAndFlush(current, currentPromise).addListener(CLOSE_ON_FAILURE);
-            if (!current.isOnlyAck() && !current.isRst()) {
+            if (mustBeAcked) {
                 currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
             }
-            else {
-                System.out.println();
-            }
+        }
+
+        private boolean mustBeAcked(ConnectionHandshakeSegment seg) {
+            return (!seg.isOnlyAck() && !seg.isRst()) || seg.len() != 0;
         }
 
         public void releaseAndFailAll(final Throwable cause) {
