@@ -23,7 +23,7 @@ package org.drasyl.cli.wormholearq.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.OldConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormholearq.handler.WormholeReceiver;
@@ -51,7 +51,7 @@ import static org.drasyl.cli.wormholearq.channel.WormholeSendChildChannelInitial
 import static org.drasyl.cli.wormholearq.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class WormholeReceiveChildChannelInitializer extends OldConnectionHandshakeChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;

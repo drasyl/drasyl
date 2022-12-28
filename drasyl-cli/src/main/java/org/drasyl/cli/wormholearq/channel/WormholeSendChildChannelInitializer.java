@@ -23,8 +23,8 @@ package org.drasyl.cli.wormholearq.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.OldConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormholearq.WormholeSendCommand.Payload;
 import org.drasyl.cli.wormholearq.handler.WormholeFileSender;
@@ -48,7 +48,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormholearq.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class WormholeSendChildChannelInitializer extends OldConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 150;
     public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);

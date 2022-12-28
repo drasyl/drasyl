@@ -28,23 +28,23 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler;
 import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
+import org.drasyl.handler.connection.OldConnectionHandshakeHandler;
 
 import java.time.Duration;
 
-public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public abstract class OldConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
     protected final Duration handshakeTimeout;
     protected final boolean initiateHandshake;
 
-    protected ConnectionHandshakeChannelInitializer(final Duration handshakeTimeout,
-                                                    final boolean initiateHandshake) {
+    protected OldConnectionHandshakeChannelInitializer(final Duration handshakeTimeout,
+                                                       final boolean initiateHandshake) {
         this.handshakeTimeout = handshakeTimeout;
         this.initiateHandshake = initiateHandshake;
     }
 
-    protected ConnectionHandshakeChannelInitializer(final boolean initiateHandshake) {
+    protected OldConnectionHandshakeChannelInitializer(final boolean initiateHandshake) {
         this(DEFAULT_HANDSHAKE_TIMEOUT, initiateHandshake);
     }
 
@@ -54,7 +54,8 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
+        p.addLast(new OldConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
+        p.addLast(new ConnectionHandshakePendWritesHandler());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,

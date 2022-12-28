@@ -97,12 +97,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
     protected void handshakeCompleted(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqSenderHandler(windowSize, windowTimeout));
-        ch.pipeline().addLast(new GoBackNArqReceiverHandler(windowTimeout.dividedBy(5)));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
-
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
