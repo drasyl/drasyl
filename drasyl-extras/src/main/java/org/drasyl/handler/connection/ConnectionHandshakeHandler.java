@@ -36,7 +36,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -983,7 +982,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     class OutgoingSegmentQueue {
         private final ChannelHandlerContext ctx;
         // FIXME: update channel writability?
-        private final ArrayDeque<Pair<ConnectionHandshakeSegment, ChannelPromise>> queue = new ArrayDeque<>();
+        private final ArrayDeque<OutgoingSegment> queue = new ArrayDeque<>();
 
         OutgoingSegmentQueue(final ChannelHandlerContext ctx) {
             this.ctx = requireNonNull(ctx);
@@ -991,7 +990,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         public ChannelPromise add(final ConnectionHandshakeSegment seg,
                                   final ChannelPromise promise) {
-            queue.add(Pair.of(seg, promise));
+            queue.add(new OutgoingSegment(seg, promise));
             return promise;
         }
 
@@ -1013,44 +1012,39 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             final int size = queue.size();
             LOG.trace("{}[{}] Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", ctx.channel(), state, size);
             if (size == 1) {
-                final Pair<ConnectionHandshakeSegment, ChannelPromise> entry = queue.remove();
-                final ConnectionHandshakeSegment seg = entry.first();
-                final ChannelPromise promise = entry.second();
+                final OutgoingSegment entry = queue.remove();
+                final ConnectionHandshakeSegment seg = entry.seg();
+                final ChannelPromise promise = entry.writePromise();
                 write(seg, promise);
                 ctx.flush();
                 return;
             }
 
             // multiple segments in queue. Check if we can cumulate them
-            final Pair<ConnectionHandshakeSegment, ChannelPromise> currentEntry = queue.poll();
-            ConnectionHandshakeSegment current = currentEntry.first();
-            ChannelPromise currentPromise = currentEntry.second();
+            OutgoingSegment current = queue.poll();
             while (!queue.isEmpty()) {
-                Pair<ConnectionHandshakeSegment, ChannelPromise> nextEntry = queue.remove();
-                ConnectionHandshakeSegment next = nextEntry.first();
-                ChannelPromise nextPromise = nextEntry.second();
+                OutgoingSegment next = queue.remove();
 
-                if (current.isOnlyAck() && next.isOnlyAck() && current.seq() == next.seq() && lessThanOrEqualTo(current.seq(), next.seq(), SEQ_NO_SPACE)) {
+                if (current.seg().isOnlyAck() && next.seg().isOnlyAck() && current.seg().seq() == next.seg().seq() && lessThanOrEqualTo(current.seg().seq(), next.seg().seq(), SEQ_NO_SPACE)) {
                     // cumulate ACKs
-                    LOG.trace("{}[{}] Outgoing queue: Current segment `{}` is followed by segment `{}` with same flags set, same SEQ, and >= ACK. We can purge current segment.", ctx.channel(), state, current, next);
-                    current.release();
-                    nextPromise.addListener(new PromiseNotifier<>(currentPromise));
+                    LOG.trace("{}[{}] Outgoing queue: Current segment `{}` is followed by segment `{}` with same flags set, same SEQ, and >= ACK. We can purge current segment.", ctx.channel(), state, current.seg(), next.seg());
+                    current.seg().release();
+                    next.writePromise().addListener(new PromiseNotifier<>(current.writePromise()));
                 }
-                else if (current.isOnlyAck() && current.seq() == next.seq() && current.len() == 0) {
+                else if (current.seg().isOnlyAck() && current.seg().seq() == next.seg().seq() && current.seg().len() == 0) {
                     // piggyback ACK
-                    LOG.trace("{}[{}] Outgoing queue: Piggyback current ACKnowledgement `{}` to next segment `{}`.", ctx.channel(), state, current, next);
-                    next = ConnectionHandshakeSegment.piggybackAck(next, current);
-                    nextPromise.addListener(new PromiseNotifier<>(currentPromise));
+                    LOG.trace("{}[{}] Outgoing queue: Piggyback current ACKnowledgement `{}` to next segment `{}`.", ctx.channel(), state, current.seg(), next.seg());
+                    next = new OutgoingSegment(ConnectionHandshakeSegment.piggybackAck(next.seg(), current.seg()), current.writePromise(), current.ackPromise());
+                    next.writePromise().addListener(new PromiseNotifier<>(current.writePromise()));
                 }
                 else {
-                    write(current, currentPromise);
+                    write(current.seg(), current.writePromise());
                 }
 
                 current = next;
-                currentPromise = nextPromise;
             }
 
-            write(current, currentPromise);
+            write(current.seg(), current.writePromise());
             ctx.flush();
         }
 
@@ -1068,13 +1062,44 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
 
         public void releaseAndFailAll(final Throwable cause) {
-            Pair<ConnectionHandshakeSegment, ChannelPromise> entry;
+            OutgoingSegment entry;
             while ((entry = queue.poll()) != null) {
-                ConnectionHandshakeSegment seg = entry.first();
-                ChannelPromise promise = entry.second();
+                ConnectionHandshakeSegment seg = entry.seg();
+                ChannelPromise promise = entry.writePromise();
 
                 seg.release();
                 promise.tryFailure(cause);
+            }
+        }
+
+        class OutgoingSegment {
+            private final ConnectionHandshakeSegment seg;
+            private final ChannelPromise writePromise;
+            private final ChannelPromise ackPromise;
+
+            OutgoingSegment(final ConnectionHandshakeSegment seg,
+                            final ChannelPromise writePromise,
+                            final ChannelPromise ackPromise) {
+                this.seg = seg;
+                this.writePromise = writePromise;
+                this.ackPromise = ackPromise;
+            }
+
+            OutgoingSegment(final ConnectionHandshakeSegment seg,
+                            final ChannelPromise writePromise) {
+                this(seg, writePromise, ctx.newPromise());
+            }
+
+            public ConnectionHandshakeSegment seg() {
+                return seg;
+            }
+
+            public ChannelPromise writePromise() {
+                return writePromise;
+            }
+
+            public ChannelPromise ackPromise() {
+                return ackPromise;
             }
         }
     }
