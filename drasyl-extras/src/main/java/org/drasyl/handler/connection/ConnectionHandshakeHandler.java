@@ -36,6 +36,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -76,8 +77,8 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
  * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
- * once the handshake has been issued. The handshake process will result either in a
- * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
+ * once the handshake has been issued. The handshake process will result either in a {@link
+ * ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
@@ -105,9 +106,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  if {@code true} a handshake will be issued on
-     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
-     *                    must initiate the handshake
+     * @param activeOpen  if {@code true} a handshake will be issued on {@link
+     *                    #channelActive(ChannelHandlerContext)}. Otherwise the remote peer must
+     *                    initiate the handshake
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
@@ -117,8 +118,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
      * @param issProvider Provider to generate the initial send sequence number
-     * @param activeOpen  Initiate active OPEN handshake process automatically on
-     *                    {@link #channelActive(ChannelHandlerContext)}
+     * @param activeOpen  Initiate active OPEN handshake process automatically on {@link
+     *                    #channelActive(ChannelHandlerContext)}
      * @param state       Current synchronization state
      * @param sndUna      Oldest unacknowledged sequence number
      * @param sndNxt      Next sequence number to be sent
@@ -267,7 +268,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // send SYN
         final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss);
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-        ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg));
+        outgoingSegmentQueue.add(seg);
+        outgoingSegmentQueue.writeAndFlushAny(ctx);
 
         switchToNewState(ctx, SYN_SENT);
 
@@ -313,7 +315,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(tcb.sndNxt, tcb.rcvNxt);
                 tcb.sndNxt++;
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
-                ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg));
+                outgoingSegmentQueue.add(seg);
+                outgoingSegmentQueue.writeAndFlushAny(ctx);
+
                 switchToNewState(ctx, FIN_WAIT_1);
 
                 applyUserTimeout(ctx, "CLOSE", promise);
@@ -844,8 +848,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
                     switchToNewState(ctx, CLOSED);
-                    // FIXME: use outgoingSegmentQueue.add(); ?
-                    ctx.writeAndFlush(response).addListener(new PromiseNotifier<>(userCallFuture)).addListener(CLOSE);
+                    outgoingSegmentQueue.add(response, userCallFuture).addListener(CLOSE);
                     break;
 
                 default:
@@ -967,17 +970,25 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
+    // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
+    // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
+    // daher speichern wir die nachrichten und warten auf ein channelReadComplete. Dort gucken wir dann, ob wir z.B. ACKs zusammenfassen können/etc.
     class OutgoingSegmentQueue {
         private final ChannelHandlerContext ctx;
         // FIXME: update channel writability?
-        private final ArrayDeque<ConnectionHandshakeSegment> queue = new ArrayDeque<>();
+        private final ArrayDeque<Pair<ConnectionHandshakeSegment, ChannelPromise>> queue = new ArrayDeque<>();
 
         OutgoingSegmentQueue(final ChannelHandlerContext ctx) {
             this.ctx = requireNonNull(ctx);
         }
 
-        public void add(final ConnectionHandshakeSegment seg) {
-            queue.add(seg);
+        public ChannelPromise add(final ConnectionHandshakeSegment seg, final ChannelPromise promise) {
+            queue.add(Pair.of(seg, promise));
+            return promise;
+        }
+
+        public ChannelPromise add(final ConnectionHandshakeSegment seg) {
+            return add(seg, ctx.newPromise());
         }
 
         public void writeAndFlushAny(final ChannelHandlerContext ctx) {
@@ -988,51 +999,60 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             final int size = queue.size();
             LOG.trace("{}[{}] Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", ctx.channel(), state, size);
             if (size == 1) {
-                final ConnectionHandshakeSegment seg = queue.remove();
-                final ChannelFuture future = ctx.writeAndFlush(seg);
+                final Pair<ConnectionHandshakeSegment, ChannelPromise> entry = queue.remove();
+                final ConnectionHandshakeSegment seg = entry.first();
+                final ChannelPromise promise = entry.second();
+                ctx.writeAndFlush(seg, promise).addListener(CLOSE_ON_FAILURE);
                 if (!seg.isOnlyAck() && !seg.isRst()) {
-                    future.addListener(new RetransmissionTimeoutApplier(ctx, seg));
+                    promise.addListener(new RetransmissionTimeoutApplier(ctx, seg));
                 }
                 else {
-                    future.addListener(CLOSE_ON_FAILURE);
+                    System.out.println();
                 }
                 return;
             }
 
             // multiple segments in queue. Check if we can cumulate them
-            ConnectionHandshakeSegment current = queue.poll();
+            final Pair<ConnectionHandshakeSegment, ChannelPromise> currentEntry = queue.poll();
+            ConnectionHandshakeSegment current = currentEntry.first();
+            ChannelPromise currentPromise = currentEntry.second();
             while (!queue.isEmpty()) {
-                ConnectionHandshakeSegment next = queue.remove();
+                Pair<ConnectionHandshakeSegment, ChannelPromise> nextEntry = queue.remove();
+                ConnectionHandshakeSegment next = nextEntry.first();
+                ChannelPromise nextPromise = nextEntry.second();
 
                 if (current.isOnlyAck() && next.isOnlyAck() && current.seq() == next.seq() && lessThanOrEqualTo(current.seq(), next.seq(), SEQ_NO_SPACE)) {
                     // cumulate ACKs
                     LOG.trace("{}[{}] Outgoing queue: Current segment `{}` is followed by segment `{}` with same flags set, same SEQ, and >= ACK. We can purge current segment.", ctx.channel(), state, current, next);
                     current.release();
+                    nextPromise.addListener(new PromiseNotifier<>(currentPromise));
                 }
                 else if (current.isOnlyAck() && current.seq() == next.seq() && current.len() == 0) {
                     // piggyback ACK
                     LOG.trace("{}[{}] Outgoing queue: Piggyback current ACKnowledgement `{}` to next segment `{}`.", ctx.channel(), state, current, next);
                     next = ConnectionHandshakeSegment.piggybackAck(next, current);
+                    nextPromise.addListener(new PromiseNotifier<>(currentPromise));
                 }
                 else {
-                    final ChannelFuture future = ctx.write(current);
+                    ctx.write(current, currentPromise).addListener(CLOSE_ON_FAILURE);
                     if (!current.isOnlyAck() && !current.isRst()) {
-                        future.addListener(new RetransmissionTimeoutApplier(ctx, current));
+                        currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
                     }
                     else {
-                        future.addListener(CLOSE_ON_FAILURE);
+                        System.out.println();
                     }
                 }
 
                 current = next;
+                currentPromise = nextPromise;
             }
 
-            final ChannelFuture future = ctx.writeAndFlush(current);
+            ctx.writeAndFlush(current, currentPromise).addListener(CLOSE_ON_FAILURE);
             if (!current.isOnlyAck() && !current.isRst()) {
-                future.addListener(new RetransmissionTimeoutApplier(ctx, current));
+                currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
             }
             else {
-                future.addListener(CLOSE_ON_FAILURE);
+                System.out.println();
             }
         }
     }
@@ -1130,10 +1150,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
          * buffer who's bytes are fully consumed during removal will have it's promise completed
          * when the passed aggregate {@link ChannelPromise} completes.
          *
-         * @param bytes            the maximum number of readable bytes in the returned
-         *                         {@link ByteBuf}, if {@code bytes} is greater than
-         *                         {@link #readableBytes} then a buffer of length
-         *                         {@link #readableBytes} is returned.
+         * @param bytes            the maximum number of readable bytes in the returned {@link
+         *                         ByteBuf}, if {@code bytes} is greater than {@link #readableBytes}
+         *                         then a buffer of length {@link #readableBytes} is returned.
          * @param aggregatePromise used to aggregate the promises and listeners for the constituent
          *                         buffers.
          * @return a {@link ByteBuf} composed of the enqueued buffers.

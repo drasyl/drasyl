@@ -116,8 +116,6 @@ class ConnectionHandshakeHandlerIT {
     void activeOpenCompleted() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
 
-        // FIXME: diesen dead so lange wiederholen, bis repackage/optimize wird notwendig, weil mehrere segmente gleichzeitig gelesen wurden
-
         // server
         final AtomicReference<ConnectionHandshakeHandler> serverHandler = new AtomicReference<>();
         final AtomicReference<ConnectionHandshakeHandler> clientHandler = new AtomicReference<>();
