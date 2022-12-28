@@ -400,7 +400,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // cancel all timeout guards
         cancelTimeoutGuards();
 
+        outgoingSegmentQueue.releaseAndFailAll(CONNECTION_CLOSED_ERROR);
+
         ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+        // cancel all timeout guards
+        cancelTimeoutGuards();
+
+        outgoingSegmentQueue.releaseAndFailAll(CONNECTION_CLOSED_ERROR);
     }
 
     @Override
@@ -1053,6 +1063,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
             else {
                 System.out.println();
+            }
+        }
+
+        public void releaseAndFailAll(final Throwable cause) {
+            Pair<ConnectionHandshakeSegment, ChannelPromise> entry;
+            while ((entry = queue.poll()) != null) {
+                ConnectionHandshakeSegment seg = entry.first();
+                ChannelPromise promise = entry.second();
+
+                seg.release();
+                promise.tryFailure(cause);
             }
         }
     }
