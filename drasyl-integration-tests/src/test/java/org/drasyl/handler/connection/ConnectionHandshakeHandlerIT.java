@@ -23,7 +23,9 @@ package org.drasyl.handler.connection;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -35,14 +37,17 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
 import test.DropRandomOutboundMessagesHandler;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,7 +72,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -82,7 +87,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
                         p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -111,7 +116,11 @@ class ConnectionHandshakeHandlerIT {
     void activeOpenCompleted() throws Exception {
         final CountDownLatch latch = new CountDownLatch(2);
 
+        // FIXME: diesen dead so lange wiederholen, bis repackage/optimize wird notwendig, weil mehrere segmente gleichzeitig gelesen wurden
+
         // server
+        final AtomicReference<ConnectionHandshakeHandler> serverHandler = new AtomicReference<>();
+        final AtomicReference<ConnectionHandshakeHandler> clientHandler = new AtomicReference<>();
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
         final Channel serverChannel = new ServerBootstrap()
@@ -122,8 +131,9 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        serverHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
+                        p.addLast(serverHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -147,8 +157,9 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        clientHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
+                        p.addLast(clientHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -166,6 +177,21 @@ class ConnectionHandshakeHandlerIT {
         try {
             // wait for completion
             assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            for (int i = 0; i < 1; i++) {
+                final ByteBuf buffer = clientChannel.alloc().buffer(5000);
+                buffer.writeBytes(RandomUtil.randomBytes(5000));
+                final ChannelFuture channelFuture = clientChannel.writeAndFlush(buffer).syncUninterruptibly();
+                assertTrue(channelFuture.isSuccess());
+                System.err.println(System.currentTimeMillis() + " ConnectionHandshakeHandlerIT.activeOpenCompleted");
+                assertEquals(0, serverHandler.get().sendBuffer.readableBytes());
+                assertEquals(0, serverHandler.get().retransmissionQueue.size());
+                assertEquals(0, serverHandler.get().receiveBuffer.readableBytes());
+                assertEquals(0, clientHandler.get().sendBuffer.readableBytes());
+                assertEquals(0, clientHandler.get().retransmissionQueue.size());
+                assertEquals(0, clientHandler.get().receiveBuffer.readableBytes());
+                Thread.sleep(1);
+            }
         }
         finally {
             clientChannel.close().sync();

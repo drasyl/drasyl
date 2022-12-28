@@ -34,6 +34,7 @@ import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -45,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.LongSupplier;
 
+import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -109,7 +111,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1254); // FIXME: good default value?
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0, 1254, 3000); // FIXME: good default values?
     }
 
     /**
@@ -122,6 +124,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @param sndNxt      Next sequence number to be sent
      * @param rcvNxt      Next expected sequence number
      * @param mss         Maximum segment size
+     * @param windowSize
      */
     @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final Duration userTimeout,
@@ -131,12 +134,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                final int sndUna,
                                final int sndNxt,
                                final int rcvNxt,
-                               final int mss) {
+                               final int mss,
+                               final int windowSize) {
         this.userTimeout = requireNonNegative(userTimeout);
         this.issProvider = requireNonNull(issProvider);
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
-        this.tcb = new TransmissionControlBlock(sndUna, sndNxt, rcvNxt);
+        this.tcb = new TransmissionControlBlock(sndUna, sndNxt, rcvNxt, windowSize);
         this.mss = mss;
     }
 
@@ -408,10 +412,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        System.out.println("ConnectionHandshakeHandler.channelReadComplete " + ctx.channel());
         outgoingSegmentQueue.writeAndFlushAny(ctx);
-
-        // FIXME: Anstelle nach jedem SEG ein ACK zu schicken, könnten wir auch einfach auf ReadComplete warten und dann erst ein ACK schicken
         tryFlushingSendBuffer(ctx, false);
 
         ctx.fireChannelReadComplete();
@@ -844,18 +845,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
                     switchToNewState(ctx, CLOSED);
                     // FIXME: use outgoingSegmentQueue.add(); ?
-                    ctx.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
-                        if (future.isSuccess()) {
-                            LOG.trace("{}[{}] Our ACKnowledgment `{}` was written to the network. Close channel!", ctx.channel(), state, response);
-                            userCallFuture.setSuccess();
-                        }
-                        else {
-                            LOG.trace("{}[{}] Failed to write our ACKnowledgment `{}` to the network: {}", ctx.channel(), state, response, future.cause());
-                            userCallFuture.setFailure(future.cause());
-                        }
-                        userCallFuture = null;
-                        future.channel().close();
-                    });
+                    ctx.writeAndFlush(response).addListener(new PromiseNotifier<>(userCallFuture)).addListener(CLOSE);
                     break;
 
                 default:
@@ -1078,17 +1068,22 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // Send Sequence Variables
         long sndUna; // oldest unacknowledged sequence number
         long sndNxt; // next sequence number to be sent
-        int sndWnd = 3000; // send window
+        int sndWnd; // send window
         long iss; // initial send sequence number
         // Receive Sequence Variables
         long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-        int rcvWnd = 3000; // receive window
+        int rcvWnd; // receive window
         long irs; // initial receive sequence number
 
-        public TransmissionControlBlock(final long sndUna, final long sndNxt, final long rcvNxt) {
+        public TransmissionControlBlock(final long sndUna,
+                                        final long sndNxt,
+                                        final long rcvNxt,
+                                        final int windowSize) {
             this.sndUna = sndUna;
             this.sndNxt = sndNxt;
+            this.sndWnd = windowSize;
             this.rcvNxt = rcvNxt;
+            this.rcvWnd = windowSize;
         }
 
         private boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
