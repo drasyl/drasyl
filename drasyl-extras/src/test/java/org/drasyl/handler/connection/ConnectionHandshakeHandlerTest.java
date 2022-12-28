@@ -312,12 +312,10 @@ class ConnectionHandshakeHandlerTest {
 
             // peer triggers close
             channel.writeInbound(ConnectionHandshakeSegment.finAck(100, 300));
-            assertEquals(ConnectionHandshakeSegment.ack(300, 101), channel.readOutbound());
-//            assertEquals(CLOSE_WAIT, handler.state);
 
             // we should trigger a close as well
-            assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
             assertEquals(LAST_ACK, handler.state);
+            assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
 
             assertEquals(300, handler.tcb.sndUna);
             assertEquals(301, handler.tcb.sndNxt);
@@ -335,7 +333,7 @@ class ConnectionHandshakeHandlerTest {
         // Both peers are in ESTABLISHED state
         // Both peers initiate close simultaneous
         @Test
-        void weShouldPerformSimulatenousCloseIfBothPeersInitiateACloseAtTheSameTime() {
+        void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 100, 100, 300, 1200);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
@@ -401,14 +399,12 @@ class ConnectionHandshakeHandlerTest {
 
             // write should perform an active OPEN handshake
             final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
-            final ChannelFuture writeFuture = channel.writeOneOutbound(data);
+            channel.writeOutbound(data);
             assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
-            assertFalse(writeFuture.isDone());
 
             // after handshake the write should be formed
             channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
             assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
-            assertTrue(writeFuture.isDone());
 
             channel.close();
             data.release();

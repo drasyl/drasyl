@@ -174,6 +174,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment fin(final long seq) {
+        return new ConnectionHandshakeSegment(seq, 0, FIN, Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment pshAck(final long seq,
                                                     final long ack,
                                                     final ByteBuf data) {
@@ -190,5 +194,15 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment seg,
+                                                          final ConnectionHandshakeSegment ack) {
+        try {
+            return new ConnectionHandshakeSegment(seg.seq(), ack.ack(), (byte) (seg.ctl() | ack.ctl()), seg.content());
+        }
+        finally {
+            ack.release();
+        }
     }
 }
