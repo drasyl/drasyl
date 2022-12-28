@@ -257,7 +257,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void performActiveOpen(final ChannelHandlerContext ctx) {
-        // update send state
+        // initiate send state
         tcb.iss = issProvider.getAsLong();
         tcb.sndUna = tcb.iss;
         tcb.sndNxt = add(tcb.iss, 1, SEQ_NO_SPACE);
@@ -520,7 +520,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.rcvNxt = add(seg.seq(), 1, SEQ_NO_SPACE);
             tcb.irs = seg.seq();
 
-            // update send state
+            // initiate send state
             tcb.iss = issProvider.getAsLong();
             tcb.sndUna = tcb.iss;
             tcb.sndNxt = add(tcb.iss, 1, SEQ_NO_SPACE);
@@ -871,8 +871,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                           final boolean acceptableAck) {
         if (acceptableAck) {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna, seg.ack(), (int) (seg.ack() - tcb.sndUna));
+            // advance send state
             tcb.sndUna = seg.ack();
 
+            // FIXME: sollten wir das nicht immer machen, wenn tcb.sndUna erhöht wird?
+            // FIXME: wie vereinen wir retransmissionQueue mit RetransmissionQueue?
             // FIXME: remove ACKnowledged segment from retransission queue. complete queue
             ConnectionHandshakeSegment current = retransmissionQueue.current();
             if (current != null) {
@@ -1013,11 +1016,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 final Pair<ConnectionHandshakeSegment, ChannelPromise> entry = queue.remove();
                 final ConnectionHandshakeSegment seg = entry.first();
                 final ChannelPromise promise = entry.second();
-                final boolean mustBeAcked = mustBeAcked(seg);
-                ctx.writeAndFlush(seg, promise).addListener(CLOSE_ON_FAILURE);
-                if (mustBeAcked) {
-                    promise.addListener(new RetransmissionTimeoutApplier(ctx, seg));
-                }
+                write(seg, promise);
+                ctx.flush();
                 return;
             }
 
@@ -1043,21 +1043,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     nextPromise.addListener(new PromiseNotifier<>(currentPromise));
                 }
                 else {
-                    final boolean mustBeAcked = mustBeAcked(current);
-                    ctx.write(current, currentPromise).addListener(CLOSE_ON_FAILURE);
-                    if (mustBeAcked) {
-                        currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
-                    }
+                    write(current, currentPromise);
                 }
 
                 current = next;
                 currentPromise = nextPromise;
             }
 
-            final boolean mustBeAcked = mustBeAcked(current);
-            ctx.writeAndFlush(current, currentPromise).addListener(CLOSE_ON_FAILURE);
+            write(current, currentPromise);
+            ctx.flush();
+        }
+
+        private void write(final ConnectionHandshakeSegment seg,
+                           final ChannelPromise promise) {
+            final boolean mustBeAcked = mustBeAcked(seg);
+            ctx.write(seg, promise).addListener(CLOSE_ON_FAILURE);
             if (mustBeAcked) {
-                currentPromise.addListener(new RetransmissionTimeoutApplier(ctx, current));
+                promise.addListener(new RetransmissionTimeoutApplier(ctx, seg));
             }
         }
 
