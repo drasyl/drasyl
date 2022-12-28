@@ -204,8 +204,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
             tcb.sndNxt = add(tcb.sndNxt, data.readableBytes(), SEQ_NO_SPACE);
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-            retransmissionQueue.add(seg, ackPromise);
-            outgoingSegmentQueue.add(seg.copy());
+            outgoingSegmentQueue.add(seg, ctx.newPromise(), ackPromise);
         }
     }
 
@@ -580,6 +579,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (seg.isAck()) {
                 // advance send state
                 tcb.sndUna = seg.ack();
+                checkForAckedSegmentsInRetransmissionQueue(ctx);
             }
 
             final boolean ourSynHasBeenAcked = greaterThan(tcb.sndUna, tcb.iss, SEQ_NO_SPACE);
@@ -699,6 +699,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         // advance send state
                         tcb.sndUna = seg.ack();
+                        checkForAckedSegmentsInRetransmissionQueue(ctx);
                     }
                     break;
 
@@ -791,7 +792,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     // Ack receival of segment text
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
-                    LOG.trace("{}[{}] ACKnowledge receival by sending `{}`.", ctx.channel(), state, response);
+                    LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
                     outgoingSegmentQueue.add(response);
 
                     break;
@@ -872,24 +873,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna, seg.ack(), (int) (seg.ack() - tcb.sndUna));
             // advance send state
             tcb.sndUna = seg.ack();
-
-            // FIXME: sollten wir das nicht immer machen, wenn tcb.sndUna erhöht wird?
-            // FIXME: wie vereinen wir retransmissionQueue mit RetransmissionQueue?
-            // FIXME: remove ACKnowledged segment from retransission queue. complete queue
-            ConnectionHandshakeSegment current = retransmissionQueue.current();
-            if (current != null) {
-                long lastAckedSegment = add(current.seq(), current.len(), SEQ_NO_SPACE);
-                while (lessThanOrEqualTo(lastAckedSegment, tcb.sndUna, SEQ_NO_SPACE)) {
-                    LOG.trace("{}[{}] Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), state, current, retransmissionQueue.size() - 1);
-                    retransmissionQueue.removeAndSucceedCurrent();
-
-                    current = retransmissionQueue.current();
-                    if (current == null) {
-                        break;
-                    }
-                    lastAckedSegment = add(current.seq(), current.len(), SEQ_NO_SPACE);
-                }
-            }
+            checkForAckedSegmentsInRetransmissionQueue(ctx);
         }
         if (lessThan(seg.ack(), tcb.sndUna, SEQ_NO_SPACE)) {
             // ACK is duplicate. ignore
@@ -903,6 +887,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return true;
         }
         return false;
+    }
+
+    private void checkForAckedSegmentsInRetransmissionQueue(ChannelHandlerContext ctx) {
+        ConnectionHandshakeSegment current = retransmissionQueue.current();
+        if (current != null) {
+            long lastSegmentToBeAcked = add(current.seq(), current.len(), SEQ_NO_SPACE);
+            while (lessThanOrEqualTo(lastSegmentToBeAcked, tcb.sndUna, SEQ_NO_SPACE)) {
+                LOG.trace("{}[{}] Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), state, current, retransmissionQueue.size() - 1);
+                retransmissionQueue.removeAndSucceedCurrent();
+
+                current = retransmissionQueue.current();
+                if (current == null) {
+                    break;
+                }
+                lastSegmentToBeAcked = add(current.seq(), current.len(), SEQ_NO_SPACE);
+            }
+        }
     }
 
     private void cancelTimeoutGuards() {
@@ -938,18 +939,22 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         private static final float BETA = 1.7F; // delay variance factor (e.g., 1.3 to 2.0)
         private final ChannelHandlerContext ctx;
         private final ConnectionHandshakeSegment seg;
+        private final ChannelPromise ackPromise;
         private final long srtt;
 
         RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
-                                     final ConnectionHandshakeSegment seg) {
-            this(ctx, seg, RTT);
+                                     final ConnectionHandshakeSegment seg,
+                                     final ChannelPromise ackPromise) {
+            this(ctx, seg, ackPromise, RTT);
         }
 
         RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
                                      final ConnectionHandshakeSegment seg,
+                                     final ChannelPromise ackPromise,
                                      final long srtt) {
             this.ctx = requireNonNull(ctx);
             this.seg = requireNonNull(seg);
+            this.ackPromise = requireNonNull(ackPromise);
             this.srtt = requirePositive(srtt);
         }
 
@@ -957,17 +962,29 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         @Override
         public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
-                if (!seg.isOnlyAck() && !seg.isRst()) {
-                    // schedule retransmission
-                    final long newSrtt = (long) (ALPHA * srtt + (1 - ALPHA) * RTT);
-                    final long rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * newSrtt)));
-                    ctx.executor().schedule(() -> {
-                        if (future.channel().isOpen() && state != CLOSED && lessThanOrEqualTo(tcb.sndUna, seg.seq(), SEQ_NO_SPACE)) {
-                            LOG.trace("{}[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), state, seg, rto);
-                            ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg, rto));
-                        }
-                    }, rto, MILLISECONDS);
-                }
+                // segment has ben successfully been written to the network
+                // schedule retransmission if SEG does not get ACKed in time
+
+                final long newSrtt = (long) (ALPHA * srtt + (1 - ALPHA) * RTT);
+                final long rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * newSrtt)));
+
+                ScheduledFuture<?> retransmissionFuture = ctx.executor().schedule(() -> {
+                    // retransmission timeout occurred
+                    // check if we're not CLOSED and if SEG has not been ACKed
+                    if (future.channel().isOpen() && state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(tcb.sndUna, seg.seq(), SEQ_NO_SPACE)) {
+                        // not ACKed, send egain
+                        LOG.trace("{}[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), state, seg, rto);
+                        ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, rto));
+                    }
+                }, rto, MILLISECONDS);
+
+                // cancel retransmission job if SEG got ACKed
+                ackPromise.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        retransmissionFuture.cancel(false);
+                    }
+                });
             }
             else if (!(future.cause() instanceof ClosedChannelException)) {
                 LOG.trace("{}[{}] Unable to send `{}`:", ctx::channel, () -> state, () -> seg, future::cause);
@@ -986,6 +1003,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         OutgoingSegmentQueue(final ChannelHandlerContext ctx) {
             this.ctx = requireNonNull(ctx);
+        }
+
+        public ChannelPromise add(final ConnectionHandshakeSegment seg,
+                                  final ChannelPromise promise,
+                                  final ChannelPromise ackPromise) {
+            queue.add(new OutgoingSegment(seg, promise, ackPromise));
+            return promise;
         }
 
         public ChannelPromise add(final ConnectionHandshakeSegment seg,
@@ -1012,10 +1036,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             final int size = queue.size();
             LOG.trace("{}[{}] Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", ctx.channel(), state, size);
             if (size == 1) {
-                final OutgoingSegment entry = queue.remove();
-                final ConnectionHandshakeSegment seg = entry.seg();
-                final ChannelPromise promise = entry.writePromise();
-                write(seg, promise);
+                final OutgoingSegment current = queue.remove();
+                LOG.trace("{}[{}] Outgoing queue 1: Write and flush `{}`.", ctx.channel(), state, current.seg());
+                write(current);
                 ctx.flush();
                 return;
             }
@@ -1030,30 +1053,48 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] Outgoing queue: Current segment `{}` is followed by segment `{}` with same flags set, same SEQ, and >= ACK. We can purge current segment.", ctx.channel(), state, current.seg(), next.seg());
                     current.seg().release();
                     next.writePromise().addListener(new PromiseNotifier<>(current.writePromise()));
+                    next.ackPromise().addListener(new PromiseNotifier<>(current.ackPromise()));
                 }
                 else if (current.seg().isOnlyAck() && current.seg().seq() == next.seg().seq() && current.seg().len() == 0) {
                     // piggyback ACK
                     LOG.trace("{}[{}] Outgoing queue: Piggyback current ACKnowledgement `{}` to next segment `{}`.", ctx.channel(), state, current.seg(), next.seg());
                     next = new OutgoingSegment(ConnectionHandshakeSegment.piggybackAck(next.seg(), current.seg()), current.writePromise(), current.ackPromise());
                     next.writePromise().addListener(new PromiseNotifier<>(current.writePromise()));
+                    next.ackPromise().addListener(new PromiseNotifier<>(current.ackPromise()));
                 }
                 else {
-                    write(current.seg(), current.writePromise());
+                    LOG.trace("{}[{}] Outgoing queue 2: Write `{}`.", ctx.channel(), state, current.seg());
+                    write(current);
                 }
 
                 current = next;
             }
 
-            write(current.seg(), current.writePromise());
+            LOG.trace("{}[{}] Outgoing queue 3: Write and flush `{}`.", ctx.channel(), state, current.seg());
+            write(current);
             ctx.flush();
         }
 
-        private void write(final ConnectionHandshakeSegment seg,
-                           final ChannelPromise promise) {
-            final boolean mustBeAcked = mustBeAcked(seg);
-            ctx.write(seg, promise).addListener(CLOSE_ON_FAILURE);
+        private void write(final OutgoingSegment seg) {
+            final boolean mustBeAcked = mustBeAcked(seg.seg());
             if (mustBeAcked) {
-                promise.addListener(new RetransmissionTimeoutApplier(ctx, seg));
+                retransmissionQueue.add(seg.seg(), seg.ackPromise());
+                seg.writePromise().addListener(new RetransmissionTimeoutApplier(ctx, seg.seg(), seg.ackPromise()));
+                ConnectionHandshakeSegment copy = seg.seg().copy();
+                ctx.write(copy, seg.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        LOG.trace("{}[{}] WRITTEN `{}`: {}", ctx.channel(), state, seg.seg(), channelFuture.isSuccess());
+                    }
+                });
+            }
+            else {
+                ctx.write(seg.seg(), seg.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        LOG.trace("{}[{}] WRITTEN `{}`: {}", ctx.channel(), state, seg.seg(), channelFuture.isSuccess());
+                    }
+                });
             }
         }
 
