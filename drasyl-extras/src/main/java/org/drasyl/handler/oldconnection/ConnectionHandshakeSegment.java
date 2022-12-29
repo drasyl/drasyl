@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.connection;
+package org.drasyl.handler.oldconnection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
@@ -51,28 +51,15 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private final long seq;
     private final long ack;
     private final byte ctl;
-    private long tsVal;
-    private long tsEcr;
 
     public ConnectionHandshakeSegment(final long seq,
                                       final long ack,
                                       final byte ctl,
-                                      final long tsVal,
-                                      final long tsEcr,
                                       final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
-        this.tsVal = tsVal;
-        this.tsEcr = tsEcr;
-    }
-
-    public ConnectionHandshakeSegment(final long seq,
-                                      final long ack,
-                                      final byte ctl,
-                                      final ByteBuf data) {
-        this(seq, ack, ctl, 0, 0, data);
     }
 
     public long seq() {
@@ -113,26 +100,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public boolean isFin() {
         return (ctl & FIN) != 0;
-    }
-
-    public long tsVal() {
-        return tsVal;
-    }
-
-    public void setTsVal(final long tsVal) {
-        this.tsVal = tsVal;
-    }
-
-    public long tsEcr() {
-        return tsEcr;
-    }
-
-    public void setTsEcr(long tsEcr) {
-        this.tsEcr = tsEcr;
-    }
-
-    public int len() {
-        return content().readableBytes();
     }
 
     @Override
@@ -177,22 +144,11 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             controlBitLabels.add("ACK");
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + "><TSval=" + tsVal + ",TSecr=" + tsEcr + ">";
-    }
-
-    @Override
-    public ConnectionHandshakeSegment copy() {
-        return new ConnectionHandshakeSegment(seq, ack, ctl, content().copy());
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + ">";
     }
 
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment ack(final long seq,
-                                                 final long ack,
-                                                 final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, data);
     }
 
     public static ConnectionHandshakeSegment rst(final long seq) {
@@ -201,10 +157,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public static ConnectionHandshakeSegment syn(final long seq) {
         return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment fin(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, FIN, Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment pshAck(final long seq,
@@ -223,15 +175,5 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment seg,
-                                                          final ConnectionHandshakeSegment ack) {
-        try {
-            return new ConnectionHandshakeSegment(seg.seq(), ack.ack(), (byte) (seg.ctl() | ack.ctl()), seg.content());
-        }
-        finally {
-            ack.release();
-        }
     }
 }

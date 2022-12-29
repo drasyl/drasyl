@@ -186,7 +186,7 @@ class WormholearqCommandIT {
         final File file = path.resolve("WormholeCommandIT-" + randomString(5) + ".bin").toFile();
 
         final RandomAccessFile f = new RandomAccessFile(file, "rw");
-        f.setLength(1024 * 10);
+        f.setLength(1024 * 1024);
         f.close();
 
         // create server

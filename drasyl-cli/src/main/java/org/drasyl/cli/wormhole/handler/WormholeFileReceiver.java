@@ -79,7 +79,7 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
         }
 
         ctx.pipeline().addBefore(ctx.name(), null, new InboundByteBufsProgressBarHandler(length, PROGRESS_BAR_INTERVAL));
-        ctx.pipeline().addBefore(ctx.name(), null, new ReadTimeoutHandler(IDLE_TIMEOUT));
+//        ctx.pipeline().addBefore(ctx.name(), null, new ReadTimeoutHandler(IDLE_TIMEOUT));
     }
 
     @Override

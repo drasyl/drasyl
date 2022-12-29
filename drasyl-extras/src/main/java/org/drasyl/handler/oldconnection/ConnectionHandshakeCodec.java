@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.connection;
+package org.drasyl.handler.oldconnection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -38,8 +38,6 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     // SEQ: 4 bytes
     // ACK: 4 bytes
     // CTL: 1 byte
-    // TS Value (TSval): 4 bytes
-    // TS Echo Reply (TSecr): 4 bytes
     // data: arbitrary number of bytes
     public static final int MIN_MESSAGE_LENGTH = 13;
 
@@ -52,8 +50,6 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
-        buf.writeInt((int) seg.tsVal());
-        buf.writeInt((int) seg.tsEcr());
         buf.writeBytes(seg.content());
         out.add(buf);
     }
@@ -68,9 +64,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
-                final long tsVal = in.readUnsignedInt();
-                final long tsEcr = in.readUnsignedInt();
-                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tsVal, tsEcr, in.retain());
+                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, in.discardSomeReadBytes().retain());
                 out.add(seg);
             }
             else {

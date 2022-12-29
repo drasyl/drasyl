@@ -25,11 +25,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
-import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
-import org.drasyl.handler.connection.OldConnectionHandshakeHandler;
+import org.drasyl.handler.oldconnection.ConnectionHandshakeCodec;
+import org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted;
+import org.drasyl.handler.oldconnection.ConnectionHandshakeException;
+import org.drasyl.handler.oldconnection.ConnectionHandshakeHandler;
+import org.drasyl.handler.oldconnection.ConnectionHandshakePendWritesHandler;
 
 import java.time.Duration;
 
@@ -54,7 +54,7 @@ public abstract class OldConnectionHandshakeChannelInitializer extends ChannelIn
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new OldConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
+        p.addLast(new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
         p.addLast(new ConnectionHandshakePendWritesHandler());
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override

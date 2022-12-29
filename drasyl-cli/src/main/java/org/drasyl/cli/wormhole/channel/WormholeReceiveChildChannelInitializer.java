@@ -43,8 +43,6 @@ import java.time.Duration;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARM_SESSION_TIME;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_RETRY_TIMEOUT;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeChannelInitializer {

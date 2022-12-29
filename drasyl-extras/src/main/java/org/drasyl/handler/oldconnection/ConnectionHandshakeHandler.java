@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.connection;
+package org.drasyl.handler.oldconnection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
@@ -40,15 +40,15 @@ import java.util.function.LongSupplier;
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.State.CLOSED;
-import static org.drasyl.handler.connection.State.CLOSING;
-import static org.drasyl.handler.connection.State.ESTABLISHED;
-import static org.drasyl.handler.connection.State.FIN_WAIT_1;
-import static org.drasyl.handler.connection.State.FIN_WAIT_2;
-import static org.drasyl.handler.connection.State.LAST_ACK;
-import static org.drasyl.handler.connection.State.LISTEN;
-import static org.drasyl.handler.connection.State.SYN_RECEIVED;
-import static org.drasyl.handler.connection.State.SYN_SENT;
+import static org.drasyl.handler.oldconnection.State.CLOSED;
+import static org.drasyl.handler.oldconnection.State.CLOSING;
+import static org.drasyl.handler.oldconnection.State.ESTABLISHED;
+import static org.drasyl.handler.oldconnection.State.FIN_WAIT_1;
+import static org.drasyl.handler.oldconnection.State.FIN_WAIT_2;
+import static org.drasyl.handler.oldconnection.State.LAST_ACK;
+import static org.drasyl.handler.oldconnection.State.LISTEN;
+import static org.drasyl.handler.oldconnection.State.SYN_RECEIVED;
+import static org.drasyl.handler.oldconnection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomInt;
@@ -70,7 +70,7 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
-public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
+public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
@@ -102,7 +102,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @param rcvNxt      Next expected sequence number
      */
     @SuppressWarnings("java:S107")
-    OldConnectionHandshakeHandler(final Duration userTimeout,
+    ConnectionHandshakeHandler(final Duration userTimeout,
                                final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
@@ -124,7 +124,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
      *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
      *                    must initiate the handshake
      */
-    public OldConnectionHandshakeHandler(final Duration userTimeout,
+    public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
         this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 0, 0, 0);
     }
@@ -218,7 +218,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
         switch (state) {
             case CLOSED:
                 data.release();
-                promise.setFailure(new ConnectionHandshakeException("Connection does not exist"));
+                promise.setFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("Connection does not exist"));
                 break;
 
             case LISTEN:
@@ -243,7 +243,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 data.release();
-                promise.setFailure(new ConnectionHandshakeException("Handshake in progress"));
+                promise.setFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("Handshake in progress"));
                 break;
 
             case ESTABLISHED:
@@ -332,7 +332,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, userCall, userTimeout);
                 switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
+                promise.tryFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
                 ctx.channel().close();
             }, userTimeout.toMillis(), MILLISECONDS);
         }
@@ -531,7 +531,7 @@ public class OldConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
                 ReferenceCountUtil.release(seg);
 
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(sndNxt, rcvNxt));
+                ctx.fireUserEventTriggered(new org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted(sndNxt, rcvNxt));
             }
             else {
                 switchToNewState(ctx, SYN_RECEIVED);

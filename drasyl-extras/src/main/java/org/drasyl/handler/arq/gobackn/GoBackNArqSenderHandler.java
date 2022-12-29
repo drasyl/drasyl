@@ -198,7 +198,7 @@ public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
             }
             else {
                 // unexpected, just drop, may do not even log this, do to cumulative acknowledgment
-                LOG.trace("[{}] Got unexpected (maybe out-of-order) {}. Drop it.", ctx.channel().id()::asShortText, () -> ack);
+                LOG.error("[{}] Got unexpected (maybe out-of-order) {}. Drop it.", ctx.channel().id()::asShortText, () -> ack);
             }
         }
         else {
@@ -325,7 +325,7 @@ public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
 
         // resend all messages from window
         if (window.size() != 0) {
-            LOG.info("[{}] ACKs got timeout. Resend complete window of size {}", ctx.channel().id()::asShortText, window::size);
+            LOG.error("[{}] ACKs got timeout. Resend complete window of size {}", ctx.channel().id()::asShortText, window::size);
             for (final Window.Frame frame : window.getQueue()) {
                 if (frame.getPromise().isDone()) {
                     window.remove();

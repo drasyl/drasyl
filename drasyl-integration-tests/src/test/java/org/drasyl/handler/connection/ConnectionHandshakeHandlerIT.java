@@ -182,23 +182,6 @@ class ConnectionHandshakeHandlerIT {
         try {
             // wait for completion
             assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-            for (int i = 0; i < 1; i++) {
-                final ByteBuf buffer = clientChannel.alloc().buffer(5000);
-                buffer.writeBytes(randomBytes(5000));
-                System.err.println(System.currentTimeMillis() + "Write " + buffer);
-                final ChannelFuture channelFuture = clientChannel.writeAndFlush(buffer).syncUninterruptibly();
-                assertTrue(channelFuture.isSuccess());
-                System.err.println(System.currentTimeMillis() + " Written");
-                assertEquals(0, serverHandler.get().sendBuffer.readableBytes());
-                assertEquals(0, serverHandler.get().retransmissionQueue.size());
-                assertEquals(0, serverHandler.get().receiveBuffer.readableBytes());
-                assertEquals(0, clientHandler.get().sendBuffer.readableBytes());
-                assertEquals(0, clientHandler.get().retransmissionQueue.size());
-                assertEquals(0, clientHandler.get().receiveBuffer.readableBytes());
-                Thread.sleep(1);
-            }
-            System.err.println("DONE");
         }
         finally {
             clientChannel.close();//.sync();
@@ -242,7 +225,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofMinutes(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -260,7 +243,7 @@ class ConnectionHandshakeHandlerIT {
 
         try {
             // wait for channel close due to handshake timeout
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(50, TimeUnit.SECONDS));
             await().untilAsserted(() -> assertFalse(clientChannel.isOpen()));
         }
         finally {
