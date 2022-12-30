@@ -21,14 +21,10 @@
  */
 package org.drasyl.handler.connection;
 
-import ch.qos.logback.classic.Level;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.logging.Slf4JLogger;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,13 +52,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class ConnectionHandshakeHandlerTest {
-    @BeforeEach
-    void setUp() {
-        final Slf4JLogger logger = (Slf4JLogger) LoggerFactory.getLogger("org.drasyl");
-        final ch.qos.logback.classic.Logger delegate = (ch.qos.logback.classic.Logger) logger.delegate();
-        delegate.setLevel(Level.TRACE);
-    }
-
     // "Server" is in CLOSED state
     // "Client" initiate handshake
     @Nested
@@ -74,7 +63,8 @@ class ConnectionHandshakeHandlerTest {
             channel.pipeline().addLast(handler);
 
             // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-            assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
+            Object actual = channel.readOutbound();
+            assertEquals(ConnectionHandshakeSegment.syn(100), actual);
             assertEquals(SYN_SENT, handler.state);
 
             assertEquals(100, handler.tcb().sndUna);

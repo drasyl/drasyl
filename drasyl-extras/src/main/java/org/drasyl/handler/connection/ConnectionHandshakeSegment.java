@@ -24,12 +24,17 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.CodecException;
 import org.drasyl.util.SerialNumberArithmetic;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -46,77 +51,89 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
     public static final long MAX_SEQ_NO = 4_294_967_295L;
     static final int SEQ_NO_SPACE = 32;
-    private static final byte ACK = 1 << 4;
-    private static final byte PSH = 1 << 3;
-    private static final byte RST = 1 << 2;
-    private static final byte SYN = 1 << 1;
+    static final byte ACK = 1 << 4;
+    static final byte PSH = 1 << 3;
+    static final byte RST = 1 << 2;
+    static final byte SYN = 1 << 1;
     @SuppressWarnings("PointlessBitwiseExpression")
-    private static final byte FIN = 1 << 0;
+    static final byte FIN = 1 << 0;
     private final long seq;
     private final long ack;
     private final byte ctl;
-    private long tsVal;
-    private long tsEcr;
+    private final Map<Option, Object> options;
 
     public ConnectionHandshakeSegment(final long seq,
                                       final long ack,
                                       final byte ctl,
-                                      final long tsVal,
-                                      final long tsEcr,
-                                      final ByteBuf data) {
+                                      final Map<Option, Object> options, final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
-        this.tsVal = tsVal;
-        this.tsEcr = tsEcr;
+        this.options = requireNonNull(options);
     }
 
-    public ConnectionHandshakeSegment(final long seq,
-                                      final long ack,
-                                      final byte ctl,
-                                      final ByteBuf data) {
-        this(seq, ack, ctl, 0, 0, data);
+    public static ConnectionHandshakeSegment ack(final long seq,
+                                                 final long ack,
+                                                 final Map<Option, Object> options,
+                                                 final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, options, data);
+    }
+
+    public static ConnectionHandshakeSegment ack(final long seq,
+                                                 final long ack,
+                                                 final Map<Option, Object> options) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, options, Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq,
                                                  final long ack,
                                                  final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, data);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, new EnumMap<>(Option.class), data);
     }
 
     public static ConnectionHandshakeSegment rst(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, 0, RST, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment syn(final long seq,
+                                                 final Map<Option, Object> options) {
+        return new ConnectionHandshakeSegment(seq, 0, SYN, new EnumMap<>(options), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment syn(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
+        return syn(seq, new EnumMap<>(Option.class));
     }
 
     public static ConnectionHandshakeSegment fin(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, FIN, Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, 0, FIN, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment pshAck(final long seq,
                                                     final long ack,
                                                     final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), data);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), new EnumMap<>(Option.class), data);
     }
 
     public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment synAck(final long seq, final long ack,
+                                                    final Map<Option, Object> options) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), new EnumMap<>(options), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
+        return synAck(seq, ack, new EnumMap<>(Option.class));
     }
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static long advanceSeq(final long seq, final long advancement) {
@@ -167,20 +184,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return ctl == FIN;
     }
 
-    public long tsVal() {
-        return tsVal;
-    }
-
-    public void setTsVal(final long tsVal) {
-        this.tsVal = tsVal;
-    }
-
-    public long tsEcr() {
-        return tsEcr;
-    }
-
-    public void setTsEcr(long tsEcr) {
-        this.tsEcr = tsEcr;
+    public Map<Option, Object> options() {
+        return options;
     }
 
     public int len() {
@@ -226,12 +231,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             controlBitLabels.add("ACK");
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + "><TSval=" + tsVal + ",TSecr=" + tsEcr + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + ">";
     }
 
     @Override
     public ConnectionHandshakeSegment copy() {
-        return new ConnectionHandshakeSegment(seq, ack, ctl, content().copy());
+        return new ConnectionHandshakeSegment(seq, ack, ctl, options, content().copy());
     }
 
     public long lastSeq() {
@@ -243,10 +248,11 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     }
 
     public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {
-        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
+        return false;
+//        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
     }
 
-    public ConnectionHandshakeSegment piggybackAck(ConnectionHandshakeSegment other) {
+    public ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment other) {
         if (!canPiggybackAck(other)) {
             return null;
         }
@@ -258,10 +264,67 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             }
 
             // attach ACK
-            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | ACK), tsVal, tsEcr, content());
+            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | ACK), options, content());
         }
         finally {
             other.release();
+        }
+    }
+
+    enum Option {
+        END_OF_OPTION_LIST((byte) 0),
+        MAXIMUM_SEGMENT_SIZE((byte) 2),
+        TIMESTAMPS((byte) 8); // TS Value (TSval): 8 bytes; TS Echo Reply (TSecr): 8 bytes
+        private static final Map<Byte, Option> OPTIONS;
+
+        static {
+            OPTIONS = new HashMap<>();
+            for (final Option option : values()) {
+                OPTIONS.put(option.kind(), option);
+            }
+        }
+
+        private final byte kind;
+
+        Option(final byte kind) {
+            this.kind = kind;
+        }
+
+        public static Option ofKind(final byte kind) {
+            return OPTIONS.get(kind);
+        }
+
+        public byte kind() {
+            return kind;
+        }
+
+        public void writeValueTo(final ByteBuf out, final Object value) {
+            switch (this) {
+                case MAXIMUM_SEGMENT_SIZE:
+                    out.writeShort((Integer) value);
+                    return;
+                case TIMESTAMPS:
+                    final long[] timestamps = (long[]) value;
+                    out.writeLong(timestamps[0]);
+                    out.writeLong(timestamps[0]);
+                    return;
+                default:
+                    throw new CodecException("Unable to write value of option " + this);
+            }
+        }
+
+        public Object readValueFrom(final ByteBuf in) {
+            switch (this) {
+                case MAXIMUM_SEGMENT_SIZE:
+                    return in.readUnsignedShort();
+                case TIMESTAMPS:
+                    return new long[]{
+                            in.readLong(),
+                            in.readLong()
+                    };
+                default:
+                    throw new CodecException("Unable to read value of option " + this);
+            }
         }
     }
 }

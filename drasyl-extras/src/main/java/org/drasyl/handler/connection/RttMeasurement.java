@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -35,13 +36,17 @@ public class RttMeasurement {
 
     public void segmentArrives(final ConnectionHandshakeSegment seg) {
         if (lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE) && lessThan(lastAckSent, add(seg.seq(), seg.len(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
-            tsRecent = seg.tsVal();
+            final Object timestampsOption = seg.options().get(TIMESTAMPS);
+            if (timestampsOption != null) {
+                final long[] timestamps = (long[]) timestampsOption;
+                tsRecent = timestamps[0];
+            }
         }
     }
 
     public void sendAck(final ConnectionHandshakeSegment seg) {
-        seg.setTsVal(System.nanoTime() / 1_000_000);
-        seg.setTsEcr(tsRecent);
+        final long tsVal = System.nanoTime() / 1_000_000;
+        seg.options().put(TIMESTAMPS, new long[]{ tsVal, tsRecent });
         lastAckSent = seg.ack();
     }
 }

@@ -25,8 +25,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.END_OF_OPTION_LIST;
 
 /**
  * Encodes {@link ByteBuf}s to {@link ConnectionHandshakeSegment}s and vice versa.
@@ -38,10 +44,9 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     // SEQ: 4 bytes
     // ACK: 4 bytes
     // CTL: 1 byte
-    // TS Value (TSval): 4 bytes
-    // TS Echo Reply (TSecr): 4 bytes
+    // Options: 2..bytes
     // data: arbitrary number of bytes
-    public static final int MIN_MESSAGE_LENGTH = 13;
+    public static final int MIN_MESSAGE_LENGTH = 15;
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -52,8 +57,18 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
-        buf.writeInt((int) seg.tsVal());
-        buf.writeInt((int) seg.tsEcr());
+
+        // options
+        for (final Entry<Option, Object> entry : seg.options().entrySet()) {
+            final Option option = entry.getKey();
+            final Object value = entry.getValue();
+
+            buf.writeByte(option.kind());
+            option.writeValueTo(buf, value);
+        }
+        // end of list option
+        buf.writeByte(END_OF_OPTION_LIST.kind());
+
         buf.writeBytes(seg.content());
         out.add(buf);
     }
@@ -68,9 +83,18 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
-                final long tsVal = in.readUnsignedInt();
-                final long tsEcr = in.readUnsignedInt();
-                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tsVal, tsEcr, in.retain());
+
+                // options
+                final Map<Option, Object> options = new EnumMap<>(Option.class);
+                byte kind;
+                while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
+                    final Option option = Option.ofKind(kind);
+                    final Object value = option.readValueFrom(in);
+
+                    options.put(option, value);
+                }
+
+                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, options, in.retain());
                 out.add(seg);
             }
             else {

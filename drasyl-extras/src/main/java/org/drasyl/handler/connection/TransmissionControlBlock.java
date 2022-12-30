@@ -119,7 +119,10 @@ class TransmissionControlBlock {
         this(channel, sndUna, advanceSeq(iss), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
     }
 
-    public TransmissionControlBlock(final Channel channel, final long sndUna, final long iss, final long irs) {
+    public TransmissionControlBlock(final Channel channel,
+                                    final long sndUna,
+                                    final long iss,
+                                    final long irs) {
         this(channel, sndUna, iss, irs, 3_000);
     }
 
@@ -146,6 +149,19 @@ class TransmissionControlBlock {
     @Override
     public int hashCode() {
         return Objects.hash(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs);
+    }
+
+    @Override
+    public String toString() {
+        return "TransmissionControlBlock{" +
+                "SND.UNA=" + sndUna +
+                ", SND.NXT=" + sndNxt +
+                ", SND.WND=" + sndWnd +
+                ", ISS=" + iss +
+                ", RCV.NXT=" + rcvNxt +
+                ", RCV.WND=" + rcvWnd +
+                ", IRS=" + irs +
+        '}';
     }
 
     int sequenceNumbersAllowedForNewDataTransmission() {

@@ -36,11 +36,13 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.function.LongSupplier;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.LOWER_BOUND;
@@ -89,9 +91,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final Duration userTimeout;
     private final LongSupplier issProvider;
     private final boolean activeOpen;
-    private final int mss; // maximum segment size
     protected ScheduledFuture<?> userTimeoutFuture;
     State state;
+    private int mss; // maximum segment size
     private TransmissionControlBlock tcb;
     private ChannelPromise userCallFuture;
     private long flushUntil = -1;
@@ -106,9 +108,22 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      *                    must initiate the handshake
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
+                                      final boolean activeOpen,
+                                      final int mss) {
+        // window size sollte ein vielfaches von mss betragen
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, mss, null);
+    }
+
+    /**
+     * @param userTimeout time in ms in which a handshake must taken place after issued
+     * @param activeOpen  if {@code true} a handshake will be issued on
+     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
+     *                    must initiate the handshake
+     */
+    public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
         // window size sollte ein vielfaches von mss betragen
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, 1254 * 10, null); // FIXME: good default values?
+        this(userTimeout, activeOpen, 1254);
     }
 
     /**
@@ -164,18 +179,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void flush(ChannelHandlerContext ctx) {
+    public void flush(final ChannelHandlerContext ctx) {
         tryFlushingSendBuffer(ctx, true);
         tcb.outgoingSegmentQueue().flush(ctx);
     }
 
     @Override
-    public void read(ChannelHandlerContext ctx) throws Exception {
+    public void read(final ChannelHandlerContext ctx) throws Exception {
         super.read(ctx);
         // FIXME: RECEIVE CALL?
     }
 
-    private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, boolean newFlush) {
+    private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, final boolean newFlush) {
         if (newFlush) {
             // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
             flushUntil = add(tcb.sndNxt, tcb.sendBuffer().readableBytes(), ConnectionHandshakeSegment.SEQ_NO_SPACE);
@@ -185,7 +200,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return;
         }
 
-        int allowedBytesForNewTransmission = tcb.sequenceNumbersAllowedForNewDataTransmission();
+        final int allowedBytesForNewTransmission = tcb.sequenceNumbersAllowedForNewDataTransmission();
         final int allowedBytesToFlush = (int) (this.flushUntil - tcb.sndNxt);
         LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, tcb.sendBuffer().readableBytes(), allowedBytesToFlush, mss);
 
@@ -262,7 +277,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         createTcb(ctx);
 
         // send SYN
-        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss);
+        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss, Map.of(
+                MAXIMUM_SEGMENT_SIZE, mss
+        ));
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.outgoingSegmentQueue().addAndFlush(ctx, seg);
 
@@ -276,6 +293,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     private void createTcb(final ChannelHandlerContext ctx) {
         tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong());
+        LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
     }
 
     @SuppressWarnings("java:S128")
@@ -353,14 +371,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, userCall, userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
+                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
                 ctx.channel().close();
             }, userTimeout.toMillis(), MILLISECONDS);
             userTimeoutFuture.addListener(new FutureListener() {
                 @Override
-                public void operationComplete(Future future) {
+                public void operationComplete(final Future future) {
                     if (future.isCancelled() && "CLOSE".equals(userCall)) {
-                        LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, userCall, userTimeout);
+                        LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, userCall);
                         switchToNewState(ctx, CLOSED);
                         ctx.channel().close();
                     }
@@ -375,7 +393,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ctx.fireChannelActive();
     }
 
-    private void gehtLos(ChannelHandlerContext ctx) {
+    private void gehtLos(final ChannelHandlerContext ctx) {
         srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
         rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
 
@@ -395,7 +413,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) {
+    public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
             gehtLos(ctx);
         }
@@ -412,7 +430,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
         // cancel all timeout guards
         cancelTimeoutGuards();
 
@@ -430,9 +448,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) {
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
         tryFlushingSendBuffer(ctx, false);
-        tcb.outgoingSegmentQueue().flush(ctx);
+        if (tcb != null) {
+            tcb.outgoingSegmentQueue().flush(ctx);
+        }
 
         ctx.fireChannelReadComplete();
     }
@@ -446,12 +466,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (tcb != null) {
             tcb.rttMeasurement().segmentArrives(seg);
         }
-        if (seg.tsEcr() > 0) {
-            rtt = (int) (System.nanoTime() / 1_000_000 - seg.tsEcr());
-            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
-            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
-            LOG.trace("{}[{}] New RTT sample: RTT={}ms; SRTT={}ms; RTO={}ms", ctx.channel(), state, rtt, srtt, rto);
-        }
+//        if (seg.tsEcr() > 0) {
+//            rtt = (int) (System.nanoTime() / 1_000_000 - seg.tsEcr());
+//            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
+//            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
+//            LOG.trace("{}[{}] New RTT sample: RTT={}ms; SRTT={}ms; RTO={}ms", ctx.channel(), state, rtt, srtt, rto);
+//        }
 
         try {
             switch (state) {
@@ -544,8 +564,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.rcvNxt = add(seg.seq(), 1, ConnectionHandshakeSegment.SEQ_NO_SPACE);
             tcb.irs = seg.seq();
 
+            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+
+            // mss negotiation
+            negotiateMss(ctx, seg);
+
             // send SYN/ACK
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss, tcb.rcvNxt);
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss, tcb.rcvNxt, Map.of(
+                    MAXIMUM_SEGMENT_SIZE, mss
+            ));
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.outgoingSegmentQueue().add(ctx, response);
             return;
@@ -601,6 +628,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 checkForAckedSegmentsInRetransmissionQueue(ctx);
             }
 
+            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+
             final boolean ourSynHasBeenAcked = greaterThan(tcb.sndUna, tcb.iss, ConnectionHandshakeSegment.SEQ_NO_SPACE);
             if (ourSynHasBeenAcked) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
@@ -609,6 +638,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, ESTABLISHED);
                 userCallFuture.setSuccess();
                 userCallFuture = null;
+
+                negotiateMss(ctx, seg);
 
                 // ACK
                 if (flushUntil == -1 || tcb.sendBuffer().isEmpty()) {
@@ -630,6 +661,16 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 tcb.outgoingSegmentQueue().add(ctx, response);
             }
+        }
+    }
+
+    private void negotiateMss(final ChannelHandlerContext ctx,
+                              final ConnectionHandshakeSegment seg) {
+        // mss negotiation
+        final Object mssOption = seg.options().get(MAXIMUM_SEGMENT_SIZE);
+        if (mssOption != null && (int) mssOption < mss) {
+            LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), state, (int) mssOption, mss);
+            mss = (int) mssOption;
         }
     }
 
@@ -899,7 +940,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         return false;
     }
 
-    private void checkForAckedSegmentsInRetransmissionQueue(ChannelHandlerContext ctx) {
+    private void checkForAckedSegmentsInRetransmissionQueue(final ChannelHandlerContext ctx) {
         ConnectionHandshakeSegment current = tcb.retransmissionQueue().current();
         if (current != null) {
             long lastSegmentToBeAcked = add(current.seq(), current.len(), ConnectionHandshakeSegment.SEQ_NO_SPACE);
@@ -936,5 +977,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
         });
         performActiveOpen(ctx);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        cause.printStackTrace();
+        super.exceptionCaught(ctx, cause);
     }
 }
