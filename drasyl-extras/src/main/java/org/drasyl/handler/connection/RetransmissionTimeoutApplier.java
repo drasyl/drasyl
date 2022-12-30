@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelFuture;
@@ -28,25 +49,21 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
     private final ChannelHandlerContext ctx;
     private final ConnectionHandshakeSegment seg;
     private final ChannelPromise ackPromise;
-    private final ConnectionHandshakeHandler handler;
     private final long rto;
 
     RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
                                  final ConnectionHandshakeSegment seg,
-                                 final ChannelPromise ackPromise,
-                                 final ConnectionHandshakeHandler handler) {
-        this(ctx, seg, ackPromise, handler, handler.rto());
+                                 final ChannelPromise ackPromise) {
+        this(ctx, seg, ackPromise, ((ConnectionHandshakeHandler) ctx.handler()).rto());
     }
 
     RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
                                  final ConnectionHandshakeSegment seg,
                                  final ChannelPromise ackPromise,
-                                 final ConnectionHandshakeHandler handler,
                                  final long rto) {
         this.ctx = requireNonNull(ctx);
         this.seg = requireNonNull(seg);
         this.ackPromise = requireNonNull(ackPromise);
-        this.handler = requireNonNull(handler);
         this.rto = requirePositive(rto);
     }
 
@@ -56,13 +73,13 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
         if (future.isSuccess()) {
             // segment has ben successfully been written to the network
             // schedule retransmission if SEG does not get ACKed in time
-            ScheduledFuture<?> retransmissionFuture = ctx.executor().schedule(() -> {
+            ScheduledFuture<?> retransmissionFuture = future.channel().eventLoop().schedule(() -> {
                 // retransmission timeout occurred
                 // check if we're not CLOSED and if SEG has not been ACKed
-                if (future.channel().isOpen() && handler.state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(handler.tcb().sndUna, seg.seq(), ConnectionHandshakeHandler.SEQ_NO_SPACE)) {
+                if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb().sndUna, seg.seq(), ConnectionHandshakeHandler.SEQ_NO_SPACE)) {
                     // not ACKed, send egain
-                    ConnectionHandshakeHandler.LOG.error("{}[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), handler.state, seg, rto);
-                    ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, handler, rto * 2));
+                    ConnectionHandshakeHandler.LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
+                    ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, rto * 2));
                     // FIXME: vermeide das jedes SEG einzeln erneut neu geschrieben und geflusht wird?
                 }
             }, rto, MILLISECONDS);
@@ -76,7 +93,7 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
             });
         }
         else if (!(future.cause() instanceof ClosedChannelException)) {
-            ConnectionHandshakeHandler.LOG.trace("{}[{}] Unable to send `{}`:", ctx::channel, () -> handler.state, () -> seg, future::cause);
+            ConnectionHandshakeHandler.LOG.trace("{} Unable to send `{}`:", future::channel, () -> seg, future::cause);
             future.channel().close();
         }
     }

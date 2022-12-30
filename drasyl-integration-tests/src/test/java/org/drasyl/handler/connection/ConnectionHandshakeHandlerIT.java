@@ -25,7 +25,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -47,7 +46,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -71,8 +69,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -86,8 +84,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -225,7 +223,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofMinutes(1), true));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -243,7 +241,7 @@ class ConnectionHandshakeHandlerIT {
 
         try {
             // wait for channel close due to handshake timeout
-            assertTrue(latch.await(50, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS));
             await().untilAsserted(() -> assertFalse(clientChannel.isOpen()));
         }
         finally {

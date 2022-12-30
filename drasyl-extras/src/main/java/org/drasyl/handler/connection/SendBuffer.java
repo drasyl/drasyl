@@ -2,11 +2,8 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
-
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -16,16 +13,13 @@ import static java.util.Objects.requireNonNull;
  */
 class SendBuffer {
     private final CoalescingBufferQueue queue;
-    private Channel ch;
 
     SendBuffer(final CoalescingBufferQueue queue) {
         this.queue = requireNonNull(queue);
-        this.ch = null;
     }
 
-    SendBuffer(final ChannelHandlerContext ctx) {
-        this(new CoalescingBufferQueue(ctx.channel(), 4, true));
-        this.ch = ctx.channel();
+    SendBuffer(final Channel channel) {
+        this(new CoalescingBufferQueue(channel, 4, true));
     }
 
     /**

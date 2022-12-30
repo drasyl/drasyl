@@ -1,6 +1,27 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.handler.connection;
 
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.PendingWriteQueue;
 import org.junit.jupiter.api.Nested;
@@ -21,10 +42,10 @@ class RetransmissionQueueTest {
     @Nested
     class Add {
         @Test
-        void shouldAddGivenSegmentsToTheEndOfTheQueu(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.executor().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(ctx);
-            final RetransmissionQueue buffer = new RetransmissionQueue(ctx.channel(), pendingWrites);
+        void shouldAddGivenSegmentsToTheEndOfTheQueu(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
+            final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
             final ConnectionHandshakeSegment seg1 = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise1 = mock(ChannelPromise.class);
             final ConnectionHandshakeSegment seg2 = mock(ConnectionHandshakeSegment.class);
@@ -48,11 +69,11 @@ class RetransmissionQueueTest {
     @Nested
     class ReleaseAndFailAll {
         @Test
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
                                                        @Mock final Throwable cause) {
-            when(ctx.executor().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(ctx);
-            final RetransmissionQueue buffer = new RetransmissionQueue(ctx.channel(), pendingWrites);
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
+            final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
             final ConnectionHandshakeSegment seg = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise = mock(ChannelPromise.class);
             pendingWrites.add(seg, promise);
@@ -67,10 +88,10 @@ class RetransmissionQueueTest {
     @Nested
     class Current {
         @Test
-        void shouldReturnCurrentSegment(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.executor().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(ctx);
-            final RetransmissionQueue buffer = new RetransmissionQueue(ctx.channel(), pendingWrites);
+        void shouldReturnCurrentSegment(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
+            final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
             final ConnectionHandshakeSegment seg = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise = mock(ChannelPromise.class);
             pendingWrites.add(seg, promise);
@@ -82,10 +103,10 @@ class RetransmissionQueueTest {
     @Nested
     class RemoveAndSucceedCurrent {
         @Test
-        void shouldRemoveSegmentAndSucceedTheFuture(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.executor().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(ctx);
-            final RetransmissionQueue buffer = new RetransmissionQueue(ctx.channel(), pendingWrites);
+        void shouldRemoveSegmentAndSucceedTheFuture(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
+            final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
             final ConnectionHandshakeSegment seg = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise = mock(ChannelPromise.class);
             pendingWrites.add(seg, promise);
@@ -105,11 +126,10 @@ class RetransmissionQueueTest {
     @Nested
     class Size {
         @Test
-        void shouldReturnNumberOfSegmentsInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.executor().inEventLoop()).thenReturn(true);
-            when(ctx.channel().eventLoop().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(ctx);
-            final RetransmissionQueue buffer = new RetransmissionQueue(ctx.channel(), pendingWrites);
+        void shouldReturnNumberOfSegmentsInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
+            final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
             final ConnectionHandshakeSegment seg = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise = mock(ChannelPromise.class);
             pendingWrites.add(seg, promise);

@@ -4,7 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.Channel;
 import io.netty.channel.CoalescingBufferQueue;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,17 +24,17 @@ class ReceiveBufferTest {
     @Nested
     class Add {
         @Test
-        void shouldAddGivenBytesToTheEndOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.channel().alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldAddGivenBytesToTheEndOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
             final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
 
             buffer.add(buf1);
             buffer.add(buf2);
 
-            final ByteBuf removed = queue.remove(15, ctx.newPromise());
+            final ByteBuf removed = queue.remove(15, channel.newPromise());
             assertEquals(15, removed.readableBytes());
             final CompositeByteBuf expectedBuf = Unpooled.compositeBuffer(2).addComponents(true, buf1, buf2);
             assertEquals(expectedBuf, removed);
@@ -46,17 +46,17 @@ class ReceiveBufferTest {
     @Nested
     class IsEmpty {
         @Test
-        void shouldReturnTrueIfBufferContainsNoBytes(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldReturnTrueIfBufferContainsNoBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
 
             assertTrue(buffer.isEmpty());
         }
 
         @Test
-        void shouldReturnFalseIfBufferContainsBytes(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldReturnFalseIfBufferContainsBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
             buffer.add(buf);
 
@@ -69,10 +69,10 @@ class ReceiveBufferTest {
     @Nested
     class Remove {
         @Test
-        void shouldRemoveGivenAmountOfBytesFromBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.channel().alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldRemoveGivenAmountOfBytesFromBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
             final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
             buffer.add(buf1);
@@ -93,10 +93,10 @@ class ReceiveBufferTest {
     @Nested
     class Release {
         @Test
-        void shouldReleaseAllBytes(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.channel().alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldReleaseAllBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
             buffer.add(buf);
 
@@ -109,10 +109,10 @@ class ReceiveBufferTest {
     @Nested
     class ReadableBytes {
         @Test
-        void shouldReturnTheNumberOfBytesInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(ctx.channel().alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(ctx.channel(), 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(ctx, queue);
+        void shouldReturnTheNumberOfBytesInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
             final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
             queue.add(buf1);

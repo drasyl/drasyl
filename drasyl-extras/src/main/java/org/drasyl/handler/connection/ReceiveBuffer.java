@@ -1,7 +1,28 @@
+/*
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
 
@@ -13,17 +34,17 @@ import static java.util.Objects.requireNonNull;
 // FIXME: add support for out-of-order?
 class ReceiveBuffer {
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
+    private final Channel channel;
     private final CoalescingBufferQueue queue;
-    private final ChannelHandlerContext ctx;
 
-    ReceiveBuffer(final ChannelHandlerContext ctx,
+    ReceiveBuffer(final Channel channel,
                   final CoalescingBufferQueue queue) {
-        this.ctx = requireNonNull(ctx);
+        this.channel = requireNonNull(channel);
         this.queue = requireNonNull(queue);
     }
 
-    ReceiveBuffer(final ChannelHandlerContext ctx) {
-        this(ctx, new CoalescingBufferQueue(ctx.channel(), 4, false));
+    ReceiveBuffer(final Channel channel) {
+        this(channel, new CoalescingBufferQueue(channel, 4, false));
     }
 
     /**
@@ -54,7 +75,7 @@ class ReceiveBuffer {
      * @return a {@link ByteBuf} composed of the enqueued buffers.
      */
     public ByteBuf remove(final int bytes) {
-        return queue.remove(bytes, ctx.newPromise().setSuccess());
+        return queue.remove(bytes, channel.newPromise().setSuccess());
     }
 
     /**
