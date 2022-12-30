@@ -25,10 +25,7 @@ import io.netty.channel.Channel;
 
 import java.util.Objects;
 
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.SEQ_NO_SPACE;
-import static org.drasyl.util.SerialNumberArithmetic.add;
-import static org.drasyl.util.SerialNumberArithmetic.lessThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 
 /**
  * <pre>
@@ -119,7 +116,7 @@ class TransmissionControlBlock {
                                     final long iss,
                                     final long irs,
                                     final int windowSize) {
-        this(channel, sndUna, add(iss, 1, SEQ_NO_SPACE), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
+        this(channel, sndUna, advanceSeq(iss), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
     }
 
     public TransmissionControlBlock(final Channel channel, final long sndUna, final long iss, final long irs) {
@@ -149,10 +146,6 @@ class TransmissionControlBlock {
     @Override
     public int hashCode() {
         return Objects.hash(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs);
-    }
-
-    boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
-        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
     int sequenceNumbersAllowedForNewDataTransmission() {

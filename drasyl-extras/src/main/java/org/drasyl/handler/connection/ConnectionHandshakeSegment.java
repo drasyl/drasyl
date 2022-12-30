@@ -24,12 +24,16 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
+import org.drasyl.util.SerialNumberArithmetic;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import static org.drasyl.util.Preconditions.requireInRange;
+import static org.drasyl.util.SerialNumberArithmetic.add;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * A message used by {@link ConnectionHandshakeHandler} to perform a handshake.
@@ -41,7 +45,7 @@ import static org.drasyl.util.Preconditions.requireInRange;
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
     public static final long MAX_SEQ_NO = 4_294_967_295L;
-    private static final byte URG = 1 << 5;
+    static final int SEQ_NO_SPACE = 32;
     private static final byte ACK = 1 << 4;
     private static final byte PSH = 1 << 3;
     private static final byte RST = 1 << 2;
@@ -75,6 +79,54 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         this(seq, ack, ctl, 0, 0, data);
     }
 
+    public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment ack(final long seq,
+                                                 final long ack,
+                                                 final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, data);
+    }
+
+    public static ConnectionHandshakeSegment rst(final long seq) {
+        return new ConnectionHandshakeSegment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment syn(final long seq) {
+        return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment fin(final long seq) {
+        return new ConnectionHandshakeSegment(seq, 0, FIN, Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment pshAck(final long seq,
+                                                    final long ack,
+                                                    final ByteBuf data) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), data);
+    }
+
+    public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static long advanceSeq(final long seq, final long advancement) {
+        return SerialNumberArithmetic.add(seq, advancement, SEQ_NO_SPACE);
+    }
+
+    public static long advanceSeq(final long seq) {
+        return advanceSeq(seq, 1);
+    }
+
     public long seq() {
         return seq;
     }
@@ -85,10 +137,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public int ctl() {
         return ctl;
-    }
-
-    public boolean isUrg() {
-        return (ctl & URG) != 0;
     }
 
     public boolean isAck() {
@@ -113,6 +161,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public boolean isFin() {
         return (ctl & FIN) != 0;
+    }
+
+    public boolean isOnlyFin() {
+        return ctl == FIN;
     }
 
     public long tsVal() {
@@ -158,9 +210,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     @Override
     public String toString() {
         final List<String> controlBitLabels = new ArrayList<>();
-        if (isUrg()) {
-            controlBitLabels.add("URG");
-        }
         if (isPsh()) {
             controlBitLabels.add("PSH");
         }
@@ -185,53 +234,34 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, ack, ctl, content().copy());
     }
 
-    public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, Unpooled.EMPTY_BUFFER);
+    public long lastSeq() {
+        return add(seq(), len() - 1L, SEQ_NO_SPACE);
     }
 
-    public static ConnectionHandshakeSegment ack(final long seq,
-                                                 final long ack,
-                                                 final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, data);
+    public boolean isAcceptableAck(final long sndUna, final long sndNxt) {
+        return isAck() && lessThan(sndUna, ack, SEQ_NO_SPACE) && lessThanOrEqualTo(ack, sndNxt, SEQ_NO_SPACE);
     }
 
-    public static ConnectionHandshakeSegment rst(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, RST, Unpooled.EMPTY_BUFFER);
+    public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {
+        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
     }
 
-    public static ConnectionHandshakeSegment syn(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, SYN, Unpooled.EMPTY_BUFFER);
-    }
+    public ConnectionHandshakeSegment piggybackAck(ConnectionHandshakeSegment other) {
+        if (!canPiggybackAck(other)) {
+            return null;
+        }
 
-    public static ConnectionHandshakeSegment fin(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, FIN, Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment pshAck(final long seq,
-                                                    final long ack,
-                                                    final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), data);
-    }
-
-    public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment seg,
-                                                          final ConnectionHandshakeSegment ack) {
         try {
-            return new ConnectionHandshakeSegment(seg.seq(), ack.ack(), (byte) (seg.ctl() | ack.ctl()), seg.content());
+            if (isAck() && other.isOnlyAck()) {
+                // fully replace other ACK
+                return this;
+            }
+
+            // attach ACK
+            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | ACK), tsVal, tsEcr, content());
         }
         finally {
-            ack.release();
+            other.release();
         }
     }
 }

@@ -21,7 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
-import static org.drasyl.handler.connection.ConnectionHandshakeHandler.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
