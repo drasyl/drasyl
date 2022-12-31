@@ -37,8 +37,6 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.SerialNumberArithmetic.add;
-import static org.drasyl.util.SerialNumberArithmetic.lessThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * A message used by {@link ConnectionHandshakeHandler} to perform a handshake.
@@ -245,10 +243,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             return seq();
         }
         return add(seq(), len() - 1L, SEQ_NO_SPACE);
-    }
-
-    public boolean isAcceptableAck(final long sndUna, final long sndNxt) {
-        return isAck() && lessThan(sndUna, ack, SEQ_NO_SPACE) && lessThanOrEqualTo(ack, sndNxt, SEQ_NO_SPACE);
     }
 
     public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {

@@ -42,7 +42,6 @@ import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
@@ -59,8 +58,6 @@ import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
-import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * This handler partially implements the Transmission Control Protocol know from <a
@@ -219,8 +216,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             else {
                 seg = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt, data);
             }
-            tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), tcb.retransmissionQueue().size() + 1);
+            tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
             tcb.outgoingSegmentQueue().add(seg, ctx.newPromise(), ackPromise);
         }
     }
@@ -329,8 +326,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
 
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(tcb.sndNxt, tcb.rcvNxt);
-                tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
+                tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
                 tcb.outgoingSegmentQueue().addAndFlush(ctx, seg);
 
                 switchToNewState(ctx, FIN_WAIT_1);
@@ -583,7 +580,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                               final ConnectionHandshakeSegment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnSynSentState");
         // check ACK
-        if (seg.isAck() && (lessThanOrEqualTo(seg.ack(), tcb.iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), tcb.sndNxt, SEQ_NO_SPACE))) {
+        if (tcb.isAckSomethingNeverSent(seg)) {
             // segment ACKed something we never sent
             LOG.trace("{}[{}] Get got an ACKnowledgement `{}` for an Segment we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
             if (seg.isRst()) {
@@ -626,8 +623,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
-            final boolean ourSynHasBeenAcked = greaterThan(tcb.sndUna, tcb.iss, SEQ_NO_SPACE);
-            if (ourSynHasBeenAcked) {
+            if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
                 cancelTimeoutGuards();
@@ -733,7 +729,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isAck()) {
             switch (state) {
                 case SYN_RECEIVED:
-                    if (lessThanOrEqualTo(tcb.sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt, SEQ_NO_SPACE)) {
+                    if (tcb.isAckOurSyn(seg)) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
                         cancelTimeoutGuards();
@@ -861,7 +857,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
-            tcb.outgoingSegmentQueue().add(ctx, response);
+            tcb.write(ctx, response);
 
             switch (state) {
                 case SYN_RECEIVED:
@@ -873,9 +869,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // daher verschicken wir schon hier das FIN, was es sonst zwischen CLOSE_WAIT und LAST_ACK geben würde
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment response2 = ConnectionHandshakeSegment.fin(tcb.sndNxt);
-                    tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
                     LOG.trace("{}[{}] As we're already waiting for this. We're sending our last Segment `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, response2);
-                    tcb.outgoingSegmentQueue().add(ctx, response2);
+                    tcb.write(ctx, response2);
                     switchToNewState(ctx, LAST_ACK);
                     break;
 
@@ -929,7 +924,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             LOG.error("{}[{}] something not yet sent has been ACKed.", ctx.channel(), state);
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-            tcb.outgoingSegmentQueue().add(ctx, response);
+            tcb.write(ctx, response);
             return true;
         }
         return false;

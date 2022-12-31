@@ -398,8 +398,6 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(ConnectionHandshakeSegment.pshAck(300, 300, data.slice(200, 50)), channel.readOutbound());
 
             channel.close();
-
-            data.release();
         }
 
         @Test

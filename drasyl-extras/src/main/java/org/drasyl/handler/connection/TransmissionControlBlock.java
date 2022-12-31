@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Objects;
 
@@ -214,5 +215,25 @@ class TransmissionControlBlock {
 
     public boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
         return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
+    }
+
+    public boolean synHasBeenAcknowledged() {
+        return greaterThan(sndUna, iss, SEQ_NO_SPACE);
+    }
+
+    public boolean isAckOurSyn(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && lessThanOrEqualTo(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
+    }
+
+    public boolean isAckSomethingNeverSent(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
+    }
+
+    public void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+        final int len = seg.len();
+        if (len > 0) {
+            sndNxt = advanceSeq(sndNxt, len);
+        }
+        outgoingSegmentQueue.add(ctx, seg);
     }
 }
