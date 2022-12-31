@@ -194,6 +194,15 @@ class OutgoingSegmentQueue {
         }
     }
 
+    public int size() {
+        return retransmissionQueue.size();
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(size());
+    }
+
     static class OutgoingSegmentEntry implements ReferenceCounted {
         private final ConnectionHandshakeSegment seg;
         private final ChannelPromise writePromise;

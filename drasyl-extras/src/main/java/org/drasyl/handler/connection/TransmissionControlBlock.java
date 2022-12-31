@@ -61,6 +61,11 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * </pre>
  */
 class TransmissionControlBlock {
+    final SendBuffer sendBuffer;
+    final RetransmissionQueue retransmissionQueue;
+    final OutgoingSegmentQueue outgoingSegmentQueue;
+    final ReceiveBuffer receiveBuffer;
+    final RttMeasurement rttMeasurement;
     // Send Sequence Variables
     long sndUna; // oldest unacknowledged sequence number
     long sndNxt; // next sequence number to be sent
@@ -70,12 +75,9 @@ class TransmissionControlBlock {
     long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     int rcvWnd; // receive window
     long irs; // initial receive sequence number
-    SendBuffer sendBuffer;
-    RetransmissionQueue retransmissionQueue;
-    ReceiveBuffer receiveBuffer;
-    OutgoingSegmentQueue outgoingSegmentQueue;
-    RttMeasurement rttMeasurement;
+    int mss; // maximum segment size
 
+    @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -84,10 +86,11 @@ class TransmissionControlBlock {
                              final int rcvWnd,
                              final long irs,
                              final SendBuffer sendBuffer,
+                             final OutgoingSegmentQueue outgoingSegmentQueue,
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
-                             final OutgoingSegmentQueue outgoingSegmentQueue,
-                             final RttMeasurement rttMeasurement) {
+                             final RttMeasurement rttMeasurement,
+                             final int mss) {
         this.sndUna = sndUna;
         this.sndNxt = sndNxt;
         this.sndWnd = sndWnd;
@@ -96,12 +99,14 @@ class TransmissionControlBlock {
         this.rcvWnd = rcvWnd;
         this.irs = irs;
         this.sendBuffer = sendBuffer;
+        this.outgoingSegmentQueue = outgoingSegmentQueue;
         this.retransmissionQueue = retransmissionQueue;
         this.receiveBuffer = receiveBuffer;
-        this.outgoingSegmentQueue = outgoingSegmentQueue;
         this.rttMeasurement = rttMeasurement;
+        this.mss = mss;
     }
 
+    @SuppressWarnings("java:S107")
     private TransmissionControlBlock(final Channel channel,
                                      final long sndUna,
                                      final long sndNxt,
@@ -113,23 +118,26 @@ class TransmissionControlBlock {
                                      final SendBuffer sendBuffer,
                                      final RetransmissionQueue retransmissionQueue,
                                      final ReceiveBuffer receiveBuffer,
-                                     final RttMeasurement rttMeasurement) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, retransmissionQueue, receiveBuffer, new OutgoingSegmentQueue(channel, retransmissionQueue, rttMeasurement), rttMeasurement);
+                                     final RttMeasurement rttMeasurement,
+                                     final int mss) {
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(channel, retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
                                     final long sndUna,
                                     final long iss,
                                     final long irs,
-                                    final int windowSize) {
-        this(channel, sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
+                                    final int windowSize,
+                                    final int mss) {
+        this(channel, sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
                                     final long sndUna,
                                     final long iss,
                                     final long irs) {
-        this(channel, sndUna, iss, irs, 1220 * 64);
+        // window size sollte ein vielfaches von mss betragen
+        this(channel, sndUna, iss, irs, 1220 * 64, 1220);
     }
 
     public TransmissionControlBlock(final Channel channel, final long iss, final long irs) {
@@ -138,6 +146,14 @@ class TransmissionControlBlock {
 
     public TransmissionControlBlock(final Channel channel, final long iss) {
         this(channel, iss, 0);
+    }
+
+    public int mss() {
+        return mss;
+    }
+
+    public void mss(final int mss) {
+        this.mss = mss;
     }
 
     @Override
@@ -167,6 +183,11 @@ class TransmissionControlBlock {
                 ", RCV.NXT=" + rcvNxt +
                 ", RCV.WND=" + rcvWnd +
                 ", IRS=" + irs +
+                ", SND.BUF=" + sendBuffer +
+                ", OG.SEG.Q=" + outgoingSegmentQueue +
+                ", RTNS.Q=" + retransmissionQueue +
+                ", RCV.BUF=" + receiveBuffer +
+                ", MSS=" + mss +
                 '}';
     }
 

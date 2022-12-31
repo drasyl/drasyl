@@ -95,4 +95,9 @@ class RetransmissionQueue {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(size());
+    }
 }

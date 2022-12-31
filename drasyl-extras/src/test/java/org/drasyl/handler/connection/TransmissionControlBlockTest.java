@@ -42,42 +42,43 @@ class TransmissionControlBlockTest {
     private OutgoingSegmentQueue outoingSegmentQueue;
     @Mock
     private RttMeasurement rttMeasurement;
+    private int mss = 1_000;
 
     @Nested
     class IsAcceptableAck {
         @Test
         void shouldReturnFalseIfSegmentIsNoAck() {
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(9, 10, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(9, 10, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
 
             assertFalse(tcb.isAcceptableAck(ConnectionHandshakeSegment.syn(1)));
         }
 
         @Test
         void shouldReturnTrueIfAckIsAcceptable() {
-            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(9, 10, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(9, 10, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertTrue(tcb1.isAcceptableAck(ConnectionHandshakeSegment.ack(1, 10)));
 
-            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(9, 11, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(9, 11, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertTrue(tcb2.isAcceptableAck(ConnectionHandshakeSegment.ack(1, 10)));
 
             // with overflow
-            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(MAX_SEQ_NO - 1, MAX_SEQ_NO, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(MAX_SEQ_NO - 1, MAX_SEQ_NO, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertTrue(tcb3.isAcceptableAck(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO)));
 
-            final TransmissionControlBlock tcb4 = new TransmissionControlBlock(MAX_SEQ_NO - 1, 0, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb4 = new TransmissionControlBlock(MAX_SEQ_NO - 1, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertTrue(tcb4.isAcceptableAck(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO)));
         }
 
         @Test
         void shouldReturnFalseIfAckIsNotAcceptable() {
-            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(10, 10, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(10, 10, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertFalse(tcb1.isAcceptableAck(ConnectionHandshakeSegment.ack(1, 10)));
 
-            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(9, 9, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(9, 9, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertFalse(tcb2.isAcceptableAck(ConnectionHandshakeSegment.ack(1, 10)));
 
             // with overflow
-            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, sendBuffer, retransmissionQueue, receiveBuffer, outoingSegmentQueue, rttMeasurement);
+            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, rttMeasurement, mss);
             assertFalse(tcb3.isAcceptableAck(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO - 1)));
         }
     }

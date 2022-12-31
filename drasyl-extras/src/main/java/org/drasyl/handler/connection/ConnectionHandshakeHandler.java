@@ -89,7 +89,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final boolean activeOpen;
     protected ScheduledFuture<?> userTimeoutFuture;
     State state;
-    private int mss; // maximum segment size
     private TransmissionControlBlock tcb;
     private ChannelPromise userCallFuture;
     private long flushUntil = -1;
@@ -118,7 +117,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        // window size sollte ein vielfaches von mss betragen
         this(userTimeout, activeOpen, 1220);
     }
 
@@ -142,7 +140,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
         this.tcb = tcb;
-        this.mss = mss;
     }
 
     public TransmissionControlBlock tcb() {
@@ -199,7 +196,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         final int allowedBytesForNewTransmission = tcb.sequenceNumbersAllowedForNewDataTransmission();
         final int allowedBytesToFlush = (int) (this.flushUntil - tcb.sndNxt);
-        LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, tcb.sendBuffer().readableBytes(), allowedBytesToFlush, mss);
+        LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, tcb.sendBuffer().readableBytes(), allowedBytesToFlush, tcb.mss());
 
         final int readableBytesInBuffer = tcb.sendBuffer().readableBytes();
         int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
@@ -207,7 +204,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
         while (remainingBytes > 0) {
             final ChannelPromise ackPromise = ctx.newPromise();
-            final ByteBuf data = tcb.sendBuffer().remove(Math.min(mss, remainingBytes), ackPromise);
+            final ByteBuf data = tcb.sendBuffer().remove(Math.min(tcb.mss(), remainingBytes), ackPromise);
             remainingBytes -= data.readableBytes();
             final boolean isLast = remainingBytes == 0 || tcb.sendBuffer().isEmpty();
             final ConnectionHandshakeSegment seg;
@@ -220,6 +217,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), tcb.retransmissionQueue().size() + 1);
             tcb.write(ctx, seg, ctx.newPromise(), ackPromise);
         }
+    }
+
+    private void userCallStatus(final ChannelHandlerContext ctx) {
+        ctx.fireUserEventTriggered(new ConnectionHandshakeStatus(state, tcb));
     }
 
     private void userCallSend(final ChannelHandlerContext ctx,
@@ -274,7 +275,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // send SYN
         final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss, Map.of(
-                MAXIMUM_SEGMENT_SIZE, mss
+                MAXIMUM_SEGMENT_SIZE, tcb.mss()
         ));
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.writeAndFlush(ctx, seg);
@@ -290,6 +291,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void createTcb(final ChannelHandlerContext ctx) {
         tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong());
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
+
+        ctx.executor().scheduleAtFixedRate(() -> {
+            System.err.println("STATUS CALL: " + new ConnectionHandshakeStatus(state, tcb));
+        }, 0, 100, MILLISECONDS);
     }
 
     @SuppressWarnings("java:S128")
@@ -563,7 +568,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             // send SYN/ACK
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss, tcb.rcvNxt, Map.of(
-                    MAXIMUM_SEGMENT_SIZE, mss
+                    MAXIMUM_SEGMENT_SIZE, tcb.mss()
             ));
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.write(ctx, response);
@@ -659,9 +664,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                               final ConnectionHandshakeSegment seg) {
         // mss negotiation
         final Object mssOption = seg.options().get(MAXIMUM_SEGMENT_SIZE);
-        if (mssOption != null && (int) mssOption < mss) {
-            LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), state, (int) mssOption, mss);
-            mss = (int) mssOption;
+        if (mssOption != null && (int) mssOption < tcb.mss()) {
+            LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), state, (int) mssOption, tcb.mss());
+            tcb.mss((int) mssOption);
         }
     }
 

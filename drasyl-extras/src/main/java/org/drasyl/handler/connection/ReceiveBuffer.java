@@ -91,4 +91,9 @@ class ReceiveBuffer {
     public int readableBytes() {
         return queue.readableBytes();
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(readableBytes());
+    }
 }
