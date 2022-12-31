@@ -23,6 +23,7 @@ package org.drasyl.handler.connection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 
 import java.util.Objects;
 
@@ -121,7 +122,7 @@ class TransmissionControlBlock {
                                     final long iss,
                                     final long irs,
                                     final int windowSize) {
-        this(channel, sndUna, advanceSeq(iss, 1), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
+        this(channel, sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -229,11 +230,45 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
+    public void write(final ChannelHandlerContext ctx,
+                      final ConnectionHandshakeSegment seg,
+                      final ChannelPromise writePromise,
+                      final ChannelPromise ackPromise) {
+        final int len = seg.len();
+        if (len > 0) {
+            sndNxt = advanceSeq(sndNxt, len);
+        }
+        outgoingSegmentQueue.add(seg, writePromise, ackPromise);
+    }
+
+    public void write(final ChannelHandlerContext ctx,
+                      final ConnectionHandshakeSegment seg,
+                      final ChannelPromise writePromise) {
+        final int len = seg.len();
+        if (len > 0) {
+            sndNxt = advanceSeq(sndNxt, len);
+        }
+        outgoingSegmentQueue.add(ctx, seg, writePromise);
+    }
+
     public void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
         outgoingSegmentQueue.add(ctx, seg);
+    }
+
+    public void writeAndFlush(final ChannelHandlerContext ctx,
+                              final ConnectionHandshakeSegment seg) {
+        final int len = seg.len();
+        if (len > 0) {
+            sndNxt = advanceSeq(sndNxt, len);
+        }
+        outgoingSegmentQueue.addAndFlush(ctx, seg);
+    }
+
+    public void flush(final ChannelHandlerContext ctx) {
+        outgoingSegmentQueue.flush(ctx);
     }
 }

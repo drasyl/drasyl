@@ -177,7 +177,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void flush(final ChannelHandlerContext ctx) {
         tryFlushingSendBuffer(ctx, true);
-        tcb.outgoingSegmentQueue().flush(ctx);
+        tcb.flush(ctx);
     }
 
     @Override
@@ -186,6 +186,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // FIXME: RECEIVE CALL?
     }
 
+    // FIXME: das hier in TCB verschieben? oder SendBuffer?
     private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, final boolean newFlush) {
         if (newFlush) {
             // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
@@ -217,8 +218,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 seg = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt, data);
             }
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), tcb.retransmissionQueue().size() + 1);
-            tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
-            tcb.outgoingSegmentQueue().add(seg, ctx.newPromise(), ackPromise);
+            tcb.write(ctx, seg, ctx.newPromise(), ackPromise);
         }
     }
 
@@ -277,7 +277,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 MAXIMUM_SEGMENT_SIZE, mss
         ));
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-        tcb.outgoingSegmentQueue().addAndFlush(ctx, seg);
+        tcb.writeAndFlush(ctx, seg);
 
         switchToNewState(ctx, SYN_SENT);
 
@@ -327,8 +327,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(tcb.sndNxt, tcb.rcvNxt);
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
-                tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
-                tcb.outgoingSegmentQueue().addAndFlush(ctx, seg);
+                tcb.writeAndFlush(ctx, seg);
 
                 switchToNewState(ctx, FIN_WAIT_1);
 
@@ -444,7 +443,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void channelReadComplete(final ChannelHandlerContext ctx) {
         tryFlushingSendBuffer(ctx, false);
         if (tcb != null) {
-            tcb.outgoingSegmentQueue().flush(ctx);
+            tcb.flush(ctx);
         }
 
         ctx.fireChannelReadComplete();
@@ -512,7 +511,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             response = ConnectionHandshakeSegment.rstAck(0, seg.seq());
         }
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
-        tcb.outgoingSegmentQueue().add(ctx, response);
+        tcb.write(ctx, response);
     }
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
@@ -529,7 +528,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // we are on a state were we have never sent anything that must be ACKed
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
             LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
-            tcb.outgoingSegmentQueue().add(ctx, response);
+            tcb.write(ctx, response);
             return;
         }
 
@@ -567,7 +566,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     MAXIMUM_SEGMENT_SIZE, mss
             ));
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
-            tcb.outgoingSegmentQueue().add(ctx, response);
+            tcb.write(ctx, response);
             return;
         }
 
@@ -589,7 +588,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             else {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
                 LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound Segment.", ctx.channel(), state, response);
-                tcb.outgoingSegmentQueue().add(ctx, response);
+                tcb.write(ctx, response);
             }
             return;
         }
@@ -637,7 +636,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 if (flushUntil == -1 || tcb.sendBuffer().isEmpty()) {
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
                     LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
-                    tcb.outgoingSegmentQueue().add(ctx, response);
+                    tcb.write(ctx, response);
                 }
                 else {
                     LOG.trace("{}[{}] We've pending data in our write queue. Flush this queue, it will piggyback an ACK.", ctx.channel(), state);
@@ -679,7 +678,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
                 LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement `{}` for the Segment we actually expect.", ctx.channel(), state, seg, response);
-                tcb.outgoingSegmentQueue().add(ctx, response);
+                tcb.write(ctx, response);
             }
             return;
         }
@@ -739,7 +738,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         if (!acceptableAck) {
                             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
                             LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
-                            tcb.outgoingSegmentQueue().add(ctx, response);
+                            tcb.write(ctx, response);
                             return;
                         }
 
@@ -805,7 +804,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // Ack it
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-                    tcb.outgoingSegmentQueue().add(ctx, response);
+                    tcb.write(ctx, response);
             }
         }
         else if (seg.content().isReadable()) {
@@ -836,7 +835,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // Ack receival of segment text
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
                     LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
-                    tcb.outgoingSegmentQueue().add(ctx, response);
+                    tcb.write(ctx, response);
 
                     break;
                 default:
@@ -890,7 +889,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
                     switchToNewState(ctx, CLOSED);
-                    tcb.outgoingSegmentQueue().add(ctx, response, userCallFuture).addListener(CLOSE);
+                    userCallFuture.addListener(CLOSE);
+                    tcb.write(ctx, response, userCallFuture);
                     break;
 
                 default:

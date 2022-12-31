@@ -184,7 +184,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public int len() {
         if (isSyn() || isFin()) {
-            return 1;
+            return 1 + content().readableBytes();
         }
         else {
             return content().readableBytes();
