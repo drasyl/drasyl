@@ -25,7 +25,11 @@ import io.netty.channel.Channel;
 
 import java.util.Objects;
 
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
+import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * <pre>
@@ -123,7 +127,7 @@ class TransmissionControlBlock {
                                     final long sndUna,
                                     final long iss,
                                     final long irs) {
-        this(channel, sndUna, iss, irs, 3_000);
+        this(channel, sndUna, iss, irs, 1220 * 64);
     }
 
     public TransmissionControlBlock(final Channel channel, final long iss, final long irs) {
@@ -193,5 +197,22 @@ class TransmissionControlBlock {
 
     public RttMeasurement rttMeasurement() {
         return rttMeasurement;
+    }
+
+    public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
+        // FIXME: im RFC 9293 steht <= anstelel von <
+        return seg.isAck() && lessThan(seg.ack(), sndUna, SEQ_NO_SPACE);
+    }
+
+    public boolean isAckSomethingNotYetSent(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE);
+    }
+
+    public boolean isFullyAcknowledged(final ConnectionHandshakeSegment seg) {
+        return lessThanOrEqualTo(seg.lastSeq(), sndUna, SEQ_NO_SPACE);
+    }
+
+    public boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 }

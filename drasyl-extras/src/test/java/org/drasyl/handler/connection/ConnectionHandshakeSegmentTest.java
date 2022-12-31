@@ -97,33 +97,6 @@ class ConnectionHandshakeSegmentTest {
     }
 
     @Nested
-    class IsAcceptableAck {
-        @Test
-        void shouldReturnFalseIfSegmentIsNoAck() {
-            assertFalse(ConnectionHandshakeSegment.syn(1).isAcceptableAck(9, 10));
-        }
-
-        @Test
-        void shouldReturnTrueIfAckIsAcceptable() {
-            assertTrue(ConnectionHandshakeSegment.ack(1, 10).isAcceptableAck(9, 10));
-            assertTrue(ConnectionHandshakeSegment.ack(1, 10).isAcceptableAck(9, 11));
-
-            // with overflow
-            assertTrue(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO).isAcceptableAck(MAX_SEQ_NO - 1, MAX_SEQ_NO));
-            assertTrue(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO).isAcceptableAck(MAX_SEQ_NO - 1, 0));
-        }
-
-        @Test
-        void shouldReturnFalseIfAckIsNotAcceptable() {
-            assertFalse(ConnectionHandshakeSegment.ack(1, 10).isAcceptableAck(10, 10));
-            assertFalse(ConnectionHandshakeSegment.ack(1, 10).isAcceptableAck(9, 9));
-
-            // with overflow
-            assertFalse(ConnectionHandshakeSegment.ack(1, MAX_SEQ_NO - 1).isAcceptableAck(MAX_SEQ_NO, 0));
-        }
-    }
-
-    @Nested
     class CanPiggybackAck {
         @Test
         void shouldReturnTrueIfOtherSegmentIsHigherAck() {
