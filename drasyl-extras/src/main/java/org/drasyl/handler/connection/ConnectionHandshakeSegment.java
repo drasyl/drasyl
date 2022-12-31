@@ -140,10 +140,6 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return SerialNumberArithmetic.add(seq, advancement, SEQ_NO_SPACE);
     }
 
-    public static long advanceSeq(final long seq) {
-        return advanceSeq(seq, 1);
-    }
-
     public long seq() {
         return seq;
     }
@@ -189,7 +185,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     }
 
     public int len() {
-        return content().readableBytes();
+        if (isSyn() || isFin()) {
+            return 1;
+        }
+        else {
+            return content().readableBytes();
+        }
     }
 
     @Override
@@ -240,6 +241,9 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     }
 
     public long lastSeq() {
+        if (len() == 0) {
+            return seq();
+        }
         return add(seq(), len() - 1L, SEQ_NO_SPACE);
     }
 
@@ -248,8 +252,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     }
 
     public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {
-        return false;
-//        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
+        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
     }
 
     public ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment other) {

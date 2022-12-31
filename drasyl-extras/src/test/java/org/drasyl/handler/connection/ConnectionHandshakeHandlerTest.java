@@ -149,7 +149,7 @@ class ConnectionHandshakeHandlerTest {
 
             assertEquals(101, handler.tcb().sndUna);
             assertEquals(101, handler.tcb().sndNxt);
-            assertEquals(301, handler.tcb().rcvNxt);
+            assertEquals(302, handler.tcb().rcvNxt);
 
             assertTrue(channel.isOpen());
             channel.close();

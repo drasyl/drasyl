@@ -43,6 +43,7 @@ import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.LOWER_BOUND;
@@ -193,7 +194,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, final boolean newFlush) {
         if (newFlush) {
             // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
-            flushUntil = add(tcb.sndNxt, tcb.sendBuffer().readableBytes(), ConnectionHandshakeSegment.SEQ_NO_SPACE);
+            flushUntil = advanceSeq(tcb.sndNxt, tcb.sendBuffer().readableBytes());
         }
 
         if (state != ESTABLISHED || flushUntil == -1 || tcb.sendBuffer().isEmpty()) {
@@ -208,7 +209,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
 
         LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
-        final boolean somethingWritten = remainingBytes > 0;
         while (remainingBytes > 0) {
             final ChannelPromise ackPromise = ctx.newPromise();
             final ByteBuf data = tcb.sendBuffer().remove(Math.min(mss, remainingBytes), ackPromise);
@@ -221,7 +221,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             else {
                 seg = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt, data);
             }
-            tcb.sndNxt = add(tcb.sndNxt, data.readableBytes(), ConnectionHandshakeSegment.SEQ_NO_SPACE);
+            tcb.sndNxt = advanceSeq(tcb.sndNxt, seg.len());
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), tcb.retransmissionQueue().size() + 1);
             tcb.outgoingSegmentQueue().add(seg, ctx.newPromise(), ackPromise);
         }
@@ -251,6 +251,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 // Queue the data for transmission after entering ESTABLISHED state.
+                LOG.trace("{}[{}] Queue the data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), state, data);
                 tcb.sendBuffer().add(data, promise);
                 break;
 
@@ -561,7 +562,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             createTcb(ctx);
 
             // synchronize receive state
-            tcb.rcvNxt = add(seg.seq(), 1, ConnectionHandshakeSegment.SEQ_NO_SPACE);
+            tcb.rcvNxt = advanceSeq(seg.seq(), seg.len());
             tcb.irs = seg.seq();
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
@@ -620,7 +621,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check SYN
         if (seg.isSyn()) {
             // synchronize receive state
-            tcb.rcvNxt = add(seg.seq(), 1, ConnectionHandshakeSegment.SEQ_NO_SPACE);
+            tcb.rcvNxt = advanceSeq(seg.seq(), seg.len());
             tcb.irs = seg.seq();
             if (seg.isAck()) {
                 // advance send state
@@ -824,14 +825,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check URG here...
 
         // process the segment text
-        final int readableBytes = seg.len();
-        if (readableBytes > 0) {
+        if (seg.len() > 0) {
             switch (state) {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
                     tcb.receiveBuffer().add(seg.content().retain()); // wir rufen am ende IMMER release auf. hier müssen wir daher mal retainen
-                    tcb.rcvNxt = add(tcb.rcvNxt, readableBytes, ConnectionHandshakeSegment.SEQ_NO_SPACE);
+                    tcb.rcvNxt = advanceSeq(tcb.rcvNxt, seg.len());
 
                     if (seg.isPsh()) {
                         final ByteBuf byteBuf = tcb.receiveBuffer().remove(tcb.receiveBuffer().readableBytes());
@@ -861,7 +861,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
 
             // advance receive state
-            tcb.rcvNxt = add(seg.seq(), 1, ConnectionHandshakeSegment.SEQ_NO_SPACE);
+            tcb.rcvNxt = advanceSeq(seg.seq(), seg.len());
 
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);

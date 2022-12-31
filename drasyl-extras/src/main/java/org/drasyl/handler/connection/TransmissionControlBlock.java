@@ -116,7 +116,7 @@ class TransmissionControlBlock {
                                     final long iss,
                                     final long irs,
                                     final int windowSize) {
-        this(channel, sndUna, advanceSeq(iss), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
+        this(channel, sndUna, advanceSeq(iss, 1), windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement());
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -161,7 +161,7 @@ class TransmissionControlBlock {
                 ", RCV.NXT=" + rcvNxt +
                 ", RCV.WND=" + rcvWnd +
                 ", IRS=" + irs +
-        '}';
+                '}';
     }
 
     int sequenceNumbersAllowedForNewDataTransmission() {

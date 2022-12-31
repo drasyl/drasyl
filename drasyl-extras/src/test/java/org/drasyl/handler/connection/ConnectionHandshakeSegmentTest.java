@@ -48,6 +48,20 @@ class ConnectionHandshakeSegmentTest {
 
             seg.release();
         }
+
+        @Test
+        void shouldCountSyn() {
+            final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(100);
+
+            assertEquals(1, seg.len());
+        }
+
+        @Test
+        void shouldCountFin() {
+            final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.fin(100);
+
+            assertEquals(1, seg.len());
+        }
     }
 
     @Nested
@@ -68,6 +82,15 @@ class ConnectionHandshakeSegmentTest {
             final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(MAX_SEQ_NO - 9, 0, data);
 
             assertEquals(MAX_SEQ_NO, seg.lastSeq());
+
+            seg.release();
+        }
+
+        @Test
+        void shouldReturnLastSegmentOfZeroLengthSegment() {
+            final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(100, 0);
+
+            assertEquals(100, seg.lastSeq());
 
             seg.release();
         }
@@ -160,9 +183,6 @@ class ConnectionHandshakeSegmentTest {
         void shouldAdvanceSeqByGivenNumber() {
             assertEquals(6, ConnectionHandshakeSegment.advanceSeq(1, 5));
             assertEquals(4, ConnectionHandshakeSegment.advanceSeq(MAX_SEQ_NO - 5, 10));
-
-            assertEquals(2, ConnectionHandshakeSegment.advanceSeq(1));
-            assertEquals(0, ConnectionHandshakeSegment.advanceSeq(MAX_SEQ_NO));
         }
     }
 }
