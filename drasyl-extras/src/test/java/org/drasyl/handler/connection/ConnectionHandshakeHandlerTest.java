@@ -318,7 +318,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 299, 300, 100));
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 299L, 300L, 100L));
             channel.pipeline().addLast(handler);
 
             // peer triggers close
@@ -387,7 +387,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldSegmentizeOutboundDataIntoSegments() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L));
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
             channel.pipeline().addLast(handler);
 
             // as mss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -446,7 +446,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldPassReceivedContentWhenConnectionIsEstablished() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 110, 100, 50));
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L));
             channel.pipeline().addLast(handler);
 
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));

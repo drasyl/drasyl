@@ -246,7 +246,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     }
 
     public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {
-        return (isOnlyAck() || isOnlyFin()) && seq() == other.seq();
+        return (other.isOnlyAck() || other.isOnlyFin()) && seq() == other.seq();
     }
 
     public ConnectionHandshakeSegment piggybackAck(final ConnectionHandshakeSegment other) {
@@ -261,7 +261,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             }
 
             // attach ACK
-            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | ACK), options, content());
+            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | other.ctl()), options, content());
         }
         finally {
             other.release();

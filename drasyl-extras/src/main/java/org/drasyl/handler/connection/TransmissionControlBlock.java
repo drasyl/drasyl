@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -134,10 +135,29 @@ class TransmissionControlBlock {
 
     public TransmissionControlBlock(final Channel channel,
                                     final long sndUna,
+                                    final long sndNxt,
+                                    final long iss,
+                                    final long irs,
+                                    final int windowSize,
+                                    final int mss) {
+        this(channel, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+    }
+
+    public TransmissionControlBlock(final Channel channel,
+                                    final long sndUna,
                                     final long iss,
                                     final long irs) {
         // window size sollte ein vielfaches von mss betragen
         this(channel, sndUna, iss, irs, 1220 * 64, 1220);
+    }
+
+    public TransmissionControlBlock(final Channel channel,
+                                    final long sndUna,
+                                    final long sndNxt,
+                                    final long iss,
+                                    final long irs) {
+        // window size sollte ein vielfaches von mss betragen
+        this(channel, sndUna, sndNxt, iss, irs, 1220 * 64, 1220);
     }
 
     public TransmissionControlBlock(final Channel channel, final long iss, final long irs) {
@@ -146,6 +166,14 @@ class TransmissionControlBlock {
 
     public TransmissionControlBlock(final Channel channel, final long iss) {
         this(channel, iss, 0);
+    }
+
+    public TransmissionControlBlock(final Channel channel, final long iss, final int windowSize, final int mss) {
+        this(channel, iss, iss, 0, windowSize, mss);
+    }
+
+    public TransmissionControlBlock(final Channel channel, final long iss, final long irs, final int windowSize, final int mss) {
+        this(channel, iss, iss, irs, windowSize, mss);
     }
 
     public int mss() {
@@ -251,10 +279,10 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
-    public void write(final ChannelHandlerContext ctx,
-                      final ConnectionHandshakeSegment seg,
-                      final ChannelPromise writePromise,
-                      final ChannelPromise ackPromise) {
+    void write(final ChannelHandlerContext ctx,
+               final ConnectionHandshakeSegment seg,
+               final ChannelPromise writePromise,
+               final ChannelPromise ackPromise) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
@@ -262,9 +290,9 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(seg, writePromise, ackPromise);
     }
 
-    public void write(final ChannelHandlerContext ctx,
-                      final ConnectionHandshakeSegment seg,
-                      final ChannelPromise writePromise) {
+    void write(final ChannelHandlerContext ctx,
+               final ConnectionHandshakeSegment seg,
+               final ChannelPromise writePromise) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
@@ -272,7 +300,7 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(ctx, seg, writePromise);
     }
 
-    public void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+    void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
@@ -280,8 +308,8 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(ctx, seg);
     }
 
-    public void writeAndFlush(final ChannelHandlerContext ctx,
-                              final ConnectionHandshakeSegment seg) {
+    void writeAndFlush(final ChannelHandlerContext ctx,
+                       final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
@@ -289,7 +317,14 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.addAndFlush(ctx, seg);
     }
 
-    public void flush(final ChannelHandlerContext ctx) {
+    void flush(final ChannelHandlerContext ctx) {
         outgoingSegmentQueue.flush(ctx);
+    }
+
+    void add(final ByteBuf data, final ChannelPromise promise) {
+        sendBuffer.add(data, promise);
+    }
+
+    void tryFlushingSendBuffer(final ChannelHandlerContext ctx, final boolean newFlush) {
     }
 }

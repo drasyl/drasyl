@@ -87,10 +87,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final Duration userTimeout;
     private final LongSupplier issProvider;
     private final boolean activeOpen;
+    private final int initialMss;
     protected ScheduledFuture<?> userTimeoutFuture;
     State state;
     private TransmissionControlBlock tcb;
-    private ChannelPromise userCallFuture;
+    private UserCallPromise userCallFuture;
     private long flushUntil = -1;
     private long rtt = -1;
     private long srtt;
@@ -126,19 +127,20 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @param activeOpen  Initiate active OPEN handshake process automatically on
      *                    {@link #channelActive(ChannelHandlerContext)}
      * @param state       Current synchronization state
-     * @param mss         Maximum segment size
+     * @param initialMss  Maximum segment size
      */
     @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final Duration userTimeout,
                                final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
-                               final int mss,
+                               final int initialMss,
                                final TransmissionControlBlock tcb) {
         this.userTimeout = requireNonNegative(userTimeout);
         this.issProvider = requireNonNull(issProvider);
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
+        this.initialMss = initialMss;
         this.tcb = tcb;
     }
 
@@ -237,25 +239,25 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] Write was performed while we're in passive OPEN mode. Switch to active OPEN mode, enqueue write operation, and initiate OPEN process.", ctx.channel(), state);
 
                 // save promise for later, as it we need ACKnowledgment from remote peer
-                userCallFuture = ctx.newPromise();
+                userCallFuture = UserCallPromise.newPromise(ctx, UserCall.OPEN);
 
                 // enqueue our write for transmission after entering ESTABLISHED state
                 performActiveOpen(ctx);
-                tcb.sendBuffer().add(data, promise);
+                tcb.add(data, promise);
                 break;
 
             case SYN_SENT:
             case SYN_RECEIVED:
                 // Queue the data for transmission after entering ESTABLISHED state.
                 LOG.trace("{}[{}] Queue the data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), state, data);
-                tcb.sendBuffer().add(data, promise);
+                tcb.add(data, promise);
                 break;
 
             case ESTABLISHED:
                 // add this message to or send buffer, to allow it to be sent together with other
                 // data for transmission efficiency.
                 LOG.trace("{}[{}] As connection is established, we can add the message `{}` to the write queue and trigger a queue flush.", ctx.channel(), state, data);
-                tcb.sendBuffer().add(data, promise);
+                tcb.add(data, promise);
                 break;
 
             default:
@@ -283,13 +285,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         switchToNewState(ctx, SYN_SENT);
 
         // start user timeout guard
-        applyUserTimeout(ctx, "OPEN", userCallFuture);
+        applyUserCallOpenTimeout(ctx, userCallFuture);
 
         ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
     }
 
     private void createTcb(final ChannelHandlerContext ctx) {
-        tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong());
+        // window size sollte ein vielfaches von mss betragen
+        tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong(), initialMss * 64, initialMss);
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
 
         ctx.executor().scheduleAtFixedRate(() -> {
@@ -325,7 +328,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case ESTABLISHED:
                 // save promise for later, as it we need ACKnowledgment from remote peer
-                userCallFuture = promise;
+                userCallFuture = UserCallPromise.wrapPromise(UserCall.CLOSE, promise);
 
                 // signal user connection closing
                 ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
@@ -336,7 +339,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 switchToNewState(ctx, FIN_WAIT_1);
 
-                applyUserTimeout(ctx, "CLOSE", promise);
+                applyUserCloseTimeout(ctx, userCallFuture);
                 break;
 
             default:
@@ -361,22 +364,43 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         state = newState;
     }
 
-    private void applyUserTimeout(final ChannelHandlerContext ctx,
-                                  final String userCall,
-                                  final ChannelPromise promise) {
+    private void applyUserCallOpenTimeout(final ChannelHandlerContext ctx,
+                                          final UserCallPromise promise) {
         if (userTimeout.toMillis() > 0) {
             if (userTimeoutFuture != null) {
                 userTimeoutFuture.cancel(false);
             }
             userTimeoutFuture = ctx.executor().schedule(() -> {
-                LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, userCall, userTimeout.toMillis());
+                LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, promise.userCall(), userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
+                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + promise.userCall() + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
                 ctx.channel().close();
             }, userTimeout.toMillis(), MILLISECONDS);
             userTimeoutFuture.addListener((FutureListener) future -> {
-                if (future.isCancelled() && "CLOSE".equals(userCall)) {
-                    LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, userCall);
+                if (future.isCancelled() && promise.userCall() == UserCall.CLOSE) {
+                    LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, promise.userCall());
+                    switchToNewState(ctx, CLOSED);
+                    ctx.channel().close();
+                }
+            });
+        }
+    }
+
+    private void applyUserCloseTimeout(final ChannelHandlerContext ctx,
+                                       final UserCallPromise promise) {
+        if (userTimeout.toMillis() > 0) {
+            if (userTimeoutFuture != null) {
+                userTimeoutFuture.cancel(false);
+            }
+            userTimeoutFuture = ctx.executor().schedule(() -> {
+                LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, promise.userCall(), userTimeout.toMillis());
+                switchToNewState(ctx, CLOSED);
+                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + promise.userCall() + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
+                ctx.channel().close();
+            }, userTimeout.toMillis(), MILLISECONDS);
+            userTimeoutFuture.addListener((FutureListener) future -> {
+                if (future.isCancelled() && promise.userCall() == UserCall.CLOSE) {
+                    LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, promise.userCall());
                     switchToNewState(ctx, CLOSED);
                     ctx.channel().close();
                 }
@@ -399,7 +423,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (activeOpen) {
                 // active OPEN
                 LOG.trace("{}[{}] Handler is configured to perform active OPEN process.", ctx.channel(), state);
-                userCallOpen(ctx, ctx.newPromise());
+                userCallOpen(ctx, UserCallPromise.newPromise(ctx, UserCall.OPEN));
             }
             else {
                 // passive OPEN
@@ -638,15 +662,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 negotiateMss(ctx, seg);
 
                 // ACK
-                if (flushUntil == -1 || tcb.sendBuffer().isEmpty()) {
-                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
-                    LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
-                    tcb.write(ctx, response);
-                }
-                else {
-                    LOG.trace("{}[{}] We've pending data in our write queue. Flush this queue, it will piggyback an ACK.", ctx.channel(), state);
-                    tryFlushingSendBuffer(ctx, false);
-                }
+                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt);
+                LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
+                tcb.write(ctx, response);
 
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt, tcb.rcvNxt));
             }
@@ -954,7 +972,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void userCallOpen(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
 
-        userCallFuture = promise;
+        userCallFuture = UserCallPromise.wrapPromise(UserCall.OPEN, promise);
 
         // channel was closed. Perform active OPEN handshake
         // as we have now future we can pass any errors to, we will throw the exception to

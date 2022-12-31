@@ -101,33 +101,35 @@ class ConnectionHandshakeSegmentTest {
         @Test
         void shouldReturnTrueIfOtherSegmentIsHigherAck() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.ack(10, 1);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.ack(10, 2);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.ack(10, 2);
 
-            assertTrue(current.canPiggybackAck(other));
+            assertTrue(next.canPiggybackAck(current));
         }
 
         @Test
         void shouldReturnTrueIfOtherSegmentCanPiggybackAck() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.ack(10, 1);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.fin(10);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.fin(10);
 
-            assertTrue(current.canPiggybackAck(other));
+            assertTrue(next.canPiggybackAck(current));
         }
 
         @Test
         void shouldReturnTrueIfOtherSegmentContainsHigherAck() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.ack(10, 1);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.pshAck(10, 1, Unpooled.EMPTY_BUFFER);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.pshAck(10, 1, Unpooled.buffer(10).writerIndex(10));
 
-            assertTrue(current.canPiggybackAck(other));
+            assertTrue(next.canPiggybackAck(current));
+
+            next.release();
         }
 
         @Test
         void shouldReturnFalseIfCurrentSegmentIsNotOnlyAck() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.pshAck(10, 1, Unpooled.EMPTY_BUFFER);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.pshAck(20, 1, Unpooled.EMPTY_BUFFER);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.pshAck(20, 1, Unpooled.EMPTY_BUFFER);
 
-            assertFalse(current.canPiggybackAck(other));
+            assertFalse(next.canPiggybackAck(current));
         }
     }
 
@@ -136,17 +138,17 @@ class ConnectionHandshakeSegmentTest {
         @Test
         void shouldReplaceCurrentAckIfOtherSegmentIsHigherAck() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.ack(10, 1);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.ack(10, 2);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.ack(10, 2);
 
-            assertSame(other, other.piggybackAck(current));
+            assertSame(next, next.piggybackAck(current));
         }
 
         @Test
         void shouldPiggybackAckToOtherSegment() {
             final ConnectionHandshakeSegment current = ConnectionHandshakeSegment.ack(10, 1);
-            final ConnectionHandshakeSegment other = ConnectionHandshakeSegment.fin(10);
+            final ConnectionHandshakeSegment next = ConnectionHandshakeSegment.fin(10);
 
-            assertEquals(ConnectionHandshakeSegment.finAck(10, 1), other.piggybackAck(current));
+            assertEquals(ConnectionHandshakeSegment.finAck(10, 1), next.piggybackAck(current));
         }
     }
 
