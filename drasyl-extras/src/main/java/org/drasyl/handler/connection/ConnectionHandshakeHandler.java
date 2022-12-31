@@ -77,9 +77,9 @@ import static org.drasyl.util.RandomUtil.randomInt;
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
-    public static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
-    public static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
+    private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
+    private static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
@@ -92,7 +92,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     State state;
     private TransmissionControlBlock tcb;
     private UserCallPromise userCallFuture;
-    private long flushUntil = -1;
     private long rtt = -1;
     private long srtt;
     private long rto;
@@ -175,7 +174,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
-        tryFlushingSendBuffer(ctx, true);
+        tcb().tryFlushingSendBuffer(ctx, state, true);
         tcb.flush(ctx);
     }
 
@@ -183,42 +182,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void read(final ChannelHandlerContext ctx) throws Exception {
         super.read(ctx);
         // FIXME: RECEIVE CALL?
-    }
-
-    // FIXME: das hier in TCB verschieben? oder SendBuffer?
-    private void tryFlushingSendBuffer(final ChannelHandlerContext ctx, final boolean newFlush) {
-        if (newFlush) {
-            // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
-            flushUntil = advanceSeq(tcb.sndNxt, tcb.sendBuffer().readableBytes());
-        }
-
-        if (state != ESTABLISHED || flushUntil == -1 || tcb.sendBuffer().isEmpty()) {
-            return;
-        }
-
-        final int allowedBytesForNewTransmission = tcb.sequenceNumbersAllowedForNewDataTransmission();
-        final int allowedBytesToFlush = (int) (this.flushUntil - tcb.sndNxt);
-        LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, tcb.sendBuffer().readableBytes(), allowedBytesToFlush, tcb.mss());
-
-        final int readableBytesInBuffer = tcb.sendBuffer().readableBytes();
-        int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
-
-        LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
-        while (remainingBytes > 0) {
-            final ChannelPromise ackPromise = ctx.newPromise();
-            final ByteBuf data = tcb.sendBuffer().remove(Math.min(tcb.mss(), remainingBytes), ackPromise);
-            remainingBytes -= data.readableBytes();
-            final boolean isLast = remainingBytes == 0 || tcb.sendBuffer().isEmpty();
-            final ConnectionHandshakeSegment seg;
-            if (isLast) {
-                seg = ConnectionHandshakeSegment.pshAck(tcb.sndNxt, tcb.rcvNxt, data);
-            }
-            else {
-                seg = ConnectionHandshakeSegment.ack(tcb.sndNxt, tcb.rcvNxt, data);
-            }
-            LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, tcb.sequenceNumbersAllowedForNewDataTransmission(), tcb.retransmissionQueue().size() + 1);
-            tcb.write(ctx, seg, ctx.newPromise(), ackPromise);
-        }
     }
 
     private void userCallStatus(final ChannelHandlerContext ctx) {
@@ -470,7 +433,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        tryFlushingSendBuffer(ctx, false);
+        tcb().tryFlushingSendBuffer(ctx, state, false);
         if (tcb != null) {
             tcb.flush(ctx);
         }
