@@ -26,19 +26,21 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.State.CLOSED;
-import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * A {@link ChannelFutureListener} that retransmit not acknowledged segments.
  */
 class RetransmissionTimeoutApplier implements ChannelFutureListener {
+    static final Logger LOG = LoggerFactory.getLogger(RetransmissionTimeoutApplier.class);
     static final long LOWER_BOUND = 1_000; // lower bound for retransmission (e.g., 1 second)
     static final long UPPER_BOUND = 60_000; // upper bound for retransmission (e.g., 1 minute)
     // as we're currently not aware of the actual RTT, we use this fixed value
@@ -54,7 +56,7 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
     RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
                                  final ConnectionHandshakeSegment seg,
                                  final ChannelPromise ackPromise) {
-        this(ctx, seg, ackPromise, ((ConnectionHandshakeHandler) ctx.handler()).rto());
+        this(ctx, seg, ackPromise, /*((ConnectionHandshakeHandler) ctx.handler()).tcb.rto()*/1000);
     }
 
     RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
@@ -64,7 +66,8 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
         this.ctx = requireNonNull(ctx);
         this.seg = requireNonNull(seg);
         this.ackPromise = requireNonNull(ackPromise);
-        this.rto = requirePositive(rto);
+        this.rto = rto;
+//        this.rto = requirePositive(rto);
     }
 
     @SuppressWarnings({ "unchecked", "java:S2164" })
@@ -78,7 +81,7 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
                 // check if we're not CLOSED and if SEG has not been ACKed
                 if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb.sndUna, seg.seq(), ConnectionHandshakeSegment.SEQ_NO_SPACE)) {
                     // not ACKed, send egain
-                    ConnectionHandshakeHandler.LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
+                    LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
                     ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, rto * 2));
                     // FIXME: vermeide das jedes SEG einzeln erneut neu geschrieben und geflusht wird?
                 }
@@ -87,13 +90,13 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
             // cancel retransmission job if SEG got ACKed
             ackPromise.addListener(new ChannelFutureListener() {
                 @Override
-                public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                public void operationComplete(ChannelFuture channelFuture) {
                     retransmissionFuture.cancel(false);
                 }
             });
         }
         else if (!(future.cause() instanceof ClosedChannelException)) {
-            ConnectionHandshakeHandler.LOG.trace("{} Unable to send `{}`:", future::channel, () -> seg, future::cause);
+            LOG.trace("{} Unable to send `{}`:", future::channel, () -> seg, future::cause);
             future.channel().close();
         }
     }

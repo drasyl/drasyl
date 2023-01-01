@@ -50,14 +50,12 @@ class OutgoingSegmentQueueTest {
     class AddAndFlush {
         @Test
         void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeHandler handler,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
                                                              @Mock final ChannelPromise writePromise,
                                                              @Mock final ChannelPromise ackPromise,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                              @Mock final RetransmissionQueue retransmissionQueue,
                                                              @Mock final RttMeasurement rttMeasurement) {
-            when(handler.rto()).thenReturn(10L);
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
 
@@ -72,14 +70,12 @@ class OutgoingSegmentQueueTest {
     class Flush {
         @Test
         void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeHandler handler,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
                                           @Mock final ChannelPromise writePromise,
                                           @Mock final ChannelPromise ackPromise,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
-            when(handler.rto()).thenReturn(10L);
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
             deque.add(new OutgoingSegmentEntry(seg, writePromise, ackPromise));
@@ -122,11 +118,9 @@ class OutgoingSegmentQueueTest {
 
         @Test
         void shouldPiggybackAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeHandler handler,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                              @Mock final RetransmissionQueue retransmissionQueue,
                                              @Mock final RttMeasurement rttMeasurement) {
-            when(handler.rto()).thenReturn(10L);
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
             final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);

@@ -31,8 +31,13 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.Objects;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
+import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
+import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
+import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.LOWER_BOUND;
+import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.UPPER_BOUND;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -83,6 +88,9 @@ class TransmissionControlBlock {
     long irs; // initial receive sequence number
     int mss; // maximum segment size
     long flushUntil = -1;
+    long rtt = -1;
+    long srtt;
+    long rto;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -375,6 +383,29 @@ class TransmissionControlBlock {
         if (mssOption != null && (int) mssOption < mss) {
             LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), mssOption, mss);
             mss = (int) mssOption;
+        }
+    }
+
+    public long rto() {
+        return rto;
+    }
+
+    public void initRto(final ChannelHandlerContext ctx) {
+        srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
+        rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
+    }
+
+    public void updateRto(final ChannelHandlerContext ctx,
+                          final ConnectionHandshakeSegment seg) {
+        final Object timestampsOption = seg.options().get(TIMESTAMPS);
+        if (timestampsOption != null) {
+            final long[] timestamps = (long[]) timestampsOption;
+            final long tsEcr = timestamps[1];
+
+            rtt = (int) (System.nanoTime() / 1_000_000 - tsEcr);
+            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
+            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
+            LOG.trace("{} New RTT sample: RTT={}ms; SRTT={}ms; RTO={}ms", ctx.channel(), rtt, srtt, rto);
         }
     }
 }

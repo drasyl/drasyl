@@ -62,6 +62,7 @@ class ConnectionHandshakeHandlerTest {
         class SuccessfulSynchronization {
             @Nested
             class ClientSide {
+                // active client, passive server
                 @Test
                 void clientShouldSynchronizeWhenServerBehavesExpectedly() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
@@ -90,6 +91,7 @@ class ConnectionHandshakeHandlerTest {
                     channel.close();
                 }
 
+                // active client, active server
                 // Both peers are in CLOSED state
                 // Both peers initiate handshake simultaneous
                 @Test
@@ -160,6 +162,32 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(data, channel.readInbound());
 
                     assertTrue(channel.isOpen());
+                    channel.close();
+                    data.release();
+                }
+
+                // passive server, passive client
+                // server write should trigger handshake
+                @Test
+                void passiveServerShouldSwitchToActiveOpenOnWrite() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
+                    channel.pipeline().addLast(handler);
+
+                    // handlerAdded on active channel should change state to LISTEN
+                    assertEquals(LISTEN, handler.state);
+
+                    // write should perform an active OPEN handshake
+                    final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
+                    channel.writeOutbound(data);
+                    assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
+                    assertEquals(SYN_SENT, handler.state);
+
+                    // after handshake the write should be formed
+                    channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
+                    assertEquals(ESTABLISHED, handler.state);
+                    assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
+
                     channel.close();
                     data.release();
                 }
@@ -381,6 +409,11 @@ class ConnectionHandshakeHandlerTest {
                 assertTrue(future.isDone());
                 assertNull(handler.tcb);
             }
+
+            @Test
+            void shouldSentRemainingDataBeforeClose() {
+                
+            }
         }
 
         @Nested
@@ -409,47 +442,41 @@ class ConnectionHandshakeHandlerTest {
     }
 
     @Nested
+    class Transmission {
+        @Nested
+        class Mss {
+            @Test
+            void shouldSegmentizeDataIntoSegmentsToLargerThenMss() {
+                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                final int bytes = 250;
+                final int mss = 100;
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, mss));
+                channel.pipeline().addLast(handler);
+
+                // as mss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
+                final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeOutbound(data);
+
+                for (int i = 0; i < bytes - mss; i += mss) {
+                    assertEquals(ConnectionHandshakeSegment.ack(100 + i, 300, data.slice(i, 100)), channel.readOutbound());
+                }
+                assertEquals(ConnectionHandshakeSegment.pshAck(300, 300, data.slice(200, 50)), channel.readOutbound());
+
+                channel.close();
+            }
+
+            // FIXME: send buffer should keep track what bytes have been enqueued before flush was triggered
+            @Test
+            void shouldOnlySendDataEnqueuedBeforeFlush() {
+                // teil des handlers oder TCB?
+            }
+        }
+    }
+
+    @Nested
     class UserCallSend {
-        @Test
-        void shouldSegmentizeOutboundDataIntoSegments() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
-            channel.pipeline().addLast(handler);
-
-            // as mss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
-            final ByteBuf data = Unpooled.buffer(250).writeBytes(randomBytes(250));
-            channel.writeOutbound(data);
-            assertEquals(ConnectionHandshakeSegment.ack(100, 300, data.slice(0, 100)), channel.readOutbound());
-            assertEquals(ConnectionHandshakeSegment.ack(200, 300, data.slice(100, 100)), channel.readOutbound());
-            assertEquals(ConnectionHandshakeSegment.pshAck(300, 300, data.slice(200, 50)), channel.readOutbound());
-
-            channel.close();
-        }
-
-        @Test
-        void passiveServerShouldSwitchToActiveOpenOnWrite() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
-            channel.pipeline().addLast(handler);
-
-            // handlerAdded on active channel should change state to LISTEN
-            assertEquals(LISTEN, handler.state);
-
-            // write should perform an active OPEN handshake
-            final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
-            channel.writeOutbound(data);
-            assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
-            assertEquals(SYN_SENT, handler.state);
-
-            // after handshake the write should be formed
-            channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
-            assertEquals(ESTABLISHED, handler.state);
-            assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
-
-            channel.close();
-            data.release();
-        }
-
         // FIXME: test bauen wenn peer nicht auf CLOSE antwortet. War früher das hier, oder? https://github.com/drasyl/drasyl/blob/master/drasyl-extras/src/test/java/org/drasyl/handler/connection/ConnectionHandshakeHandlerTest.java#L347
         // FIXME: gleichen test für SYN?
         // FIXME: gleichen test für jeden state? :P

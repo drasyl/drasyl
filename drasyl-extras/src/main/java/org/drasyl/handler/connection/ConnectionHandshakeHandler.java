@@ -45,10 +45,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.LOWER_BOUND;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.UPPER_BOUND;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -80,7 +76,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
-    static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
     private static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
@@ -91,13 +87,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final LongSupplier issProvider;
     private final boolean activeOpen;
     private final int initialMss;
-    protected ScheduledFuture<?> userTimeoutFuture;
+    ScheduledFuture<?> userTimeoutFuture;
     State state;
     TransmissionControlBlock tcb;
     private UserCallPromise userCallFuture;
-    private long rtt = -1;
-    private long srtt;
-    private long rto;
     private boolean initDone;
 
     /**
@@ -144,10 +137,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         this.state = requireNonNull(state);
         this.initialMss = requirePositive(initialMss);
         this.tcb = tcb;
-    }
-
-    public long rto() {
-        return rto;
     }
 
     /*
@@ -498,8 +487,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void initHandler(final ChannelHandlerContext ctx) {
         if (!initDone) {
             initDone = true;
-            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
-            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
+            tcb.initRto(ctx);
 
             // this state check is only required for some of our unit tests
             if (state == CLOSED) {
@@ -531,13 +519,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // RTTM
         if (tcb != null) {
             tcb.rttMeasurement().segmentArrives(seg);
+            tcb.updateRto(ctx, seg);
         }
-//        if (seg.tsEcr() > 0) {
-//            rtt = (int) (System.nanoTime() / 1_000_000 - seg.tsEcr());
-//            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
-//            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
-//            LOG.trace("{}[{}] New RTT sample: RTT={}ms; SRTT={}ms; RTO={}ms", ctx.channel(), state, rtt, srtt, rto);
-//        }
 
         try {
             switch (state) {
