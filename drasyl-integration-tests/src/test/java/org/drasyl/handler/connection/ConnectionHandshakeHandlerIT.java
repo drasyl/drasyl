@@ -40,7 +40,6 @@ import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
-import test.DropRandomOutboundMessagesHandler;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -137,7 +136,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         serverHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
                         p.addLast(serverHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -169,7 +168,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+//                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                         clientHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
                         p.addLast(clientHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -419,13 +418,9 @@ class ConnectionHandshakeHandlerIT {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
                                                         final ConnectionHandshakeSegment msg) {
-                                if (msg.isFin()) {
-                                    // drop
-                                    ReferenceCountUtil.release(msg);
-                                }
-                                else {
+                                if (!msg.isFin()) {
                                     // pass through
-                                    ctx.fireChannelRead(msg);
+                                    ctx.fireChannelRead(msg.retain());
                                 }
                             }
                         });

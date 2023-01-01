@@ -41,7 +41,7 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <root level="trace">
+    <root level="debug">
         <appender-ref ref="Console"/>
     </root>
 </configuration>

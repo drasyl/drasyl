@@ -23,12 +23,10 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -40,7 +38,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
-import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
@@ -153,7 +150,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
         // cancel all timeout guards
-        cancelTimeoutGuards();
+        cancelUserTimeoutGuard();
 
         deleteTcb(CONNECTION_CLOSED_ERROR);
     }
@@ -214,7 +211,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         // cancel all timeout guards
-        cancelTimeoutGuards();
+        cancelUserTimeoutGuard();
 
         deleteTcb(CONNECTION_CLOSED_ERROR);
 
@@ -248,9 +245,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         switchToNewState(ctx, CLOSED);
         deleteTcb(cause);
-        failUserCall(cause);
 
         ctx.close();
+
+        ctx.fireExceptionCaught(cause);
     }
 
     /*
@@ -265,16 +263,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
 
-        userCallFuture = UserCallPromise.newPromise(ctx, UserCall.OPEN);
-
-        // fire channel exception if this user call timed out or is being cancelled (e.g.
-        // CLOSE call before connection has been ESTABLISHED)
-        userCallFuture.addListener((ChannelFutureListener) future -> {
-            if (!future.isSuccess()) {
-                ctx.fireExceptionCaught(future.cause());
-            }
-        });
-
+        // create TCB
         createTcb(ctx);
 
         // send SYN
@@ -284,10 +273,18 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.writeAndFlush(ctx, seg);
 
+        // switch state
         switchToNewState(ctx, SYN_SENT);
 
-        // start user timeout guard
-        applyUserCallOpenTimeout(ctx, userCallFuture);
+        // start user call timeout guard
+        if (userTimeout.toMillis() > 0) {
+            userTimeoutFuture = ctx.executor().schedule(() -> {
+                LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
+                switchToNewState(ctx, CLOSED);
+                ctx.fireExceptionCaught(new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel."));
+                ctx.close();
+            }, userTimeout.toMillis(), MILLISECONDS);
+        }
 
         // inform application about issue handshake
         ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
@@ -368,15 +365,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case LISTEN:
             case SYN_SENT:
-                // fail any existing OPEN user call
-                failUserCall(CONNECTION_CLOSING_ERROR);
+                cancelUserTimeoutGuard();
+                ctx.fireExceptionCaught(CONNECTION_CLOSING_ERROR);
                 switchToNewState(ctx, CLOSED);
                 ctx.close(promise);
                 break;
 
             case SYN_RECEIVED:
-                // fail any existing OPEN user call
-                failUserCall(CONNECTION_CLOSING_ERROR);
+                cancelUserTimeoutGuard();
+                ctx.fireExceptionCaught(CONNECTION_CLOSING_ERROR);
                 // continue with ESTABLISHED part
 
             case ESTABLISHED:
@@ -392,19 +389,21 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 switchToNewState(ctx, FIN_WAIT_1);
 
-                applyUserCloseTimeout(ctx, userCallFuture);
+                if (userTimeout.toMillis() > 0) {
+                    userTimeoutFuture = ctx.executor().schedule(() -> {
+                        LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
+                        switchToNewState(ctx, CLOSED);
+                        promise.tryFailure(new ConnectionHandshakeException("User timeout for CLOSE user call after " + userTimeout.toMillis() + "ms. Close channel."));
+                        ctx.close();
+                    }, userTimeout.toMillis(), MILLISECONDS);
+                }
                 break;
 
             default:
-                userCallFuture.addListener(new PromiseNotifier<>(promise));
+                if (userCallFuture != null) {
+                    userCallFuture.addListener(new PromiseNotifier<>(promise));
+                }
                 break;
-        }
-    }
-
-    private void failUserCall(Throwable cause) {
-        if (userCallFuture != null) {
-            userCallFuture.tryFailure(cause);
-            userCallFuture = null;
         }
     }
 
@@ -450,54 +449,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         state = newState;
     }
 
-    private void applyUserCallOpenTimeout(final ChannelHandlerContext ctx,
-                                          final UserCallPromise promise) {
-        if (userTimeout.toMillis() > 0) {
-            if (userTimeoutFuture != null) {
-                userTimeoutFuture.cancel(false);
-            }
-            userTimeoutFuture = ctx.executor().schedule(() -> {
-                LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, promise != null ? promise.userCall() : "NULL", userTimeout.toMillis());
-                switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + promise.userCall() + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
-                ctx.close();
-            }, userTimeout.toMillis(), MILLISECONDS);
-            userTimeoutFuture.addListener((FutureListener) future -> {
-                if (future.isCancelled() && promise.userCall() == UserCall.CLOSE) {
-                    LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, promise.userCall());
-                    switchToNewState(ctx, CLOSED);
-                    ctx.close();
-                }
-            });
-        }
-    }
-
-    private void applyUserCloseTimeout(final ChannelHandlerContext ctx,
-                                       final UserCallPromise promise) {
-        if (userTimeout.toMillis() > 0) {
-            if (userTimeoutFuture != null) {
-                userTimeoutFuture.cancel(false);
-            }
-            userTimeoutFuture = ctx.executor().schedule(() -> {
-                LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, promise.userCall(), userTimeout.toMillis());
-                switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + promise.userCall() + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
-                ctx.channel().close();
-            }, userTimeout.toMillis(), MILLISECONDS);
-            userTimeoutFuture.addListener((FutureListener) future -> {
-                if (future.isCancelled() && promise.userCall() == UserCall.CLOSE) {
-                    LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, promise.userCall());
-                    switchToNewState(ctx, CLOSED);
-                    ctx.channel().close();
-                }
-            });
-        }
-    }
-
     private void initHandler(final ChannelHandlerContext ctx) {
         if (!initDone) {
             initDone = true;
-            tcb.initRto(ctx);
+            if (tcb != null) {
+                tcb.initRto(ctx);
+            }
 
             // this state check is only required for some of our unit tests
             if (state == CLOSED) {
@@ -582,7 +539,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
         // check RST
         if (seg.isRst()) {
-            // as we are already/still in CLOSED state, we can ignore the RST
+            // Nothing to reset in this state. Just ignore the RST :-)
             return;
         }
 
@@ -666,7 +623,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, CLOSED);
                 deleteTcb(CONNECTION_RESET_EXCEPTION);
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
-                ctx.channel().close();
+                ctx.close();
             }
             else {
                 LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Drop it.", ctx.channel(), state, seg);
@@ -690,10 +647,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
-                cancelTimeoutGuards();
                 switchToNewState(ctx, ESTABLISHED);
-                userCallFuture.setSuccess();
-                userCallFuture = null;
+                cancelUserTimeoutGuard();
 
                 tcb.negotiateMss(ctx, seg);
 
@@ -742,7 +697,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         switchToNewState(ctx, CLOSED);
                         deleteTcb(CONNECTION_REFUSED_EXCEPTION);
                         ctx.fireExceptionCaught(CONNECTION_REFUSED_EXCEPTION);
-                        ctx.channel().close();
+                        ctx.close();
                         return;
                     }
                     else {
@@ -759,7 +714,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     switchToNewState(ctx, CLOSED);
                     deleteTcb(CONNECTION_RESET_EXCEPTION);
                     ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
-                    ctx.channel().close();
+                    ctx.close();
                     return;
 
                 default:
@@ -768,19 +723,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
                     deleteTcb(CONNECTION_CLOSED_ERROR);
-                    ctx.channel().close();
+                    ctx.close();
                     return;
             }
         }
 
         // check ACK
-        if (seg.isAck()) {
+        if (!seg.isAck() && seg.content().isReadable()) {
+            LOG.trace("{}[{}] Got `{}` with off ACK bit. Drop segment and return.", ctx.channel(), state, seg);
+            return;
+        }
+        else {
             switch (state) {
                 case SYN_RECEIVED:
                     if (tcb.isAckOurSyn(seg)) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
-                        cancelTimeoutGuards();
+                        cancelUserTimeoutGuard();
                         switchToNewState(ctx, ESTABLISHED);
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt, tcb.rcvNxt));
 
@@ -798,7 +757,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case ESTABLISHED:
-                    establishedProcessing(ctx, seg, acceptableAck);
+                    if (establishedProcessing(ctx, seg, acceptableAck)) {
+                        return;
+                    }
                     break;
 
                 case FIN_WAIT_1:
@@ -855,10 +816,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     tcb.write(ctx, response);
             }
-        }
-        else if (seg.content().isReadable()) {
-            LOG.trace("{}[{}] Got `{}` with off ACK bit. Drop segment and return.", ctx.channel(), state, seg);
-            return;
         }
 
         // check URG here...
@@ -937,8 +894,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
                     switchToNewState(ctx, CLOSED);
-                    userCallFuture.addListener(CLOSE);
-                    tcb.write(ctx, response, userCallFuture);
+                    userCallFuture.setSuccess();
+                    userCallFuture = null;
+                    tcb.write(ctx, response);
+                    // FIXME: Enter the TIME-WAIT state. Start the time-wait timer, turn off the other timers.
                     break;
 
                 default:
@@ -988,9 +947,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
-    private void cancelTimeoutGuards() {
+    private void cancelUserTimeoutGuard() {
         if (userTimeoutFuture != null) {
             userTimeoutFuture.cancel(false);
+            userTimeoutFuture = null;
         }
     }
 }

@@ -182,11 +182,18 @@ class TransmissionControlBlock {
         this(channel, iss, 0);
     }
 
-    public TransmissionControlBlock(final Channel channel, final long iss, final int windowSize, final int mss) {
+    public TransmissionControlBlock(final Channel channel,
+                                    final long iss,
+                                    final int windowSize,
+                                    final int mss) {
         this(channel, iss, iss, 0, windowSize, mss);
     }
 
-    public TransmissionControlBlock(final Channel channel, final long iss, final long irs, final int windowSize, final int mss) {
+    public TransmissionControlBlock(final Channel channel,
+                                    final long iss,
+                                    final long irs,
+                                    final int windowSize,
+                                    final int mss) {
         this(channel, iss, iss, irs, windowSize, mss);
     }
 
@@ -322,13 +329,13 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(ctx, seg);
     }
 
-    void writeAndFlush(final ChannelHandlerContext ctx,
-                       final ConnectionHandshakeSegment seg) {
+    ChannelPromise writeAndFlush(final ChannelHandlerContext ctx,
+                                 final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        outgoingSegmentQueue.addAndFlush(ctx, seg);
+        return outgoingSegmentQueue.addAndFlush(ctx, seg);
     }
 
     void flush(final ChannelHandlerContext ctx) {
