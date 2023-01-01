@@ -148,10 +148,39 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         return rto;
     }
 
+    /*
+     * Handler Events
+     */
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            initHandler(ctx);
+        }
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+        // cancel all timeout guards
+        cancelTimeoutGuards();
+
+        tcb.delete(CONNECTION_CLOSED_ERROR);
+    }
+
+    /*
+     * Channel Signals
+     */
+
     @Override
     public void close(final ChannelHandlerContext ctx,
                       final ChannelPromise promise) throws Exception {
         userCallClose(ctx, promise);
+    }
+
+    @Override
+    public void read(final ChannelHandlerContext ctx) throws Exception {
+        super.read(ctx);
+        // FIXME: RECEIVE CALL?
     }
 
     @Override
@@ -176,10 +205,50 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         tcb.flush(ctx);
     }
 
+    /*
+     * Channel Events
+     */
+
     @Override
-    public void read(final ChannelHandlerContext ctx) throws Exception {
-        super.read(ctx);
-        // FIXME: RECEIVE CALL?
+    public void channelActive(final ChannelHandlerContext ctx) {
+        initHandler(ctx);
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        // cancel all timeout guards
+        cancelTimeoutGuards();
+
+        tcb.delete(CONNECTION_CLOSED_ERROR);
+
+        ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof ConnectionHandshakeSegment) {
+            segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
+        }
+        else {
+            ctx.fireChannelRead(msg);
+        }
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        tcb.tryFlushingSendBuffer(ctx, state, false);
+        if (tcb != null) {
+            tcb.flush(ctx);
+        }
+
+        ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
+        cause.printStackTrace();
+        super.exceptionCaught(ctx, cause);
     }
 
     /*
@@ -428,12 +497,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        initHandler(ctx);
-        ctx.fireChannelActive();
-    }
-
     private void initHandler(final ChannelHandlerContext ctx) {
         if (!initDone) {
             initDone = true;
@@ -455,51 +518,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 }
             }
         }
-    }
-
-    @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        if (ctx.channel().isActive()) {
-            initHandler(ctx);
-        }
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        // cancel all timeout guards
-        cancelTimeoutGuards();
-
-        tcb.delete(CONNECTION_CLOSED_ERROR);
-
-        ctx.fireChannelInactive();
-    }
-
-    @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
-        // cancel all timeout guards
-        cancelTimeoutGuards();
-
-        tcb.delete(CONNECTION_CLOSED_ERROR);
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof ConnectionHandshakeSegment) {
-            segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
-        }
-        else {
-            ctx.fireChannelRead(msg);
-        }
-    }
-
-    @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        tcb.tryFlushingSendBuffer(ctx, state, false);
-        if (tcb != null) {
-            tcb.flush(ctx);
-        }
-
-        ctx.fireChannelReadComplete();
     }
 
     private void segmentArrives(final ChannelHandlerContext ctx,
@@ -991,11 +1009,5 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (userTimeoutFuture != null) {
             userTimeoutFuture.cancel(false);
         }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
-        super.exceptionCaught(ctx, cause);
     }
 }
