@@ -25,9 +25,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.UnsupportedMessageTypeException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
@@ -412,7 +414,7 @@ class ConnectionHandshakeHandlerTest {
 
             @Test
             void shouldSentRemainingDataBeforeClose() {
-                
+
             }
         }
 
@@ -477,6 +479,17 @@ class ConnectionHandshakeHandlerTest {
 
     @Nested
     class UserCallSend {
+        @Test
+        void shouldRejectOutboundNonByteBufs() {
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            channel.pipeline().addLast(handler);
+
+            assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
+
+            channel.close();
+        }
+
         // FIXME: test bauen wenn peer nicht auf CLOSE antwortet. War früher das hier, oder? https://github.com/drasyl/drasyl/blob/master/drasyl-extras/src/test/java/org/drasyl/handler/connection/ConnectionHandshakeHandlerTest.java#L347
         // FIXME: gleichen test für SYN?
         // FIXME: gleichen test für jeden state? :P
@@ -510,5 +523,31 @@ class ConnectionHandshakeHandlerTest {
 
             data.release();
         }
+
+        @Test
+        void shouldRejectInboundNonByteBufs() {
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            channel.pipeline().addLast(handler);
+
+            final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            channel.writeInbound(buf);
+
+            assertNull(channel.readInbound());
+            assertEquals(0, buf.refCnt());
+
+            channel.close();
+        }
+    }
+
+    @Test
+    void exceptionsShouldCloseTheConnection(@Mock final Throwable cause) {
+        final EmbeddedChannel channel = new EmbeddedChannel();
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+        channel.pipeline().addLast(handler);
+
+        channel.pipeline().fireExceptionCaught(cause);
+
+        assertEquals(CLOSED, handler.state);
     }
 }

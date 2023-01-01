@@ -155,10 +155,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // cancel all timeout guards
         cancelTimeoutGuards();
 
-        if (tcb != null) {
-            tcb.delete(CONNECTION_CLOSED_ERROR);
-            tcb = null;
-        }
+        deleteTcb(CONNECTION_CLOSED_ERROR);
     }
 
     /*
@@ -219,9 +216,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // cancel all timeout guards
         cancelTimeoutGuards();
 
-        if (tcb != null) {
-            tcb.delete(CONNECTION_CLOSED_ERROR);
-        }
+        deleteTcb(CONNECTION_CLOSED_ERROR);
 
         ctx.fireChannelInactive();
     }
@@ -232,7 +227,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
         }
         else {
-            ctx.fireChannelRead(msg);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 
@@ -249,10 +244,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx,
                                 final Throwable cause) {
-        // FIXME
-        cause.printStackTrace();
+        LOG.trace("{}[{}] Exception caught. Close channel:", ctx.channel(), state, cause);
 
-        ctx.fireExceptionCaught(cause);
+        switchToNewState(ctx, CLOSED);
+        deleteTcb(cause);
+        failUserCall(cause);
+
+        ctx.close();
     }
 
     /*
@@ -370,17 +368,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case LISTEN:
             case SYN_SENT:
-                if (userCallFuture != null) {
-                    userCallFuture.setFailure(CONNECTION_CLOSING_ERROR);
-                }
+                // fail any existing OPEN user call
+                failUserCall(CONNECTION_CLOSING_ERROR);
                 switchToNewState(ctx, CLOSED);
                 ctx.close(promise);
                 break;
 
             case SYN_RECEIVED:
-                if (userCallFuture != null) {
-                    userCallFuture.setFailure(CONNECTION_CLOSING_ERROR);
-                }
+                // fail any existing OPEN user call
+                failUserCall(CONNECTION_CLOSING_ERROR);
                 // continue with ESTABLISHED part
 
             case ESTABLISHED:
@@ -402,6 +398,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             default:
                 userCallFuture.addListener(new PromiseNotifier<>(promise));
                 break;
+        }
+    }
+
+    private void failUserCall(Throwable cause) {
+        if (userCallFuture != null) {
+            userCallFuture.tryFailure(cause);
+            userCallFuture = null;
         }
     }
 
@@ -433,6 +436,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 //        ctx.executor().scheduleAtFixedRate(() -> {
 //            System.err.println("STATUS CALL: " + new ConnectionHandshakeStatus(state, tcb));
 //        }, 0, 100, MILLISECONDS);
+    }
+
+    private void deleteTcb(final Throwable cause) {
+        if (tcb != null) {
+            tcb.delete(cause);
+            tcb = null;
+        }
     }
 
     private void switchToNewState(final ChannelHandlerContext ctx, final State newState) {
@@ -654,7 +664,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (acceptableAck) {
                 LOG.trace("{}[{}] Segment `{}` is an acceptable ACKnowledgement. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
                 switchToNewState(ctx, CLOSED);
-                tcb.delete(CONNECTION_RESET_EXCEPTION);
+                deleteTcb(CONNECTION_RESET_EXCEPTION);
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                 ctx.channel().close();
             }
@@ -730,7 +740,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         // connection has been refused by remote
                         LOG.trace("{}[{}] We got `{}`. Connection has been refused by remote peer.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
-                        tcb.delete(CONNECTION_REFUSED_EXCEPTION);
+                        deleteTcb(CONNECTION_REFUSED_EXCEPTION);
                         ctx.fireExceptionCaught(CONNECTION_REFUSED_EXCEPTION);
                         ctx.channel().close();
                         return;
@@ -747,7 +757,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    tcb.delete(CONNECTION_RESET_EXCEPTION);
+                    deleteTcb(CONNECTION_RESET_EXCEPTION);
                     ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                     ctx.channel().close();
                     return;
@@ -757,7 +767,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // LAST-ACK
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    tcb.delete(CONNECTION_CLOSED_ERROR);
+                    deleteTcb(CONNECTION_CLOSED_ERROR);
                     ctx.channel().close();
                     return;
             }
@@ -829,7 +839,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // our FIN has been ACKed
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                     switchToNewState(ctx, CLOSED);
-                    tcb.delete(CONNECTION_CLOSED_ERROR);
+                    deleteTcb(CONNECTION_CLOSED_ERROR);
                     if (userCallFuture != null) {
                         ctx.close(userCallFuture);
                     }
@@ -917,11 +927,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         // our FIN has been acknowledged
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
-                        tcb.delete(CONNECTION_CLOSED_ERROR);
+                        deleteTcb(CONNECTION_CLOSED_ERROR);
                     }
                     else {
                         switchToNewState(ctx, CLOSING);
-                        tcb.delete(CONNECTION_CLOSING_ERROR);
                     }
                     break;
 
