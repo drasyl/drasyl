@@ -638,8 +638,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.irs = seg.seq();
             if (seg.isAck()) {
                 // advance send state
-                tcb.sndUna = seg.ack();
-                checkForAckedSegmentsInRetransmissionQueue(ctx);
+                tcb.handleAcknowledgement(ctx, seg);
             }
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
@@ -751,8 +750,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         }
 
                         // advance send state
-                        tcb.sndUna = seg.ack();
-                        checkForAckedSegmentsInRetransmissionQueue(ctx);
+                        tcb.handleAcknowledgement(ctx, seg);
                     }
                     break;
 
@@ -917,8 +915,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (acceptableAck) {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna, seg.ack(), (int) (seg.ack() - tcb.sndUna));
             // advance send state
-            tcb.sndUna = seg.ack();
-            checkForAckedSegmentsInRetransmissionQueue(ctx);
+            tcb.handleAcknowledgement(ctx, seg);
         }
         if (tcb.isDuplicateAck(seg)) {
             // ACK is duplicate. ignore
@@ -935,16 +932,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return true;
         }
         return false;
-    }
-
-    private void checkForAckedSegmentsInRetransmissionQueue(final ChannelHandlerContext ctx) {
-        ConnectionHandshakeSegment current = tcb.retransmissionQueue().current();
-        while (current != null && tcb.isFullyAcknowledged(current)) {
-            LOG.trace("{}[{}] Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), state, current, tcb.retransmissionQueue().size() - 1);
-            tcb.retransmissionQueue().removeAndSucceedCurrent();
-
-            current = tcb.retransmissionQueue().current();
-        }
     }
 
     private void cancelUserTimeoutGuard() {
