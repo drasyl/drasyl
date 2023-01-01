@@ -30,6 +30,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Objects;
 
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -67,8 +68,8 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     final SendBuffer sendBuffer;
-    final RetransmissionQueue retransmissionQueue;
     final OutgoingSegmentQueue outgoingSegmentQueue;
+    final RetransmissionQueue retransmissionQueue;
     final ReceiveBuffer receiveBuffer;
     final RttMeasurement rttMeasurement;
     // Send Sequence Variables
@@ -324,6 +325,7 @@ class TransmissionControlBlock {
 
     void flush(final ChannelHandlerContext ctx) {
         outgoingSegmentQueue.flush(ctx);
+        ctx.flush();
     }
 
     void add(final ByteBuf data, final ChannelPromise promise) {
@@ -364,6 +366,15 @@ class TransmissionControlBlock {
             }
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue().size() + 1);
             write(ctx, seg, ctx.newPromise(), ackPromise);
+        }
+    }
+
+    public void negotiateMss(final ChannelHandlerContext ctx,
+                             final ConnectionHandshakeSegment seg) {
+        final Object mssOption = seg.options().get(MAXIMUM_SEGMENT_SIZE);
+        if (mssOption != null && (int) mssOption < mss) {
+            LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), mssOption, mss);
+            mss = (int) mssOption;
         }
     }
 }

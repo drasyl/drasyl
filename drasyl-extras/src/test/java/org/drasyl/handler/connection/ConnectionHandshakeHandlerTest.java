@@ -207,10 +207,6 @@ class ConnectionHandshakeHandlerTest {
             final ConnectionHandshakeSegment msg = ConnectionHandshakeSegment.rst(100);
             assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
             assertEquals(CLOSED, handler.state);
-
-            assertEquals(300, handler.tcb.sndUna);
-            assertEquals(300, handler.tcb.sndNxt);
-            assertEquals(100, handler.tcb.rcvNxt);
         }
 
         // dead peer
@@ -290,9 +286,6 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(CLOSED, handler.state);
             });
             assertTrue(future.isDone());
-            assertEquals(101, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(301, handler.tcb.rcvNxt);
         }
 
         // We're in ESTABLISHED state
@@ -335,10 +328,6 @@ class ConnectionHandshakeHandlerTest {
             // peer ACKed our close
             channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
             assertEquals(CLOSED, handler.state);
-
-            assertEquals(300, handler.tcb.sndUna);
-            assertEquals(301, handler.tcb.sndNxt);
-            assertEquals(101, handler.tcb.rcvNxt);
         }
 
         // Both peers are in ESTABLISHED state
@@ -376,9 +365,6 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(CLOSED, handler.state);
             });
             assertTrue(future.isDone());
-            assertEquals(101, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(301, handler.tcb.rcvNxt);
         }
     }
 
