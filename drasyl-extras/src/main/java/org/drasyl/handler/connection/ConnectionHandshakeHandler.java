@@ -211,7 +211,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.flush(ctx);
         }
 
-        ctx.flush(); // tcb.flush macht eventuell auch chon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
+        ctx.flush(); // tcb.flush macht eventuell auch schon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
     }
 
     /*
@@ -460,15 +460,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, promise != null ? promise.userCall() : "NULL", userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
-                // FIXME: wenn es ein OPEN call war, kannst du den auch einfach als extpeion in den channel schrieben
                 promise.tryFailure(new ConnectionHandshakeException("User timeout for " + promise.userCall() + " user call after " + userTimeout.toMillis() + "ms. Close channel."));
-                ctx.channel().close();
+                ctx.close();
             }, userTimeout.toMillis(), MILLISECONDS);
             userTimeoutFuture.addListener((FutureListener) future -> {
                 if (future.isCancelled() && promise.userCall() == UserCall.CLOSE) {
                     LOG.trace("{}[{}] User timeout for {} user call has been cancelled (vermutlich EmbeddedChannel close Aufruf?). Close channel immediately.", ctx.channel(), state, promise.userCall());
                     switchToNewState(ctx, CLOSED);
-                    ctx.channel().close();
+                    ctx.close();
                 }
             });
         }
@@ -607,13 +606,15 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isSyn()) {
             LOG.trace("{}[{}] Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), state, seg);
 
+            // start timer that aborts the handshake if remote peer is not ACKing our SYN
             if (userTimeout.toMillis() > 0) {
                 // create handshake timeguard
                 ctx.executor().schedule(() -> {
                     if (state != ESTABLISHED && state != CLOSED) {
-                        LOG.trace("{}[{}] Handshake initiated by remote port has not been completed within {}ms. Abort handshake, close channel.", ctx.channel(), state, userTimeout);
+                        LOG.trace("{}[{}] Handshake initiated by remote peer has not been completed within {}ms. Abort handshake. Close channel.", ctx.channel(), state, userTimeout);
                         switchToNewState(ctx, CLOSED);
-                        ctx.channel().close();
+                        ctx.fireExceptionCaught(new ConnectionHandshakeException("Handshake initiated by remote port has not been completed within " + userTimeout.toMillis() + "ms. Abort handshake. Close channel."));
+                        ctx.close();
                     }
                 }, userTimeout.toMillis(), MILLISECONDS);
             }

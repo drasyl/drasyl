@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Duration;
 
 import static java.time.Duration.ZERO;
+import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.handler.connection.State.CLOSED;
@@ -47,6 +48,7 @@ import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -56,315 +58,353 @@ class ConnectionHandshakeHandlerTest {
     // "Client" initiate handshake
     @Nested
     class ConnectionEstablishment {
-        @Test
-        void clientShouldSynchronizeWhenServerBehavesExpectedly() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
-            channel.pipeline().addLast(handler);
+        @Nested
+        class SuccessfulSynchronization {
+            @Nested
+            class ClientSide {
+                @Test
+                void clientShouldSynchronizeWhenServerBehavesExpectedly() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
+                    channel.pipeline().addLast(handler);
 
-            // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-            Object actual = channel.readOutbound();
-            assertEquals(ConnectionHandshakeSegment.syn(100), actual);
-            assertEquals(SYN_SENT, handler.state);
+                    // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
+                    Object actual = channel.readOutbound();
+                    assertEquals(ConnectionHandshakeSegment.syn(100), actual);
+                    assertEquals(SYN_SENT, handler.state);
 
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(0, handler.tcb.rcvNxt);
+                    assertEquals(100, handler.tcb.sndUna);
+                    assertEquals(101, handler.tcb.sndNxt);
+                    assertEquals(0, handler.tcb.rcvNxt);
 
-            // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
-            channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
-            assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
-            assertEquals(ESTABLISHED, handler.state);
+                    // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
+                    channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
+                    assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                    assertEquals(ESTABLISHED, handler.state);
 
-            assertEquals(101, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(301, handler.tcb.rcvNxt);
+                    assertEquals(101, handler.tcb.sndUna);
+                    assertEquals(101, handler.tcb.sndNxt);
+                    assertEquals(301, handler.tcb.rcvNxt);
 
-            assertTrue(channel.isOpen());
-            channel.close();
+                    assertTrue(channel.isOpen());
+                    channel.close();
+                }
+
+                // Both peers are in CLOSED state
+                // Both peers initiate handshake simultaneous
+                @Test
+                void clientShouldSynchronizeIfServerPerformsSimultaneousHandshake() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
+                    channel.pipeline().addLast(handler);
+
+                    // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
+                    assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
+                    assertEquals(SYN_SENT, handler.state);
+
+                    assertEquals(100, handler.tcb.sndUna);
+                    assertEquals(101, handler.tcb.sndNxt);
+                    assertEquals(0, handler.tcb.rcvNxt);
+
+                    // peer SYNchronizes his SEG before our SYN has been received
+                    channel.writeInbound(ConnectionHandshakeSegment.syn(300));
+                    assertEquals(SYN_RECEIVED, handler.state);
+                    assertEquals(ConnectionHandshakeSegment.synAck(100, 301), channel.readOutbound());
+
+                    assertEquals(100, handler.tcb.sndUna);
+                    assertEquals(101, handler.tcb.sndNxt);
+                    assertEquals(301, handler.tcb.rcvNxt);
+
+                    // peer respond to our SYN with ACK (and another SYN)
+                    channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
+                    assertEquals(ESTABLISHED, handler.state);
+
+                    assertEquals(101, handler.tcb.sndUna);
+                    assertEquals(101, handler.tcb.sndNxt);
+                    assertEquals(302, handler.tcb.rcvNxt);
+
+                    assertTrue(channel.isOpen());
+                    channel.close();
+                }
+            }
+
+            @Nested
+            class ServerSide {
+                @Test
+                void passiveServerShouldSynchronizeWhenClientBehavesExpectedly() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 300, false, CLOSED, 1200, new TransmissionControlBlock(channel, 300));
+                    channel.pipeline().addLast(handler);
+
+                    // handlerAdded on active channel should change state to LISTEN
+                    assertEquals(LISTEN, handler.state);
+
+                    // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
+                    channel.writeInbound(ConnectionHandshakeSegment.syn(100));
+                    assertEquals(ConnectionHandshakeSegment.synAck(300, 101), channel.readOutbound());
+                    assertEquals(SYN_RECEIVED, handler.state);
+
+                    assertEquals(300, handler.tcb.sndUna);
+                    assertEquals(301, handler.tcb.sndNxt);
+                    assertEquals(101, handler.tcb.rcvNxt);
+
+                    // peer ACKed our SYN
+                    // we piggyback some data, that should also be processed by the server
+                    final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+                    channel.writeInbound(ConnectionHandshakeSegment.pshAck(101, 301, data));
+                    assertEquals(ESTABLISHED, handler.state);
+
+                    assertEquals(301, handler.tcb.sndUna);
+                    assertEquals(301, handler.tcb.sndNxt);
+                    assertEquals(111, handler.tcb.rcvNxt);
+                    assertEquals(data, channel.readInbound());
+
+                    assertTrue(channel.isOpen());
+                    channel.close();
+                    data.release();
+                }
+            }
         }
 
-        @Test
-        void passiveServerShouldSynchronizeWhenClientBehavesExpectedly() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 300, false, CLOSED, 1200, new TransmissionControlBlock(channel, 300));
-            channel.pipeline().addLast(handler);
+        @Nested
+        class DeadPeer {
+            @Nested
+            class ClientSide {
+                // server is not responding to the SYN
+                @Test
+                void clientShouldCloseChannelIfServerIsNotRespondingToSyn() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
+                    channel.pipeline().addLast(handler);
 
-            // handlerAdded on active channel should change state to LISTEN
-            assertEquals(LISTEN, handler.state);
+                    // peer is dead and therefore no SYN/ACK is received
+                    // wait for user timeout
+                    await().atMost(ofHours(1)).untilAsserted(() -> {
+                        channel.runScheduledPendingTasks();
+                        assertEquals(CLOSED, handler.state);
+                    });
 
-            // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-            channel.writeInbound(ConnectionHandshakeSegment.syn(100));
-            assertEquals(ConnectionHandshakeSegment.synAck(300, 101), channel.readOutbound());
-            assertEquals(SYN_RECEIVED, handler.state);
+                    assertThrows(ConnectionHandshakeException.class, channel::checkException);
+                    assertFalse(channel.isOpen());
+                    assertNull(handler.tcb);
+                }
+            }
 
-            assertEquals(300, handler.tcb.sndUna);
-            assertEquals(301, handler.tcb.sndNxt);
-            assertEquals(101, handler.tcb.rcvNxt);
+            @Nested
+            class ServerSide {
+                // client is not responding to the SYN/ACK
+                @Test
+                void serverShouldCloseChannelIfClientIsNotRespondingToSynAck() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 300, false, CLOSED, 1200, new TransmissionControlBlock(channel, 300));
+                    channel.pipeline().addLast(handler);
 
-            // peer ACKed our SYN
-            // we piggyback some data, that should also be processed by the server
-            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            channel.writeInbound(ConnectionHandshakeSegment.pshAck(101, 301, data));
-            assertEquals(ESTABLISHED, handler.state);
+                    // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
+                    channel.writeInbound(ConnectionHandshakeSegment.syn(100));
 
-            assertEquals(301, handler.tcb.sndUna);
-            assertEquals(301, handler.tcb.sndNxt);
-            assertEquals(111, handler.tcb.rcvNxt);
-            assertEquals(data, channel.readInbound());
+                    // peer is dead and therefore no ACK is received
+                    // wait for user timeout
+                    await().atMost(ofHours(1)).untilAsserted(() -> {
+                        channel.runScheduledPendingTasks();
+                        assertEquals(CLOSED, handler.state);
+                    });
 
-            assertTrue(channel.isOpen());
-            channel.close();
-            data.release();
+                    assertThrows(ConnectionHandshakeException.class, channel::checkException);
+                    assertFalse(channel.isOpen());
+                    assertNull(handler.tcb);
+                }
+            }
         }
 
-        // Both peers are in CLOSED state
-        // Both peers initiate handshake simultaneous
-        @Test
-        void clientShouldSynchronizeIfServerPerformsSimultaneousHandshake() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
-            channel.pipeline().addLast(handler);
+        @Nested
+        class HalfOpenDiscovery {
+            // we've crashed
+            // peer is in ESTABLISHED state
+            @Test
+            void weShouldResetPeerIfWeHaveDiscoveredThatWeHaveCrashed() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 400, true, CLOSED, 1200, new TransmissionControlBlock(channel, 400));
+                channel.pipeline().addLast(handler);
 
-            // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-            assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
-            assertEquals(SYN_SENT, handler.state);
+                // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
+                assertEquals(ConnectionHandshakeSegment.syn(400), channel.readOutbound());
+                assertEquals(SYN_SENT, handler.state);
 
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(0, handler.tcb.rcvNxt);
+                assertEquals(400, handler.tcb.sndUna);
+                assertEquals(401, handler.tcb.sndNxt);
+                assertEquals(0, handler.tcb.rcvNxt);
 
-            // peer SYNchronizes his SEG before our SYN has been received
-            channel.writeInbound(ConnectionHandshakeSegment.syn(300));
-            assertEquals(SYN_RECEIVED, handler.state);
-            assertEquals(ConnectionHandshakeSegment.synAck(100, 301), channel.readOutbound());
+                // as we got an ACK for an unexpected seq, reset the peer
+                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 100));
+                assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
+                assertEquals(SYN_SENT, handler.state);
 
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(301, handler.tcb.rcvNxt);
+                assertEquals(400, handler.tcb.sndUna);
+                assertEquals(401, handler.tcb.sndNxt);
+                assertEquals(0, handler.tcb.rcvNxt);
 
-            // peer respond to our SYN with ACK (and another SYN)
-            channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
-            assertEquals(ESTABLISHED, handler.state);
+                assertTrue(channel.isOpen());
+                channel.close();
+            }
 
-            assertEquals(101, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(302, handler.tcb.rcvNxt);
+            // we're in ESTABLISHED state
+            // peer has crashed
+            @Test
+            void weShouldCloseOurConnectionIfPeerHasDiscoveredThatPeerHasCrashed() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 300L, 100L));
+                channel.pipeline().addLast(handler);
 
-            assertTrue(channel.isOpen());
-            channel.close();
-        }
+                // other wants to SYNchronize with us, ACK with our expected seq
+                channel.writeInbound(ConnectionHandshakeSegment.syn(400));
+                assertEquals(ESTABLISHED, handler.state);
+                assertEquals(ConnectionHandshakeSegment.ack(300, 100), channel.readOutbound());
 
-        // half-open discovery
-        // we've crashed
-        // peer is in ESTABLISHED state
-        @Test
-        void weShouldResetPeerIfWeHaveDiscoveredThatWeHaveCrashed() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 400, true, CLOSED, 1200, new TransmissionControlBlock(channel, 400));
-            channel.pipeline().addLast(handler);
+                assertEquals(300, handler.tcb.sndUna);
+                assertEquals(300, handler.tcb.sndNxt);
+                assertEquals(100, handler.tcb.rcvNxt);
 
-            // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-            assertEquals(ConnectionHandshakeSegment.syn(400), channel.readOutbound());
-            assertEquals(SYN_SENT, handler.state);
-
-            assertEquals(400, handler.tcb.sndUna);
-            assertEquals(401, handler.tcb.sndNxt);
-            assertEquals(0, handler.tcb.rcvNxt);
-
-            // as we got an ACK for an unexpected seq, reset the peer
-            channel.writeInbound(ConnectionHandshakeSegment.ack(300, 100));
-            assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
-            assertEquals(SYN_SENT, handler.state);
-
-            assertEquals(400, handler.tcb.sndUna);
-            assertEquals(401, handler.tcb.sndNxt);
-            assertEquals(0, handler.tcb.rcvNxt);
-
-            assertTrue(channel.isOpen());
-            channel.close();
-        }
-
-        // half-open discovery
-        // we're in ESTABLISHED state
-        // peer has crashed
-        @Test
-        void weShouldCloseOurConnectionIfPeerHasDiscoveredThatPeerHasCrashed() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, true, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 300L, 100L));
-            channel.pipeline().addLast(handler);
-
-            // other wants to SYNchronize with us, ACK with our expected seq
-            channel.writeInbound(ConnectionHandshakeSegment.syn(400));
-            assertEquals(ESTABLISHED, handler.state);
-            assertEquals(ConnectionHandshakeSegment.ack(300, 100), channel.readOutbound());
-
-            assertEquals(300, handler.tcb.sndUna);
-            assertEquals(300, handler.tcb.sndNxt);
-            assertEquals(100, handler.tcb.rcvNxt);
-
-            // as we sent an ACK for an unexpected seq, peer will reset us
-            final ConnectionHandshakeSegment msg = ConnectionHandshakeSegment.rst(100);
-            assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
-            assertEquals(CLOSED, handler.state);
-        }
-
-        // dead peer
-        // server is not responding to the SYN
-        @Test
-        void clientShouldCloseChannelIfServerIsNotRespondingToSyn() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 100, true, CLOSED, 1200, new TransmissionControlBlock(channel, 100));
-            channel.pipeline().addLast(handler);
-
-            // peer is dead and therefore no SYN/ACK is received
-            // wait for user timeout
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
+                // as we sent an ACK for an unexpected seq, peer will reset us
+                final ConnectionHandshakeSegment msg = ConnectionHandshakeSegment.rst(100);
+                assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
                 assertEquals(CLOSED, handler.state);
-            });
-
-            assertFalse(channel.isOpen());
-        }
-
-        // dead peer
-        // client is not responding to the SYN/ACK
-        @Test
-        void serverShouldCloseChannelIfClientIsNotRespondingToSynAck() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 300, false, CLOSED, 1200, new TransmissionControlBlock(channel, 300));
-            channel.pipeline().addLast(handler);
-
-            // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-            channel.writeInbound(ConnectionHandshakeSegment.syn(100));
-
-            // peer is dead and therefore no ACK is received
-            // wait for user timeout
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
-                assertEquals(CLOSED, handler.state);
-            });
-
-            assertFalse(channel.isOpen());
+                assertNull(handler.tcb);
+            }
         }
     }
 
     @Nested
     class ConnectionClearing {
-        // Both peers are in ESTABLISHED state
-        @Test
-        void weShouldPerformNormalCloseSequenceOnChannelClose() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100L, 300L));
-            channel.pipeline().addLast(handler);
+        @Nested
+        class SuccessfulClearing {
+            // Both peers are in ESTABLISHED state
+            // we close
+            @Test
+            void weShouldPerformNormalCloseSequenceOnChannelClose() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100L, 300L));
+                channel.pipeline().addLast(handler);
 
-            // trigger close
-            final ChannelFuture future = channel.close();
-            assertEquals(FIN_WAIT_1, handler.state);
-            assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
-            assertFalse(future.isDone());
+                // trigger close
+                final ChannelFuture future = channel.close();
+                assertEquals(FIN_WAIT_1, handler.state);
+                assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
+                assertFalse(future.isDone());
 
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(300, handler.tcb.rcvNxt);
+                assertEquals(100, handler.tcb.sndUna);
+                assertEquals(101, handler.tcb.sndNxt);
+                assertEquals(300, handler.tcb.rcvNxt);
 
-            // my close got ACKed
-            channel.writeInbound(ConnectionHandshakeSegment.ack(300, 101));
-            assertEquals(FIN_WAIT_2, handler.state);
-            assertFalse(future.isDone());
+                // my close got ACKed
+                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 101));
+                assertEquals(FIN_WAIT_2, handler.state);
+                assertFalse(future.isDone());
 
-            assertEquals(101, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(300, handler.tcb.rcvNxt);
+                assertEquals(101, handler.tcb.sndUna);
+                assertEquals(101, handler.tcb.sndNxt);
+                assertEquals(300, handler.tcb.rcvNxt);
 
-            // peer now triggers close as well
-            channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 101));
-            assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                // peer now triggers close as well
+                channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 101));
+                assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
 
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
+                await().untilAsserted(() -> {
+                    channel.runScheduledPendingTasks();
+                    assertEquals(CLOSED, handler.state);
+                });
+
+                assertTrue(future.isDone());
+                assertNull(handler.tcb);
+            }
+
+            // Both peers are in ESTABLISHED state
+            // other peer close
+            @Test
+            void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 299L, 300L, 100L));
+                channel.pipeline().addLast(handler);
+
+                // peer triggers close
+                channel.writeInbound(ConnectionHandshakeSegment.finAck(100, 300));
+
+                // we should trigger a close as well
+                assertEquals(LAST_ACK, handler.state);
+                assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
+
+                assertEquals(300, handler.tcb.sndUna);
+                assertEquals(301, handler.tcb.sndNxt);
+                assertEquals(101, handler.tcb.rcvNxt);
+
+                // peer ACKed our close
+                channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
+
                 assertEquals(CLOSED, handler.state);
-            });
-            assertTrue(future.isDone());
+                assertNull(handler.tcb);
+            }
+
+            // Both peers are in ESTABLISHED state
+            // Both peers initiate close simultaneous
+            @Test
+            void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100L, 100L, 300L));
+                channel.pipeline().addLast(handler);
+
+                // trigger close
+                final ChannelFuture future = channel.close();
+                assertEquals(FIN_WAIT_1, handler.state);
+                assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
+                assertFalse(future.isDone());
+
+                assertEquals(100, handler.tcb.sndUna);
+                assertEquals(101, handler.tcb.sndNxt);
+                assertEquals(300, handler.tcb.rcvNxt);
+
+                // got parallel close
+                channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 100));
+                assertEquals(CLOSING, handler.state);
+                assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                assertFalse(future.isDone());
+
+                assertEquals(100, handler.tcb.sndUna);
+                assertEquals(101, handler.tcb.sndNxt);
+                assertEquals(301, handler.tcb.rcvNxt);
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(301, 101));
+
+                await().untilAsserted(() -> {
+                    channel.runScheduledPendingTasks();
+                    assertEquals(CLOSED, handler.state);
+                });
+
+                assertTrue(future.isDone());
+                assertNull(handler.tcb);
+            }
         }
 
-        // We're in ESTABLISHED state
-        // Peer is dead
-        @Test
-        void weShouldSucceedCloseSequenceIfPeerIsDead() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100));
-            channel.pipeline().addLast(handler);
+        @Nested
+        class DeadPeer {
+            // We're in ESTABLISHED state
+            // Peer is dead
+            @Test
+            void weShouldSucceedCloseSequenceIfPeerIsDead() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100));
+                channel.pipeline().addLast(handler);
 
-            // trigger close
-            channel.close();
+                // trigger close
+                channel.close();
 
-            // wait for user timeout
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
-                assertEquals(CLOSED, handler.state);
-            });
+                // wait for user timeout
+                await().untilAsserted(() -> {
+                    channel.runScheduledPendingTasks();
+                    assertEquals(CLOSED, handler.state);
+                });
 
-            assertFalse(channel.isOpen());
-        }
-
-        @Test
-        void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 299L, 300L, 100L));
-            channel.pipeline().addLast(handler);
-
-            // peer triggers close
-            channel.writeInbound(ConnectionHandshakeSegment.finAck(100, 300));
-
-            // we should trigger a close as well
-            assertEquals(LAST_ACK, handler.state);
-            assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
-
-            assertEquals(300, handler.tcb.sndUna);
-            assertEquals(301, handler.tcb.sndNxt);
-            assertEquals(101, handler.tcb.rcvNxt);
-
-            // peer ACKed our close
-            channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
-            assertEquals(CLOSED, handler.state);
-        }
-
-        // Both peers are in ESTABLISHED state
-        // Both peers initiate close simultaneous
-        @Test
-        void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, () -> 100, false, ESTABLISHED, 1200, new TransmissionControlBlock(channel, 100L, 100L, 300L));
-            channel.pipeline().addLast(handler);
-
-            // trigger close
-            final ChannelFuture future = channel.close();
-            assertEquals(FIN_WAIT_1, handler.state);
-            assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
-            assertFalse(future.isDone());
-
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(300, handler.tcb.rcvNxt);
-
-            // got parallel close
-            channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 100));
-            assertEquals(CLOSING, handler.state);
-            assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
-            assertFalse(future.isDone());
-
-            assertEquals(100, handler.tcb.sndUna);
-            assertEquals(101, handler.tcb.sndNxt);
-            assertEquals(301, handler.tcb.rcvNxt);
-
-            channel.writeInbound(ConnectionHandshakeSegment.ack(301, 101));
-
-            await().untilAsserted(() -> {
-                channel.runScheduledPendingTasks();
-                assertEquals(CLOSED, handler.state);
-            });
-            assertTrue(future.isDone());
+                assertFalse(channel.isOpen());
+                assertNull(handler.tcb);
+            }
         }
     }
 
