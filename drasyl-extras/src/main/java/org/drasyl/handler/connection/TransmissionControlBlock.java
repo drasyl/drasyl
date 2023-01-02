@@ -25,13 +25,17 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
@@ -315,6 +319,15 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
+    private void writeBytes(long seg,
+                            int readableBytes,
+                            long ack) {
+        if (readableBytes > 0) {
+            sndNxt = advanceSeq(sndNxt, readableBytes);
+        }
+        writeWithout(seg, readableBytes, ack, PSH | ACK, new EnumMap<>(Option.class));
+    }
+
     void write(final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
@@ -324,11 +337,14 @@ class TransmissionControlBlock {
     }
 
     void writeWithout(final ConnectionHandshakeSegment seg) {
-        final long seq1 = seg.seq();
-        final int readableBytes = seg.content().readableBytes();
-        final long ack1 = seg.ack();
-        final int ctl1 = seg.ctl();
-        final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
+    }
+
+    private void writeWithout(long seq1,
+                              int readableBytes,
+                              long ack1,
+                              int ctl1,
+                              Map<Option, Object> options1) {
         outgoingSegmentQueue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
     }
 
@@ -367,17 +383,9 @@ class TransmissionControlBlock {
                 final ChannelPromise ackPromise = ctx.newPromise();
                 final ByteBuf data = sendBuffer.remove(Math.min(mss(), remainingBytes), ackPromise);
                 remainingBytes -= data.readableBytes();
-                final boolean isLast = remainingBytes == 0 || sendBuffer.isEmpty();
-                final ConnectionHandshakeSegment seg;
-                if (isLast) {
-                    seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
-                }
-                else {
-                    seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
-                }
-                LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-                write(seg);
-//                writeBytes(seg.seq(), seg.ack(), seg.content().readableBytes());
+                final int readableBytes = data.readableBytes();
+                LOG.trace("{}[{}] Write {} bytes to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, readableBytes, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
+                writeBytes(sndNxt, readableBytes, rcvNxt);
             }
         }
         finally {
