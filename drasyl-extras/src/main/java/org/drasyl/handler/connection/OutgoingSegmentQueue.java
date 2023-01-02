@@ -41,8 +41,12 @@ import java.util.Objects;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.RST;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
@@ -80,7 +84,7 @@ class OutgoingSegmentQueue {
         if (seq == 0) {
             seq = seg.seq();
         }
-        len += seg.len();
+        len += seg.content().readableBytes();
         if (SerialNumberArithmetic.greaterThan(seg.ack(), ack, SEQ_NO_SPACE)) {
             ack = seg.ack();
         }
@@ -125,6 +129,7 @@ class OutgoingSegmentQueue {
                 final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
                 assert current.equals(newCurrent);
                 seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
+                len -= newCurrentSeg.content().readableBytes();
 
                 write(ctx, newCurrent);
             }
@@ -137,13 +142,30 @@ class OutgoingSegmentQueue {
         final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
         final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
         seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
+        len -= newCurrentSeg.content().readableBytes();
         assert current.equals(newCurrent);
 
+        // use SYN once, as early as possible
+        ctl &= ~SYN;
+
+        // use PSH once, as late as possible
+        ctl &= ~PSH;
+
+        // remove ACK after last write
+        ctl &= ~ACK;
+
+        // remove FIN after last write
+        ctl &= ~FIN;
+
+        // remove RST after last write
+        ctl &= ~RST;
+
+        assert len == 0;
+//        assert ctl == 0;
         seq = 0;
         ack = 0;
         ctl = 0;
         options.clear();
-        len = 0;
 
         write(ctx, current);
         ctx.flush();

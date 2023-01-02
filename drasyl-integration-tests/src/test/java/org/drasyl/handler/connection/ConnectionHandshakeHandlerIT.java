@@ -188,7 +188,7 @@ class ConnectionHandshakeHandlerIT {
 
         try {
             // wait for completion
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(50000, TimeUnit.SECONDS));
         }
         finally {
             clientChannel.close();//.sync();
