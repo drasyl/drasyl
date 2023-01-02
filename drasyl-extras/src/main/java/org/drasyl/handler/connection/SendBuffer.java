@@ -34,6 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 class SendBuffer {
     private final CoalescingBufferQueue queue;
+    CoalescingBufferQueue queue2;
 
     SendBuffer(final CoalescingBufferQueue queue) {
         this.queue = requireNonNull(queue);
@@ -41,6 +42,7 @@ class SendBuffer {
 
     SendBuffer(final Channel channel) {
         this(new CoalescingBufferQueue(channel, 4, true));
+        this.queue2 = new CoalescingBufferQueue(channel, 4, true);
     }
 
     /**
@@ -52,13 +54,14 @@ class SendBuffer {
      */
     public void add(final ByteBuf buf, final ChannelPromise promise) {
         queue.add(buf, promise);
+        queue2.add(buf.copy(), promise);
     }
 
     /**
      * Are there pending buffers in the queue.
      */
     public boolean isEmpty() {
-        return queue.isEmpty();
+        return queue2.isEmpty();
     }
 
     /**
@@ -81,14 +84,14 @@ class SendBuffer {
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void releaseAndFailAll(final Throwable cause) {
-        queue.releaseAndFailAll(cause);
+        queue2.releaseAndFailAll(cause);
     }
 
     /**
      * The number of readable bytes.
      */
     public int readableBytes() {
-        return queue.readableBytes();
+        return queue2.readableBytes();
     }
 
     @Override

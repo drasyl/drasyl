@@ -341,7 +341,7 @@ class TransmissionControlBlock {
     void writeAndFlush(final ChannelHandlerContext ctx,
                        final ConnectionHandshakeSegment seg) {
         write(seg, ctx.newPromise());
-        outgoingSegmentQueue.flush(ctx);
+        outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
     }
 
     void add(final ByteBuf data, final ChannelPromise promise) {
@@ -386,7 +386,7 @@ class TransmissionControlBlock {
             }
         }
         finally {
-            outgoingSegmentQueue.flush(ctx);
+            outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
             ctx.flush();
         }
     }

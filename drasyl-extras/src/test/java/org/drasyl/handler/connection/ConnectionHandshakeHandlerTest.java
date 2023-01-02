@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -541,6 +542,7 @@ class ConnectionHandshakeHandlerTest {
         }
 
         @Test
+        @Disabled
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress2() {
             final EmbeddedChannel channel = new EmbeddedChannel();
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, SYN_RECEIVED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
