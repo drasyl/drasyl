@@ -31,7 +31,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.Objects;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
@@ -322,23 +321,12 @@ class TransmissionControlBlock {
 
     void write(final ChannelHandlerContext ctx,
                final ConnectionHandshakeSegment seg,
-               final ChannelPromise writePromise,
                final ChannelPromise ackPromise) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        outgoingSegmentQueue.add(seg, writePromise, ackPromise);
-    }
-
-    void write(final ChannelHandlerContext ctx,
-               final ConnectionHandshakeSegment seg,
-               final ChannelPromise writePromise) {
-        final int len = seg.len();
-        if (len > 0) {
-            sndNxt = advanceSeq(sndNxt, len);
-        }
-        outgoingSegmentQueue.add(ctx, seg, writePromise);
+        outgoingSegmentQueue.add(ctx, seg, ctx.newPromise(), ackPromise);
     }
 
     void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
@@ -400,7 +388,7 @@ class TransmissionControlBlock {
                 seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
             }
             LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-            write(ctx, seg, ctx.newPromise(), ackPromise);
+            write(ctx, seg, ackPromise);
         }
     }
 
@@ -420,20 +408,6 @@ class TransmissionControlBlock {
     public void initRto(final ChannelHandlerContext ctx) {
         srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
         rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
-    }
-
-    public void updateRto(final ChannelHandlerContext ctx,
-                          final ConnectionHandshakeSegment seg) {
-        final Object timestampsOption = seg.options().get(TIMESTAMPS);
-        if (timestampsOption != null) {
-            final long[] timestamps = (long[]) timestampsOption;
-            final long tsEcr = timestamps[1];
-
-            rtt = (int) (System.nanoTime() / 1_000_000 - tsEcr);
-            srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
-            rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
-            LOG.trace("{} New RTT sample: RTT={}ms; SRTT={}ms; RTO={}ms", ctx.channel(), rtt, srtt, rto);
-        }
     }
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,

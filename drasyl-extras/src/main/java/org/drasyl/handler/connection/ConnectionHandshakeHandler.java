@@ -484,8 +484,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // RTTM
         if (tcb != null) {
-            tcb.rttMeasurement().segmentArrives(seg);
-            tcb.updateRto(ctx, seg);
+            tcb.rttMeasurement().segmentArrives(ctx, seg, tcb.mss(), tcb.sndWnd()); // FIXME: platzhalter. eigentlich müssen wir hier SMSS und FlightSize nehmen
         }
 
         try {
@@ -576,7 +575,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // synchronize receive state
             tcb.synchronizeReceiveState(seg);
 
-            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+            LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             // mss negotiation
             tcb.negotiateMss(ctx, seg);
@@ -639,7 +638,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 tcb.handleAcknowledgement(ctx, seg);
             }
 
-            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+            LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);

@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -76,7 +77,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -91,7 +92,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -550,6 +551,109 @@ class ConnectionHandshakeHandlerIT {
             System.err.println("Transmitted " + bytes + " bytes within " + (endTime - startTime) / 1_000_000 + "ms.");
 
             assertTrue(future.isSuccess());
+            assertEquals(sentBuf, receivedBuf);
+        }
+        finally {
+            clientChannel.close().sync();
+            serverChannel.close().sync();
+            group.shutdownGracefully().sync();
+        }
+    }
+
+    /**
+     * Clients sends data to server. Correct receival is tested.
+     */
+    @Test
+    void completeTransmissionBeforeTeardown() throws Exception {
+        final ByteBuf receivedBuf = Unpooled.buffer();
+
+        // server
+        final EventLoopGroup group = new DefaultEventLoopGroup();
+        final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
+        final Channel serverChannel = new ServerBootstrap()
+                .channel(LocalServerChannel.class)
+                .group(group)
+                .childHandler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, 2000));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(final ChannelHandlerContext ctx,
+                                                    final Object msg) {
+                                if (msg instanceof ByteBuf) {
+                                    receivedBuf.writeBytes((ByteBuf) msg);
+                                    ReferenceCountUtil.release(msg);
+                                }
+                                else {
+                                    ctx.fireChannelRead(msg);
+                                }
+                            }
+
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                if (evt instanceof ConnectionHandshakeCompleted) {
+                                    // FIXME:
+//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
+                    }
+                })
+                .bind(serverAddress).sync().channel();
+
+        // client
+        final Channel clientChannel = new Bootstrap()
+                .channel(LocalChannel.class)
+                .group(group)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) {
+                        final ChannelPipeline p = ch.pipeline();
+                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, 1000));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                // start dropping segments once handshake is completed
+                                if (evt instanceof ConnectionHandshakeCompleted) {
+                                    // FIXME:
+//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
+                    }
+                })
+                .connect(serverAddress).sync().channel();
+
+        try {
+            int bytes = 5_000;
+            final ByteBuf sentBuf = clientChannel.alloc().buffer(bytes);
+            sentBuf.writeBytes(randomBytes(bytes));
+
+            clientChannel.writeAndFlush(sentBuf.copy()).addListener(CLOSE).syncUninterruptibly();
+
+//            final long startTime = System.nanoTime();
+//            final ChannelFuture channelFuture = clientChannel.writeAndFlush(sentBuf.copy()).addListener((ChannelFutureListener) future -> {
+//                if (future.isSuccess()) {
+//                    final long endTime = System.nanoTime();
+//                    System.err.println("Transmitted " + bytes + " bytes within " + (endTime - startTime) / 1_000_000 + "ms.");
+//                }
+//                else {
+//                    future.cause().printStackTrace();
+//                }
+//            });
+//            clientChannel.pipeline().close();
+//            channelFuture.syncUninterruptibly();
+
+            //FIXME: add suport for cancel beim write. dann
+
             assertEquals(sentBuf, receivedBuf);
         }
         finally {

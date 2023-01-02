@@ -229,8 +229,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         if (isAck()) {
             controlBitLabels.add("ACK");
         }
+        final List<String> optionsLabel = new ArrayList<>();
+        for (Option option : options.keySet()) {
+            optionsLabel.add(option.toString());
+        }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override

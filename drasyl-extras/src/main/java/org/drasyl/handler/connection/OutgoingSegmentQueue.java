@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -28,10 +29,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.PromiseNotifier;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.ArrayDeque;
+import java.util.EnumMap;
+import java.util.Map;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -45,6 +49,12 @@ class OutgoingSegmentQueue {
     private final Channel channel;
     private final RetransmissionQueue retransmissionQueue;
     private final RttMeasurement rttMeasurement;
+    private long seq;
+    private long ack;
+    private byte ctl;
+    private Map<Option, Object> options = new EnumMap<>(Option.class);
+    private int len;
+    private ByteBuf data;
 
     OutgoingSegmentQueue(final Channel channel,
                          final ArrayDeque<OutgoingSegmentEntry> deque,
@@ -62,46 +72,52 @@ class OutgoingSegmentQueue {
         this(channel, new ArrayDeque<>(), retransmissionQueue, rttMeasurement);
     }
 
-    public ChannelPromise add(final ConnectionHandshakeSegment seg,
+    public ChannelPromise add(final ChannelHandlerContext ctx,
+                              final ConnectionHandshakeSegment seg,
                               final ChannelPromise writePromise,
                               final ChannelPromise ackPromise) {
+//        if (seq == 0) {
+//            seq = seg.seq();
+//        }
+//        if (data == null) {
+//            data = ctx.alloc().buffer();
+//        }
+//        len += seg.len();
+//        ack = seg.ack();
+//        ctl |= seg.ctl();
+//        options.putAll(seg.options());
+//        data.writeBytes(seg.content());
+
         deque.add(new OutgoingSegmentEntry(seg, writePromise, ackPromise));
         return writePromise;
     }
 
     public ChannelPromise add(final ChannelHandlerContext ctx,
-                              final ConnectionHandshakeSegment seg,
-                              final ChannelPromise writePromise) {
-        deque.add(new OutgoingSegmentEntry(seg, writePromise, ctx.newPromise()));
-        return writePromise;
-    }
-
-    public ChannelPromise add(final ChannelHandlerContext ctx,
                               final ConnectionHandshakeSegment seg) {
-        return add(ctx, seg, channel.newPromise());
-    }
+        //        if (seq == 0) {
+//            seq = seg.seq();
+//        }
+//        if (data == null) {
+//            data = ctx.alloc().buffer();
+//        }
+//        len += seg.len();
+//        ack = seg.ack();
+//        ctl |= seg.ctl();
+//        options.putAll(seg.options());
+//        data.writeBytes(seg.content());
 
-    public ChannelPromise addAndFlush(final ChannelHandlerContext ctx,
-                                      final ConnectionHandshakeSegment seg,
-                                      final ChannelPromise writePromise,
-                                      final ChannelPromise ackPromise) {
-        try {
-            return add(seg, writePromise, ackPromise);
-        }
-        finally {
-            flush(ctx);
-        }
-    }
-
-    public ChannelPromise addAndFlush(final ChannelHandlerContext ctx,
-                                      final ConnectionHandshakeSegment seg,
-                                      final ChannelPromise writePromise) {
-        return addAndFlush(ctx, seg, writePromise, ctx.newPromise());
+        deque.add(new OutgoingSegmentEntry(seg, ctx.newPromise(), ctx.newPromise()));
+        return channel.newPromise();
     }
 
     public ChannelPromise addAndFlush(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg) {
-        return addAndFlush(ctx, seg, ctx.newPromise());
+        try {
+            return add(ctx, seg, ctx.newPromise(), ctx.newPromise());
+        }
+        finally {
+            flush(ctx);
+        }
     }
 
     public void flush(final ChannelHandlerContext ctx) {
@@ -111,7 +127,13 @@ class OutgoingSegmentQueue {
 
         final int size = deque.size();
         LOG.trace("Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", size);
+
+
         if (size == 1) {
+//            ConnectionHandshakeSegment altSeg = null;
+//            if (data.readableBytes() <= 1000) {
+//                altSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
+//            }
             final OutgoingSegmentEntry current = deque.remove();
             write(ctx, current);
             ctx.flush();
@@ -147,14 +169,14 @@ class OutgoingSegmentQueue {
 
     private void write(final ChannelHandlerContext ctx,
                        final OutgoingSegmentEntry entry) {
+        // RTTM
+        rttMeasurement.write(entry.seg());
+
         final boolean mustBeAcked = mustBeAcked(entry.seg());
         if (mustBeAcked) {
             retransmissionQueue.add(entry.seg(), entry.ackPromise());
             entry.writePromise().addListener(new RetransmissionTimeoutApplier(ctx, entry.seg(), entry.ackPromise()));
             final ConnectionHandshakeSegment copy = entry.seg().copy();
-
-            // RTTM
-            rttMeasurement.sendAck(copy);
 
             ctx.write(copy, entry.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
@@ -164,9 +186,6 @@ class OutgoingSegmentQueue {
             });
         }
         else {
-            // RTTM
-            rttMeasurement.sendAck(entry.seg());
-
             entry.writePromise().addListener(new PromiseNotifier<>(entry.ackPromise()));
             ctx.write(entry.seg(), entry.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
