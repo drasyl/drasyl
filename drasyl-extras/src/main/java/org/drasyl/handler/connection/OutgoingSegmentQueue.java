@@ -84,7 +84,7 @@ class OutgoingSegmentQueue {
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
         while (!(len == 0 && ctl == 0)) {
             final ChannelPromise ackPromise = ctx.newPromise();
-            final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
+            final ByteBuf data = sendBuffer.remove2(Math.min(mss, len), ackPromise);
             len -= data.readableBytes();
             byte myCtl = ctl;
             // use PSH flag only for last data

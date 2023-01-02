@@ -81,7 +81,7 @@ class TransmissionControlBlock {
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
-    private long flushUntil = -1;
+    private int allowedBytesToFlush = -1;
     private long rtt = -1;
     private long srtt;
     private long rto;
@@ -364,15 +364,14 @@ class TransmissionControlBlock {
         try {
             if (newFlush) {
                 // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
-                flushUntil = advanceSeq(sndNxt, sendBuffer.readableBytes());
+                allowedBytesToFlush = sendBuffer.readableBytes();
             }
 
-            if (state != ESTABLISHED || flushUntil == -1) {
+            if (state != ESTABLISHED || allowedBytesToFlush == -1) {
                 return;
             }
 
             final int allowedBytesForNewTransmission = sequenceNumbersAllowedForNewDataTransmission();
-            final int allowedBytesToFlush = (int) (flushUntil - sndNxt);
             LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, sendBuffer.readableBytes(), allowedBytesToFlush, mss());
 
             final int readableBytesInBuffer = sendBuffer.readableBytes();
