@@ -30,15 +30,19 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
+import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
@@ -54,7 +58,6 @@ class OutgoingSegmentQueue {
     private byte ctl;
     private Map<Option, Object> options = new EnumMap<>(Option.class);
     private int len;
-    private ByteBuf data;
 
     OutgoingSegmentQueue(final Channel channel,
                          final ArrayDeque<OutgoingSegmentEntry> deque,
@@ -74,17 +77,15 @@ class OutgoingSegmentQueue {
 
     public void add(final ConnectionHandshakeSegment seg,
                     final ChannelPromise ackPromise) {
-//        if (seq == 0) {
-//            seq = seg.seq();
-//        }
-//        if (data == null) {
-//            data = ctx.alloc().buffer();
-//        }
-//        len += seg.len();
-//        ack = seg.ack();
-//        ctl |= seg.ctl();
-//        options.putAll(seg.options());
-//        data.writeBytes(seg.content());
+        if (seq == 0) {
+            seq = seg.seq();
+        }
+        len += seg.len();
+        if (SerialNumberArithmetic.greaterThan(seg.ack(), ack, SEQ_NO_SPACE)) {
+            ack = seg.ack();
+        }
+        ctl |= seg.ctl();
+        options.putAll(seg.options());
 
         deque.add(new OutgoingSegmentEntry(seg, ackPromise));
     }
@@ -98,12 +99,22 @@ class OutgoingSegmentQueue {
         LOG.trace("Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", size);
 
         if (size == 1) {
-//            ConnectionHandshakeSegment altSeg = null;
-//            if (data.readableBytes() <= 1000) {
-//                altSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
-//            }
             final OutgoingSegmentEntry current = deque.remove();
-            write(ctx, current);
+            final ChannelPromise ackPromise = current.ackPromise();
+
+            final ByteBuf data = current.content();
+            final ConnectionHandshakeSegment newSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
+            final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newSeg, ackPromise);
+
+            seq = ConnectionHandshakeSegment.advanceSeq(seq, current.content().readableBytes());
+            assert current.seg().equals(newCurrent.seg());
+            seq = 0;
+            ack = 0;
+            ctl = 0;
+            options.clear();
+            len = 0;
+
+            write(ctx, newCurrent);
             ctx.flush();
             return;
         }
@@ -113,8 +124,8 @@ class OutgoingSegmentQueue {
         while (!deque.isEmpty()) {
             OutgoingSegmentEntry next = deque.remove();
 
-            final ConnectionHandshakeSegment nextSeg = next.seg();
             final ConnectionHandshakeSegment currentSeg = current.seg();
+            final ConnectionHandshakeSegment nextSeg = next.seg();
             final ConnectionHandshakeSegment piggybackingSeq = nextSeg.piggybackAck(currentSeg);
 
             if (piggybackingSeq != null) {
@@ -124,19 +135,43 @@ class OutgoingSegmentQueue {
                 next.ackPromise().addListener(new PromiseNotifier<>(current.ackPromise()));
             }
             else {
-                write(ctx, current);
+                byte myCtl = ctl;
+                // use PSH flag only for last data
+                if (nextSeg != null) {
+                    myCtl &= ~PSH;
+                }
+                final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, current.content());
+                final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, current.ackPromise());
+                seq = ConnectionHandshakeSegment.advanceSeq(seq, current.content().readableBytes());
+                assert current.equals(newCurrent);
+
+                write(ctx, newCurrent);
             }
 
             current = next;
         }
+
+        byte myCtl = ctl;
+        final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, current.content());
+        final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, current.ackPromise());
+        seq = ConnectionHandshakeSegment.advanceSeq(seq, current.content().readableBytes());
+        assert current.seg().equals(newCurrentSeg);
+
+        seq = 0;
+        ack = 0;
+        ctl = 0;
+        options.clear();
+        len = 0;
 
         write(ctx, current);
         ctx.flush();
     }
 
     private void write(final ChannelHandlerContext ctx,
-                       final OutgoingSegmentEntry entry) {
+                       OutgoingSegmentEntry entry) {
         // RTTM
+        entry = new OutgoingSegmentEntry(entry.seg().copy(), entry.ackPromise());
+
         rttMeasurement.write(entry.seg());
 
         final boolean mustBeAcked = mustBeAcked(entry.seg());
@@ -144,18 +179,20 @@ class OutgoingSegmentQueue {
             retransmissionQueue.add(entry.seg(), entry.ackPromise());
             final ConnectionHandshakeSegment copy = entry.seg().copy();
 
+            OutgoingSegmentEntry finalEntry = entry;
             ctx.write(copy).addListener(new RetransmissionTimeoutApplier(ctx, entry.seg(), entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture channelFuture) {
-                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), entry.seg(), channelFuture.isSuccess());
+                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), finalEntry.seg(), channelFuture.isSuccess());
                 }
             });
         }
         else {
+            OutgoingSegmentEntry finalEntry1 = entry;
             ctx.write(entry.seg()).addListener(new PromiseNotifier<>(entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture channelFuture) {
-                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), entry.seg(), channelFuture.isSuccess());
+                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), finalEntry1.seg(), channelFuture.isSuccess());
                 }
             });
         }
@@ -244,6 +281,27 @@ class OutgoingSegmentQueue {
         @Override
         public boolean release(int decrement) {
             return false;
+        }
+
+        public ByteBuf content() {
+            return seg().content();
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(seg, ackPromise);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final OutgoingSegmentEntry that = (OutgoingSegmentEntry) o;
+            return Objects.equals(seg, that.seg) && Objects.equals(ackPromise, that.ackPromise);
         }
     }
 }

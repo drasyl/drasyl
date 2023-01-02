@@ -239,7 +239,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     @Override
     public ConnectionHandshakeSegment copy() {
-        return new ConnectionHandshakeSegment(seq, ack, ctl, options, content().copy());
+        return new ConnectionHandshakeSegment(seq, ack, ctl, new EnumMap<>(options), content().copy());
     }
 
     public long lastSeq() {
