@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayDeque;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,7 +38,12 @@ class OutgoingSegmentQueueTest {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
-            queue.add(seg);
+            final long seq1 = seg.seq();
+            final int readableBytes = seg.content().readableBytes();
+            final long ack1 = seg.ack();
+            final int ctl1 = seg.ctl();
+            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             final OutgoingSegmentEntry entry = deque.poll();
             assertEquals(seg, entry.seg());
@@ -55,7 +61,12 @@ class OutgoingSegmentQueueTest {
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
             try {
-                queue.add(seg);
+                final long seq1 = seg.seq();
+                final int readableBytes = seg.content().readableBytes();
+                final long ack1 = seg.ack();
+                final int ctl1 = seg.ctl();
+                final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+                queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
             }
             finally {
                 queue.flush(ctx, sendBuffer, mss);
@@ -97,8 +108,18 @@ class OutgoingSegmentQueueTest {
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 250);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            queue.add(seg1);
-            queue.add(seg2);
+            final long seq11 = seg1.seq();
+            final int readableBytes1 = seg1.content().readableBytes();
+            final long ack11 = seg1.ack();
+            final int ctl11 = seg1.ctl();
+            final Map<ConnectionHandshakeSegment.Option, Object> options11 = seg1.options();
+            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
+            final long seq1 = seg2.seq();
+            final int readableBytes = seg2.content().readableBytes();
+            final long ack1 = seg2.ack();
+            final int ctl1 = seg2.ctl();
+            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg2.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, sendBuffer, mss);
 
@@ -124,8 +145,18 @@ class OutgoingSegmentQueueTest {
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.fin(100);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            queue.add(seg1);
-            queue.add(seg2);
+            final long seq11 = seg1.seq();
+            final int readableBytes1 = seg1.content().readableBytes();
+            final long ack11 = seg1.ack();
+            final int ctl11 = seg1.ctl();
+            final Map<ConnectionHandshakeSegment.Option, Object> options11 = seg1.options();
+            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
+            final long seq1 = seg2.seq();
+            final int readableBytes = seg2.content().readableBytes();
+            final long ack1 = seg2.ack();
+            final int ctl1 = seg2.ctl();
+            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg2.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, sendBuffer, mss);
 

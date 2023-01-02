@@ -28,6 +28,7 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
@@ -323,7 +324,12 @@ class TransmissionControlBlock {
     }
 
     void writeWithout(final ConnectionHandshakeSegment seg) {
-        outgoingSegmentQueue.add(seg);
+        final long seq1 = seg.seq();
+        final int readableBytes = seg.content().readableBytes();
+        final long ack1 = seg.ack();
+        final int ctl1 = seg.ctl();
+        final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+        outgoingSegmentQueue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
@@ -371,6 +377,7 @@ class TransmissionControlBlock {
                 }
                 LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
                 write(seg);
+//                writeBytes(seg.seq(), seg.ack(), seg.content().readableBytes());
             }
         }
         finally {

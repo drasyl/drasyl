@@ -65,16 +65,20 @@ class OutgoingSegmentQueue {
         this.rttMeasurement = requireNonNull(rttMeasurement);
     }
 
-    public void add(final ConnectionHandshakeSegment seg) {
-        if (seq == 0) {
-            seq = seg.seq();
+    void addBytes(long seq,
+                  int readableBytes,
+                  long ack,
+                  int ctl,
+                  Map<Option, Object> options) {
+        if (this.seq == 0) {
+            this.seq = seq;
         }
-        len += seg.content().readableBytes();
-        if (SerialNumberArithmetic.greaterThan(seg.ack(), ack, SEQ_NO_SPACE)) {
-            ack = seg.ack();
+        len += readableBytes;
+        if (SerialNumberArithmetic.greaterThan(ack, this.ack, SEQ_NO_SPACE)) {
+            this.ack = ack;
         }
-        ctl |= seg.ctl();
-        options.putAll(seg.options());
+        this.ctl |= ctl;
+        this.options.putAll(options);
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
