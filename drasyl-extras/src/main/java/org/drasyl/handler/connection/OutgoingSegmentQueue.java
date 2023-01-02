@@ -100,9 +100,9 @@ class OutgoingSegmentQueue {
 
         if (size == 1) {
             final OutgoingSegmentEntry current = deque.remove();
-            final ChannelPromise ackPromise = current.ackPromise();
+            final ChannelPromise ackPromise = ctx.newPromise();
 
-            final ByteBuf data = sendBuffer.queue2.remove(mss, current.ackPromise());
+            final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
             final ConnectionHandshakeSegment newSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
             final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newSeg, ackPromise);
 
@@ -140,9 +140,10 @@ class OutgoingSegmentQueue {
                 if (nextSeg != null) {
                     myCtl &= ~PSH;
                 }
-                final ByteBuf data = sendBuffer.queue2.remove(mss, current.ackPromise());
+                final ChannelPromise ackPromise = ctx.newPromise();
+                final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
                 final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
-                final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, current.ackPromise());
+                final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
                 seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
                 assert current.equals(newCurrent);
 
@@ -153,9 +154,10 @@ class OutgoingSegmentQueue {
         }
 
         byte myCtl = ctl;
-        final ByteBuf data = sendBuffer.queue2.remove(mss, current.ackPromise());
+        final ChannelPromise ackPromise = ctx.newPromise();
+        final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
         final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
-        final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, current.ackPromise());
+        final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
         seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
         assert current.equals(newCurrent);
 
@@ -303,7 +305,7 @@ class OutgoingSegmentQueue {
                 return false;
             }
             final OutgoingSegmentEntry that = (OutgoingSegmentEntry) o;
-            return Objects.equals(seg, that.seg) && Objects.equals(ackPromise, that.ackPromise);
+            return Objects.equals(seg, that.seg);
         }
     }
 }
