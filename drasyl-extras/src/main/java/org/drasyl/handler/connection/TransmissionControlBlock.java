@@ -121,8 +121,7 @@ class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    private TransmissionControlBlock(final Channel channel,
-                                     final long sndUna,
+    private TransmissionControlBlock(final long sndUna,
                                      final long sndNxt,
                                      final int sndWnd,
                                      final long iss,
@@ -134,7 +133,7 @@ class TransmissionControlBlock {
                                      final ReceiveBuffer receiveBuffer,
                                      final RttMeasurement rttMeasurement,
                                      final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(channel, retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -143,7 +142,7 @@ class TransmissionControlBlock {
                                     final long irs,
                                     final int windowSize,
                                     final int mss) {
-        this(channel, sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -153,7 +152,7 @@ class TransmissionControlBlock {
                                     final long irs,
                                     final int windowSize,
                                     final int mss) {
-        this(channel, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -315,32 +314,21 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
-    void write(final ConnectionHandshakeSegment seg,
-               final ChannelPromise ackPromise) {
+    void write(final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        writeWithout(seg, ackPromise);
+        writeWithout(seg);
     }
 
-    void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
-        write(seg, ctx.newPromise());
-    }
-
-    void writeWithout(final ConnectionHandshakeSegment seg,
-                      final ChannelPromise ackPromise) {
-        outgoingSegmentQueue.add(seg, ackPromise);
-    }
-
-    void writeWithout(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
-        writeWithout(seg, ctx.newPromise());
-        outgoingSegmentQueue.add(seg, ctx.newPromise());
+    void writeWithout(final ConnectionHandshakeSegment seg) {
+        outgoingSegmentQueue.add(seg);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
                        final ConnectionHandshakeSegment seg) {
-        write(seg, ctx.newPromise());
+        write(seg);
         outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
     }
 
@@ -382,7 +370,7 @@ class TransmissionControlBlock {
                     seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
                 }
                 LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-                write(seg, ackPromise);
+                write(seg);
             }
         }
         finally {

@@ -31,36 +31,31 @@ class OutgoingSegmentQueueTest {
     @Nested
     class Add {
         @Test
-        void shouldAddSegmentToEndOfQueue(@Mock final Channel channel,
-                                          @Mock final ConnectionHandshakeSegment seg,
-                                          @Mock final ChannelPromise ackPromise,
+        void shouldAddSegmentToEndOfQueue(@Mock final ConnectionHandshakeSegment seg,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
-            queue.add(seg, ackPromise);
+            queue.add(seg);
 
             final OutgoingSegmentEntry entry = deque.poll();
             assertEquals(seg, entry.seg());
-            assertEquals(ackPromise, entry.ackPromise());
         }
     }
 
     @Nested
     class AddAndFlush {
         @Test
-        void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
-                                                             @Mock final ChannelPromise ackPromise,
+        void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                              @Mock final RetransmissionQueue retransmissionQueue,
                                                              @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
             try {
-                queue.add(seg, ackPromise);
+                queue.add(seg);
             }
             finally {
                 queue.flush(ctx, sendBuffer, mss);
@@ -74,15 +69,14 @@ class OutgoingSegmentQueueTest {
     @Nested
     class Flush {
         @Test
-        void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
+        void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
                                           @Mock final ChannelPromise writePromise,
                                           @Mock final ChannelPromise ackPromise,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
             deque.add(new OutgoingSegmentEntry(seg, ackPromise));
 
             queue.flush(ctx, sendBuffer, mss);
@@ -99,14 +93,12 @@ class OutgoingSegmentQueueTest {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
             final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final ChannelPromise ackPromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 250);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            final ChannelPromise ackPromise2 = new DefaultChannelPromise(channel);
-            queue.add(seg1, ackPromise1);
-            queue.add(seg2, ackPromise2);
+            queue.add(seg1);
+            queue.add(seg2);
 
             queue.flush(ctx, sendBuffer, mss);
 
@@ -118,7 +110,6 @@ class OutgoingSegmentQueueTest {
             assertFalse(writePromise1.isSuccess());
             writePromise2.setSuccess();
             assertTrue(writePromise1.isSuccess());
-            assertTrue(ackPromise1.isSuccess());
         }
 
         @Test
@@ -129,14 +120,12 @@ class OutgoingSegmentQueueTest {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
             final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final ChannelPromise ackPromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.fin(100);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            final ChannelPromise ackPromise2 = new DefaultChannelPromise(channel);
-            queue.add(seg1, ackPromise1);
-            queue.add(seg2, ackPromise2);
+            queue.add(seg1);
+            queue.add(seg2);
 
             queue.flush(ctx, sendBuffer, mss);
 
@@ -148,9 +137,6 @@ class OutgoingSegmentQueueTest {
             assertFalse(writePromise1.isSuccess());
             writePromise2.setSuccess();
             assertTrue(writePromise1.isSuccess());
-            assertFalse(ackPromise1.isSuccess());
-            ackPromise2.setSuccess();
-            assertTrue(ackPromise1.isSuccess());
         }
 
         @Test

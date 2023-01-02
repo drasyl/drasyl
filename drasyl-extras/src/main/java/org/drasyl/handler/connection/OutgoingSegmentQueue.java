@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,7 +33,6 @@ import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -53,8 +51,6 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
 // daher speichern wir die nachrichten und warten auf ein channelReadComplete. Dort gucken wir dann, ob wir z.B. ACKs zusammenfassen können/etc.
 class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
-    private final ArrayDeque<OutgoingSegmentEntry> deque;
-    private final Channel channel;
     private final RetransmissionQueue retransmissionQueue;
     private final RttMeasurement rttMeasurement;
     private long seq;
@@ -63,24 +59,13 @@ class OutgoingSegmentQueue {
     private Map<Option, Object> options = new EnumMap<>(Option.class);
     private int len;
 
-    OutgoingSegmentQueue(final Channel channel,
-                         final ArrayDeque<OutgoingSegmentEntry> deque,
-                         final RetransmissionQueue retransmissionQueue,
+    OutgoingSegmentQueue(final RetransmissionQueue retransmissionQueue,
                          final RttMeasurement rttMeasurement) {
-        this.deque = requireNonNull(deque);
-        this.channel = requireNonNull(channel);
         this.retransmissionQueue = requireNonNull(retransmissionQueue);
         this.rttMeasurement = requireNonNull(rttMeasurement);
     }
 
-    OutgoingSegmentQueue(final Channel channel,
-                         final RetransmissionQueue retransmissionQueue,
-                         final RttMeasurement rttMeasurement) {
-        this(channel, new ArrayDeque<>(), retransmissionQueue, rttMeasurement);
-    }
-
-    public void add(final ConnectionHandshakeSegment seg,
-                    final ChannelPromise ackPromise) {
+    public void add(final ConnectionHandshakeSegment seg) {
         if (seq == 0) {
             seq = seg.seq();
         }
