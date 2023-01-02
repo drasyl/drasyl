@@ -315,27 +315,32 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
-    void write(final ChannelHandlerContext ctx,
-               final ConnectionHandshakeSegment seg,
+    void write(final ConnectionHandshakeSegment seg,
                final ChannelPromise ackPromise) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        outgoingSegmentQueue.add(seg, ackPromise);
+        writeWithout(seg, ackPromise);
     }
 
     void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
-        write(ctx, seg, ctx.newPromise());
+        write(seg, ctx.newPromise());
+    }
+
+    void writeWithout(final ConnectionHandshakeSegment seg,
+                      final ChannelPromise ackPromise) {
+        outgoingSegmentQueue.add(seg, ackPromise);
     }
 
     void writeWithout(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+        writeWithout(seg, ctx.newPromise());
         outgoingSegmentQueue.add(seg, ctx.newPromise());
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
                        final ConnectionHandshakeSegment seg) {
-        write(ctx, seg, ctx.newPromise());
+        write(seg, ctx.newPromise());
         outgoingSegmentQueue.flush(ctx);
     }
 
@@ -377,7 +382,7 @@ class TransmissionControlBlock {
                     seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
                 }
                 LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-                write(ctx, seg, ackPromise);
+                write(seg, ackPromise);
             }
         }
         finally {
