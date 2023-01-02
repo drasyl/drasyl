@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  */
 class SendBuffer {
     private final CoalescingBufferQueue queue;
-    CoalescingBufferQueue queue2;
+    private CoalescingBufferQueue queue2;
 
     SendBuffer(final CoalescingBufferQueue queue) {
         this.queue = requireNonNull(queue);
@@ -78,6 +78,22 @@ class SendBuffer {
      */
     public ByteBuf remove(final int bytes, final ChannelPromise aggregatePromise) {
         return queue.remove(bytes, aggregatePromise);
+    }
+
+    /**
+     * Remove a {@link ByteBuf} from the queue with the specified number of bytes. Any added buffer
+     * who's bytes are fully consumed during removal will have it's promise completed when the
+     * passed aggregate {@link ChannelPromise} completes.
+     *
+     * @param bytes            the maximum number of readable bytes in the returned {@link ByteBuf},
+     *                         if {@code bytes} is greater than {@link #readableBytes} then a buffer
+     *                         of length {@link #readableBytes} is returned.
+     * @param aggregatePromise used to aggregate the promises and listeners for the constituent
+     *                         buffers.
+     * @return a {@link ByteBuf} composed of the enqueued buffers.
+     */
+    public ByteBuf remove2(final int bytes, final ChannelPromise aggregatePromise) {
+        return queue2.remove(bytes, aggregatePromise);
     }
 
     /**

@@ -91,33 +91,12 @@ class OutgoingSegmentQueue {
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
-        if (deque.isEmpty()) {
+        if (len == 0 && ctl == 0) {
             return;
         }
 
         final int size = deque.size();
         LOG.trace("Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", size);
-
-        if (size == 1) {
-            final OutgoingSegmentEntry current = deque.remove();
-            final ChannelPromise ackPromise = ctx.newPromise();
-
-            final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
-            final ConnectionHandshakeSegment newSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
-            final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newSeg, ackPromise);
-
-            seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
-            assert current.seg().equals(newCurrent.seg());
-            seq = 0;
-            ack = 0;
-            ctl = 0;
-            options.clear();
-            len = 0;
-
-            write(ctx, newCurrent);
-            ctx.flush();
-            return;
-        }
 
         // multiple segments in queue. Check if we can cumulate them
         OutgoingSegmentEntry current = deque.poll();
@@ -141,11 +120,11 @@ class OutgoingSegmentQueue {
                     myCtl &= ~PSH;
                 }
                 final ChannelPromise ackPromise = ctx.newPromise();
-                final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
+                final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
                 final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
                 final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
-                seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
                 assert current.equals(newCurrent);
+                seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
 
                 write(ctx, newCurrent);
             }
@@ -153,10 +132,9 @@ class OutgoingSegmentQueue {
             current = next;
         }
 
-        byte myCtl = ctl;
         final ChannelPromise ackPromise = ctx.newPromise();
-        final ByteBuf data = sendBuffer.queue2.remove(mss, ackPromise);
-        final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
+        final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
+        final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
         final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
         seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
         assert current.equals(newCurrent);
