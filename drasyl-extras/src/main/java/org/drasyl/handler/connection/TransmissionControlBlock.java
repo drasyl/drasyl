@@ -282,10 +282,6 @@ class TransmissionControlBlock {
         return receiveBuffer;
     }
 
-    public OutgoingSegmentQueue outgoingSegmentQueue() {
-        return outgoingSegmentQueue;
-    }
-
     public RttMeasurement rttMeasurement() {
         return rttMeasurement;
     }
@@ -326,7 +322,11 @@ class TransmissionControlBlock {
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        outgoingSegmentQueue.add(ctx, seg, ctx.newPromise(), ackPromise);
+        outgoingSegmentQueue.add(seg, ackPromise);
+    }
+
+    void writeWithout(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+        outgoingSegmentQueue.add(ctx, seg);
     }
 
     void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
@@ -337,18 +337,13 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(ctx, seg);
     }
 
-    ChannelPromise writeAndFlush(final ChannelHandlerContext ctx,
-                                 final ConnectionHandshakeSegment seg) {
+    void writeAndFlush(final ChannelHandlerContext ctx,
+                       final ConnectionHandshakeSegment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
         }
-        return outgoingSegmentQueue.addAndFlush(ctx, seg);
-    }
-
-    void flush(final ChannelHandlerContext ctx) {
-        outgoingSegmentQueue.flush(ctx);
-        ctx.flush();
+        outgoingSegmentQueue.addAndFlush(ctx, seg);
     }
 
     void add(final ByteBuf data, final ChannelPromise promise) {
@@ -358,37 +353,43 @@ class TransmissionControlBlock {
     void tryFlushingSendBuffer(final ChannelHandlerContext ctx,
                                final State state,
                                final boolean newFlush) {
-        if (newFlush) {
-            // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
-            flushUntil = advanceSeq(sndNxt, sendBuffer.readableBytes());
-        }
-
-        if (state != ESTABLISHED || flushUntil == -1 || sendBuffer.isEmpty()) {
-            return;
-        }
-
-        final int allowedBytesForNewTransmission = sequenceNumbersAllowedForNewDataTransmission();
-        final int allowedBytesToFlush = (int) (flushUntil - sndNxt);
-        LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, sendBuffer.readableBytes(), allowedBytesToFlush, mss());
-
-        final int readableBytesInBuffer = sendBuffer.readableBytes();
-        int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
-
-        LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
-        while (remainingBytes > 0) {
-            final ChannelPromise ackPromise = ctx.newPromise();
-            final ByteBuf data = sendBuffer.remove(Math.min(mss(), remainingBytes), ackPromise);
-            remainingBytes -= data.readableBytes();
-            final boolean isLast = remainingBytes == 0 || sendBuffer.isEmpty();
-            final ConnectionHandshakeSegment seg;
-            if (isLast) {
-                seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
+        try {
+            if (newFlush) {
+                // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
+                flushUntil = advanceSeq(sndNxt, sendBuffer.readableBytes());
             }
-            else {
-                seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
+
+            if (state != ESTABLISHED || flushUntil == -1 || sendBuffer.isEmpty()) {
+                return;
             }
-            LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-            write(ctx, seg, ackPromise);
+
+            final int allowedBytesForNewTransmission = sequenceNumbersAllowedForNewDataTransmission();
+            final int allowedBytesToFlush = (int) (flushUntil - sndNxt);
+            LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, sendBuffer.readableBytes(), allowedBytesToFlush, mss());
+
+            final int readableBytesInBuffer = sendBuffer.readableBytes();
+            int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
+
+            LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
+            while (remainingBytes > 0) {
+                final ChannelPromise ackPromise = ctx.newPromise();
+                final ByteBuf data = sendBuffer.remove(Math.min(mss(), remainingBytes), ackPromise);
+                remainingBytes -= data.readableBytes();
+                final boolean isLast = remainingBytes == 0 || sendBuffer.isEmpty();
+                final ConnectionHandshakeSegment seg;
+                if (isLast) {
+                    seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
+                }
+                else {
+                    seg = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt, data);
+                }
+                LOG.trace("{}[{}] Write `{}` to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, seg, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
+                write(ctx, seg, ackPromise);
+            }
+        }
+        finally {
+            outgoingSegmentQueue.flush(ctx);
+            ctx.flush();
         }
     }
 

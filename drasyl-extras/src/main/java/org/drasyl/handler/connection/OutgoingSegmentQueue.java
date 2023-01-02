@@ -72,10 +72,8 @@ class OutgoingSegmentQueue {
         this(channel, new ArrayDeque<>(), retransmissionQueue, rttMeasurement);
     }
 
-    public ChannelPromise add(final ChannelHandlerContext ctx,
-                              final ConnectionHandshakeSegment seg,
-                              final ChannelPromise writePromise,
-                              final ChannelPromise ackPromise) {
+    public void add(final ConnectionHandshakeSegment seg,
+                    final ChannelPromise ackPromise) {
 //        if (seq == 0) {
 //            seq = seg.seq();
 //        }
@@ -88,32 +86,18 @@ class OutgoingSegmentQueue {
 //        options.putAll(seg.options());
 //        data.writeBytes(seg.content());
 
-        deque.add(new OutgoingSegmentEntry(seg, writePromise, ackPromise));
-        return writePromise;
+        deque.add(new OutgoingSegmentEntry(seg, ackPromise));
     }
 
-    public ChannelPromise add(final ChannelHandlerContext ctx,
-                              final ConnectionHandshakeSegment seg) {
-        //        if (seq == 0) {
-//            seq = seg.seq();
-//        }
-//        if (data == null) {
-//            data = ctx.alloc().buffer();
-//        }
-//        len += seg.len();
-//        ack = seg.ack();
-//        ctl |= seg.ctl();
-//        options.putAll(seg.options());
-//        data.writeBytes(seg.content());
-
-        deque.add(new OutgoingSegmentEntry(seg, ctx.newPromise(), ctx.newPromise()));
-        return channel.newPromise();
+    public void add(final ChannelHandlerContext ctx,
+                    final ConnectionHandshakeSegment seg) {
+        add(seg, ctx.newPromise());
     }
 
-    public ChannelPromise addAndFlush(final ChannelHandlerContext ctx,
-                                      final ConnectionHandshakeSegment seg) {
+    public void addAndFlush(final ChannelHandlerContext ctx,
+                            final ConnectionHandshakeSegment seg) {
         try {
-            return add(ctx, seg, ctx.newPromise(), ctx.newPromise());
+            add(seg, ctx.newPromise());
         }
         finally {
             flush(ctx);
@@ -127,7 +111,6 @@ class OutgoingSegmentQueue {
 
         final int size = deque.size();
         LOG.trace("Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", size);
-
 
         if (size == 1) {
 //            ConnectionHandshakeSegment altSeg = null;
@@ -152,8 +135,7 @@ class OutgoingSegmentQueue {
             if (piggybackingSeq != null) {
                 // piggyback ACK
                 LOG.trace("Piggyback current ACK `{}` to next segment `{}`.", currentSeg, nextSeg);
-                next = new OutgoingSegmentEntry(piggybackingSeq, next.writePromise(), next.ackPromise());
-                next.writePromise().addListener(new PromiseNotifier<>(current.writePromise()));
+                next = new OutgoingSegmentEntry(piggybackingSeq, next.ackPromise());
                 next.ackPromise().addListener(new PromiseNotifier<>(current.ackPromise()));
             }
             else {
@@ -175,10 +157,9 @@ class OutgoingSegmentQueue {
         final boolean mustBeAcked = mustBeAcked(entry.seg());
         if (mustBeAcked) {
             retransmissionQueue.add(entry.seg(), entry.ackPromise());
-            entry.writePromise().addListener(new RetransmissionTimeoutApplier(ctx, entry.seg(), entry.ackPromise()));
             final ConnectionHandshakeSegment copy = entry.seg().copy();
 
-            ctx.write(copy, entry.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
+            ctx.write(copy).addListener(new RetransmissionTimeoutApplier(ctx, entry.seg(), entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture channelFuture) {
                     LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), entry.seg(), channelFuture.isSuccess());
@@ -186,8 +167,7 @@ class OutgoingSegmentQueue {
             });
         }
         else {
-            entry.writePromise().addListener(new PromiseNotifier<>(entry.ackPromise()));
-            ctx.write(entry.seg(), entry.writePromise()).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
+            ctx.write(entry.seg()).addListener(new PromiseNotifier<>(entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture channelFuture) {
                     LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), entry.seg(), channelFuture.isSuccess());
@@ -204,11 +184,9 @@ class OutgoingSegmentQueue {
         OutgoingSegmentEntry entry;
         while ((entry = deque.poll()) != null) {
             final ConnectionHandshakeSegment seg = entry.seg();
-            final ChannelPromise writePromise = entry.writePromise();
             final ChannelPromise ackPromise = entry.ackPromise();
 
             seg.release();
-            writePromise.tryFailure(cause);
             ackPromise.tryFailure(cause);
         }
     }
@@ -224,14 +202,11 @@ class OutgoingSegmentQueue {
 
     static class OutgoingSegmentEntry implements ReferenceCounted {
         private final ConnectionHandshakeSegment seg;
-        private final ChannelPromise writePromise;
         private final ChannelPromise ackPromise;
 
         OutgoingSegmentEntry(final ConnectionHandshakeSegment seg,
-                             final ChannelPromise writePromise,
                              final ChannelPromise ackPromise) {
             this.seg = requireNonNull(seg);
-            this.writePromise = requireNonNull(writePromise);
             this.ackPromise = requireNonNull(ackPromise);
         }
 
@@ -239,17 +214,12 @@ class OutgoingSegmentQueue {
         public String toString() {
             return "OutgoingSegmentEntry{" +
                     "seg=" + seg +
-                    ", writePromise=" + writePromise +
                     ", ackPromise=" + ackPromise +
                     '}';
         }
 
         public ConnectionHandshakeSegment seg() {
             return seg;
-        }
-
-        public ChannelPromise writePromise() {
-            return writePromise;
         }
 
         public ChannelPromise ackPromise() {

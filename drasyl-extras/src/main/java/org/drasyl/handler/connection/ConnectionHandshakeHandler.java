@@ -190,7 +190,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void flush(final ChannelHandlerContext ctx) {
         if (tcb != null) {
             tcb.tryFlushingSendBuffer(ctx, state, true);
-            tcb.flush(ctx);
         }
 
         ctx.flush(); // tcb.flush macht eventuell auch schon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
@@ -231,7 +230,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void channelReadComplete(final ChannelHandlerContext ctx) {
         if (tcb != null) {
             tcb.tryFlushingSendBuffer(ctx, state, false);
-            tcb.flush(ctx);
         }
 
         ctx.fireChannelReadComplete();
@@ -660,7 +658,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // SYN/ACK
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss(), tcb.rcvNxt());
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-                tcb.outgoingSegmentQueue().add(ctx, response);
+                tcb.writeWithout(ctx, response);
             }
         }
     }

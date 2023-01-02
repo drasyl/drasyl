@@ -30,19 +30,16 @@ class OutgoingSegmentQueueTest {
         @Test
         void shouldAddSegmentToEndOfQueue(@Mock final Channel channel,
                                           @Mock final ConnectionHandshakeSegment seg,
-                                          @Mock final ChannelPromise writePromise,
                                           @Mock final ChannelPromise ackPromise,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
 
-            queue.add(ctx, seg, writePromise, ackPromise);
+            queue.add(seg, ackPromise);
 
             final OutgoingSegmentEntry entry = deque.poll();
             assertEquals(seg, entry.seg());
-            assertEquals(writePromise, entry.writePromise());
             assertEquals(ackPromise, entry.ackPromise());
         }
     }
@@ -52,7 +49,6 @@ class OutgoingSegmentQueueTest {
         @Test
         void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
-                                                             @Mock final ChannelPromise writePromise,
                                                              @Mock final ChannelPromise ackPromise,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                              @Mock final RetransmissionQueue retransmissionQueue,
@@ -61,13 +57,13 @@ class OutgoingSegmentQueueTest {
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
 
             try {
-                queue.add(ctx, seg, writePromise, ackPromise);
+                queue.add(seg, ackPromise);
             }
             finally {
                 queue.flush(ctx);
             }
 
-            verify(ctx).write(seg.copy(), writePromise);
+            verify(ctx).write(seg.copy());
             verify(ctx).flush();
         }
     }
@@ -84,7 +80,7 @@ class OutgoingSegmentQueueTest {
                                           @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
-            deque.add(new OutgoingSegmentEntry(seg, writePromise, ackPromise));
+            deque.add(new OutgoingSegmentEntry(seg, ackPromise));
 
             queue.flush(ctx);
 
@@ -106,8 +102,8 @@ class OutgoingSegmentQueueTest {
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 250);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
             final ChannelPromise ackPromise2 = new DefaultChannelPromise(channel);
-            queue.add(ctx, seg1, writePromise1, ackPromise1);
-            queue.add(ctx, seg2, writePromise2, ackPromise2);
+            queue.add(seg1, ackPromise1);
+            queue.add(seg2, ackPromise2);
 
             queue.flush(ctx);
 
@@ -136,8 +132,8 @@ class OutgoingSegmentQueueTest {
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.fin(100);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
             final ChannelPromise ackPromise2 = new DefaultChannelPromise(channel);
-            queue.add(ctx, seg1, writePromise1, ackPromise1);
-            queue.add(ctx, seg2, writePromise2, ackPromise2);
+            queue.add(seg1, ackPromise1);
+            queue.add(seg2, ackPromise2);
 
             queue.flush(ctx);
 
@@ -172,7 +168,7 @@ class OutgoingSegmentQueueTest {
                                                        @Mock final RttMeasurement rttMeasurement) {
             final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
-            deque.add(new OutgoingSegmentEntry(seg, writePromise, ackPromise));
+            deque.add(new OutgoingSegmentEntry(seg, ackPromise));
 
             queue.releaseAndFailAll(cause);
 
