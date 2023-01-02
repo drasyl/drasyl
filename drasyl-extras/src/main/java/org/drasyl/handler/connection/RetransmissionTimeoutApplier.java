@@ -33,6 +33,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
@@ -79,7 +80,7 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
             ScheduledFuture<?> retransmissionFuture = future.channel().eventLoop().schedule(() -> {
                 // retransmission timeout occurred
                 // check if we're not CLOSED and if SEG has not been ACKed
-                if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb.sndUna, seg.seq(), ConnectionHandshakeSegment.SEQ_NO_SPACE)) {
+                if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
                     // not ACKed, send egain
                     LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
                     ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, rto * 2));

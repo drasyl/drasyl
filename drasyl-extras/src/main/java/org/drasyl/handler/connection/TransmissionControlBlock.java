@@ -73,24 +73,24 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     final SendBuffer sendBuffer;
-    final OutgoingSegmentQueue outgoingSegmentQueue;
-    final RetransmissionQueue retransmissionQueue;
-    final ReceiveBuffer receiveBuffer;
-    final RttMeasurement rttMeasurement;
+    private final OutgoingSegmentQueue outgoingSegmentQueue;
+    private final RetransmissionQueue retransmissionQueue;
+    private final ReceiveBuffer receiveBuffer;
+    private final RttMeasurement rttMeasurement;
+    private long flushUntil = -1;
+    private long rtt = -1;
+    private long srtt;
+    private long rto;
     // Send Sequence Variables
-    long sndUna; // oldest unacknowledged sequence number
-    long sndNxt; // next sequence number to be sent
-    int sndWnd; // send window
-    long iss; // initial send sequence number
+    private long sndUna; // oldest unacknowledged sequence number
+    private long sndNxt; // next sequence number to be sent
+    private int sndWnd; // send window
+    private long iss; // initial send sequence number
     // Receive Sequence Variables
-    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    int rcvWnd; // receive window
-    long irs; // initial receive sequence number
-    int mss; // maximum segment size
-    long flushUntil = -1;
-    long rtt = -1;
-    long srtt;
-    long rto;
+    private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
+    private int rcvWnd; // receive window
+    private long irs; // initial receive sequence number
+    private int mss; // maximum segment size
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -197,6 +197,34 @@ class TransmissionControlBlock {
         this(channel, iss, iss, irs, windowSize, mss);
     }
 
+    public long sndUna() {
+        return sndUna;
+    }
+
+    public long sndNxt() {
+        return sndNxt;
+    }
+
+    public int sndWnd() {
+        return sndWnd;
+    }
+
+    public long iss() {
+        return iss;
+    }
+
+    public long rcvNxt() {
+        return rcvNxt;
+    }
+
+    public int rcvWnd() {
+        return rcvWnd;
+    }
+
+    public long irs() {
+        return irs;
+    }
+
     public int mss() {
         return mss;
     }
@@ -272,7 +300,7 @@ class TransmissionControlBlock {
     }
 
     public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
-        // FIXME: im RFC 9293 steht <= anstelel von <
+        // FIXME: im RFC 9293 steht <= anstelle von <
         return seg.isAck() && lessThan(seg.ack(), sndUna, SEQ_NO_SPACE);
     }
 
@@ -427,5 +455,17 @@ class TransmissionControlBlock {
 
             current = retransmissionQueue.current();
         }
+    }
+
+    public void synchronizeReceiveState(final ConnectionHandshakeSegment seg) {
+        rcvNxt = advanceSeq(seg.seq(), seg.len());
+        irs = seg.seq();
+    }
+
+    public void receive(final ConnectionHandshakeSegment seg) {
+        if (seg.content().isReadable()) {
+            receiveBuffer.add(seg.content().retain());
+        }
+        this.rcvNxt = advanceSeq(rcvNxt(), seg.len());
     }
 }

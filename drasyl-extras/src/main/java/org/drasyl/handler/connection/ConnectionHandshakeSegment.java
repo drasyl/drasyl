@@ -268,6 +268,11 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         }
     }
 
+    @Override
+    public ConnectionHandshakeSegment retain() {
+        return (ConnectionHandshakeSegment) super.retain();
+    }
+
     enum Option {
         END_OF_OPTION_LIST((byte) 0),
         MAXIMUM_SEGMENT_SIZE((byte) 2),

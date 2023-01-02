@@ -88,18 +88,18 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(ConnectionHandshakeSegment.syn(100), actual);
                     assertEquals(SYN_SENT, handler.state);
 
-                    assertEquals(100, handler.tcb.sndUna);
-                    assertEquals(101, handler.tcb.sndNxt);
-                    assertEquals(0, handler.tcb.rcvNxt);
+                    assertEquals(100, handler.tcb.sndUna());
+                    assertEquals(101, handler.tcb.sndNxt());
+                    assertEquals(0, handler.tcb.rcvNxt());
 
                     // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
                     channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
                     assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
                     assertEquals(ESTABLISHED, handler.state);
 
-                    assertEquals(101, handler.tcb.sndUna);
-                    assertEquals(101, handler.tcb.sndNxt);
-                    assertEquals(301, handler.tcb.rcvNxt);
+                    assertEquals(101, handler.tcb.sndUna());
+                    assertEquals(101, handler.tcb.sndNxt());
+                    assertEquals(301, handler.tcb.rcvNxt());
 
                     assertTrue(channel.isOpen());
                     channel.close();
@@ -118,26 +118,26 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(ConnectionHandshakeSegment.syn(100), channel.readOutbound());
                     assertEquals(SYN_SENT, handler.state);
 
-                    assertEquals(100, handler.tcb.sndUna);
-                    assertEquals(101, handler.tcb.sndNxt);
-                    assertEquals(0, handler.tcb.rcvNxt);
+                    assertEquals(100, handler.tcb.sndUna());
+                    assertEquals(101, handler.tcb.sndNxt());
+                    assertEquals(0, handler.tcb.rcvNxt());
 
                     // peer SYNchronizes his SEG before our SYN has been received
                     channel.writeInbound(ConnectionHandshakeSegment.syn(300));
                     assertEquals(SYN_RECEIVED, handler.state);
                     assertEquals(ConnectionHandshakeSegment.synAck(100, 301), channel.readOutbound());
 
-                    assertEquals(100, handler.tcb.sndUna);
-                    assertEquals(101, handler.tcb.sndNxt);
-                    assertEquals(301, handler.tcb.rcvNxt);
+                    assertEquals(100, handler.tcb.sndUna());
+                    assertEquals(101, handler.tcb.sndNxt());
+                    assertEquals(301, handler.tcb.rcvNxt());
 
                     // peer respond to our SYN with ACK (and another SYN)
                     channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101));
                     assertEquals(ESTABLISHED, handler.state);
 
-                    assertEquals(101, handler.tcb.sndUna);
-                    assertEquals(101, handler.tcb.sndNxt);
-                    assertEquals(302, handler.tcb.rcvNxt);
+                    assertEquals(101, handler.tcb.sndUna());
+                    assertEquals(101, handler.tcb.sndNxt());
+                    assertEquals(301, handler.tcb.rcvNxt());
 
                     assertTrue(channel.isOpen());
                     channel.close();
@@ -160,9 +160,9 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(ConnectionHandshakeSegment.synAck(300, 101), channel.readOutbound());
                     assertEquals(SYN_RECEIVED, handler.state);
 
-                    assertEquals(300, handler.tcb.sndUna);
-                    assertEquals(301, handler.tcb.sndNxt);
-                    assertEquals(101, handler.tcb.rcvNxt);
+                    assertEquals(300, handler.tcb.sndUna());
+                    assertEquals(301, handler.tcb.sndNxt());
+                    assertEquals(101, handler.tcb.rcvNxt());
 
                     // peer ACKed our SYN
                     // we piggyback some data, that should also be processed by the server
@@ -170,9 +170,9 @@ class ConnectionHandshakeHandlerTest {
                     channel.writeInbound(ConnectionHandshakeSegment.pshAck(101, 301, data));
                     assertEquals(ESTABLISHED, handler.state);
 
-                    assertEquals(301, handler.tcb.sndUna);
-                    assertEquals(301, handler.tcb.sndNxt);
-                    assertEquals(111, handler.tcb.rcvNxt);
+                    assertEquals(301, handler.tcb.sndUna());
+                    assertEquals(301, handler.tcb.sndNxt());
+                    assertEquals(111, handler.tcb.rcvNxt());
                     assertEquals(data, channel.readInbound());
 
                     assertTrue(channel.isOpen());
@@ -272,18 +272,18 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(ConnectionHandshakeSegment.syn(400), channel.readOutbound());
                 assertEquals(SYN_SENT, handler.state);
 
-                assertEquals(400, handler.tcb.sndUna);
-                assertEquals(401, handler.tcb.sndNxt);
-                assertEquals(0, handler.tcb.rcvNxt);
+                assertEquals(400, handler.tcb.sndUna());
+                assertEquals(401, handler.tcb.sndNxt());
+                assertEquals(0, handler.tcb.rcvNxt());
 
                 // as we got an ACK for an unexpected seq, reset the peer
                 channel.writeInbound(ConnectionHandshakeSegment.ack(300, 100));
                 assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
                 assertEquals(SYN_SENT, handler.state);
 
-                assertEquals(400, handler.tcb.sndUna);
-                assertEquals(401, handler.tcb.sndNxt);
-                assertEquals(0, handler.tcb.rcvNxt);
+                assertEquals(400, handler.tcb.sndUna());
+                assertEquals(401, handler.tcb.sndNxt());
+                assertEquals(0, handler.tcb.rcvNxt());
 
                 assertTrue(channel.isOpen());
                 channel.close();
@@ -302,9 +302,9 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(ESTABLISHED, handler.state);
                 assertEquals(ConnectionHandshakeSegment.ack(300, 100), channel.readOutbound());
 
-                assertEquals(300, handler.tcb.sndUna);
-                assertEquals(300, handler.tcb.sndNxt);
-                assertEquals(100, handler.tcb.rcvNxt);
+                assertEquals(300, handler.tcb.sndUna());
+                assertEquals(300, handler.tcb.sndNxt());
+                assertEquals(100, handler.tcb.rcvNxt());
 
                 // as we sent an ACK for an unexpected seq, peer will reset us
                 final ConnectionHandshakeSegment msg = ConnectionHandshakeSegment.rst(100);
@@ -345,18 +345,18 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
                 assertFalse(future.isDone());
 
-                assertEquals(100, handler.tcb.sndUna);
-                assertEquals(101, handler.tcb.sndNxt);
-                assertEquals(300, handler.tcb.rcvNxt);
+                assertEquals(100, handler.tcb.sndUna());
+                assertEquals(101, handler.tcb.sndNxt());
+                assertEquals(300, handler.tcb.rcvNxt());
 
                 // my close got ACKed
                 channel.writeInbound(ConnectionHandshakeSegment.ack(300, 101));
                 assertEquals(FIN_WAIT_2, handler.state);
                 assertFalse(future.isDone());
 
-                assertEquals(101, handler.tcb.sndUna);
-                assertEquals(101, handler.tcb.sndNxt);
-                assertEquals(300, handler.tcb.rcvNxt);
+                assertEquals(101, handler.tcb.sndUna());
+                assertEquals(101, handler.tcb.sndNxt());
+                assertEquals(300, handler.tcb.rcvNxt());
 
                 // peer now triggers close as well
                 channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 101));
@@ -383,9 +383,9 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(LAST_ACK, handler.state);
                 assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
 
-                assertEquals(300, handler.tcb.sndUna);
-                assertEquals(301, handler.tcb.sndNxt);
-                assertEquals(101, handler.tcb.rcvNxt);
+                assertEquals(300, handler.tcb.sndUna());
+                assertEquals(301, handler.tcb.sndNxt());
+                assertEquals(101, handler.tcb.rcvNxt());
 
                 // peer ACKed our close
                 channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
@@ -408,9 +408,9 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
                 assertFalse(future.isDone());
 
-                assertEquals(100, handler.tcb.sndUna);
-                assertEquals(101, handler.tcb.sndNxt);
-                assertEquals(300, handler.tcb.rcvNxt);
+                assertEquals(100, handler.tcb.sndUna());
+                assertEquals(101, handler.tcb.sndNxt());
+                assertEquals(300, handler.tcb.rcvNxt());
 
                 // got parallel close
                 channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 100));
@@ -418,9 +418,9 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
                 assertFalse(future.isDone());
 
-                assertEquals(100, handler.tcb.sndUna);
-                assertEquals(101, handler.tcb.sndNxt);
-                assertEquals(301, handler.tcb.rcvNxt);
+                assertEquals(100, handler.tcb.sndUna());
+                assertEquals(101, handler.tcb.sndNxt());
+                assertEquals(301, handler.tcb.rcvNxt());
 
                 channel.writeInbound(ConnectionHandshakeSegment.ack(301, 101));
 
