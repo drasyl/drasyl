@@ -89,21 +89,6 @@ class OutgoingSegmentQueue {
         deque.add(new OutgoingSegmentEntry(seg, ackPromise));
     }
 
-    public void add(final ChannelHandlerContext ctx,
-                    final ConnectionHandshakeSegment seg) {
-        add(seg, ctx.newPromise());
-    }
-
-    public void addAndFlush(final ChannelHandlerContext ctx,
-                            final ConnectionHandshakeSegment seg) {
-        try {
-            add(seg, ctx.newPromise());
-        }
-        finally {
-            flush(ctx);
-        }
-    }
-
     public void flush(final ChannelHandlerContext ctx) {
         if (deque.isEmpty()) {
             return;

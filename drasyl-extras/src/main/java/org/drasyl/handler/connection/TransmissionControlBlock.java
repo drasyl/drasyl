@@ -325,34 +325,27 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.add(seg, ackPromise);
     }
 
-    void writeWithout(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
-        outgoingSegmentQueue.add(ctx, seg);
+    void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+        write(ctx, seg, ctx.newPromise());
     }
 
-    void write(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
-        final int len = seg.len();
-        if (len > 0) {
-            sndNxt = advanceSeq(sndNxt, len);
-        }
-        outgoingSegmentQueue.add(ctx, seg);
+    void writeWithout(final ChannelHandlerContext ctx, final ConnectionHandshakeSegment seg) {
+        outgoingSegmentQueue.add(seg, ctx.newPromise());
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
                        final ConnectionHandshakeSegment seg) {
-        final int len = seg.len();
-        if (len > 0) {
-            sndNxt = advanceSeq(sndNxt, len);
-        }
-        outgoingSegmentQueue.addAndFlush(ctx, seg);
+        write(ctx, seg, ctx.newPromise());
+        outgoingSegmentQueue.flush(ctx);
     }
 
     void add(final ByteBuf data, final ChannelPromise promise) {
         sendBuffer.add(data, promise);
     }
 
-    void tryFlushingSendBuffer(final ChannelHandlerContext ctx,
-                               final State state,
-                               final boolean newFlush) {
+    void flush(final ChannelHandlerContext ctx,
+               final State state,
+               final boolean newFlush) {
         try {
             if (newFlush) {
                 // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin

@@ -189,7 +189,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void flush(final ChannelHandlerContext ctx) {
         if (tcb != null) {
-            tcb.tryFlushingSendBuffer(ctx, state, true);
+            tcb.flush(ctx, state, true);
         }
 
         ctx.flush(); // tcb.flush macht eventuell auch schon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
@@ -229,7 +229,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
         if (tcb != null) {
-            tcb.tryFlushingSendBuffer(ctx, state, false);
+            tcb.flush(ctx, state, false);
         }
 
         ctx.fireChannelReadComplete();
