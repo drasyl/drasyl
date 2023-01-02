@@ -95,70 +95,38 @@ class OutgoingSegmentQueue {
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
-        if (len == 0 && ctl == 0) {
-            return;
-        }
-
-        final int size = deque.size();
-        LOG.trace("Channel read complete. Now check if we can repackage/cumulate {} outgoing segments.", size);
-
-        // multiple segments in queue. Check if we can cumulate them
-        OutgoingSegmentEntry current = deque.poll();
-        while (!deque.isEmpty()) {
-            OutgoingSegmentEntry next = deque.remove();
-
-            final ConnectionHandshakeSegment currentSeg = current.seg();
-            final ConnectionHandshakeSegment nextSeg = next.seg();
-            final ConnectionHandshakeSegment piggybackingSeq = nextSeg.piggybackAck(currentSeg);
-
-            if (piggybackingSeq != null) {
-                // piggyback ACK
-                LOG.trace("Piggyback current ACK `{}` to next segment `{}`.", currentSeg, nextSeg);
-                next = new OutgoingSegmentEntry(piggybackingSeq, next.ackPromise());
-                next.ackPromise().addListener(new PromiseNotifier<>(current.ackPromise()));
+        while (!(len == 0 && ctl == 0)) {
+            final ChannelPromise ackPromise = ctx.newPromise();
+            final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
+            len -= data.readableBytes();
+            byte myCtl = ctl;
+            // use PSH flag only for last data
+            final boolean notLast = len != 0;
+            if (notLast) {
+                myCtl &= ~PSH;
             }
-            else {
-                byte myCtl = ctl;
-                // use PSH flag only for last data
-                if (nextSeg != null) {
-                    myCtl &= ~PSH;
-                }
-                final ChannelPromise ackPromise = ctx.newPromise();
-                final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
-                final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
-                final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
-                assert current.equals(newCurrent);
-                seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
-                len -= newCurrentSeg.content().readableBytes();
+            final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
+            final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
+            seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
 
-                write(ctx, newCurrent);
+            write(ctx, newCurrent);
+
+            // use SYN once, as early as possible
+            ctl &= ~SYN;
+
+            if (!notLast) {
+                // remove ACK after last write
+                ctl &= ~ACK;
+
+                ctl &= ~PSH;
+
+                // remove FIN after last write
+                ctl &= ~FIN;
+
+                // remove RST after last write
+                ctl &= ~RST;
             }
-
-            current = next;
         }
-
-        final ChannelPromise ackPromise = ctx.newPromise();
-        final ByteBuf data = sendBuffer.remove2(mss, ackPromise);
-        final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
-        final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
-        seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
-        len -= newCurrentSeg.content().readableBytes();
-        assert current.equals(newCurrent);
-
-        // use SYN once, as early as possible
-        ctl &= ~SYN;
-
-        // use PSH once, as late as possible
-        ctl &= ~PSH;
-
-        // remove ACK after last write
-        ctl &= ~ACK;
-
-        // remove FIN after last write
-        ctl &= ~FIN;
-
-        // remove RST after last write
-        ctl &= ~RST;
 
         assert len == 0;
 //        assert ctl == 0;
@@ -167,7 +135,6 @@ class OutgoingSegmentQueue {
         ctl = 0;
         options.clear();
 
-        write(ctx, current);
         ctx.flush();
     }
 
