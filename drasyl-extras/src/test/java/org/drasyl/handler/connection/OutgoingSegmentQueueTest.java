@@ -158,26 +158,4 @@ class OutgoingSegmentQueueTest {
             // TODO
         }
     }
-
-    @Nested
-    class ReleaseAndFailAll {
-        @Test
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock final Channel channel,
-                                                       @Mock final ConnectionHandshakeSegment seg,
-                                                       @Mock final ChannelPromise writePromise,
-                                                       @Mock final ChannelPromise ackPromise,
-                                                       @Mock final Throwable cause,
-                                                       @Mock final RetransmissionQueue retransmissionQueue,
-                                                       @Mock final RttMeasurement rttMeasurement) {
-            final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(channel, deque, retransmissionQueue, rttMeasurement);
-            deque.add(new OutgoingSegmentEntry(seg, ackPromise));
-
-            queue.releaseAndFailAll(cause);
-
-            verify(seg).release();
-            verify(writePromise).tryFailure(cause);
-            verify(ackPromise).tryFailure(cause);
-        }
-    }
 }

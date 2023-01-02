@@ -90,8 +90,6 @@ class OutgoingSegmentQueue {
         }
         ctl |= seg.ctl();
         options.putAll(seg.options());
-
-        deque.add(new OutgoingSegmentEntry(seg, ackPromise));
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
@@ -171,17 +169,6 @@ class OutgoingSegmentQueue {
 
     private boolean mustBeAcked(final ConnectionHandshakeSegment seg) {
         return (!seg.isOnlyAck() && !seg.isRst()) || seg.len() != 0;
-    }
-
-    public void releaseAndFailAll(final Throwable cause) {
-        OutgoingSegmentEntry entry;
-        while ((entry = deque.poll()) != null) {
-            final ConnectionHandshakeSegment seg = entry.seg();
-            final ChannelPromise ackPromise = entry.ackPromise();
-
-            seg.release();
-            ackPromise.tryFailure(cause);
-        }
     }
 
     public int size() {
