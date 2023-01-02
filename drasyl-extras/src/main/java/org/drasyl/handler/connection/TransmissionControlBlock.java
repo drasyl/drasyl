@@ -324,8 +324,8 @@ class TransmissionControlBlock {
                             long ack) {
         if (readableBytes > 0) {
             sndNxt = advanceSeq(sndNxt, readableBytes);
+            writeWithout(seg, readableBytes, ack, PSH | ACK, new EnumMap<>(Option.class));
         }
-        writeWithout(seg, readableBytes, ack, PSH | ACK, new EnumMap<>(Option.class));
     }
 
     void write(final ConnectionHandshakeSegment seg) {
@@ -367,7 +367,7 @@ class TransmissionControlBlock {
                 flushUntil = advanceSeq(sndNxt, sendBuffer.readableBytes());
             }
 
-            if (state != ESTABLISHED || flushUntil == -1 || sendBuffer.isEmpty()) {
+            if (state != ESTABLISHED || flushUntil == -1) {
                 return;
             }
 
@@ -379,18 +379,10 @@ class TransmissionControlBlock {
             int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
-            while (remainingBytes > 0) {
-                final ChannelPromise ackPromise = ctx.newPromise();
-                final ByteBuf data = sendBuffer.remove(Math.min(mss(), remainingBytes), ackPromise);
-                remainingBytes -= data.readableBytes();
-                final int readableBytes = data.readableBytes();
-                LOG.trace("{}[{}] Write {} bytes to network ({} bytes allowed to write to network left. {} writes will be contained in retransmission queue).", ctx.channel(), state, readableBytes, sequenceNumbersAllowedForNewDataTransmission(), retransmissionQueue.size() + 1);
-                writeBytes(sndNxt, readableBytes, rcvNxt);
-            }
+            writeBytes(sndNxt, remainingBytes, rcvNxt);
         }
         finally {
             outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
-            ctx.flush();
         }
     }
 
