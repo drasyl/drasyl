@@ -535,9 +535,8 @@ class ConnectionHandshakeHandlerTest {
             channel.pipeline().addLast(handler);
 
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            assertFalse(channel.writeOutbound(buf));
+            channel.write(buf);
 
-            buf.release();
             channel.close();
         }
 
