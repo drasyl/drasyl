@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
@@ -130,12 +129,13 @@ class OutgoingSegmentQueue {
         rttMeasurement.write(seg);
 
         if (seg.mustBeAcked()) {
+            // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
             retransmissionQueue.add(seg, promise);
-
             ctx.write(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, promise));
         }
         else {
-            ctx.write(seg).addListener(new PromiseNotifier<>(promise));
+            // no ACKnowledgement necessary, just write to network and succeed
+            ctx.write(seg, promise);
         }
     }
 
