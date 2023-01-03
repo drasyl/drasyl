@@ -75,23 +75,22 @@ class OutgoingSegmentQueue {
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
-        while (!(len == 0 && ctl == 0)) {
+        while (len != 0 || ctl != 0) {
             final ChannelPromise ackPromise = ctx.newPromise();
             final ByteBuf data = sendBuffer.remove2(Math.min(mss, len), ackPromise);
             len -= data.readableBytes();
-            byte myCtl = ctl;
-            // use PSH flag only for last data
-            final boolean notLast = len != 0;
-            if (notLast) {
-                myCtl &= ~PSH;
+
+            // use PSH for last data
+            if (len == 0 && data.isReadable()) {
+                ctl |= PSH;
             }
 
             final Map<Option, Object> options = new EnumMap<>(Option.class);
-            if ((myCtl & SYN) != 0) {
+            if ((ctl & SYN) != 0) {
                 options.put(MAXIMUM_SEGMENT_SIZE, mss);
             }
 
-            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
+            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
             write(ctx, seg, ackPromise);
@@ -99,7 +98,7 @@ class OutgoingSegmentQueue {
             // use SYN once, as early as possible
             ctl &= ~SYN;
 
-            if (!notLast) {
+            if (len == 0) {
                 // remove ACK after last write
                 ctl &= ~ACK;
 

@@ -25,17 +25,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
@@ -324,7 +320,7 @@ class TransmissionControlBlock {
                             long ack) {
         if (readableBytes > 0) {
             sndNxt = advanceSeq(sndNxt, readableBytes);
-            writeWithout(seg, readableBytes, ack, PSH | ACK, new EnumMap<>(Option.class));
+            writeWithout(seg, readableBytes, ack, ACK);
         }
     }
 
@@ -337,15 +333,14 @@ class TransmissionControlBlock {
     }
 
     void writeWithout(final ConnectionHandshakeSegment seg) {
-        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
+        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl());
     }
 
-    private void writeWithout(long seq1,
+    private void writeWithout(long seq,
                               int readableBytes,
-                              long ack1,
-                              int ctl1,
-                              Map<Option, Object> options1) {
-        outgoingSegmentQueue.addBytes(seq1, readableBytes, ack1, ctl1);
+                              long ack,
+                              int ctl) {
+        outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
