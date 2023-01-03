@@ -22,8 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCounted;
@@ -94,9 +92,11 @@ class OutgoingSegmentQueue {
             }
             final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
             final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
-            seq = ConnectionHandshakeSegment.advanceSeq(seq, newCurrent.content().readableBytes());
+            seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
-            write(ctx, newCurrent);
+            final ConnectionHandshakeSegment seg = newCurrent.seg();
+            final ChannelPromise ackPromise1 = newCurrent.ackPromise();
+            write(ctx, seg, ackPromise1);
 
             // use SYN once, as early as possible
             ctl &= ~SYN;
@@ -116,43 +116,27 @@ class OutgoingSegmentQueue {
         }
 
         assert len == 0;
-//        assert ctl == 0;
+        assert ctl == 0;
         seq = 0;
         ack = 0;
-        ctl = 0;
-        options.clear();
 
         ctx.flush();
     }
 
-    private void write(final ChannelHandlerContext ctx,
-                       OutgoingSegmentEntry entry) {
+    private void write(ChannelHandlerContext ctx,
+                       ConnectionHandshakeSegment seg,
+                       ChannelPromise ackPromise) {
         // RTTM
-        entry = new OutgoingSegmentEntry(entry.seg().copy(), entry.ackPromise());
+        rttMeasurement.write(seg);
 
-        rttMeasurement.write(entry.seg());
-
-        final boolean mustBeAcked = mustBeAcked(entry.seg());
+        final boolean mustBeAcked = mustBeAcked(seg);
         if (mustBeAcked) {
-            retransmissionQueue.add(entry.seg(), entry.ackPromise());
-            final ConnectionHandshakeSegment copy = entry.seg().copy();
+            retransmissionQueue.add(seg, ackPromise);
 
-            OutgoingSegmentEntry finalEntry = entry;
-            ctx.write(copy).addListener(new RetransmissionTimeoutApplier(ctx, entry.seg(), entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture channelFuture) {
-                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), finalEntry.seg(), channelFuture.isSuccess());
-                }
-            });
+            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise)).addListener(CLOSE_ON_FAILURE);
         }
         else {
-            OutgoingSegmentEntry finalEntry1 = entry;
-            ctx.write(entry.seg()).addListener(new PromiseNotifier<>(entry.ackPromise())).addListener(CLOSE_ON_FAILURE).addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture channelFuture) {
-                    LOG.trace("{} WRITTEN `{}`: {}", channelFuture.channel(), finalEntry1.seg(), channelFuture.isSuccess());
-                }
-            });
+            ctx.write(seg).addListener(new PromiseNotifier<>(ackPromise)).addListener(CLOSE_ON_FAILURE);
         }
     }
 

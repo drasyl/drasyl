@@ -6,14 +6,13 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
-import org.drasyl.handler.connection.OutgoingSegmentQueue.OutgoingSegmentEntry;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayDeque;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,18 +34,14 @@ class OutgoingSegmentQueueTest {
         void shouldAddSegmentToEndOfQueue(@Mock final ConnectionHandshakeSegment seg,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
-            final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
             final long seq1 = seg.seq();
             final int readableBytes = seg.content().readableBytes();
             final long ack1 = seg.ack();
             final int ctl1 = seg.ctl();
-            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+            final Map<Option, Object> options1 = seg.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
-
-            final OutgoingSegmentEntry entry = deque.poll();
-            assertEquals(seg, entry.seg());
         }
     }
 
@@ -57,7 +52,6 @@ class OutgoingSegmentQueueTest {
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                              @Mock final RetransmissionQueue retransmissionQueue,
                                                              @Mock final RttMeasurement rttMeasurement) {
-            final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
             try {
@@ -65,7 +59,7 @@ class OutgoingSegmentQueueTest {
                 final int readableBytes = seg.content().readableBytes();
                 final long ack1 = seg.ack();
                 final int ctl1 = seg.ctl();
-                final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg.options();
+                final Map<Option, Object> options1 = seg.options();
                 queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
             }
             finally {
@@ -86,9 +80,7 @@ class OutgoingSegmentQueueTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock final RetransmissionQueue retransmissionQueue,
                                           @Mock final RttMeasurement rttMeasurement) {
-            final ArrayDeque<OutgoingSegmentEntry> deque = new ArrayDeque<>();
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
-            deque.add(new OutgoingSegmentEntry(seg, ackPromise));
 
             queue.flush(ctx, sendBuffer, mss);
 
@@ -112,13 +104,13 @@ class OutgoingSegmentQueueTest {
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            final Map<ConnectionHandshakeSegment.Option, Object> options11 = seg1.options();
+            final Map<Option, Object> options11 = seg1.options();
             queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg2.options();
+            final Map<Option, Object> options1 = seg2.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, sendBuffer, mss);
@@ -149,13 +141,13 @@ class OutgoingSegmentQueueTest {
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            final Map<ConnectionHandshakeSegment.Option, Object> options11 = seg1.options();
+            final Map<Option, Object> options11 = seg1.options();
             queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            final Map<ConnectionHandshakeSegment.Option, Object> options1 = seg2.options();
+            final Map<Option, Object> options1 = seg2.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, sendBuffer, mss);
