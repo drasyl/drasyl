@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.SerialNumberArithmetic;
@@ -33,9 +32,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 
-import static io.netty.channel.ChannelFutureListener.CLOSE_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
@@ -90,13 +87,10 @@ class OutgoingSegmentQueue {
             if (notLast) {
                 myCtl &= ~PSH;
             }
-            final ConnectionHandshakeSegment newCurrentSeg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
-            final OutgoingSegmentEntry newCurrent = new OutgoingSegmentEntry(newCurrentSeg, ackPromise);
+            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
-            final ConnectionHandshakeSegment seg = newCurrent.seg();
-            final ChannelPromise ackPromise1 = newCurrent.ackPromise();
-            write(ctx, seg, ackPromise1);
+            write(ctx, seg, ackPromise);
 
             // use SYN once, as early as possible
             ctl &= ~SYN;
@@ -129,19 +123,14 @@ class OutgoingSegmentQueue {
         // RTTM
         rttMeasurement.write(seg);
 
-        final boolean mustBeAcked = mustBeAcked(seg);
-        if (mustBeAcked) {
+        if (seg.mustBeAcked()) {
             retransmissionQueue.add(seg, ackPromise);
 
-            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise)).addListener(CLOSE_ON_FAILURE);
+            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise));
         }
         else {
-            ctx.write(seg).addListener(new PromiseNotifier<>(ackPromise)).addListener(CLOSE_ON_FAILURE);
+            ctx.write(seg).addListener(new PromiseNotifier<>(ackPromise));
         }
-    }
-
-    private boolean mustBeAcked(final ConnectionHandshakeSegment seg) {
-        return (!seg.isOnlyAck() && !seg.isRst()) || seg.len() != 0;
     }
 
     public int size() {
@@ -151,88 +140,5 @@ class OutgoingSegmentQueue {
     @Override
     public String toString() {
         return String.valueOf(size());
-    }
-
-    static class OutgoingSegmentEntry implements ReferenceCounted {
-        private final ConnectionHandshakeSegment seg;
-        private final ChannelPromise ackPromise;
-
-        OutgoingSegmentEntry(final ConnectionHandshakeSegment seg,
-                             final ChannelPromise ackPromise) {
-            this.seg = requireNonNull(seg);
-            this.ackPromise = requireNonNull(ackPromise);
-        }
-
-        @Override
-        public String toString() {
-            return "OutgoingSegmentEntry{" +
-                    "seg=" + seg +
-                    ", ackPromise=" + ackPromise +
-                    '}';
-        }
-
-        public ConnectionHandshakeSegment seg() {
-            return seg;
-        }
-
-        public ChannelPromise ackPromise() {
-            return ackPromise;
-        }
-
-        @Override
-        public int refCnt() {
-            return 0;
-        }
-
-        @Override
-        public ReferenceCounted retain() {
-            return null;
-        }
-
-        @Override
-        public ReferenceCounted retain(int increment) {
-            return null;
-        }
-
-        @Override
-        public ReferenceCounted touch() {
-            return null;
-        }
-
-        @Override
-        public ReferenceCounted touch(Object hint) {
-            return null;
-        }
-
-        @Override
-        public boolean release() {
-            return false;
-        }
-
-        @Override
-        public boolean release(int decrement) {
-            return false;
-        }
-
-        public ByteBuf content() {
-            return seg().content();
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(seg, ackPromise);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            final OutgoingSegmentEntry that = (OutgoingSegmentEntry) o;
-            return Objects.equals(seg, that.seg);
-        }
     }
 }

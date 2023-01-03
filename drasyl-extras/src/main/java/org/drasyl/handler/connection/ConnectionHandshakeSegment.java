@@ -249,6 +249,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return add(seq(), len() - 1L, SEQ_NO_SPACE);
     }
 
+    public boolean mustBeAcked() {
+        return (!isOnlyAck() && !isRst()) || len() != 0;
+    }
+
     public boolean canPiggybackAck(final ConnectionHandshakeSegment other) {
         return (other.isOnlyAck() || other.isOnlyFin()) && seq() == other.seq();
     }
