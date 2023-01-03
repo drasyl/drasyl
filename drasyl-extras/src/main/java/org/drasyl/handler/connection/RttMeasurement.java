@@ -36,7 +36,11 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * href="https://www.rfc-editor.org/rfc/rfc7323.html#section-3">RFC 7323, Sections 3 and 4</a>.
  */
 public class RttMeasurement {
+    public static final int K = 4;
+    public static final double G = 1.0 / 1_000; // clock granularity in seconds
     private static final Logger LOG = LoggerFactory.getLogger(RttMeasurement.class);
+    public static final int LOWER_BOUND = 1_000;
+    public static final int UPPER_BOUND = 60_000;
     long tsRecent; // holds a timestamp to be echoed in TSecr whenever a segment is sent
     long lastAckSent; // holds the ACK field from the last segment sent
     boolean addTimestamps;
@@ -96,8 +100,6 @@ public class RttMeasurement {
                               final long tsEcr,
                               final int smss,
                               final int flightSize) {
-        int K = 4;
-        double G = 1.0 / 1_000;
         if (SRTT == -1) {
             // first measurement
             int r = (int) (System.nanoTime() / 1_000_000 - tsEcr);
@@ -117,15 +119,15 @@ public class RttMeasurement {
             RTO = SRTT + Math.max(G, K * RTTVAR);
         }
 
-        if (RTO < 1_000) {
+        if (RTO < LOWER_BOUND) {
             // Whenever RTO is computed, if it is less than 1 second, then the
             //         RTO SHOULD be rounded up to 1 second.
-            RTO = 1_000;
+            RTO = LOWER_BOUND;
         }
-        else if (RTO > 60_000) {
+        else if (RTO > UPPER_BOUND) {
             // A maximum value MAY be placed on RTO provided it is at least 60
             //         seconds.
-            RTO = 60_000;
+            RTO = UPPER_BOUND;
         }
 
         LOG.error("{} RTO set to {}ms.", ctx.channel(), RTO);
