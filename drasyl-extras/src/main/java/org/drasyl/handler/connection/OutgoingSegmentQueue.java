@@ -73,11 +73,12 @@ class OutgoingSegmentQueue {
         this.ctl |= ctl;
     }
 
-    public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
+    public void flush(final ChannelHandlerContext ctx,
+                      final TransmissionControlBlock tcb) {
         final boolean doFlush = len != 0 || ctl != 0;
         while (len != 0 || ctl != 0) {
             final ChannelPromise promise = ctx.newPromise();
-            final ByteBuf data = sendBuffer.remove(Math.min(mss, len), promise);
+            final ByteBuf data = tcb.sendBuffer().remove(Math.min(tcb.mss(), len), promise);
             len -= data.readableBytes();
 
             // use PSH for last data
@@ -87,13 +88,13 @@ class OutgoingSegmentQueue {
 
             final Map<Option, Object> options = new EnumMap<>(Option.class);
             if ((ctl & SYN) != 0) {
-                options.put(MAXIMUM_SEGMENT_SIZE, mss);
+                options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
 
             final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
-            write(ctx, seg, promise);
+            write(ctx, tcb, seg, promise);
 
             // use SYN once, as early as possible
             ctl &= ~SYN;
@@ -123,6 +124,7 @@ class OutgoingSegmentQueue {
     }
 
     private void write(final ChannelHandlerContext ctx,
+                       final TransmissionControlBlock tcb,
                        final ConnectionHandshakeSegment seg,
                        final ChannelPromise promise) {
         // RTTM
@@ -131,7 +133,7 @@ class OutgoingSegmentQueue {
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
             retransmissionQueue.add(seg, promise);
-            ctx.write(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, promise));
+            ctx.write(seg.copy()).addListener(new RetransmissionApplier(ctx, tcb, seg, promise));
         }
         else {
             // no ACKnowledgement necessary, just write to network and succeed

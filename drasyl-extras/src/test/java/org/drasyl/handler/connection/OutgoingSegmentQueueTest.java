@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 class OutgoingSegmentQueueTest {
     private SendBuffer sendBuffer;
     private int mss;
+    private TransmissionControlBlock tcb;
 
     @Nested
     class Add {
@@ -58,7 +59,7 @@ class OutgoingSegmentQueueTest {
                 queue.addBytes(seq1, readableBytes, ack1, ctl1);
             }
             finally {
-                queue.flush(ctx, sendBuffer, mss);
+                queue.flush(ctx, tcb);
             }
 
             verify(ctx).write(seg.copy());
@@ -77,7 +78,7 @@ class OutgoingSegmentQueueTest {
                                           @Mock final RttMeasurement rttMeasurement) {
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
 
-            queue.flush(ctx, sendBuffer, mss);
+            queue.flush(ctx, tcb);
 
             verify(ctx).write(seg.copy(), writePromise);
             verify(ctx).flush();
@@ -106,7 +107,7 @@ class OutgoingSegmentQueueTest {
             final int ctl1 = seg2.ctl();
             queue.addBytes(seq1, readableBytes, ack1, ctl1);
 
-            queue.flush(ctx, sendBuffer, mss);
+            queue.flush(ctx, tcb);
 
             // seg1 should have been superseded by seg2
             verify(ctx).write(seg2, writePromise2);
@@ -141,7 +142,7 @@ class OutgoingSegmentQueueTest {
             final int ctl1 = seg2.ctl();
             queue.addBytes(seq1, readableBytes, ack1, ctl1);
 
-            queue.flush(ctx, sendBuffer, mss);
+            queue.flush(ctx, tcb);
 
             // seg1 should have been piggybacked by seg2
             verify(ctx).write(eq(ConnectionHandshakeSegment.finAck(100, 200)), eq(writePromise2));

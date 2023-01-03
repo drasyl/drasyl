@@ -42,25 +42,18 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 class RetransmissionApplier implements ChannelFutureListener {
     static final Logger LOG = LoggerFactory.getLogger(RetransmissionApplier.class);
     private final ChannelHandlerContext ctx;
+    private final TransmissionControlBlock tcb;
     private final ConnectionHandshakeSegment seg;
-    private final ChannelPromise ackPromise;
-    private final long rto;
+    private final ChannelPromise promise;
 
     RetransmissionApplier(final ChannelHandlerContext ctx,
+                          final TransmissionControlBlock tcb,
                           final ConnectionHandshakeSegment seg,
-                          final ChannelPromise ackPromise) {
-        this(ctx, seg, ackPromise, /*((ConnectionHandshakeHandler) ctx.handler()).tcb.rto()*/1000);
-    }
-
-    RetransmissionApplier(final ChannelHandlerContext ctx,
-                          final ConnectionHandshakeSegment seg,
-                          final ChannelPromise ackPromise,
-                          final long rto) {
+                          final ChannelPromise promise) {
         this.ctx = requireNonNull(ctx);
+        this.tcb = requireNonNull(tcb);
         this.seg = requireNonNull(seg);
-        this.ackPromise = requireNonNull(ackPromise);
-        this.rto = rto;
-//        this.rto = requirePositive(rto);
+        this.promise = requireNonNull(promise);
     }
 
     @SuppressWarnings({ "unchecked", "java:S2164" })
@@ -69,19 +62,20 @@ class RetransmissionApplier implements ChannelFutureListener {
         // segment has been successfully been written to the network
         // schedule retransmission if SEG does not get ACKed in time
         final Channel channel = future.channel();
+        final long rto = tcb.rto();
         final ScheduledFuture<?> retransmissionFuture = channel.eventLoop().schedule(() -> {
             // retransmission timeout occurred
             // check if we're not CLOSED and if SEG has not been ACKed
             final ConnectionHandshakeHandler handler = (ConnectionHandshakeHandler) ctx.handler();
-            if (handler.state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(handler.tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
+            if (handler.state != CLOSED && !promise.isDone() && lessThanOrEqualTo(handler.tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
                 // not ACKed, send again
                 LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", channel, seg, rto);
-                ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, ackPromise, rto * 2));
+                ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionApplier(ctx, tcb, seg, promise));
             }
         }, rto, MILLISECONDS);
 
         // cancel retransmission job if SEG got ACKed
-        ackPromise.addListener(new ChannelFutureListener() {
+        promise.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture channelFuture) {
                 retransmissionFuture.cancel(false);

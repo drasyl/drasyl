@@ -339,7 +339,7 @@ class TransmissionControlBlock {
     void writeAndFlush(final ChannelHandlerContext ctx,
                        final ConnectionHandshakeSegment seg) {
         write(seg);
-        outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
+        outgoingSegmentQueue.flush(ctx, this);
     }
 
     void add(final ByteBuf data, final ChannelPromise promise) {
@@ -369,7 +369,7 @@ class TransmissionControlBlock {
             writeBytes(sndNxt, remainingBytes, rcvNxt);
         }
         finally {
-            outgoingSegmentQueue.flush(ctx, sendBuffer, mss);
+            outgoingSegmentQueue.flush(ctx, this);
         }
     }
 
@@ -409,5 +409,9 @@ class TransmissionControlBlock {
             receiveBuffer.add(seg.content().retain());
         }
         this.rcvNxt = advanceSeq(rcvNxt(), seg.len());
+    }
+
+    public SendBuffer sendBuffer() {
+        return sendBuffer;
     }
 }
