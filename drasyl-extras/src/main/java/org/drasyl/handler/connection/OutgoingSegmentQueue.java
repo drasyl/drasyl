@@ -75,9 +75,10 @@ class OutgoingSegmentQueue {
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
+        final boolean doFlush = len != 0 || ctl != 0;
         while (len != 0 || ctl != 0) {
-            final ChannelPromise ackPromise = ctx.newPromise();
-            final ByteBuf data = sendBuffer.remove2(Math.min(mss, len), ackPromise);
+            final ChannelPromise promise = ctx.newPromise();
+            final ByteBuf data = sendBuffer.remove(Math.min(mss, len), promise);
             len -= data.readableBytes();
 
             // use PSH for last data
@@ -93,7 +94,7 @@ class OutgoingSegmentQueue {
             final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
-            write(ctx, seg, ackPromise);
+            write(ctx, seg, promise);
 
             // use SYN once, as early as possible
             ctl &= ~SYN;
@@ -117,22 +118,24 @@ class OutgoingSegmentQueue {
         seq = 0;
         ack = 0;
 
-        ctx.flush();
+        if (doFlush) {
+            ctx.flush();
+        }
     }
 
-    private void write(ChannelHandlerContext ctx,
-                       ConnectionHandshakeSegment seg,
-                       ChannelPromise ackPromise) {
+    private void write(final ChannelHandlerContext ctx,
+                       final ConnectionHandshakeSegment seg,
+                       final ChannelPromise promise) {
         // RTTM
         rttMeasurement.write(seg);
 
         if (seg.mustBeAcked()) {
-            retransmissionQueue.add(seg, ackPromise);
+            retransmissionQueue.add(seg, promise);
 
-            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise));
+            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, promise));
         }
         else {
-            ctx.write(seg).addListener(new PromiseNotifier<>(ackPromise));
+            ctx.write(seg).addListener(new PromiseNotifier<>(promise));
         }
     }
 
