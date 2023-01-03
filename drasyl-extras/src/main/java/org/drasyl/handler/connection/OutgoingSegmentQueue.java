@@ -36,6 +36,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.RST;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
@@ -51,7 +52,6 @@ class OutgoingSegmentQueue {
     private long seq;
     private long ack;
     private byte ctl;
-    private Map<Option, Object> options = new EnumMap<>(Option.class);
     private int len;
 
     OutgoingSegmentQueue(final RetransmissionQueue retransmissionQueue,
@@ -63,8 +63,7 @@ class OutgoingSegmentQueue {
     void addBytes(long seq,
                   int readableBytes,
                   long ack,
-                  int ctl,
-                  Map<Option, Object> options) {
+                  int ctl) {
         if (this.seq == 0) {
             this.seq = seq;
         }
@@ -73,7 +72,6 @@ class OutgoingSegmentQueue {
             this.ack = ack;
         }
         this.ctl |= ctl;
-        this.options.putAll(options);
     }
 
     public void flush(final ChannelHandlerContext ctx, final SendBuffer sendBuffer, int mss) {
@@ -87,6 +85,12 @@ class OutgoingSegmentQueue {
             if (notLast) {
                 myCtl &= ~PSH;
             }
+
+            final Map<Option, Object> options = new EnumMap<>(Option.class);
+            if ((myCtl & SYN) != 0) {
+                options.put(MAXIMUM_SEGMENT_SIZE, mss);
+            }
+
             final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, myCtl, options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 

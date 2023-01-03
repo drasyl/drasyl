@@ -264,9 +264,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         createTcb(ctx);
 
         // send SYN
-        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss(), Map.of(
-                MAXIMUM_SEGMENT_SIZE, tcb.mss()
-        ));
+        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss());
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.writeAndFlush(ctx, seg);
 
@@ -579,9 +577,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.negotiateMss(ctx, seg);
 
             // send SYN/ACK
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss(), tcb.rcvNxt(), Map.of(
-                    MAXIMUM_SEGMENT_SIZE, tcb.mss()
-            ));
+            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss(), tcb.rcvNxt());
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.write(response);
             return;

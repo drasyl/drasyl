@@ -63,7 +63,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     public ConnectionHandshakeSegment(final long seq,
                                       final long ack,
                                       final byte ctl,
-                                      final Map<Option, Object> options, final ByteBuf data) {
+                                      final Map<Option, Object> options,
+                                      final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -98,13 +99,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, RST, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment syn(final long seq,
-                                                 final Map<Option, Object> options) {
-        return new ConnectionHandshakeSegment(seq, 0, SYN, new EnumMap<>(options), Unpooled.EMPTY_BUFFER);
-    }
-
     public static ConnectionHandshakeSegment syn(final long seq) {
-        return syn(seq, new EnumMap<>(Option.class));
+        return new ConnectionHandshakeSegment(seq, 0, SYN, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment fin(final long seq) {
@@ -121,13 +117,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public static ConnectionHandshakeSegment synAck(final long seq, final long ack,
-                                                    final Map<Option, Object> options) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), new EnumMap<>(options), Unpooled.EMPTY_BUFFER);
-    }
-
     public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
-        return synAck(seq, ack, new EnumMap<>(Option.class));
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {

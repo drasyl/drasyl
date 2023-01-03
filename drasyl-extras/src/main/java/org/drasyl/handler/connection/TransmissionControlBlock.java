@@ -345,7 +345,7 @@ class TransmissionControlBlock {
                               long ack1,
                               int ctl1,
                               Map<Option, Object> options1) {
-        outgoingSegmentQueue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
+        outgoingSegmentQueue.addBytes(seq1, readableBytes, ack1, ctl1);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
