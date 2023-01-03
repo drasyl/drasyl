@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,8 +29,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -67,31 +66,26 @@ class RetransmissionApplier implements ChannelFutureListener {
     @SuppressWarnings({ "unchecked", "java:S2164" })
     @Override
     public void operationComplete(final ChannelFuture future) {
-        if (future.isSuccess()) {
-            // segment has ben successfully been written to the network
-            // schedule retransmission if SEG does not get ACKed in time
-            ScheduledFuture<?> retransmissionFuture = future.channel().eventLoop().schedule(() -> {
-                // retransmission timeout occurred
-                // check if we're not CLOSED and if SEG has not been ACKed
-                if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
-                    // not ACKed, send egain
-                    LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
-                    ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, ackPromise, rto * 2));
-                    // FIXME: vermeide das jedes SEG einzeln erneut neu geschrieben und geflusht wird?
-                }
-            }, rto, MILLISECONDS);
+        // segment has been successfully been written to the network
+        // schedule retransmission if SEG does not get ACKed in time
+        final Channel channel = future.channel();
+        final ScheduledFuture<?> retransmissionFuture = channel.eventLoop().schedule(() -> {
+            // retransmission timeout occurred
+            // check if we're not CLOSED and if SEG has not been ACKed
+            final ConnectionHandshakeHandler handler = (ConnectionHandshakeHandler) ctx.handler();
+            if (handler.state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(handler.tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
+                // not ACKed, send again
+                LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", channel, seg, rto);
+                ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, ackPromise, rto * 2));
+            }
+        }, rto, MILLISECONDS);
 
-            // cancel retransmission job if SEG got ACKed
-            ackPromise.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture channelFuture) {
-                    retransmissionFuture.cancel(false);
-                }
-            });
-        }
-        else if (!(future.cause() instanceof ClosedChannelException)) {
-            LOG.trace("{} Unable to send `{}`:", future::channel, () -> seg, future::cause);
-            future.channel().close();
-        }
+        // cancel retransmission job if SEG got ACKed
+        ackPromise.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture channelFuture) {
+                retransmissionFuture.cancel(false);
+            }
+        });
     }
 }
