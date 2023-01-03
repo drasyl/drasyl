@@ -58,17 +58,20 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     private final long seq;
     private final long ack;
     private final byte ctl;
+    private final long window;
     private final Map<Option, Object> options;
 
     public ConnectionHandshakeSegment(final long seq,
                                       final long ack,
                                       final byte ctl,
+                                      final long window,
                                       final Map<Option, Object> options,
                                       final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
+        this.window = window;
         this.options = requireNonNull(options);
     }
 
@@ -76,53 +79,53 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
                                                  final long ack,
                                                  final Map<Option, Object> options,
                                                  final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, options, data);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, 0, options, data);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq,
                                                  final long ack,
                                                  final Map<Option, Object> options) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, options, Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, 0, options, Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq,
                                                  final long ack,
                                                  final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, new EnumMap<>(Option.class), data);
+        return new ConnectionHandshakeSegment(seq, ack, ACK, 0, new EnumMap<>(Option.class), data);
     }
 
     public static ConnectionHandshakeSegment rst(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, RST, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, 0, RST, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment syn(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, SYN, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, 0, SYN, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment fin(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, FIN, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, 0, FIN, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment pshAck(final long seq,
                                                     final long ack,
                                                     final ByteBuf data) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), new EnumMap<>(Option.class), data);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (PSH | ACK), 0, new EnumMap<>(Option.class), data);
     }
 
     public static ConnectionHandshakeSegment rstAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (FIN | ACK), 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
     public static long advanceSeq(final long seq, final long advancement) {
@@ -139,6 +142,10 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
 
     public int ctl() {
         return ctl;
+    }
+
+    public long window() {
+        return window;
     }
 
     public boolean isAck() {
@@ -225,12 +232,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             optionsLabel.add(option.toString());
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + window + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override
     public ConnectionHandshakeSegment copy() {
-        return new ConnectionHandshakeSegment(seq, ack, ctl, new EnumMap<>(options), content().copy());
+        return new ConnectionHandshakeSegment(seq, ack, ctl, window, new EnumMap<>(options), content().copy());
     }
 
     public long lastSeq() {
@@ -260,7 +267,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
             }
 
             // attach ACK
-            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | other.ctl()), options, content());
+            return new ConnectionHandshakeSegment(seq, other.ack(), (byte) (ctl | other.ctl()), window, options, content());
         }
         finally {
             other.release();

@@ -150,31 +150,6 @@ class TransmissionControlBlock {
     }
 
     public TransmissionControlBlock(final Channel channel,
-                                    final long sndUna,
-                                    final long iss,
-                                    final long irs) {
-        // window size sollte ein vielfaches von mss betragen
-        this(channel, sndUna, iss, irs, 1220 * 64, 1220);
-    }
-
-    public TransmissionControlBlock(final Channel channel,
-                                    final long sndUna,
-                                    final long sndNxt,
-                                    final long iss,
-                                    final long irs) {
-        // window size sollte ein vielfaches von mss betragen
-        this(channel, sndUna, sndNxt, iss, irs, 1220 * 64, 1220);
-    }
-
-    public TransmissionControlBlock(final Channel channel, final long iss, final long irs) {
-        this(channel, iss, iss, irs);
-    }
-
-    public TransmissionControlBlock(final Channel channel, final long iss) {
-        this(channel, iss, 0);
-    }
-
-    public TransmissionControlBlock(final Channel channel,
                                     final long iss,
                                     final int windowSize,
                                     final int mss) {
@@ -223,6 +198,10 @@ class TransmissionControlBlock {
 
     public void mss(final int mss) {
         this.mss = mss;
+    }
+
+    public long window() {
+        return rcvWnd - receiveBuffer.readableBytes();
     }
 
     @Override

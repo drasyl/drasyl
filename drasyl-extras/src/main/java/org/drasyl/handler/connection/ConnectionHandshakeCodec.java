@@ -57,6 +57,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
+        buf.writeInt((int) seg.window());
 
         // options
         for (final Entry<Option, Object> entry : seg.options().entrySet()) {
@@ -83,6 +84,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
+                final long window = in.readUnsignedInt();
 
                 // options
                 final Map<Option, Object> options = new EnumMap<>(Option.class);
@@ -94,7 +96,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                     options.put(option, value);
                 }
 
-                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, options, in.retain());
+                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, window, options, in.retain());
                 out.add(seg);
             }
             else {

@@ -67,30 +67,6 @@ class ReceiveBufferTest {
     }
 
     @Nested
-    class Remove {
-        @Test
-        void shouldRemoveGivenAmountOfBytesFromBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
-            final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
-            buffer.add(buf1);
-            buffer.add(buf2);
-
-            final ByteBuf removed = buffer.remove(13);
-            assertEquals(13, removed.readableBytes());
-            assertEquals(2, buffer.readableBytes());
-
-            final CompositeByteBuf expectedBuf = Unpooled.compositeBuffer(2).addComponents(true, buf1, buf2.slice(0, 3));
-            assertEquals(expectedBuf, removed);
-
-            expectedBuf.release();
-            buf2.release();
-        }
-    }
-
-    @Nested
     class Release {
         @Test
         void shouldReleaseAllBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {

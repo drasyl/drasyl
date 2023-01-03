@@ -23,8 +23,10 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.CoalescingBufferQueue;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 
@@ -33,6 +35,7 @@ import static java.util.Objects.requireNonNull;
 // FIXME: add maximum capacity size?
 // FIXME: add support for out-of-order?
 class ReceiveBuffer {
+    private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
     private final CoalescingBufferQueue queue;
@@ -65,20 +68,6 @@ class ReceiveBuffer {
     }
 
     /**
-     * Remove a {@link ByteBuf} from the queue with the specified number of bytes. Any added buffer
-     * who's bytes are fully consumed during removal will have it's promise completed when the
-     * passed aggregate {@link ChannelPromise} completes.
-     *
-     * @param bytes the maximum number of readable bytes in the returned {@link ByteBuf}, if {@code
-     *              bytes} is greater than {@link #readableBytes} then a buffer of length {@link
-     *              #readableBytes} is returned.
-     * @return a {@link ByteBuf} composed of the enqueued buffers.
-     */
-    public ByteBuf remove(final int bytes) {
-        return queue.remove(bytes, channel.newPromise().setSuccess());
-    }
-
-    /**
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void release() {
@@ -95,5 +84,11 @@ class ReceiveBuffer {
     @Override
     public String toString() {
         return String.valueOf(readableBytes());
+    }
+
+    public void fireRead(final ChannelHandlerContext ctx) {
+        final ByteBuf byteBuf = queue.remove(readableBytes(), ctx.newPromise().setSuccess());
+        LOG.trace("{} Pass receive buffer content inbound to channel.", ctx.channel(), byteBuf);
+        ctx.fireChannelRead(byteBuf);
     }
 }

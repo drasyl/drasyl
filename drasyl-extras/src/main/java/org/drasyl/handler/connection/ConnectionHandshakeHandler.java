@@ -813,9 +813,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     tcb.receive(seg.retain()); // wir rufen am ende IMMER release auf. hier müssen wir daher mal retainen
 
                     if (seg.isPsh()) {
-                        final ByteBuf byteBuf = tcb.receiveBuffer().remove(tcb.receiveBuffer().readableBytes());
-                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and pass `{}` inbound to channel.", ctx.channel(), state, seg, byteBuf);
-                        ctx.fireChannelRead(byteBuf);
+                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and trigger receiver buffer flush.", ctx.channel(), state, seg);
+                        tcb.receiveBuffer().fireRead(ctx);
                     }
                     else {
                         LOG.trace("{}[{}] Got `{}`. Add to receive buffer and wait for next segment.", ctx.channel(), state, seg);
