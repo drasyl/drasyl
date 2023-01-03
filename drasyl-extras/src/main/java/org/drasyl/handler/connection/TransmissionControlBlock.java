@@ -34,10 +34,6 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.LOWER_BOUND;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.UPPER_BOUND;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -78,9 +74,6 @@ class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
     private int allowedBytesToFlush = -1;
-    private long rtt = -1;
-    private long srtt;
-    private long rto;
     // Send Sequence Variables
     private long sndUna; // oldest unacknowledged sequence number
     private long sndNxt; // next sequence number to be sent
@@ -390,12 +383,7 @@ class TransmissionControlBlock {
     }
 
     public long rto() {
-        return rto;
-    }
-
-    public void initRto(final ChannelHandlerContext ctx) {
-        srtt = (long) (ALPHA * srtt + (1 - ALPHA) * rtt);
-        rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * srtt)));
+        return 1_000;
     }
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,

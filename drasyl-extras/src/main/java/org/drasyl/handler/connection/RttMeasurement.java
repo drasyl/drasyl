@@ -27,8 +27,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.ALPHA;
-import static org.drasyl.handler.connection.RetransmissionTimeoutApplier.BETA;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
@@ -38,9 +36,11 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 public class RttMeasurement {
     public static final int K = 4;
     public static final double G = 1.0 / 1_000; // clock granularity in seconds
+    static final float ALPHA = .8F; // smoothing factor (e.g., .8 to .9)
+    static final float BETA = 1.3F; // delay variance factor (e.g., 1.3 to 2.0)
     private static final Logger LOG = LoggerFactory.getLogger(RttMeasurement.class);
-    public static final int LOWER_BOUND = 1_000;
-    public static final int UPPER_BOUND = 60_000;
+    static final long LOWER_BOUND = 1_000; // lower bound for retransmission (e.g., 1 second)
+    static final long UPPER_BOUND = 60_000; // upper bound for retransmission (e.g., 1 minute)
     long tsRecent; // holds a timestamp to be echoed in TSecr whenever a segment is sent
     long lastAckSent; // holds the ACK field from the last segment sent
     boolean addTimestamps;

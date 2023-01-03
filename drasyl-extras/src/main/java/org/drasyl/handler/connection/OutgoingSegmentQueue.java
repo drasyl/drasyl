@@ -132,7 +132,7 @@ class OutgoingSegmentQueue {
         if (seg.mustBeAcked()) {
             retransmissionQueue.add(seg, promise);
 
-            ctx.write(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, promise));
+            ctx.write(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, promise));
         }
         else {
             ctx.write(seg).addListener(new PromiseNotifier<>(promise));

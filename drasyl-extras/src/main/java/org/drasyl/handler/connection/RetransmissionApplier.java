@@ -40,30 +40,23 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 /**
  * A {@link ChannelFutureListener} that retransmit not acknowledged segments.
  */
-class RetransmissionTimeoutApplier implements ChannelFutureListener {
-    static final Logger LOG = LoggerFactory.getLogger(RetransmissionTimeoutApplier.class);
-    static final long LOWER_BOUND = 1_000; // lower bound for retransmission (e.g., 1 second)
-    static final long UPPER_BOUND = 60_000; // upper bound for retransmission (e.g., 1 minute)
-    // as we're currently not aware of the actual RTT, we use this fixed value
-    // TS Value (TSval)  |TS Echo Reply (TSecr)
-    // https://www.rfc-editor.org/rfc/rfc1323
-    static final float ALPHA = .8F; // smoothing factor (e.g., .8 to .9)
-    static final float BETA = 1.3F; // delay variance factor (e.g., 1.3 to 2.0)
+class RetransmissionApplier implements ChannelFutureListener {
+    static final Logger LOG = LoggerFactory.getLogger(RetransmissionApplier.class);
     private final ChannelHandlerContext ctx;
     private final ConnectionHandshakeSegment seg;
     private final ChannelPromise ackPromise;
     private final long rto;
 
-    RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
-                                 final ConnectionHandshakeSegment seg,
-                                 final ChannelPromise ackPromise) {
+    RetransmissionApplier(final ChannelHandlerContext ctx,
+                          final ConnectionHandshakeSegment seg,
+                          final ChannelPromise ackPromise) {
         this(ctx, seg, ackPromise, /*((ConnectionHandshakeHandler) ctx.handler()).tcb.rto()*/1000);
     }
 
-    RetransmissionTimeoutApplier(final ChannelHandlerContext ctx,
-                                 final ConnectionHandshakeSegment seg,
-                                 final ChannelPromise ackPromise,
-                                 final long rto) {
+    RetransmissionApplier(final ChannelHandlerContext ctx,
+                          final ConnectionHandshakeSegment seg,
+                          final ChannelPromise ackPromise,
+                          final long rto) {
         this.ctx = requireNonNull(ctx);
         this.seg = requireNonNull(seg);
         this.ackPromise = requireNonNull(ackPromise);
@@ -83,7 +76,7 @@ class RetransmissionTimeoutApplier implements ChannelFutureListener {
                 if (future.channel().isOpen() && ((ConnectionHandshakeHandler) ctx.handler()).state != CLOSED && !ackPromise.isDone() && lessThanOrEqualTo(((ConnectionHandshakeHandler) ctx.handler()).tcb.sndUna(), seg.seq(), SEQ_NO_SPACE)) {
                     // not ACKed, send egain
                     LOG.error("{} Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), seg, rto);
-                    ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionTimeoutApplier(ctx, seg, ackPromise, rto * 2));
+                    ctx.writeAndFlush(seg.copy()).addListener(new RetransmissionApplier(ctx, seg, ackPromise, rto * 2));
                     // FIXME: vermeide das jedes SEG einzeln erneut neu geschrieben und geflusht wird?
                 }
             }, rto, MILLISECONDS);

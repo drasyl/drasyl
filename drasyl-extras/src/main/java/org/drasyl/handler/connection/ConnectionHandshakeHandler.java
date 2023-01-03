@@ -35,12 +35,10 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -447,9 +445,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private void initHandler(final ChannelHandlerContext ctx) {
         if (!initDone) {
             initDone = true;
-            if (tcb != null) {
-                tcb.initRto(ctx);
-            }
 
             // this state check is only required for some of our unit tests
             if (state == CLOSED) {
