@@ -39,6 +39,7 @@ import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -51,6 +52,8 @@ import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomInt;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
+import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
  * This handler partially implements the Transmission Control Protocol know from <a
@@ -81,6 +84,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final LongSupplier issProvider;
     private final boolean activeOpen;
     private final int initialMss;
+    private final int initialWindow;
     ScheduledFuture<?> userTimeoutFuture;
     State state;
     TransmissionControlBlock tcb;
@@ -88,15 +92,43 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private boolean initDone;
 
     /**
-     * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  if {@code true} a handshake will be issued on
-     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
-     *                    must initiate the handshake
+     * @param userTimeout   time in ms in which a handshake must taken place after issued
+     * @param issProvider   Provider to generate the initial send sequence number
+     * @param activeOpen    Initiate active OPEN handshake process automatically on
+     *                      {@link #channelActive(ChannelHandlerContext)}
+     * @param state         Current synchronization state
+     * @param initialMss    Maximum segment size
+     * @param initialWindow
+     */
+    @SuppressWarnings("java:S107")
+    ConnectionHandshakeHandler(final Duration userTimeout,
+                               final LongSupplier issProvider,
+                               final boolean activeOpen,
+                               final State state,
+                               final int initialMss,
+                               final int initialWindow,
+                               final TransmissionControlBlock tcb) {
+        this.userTimeout = requireNonNegative(userTimeout);
+        this.issProvider = requireNonNull(issProvider);
+        this.activeOpen = activeOpen;
+        this.state = requireNonNull(state);
+        this.initialMss = requirePositive(initialMss);
+        this.initialWindow = requirePositive(initialWindow);
+        this.tcb = tcb;
+    }
+
+    /**
+     * @param userTimeout   time in ms in which a handshake must taken place after issued
+     * @param activeOpen    if {@code true} a handshake will be issued on
+     *                      {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
+     *                      must initiate the handshake
+     * @param initialWindow
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen,
-                                      final int mss) {
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, mss, null);
+                                      final int initialMss,
+                                      final int initialWindow) {
+        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, initialMss, initialWindow, null);
     }
 
     /**
@@ -107,30 +139,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, activeOpen, 1220);
-    }
-
-    /**
-     * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param issProvider Provider to generate the initial send sequence number
-     * @param activeOpen  Initiate active OPEN handshake process automatically on
-     *                    {@link #channelActive(ChannelHandlerContext)}
-     * @param state       Current synchronization state
-     * @param initialMss  Maximum segment size
-     */
-    @SuppressWarnings("java:S107")
-    ConnectionHandshakeHandler(final Duration userTimeout,
-                               final LongSupplier issProvider,
-                               final boolean activeOpen,
-                               final State state,
-                               final int initialMss,
-                               final TransmissionControlBlock tcb) {
-        this.userTimeout = requireNonNegative(userTimeout);
-        this.issProvider = requireNonNull(issProvider);
-        this.activeOpen = activeOpen;
-        this.state = requireNonNull(state);
-        this.initialMss = requirePositive(initialMss);
-        this.tcb = tcb;
+        this(userTimeout, activeOpen, 1220, 64 * 1220);
     }
 
     /*
@@ -422,7 +431,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     private void createTcb(final ChannelHandlerContext ctx) {
         // window size sollte ein vielfaches von mss betragen
-        tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong(), initialMss * 64, initialMss);
+        tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong(), initialWindow, initialMss);
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
 
 //        ctx.executor().scheduleAtFixedRate(() -> {
@@ -564,7 +573,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             createTcb(ctx);
 
             // synchronize receive state
-            tcb.synchronizeReceiveState(seg);
+            tcb.synchronizeState(seg);
 
             LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
@@ -620,7 +629,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check SYN
         if (seg.isSyn()) {
             // synchronize receive state
-            tcb.synchronizeReceiveState(seg);
+            tcb.synchronizeState(seg);
 
             if (seg.isAck()) {
                 // advance send state
@@ -651,6 +660,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 tcb.writeWithout(response);
             }
+
+            // update window
+            tcb.updateSndWnd(seg);
         }
     }
 
@@ -726,6 +738,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         cancelUserTimeoutGuard();
                         switchToNewState(ctx, ESTABLISHED);
+                        tcb.updateSndWnd(seg);
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
 
                         if (!acceptableAck) {
@@ -900,6 +913,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), (int) (seg.ack() - tcb.sndUna()));
             // advance send state
             tcb.handleAcknowledgement(ctx, seg);
+
+            // update window
+            if (lessThan(tcb.sndWl1(), seg.seq(), SEQ_NO_SPACE) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack(), SEQ_NO_SPACE))) {
+                tcb.updateSndWnd(seg);
+            }
         }
         if (tcb.isDuplicateAck(seg)) {
             // ACK is duplicate. ignore

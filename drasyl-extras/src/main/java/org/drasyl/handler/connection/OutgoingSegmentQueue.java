@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
@@ -59,10 +60,10 @@ class OutgoingSegmentQueue {
         this.rttMeasurement = requireNonNull(rttMeasurement);
     }
 
-    void addBytes(long seq,
-                  int readableBytes,
-                  long ack,
-                  int ctl) {
+    void addBytes(final long seq,
+                  final long readableBytes,
+                  final long ack,
+                  final int ctl) {
         if (this.seq == 0) {
             this.seq = seq;
         }
@@ -78,7 +79,13 @@ class OutgoingSegmentQueue {
         final boolean doFlush = len != 0 || ctl != 0;
         while (len != 0 || ctl != 0) {
             final ChannelPromise promise = ctx.newPromise();
-            final ByteBuf data = tcb.sendBuffer().remove(Math.min(tcb.mss(), len), promise);
+            final ByteBuf data;
+            if (len > 0) {
+                data = tcb.sendBuffer().remove(Math.min(tcb.mss(), len), promise);
+            }
+            else {
+                data = Unpooled.EMPTY_BUFFER;
+            }
             len -= data.readableBytes();
 
             // use PSH for last data
@@ -127,6 +134,8 @@ class OutgoingSegmentQueue {
                        final TransmissionControlBlock tcb,
                        final ConnectionHandshakeSegment seg,
                        final ChannelPromise promise) {
+        LOG.trace("[{}] Write SEG `{}` to network.", ctx.channel(), seg);
+
         // RTTM
         rttMeasurement.write(seg);
 

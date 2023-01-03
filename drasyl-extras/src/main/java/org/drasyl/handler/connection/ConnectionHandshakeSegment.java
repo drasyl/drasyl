@@ -102,8 +102,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, RST, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment syn(final long seq, final long window) {
+        return new ConnectionHandshakeSegment(seq, 0, SYN, window, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment syn(final long seq) {
-        return new ConnectionHandshakeSegment(seq, 0, SYN, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return syn(seq, 0);
     }
 
     public static ConnectionHandshakeSegment fin(final long seq) {
@@ -120,8 +124,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (RST | ACK), 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment synAck(final long seq, final long ack, final long window) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), window, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return synAck(seq, ack, 0);
     }
 
     public static ConnectionHandshakeSegment finAck(final long seq, final long ack) {

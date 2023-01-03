@@ -73,15 +73,17 @@ class TransmissionControlBlock {
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
-    private int allowedBytesToFlush = -1;
+    private long allowedBytesToFlush = -1;
     // Send Sequence Variables
     private long sndUna; // oldest unacknowledged sequence number
     private long sndNxt; // next sequence number to be sent
-    private int sndWnd; // send window
+    private long sndWnd; // send window
+    private long sndWl1; // segment sequence number used for last window update
+    private long sndWl2; // segment acknowledgment number used for last window update
     private long iss; // initial send sequence number
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    private int rcvWnd; // receive window
+    private long rcvWnd; // receive window
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
 
@@ -91,7 +93,7 @@ class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long rcvNxt,
-                             final int rcvWnd,
+                             final long rcvWnd,
                              final long irs,
                              final SendBuffer sendBuffer,
                              final OutgoingSegmentQueue outgoingSegmentQueue,
@@ -115,28 +117,19 @@ class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    private TransmissionControlBlock(final long sndUna,
-                                     final long sndNxt,
-                                     final int sndWnd,
-                                     final long iss,
-                                     final long rcvNxt,
-                                     final int rcvWnd,
-                                     final long irs,
-                                     final SendBuffer sendBuffer,
-                                     final RetransmissionQueue retransmissionQueue,
-                                     final ReceiveBuffer receiveBuffer,
-                                     final RttMeasurement rttMeasurement,
-                                     final int mss) {
+    TransmissionControlBlock(final long sndUna,
+                             final long sndNxt,
+                             final int sndWnd,
+                             final long iss,
+                             final long rcvNxt,
+                             final int rcvWnd,
+                             final long irs,
+                             final SendBuffer sendBuffer,
+                             final RetransmissionQueue retransmissionQueue,
+                             final ReceiveBuffer receiveBuffer,
+                             final RttMeasurement rttMeasurement,
+                             final int mss) {
         this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss);
-    }
-
-    public TransmissionControlBlock(final Channel channel,
-                                    final long sndUna,
-                                    final long iss,
-                                    final long irs,
-                                    final int windowSize,
-                                    final int mss) {
-        this(sndUna, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -151,9 +144,9 @@ class TransmissionControlBlock {
 
     public TransmissionControlBlock(final Channel channel,
                                     final long iss,
-                                    final int windowSize,
+                                    final int rcvWnd,
                                     final int mss) {
-        this(channel, iss, iss, 0, windowSize, mss);
+        this(iss, iss, 0, iss, 0, rcvWnd, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -161,7 +154,7 @@ class TransmissionControlBlock {
                                     final long irs,
                                     final int windowSize,
                                     final int mss) {
-        this(channel, iss, iss, irs, windowSize, mss);
+        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public long sndUna() {
@@ -172,7 +165,7 @@ class TransmissionControlBlock {
         return sndNxt;
     }
 
-    public int sndWnd() {
+    public long sndWnd() {
         return sndWnd;
     }
 
@@ -184,7 +177,7 @@ class TransmissionControlBlock {
         return rcvNxt;
     }
 
-    public int rcvWnd() {
+    public long rcvWnd() {
         return rcvWnd;
     }
 
@@ -239,11 +232,6 @@ class TransmissionControlBlock {
                 '}';
     }
 
-    int sequenceNumbersAllowedForNewDataTransmission() {
-        // FIXME: overflow?
-        return (int) (sndUna + sndWnd - sndNxt);
-    }
-
     public void delete(final Throwable cause) {
         sendBuffer.releaseAndFailAll(cause);
         retransmissionQueue.releaseAndFailAll(cause);
@@ -287,9 +275,9 @@ class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
-    private void writeBytes(long seg,
-                            int readableBytes,
-                            long ack) {
+    private void writeBytes(final long seg,
+                            final long readableBytes,
+                            final long ack) {
         if (readableBytes > 0) {
             sndNxt = advanceSeq(sndNxt, readableBytes);
             writeWithout(seg, readableBytes, ack, ACK);
@@ -308,10 +296,10 @@ class TransmissionControlBlock {
         writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl());
     }
 
-    private void writeWithout(long seq,
-                              int readableBytes,
-                              long ack,
-                              int ctl) {
+    private void writeWithout(final long seq,
+                              final long readableBytes,
+                              final long ack,
+                              final int ctl) {
         outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl);
     }
 
@@ -338,11 +326,11 @@ class TransmissionControlBlock {
                 return;
             }
 
-            final int allowedBytesForNewTransmission = sequenceNumbersAllowedForNewDataTransmission();
+            final long allowedBytesForNewTransmission = sndWnd();
             LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, sendBuffer.readableBytes(), allowedBytesToFlush, mss());
 
-            final int readableBytesInBuffer = sendBuffer.readableBytes();
-            int remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
+            final long readableBytesInBuffer = sendBuffer.readableBytes();
+            long remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
             writeBytes(sndNxt, remainingBytes, rcvNxt);
@@ -378,9 +366,15 @@ class TransmissionControlBlock {
         }
     }
 
-    public void synchronizeReceiveState(final ConnectionHandshakeSegment seg) {
+    public void synchronizeState(final ConnectionHandshakeSegment seg) {
         rcvNxt = advanceSeq(seg.seq(), seg.len());
         irs = seg.seq();
+    }
+
+    public void updateSndWnd(final ConnectionHandshakeSegment seg) {
+        sndWnd = seg.window();
+        sndWl1 = seg.seq();
+        sndWl2 = seg.ack();
     }
 
     public void receive(final ConnectionHandshakeSegment seg) {
@@ -392,5 +386,12 @@ class TransmissionControlBlock {
 
     public SendBuffer sendBuffer() {
         return sendBuffer;
+    }
+
+    public long sndWl1() {
+        return sndWl1;
+    }
+    public long sndWl2() {
+        return sndWl2;
     }
 }

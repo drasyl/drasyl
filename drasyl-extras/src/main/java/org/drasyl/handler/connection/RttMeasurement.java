@@ -51,7 +51,7 @@ public class RttMeasurement {
     public void segmentArrives(final ChannelHandlerContext ctx,
                                final ConnectionHandshakeSegment seg,
                                final int smss,
-                               final int flightSize) {
+                               final long flightSize) {
         final Object timestampsOption = seg.options().get(TIMESTAMPS);
         if (timestampsOption != null) {
             final long[] timestamps = (long[]) timestampsOption;
@@ -99,7 +99,7 @@ public class RttMeasurement {
     private void calculateRto(final ChannelHandlerContext ctx,
                               final long tsEcr,
                               final int smss,
-                              final int flightSize) {
+                              final long flightSize) {
         if (SRTT == -1) {
             // first measurement
             int r = (int) (System.nanoTime() / 1_000_000 - tsEcr);
