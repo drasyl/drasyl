@@ -827,7 +827,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     if (seg.isPsh()) {
                         LOG.trace("{}[{}] Got `{}`. Add to receive buffer and trigger receiver buffer flush.", ctx.channel(), state, seg);
-                        tcb.receiveBuffer().fireRead(ctx);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
                     }
                     else {
                         LOG.trace("{}[{}] Got `{}`. Add to receive buffer and wait for next segment.", ctx.channel(), state, seg);

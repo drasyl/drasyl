@@ -247,7 +247,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                // normally we would add this message to or send buffer, to allow it to be sent
+                // normally we would add this message to our SND.BUF, to allow it to be sent
                 // together with other data for transmission efficiency. As this implementation is
                 // currently still message-oriented and not byte-oriented, we will send every message directly.
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);

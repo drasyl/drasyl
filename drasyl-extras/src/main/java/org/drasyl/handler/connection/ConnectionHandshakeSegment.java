@@ -36,6 +36,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireInRange;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 
 /**
@@ -71,7 +72,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
-        this.window = window;
+        this.window = requireNonNegative(window);
         this.options = requireNonNull(options);
     }
 

@@ -83,7 +83,7 @@ class TransmissionControlBlock {
     private long iss; // initial send sequence number
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    private long rcvWnd; // receive window
+    long rcvWnd; // receive window
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
 

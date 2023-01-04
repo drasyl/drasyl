@@ -86,9 +86,11 @@ class ReceiveBuffer {
         return String.valueOf(readableBytes());
     }
 
-    public void fireRead(final ChannelHandlerContext ctx) {
-        final ByteBuf byteBuf = queue.remove(readableBytes(), ctx.newPromise().setSuccess());
-        LOG.trace("{} Pass receive buffer content inbound to channel.", ctx.channel(), byteBuf);
+    public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+        final int bytes = readableBytes();
+        final ByteBuf byteBuf = queue.remove(bytes, ctx.newPromise().setSuccess());
+        tcb.rcvWnd += bytes;
+        LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
         ctx.fireChannelRead(byteBuf);
     }
 }
