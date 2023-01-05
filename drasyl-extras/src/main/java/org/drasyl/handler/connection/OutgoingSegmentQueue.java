@@ -141,8 +141,8 @@ class OutgoingSegmentQueue {
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            retransmissionQueue.add(seg, promise);
-            ctx.write(seg.copy()).addListener(new RetransmissionApplier(ctx, tcb, seg, promise));
+            retransmissionQueue.add(ctx, seg.copy(), promise, tcb, rttMeasurement);
+            ctx.write(seg);
         }
         else {
             // no ACKnowledgement necessary, just write to network and succeed

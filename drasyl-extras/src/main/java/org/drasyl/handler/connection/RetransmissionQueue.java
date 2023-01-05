@@ -22,13 +22,18 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.PendingWriteQueue;
+import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Holds all segments that has been written to the network (called in-flight) but have not been
@@ -36,8 +41,10 @@ import static java.util.Objects.requireNonNull;
  * for the bytes it holds.
  */
 class RetransmissionQueue {
+    private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
     private final Channel channel;
     private final PendingWriteQueue pendingWrites;
+    private ScheduledFuture<?> retransmissionTimer;
 
     RetransmissionQueue(final Channel channel,
                         final PendingWriteQueue pendingWrites) {
@@ -49,8 +56,13 @@ class RetransmissionQueue {
         this(channel, new PendingWriteQueue(channel));
     }
 
-    public void add(final ConnectionHandshakeSegment seg, final ChannelPromise promise) {
+    public void add(final ChannelHandlerContext ctx,
+                    final ConnectionHandshakeSegment seg,
+                    final ChannelPromise promise,
+                    final TransmissionControlBlock tcb,
+                    final RttMeasurement rttMeasurement) {
         pendingWrites.add(seg, promise);
+        recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
     }
 
     /**
@@ -99,5 +111,63 @@ class RetransmissionQueue {
     @Override
     public String toString() {
         return String.valueOf(size());
+    }
+
+    public void handleAcknowledgement(final ChannelHandlerContext ctx,
+                                      final ConnectionHandshakeSegment seg,
+                                      final TransmissionControlBlock tcb,
+                                      final RttMeasurement rttMeasurement) {
+        ConnectionHandshakeSegment current = current();
+        final boolean queueWasNotEmpty = current != null;
+        boolean somethingWasAcked = true;
+        while (current != null && tcb.isFullyAcknowledged(current)) {
+            LOG.trace("{} Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), current, size() - 1);
+            removeAndSucceedCurrent();
+            somethingWasAcked = true;
+
+            current = current();
+        }
+
+        if (queueWasNotEmpty) {
+            if (current == null) {
+                // everything was ACKed, cancel retransmission timer
+                cancelRetransmissionTimer();
+            }
+            else if (somethingWasAcked) {
+                // as something was ACKed, recreate retransmission timer
+                recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
+            }
+        }
+    }
+
+    private void recreateRetransmissionTimer(final ChannelHandlerContext ctx,
+                                             final TransmissionControlBlock tcb,
+                                             final RttMeasurement rttMeasurement) {
+        // reset existing timer
+        if (retransmissionTimer != null) {
+            retransmissionTimer.cancel(false);
+        }
+
+        // create new timer
+        retransmissionTimer = ctx.executor().schedule(() -> {
+            // https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
+            LOG.error("{} Retransmission timeout!", channel, pendingWrites.size());
+
+            // retransmit the earliest segment that has not been acknowledged
+            ctx.writeAndFlush(current().copy());
+
+            // The host MUST set RTO <- RTO * 2 ("back off the timer")
+            rttMeasurement.timeoutOccured();
+
+            // Start the retransmission timer, such that it expires after RTO seconds
+            recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
+        }, (long) rttMeasurement.rto(), MILLISECONDS);
+    }
+
+    private void cancelRetransmissionTimer() {
+        if (retransmissionTimer != null) {
+            retransmissionTimer.cancel(false);
+            retransmissionTimer = null;
+        }
     }
 }

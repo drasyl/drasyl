@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.PendingWriteQueue;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +40,10 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RetransmissionQueueTest {
+    private ChannelHandlerContext ctx;
+    private TransmissionControlBlock tcb;
+    private RttMeasurement rttMeasurement;
+
     @Nested
     class Add {
         @Test
@@ -51,8 +56,8 @@ class RetransmissionQueueTest {
             final ConnectionHandshakeSegment seg2 = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise2 = mock(ChannelPromise.class);
 
-            buffer.add(seg1, promise1);
-            buffer.add(seg2, promise2);
+            buffer.add(ctx, seg1, promise1, tcb, rttMeasurement);
+            buffer.add(ctx, seg2, promise2, tcb, rttMeasurement);
 
             assertEquals(seg1, pendingWrites.current());
             pendingWrites.remove();

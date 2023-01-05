@@ -349,21 +349,10 @@ class TransmissionControlBlock {
         }
     }
 
-    public long rto() {
-        return 1_000;
-    }
-
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg) {
         sndUna = seg.ack();
-
-        ConnectionHandshakeSegment current = retransmissionQueue.current();
-        while (current != null && isFullyAcknowledged(current)) {
-            LOG.trace("{} Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), current, retransmissionQueue.size() - 1);
-            retransmissionQueue.removeAndSucceedCurrent();
-
-            current = retransmissionQueue.current();
-        }
+        retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement);
     }
 
     public void synchronizeState(final ConnectionHandshakeSegment seg) {

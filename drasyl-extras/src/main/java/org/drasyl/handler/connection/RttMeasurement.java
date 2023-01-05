@@ -132,4 +132,18 @@ public class RttMeasurement {
 
         LOG.error("{} RTO set to {}ms.", ctx.channel(), RTO);
     }
+
+    void timeoutOccured() {
+        RTO *= 2;
+
+        if (RTO > UPPER_BOUND) {
+            // A maximum value MAY be placed on RTO provided it is at least 60
+            //         seconds.
+            RTO = UPPER_BOUND;
+        }
+    }
+
+    public double rto() {
+        return RTO;
+    }
 }
