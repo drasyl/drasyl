@@ -475,6 +475,23 @@ class ConnectionHandshakeHandlerTest {
             // teil des handlers oder TCB?
         }
 
+        @Test
+        void shouldPassReceivedDataCorrectlyToApplication() {
+            // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+            final EmbeddedChannel channel = new EmbeddedChannel();
+            TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 100, 100L, 1000);
+            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+            channel.pipeline().addLast(handler);
+
+            final ByteBuf receivedData = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, receivedData));
+
+            final ByteBuf dataPassedToApplication = channel.readInbound();
+            assertEquals(receivedData, dataPassedToApplication);
+
+            channel.close();
+        }
+
         @Nested
         class Mss {
             @Test

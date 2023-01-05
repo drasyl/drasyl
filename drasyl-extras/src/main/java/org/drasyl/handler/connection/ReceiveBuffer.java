@@ -94,7 +94,7 @@ class ReceiveBuffer {
             final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
             tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
 
-            add(seg.content().slice(0, bytesToReceive));
+            add(seg.content().slice(seg.content().readerIndex(), bytesToReceive));
             tcb.rcvWnd -= bytesToReceive;
         }
         else {
