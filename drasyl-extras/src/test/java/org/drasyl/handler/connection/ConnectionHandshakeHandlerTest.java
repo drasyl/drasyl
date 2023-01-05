@@ -504,7 +504,7 @@ class ConnectionHandshakeHandlerTest {
         @Nested
         class Window {
             @Test
-            void senderShouldNotSendMoreSegmentsThenTheSenderWindowAllows() {
+            void senderShouldRespectSndWndWhenWritingToNetwork() {
                 // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                 final int bytes = 600;
 
@@ -512,7 +512,6 @@ class ConnectionHandshakeHandlerTest {
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 1000);
                 final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
                 channel.pipeline().addLast(handler);
-                // sollte ohne ACK nicht mehr Bytes verschicken als das SND.WND erlaubt
 
                 // no data in flight, everything should be written to network
                 final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
@@ -527,6 +526,33 @@ class ConnectionHandshakeHandlerTest {
                 // send ack for the first segment. The remaining 200 bytes should then be sent
                 channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
                 assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data2.slice(400, 200)), channel.readOutbound());
+
+                channel.close();
+            }
+
+            @Test
+            void receiverShouldUpdateRcvWnd() {
+                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                final int bytes = 600;
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                channel.config().setAutoRead(false);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                // initial value
+                assertEquals(1000, tcb.rcvWnd());
+
+                // 600 bytes added to RCV.BUF
+                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data1));
+
+                assertEquals(400, tcb.rcvWnd());
+
+                // RCV.BUF flushed
+                channel.read();
+                assertEquals(1000, tcb.rcvWnd());
 
                 channel.close();
             }

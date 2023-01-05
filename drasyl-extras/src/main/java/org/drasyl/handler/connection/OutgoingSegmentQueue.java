@@ -98,7 +98,7 @@ class OutgoingSegmentQueue {
                 options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
 
-            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.window(), options, data);
+            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.rcvWnd(), options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
 
             write(ctx, tcb, seg, promise);

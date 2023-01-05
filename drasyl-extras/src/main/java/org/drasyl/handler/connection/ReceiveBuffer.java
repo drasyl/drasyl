@@ -31,6 +31,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 
 // FIXME: add maximum capacity size?
 // FIXME: add support for out-of-order?
@@ -86,11 +87,24 @@ class ReceiveBuffer {
         return String.valueOf(readableBytes());
     }
 
+    public void receive(final ChannelHandlerContext ctx,
+                        final ConnectionHandshakeSegment seg,
+                        final TransmissionControlBlock tcb) {
+        if (seg.content().isReadable()) {
+            add(seg.content());
+        }
+        tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
+        tcb.rcvWnd -= seg.content().readableBytes();
+        LOG.trace("{} Added SEG to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
+    }
+
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         final int bytes = readableBytes();
-        final ByteBuf byteBuf = queue.remove(bytes, ctx.newPromise().setSuccess());
-        tcb.rcvWnd += bytes;
-        LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
-        ctx.fireChannelRead(byteBuf);
+        if (bytes > 0) {
+            final ByteBuf byteBuf = queue.remove(bytes, ctx.newPromise().setSuccess());
+            tcb.rcvWnd += bytes;
+            LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
+            ctx.fireChannelRead(byteBuf);
+        }
     }
 }

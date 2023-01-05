@@ -175,6 +175,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void read(final ChannelHandlerContext ctx) {
         readPending = true;
+        if (tcb != null) {
+            tcb.receiveBuffer().fireRead(ctx, tcb);
+        }
 
         ctx.read();
     }
@@ -825,7 +828,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    tcb.receive(seg.retain()); // wir rufen am ende IMMER release auf. hier müssen wir daher mal retainen
+                    tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
 
                     if (readPending) {
                         readPending = false;
@@ -859,7 +862,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
 
             // advance receive state
-            tcb.receive(seg);
+            tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
 
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());

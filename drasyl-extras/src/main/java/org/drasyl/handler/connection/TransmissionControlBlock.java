@@ -83,7 +83,7 @@ class TransmissionControlBlock {
     private long sndWl2; // segment acknowledgment number used for last window update
     private long iss; // initial send sequence number
     // Receive Sequence Variables
-    private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
+    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
 
@@ -187,14 +187,6 @@ class TransmissionControlBlock {
 
     public int mss() {
         return mss;
-    }
-
-    public void mss(final int mss) {
-        this.mss = mss;
-    }
-
-    public long window() {
-        return rcvWnd - receiveBuffer.readableBytes();
     }
 
     @Override
@@ -364,13 +356,6 @@ class TransmissionControlBlock {
         sndWnd = seg.window();
         sndWl1 = seg.seq();
         sndWl2 = seg.ack();
-    }
-
-    public void receive(final ConnectionHandshakeSegment seg) {
-        if (seg.content().isReadable()) {
-            receiveBuffer.add(seg.content().retain());
-        }
-        this.rcvNxt = advanceSeq(rcvNxt(), seg.len());
     }
 
     public SendBuffer sendBuffer() {
