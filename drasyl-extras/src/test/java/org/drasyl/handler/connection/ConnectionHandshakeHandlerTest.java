@@ -34,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
 
 import static java.time.Duration.ZERO;
 import static java.time.Duration.ofHours;
@@ -469,6 +470,12 @@ class ConnectionHandshakeHandlerTest {
 
     @Nested
     class Transmission {
+        // FIXME: send buffer should keep track what bytes have been enqueued before flush was triggered
+        @Test
+        void shouldOnlySendDataEnqueuedBeforeFlush() {
+            // teil des handlers oder TCB?
+        }
+
         @Nested
         class Mss {
             @Test
@@ -492,11 +499,36 @@ class ConnectionHandshakeHandlerTest {
 
                 channel.close();
             }
+        }
 
-            // FIXME: send buffer should keep track what bytes have been enqueued before flush was triggered
+        @Nested
+        class Window {
             @Test
-            void shouldOnlySendDataEnqueuedBeforeFlush() {
-                // teil des handlers oder TCB?
+            void senderShouldNotSendMoreSegmentsThenTheSenderWindowAllows() {
+                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                final int bytes = 600;
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+                // sollte ohne ACK nicht mehr Bytes verschicken als das SND.WND erlaubt
+
+                // no data in flight, everything should be written to network
+                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeOutbound(data1);
+                assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data1), channel.readOutbound());
+
+                // 600 bytes in flight, just 400 bytes allowed
+                final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeOutbound(data2);
+                assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data2.slice(0, 400)), channel.readOutbound());
+
+                // send ack for the first segment. The remaining 200 bytes should then be sent
+                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
+                assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data2.slice(400, 200)), channel.readOutbound());
+
+                channel.close();
             }
         }
     }

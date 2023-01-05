@@ -73,6 +73,7 @@ class TransmissionControlBlock {
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
+    long rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
     // Send Sequence Variables
     private long sndUna; // oldest unacknowledged sequence number
@@ -83,7 +84,6 @@ class TransmissionControlBlock {
     private long iss; // initial send sequence number
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    long rcvWnd; // receive window
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
 
@@ -326,13 +326,13 @@ class TransmissionControlBlock {
                 return;
             }
 
-            final long allowedBytesForNewTransmission = sndWnd();
-            LOG.trace("{}[{}] Flush of write buffer was triggered. {} sequence numbers are allowed to write to the network. {} bytes in send buffer. {} bytes allowed to flush. MSS={}", ctx.channel(), state, allowedBytesForNewTransmission, sendBuffer.readableBytes(), allowedBytesToFlush, mss());
+            final long flightSize = retransmissionQueue.bytes();
+            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
 
-            final long readableBytesInBuffer = sendBuffer.readableBytes();
-            long remainingBytes = Math.min(Math.min(allowedBytesForNewTransmission, readableBytesInBuffer), allowedBytesToFlush);
+            long remainingBytes = Math.min(Math.min(Math.max(0, sndWnd() - flightSize), sendBuffer.readableBytes()), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
+
             writeBytes(sndNxt, remainingBytes, rcvNxt);
         }
         finally {
@@ -380,6 +380,7 @@ class TransmissionControlBlock {
     public long sndWl1() {
         return sndWl1;
     }
+
     public long sndWl2() {
         return sndWl2;
     }

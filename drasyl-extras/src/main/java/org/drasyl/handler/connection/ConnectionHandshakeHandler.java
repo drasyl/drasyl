@@ -175,6 +175,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     public void read(final ChannelHandlerContext ctx) throws Exception {
         super.read(ctx);
         // FIXME: RECEIVE CALL?
+        // wir sollten gucken ob autoRead läuft und dann den receive buffer automatisch flushen
     }
 
     @Override

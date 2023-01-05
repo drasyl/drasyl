@@ -170,4 +170,9 @@ class RetransmissionQueue {
             retransmissionTimer = null;
         }
     }
+
+    public long bytes() {
+        // remove pending writes overhead
+        return pendingWrites.bytes() - pendingWrites.size() * 64;
+    }
 }

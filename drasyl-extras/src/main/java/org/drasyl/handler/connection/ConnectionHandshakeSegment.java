@@ -89,8 +89,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, ack, ACK, 0, options, Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment ack(final long seq, final long ack, final long window) {
+        return new ConnectionHandshakeSegment(seq, ack, ACK, window, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment ack(final long seq, final long ack) {
-        return new ConnectionHandshakeSegment(seq, ack, ACK, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+        return ack(seq, ack, 0);
     }
 
     public static ConnectionHandshakeSegment ack(final long seq,
