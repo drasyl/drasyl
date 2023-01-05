@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.protocol;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
@@ -34,6 +33,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ArrayUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
