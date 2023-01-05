@@ -45,7 +45,7 @@ public class RttNode extends DrasylNode {
                 final String name = node.pipeline().context(PeersManagerHandler.class).name();
 
                 // generate every 5 seconds RTT report
-                node.pipeline().addBefore(name, null, new PeersRttHandler(null, 5_000L));
+                node.pipeline().addBefore(name, null, new PeersRttHandler(5_000L));
 
                 // print RTT reports to System.out
                 node.pipeline().addBefore(name, null, new ChannelInboundHandlerAdapter() {
