@@ -135,6 +135,17 @@ class TransmissionControlBlock {
     public TransmissionControlBlock(final Channel channel,
                                     final long sndUna,
                                     final long sndNxt,
+                                    final int sndWnd,
+                                    final long iss,
+                                    final int rcvWnd,
+                                    final long irs,
+                                    final int mss) {
+        this(sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+    }
+
+    public TransmissionControlBlock(final Channel channel,
+                                    final long sndUna,
+                                    final long sndNxt,
                                     final long iss,
                                     final long irs,
                                     final int windowSize,

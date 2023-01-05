@@ -556,6 +556,37 @@ class ConnectionHandshakeHandlerTest {
 
                 channel.close();
             }
+
+
+            // FIXME: handle SND.WND 0 size
+            @Test
+            void zeroWindowProbing() {
+                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                final int bytes = 600;
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                channel.config().setAutoRead(false);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 1000, 100L, 1000, 100L, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                // initial value
+                assertEquals(1000, tcb.rcvWnd());
+
+                // 600 bytes added to RCV.BUF
+                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data1));
+
+                assertEquals(400, tcb.rcvWnd());
+
+                // RCV.BUF flushed
+                channel.read();
+                assertEquals(1000, tcb.rcvWnd());
+
+                channel.close();
+            }
+
+            // FIXME: kann sender (und empfänger) damit umgehen, das segmente nur teilweise akzeptiert werden?
         }
     }
 
