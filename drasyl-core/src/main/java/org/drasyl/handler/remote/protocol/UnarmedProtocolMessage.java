@@ -152,7 +152,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                             getRecipient(),
                             getSender(),
                             getProofOfWork(),
-                            getBytes().slice().retain()
+                            getBytes().retain()
                     );
                 case UNITE:
                     return UniteMessage.of(
