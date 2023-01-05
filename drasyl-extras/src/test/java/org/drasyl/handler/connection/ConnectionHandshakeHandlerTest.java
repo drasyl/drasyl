@@ -26,7 +26,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -436,7 +435,7 @@ class ConnectionHandshakeHandlerTest {
 
             @Test
             void shouldSentRemainingDataBeforeClose() {
-
+                // FIXME
             }
         }
 
@@ -503,90 +502,122 @@ class ConnectionHandshakeHandlerTest {
 
         @Nested
         class Window {
-            @Test
-            void senderShouldRespectSndWndWhenWritingToNetwork() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
-                final int bytes = 600;
+            @Nested
+            class SendWindow {
+                @Test
+                void senderShouldRespectSndWndWhenWritingToNetwork() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final int bytes = 600;
 
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
-                channel.pipeline().addLast(handler);
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
 
-                // no data in flight, everything should be written to network
-                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeOutbound(data1);
-                assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data1), channel.readOutbound());
+                    // no data in flight, everything should be written to network
+                    final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                    channel.writeOutbound(data1);
+                    assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data1), channel.readOutbound());
 
-                // 600 bytes in flight, just 400 bytes allowed
-                final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeOutbound(data2);
-                assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data2.slice(0, 400)), channel.readOutbound());
+                    // 600 bytes in flight, just 400 bytes allowed
+                    final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                    channel.writeOutbound(data2);
+                    assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data2.slice(0, 400)), channel.readOutbound());
 
-                // send ack for the first segment. The remaining 200 bytes should then be sent
-                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
-                assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data2.slice(400, 200)), channel.readOutbound());
+                    // send ack for the first segment. The remaining 200 bytes should then be sent
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
+                    assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data2.slice(400, 200)), channel.readOutbound());
 
-                channel.close();
+                    channel.close();
+                }
+
+                @Test
+                void zeroWindowProbing() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    channel.config().setAutoRead(false);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 0, 100L, 1000, 100L, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
+                    channel.writeOutbound(data);
+
+                    // SND.WND is 0, we have to perform Zero-Window Probing
+                    assertEquals(ConnectionHandshakeSegment.pshAck(600, 100, data.slice(0, 1)), channel.readOutbound());
+
+                    channel.close();
+                }
+
+                @Test
+                void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    channel.config().setAutoRead(false);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 0, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    // 300 bytes in flight, only first 100 are ACKed
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 400));
+
+                    assertEquals(400, tcb.sndUna());
+                    assertEquals(600, tcb.sndNxt());
+
+                    channel.close();
+                }
             }
 
-            @Test
-            void receiverShouldUpdateRcvWnd() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
-                final int bytes = 600;
+            @Nested
+            class ReceiveWindow {
+                @Test
+                void receiverShouldUpdateRcvWnd() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final int bytes = 600;
 
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                channel.config().setAutoRead(false);
-                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
-                channel.pipeline().addLast(handler);
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    channel.config().setAutoRead(false);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
 
-                // initial value
-                assertEquals(1000, tcb.rcvWnd());
+                    // initial value
+                    assertEquals(1000, tcb.rcvWnd());
 
-                // 600 bytes added to RCV.BUF
-                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data1));
+                    // 600 bytes added to RCV.BUF
+                    final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data));
 
-                assertEquals(400, tcb.rcvWnd());
+                    assertEquals(400, tcb.rcvWnd());
 
-                // RCV.BUF flushed
-                channel.read();
-                assertEquals(1000, tcb.rcvWnd());
+                    // RCV.BUF flushed
+                    channel.read();
+                    assertEquals(1000, tcb.rcvWnd());
 
-                channel.close();
+                    channel.close();
+                }
+
+                @Test
+                void shouldOnlyAcceptAsManyBytesAsSpaceAvailableInReceiveBuffer() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    channel.config().setAutoRead(false);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    // we got more than we are willing to accept
+                    final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, data));
+
+                    // we ACK just the part we have accepted
+                    assertEquals(channel.readOutbound(), ConnectionHandshakeSegment.ack(301, 160));
+
+                    channel.close();
+                }
+
+                // FIXME: schick ein segment, bei dem nur der hintere teil neu ist
             }
-
-
-            // FIXME: handle SND.WND 0 size
-            @Test
-            void zeroWindowProbing() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
-                final int bytes = 600;
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                channel.config().setAutoRead(false);
-                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 1000, 100L, 1000, 100L, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
-                channel.pipeline().addLast(handler);
-
-                // initial value
-                assertEquals(1000, tcb.rcvWnd());
-
-                // 600 bytes added to RCV.BUF
-                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data1));
-
-                assertEquals(400, tcb.rcvWnd());
-
-                // RCV.BUF flushed
-                channel.read();
-                assertEquals(1000, tcb.rcvWnd());
-
-                channel.close();
-            }
-
-            // FIXME: kann sender (und empfänger) damit umgehen, das segmente nur teilweise akzeptiert werden?
         }
     }
 
@@ -630,7 +661,6 @@ class ConnectionHandshakeHandlerTest {
         }
 
         @Test
-        @Disabled
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress2() {
             final EmbeddedChannel channel = new EmbeddedChannel();
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), () -> 100, false, SYN_RECEIVED, 100, 64_000, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));

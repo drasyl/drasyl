@@ -312,7 +312,7 @@ class TransmissionControlBlock {
         outgoingSegmentQueue.flush(ctx, this);
     }
 
-    void add(final ByteBuf data, final ChannelPromise promise) {
+    void addToSendBuffer(final ByteBuf data, final ChannelPromise promise) {
         sendBuffer.add(data, promise);
     }
 
@@ -332,7 +332,9 @@ class TransmissionControlBlock {
             final long flightSize = retransmissionQueue.bytes();
             LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
 
-            long remainingBytes = Math.min(Math.min(Math.max(0, sndWnd() - flightSize), sendBuffer.readableBytes()), allowedBytesToFlush);
+            // at least one byte is required for Zero-Window Probing
+            final long max = Math.max(1, sndWnd() - flightSize);
+            long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
 

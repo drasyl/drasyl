@@ -91,10 +91,16 @@ class ReceiveBuffer {
                         final ConnectionHandshakeSegment seg,
                         final TransmissionControlBlock tcb) {
         if (seg.content().isReadable()) {
-            add(seg.content());
+            final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
+            tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
+
+            add(seg.content().slice(0, bytesToReceive));
+            tcb.rcvWnd -= bytesToReceive;
         }
-        tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
-        tcb.rcvWnd -= seg.content().readableBytes();
+        else {
+            tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
+        }
+
         LOG.trace("{} Added SEG to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
     }
 

@@ -323,20 +323,20 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 userCallOpen(ctx);
 
                 // enqueue data for transmission after entering ESTABLISHED state
-                tcb.add(data, promise);
+                tcb.addToSendBuffer(data, promise);
                 break;
 
             case SYN_SENT:
             case SYN_RECEIVED:
                 // Queue the data for transmission after entering ESTABLISHED state.
                 LOG.trace("{}[{}] Queue data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), state, data);
-                tcb.add(data, promise);
+                tcb.addToSendBuffer(data, promise);
                 break;
 
             case ESTABLISHED:
                 // Queue the data for transmission, to allow it to be sent together with other data for transmission efficiency.
                 LOG.trace("{}[{}] Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), state, data);
-                tcb.add(data, promise);
+                tcb.addToSendBuffer(data, promise);
                 break;
 
             default:
