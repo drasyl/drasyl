@@ -128,7 +128,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.4.5</logback.version>
         <junit.version>5.9.1</junit.version>
-        <mockito.version>4.10.0</mockito.version>
+        <mockito.version>4.11.0</mockito.version>
         <jackson.version>2.14.1</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
@@ -216,13 +216,11 @@
                 <artifactId>netty-transport</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-buffer</artifactId>
@@ -301,7 +299,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.153</version>
+                <version>4.8.154</version>
             </dependency>
 
             <!-- Crypto -->
@@ -584,7 +582,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.5.0</version>
+                        <version>10.6.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
