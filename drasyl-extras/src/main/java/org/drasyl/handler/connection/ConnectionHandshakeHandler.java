@@ -90,6 +90,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     TransmissionControlBlock tcb;
     private UserCallPromise userCallFuture;
     private boolean initDone;
+    private boolean readPending;
 
     /**
      * @param userTimeout   time in ms in which a handshake must taken place after issued
@@ -172,10 +173,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void read(final ChannelHandlerContext ctx) throws Exception {
-        super.read(ctx);
-        // FIXME: RECEIVE CALL?
-        // wir sollten gucken ob autoRead läuft und dann den receive buffer automatisch flushen
+    public void read(final ChannelHandlerContext ctx) {
+        readPending = true;
+
+        ctx.read();
     }
 
     @Override
@@ -826,12 +827,17 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     tcb.receive(seg.retain()); // wir rufen am ende IMMER release auf. hier müssen wir daher mal retainen
 
-                    if (seg.isPsh()) {
-                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and trigger receiver buffer flush.", ctx.channel(), state, seg);
+                    if (readPending) {
+                        readPending = false;
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                    }
+                    else if (seg.isPsh()) {
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
                         tcb.receiveBuffer().fireRead(ctx, tcb);
                     }
                     else {
-                        LOG.trace("{}[{}] Got `{}`. Add to receive buffer and wait for next segment.", ctx.channel(), state, seg);
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
                     }
 
                     // Ack receival of segment text
