@@ -137,7 +137,15 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
-        out.writeBytes(getPayload(), getPayload().readerIndex(), getPayload().readableBytes());
+        final ByteBuf payload = getPayload();
+        payload.markReaderIndex();
+        out.writeBytes(payload);
+        payload.resetReaderIndex();
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + getPayload().readableBytes();
     }
 
     @Override

@@ -24,8 +24,10 @@ package org.drasyl.node.handler.crypto;
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.util.internal.UnstableApi;
 
 @AutoValue
+@UnstableApi
 public abstract class AcknowledgementMessage extends ArmMessage {
     public static final int LENGTH = 4;
 

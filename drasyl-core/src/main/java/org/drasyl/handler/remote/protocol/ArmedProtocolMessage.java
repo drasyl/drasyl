@@ -53,6 +53,11 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     public static final int ARMED_HEADER_LENGTH = 16;
 
     @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + getBytes().readableBytes();
+    }
+
+    @Override
     public void close() {
         release();
     }
@@ -127,7 +132,7 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
         try {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
-                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] decryptedPrivateHeader = cryptoInstance.decrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH + DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_ABYTES), buildPublicHeader().buildAuthTag(alloc), getNonce(), sessionPair);
                 final ByteBuf byteBuf = alloc.buffer(decryptedPrivateHeader.length).writeBytes(decryptedPrivateHeader);
                 final PrivateHeader privateHeader = PrivateHeader.of(byteBuf);
                 byteBuf.release();
@@ -202,10 +207,6 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
 
     private PublicHeader buildPublicHeader() {
         return PublicHeader.of(this);
-    }
-
-    private byte[] buildAuthTag() {
-        return buildPublicHeader().buildAuthTag();
     }
 
     /**
