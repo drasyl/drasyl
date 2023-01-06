@@ -56,8 +56,8 @@ class RetransmissionQueueTest {
             final ConnectionHandshakeSegment seg2 = mock(ConnectionHandshakeSegment.class);
             final ChannelPromise promise2 = mock(ChannelPromise.class);
 
-            buffer.add(ctx, seg1, promise1, tcb, rttMeasurement);
-            buffer.add(ctx, seg2, promise2, tcb, rttMeasurement);
+            buffer.add(ctx, seg1, promise1, rttMeasurement);
+            buffer.add(ctx, seg2, promise2, rttMeasurement);
 
             assertEquals(seg1, pendingWrites.current());
             pendingWrites.remove();

@@ -634,7 +634,7 @@ class ConnectionHandshakeHandlerTest {
                     channel.close();
                 }
 
-                // FIXME: schick ein segment, bei dem nur der hintere teil neu ist
+                // FIXME: Wir erhalten ACK welcher nur ein Teil eines SEG in unserer RetransmissionQueue bestätigt. RetransmissionQueue muss bestätigten Teil entfernen und rest neu packen
                 @Disabled
                 @Test
                 void receiverShouldAbleToAckSegmentWhichContainsOnlyPartiallyNewSegments() {

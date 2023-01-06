@@ -59,10 +59,9 @@ class RetransmissionQueue {
     public void add(final ChannelHandlerContext ctx,
                     final ConnectionHandshakeSegment seg,
                     final ChannelPromise promise,
-                    final TransmissionControlBlock tcb,
                     final RttMeasurement rttMeasurement) {
         pendingWrites.add(seg, promise);
-        recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
+        recreateRetransmissionTimer(ctx, rttMeasurement);
     }
 
     /**
@@ -135,13 +134,12 @@ class RetransmissionQueue {
             }
             else if (somethingWasAcked) {
                 // as something was ACKed, recreate retransmission timer
-                recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
+                recreateRetransmissionTimer(ctx, rttMeasurement);
             }
         }
     }
 
     private void recreateRetransmissionTimer(final ChannelHandlerContext ctx,
-                                             final TransmissionControlBlock tcb,
                                              final RttMeasurement rttMeasurement) {
         // reset existing timer
         if (retransmissionTimer != null) {
@@ -160,7 +158,7 @@ class RetransmissionQueue {
             rttMeasurement.timeoutOccured();
 
             // Start the retransmission timer, such that it expires after RTO seconds
-            recreateRetransmissionTimer(ctx, tcb, rttMeasurement);
+            recreateRetransmissionTimer(ctx, rttMeasurement);
         }, (long) rttMeasurement.rto(), MILLISECONDS);
     }
 

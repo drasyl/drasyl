@@ -286,6 +286,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // start user call timeout guard
         if (userTimeout.toMillis() > 0) {
             userTimeoutFuture = ctx.executor().schedule(() -> {
+                // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                 LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
                 ctx.fireExceptionCaught(new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel."));
@@ -397,6 +398,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, FIN_WAIT_1);
 
                 if (userTimeout.toMillis() > 0) {
+                    // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                     userTimeoutFuture = ctx.executor().schedule(() -> {
                         LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                         switchToNewState(ctx, CLOSED);
@@ -778,6 +780,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_2:
+                    // FIXME: In addition to the processing for the ESTABLISHED state, if the retransmission queue is empty, the user's CLOSE can be acknowledged ("ok") but do not delete the TCB.
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }

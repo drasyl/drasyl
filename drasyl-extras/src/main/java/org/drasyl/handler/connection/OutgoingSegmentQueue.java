@@ -134,14 +134,14 @@ class OutgoingSegmentQueue {
                        final TransmissionControlBlock tcb,
                        final ConnectionHandshakeSegment seg,
                        final ChannelPromise promise) {
-        LOG.trace("[{}] Write SEG `{}` to network.", ctx.channel(), seg);
+        LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         // RTTM
         rttMeasurement.write(seg);
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            retransmissionQueue.add(ctx, seg.copy(), promise, tcb, rttMeasurement);
+            retransmissionQueue.add(ctx, seg.copy(), promise, rttMeasurement);
             ctx.write(seg);
         }
         else {
