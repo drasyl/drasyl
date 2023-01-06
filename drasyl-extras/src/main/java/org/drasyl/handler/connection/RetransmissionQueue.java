@@ -147,19 +147,21 @@ class RetransmissionQueue {
         }
 
         // create new timer
+        long rto = (long) rttMeasurement.rto();
         retransmissionTimer = ctx.executor().schedule(() -> {
             // https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
-            LOG.error("{} Retransmission timeout!", channel, pendingWrites.size());
+            ConnectionHandshakeSegment current = current();
+            LOG.error("{} Retransmission timeout after {}ms! Current SEG: {}", channel, rto, current);
 
             // retransmit the earliest segment that has not been acknowledged
-            ctx.writeAndFlush(current().copy());
+            ctx.writeAndFlush(current.copy());
 
             // The host MUST set RTO <- RTO * 2 ("back off the timer")
             rttMeasurement.timeoutOccured();
 
             // Start the retransmission timer, such that it expires after RTO seconds
             recreateRetransmissionTimer(ctx, rttMeasurement);
-        }, (long) rttMeasurement.rto(), MILLISECONDS);
+        }, rto, MILLISECONDS);
     }
 
     private void cancelRetransmissionTimer() {

@@ -130,7 +130,7 @@ public class RttMeasurement {
             RTO = UPPER_BOUND;
         }
 
-        LOG.error("{} RTO set to {}ms.", ctx.channel(), RTO);
+        LOG.trace("{} RTO set to {}ms.", ctx.channel(), RTO);
     }
 
     void timeoutOccured() {

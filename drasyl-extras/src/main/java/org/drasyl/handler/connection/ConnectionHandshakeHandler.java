@@ -929,7 +929,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final ConnectionHandshakeSegment seg,
                                           final boolean acceptableAck) {
-        final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), (int) (seg.ack() - tcb.sndUna()));
             // advance send state
@@ -940,7 +939,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 tcb.updateSndWnd(seg);
             }
         }
-        if (duplicateAck) {
+        else if (tcb.isDuplicateAck(seg)) {
             // ACK is duplicate. ignore
             LOG.error("{}[{}] Got old ACK. Ignore.", ctx.channel(), state);
         }

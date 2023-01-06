@@ -334,7 +334,7 @@ class TransmissionControlBlock {
             LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
 
             // at least one byte is required for Zero-Window Probing
-            final long max = Math.max(1, sndWnd() - flightSize);
+            final long max = Math.max(newFlush ? 1 : 0, sndWnd() - flightSize);
             long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
