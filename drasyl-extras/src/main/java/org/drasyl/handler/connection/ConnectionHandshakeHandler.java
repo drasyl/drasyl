@@ -677,7 +677,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
         // check SEQ
         final boolean validSeg = seg.seq() == tcb.rcvNxt();
-        final boolean acceptableAck = tcb.isAcceptableAck(seg);
+        final boolean acceptableAck = tcb.isAcceptableAck2(seg);
 
         if (!validSeg && !acceptableAck) {
             // not expected seq
@@ -738,7 +738,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         else {
             switch (state) {
                 case SYN_RECEIVED:
-                    if (tcb.isAckOurSyn(seg)) {
+                    if (tcb.isAckOurSynOrFin(seg)) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
                         cancelUserTimeoutGuard();
@@ -765,11 +765,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
+                    final boolean ackOurFin = tcb.isAckOurSynOrFin(seg);
+
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
 
-                    if (acceptableAck) {
+                    if (ackOurFin) {
                         // our FIN has been acknowledged
                         switchToNewState(ctx, FIN_WAIT_2);
                     }
@@ -783,11 +785,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSING:
+                    final boolean ackOurFin2 = tcb.isAckOurSynOrFin(seg);
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
                     }
 
-                    if (acceptableAck) {
+                    if (ackOurFin2) {
                         LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
                         ctx.close(userCallFuture);
@@ -885,7 +888,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    if (acceptableAck) {
+                    if (tcb.isAckOurSynOrFin(seg)) {
                         // our FIN has been acknowledged
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
                         switchToNewState(ctx, CLOSED);
@@ -919,6 +922,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final ConnectionHandshakeSegment seg,
                                           final boolean acceptableAck) {
+        final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
             LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), (int) (seg.ack() - tcb.sndUna()));
             // advance send state
@@ -929,10 +933,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 tcb.updateSndWnd(seg);
             }
         }
-        if (tcb.isDuplicateAck(seg)) {
+        if (duplicateAck) {
             // ACK is duplicate. ignore
             LOG.error("{}[{}] Got old ACK. Ignore.", ctx.channel(), state);
-            return true;
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {
             // FIXME: add support for window!

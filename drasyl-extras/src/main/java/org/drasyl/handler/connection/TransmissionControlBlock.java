@@ -35,6 +35,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MA
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
+import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
@@ -251,7 +252,7 @@ class TransmissionControlBlock {
 
     public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
         // FIXME: im RFC 9293 steht <= anstelle von <
-        return seg.isAck() && lessThan(seg.ack(), sndUna, SEQ_NO_SPACE);
+        return seg.isAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE);
     }
 
     public boolean isAckSomethingNotYetSent(final ConnectionHandshakeSegment seg) {
@@ -270,8 +271,8 @@ class TransmissionControlBlock {
         return greaterThan(sndUna, iss, SEQ_NO_SPACE);
     }
 
-    public boolean isAckOurSyn(final ConnectionHandshakeSegment seg) {
-        return seg.isAck() && lessThanOrEqualTo(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
+    public boolean isAckOurSynOrFin(final ConnectionHandshakeSegment seg) {
+        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
     public boolean isAckSomethingNeverSent(final ConnectionHandshakeSegment seg) {
@@ -381,5 +382,29 @@ class TransmissionControlBlock {
 
     public long sndWl2() {
         return sndWl2;
+    }
+
+    public boolean isAcceptableAck2(final ConnectionHandshakeSegment seg) {
+        if (!seg.isAck()) {
+            return false;
+        }
+
+        if (seg.len() == 0 && rcvWnd == 0) {
+            // SEG.SEQ = RCV.NXT
+            return seg.seq() == rcvNxt;
+        }
+        else if (seg.len() == 0 && rcvWnd > 0) {
+            // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
+            return lessThanOrEqualTo(rcvNxt, seg.seq(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE);
+        }
+        else if (seg.len() > 0 && rcvWnd == 0) {
+            // not acceptable
+            return false;
+        }
+        else {
+            // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND or RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
+            return (lessThanOrEqualTo(rcvNxt, seg.seq(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE)) ||
+                    (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), SEQ_NO_SPACE) && greaterThan(add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE));
+        }
     }
 }
