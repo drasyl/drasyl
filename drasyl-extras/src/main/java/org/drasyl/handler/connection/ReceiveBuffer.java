@@ -101,7 +101,7 @@ class ReceiveBuffer {
             tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
         }
 
-        LOG.trace("{} Added SEG to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
+        LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
     }
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {

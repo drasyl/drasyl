@@ -582,6 +582,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // synchronize receive state
             tcb.synchronizeState(seg);
 
+            // update window
+            tcb.updateSndWnd(seg);
+
             LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             // mss negotiation
@@ -643,6 +646,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 tcb.handleAcknowledgement(ctx, seg);
             }
 
+            // update window
+            tcb.updateSndWnd(seg);
+
             LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             if (tcb.synHasBeenAcknowledged()) {
@@ -651,6 +657,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, ESTABLISHED);
                 cancelUserTimeoutGuard();
 
+                // mss negotiation
                 tcb.negotiateMss(ctx, seg);
 
                 // ACK
@@ -667,9 +674,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 tcb.writeWithout(response);
             }
-
-            // update window
-            tcb.updateSndWnd(seg);
         }
     }
 
