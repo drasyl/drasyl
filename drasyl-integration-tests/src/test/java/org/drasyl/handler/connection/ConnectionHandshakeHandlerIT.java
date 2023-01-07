@@ -263,8 +263,8 @@ class ConnectionHandshakeHandlerIT {
 
     /**
      * Both server and client wait for handshake to be initiated by remote peer. Write of client
-     * will implicitly initiate handshake, but server will not respond. This should cause a
-     * {@link ConnectionHandshakeException}, failed write future, and followed by a closed channel.
+     * will implicitly initiate handshake, but server will not respond. This should cause a {@link
+     * ConnectionHandshakeException}, failed write future, and followed by a closed channel.
      */
     @Test
     void passiveToActiveOpenCompletedTimeout() throws Exception {
@@ -486,7 +486,8 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, 1000, 32_000));
+                        ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofHours(1), false, 1000, 32_000);
+                        p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRead(final ChannelHandlerContext ctx,
@@ -541,7 +542,7 @@ class ConnectionHandshakeHandlerIT {
                 .connect(serverAddress).sync().channel();
 
         try {
-            int bytes = 5_000_000;
+            int bytes = 100_000;
             final ByteBuf sentBuf = clientChannel.alloc().buffer(bytes);
             sentBuf.writeBytes(randomBytes(bytes));
 

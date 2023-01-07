@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
@@ -420,15 +419,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * STATUS call as described in <a
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
      * 3.10.6</a>.
+     * @return
      */
-    private void userCallStatus(final ChannelHandlerContext ctx,
-                                final Promise<ConnectionHandshakeStatus> promise) {
+    public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
         switch (state) {
             case CLOSED:
-                promise.setFailure(CONNECTION_CLOSED_ERROR);
-                break;
+                throw CONNECTION_CLOSED_ERROR;
             default:
-                promise.setSuccess(new ConnectionHandshakeStatus(state, tcb));
+                return new ConnectionHandshakeStatus(state, tcb);
         }
     }
 
@@ -946,7 +944,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (tcb.isAckSomethingNotYetSent(seg)) {
             // FIXME: add support for window!
             // something not yet sent has been ACKed
-            LOG.error("{}[{}] something not yet sent has been ACKed.", ctx.channel(), state);
+            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
             tcb.write(response);

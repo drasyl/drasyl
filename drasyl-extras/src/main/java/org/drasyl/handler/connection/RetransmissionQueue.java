@@ -40,7 +40,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * acknowledged yet. This FIFO queue also updates the {@link io.netty.channel.Channel} writability
  * for the bytes it holds.
  */
-class RetransmissionQueue {
+public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
     private final Channel channel;
     private final PendingWriteQueue pendingWrites;

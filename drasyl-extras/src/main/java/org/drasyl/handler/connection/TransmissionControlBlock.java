@@ -67,13 +67,15 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  *         3 - future sequence numbers which are not yet allowed
  * </pre>
  */
-class TransmissionControlBlock {
+public class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     final SendBuffer sendBuffer;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
+    // Receive Sequence Variables
+    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     long rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
     // Send Sequence Variables
@@ -83,10 +85,10 @@ class TransmissionControlBlock {
     private long sndWl1; // segment sequence number used for last window update
     private long sndWl2; // segment acknowledgment number used for last window update
     private long iss; // initial send sequence number
-    // Receive Sequence Variables
-    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
+    private long cwnd; // congestion window
+    private long ssthresh; // slow start threshold
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -101,7 +103,9 @@ class TransmissionControlBlock {
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
                              final RttMeasurement rttMeasurement,
-                             final int mss) {
+                             final int mss,
+                             final long cwnd,
+                             final long ssthresh) {
         this.sndUna = sndUna;
         this.sndNxt = sndNxt;
         this.sndWnd = sndWnd;
@@ -115,6 +119,8 @@ class TransmissionControlBlock {
         this.receiveBuffer = receiveBuffer;
         this.rttMeasurement = rttMeasurement;
         this.mss = mss;
+        this.cwnd = cwnd;
+        this.ssthresh = ssthresh;
     }
 
     @SuppressWarnings("java:S107")
@@ -130,7 +136,15 @@ class TransmissionControlBlock {
                              final ReceiveBuffer receiveBuffer,
                              final RttMeasurement rttMeasurement,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss);
+        // IW, the initial value of cwnd, MUST be set using the following guidelines as an upper bound.
+        //
+        // If SMSS > 2190 bytes:
+        //  IW = 2 * SMSS bytes and MUST NOT be more than 2 segments
+        // If (SMSS > 1095 bytes) and (SMSS <= 2190 bytes):
+        //  IW = 3 * SMSS bytes and MUST NOT be more than 3 segments
+        // if SMSS <= 1095 bytes:
+        //  IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss, 3 * mss, rcvWnd);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -233,6 +247,8 @@ class TransmissionControlBlock {
                 ", RTNS.Q=" + retransmissionQueue +
                 ", RCV.BUF=" + receiveBuffer +
                 ", MSS=" + mss +
+                ", CWND=" + cwnd +
+                ", SSTHRESH=" + ssthresh +
                 '}';
     }
 
@@ -251,7 +267,6 @@ class TransmissionControlBlock {
     }
 
     public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
-        // FIXME: im RFC 9293 steht <= anstelle von <
         return seg.isAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE);
     }
 
@@ -331,13 +346,15 @@ class TransmissionControlBlock {
             }
 
             final long flightSize = retransmissionQueue.bytes();
-            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
+            final long sendWindow = sndWnd();
+            final long congestionWindow = cwnd();
+            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
 
             // at least one byte is required for Zero-Window Probing
-            final long max = Math.max(newFlush ? 1 : 0, sndWnd() - flightSize);
+            final long max = Math.max(newFlush ? 1 : 0, congestionWindow - flightSize);
             long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
 
-            LOG.trace("{}[{}] Write {} bytes to network", ctx.channel(), state, remainingBytes);
+            LOG.trace("{}[{}] Write {} bytes to network.", ctx.channel(), state, remainingBytes);
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
         }
@@ -359,6 +376,15 @@ class TransmissionControlBlock {
                                       final ConnectionHandshakeSegment seg) {
         sndUna = seg.ack();
         retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement);
+
+        if (doSlowStart()) {
+            // Slow Start -> +1 MSS after each ACK
+            cwnd += mss;
+        }
+        else {
+            // Congestion Avoidance -> +1 MSS after each RTT
+            cwnd += (long) mss * mss / cwnd;
+        }
     }
 
     public void synchronizeState(final ConnectionHandshakeSegment seg) {
@@ -406,5 +432,25 @@ class TransmissionControlBlock {
             return (lessThanOrEqualTo(rcvNxt, seg.seq(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE)) ||
                     (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), SEQ_NO_SPACE) && greaterThan(add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE));
         }
+    }
+
+    private boolean doSlowStart() {
+        return cwnd < ssthresh;
+    }
+
+    public long cwnd() {
+        return cwnd;
+    }
+
+    public OutgoingSegmentQueue outgoingSegmentQueue() {
+        return outgoingSegmentQueue;
+    }
+
+    public RetransmissionQueue retransmissionQueue() {
+        return retransmissionQueue;
+    }
+
+    public long ssthresh() {
+        return ssthresh;
     }
 }

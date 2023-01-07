@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="CLI: receiver" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
+    <module name="drasyl-cli" />
+    <option name="PROGRAM_PARAMETERS" value="wormhole receive --no-protocol-arming --network-id 2 --super-peers c909a27d9ec0127c57142c3e1547ba9f82bc605277380b2a8fc0fabafe2be4c9=sp-ham1.test.drasyl.org:22527 72553adde8a14040bbb9e0751317a2f82b4b14841e2a9ae7c29fc1a4378213380" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/receiver" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="org.drasyl.cli.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

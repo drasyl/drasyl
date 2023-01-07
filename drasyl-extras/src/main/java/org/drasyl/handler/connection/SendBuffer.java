@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * Holds data enqueued by the application to be written to the network. This FIFO queue also updates
  * the {@link io.netty.channel.Channel} writability for the bytes it holds.
  */
-class SendBuffer {
+public class SendBuffer {
     private CoalescingBufferQueue queue;
 
     SendBuffer(final CoalescingBufferQueue queue) {
@@ -51,7 +51,7 @@ class SendBuffer {
      * @param promise to complete when all the bytes have been consumed and written, can be void.
      */
     public void add(final ByteBuf buf, final ChannelPromise promise) {
-        queue.add(buf.copy(), promise);
+        queue.add(buf, promise);
     }
 
     /**

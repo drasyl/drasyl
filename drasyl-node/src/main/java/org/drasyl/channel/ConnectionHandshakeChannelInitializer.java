@@ -25,13 +25,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoop;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
-import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
+import org.drasyl.handler.connection.ConnectionHandshakeStatus;
+import org.drasyl.util.CsvLogger;
 
+import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
@@ -54,7 +60,18 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ConnectionHandshakeCodec());
-        p.addLast(new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake));
+        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake);
+        p.addLast(handler);
+        final CsvLogger logger = new CsvLogger("/Users/heiko/Development/drasyl/" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
+        new DefaultEventLoop().scheduleAtFixedRate(() -> {
+            try {
+                ConnectionHandshakeStatus status = handler.userCallStatus();
+                logger.log(status.tcb());
+            }
+            catch (final ClosedChannelException e) {
+                e.printStackTrace();
+            }
+        }, 100, 100, MILLISECONDS);
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,

@@ -52,6 +52,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void encode(final ChannelHandlerContext ctx,
                           final ConnectionHandshakeSegment seg,
                           final List<Object> out) throws Exception {
+        System.out.println("-> " + seg);
         final ByteBuf buf = ctx.alloc().buffer(13);
         buf.writeInt(MAGIC_NUMBER);
         buf.writeInt((int) seg.seq());
@@ -97,6 +98,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                 }
 
                 final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, window, options, in.retain());
+                System.out.println("<- " + seg);
                 out.add(seg);
             }
             else {

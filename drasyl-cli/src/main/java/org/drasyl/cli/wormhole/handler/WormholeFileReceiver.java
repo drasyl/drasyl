@@ -24,7 +24,6 @@ package org.drasyl.cli.wormhole.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import org.drasyl.cli.handler.InboundByteBufsProgressBarHandler;
 import org.drasyl.cli.wormhole.message.FileMessage;
 
@@ -35,7 +34,6 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.wormhole.handler.WormholeFileSender.IDLE_TIMEOUT;
 import static org.drasyl.cli.wormhole.handler.WormholeFileSender.PROGRESS_BAR_INTERVAL;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -65,8 +63,7 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
         out.println("Receiving file (" + numberToHumanData(length) + ") into: " + file.getName());
 
         if (file.exists()) {
-            ctx.fireExceptionCaught(new FileExistException(file.getName()));
-            return;
+            file.delete();
         }
 
         try {

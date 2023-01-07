@@ -45,7 +45,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
 // daher speichern wir die nachrichten und warten auf ein channelReadComplete. Dort gucken wir dann, ob wir z.B. ACKs zusammenfassen können/etc.
-class OutgoingSegmentQueue {
+public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
     private final RetransmissionQueue retransmissionQueue;
     private final RttMeasurement rttMeasurement;
@@ -150,12 +150,12 @@ class OutgoingSegmentQueue {
         }
     }
 
-    public int size() {
-        return retransmissionQueue.size();
+    public int len() {
+        return len;
     }
 
     @Override
     public String toString() {
-        return String.valueOf(size());
+        return String.valueOf(len());
     }
 }

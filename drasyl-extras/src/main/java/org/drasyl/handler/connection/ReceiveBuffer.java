@@ -33,9 +33,8 @@ import java.nio.channels.ClosedChannelException;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 
-// FIXME: add maximum capacity size?
 // FIXME: add support for out-of-order?
-class ReceiveBuffer {
+public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
