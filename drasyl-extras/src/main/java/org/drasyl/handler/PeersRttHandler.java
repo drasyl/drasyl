@@ -32,6 +32,7 @@ import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.EvictingQueue;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.net.InetSocketAddress;
 import java.time.Clock;
@@ -55,6 +56,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * information and generates some statistics that are periodically passed to the channel as an
  * {@link PeersRttReport} event.
  */
+@UnstableApi
 public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     private final long emitEventInterval;
     private final Map<DrasylAddress, PeerRtt> rtts;
