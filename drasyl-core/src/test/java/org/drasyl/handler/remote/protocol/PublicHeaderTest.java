@@ -26,7 +26,12 @@ import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Arrays;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
@@ -34,6 +39,32 @@ import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
 class PublicHeaderTest {
+    @Nested
+    static class Serialization {
+        @ParameterizedTest
+        @MethodSource("shouldSerializeCorrectlyAndViceVersaProvider")
+        void shouldSerializeCorrectlyAndViceVersa(final PublicHeader publicHeader) throws InvalidMessageFormatException {
+            final ByteBuf out = Unpooled.buffer();
+            publicHeader.writeTo(out);
+
+            assertEquals(PublicHeader.LENGTH, out.readableBytes());
+
+            final PublicHeader deserializedHeader = PublicHeader.of(out);
+            assertEquals(publicHeader, deserializedHeader);
+
+            out.release();
+        }
+
+        static Collection<PublicHeader> shouldSerializeCorrectlyAndViceVersaProvider() {
+            return Arrays.asList(new PublicHeader[]{
+                    PublicHeader.of(HopCount.of(0), false, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork()),
+                    PublicHeader.of(HopCount.of(1), false, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork()),
+                    PublicHeader.of(HopCount.of(0), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork()),
+                    PublicHeader.of(HopCount.of(1), true, 0, Nonce.randomNonce(), ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork())
+            });
+        }
+    }
+
     @Nested
     class WriteTo {
         @Test
