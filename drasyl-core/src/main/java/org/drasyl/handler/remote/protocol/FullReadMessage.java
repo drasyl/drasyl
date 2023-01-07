@@ -26,6 +26,7 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 /**
  * Describes a message whose content has been read completely. This is the case for unencrypted or
@@ -33,6 +34,7 @@ import org.drasyl.identity.IdentityPublicKey;
  *
  * @see PartialReadMessage
  */
+@UnstableApi
 public interface FullReadMessage<T extends FullReadMessage<?>> extends RemoteMessage {
     /**
      * Returns the {@link IdentityPublicKey} of the message recipient.

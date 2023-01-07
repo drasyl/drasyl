@@ -32,8 +32,8 @@ import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.EvictingQueue;
+import org.drasyl.util.internal.UnstableApi;
 
-import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.time.Instant;
@@ -56,6 +56,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * information and generates some statistics that are periodically passed to the channel as an
  * {@link PeersRttReport} event.
  */
+@UnstableApi
 public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     private final long emitEventInterval;
     private final Map<DrasylAddress, PeerRtt> rtts;
@@ -68,16 +69,14 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * @param printStream       if not {@code null}, the RTT statistics will be written to this
-     *                          {@link PrintStream}
      * @param emitEventInterval time in ms how often report should be generated
      */
-    public PeersRttHandler(final PrintStream printStream, final long emitEventInterval) {
+    public PeersRttHandler(final long emitEventInterval) {
         this(emitEventInterval, new HashMap<>());
     }
 
     public PeersRttHandler() {
-        this(System.out, 5_000L); // NOSONAR
+        this(5_000L); // NOSONAR
     }
 
     @Override
