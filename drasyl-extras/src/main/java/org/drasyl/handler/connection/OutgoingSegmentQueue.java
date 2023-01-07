@@ -26,7 +26,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
-import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -41,6 +40,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.RST;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
+import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
@@ -49,8 +49,8 @@ public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
     private final RetransmissionQueue retransmissionQueue;
     private final RttMeasurement rttMeasurement;
-    private long seq;
-    private long ack;
+    private long seq = -1;
+    private long ack = -1;
     private byte ctl;
     private int len;
 
@@ -64,11 +64,11 @@ public class OutgoingSegmentQueue {
                   final long readableBytes,
                   final long ack,
                   final int ctl) {
-        if (this.seq == 0) {
+        if (this.seq == -1) {
             this.seq = seq;
         }
         len += readableBytes;
-        if (SerialNumberArithmetic.greaterThan(ack, this.ack, SEQ_NO_SPACE)) {
+        if (this.ack == -1 || greaterThan(ack, this.ack, SEQ_NO_SPACE)) {
             this.ack = ack;
         }
         this.ctl |= ctl;
@@ -122,8 +122,8 @@ public class OutgoingSegmentQueue {
 
         assert len == 0;
         assert ctl == 0;
-        seq = 0;
-        ack = 0;
+        seq = -1;
+        ack = -1;
 
         if (doFlush) {
             ctx.flush();

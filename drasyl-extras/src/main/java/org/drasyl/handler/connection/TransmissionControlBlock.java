@@ -341,14 +341,14 @@ public class TransmissionControlBlock {
                 allowedBytesToFlush = sendBuffer.readableBytes();
             }
 
-            if (state != ESTABLISHED || allowedBytesToFlush == -1) {
+            if (state != ESTABLISHED || allowedBytesToFlush < 1) {
                 return;
             }
 
             final long flightSize = retransmissionQueue.bytes();
             final long sendWindow = sndWnd();
             final long congestionWindow = cwnd();
-            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), allowedBytesToFlush, flightSize);
+            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
 
             // at least one byte is required for Zero-Window Probing
             final long max = Math.max(newFlush ? 1 : 0, congestionWindow - flightSize);
@@ -357,6 +357,7 @@ public class TransmissionControlBlock {
             LOG.trace("{}[{}] Write {} bytes to network.", ctx.channel(), state, remainingBytes);
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
+            allowedBytesToFlush -= remainingBytes;
         }
         finally {
             outgoingSegmentQueue.flush(ctx, this);
@@ -375,15 +376,20 @@ public class TransmissionControlBlock {
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg) {
         sndUna = seg.ack();
+        final long bytes1 = retransmissionQueue.bytes();
         retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement);
+        final long bytes2 = retransmissionQueue.bytes();
+        final long ackedBytes = bytes1 - bytes2;
 
-        if (doSlowStart()) {
-            // Slow Start -> +1 MSS after each ACK
-            cwnd += mss;
-        }
-        else {
-            // Congestion Avoidance -> +1 MSS after each RTT
-            cwnd += (long) mss * mss / cwnd;
+        if (ackedBytes > 0) {
+            if (doSlowStart()) {
+                // Slow Start -> +1 MSS after each ACK
+                cwnd += Math.min(mss, ackedBytes);
+            }
+            else {
+                // Congestion Avoidance -> +1 MSS after each RTT
+                cwnd += Math.ceil(((long) mss * mss) / (float) cwnd);
+            }
         }
     }
 
