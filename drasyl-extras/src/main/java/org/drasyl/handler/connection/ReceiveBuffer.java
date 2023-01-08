@@ -91,8 +91,10 @@ public class ReceiveBuffer {
                         final TransmissionControlBlock tcb) {
         if (seg.content().isReadable()) {
             final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
-            tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
-
+            final long oldRcvNxt = tcb.rcvNxt();
+            tcb.rcvNxt = advanceSeq(oldRcvNxt, bytesToReceive);
+            LOG.trace("{} Got `{}`. Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), seg, oldRcvNxt, tcb.rcvNxt());
+            
             add(seg.content().slice(seg.content().readerIndex(), bytesToReceive));
             tcb.rcvWnd -= bytesToReceive;
         }
