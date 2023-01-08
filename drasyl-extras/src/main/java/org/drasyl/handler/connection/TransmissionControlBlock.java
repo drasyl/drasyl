@@ -89,6 +89,7 @@ public class TransmissionControlBlock {
     private int mss; // maximum segment size
     private long cwnd; // congestion window
     private long ssthresh; // slow start threshold
+    private int duplicateAcks;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -394,6 +395,12 @@ public class TransmissionControlBlock {
                 // Congestion Avoidance -> +1 MSS after each RTT
                 cwnd += Math.ceil(((long) mss * mss) / (float) cwnd);
             }
+
+            if (duplicateAcks != 0) {
+                duplicateAcks = 0;
+                cwnd = ssthresh;
+                LOG.error("{} ACKed new data. Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel());
+            }
         }
     }
 
@@ -462,5 +469,32 @@ public class TransmissionControlBlock {
 
     public long ssthresh() {
         return ssthresh;
+    }
+
+    public void gotDuplicateAck(final ChannelHandlerContext ctx) {
+        duplicateAcks += 1;
+        if (duplicateAcks == 3) {
+            LOG.error("{} Got {} duplicate ACKs (in a row?).", ctx.channel(), duplicateAcks);
+
+            // When the third duplicate ACK is received, a TCP MUST set ssthresh
+            //       to no more than the value given in equation (4)
+            ssthresh = Math.max(retransmissionQueue.bytes() / 2, 2L * mss);
+            LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
+
+            // The lost segment starting at SND.UNA MUST be retransmitted...
+            // FIXME
+            final ConnectionHandshakeSegment current = retransmissionQueue.current();
+            LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
+            ctx.writeAndFlush(current.copy());
+
+            // ... and cwnd set to ssthresh plus 3*SMSS.
+            cwnd = ssthresh + 3L * mss;
+            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
+        }
+        else if (duplicateAcks > 3) {
+            // For each additional duplicate ACK received (after the third),
+            //       cwnd MUST be incremented by SMSS.
+            cwnd += mss;
+        }
     }
 }
