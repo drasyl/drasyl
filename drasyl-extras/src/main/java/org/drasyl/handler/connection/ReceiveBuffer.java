@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.CoalescingBufferQueue;
@@ -31,19 +32,23 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 
 // FIXME: add support for out-of-order?
 public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
-    private final CoalescingBufferQueue queue;
+    // head and tail pointers for the linked-list structure. If empty head and tail are null.
+    private ReceiveBufferEntry head;
+    private int bytes;
+    private ByteBuf cumulation = null;
 
     ReceiveBuffer(final Channel channel,
                   final CoalescingBufferQueue queue) {
         this.channel = requireNonNull(channel);
-        this.queue = requireNonNull(queue);
     }
 
     ReceiveBuffer(final Channel channel) {
@@ -51,39 +56,29 @@ public class ReceiveBuffer {
     }
 
     /**
-     * Add a buffer to the end of the queue and associate a promise with it that should be completed
-     * when all the buffer's bytes have been consumed from the queue and written.
-     *
-     * @param buf to add to the tail of the queue
-     */
-    public void add(final ByteBuf buf) {
-        queue.add(buf);
-    }
-
-    /**
-     * Are there pending buffers in the queue.
-     */
-    public boolean isEmpty() {
-        return queue.isEmpty();
-    }
-
-    /**
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void release() {
-        queue.releaseAndFailAll(DUMMY_CAUSE);
+        if (cumulation != null) {
+            cumulation.release();
+        }
+
+        while (head != null) {
+            head.seg.release();
+            head = head.next;
+        }
     }
 
     /**
      * The number of readable bytes.
      */
-    public int readableBytes() {
-        return queue.readableBytes();
+    public int bytes() {
+        return bytes;
     }
 
     @Override
     public String toString() {
-        return String.valueOf(readableBytes());
+        return String.valueOf(bytes());
     }
 
     public void receive(final ChannelHandlerContext ctx,
@@ -91,25 +86,106 @@ public class ReceiveBuffer {
                         final TransmissionControlBlock tcb) {
         if (seg.content().isReadable()) {
             final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
-            tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
 
-            add(seg.content().slice(seg.content().readerIndex(), bytesToReceive));
+            final ByteBuf next = seg.content().slice(seg.content().readerIndex(), bytesToReceive);
             tcb.rcvWnd -= bytesToReceive;
+            bytes += bytesToReceive;
 
-            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
+            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), seg.content().readableBytes());
+
+            // left edge?
+            if (seg.seq() == tcb.rcvNxt) {
+                tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
+
+                compose(ctx, next);
+
+                // guck in unseren park
+                while (head != null && head.seg.seq() == tcb.rcvNxt) {
+                    tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), head.seg.content().readableBytes());
+                    compose(ctx, head.seg.content());
+
+                    head = head.next;
+                }
+            }
+            else {
+                // irgendwo anders parken yumad
+                final ReceiveBufferEntry receive = new ReceiveBufferEntry(seg);
+                ReceiveBufferEntry currentHead = head;
+                if (currentHead == null) {
+                    // erstes element
+                    head = receive;
+                }
+                else {
+                    // n tes element. packe an die richtige stelle
+                    ReceiveBufferEntry current = currentHead;
+                    while (current != null) {
+                        // add before?
+                        if (lessThan(seg.seq(), current.seg.seq(), SEQ_NO_SPACE)) {
+                            final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
+                            x.next = head;
+                            head = x;
+                            break;
+                        }
+                        // add after?
+                        else if (current.next == null || lessThan(seg.seq(), current.next.seg.seq(), SEQ_NO_SPACE)) {
+                            final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
+                            x.next = current.next;
+                            current.next = x;
+                            break;
+                        }
+
+                        current = current.next;
+                    }
+                }
+            }
         }
         else if (seg.len() > 0) {
             tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
         }
     }
 
+    private void compose(ChannelHandlerContext ctx, ByteBuf next) {
+        if (cumulation == null) {
+            // create new cumulation
+            cumulation = next;
+        }
+        else if (cumulation instanceof CompositeByteBuf) {
+            // add component
+            CompositeByteBuf composite = (CompositeByteBuf) cumulation;
+            composite.addComponent(true, next);
+        }
+        else {
+            // create composite
+            final CompositeByteBuf composite = ctx.alloc().compositeBuffer(2);
+            composite.addComponent(true, cumulation);
+            composite.addComponent(true, next);
+            cumulation = composite;
+        }
+    }
+
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
-        final int bytes = readableBytes();
-        if (bytes > 0) {
-            final ByteBuf byteBuf = queue.remove(bytes, ctx.newPromise().setSuccess());
-            tcb.rcvWnd += bytes;
+        if (cumulation != null) {
+            tcb.rcvWnd += cumulation.readableBytes();
+            bytes -= cumulation.readableBytes();
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
-            ctx.fireChannelRead(byteBuf);
+            ctx.fireChannelRead(cumulation);
+            cumulation = null;
+        }
+    }
+
+    private class ReceiveBufferEntry {
+        private final ConnectionHandshakeSegment seg;
+        private ReceiveBufferEntry next;
+
+        public ReceiveBufferEntry(final ConnectionHandshakeSegment seg) {
+            this.seg = requireNonNull(seg);
+        }
+
+        @Override
+        public String toString() {
+            return "ReceiveBufferEntry{" +
+                    "seg=" + seg +
+                    '}';
         }
     }
 }

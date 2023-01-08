@@ -70,6 +70,8 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * <p>
  * Wire format ist nicht kompatibel.
  */
+// Slow Start and Congestion Avoidance
+// Fast Retransmit/Fast Recovery
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
@@ -841,29 +843,19 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    // we know the SEG is within the window. Now check for left window edge
-                    // FIXME: add support for out-of-order receival?
-                    // In addition, a TCP receiver
-                    //   SHOULD send an immediate ACK when the incoming segment fills in all
-                    //   or part of a gap in the sequence space.  This will generate more
-                    //   timely information for a sender recovering from a loss through a
-                    //   retransmission timeout, a fast retransmit, or an advanced loss
-                    //   recovery algorithm, as outlined in section 4.3.
-                    if (seg.seq() == tcb.rcvNxt) {
-                        tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
+                    tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
 
-                        if (readPending) {
-                            readPending = false;
-                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
-                            tcb.receiveBuffer().fireRead(ctx, tcb);
-                        }
-                        else if (seg.isPsh()) {
-                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
-                            tcb.receiveBuffer().fireRead(ctx, tcb);
-                        }
-                        else {
-                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
-                        }
+                    if (readPending) {
+                        readPending = false;
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                    }
+                    else if (seg.isPsh()) {
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                    }
+                    else {
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
                     }
 
                     // Ack receival of segment text

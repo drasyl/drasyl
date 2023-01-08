@@ -103,7 +103,7 @@ public class CsvLogger {
             writer.append(",");
             escapedWrite(writer, tcb.retransmissionQueue().bytes());
             writer.append(",");
-            escapedWrite(writer, tcb.receiveBuffer().readableBytes());
+            escapedWrite(writer, tcb.receiveBuffer().bytes());
 
             writer.append(",");
             escapedWrite(writer, tcb.cwnd());
