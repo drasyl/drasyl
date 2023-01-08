@@ -267,7 +267,7 @@ public class TransmissionControlBlock {
     }
 
     public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
-        return seg.isAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE);
+        return seg.isOnlyAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE) && seg.len() == 0;
     }
 
     public boolean isAckSomethingNotYetSent(final ConnectionHandshakeSegment seg) {
@@ -375,7 +375,11 @@ public class TransmissionControlBlock {
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg) {
-        sndUna = seg.ack();
+        if (sndUna != seg.ack()) {
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
+            sndUna = seg.ack();
+        }
+
         final long bytes1 = retransmissionQueue.bytes();
         retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement);
         final long bytes2 = retransmissionQueue.bytes();

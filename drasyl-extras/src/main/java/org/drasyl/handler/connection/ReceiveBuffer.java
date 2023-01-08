@@ -95,12 +95,12 @@ public class ReceiveBuffer {
 
             add(seg.content().slice(seg.content().readerIndex(), bytesToReceive));
             tcb.rcvWnd -= bytesToReceive;
+
+            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
         }
-        else {
+        else if (seg.len() > 0) {
             tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
         }
-
-        LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, readableBytes(), tcb.rcvWnd(), seg.content().readableBytes());
     }
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {

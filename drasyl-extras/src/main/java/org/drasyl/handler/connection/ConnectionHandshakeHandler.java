@@ -588,7 +588,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // update window
             tcb.updateSndWnd(seg);
 
-            LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             // mss negotiation
             tcb.negotiateMss(ctx, seg);
@@ -611,13 +611,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check ACK
         if (tcb.isAckSomethingNeverSent(seg)) {
             // segment ACKed something we never sent
-            LOG.trace("{}[{}] Get got an ACKnowledgement `{}` for an Segment we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
+            LOG.trace("{}[{}] Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
             if (seg.isRst()) {
                 LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
             }
             else {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound Segment.", ctx.channel(), state, response);
+                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
                 tcb.write(response);
             }
             return;
@@ -627,14 +627,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check RST
         if (seg.isRst()) {
             if (acceptableAck) {
-                LOG.trace("{}[{}] Segment `{}` is an acceptable ACKnowledgement. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
                 switchToNewState(ctx, CLOSED);
                 deleteTcb(CONNECTION_RESET_EXCEPTION);
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                 ctx.close();
             }
             else {
-                LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Drop it.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Drop it.", ctx.channel(), state, seg);
             }
             return;
         }
@@ -652,10 +652,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // update window
             tcb.updateSndWnd(seg);
 
-            LOG.error("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
+            LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
             if (tcb.synHasBeenAcknowledged()) {
-                LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
                 switchToNewState(ctx, ESTABLISHED);
                 cancelUserTimeoutGuard();
@@ -692,7 +692,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
-                LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement `{}` for the Segment we actually expect.", ctx.channel(), state, seg, response);
+                LOG.trace("{}[{}] We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), state, seg, response);
                 tcb.write(response);
             }
             return;
@@ -757,7 +757,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         if (!acceptableAck) {
                             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                            LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
+                            LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Send RST `{}` and drop received SEG.", ctx.channel(), state, seg, response);
                             tcb.write(response);
                             return;
                         }
@@ -842,7 +842,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
                     // we know the SEG is within the window. Now check for left window edge
-                    // FIXME: add suppoert for out-of-order receival?
+                    // FIXME: add support for out-of-order receival?
+                    // In addition, a TCP receiver
+                    //   SHOULD send an immediate ACK when the incoming segment fills in all
+                    //   or part of a gap in the sequence space.  This will generate more
+                    //   timely information for a sender recovering from a loss through a
+                    //   retransmission timeout, a fast retransmit, or an advanced loss
+                    //   recovery algorithm, as outlined in section 4.3.
                     if (seg.seq() == tcb.rcvNxt) {
                         tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
 
@@ -896,7 +902,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // daher verschicken wir schon hier das FIN, was es sonst zwischen CLOSE_WAIT und LAST_ACK geben würde
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment response2 = ConnectionHandshakeSegment.fin(tcb.sndNxt());
-                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last Segment `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, response2);
+                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last SEG `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, response2);
                     tcb.write(response2);
                     switchToNewState(ctx, LAST_ACK);
                     break;
@@ -936,8 +942,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final ConnectionHandshakeSegment seg,
                                           final boolean acceptableAck) {
+        final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
-            LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), (int) (seg.ack() - tcb.sndUna()));
             // advance send state
             tcb.handleAcknowledgement(ctx, seg);
 
@@ -946,9 +952,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 tcb.updateSndWnd(seg);
             }
         }
-        else if (tcb.isDuplicateAck(seg)) {
+        if (duplicateAck) {
             // ACK is duplicate. ignore
-            LOG.error("{}[{}] Got old ACK. Ignore.", ctx.channel(), state);
+            LOG.error("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {
             // FIXME: add support for window!

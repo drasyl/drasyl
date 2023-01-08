@@ -476,13 +476,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check ACK
         if (seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE))) {
             // segment ACKed something we never sent
-            LOG.trace("{}[{}] Get got an ACKnowledgement `{}` for an Segment we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
+            LOG.trace("{}[{}] Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
             if (seg.isRst()) {
                 LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
             }
             else {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound Segment.", ctx.channel(), state, response);
+                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
                 ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
             }
             ReferenceCountUtil.release(seg);
@@ -493,14 +493,14 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check RST
         if (seg.isRst()) {
             if (acceptableAck) {
-                LOG.trace("{}[{}] Segment `{}` is an acceptable ACKnowledgement. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
                 ReferenceCountUtil.release(seg);
                 switchToNewState(ctx, CLOSED);
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                 ctx.channel().close();
             }
             else {
-                LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Drop it.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Drop it.", ctx.channel(), state, seg);
                 ReferenceCountUtil.release(seg);
             }
             return;
@@ -518,7 +518,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             final boolean ourSynHasBeenAcked = greaterThan(sndUna, iss, SEQ_NO_SPACE);
             if (ourSynHasBeenAcked) {
-                LOG.trace("{}[{}] Remote peer has ACKed our SYN package and sent us his SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
+                LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
                 cancelTimeoutGuards();
                 switchToNewState(ctx, ESTABLISHED);
@@ -560,7 +560,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(sndNxt, rcvNxt);
-                LOG.trace("{}[{}] We got an unexpected Segment `{}`. Send an ACKnowledgement `{}` for the Segment we actually expect.", ctx.channel(), state, seg, response);
+                LOG.trace("{}[{}] We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), state, seg, response);
                 ctx.writeAndFlush(response).addListener(CLOSE_ON_FAILURE);
             }
             ReferenceCountUtil.release(seg);
@@ -622,7 +622,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                         if (!acceptableAck) {
                             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
-                            LOG.trace("{}[{}] Segment `{}` is not an acceptable ACKnowledgement. Send RST `{}` and drop received Segment.", ctx.channel(), state, seg, response);
+                            LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Send RST `{}` and drop received SEG.", ctx.channel(), state, seg, response);
                             ReferenceCountUtil.release(seg);
                             ctx.writeAndFlush(response).addListener(new RetransmissionTimeoutApplier(ctx, response));
                             return;
@@ -737,7 +737,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
                     final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.finAck(sndNxt, rcvNxt);
                     sndNxt++;
-                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last Segment `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
+                    LOG.trace("{}[{}] As we're already waiting for this. We're sending our last SEG `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, seg2);
                     ctx.writeAndFlush(seg2).addListener(new RetransmissionTimeoutApplier(ctx, seg2));
                     switchToNewState(ctx, LAST_ACK);
                     ReferenceCountUtil.release(seg);
@@ -846,7 +846,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     final long rto = Math.min(UPPER_BOUND, Math.max(LOWER_BOUND, (long) (BETA * newSrtt)));
                     ctx.executor().schedule(() -> {
                         if (future.channel().isOpen() && state != CLOSED && lessThanOrEqualTo(sndUna, seg.seq(), SEQ_NO_SPACE)) {
-                            LOG.trace("{}[{}] Segment `{}` has not been acknowledged within {}ms. Send again.", future.channel(), state, seg, rto);
+                            LOG.trace("{}[{}] SEG `{}` has not been acknowledged within {}ms. Send again.", future.channel(), state, seg, rto);
                             ctx.writeAndFlush(seg).addListener(new RetransmissionTimeoutApplier(ctx, seg, rto));
                         }
                     }, rto, MILLISECONDS);

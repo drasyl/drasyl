@@ -120,7 +120,7 @@ public class RetransmissionQueue {
         final boolean queueWasNotEmpty = current != null;
         boolean somethingWasAcked = true;
         while (current != null && tcb.isFullyAcknowledged(current)) {
-            LOG.trace("{} Segment `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), current, size() - 1);
+            LOG.trace("{} SEG `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), current, size() - 1);
             removeAndSucceedCurrent();
             somethingWasAcked = true;
 

@@ -100,6 +100,7 @@ public class RttMeasurement {
                               final long tsEcr,
                               final int smss,
                               final long flightSize) {
+        double oldRto = RTO;
         if (SRTT == -1) {
             // first measurement
             int r = (int) (System.nanoTime() / 1_000_000 - tsEcr);
@@ -130,7 +131,9 @@ public class RttMeasurement {
             RTO = UPPER_BOUND;
         }
 
-        LOG.trace("{} RTO set to {}ms.", ctx.channel(), RTO);
+        if (RTO != oldRto) {
+            LOG.trace("{} RTO set to {}ms.", ctx.channel(), RTO);
+        }
     }
 
     void timeoutOccured() {

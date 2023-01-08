@@ -679,6 +679,22 @@ class ConnectionHandshakeHandlerTest {
 
                     channel.close();
                 }
+
+                // can be caused by a lost SEG
+                @Test
+                void receiverShouldRespondWithExpectedSegToUnexpectedSeg2() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final int bytes = 600;
+
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 300, 1000));
+
+                    channel.close();
+                }
             }
         }
     }
