@@ -604,7 +604,7 @@ class ConnectionHandshakeHandlerTest {
 
                     // 600 bytes added to RCV.BUF
                     final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 600, data));
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 600, data));
 
                     assertEquals(400, tcb.rcvWnd());
 
@@ -655,6 +655,27 @@ class ConnectionHandshakeHandlerTest {
                     // SEG not fully ACKed, we send again
                     final ByteBuf data2 = Unpooled.buffer(100).writeBytes(randomBytes(100));
                     channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, data2));
+
+                    channel.close();
+                }
+
+                // can be caused by a lost SEG
+                @Test
+                void receiverShouldRespondWithExpectedSegToUnexpectedSeg() {
+                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                    final int bytes = 600;
+
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    // SEG 100 is expected, but we send next SEG 400
+                    final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(400, 600, data));
+
+                    // we get ACK with expected SEG 100 number
+                    assertEquals(ConnectionHandshakeSegment.ack(600, 100), channel.readOutbound());
 
                     channel.close();
                 }

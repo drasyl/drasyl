@@ -429,12 +429,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @return
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
-        switch (state) {
-            case CLOSED:
-                throw CONNECTION_CLOSED_ERROR;
-            default:
-                return new ConnectionHandshakeStatus(state, tcb);
+        if (requireNonNull(state) == CLOSED) {
+            throw CONNECTION_CLOSED_ERROR;
         }
+        return new ConnectionHandshakeStatus(state, tcb);
     }
 
     /*
@@ -843,19 +841,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
+                    // we know the SEG is within the window. Now check for left window edge
+                    // FIXME: add suppoert for out-of-order receival?
+                    if (seg.seq() == tcb.rcvNxt) {
+                        tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
 
-                    if (readPending) {
-                        readPending = false;
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
-                    }
-                    else if (seg.isPsh()) {
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
-                    }
-                    else {
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
+                        if (readPending) {
+                            readPending = false;
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
+                            tcb.receiveBuffer().fireRead(ctx, tcb);
+                        }
+                        else if (seg.isPsh()) {
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
+                            tcb.receiveBuffer().fireRead(ctx, tcb);
+                        }
+                        else {
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
+                        }
                     }
 
                     // Ack receival of segment text
