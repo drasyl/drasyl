@@ -254,7 +254,7 @@ public class TransmissionControlBlock {
 
     public void delete(final Throwable cause) {
         sendBuffer.releaseAndFailAll(cause);
-        retransmissionQueue.releaseAndFailAll(cause);
+        retransmissionQueue.releaseAndFailAll();
         receiveBuffer.release();
     }
 
@@ -348,10 +348,10 @@ public class TransmissionControlBlock {
             final long flightSize = retransmissionQueue.bytes();
             final long sendWindow = sndWnd();
             final long congestionWindow = cwnd();
-            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}. {} bytes of SND.BUF requested to flush.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
+            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
 
             // at least one byte is required for Zero-Window Probing
-            final long max = Math.max(newFlush ? 1 : 0, congestionWindow - flightSize);
+            final long max = Math.max(newFlush ? 1 : 0, Math.min(sendWindow, congestionWindow) - flightSize);
             long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network.", ctx.channel(), state, remainingBytes);

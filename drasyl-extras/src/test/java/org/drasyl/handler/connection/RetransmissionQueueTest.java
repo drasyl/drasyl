@@ -34,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,8 +75,7 @@ class RetransmissionQueueTest {
     @Nested
     class ReleaseAndFailAll {
         @Test
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                                       @Mock final Throwable cause) {
+        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
             final RetransmissionQueue buffer = new RetransmissionQueue(channel, pendingWrites);
@@ -83,10 +83,10 @@ class RetransmissionQueueTest {
             final ChannelPromise promise = mock(ChannelPromise.class);
             pendingWrites.add(seg, promise);
 
-            buffer.releaseAndFailAll(cause);
+            buffer.releaseAndFailAll();
 
             verify(seg).release();
-            verify(promise).tryFailure(cause);
+            verify(promise).tryFailure(any());
         }
     }
 

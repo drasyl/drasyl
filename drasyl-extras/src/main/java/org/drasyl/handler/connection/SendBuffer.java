@@ -25,6 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,6 +35,7 @@ import static java.util.Objects.requireNonNull;
  * the {@link io.netty.channel.Channel} writability for the bytes it holds.
  */
 public class SendBuffer {
+    private static final Logger LOG = LoggerFactory.getLogger(SendBuffer.class);
     private CoalescingBufferQueue queue;
 
     SendBuffer(final CoalescingBufferQueue queue) {

@@ -139,7 +139,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, activeOpen, 1220, 64 * 1220);
+        this(userTimeout, activeOpen, 1220, 10_000 * 1220);
     }
 
     /*
@@ -258,6 +258,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         ctx.fireExceptionCaught(cause);
     }
+
+//    @Override
+//    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+//        LOG.error("channelWritabilityChanged {}", ctx.channel().isWritable());
+//        super.channelWritabilityChanged(ctx);
+//    }
 
     /*
      * User Calls
@@ -419,6 +425,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * STATUS call as described in <a
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
      * 3.10.6</a>.
+     *
      * @return
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
@@ -566,7 +573,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (state != ESTABLISHED && state != CLOSED) {
                         LOG.trace("{}[{}] Handshake initiated by remote peer has not been completed within {}ms. Abort handshake. Close channel.", ctx.channel(), state, userTimeout);
                         switchToNewState(ctx, CLOSED);
-                        ctx.fireExceptionCaught(new ConnectionHandshakeException("Handshake initiated by remote port has not been completed within " + userTimeout.toMillis() + "ms. Abort handshake. Close channel."));
+                        ctx.fireExceptionCaught(new ConnectionHandshakeException("User Timeout! Handshake initiated by remote port has not been completed within " + userTimeout.toMillis() + "ms. Abort handshake. Close channel."));
                         ctx.close();
                     }
                 }, userTimeout.toMillis(), MILLISECONDS);

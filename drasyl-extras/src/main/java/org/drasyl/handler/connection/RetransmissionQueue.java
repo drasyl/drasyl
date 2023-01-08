@@ -67,8 +67,8 @@ public class RetransmissionQueue {
     /**
      * Release all buffers in the queue and complete all listeners and promises.
      */
-    public void releaseAndFailAll(final Throwable cause) {
-        pendingWrites.removeAndFailAll(cause);
+    public void releaseAndFailAll() {
+        pendingWrites.removeAndFailAll(new Exception("FIXME"));
     }
 
     /**
