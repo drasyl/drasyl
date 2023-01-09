@@ -482,10 +482,9 @@ public class TransmissionControlBlock {
             LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
 
             // The lost segment starting at SND.UNA MUST be retransmitted...
-            // FIXME
-            final ConnectionHandshakeSegment current = null;//retransmissionQueue.current();
+            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
             LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
-            ctx.writeAndFlush(current.copy());
+            ctx.writeAndFlush(current);
 
             // ... and cwnd set to ssthresh plus 3*SMSS.
             cwnd = ssthresh + 3L * mss;

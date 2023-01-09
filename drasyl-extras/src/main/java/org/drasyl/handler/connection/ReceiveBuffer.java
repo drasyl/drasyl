@@ -110,7 +110,7 @@ public class ReceiveBuffer {
             }
             else {
                 // irgendwo anders parken yumad
-                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ {} but got SEQ {}. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt);
+                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ `{}` but got SEQ `{}`. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt);
                 final ReceiveBufferEntry receive = new ReceiveBufferEntry(seg);
                 ReceiveBufferEntry currentHead = head;
                 if (currentHead == null) {

@@ -253,6 +253,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                 final Throwable cause) {
         LOG.trace("{}[{}] Exception caught. Close channel:", ctx.channel(), state, cause);
 
+        cause.printStackTrace();
+
         switchToNewState(ctx, CLOSED);
         deleteTcb(cause);
 

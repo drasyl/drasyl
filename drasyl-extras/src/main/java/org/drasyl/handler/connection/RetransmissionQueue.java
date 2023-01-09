@@ -115,7 +115,6 @@ public class RetransmissionQueue {
         }
 
         boolean queueWasNotEmpty = ackedBytes != 0;
-        Object current = null;
         if (queueWasNotEmpty) {
             if (tcb.sendBuffer().acknowledgeableBytes() == 0) {
                 // everything was ACKed, cancel retransmission timer
@@ -140,22 +139,8 @@ public class RetransmissionQueue {
             // https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
 
             // retransmit the earliest segment that has not been acknowledged
-            final EnumMap<Option, Object> options = new EnumMap<>(Option.class);
-            final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
-            byte ctl = ACK;
-            if (synSeq != -1) {
-                ctl |= SYN;
-            } else if (pshSeq != -1) {
-                ctl |= PSH;
-            } else if (finSeq != -1) {
-                ctl |= FIN;
-            }
-            if (ctl == ACK && data.readableBytes() == 0) {
-                System.out.printf("");
-            }
-            // FIXME: wann PSH hinzufügen?
-            ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(tcb.sndUna(), tcb.rcvNxt(), ctl, tcb.rcvWnd(), options, data);
-            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}", channel, rto, retransmission);
+            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
+            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
 
             ctx.writeAndFlush(retransmission);
 
@@ -165,6 +150,24 @@ public class RetransmissionQueue {
             // Start the retransmission timer, such that it expires after RTO seconds
             recreateRetransmissionTimer(ctx, tcb);
         }, rto, MILLISECONDS);
+    }
+
+    ConnectionHandshakeSegment retransmissionSegment(final TransmissionControlBlock tcb) {
+        final EnumMap<Option, Object> options = new EnumMap<>(Option.class);
+        final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
+        byte ctl = ACK;
+        if (synSeq != -1) {
+            ctl |= SYN;
+        } else if (pshSeq != -1) {
+            ctl |= PSH;
+        } else if (finSeq != -1) {
+            ctl |= FIN;
+        }
+        if (ctl == ACK && data.readableBytes() == 0) {
+            System.out.printf("");
+        }
+        ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(tcb.sndUna(), tcb.rcvNxt(), ctl, tcb.rcvWnd(), options, data);
+        return retransmission;
     }
 
     private void cancelRetransmissionTimer() {
