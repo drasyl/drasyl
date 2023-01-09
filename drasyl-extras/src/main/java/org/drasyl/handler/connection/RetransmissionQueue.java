@@ -21,19 +21,24 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.PendingWriteQueue;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.EnumMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
+import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 
 /**
  * Holds all segments that has been written to the network (called in-flight) but have not been
@@ -43,124 +48,122 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
     private final Channel channel;
-    private final PendingWriteQueue pendingWrites;
     private ScheduledFuture<?> retransmissionTimer;
-
-    RetransmissionQueue(final Channel channel,
-                        final PendingWriteQueue pendingWrites) {
-        this.channel = requireNonNull(channel);
-        this.pendingWrites = requireNonNull(pendingWrites);
-    }
+    private long synSeq = -1;
+    private long pshSeq = -1;
+    private long finSeq = -1;
 
     RetransmissionQueue(final Channel channel) {
-        this(channel, new PendingWriteQueue(channel));
+        this.channel = requireNonNull(channel);
     }
 
     public void add(final ChannelHandlerContext ctx,
                     final ConnectionHandshakeSegment seg,
-                    final ChannelPromise promise,
-                    final RttMeasurement rttMeasurement) {
-        pendingWrites.add(seg, promise);
-        recreateRetransmissionTimer(ctx, rttMeasurement);
+                    final TransmissionControlBlock tcb) {
+        if (seg.isSyn()) {
+            synSeq = seg.seq();
+        }
+        if (seg.isPsh()) {
+            pshSeq = seg.seq();
+        }
+        if (seg.isFin()) {
+            finSeq = seg.seq();
+        }
+
+        recreateRetransmissionTimer(ctx, tcb);
     }
 
     /**
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void releaseAndFailAll() {
-        pendingWrites.removeAndFailAll(new Exception("FIXME"));
-    }
-
-    /**
-     * Return the current message or {@code null} if empty.
-     */
-    public ConnectionHandshakeSegment current() {
-        return (ConnectionHandshakeSegment) pendingWrites.current();
-    }
-
-    public void removeAndSucceedCurrent() {
-        pendingWrites.remove().setSuccess();
-    }
-
-    /**
-     * Returns the number of pending write operations.
-     */
-    public int size() {
-        if (channel.eventLoop().inEventLoop()) {
-            return pendingWrites.size();
-        }
-        else {
-            // FIXME: remove
-            final CompletableFuture<Integer> future = new CompletableFuture<>();
-            channel.eventLoop().execute(() -> {
-                future.complete(pendingWrites.size());
-            });
-            try {
-                return future.get();
-            }
-            catch (final InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            catch (final ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        synSeq = -1;
+        pshSeq = -1;
+        finSeq = -1;
+        // FIXME: fail stuff in SendBuffer?
     }
 
     @Override
     public String toString() {
-        return String.valueOf(size());
+        return "RTNS.Q(SYN=" + synSeq + ", PSH=" + pshSeq + ", FIN=" + finSeq + ")";
     }
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg,
                                       final TransmissionControlBlock tcb,
-                                      final RttMeasurement rttMeasurement) {
-        ConnectionHandshakeSegment current = current();
-        final boolean queueWasNotEmpty = current != null;
-        boolean somethingWasAcked = true;
-        while (current != null && tcb.isFullyAcknowledged(current)) {
-            LOG.trace("{} SEG `{}` has been fully ACKnowledged. Remove from retransmission queue. {} writes remain in retransmission queue.", ctx.channel(), current, size() - 1);
-            removeAndSucceedCurrent();
+                                      final RttMeasurement rttMeasurement,
+                                      final long ackedBytes) {
+        boolean somethingWasAcked = ackedBytes > 0;
+        if (synSeq != -1 && lessThan(synSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+            // SYN has been ACKed
+            synSeq = -1;
             somethingWasAcked = true;
-
-            current = current();
+        }
+        if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+            // PSH has been ACKed
+            pshSeq = -1;
+            somethingWasAcked = true;
+        }
+        if (finSeq != -1 && lessThan(finSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+            // FIN has been ACKed
+            finSeq = -1;
+            somethingWasAcked = true;
         }
 
+        if (somethingWasAcked) {
+            tcb.sendBuffer().acknowledge((int) ackedBytes);
+        }
+
+        boolean queueWasNotEmpty = ackedBytes != 0;
+        Object current = null;
         if (queueWasNotEmpty) {
-            if (current == null) {
+            if (tcb.sendBuffer().acknowledgeableBytes() == 0) {
                 // everything was ACKed, cancel retransmission timer
                 cancelRetransmissionTimer();
-            }
-            else if (somethingWasAcked) {
+            } else if (somethingWasAcked) {
                 // as something was ACKed, recreate retransmission timer
-                recreateRetransmissionTimer(ctx, rttMeasurement);
+                recreateRetransmissionTimer(ctx, tcb);
             }
         }
     }
 
     private void recreateRetransmissionTimer(final ChannelHandlerContext ctx,
-                                             final RttMeasurement rttMeasurement) {
+                                             final TransmissionControlBlock tcb) {
         // reset existing timer
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
         }
 
         // create new timer
-        long rto = (long) rttMeasurement.rto();
+        long rto = (long) tcb.rttMeasurement().rto();
         retransmissionTimer = ctx.executor().schedule(() -> {
             // https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
-            ConnectionHandshakeSegment current = current();
-            LOG.error("{} Retransmission timeout after {}ms! Current SEG: {}", channel, rto, current);
 
             // retransmit the earliest segment that has not been acknowledged
-            ctx.writeAndFlush(current.copy());
+            final EnumMap<Option, Object> options = new EnumMap<>(Option.class);
+            final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
+            byte ctl = ACK;
+            if (synSeq != -1) {
+                ctl |= SYN;
+            } else if (pshSeq != -1) {
+                ctl |= PSH;
+            } else if (finSeq != -1) {
+                ctl |= FIN;
+            }
+            if (ctl == ACK && data.readableBytes() == 0) {
+                System.out.printf("");
+            }
+            // FIXME: wann PSH hinzufügen?
+            ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(tcb.sndUna(), tcb.rcvNxt(), ctl, tcb.rcvWnd(), options, data);
+            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}", channel, rto, retransmission);
+
+            ctx.writeAndFlush(retransmission);
 
             // The host MUST set RTO <- RTO * 2 ("back off the timer")
-            rttMeasurement.timeoutOccured();
+            tcb.rttMeasurement().timeoutOccured();
 
             // Start the retransmission timer, such that it expires after RTO seconds
-            recreateRetransmissionTimer(ctx, rttMeasurement);
+            recreateRetransmissionTimer(ctx, tcb);
         }, rto, MILLISECONDS);
     }
 
@@ -169,10 +172,5 @@ public class RetransmissionQueue {
             retransmissionTimer.cancel(false);
             retransmissionTimer = null;
         }
-    }
-
-    public long bytes() {
-        // remove pending writes overhead
-        return pendingWrites.bytes() - pendingWrites.size() * 64;
     }
 }

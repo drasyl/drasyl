@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -145,7 +146,7 @@ public class TransmissionControlBlock {
         //  IW = 3 * SMSS bytes and MUST NOT be more than 3 segments
         // if SMSS <= 1095 bytes:
         //  IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement), retransmissionQueue, receiveBuffer, rttMeasurement, mss, 3 * mss, rcvWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, rttMeasurement, mss, 3 * mss, rcvWnd);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -243,9 +244,9 @@ public class TransmissionControlBlock {
                 ", RCV.NXT=" + rcvNxt +
                 ", RCV.WND=" + rcvWnd +
                 ", IRS=" + irs +
-                ", SND.BUF=" + sendBuffer +
+                ", " + sendBuffer +
                 ", OG.SEG.Q=" + outgoingSegmentQueue +
-                ", RTNS.Q=" + retransmissionQueue +
+                ", " + retransmissionQueue +
                 ", RCV.BUF=" + receiveBuffer +
                 ", MSS=" + mss +
                 ", CWND=" + cwnd +
@@ -346,7 +347,7 @@ public class TransmissionControlBlock {
                 return;
             }
 
-            final long flightSize = retransmissionQueue.bytes();
+            final long flightSize = sendBuffer.acknowledgeableBytes();
             final long sendWindow = sndWnd();
             final long congestionWindow = cwnd();
             LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
@@ -376,19 +377,16 @@ public class TransmissionControlBlock {
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg) {
+        long ackedBytes = 0;
         if (sndUna != seg.ack()) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
+            ackedBytes = SerialNumberArithmetic.sub(seg.ack(), sndUna, SEQ_NO_SPACE);
             sndUna = seg.ack();
         }
 
-        final long bytes1 = retransmissionQueue.bytes();
-        retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement);
-        final long bytes2 = retransmissionQueue.bytes();
-        final long ackedBytes = bytes1 - bytes2;
+        retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement, ackedBytes);
 
         if (ackedBytes > 0) {
-            sendBuffer.acknowledge((int) ackedBytes);
-
             if (doSlowStart()) {
                 // Slow Start -> +1 MSS after each ACK
                 cwnd += Math.min(mss, ackedBytes);
@@ -480,12 +478,12 @@ public class TransmissionControlBlock {
 
             // When the third duplicate ACK is received, a TCP MUST set ssthresh
             //       to no more than the value given in equation (4)
-            ssthresh = Math.max(retransmissionQueue.bytes() / 2, 2L * mss);
+            ssthresh = Math.max(sendBuffer.acknowledgeableBytes() / 2, 2L * mss);
             LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
 
             // The lost segment starting at SND.UNA MUST be retransmitted...
             // FIXME
-            final ConnectionHandshakeSegment current = retransmissionQueue.current();
+            final ConnectionHandshakeSegment current = null;//retransmissionQueue.current();
             LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
             ctx.writeAndFlush(current.copy());
 

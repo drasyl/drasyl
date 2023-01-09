@@ -101,6 +101,32 @@ class SendBufferTest {
     }
 
     @Nested
+    class Unacknowledged {
+        @Test
+        void shouldReadGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final SendBuffer buffer = new SendBuffer(channel);
+            final ByteBuf addBuf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final ChannelPromise promise1 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf1, promise1);
+            final ByteBuf addBuf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
+            final ChannelPromise promise2 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf2, promise2);
+            buffer.read(13);
+
+            // read a few bytes
+            assertEquals(addBuf1.slice(0, 4), buffer.unacknowledged(4));
+
+            // read all bytes
+            assertEquals(Unpooled.compositeBuffer(2).addComponents(true, addBuf1, addBuf2.slice(0, 3)), buffer.unacknowledged(13));
+
+            // read to much bytes
+            assertEquals(Unpooled.compositeBuffer(2).addComponents(true, addBuf1, addBuf2.slice(0, 3)), buffer.unacknowledged(20));
+        }
+    }
+
+    @Nested
     class Acknowledge {
         @Test
         void shouldAcknowledgeGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {

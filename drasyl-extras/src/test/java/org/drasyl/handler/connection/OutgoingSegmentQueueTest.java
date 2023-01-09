@@ -29,10 +29,8 @@ class OutgoingSegmentQueueTest {
     @Nested
     class Add {
         @Test
-        void shouldAddSegmentToEndOfQueue(@Mock final ConnectionHandshakeSegment seg,
-                                          @Mock final RetransmissionQueue retransmissionQueue,
-                                          @Mock final RttMeasurement rttMeasurement) {
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
+        void shouldAddSegmentToEndOfQueue(@Mock final ConnectionHandshakeSegment seg) {
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
             final long seq1 = seg.seq();
             final int readableBytes = seg.content().readableBytes();
@@ -46,10 +44,8 @@ class OutgoingSegmentQueueTest {
     class AddAndFlush {
         @Test
         void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                             @Mock final RetransmissionQueue retransmissionQueue,
-                                                             @Mock final RttMeasurement rttMeasurement) {
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
             try {
                 final long seq1 = seg.seq();
@@ -73,10 +69,8 @@ class OutgoingSegmentQueueTest {
         void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
                                           @Mock final ChannelPromise writePromise,
                                           @Mock final ChannelPromise ackPromise,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock final RetransmissionQueue retransmissionQueue,
-                                          @Mock final RttMeasurement rttMeasurement) {
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
             queue.flush(ctx, tcb);
 
@@ -86,13 +80,11 @@ class OutgoingSegmentQueueTest {
 
         @Test
         void shouldCumulateAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                            @Mock final RetransmissionQueue retransmissionQueue,
-                                            @Mock final RttMeasurement rttMeasurement) {
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
             final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 250);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
@@ -121,13 +113,11 @@ class OutgoingSegmentQueueTest {
 
         @Test
         void shouldPiggybackAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                             @Mock final RetransmissionQueue retransmissionQueue,
-                                             @Mock final RttMeasurement rttMeasurement) {
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
             final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(retransmissionQueue, rttMeasurement);
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
             final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.fin(100);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);

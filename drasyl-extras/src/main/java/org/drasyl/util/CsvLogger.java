@@ -101,7 +101,7 @@ public class CsvLogger {
             writer.append(",");
             escapedWrite(writer, tcb.outgoingSegmentQueue().len());
             writer.append(",");
-            escapedWrite(writer, tcb.retransmissionQueue().bytes());
+            escapedWrite(writer, -1);
             writer.append(",");
             escapedWrite(writer, tcb.receiveBuffer().bytes());
 

@@ -32,7 +32,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.EnumMap;
 import java.util.Map;
 
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
@@ -47,18 +46,10 @@ import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 // daher speichern wir die nachrichten und warten auf ein channelReadComplete. Dort gucken wir dann, ob wir z.B. ACKs zusammenfassen können/etc.
 public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
-    private final RetransmissionQueue retransmissionQueue;
-    private final RttMeasurement rttMeasurement;
     private long seq = -1;
     private long ack = -1;
     private byte ctl;
     private int len;
-
-    OutgoingSegmentQueue(final RetransmissionQueue retransmissionQueue,
-                         final RttMeasurement rttMeasurement) {
-        this.retransmissionQueue = requireNonNull(retransmissionQueue);
-        this.rttMeasurement = requireNonNull(rttMeasurement);
-    }
 
     void addBytes(final long seq,
                   final long readableBytes,
@@ -138,11 +129,11 @@ public class OutgoingSegmentQueue {
         LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         // RTTM
-        rttMeasurement.write(seg);
+        tcb.rttMeasurement().write(seg);
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            retransmissionQueue.add(ctx, seg.copy(), promise, rttMeasurement);
+            tcb.retransmissionQueue().add(ctx, seg.copy(), tcb);
             ctx.write(seg);
         }
         else {

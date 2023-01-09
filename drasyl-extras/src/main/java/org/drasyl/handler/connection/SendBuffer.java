@@ -137,10 +137,44 @@ public class SendBuffer {
         return read(channel.alloc(), bytes);
     }
 
+    public ByteBuf unacknowledged(final ByteBufAllocator alloc, int bytes) {
+        bytes = Math.min(bytes, acknowledgeableBytes);
+
+        ByteBuf toReturn = null;
+        SendBufferEntry currentEntry = head;
+        while (bytes > 0 && currentEntry != null) {
+            ByteBuf currentBuf = currentEntry.content();
+            final int remainingBytes = readMark != null && readMark.entry.content() == currentBuf ? readMark.entry.content().readableBytes() - readMark.remainingBytes() : currentBuf.readableBytes();
+            if (bytes < remainingBytes) {
+                // take part of buf
+                currentBuf = currentBuf.retainedSlice(0, bytes);
+                bytes = 0;
+                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+            }
+            else {
+                // read whole buf
+                currentBuf = currentBuf.retainedSlice(0, remainingBytes);
+                bytes -= remainingBytes;
+                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+            }
+
+            currentEntry = currentEntry.next;
+        }
+
+        if (toReturn == null) {
+            toReturn = Unpooled.EMPTY_BUFFER;
+        }
+
+        return toReturn;
+    }
+
+    public ByteBuf unacknowledged(int bytes) {
+        return unacknowledged(channel.alloc(), bytes);
+    }
+
     public void acknowledge(int bytes) {
         bytes = Math.min(bytes, acknowledgeableBytes);
 
-        // FIXME: check that we do not ack more then we read
         while (bytes > 0 && head != null) {
             final ByteBuf headBuf = head.content();
             final int remainingBytes = readMark != null && readMark.entry.content() == head.content() ? readMark.index - acknowledgementIndex : headBuf.readableBytes() - acknowledgementIndex;
