@@ -387,6 +387,8 @@ public class TransmissionControlBlock {
         final long ackedBytes = bytes1 - bytes2;
 
         if (ackedBytes > 0) {
+            sendBuffer.acknowledge((int) ackedBytes);
+
             if (doSlowStart()) {
                 // Slow Start -> +1 MSS after each ACK
                 cwnd += Math.min(mss, ackedBytes);

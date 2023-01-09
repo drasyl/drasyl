@@ -194,7 +194,7 @@ public class ReceiveBuffer {
         }
     }
 
-    private class ReceiveBufferEntry {
+    private static class ReceiveBufferEntry {
         private final ConnectionHandshakeSegment seg;
         private ReceiveBufferEntry next;
 

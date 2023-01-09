@@ -81,7 +81,8 @@ public class OutgoingSegmentQueue {
             final ChannelPromise promise = ctx.newPromise();
             final ByteBuf data;
             if (len > 0) {
-                data = tcb.sendBuffer().remove(Math.min(tcb.mss(), len), promise);
+                final int bytes = Math.min(tcb.mss(), len);
+                data = tcb.sendBuffer().read(bytes);
             }
             else {
                 data = Unpooled.EMPTY_BUFFER;

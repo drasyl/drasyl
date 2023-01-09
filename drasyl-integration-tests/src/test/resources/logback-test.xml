@@ -27,7 +27,7 @@
     <!-- Configure the Console appender -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%cyan(%-40.40logger{40}) : %msg%n</pattern>
+            <pattern>%cyan(%-40.40logger{40}) %highlight(%-5level) : %msg%n</pattern>
         </encoder>
     </appender>
 

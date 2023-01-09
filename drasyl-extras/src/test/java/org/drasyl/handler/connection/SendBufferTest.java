@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -42,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,28 +50,92 @@ class SendBufferTest {
     class Add {
         @Test
         void shouldAddGivenBytesToTheEndOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = new SendBuffer(queue);
+            final SendBuffer buffer = new SendBuffer(channel);
+
             final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ChannelPromise promise1 = mock(ChannelPromise.class);
+            buffer.add(buf1, promise1);
+
             final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
             final ChannelPromise promise2 = mock(ChannelPromise.class);
-
-            buffer.add(buf1, promise1);
             buffer.add(buf2, promise2);
 
-            final ByteBuf removed = queue.remove(15, channel.newPromise());
-            assertEquals(15, removed.readableBytes());
-            final CompositeByteBuf expectedBuf = Unpooled.compositeBuffer(2).addComponents(true, buf1, buf2);
-            assertEquals(expectedBuf, removed);
-
-            expectedBuf.release();
+            assertEquals(15, buffer.readableBytes());
+            assertEquals(0, buffer.acknowledgeableBytes());
         }
+    }
 
+    @Nested
+    class Read {
         @Test
-        void shouldUpdateChannelWritability() {
-            // TODO
+        void shouldReadGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final SendBuffer buffer = new SendBuffer(channel);
+            final ByteBuf addBuf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final ChannelPromise promise1 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf1, promise1);
+            final ByteBuf addBuf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
+            final ChannelPromise promise2 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf2, promise2);
+
+            // read part of first buf
+            final ByteBuf readBuf1 = buffer.read(5);
+            assertEquals(addBuf1.slice(0, 5), readBuf1);
+            assertEquals(10, buffer.readableBytes());
+
+            // read remaining part of first buf and part of second buf
+            final ByteBuf readBuf2 = buffer.read(6);
+            assertEquals(Unpooled.compositeBuffer(2).addComponents(true, addBuf1.slice(5, 5), addBuf2.slice(0, 1)), readBuf2);
+            assertEquals(4, buffer.readableBytes());
+
+            // read remainder
+            final ByteBuf readBuf3 = buffer.read(10);
+            assertEquals(addBuf2.slice(1, 4), readBuf3);
+            assertEquals(0, buffer.readableBytes());
+
+            // nothing remain
+            assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99));
+            assertEquals(0, buffer.readableBytes());
+        }
+    }
+
+    @Nested
+    class Acknowledge {
+        @Test
+        void shouldAcknowledgeGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final SendBuffer buffer = new SendBuffer(channel);
+            final ByteBuf addBuf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final ChannelPromise promise1 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf1, promise1);
+            final ByteBuf addBuf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
+            final ChannelPromise promise2 = new DefaultChannelPromise(channel);
+            buffer.add(addBuf2, promise2);
+            buffer.read(13);
+
+            // ack 5 bytes (as no buf is completely acked, not promise should be done)
+            buffer.acknowledge(5);
+            assertFalse(promise1.isDone());
+            assertFalse(promise2.isDone());
+            assertEquals(8, buffer.acknowledgeableBytes());
+
+            // ack another 6 bytes (first buf done)
+            buffer.acknowledge(6);
+            assertTrue(promise1.isDone());
+            assertFalse(promise2.isDone());
+            assertEquals(2, buffer.acknowledgeableBytes());
+
+            // ack another 10 bytes (but only 2 are allowed)
+            buffer.acknowledge(10);
+            assertTrue(promise1.isDone());
+            assertTrue(promise2.isDone());
+            assertEquals(0, buffer.acknowledgeableBytes());
+
+            // ack more (0 allowed)
+            buffer.acknowledge(99);
+            assertEquals(0, buffer.acknowledgeableBytes());
         }
     }
 
@@ -82,7 +144,7 @@ class SendBufferTest {
         @Test
         void shouldReturnTrueIfBufferContainsNoBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = new SendBuffer(queue);
+            final SendBuffer buffer = null;//new SendBuffer(channel, queue, bufAndListenerPairs);
 
             assertTrue(buffer.isEmpty());
         }
@@ -90,7 +152,7 @@ class SendBufferTest {
         @Test
         void shouldReturnFalseIfBufferContainsBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = new SendBuffer(queue);
+            final SendBuffer buffer = null;//new SendBuffer(channel, queue, bufAndListenerPairs);
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ChannelPromise promise = mock(ChannelPromise.class);
             buffer.add(buf, promise);
@@ -102,44 +164,12 @@ class SendBufferTest {
     }
 
     @Nested
-    class Remove {
-        @Test
-        void shouldRemoveGivenAmountOfBytesFromBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-            when(channel.eventLoop().inEventLoop()).thenReturn(true);
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = new SendBuffer(queue);
-            final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final ChannelPromise promise1 = mock(ChannelPromise.class);
-            final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
-            final ChannelPromise promise2 = mock(ChannelPromise.class);
-            buffer.add(buf1, promise1);
-            buffer.add(buf2, promise2);
-
-            final ChannelPromise aggregatePromise = new DefaultChannelPromise(channel);
-            final ByteBuf removed = buffer.remove(13, aggregatePromise);
-            assertEquals(13, removed.readableBytes());
-            assertEquals(2, buffer.readableBytes());
-
-            final CompositeByteBuf expectedBuf = Unpooled.compositeBuffer(2).addComponents(true, buf1, buf2.slice(0, 3));
-            assertEquals(expectedBuf, removed);
-
-            aggregatePromise.setSuccess();
-            verify(promise1).trySuccess(null);
-            verify(promise2, never()).trySuccess(null);
-
-            expectedBuf.release();
-            buf2.release();
-        }
-    }
-
-    @Nested
     class ReleaseAndFailAll {
         @Test
         void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
                                                        @Mock final Throwable cause) {
             final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = new SendBuffer(queue);
+            final SendBuffer buffer = null;//new SendBuffer(channel, queue, bufAndListenerPairs);
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ChannelPromise promise = mock(ChannelPromise.class);
             buffer.add(buf, promise);
