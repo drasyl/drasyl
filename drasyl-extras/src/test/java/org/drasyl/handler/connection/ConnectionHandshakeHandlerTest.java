@@ -745,12 +745,40 @@ class ConnectionHandshakeHandlerTest {
                 ByteBuf passedToApplication = channel.readInbound();
                 assertEquals(2000, tcb.rcvWnd());
                 assertEquals(1500, passedToApplication.readableBytes());
-                passedToApplication.release();
 
                 channel.close();
             }
 
-            // FIXME: duplicate?
+            @Test
+            void receiverShouldNotBufferReceivedDuplicateSegments() {
+                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
+                final int bytes = 300;
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 2000, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                // SEG 100 is expected, but we send next SEG 700
+                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(700, 600, data1));
+
+                assertEquals(100, tcb.rcvNxt());
+                assertEquals(1700, tcb.rcvWnd());
+                // ignore ACK, not checked in this test
+                assertNotNull(channel.readOutbound());
+
+                // SEG 100 is expected, but we send next SEG 700 again!
+                final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(700, 600, data2));
+
+                assertEquals(100, tcb.rcvNxt());
+                assertEquals(1700, tcb.rcvWnd());
+                // ignore ACK, not checked in this test
+                assertNotNull(channel.readOutbound());
+
+                channel.close();
+            }
         }
     }
 

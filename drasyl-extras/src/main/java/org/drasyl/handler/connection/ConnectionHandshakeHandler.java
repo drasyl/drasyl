@@ -946,7 +946,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
         if (duplicateAck) {
             // ACK is duplicate. ignore
-            LOG.error("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
+            LOG.warn("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
             tcb.gotDuplicateAck(ctx);
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {

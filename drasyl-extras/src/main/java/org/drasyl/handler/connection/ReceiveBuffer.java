@@ -84,46 +84,63 @@ public class ReceiveBuffer {
     public void receive(final ChannelHandlerContext ctx,
                         final ConnectionHandshakeSegment seg,
                         final TransmissionControlBlock tcb) {
-        if (seg.content().isReadable()) {
+        final ByteBuf content = seg.content();
+        if (content.isReadable()) {
             final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
-
-            final ByteBuf next = seg.content().slice(seg.content().readerIndex(), bytesToReceive);
-            tcb.rcvWnd -= bytesToReceive;
-            bytes += bytesToReceive;
-
-            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), seg.content().readableBytes());
+            final ByteBuf next = content.slice(content.readerIndex(), bytesToReceive);
 
             // left edge?
             if (seg.seq() == tcb.rcvNxt) {
+                tcb.rcvWnd -= bytesToReceive;
+                bytes += bytesToReceive;
+                LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
+
+                // advance RCV.NXT
                 tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
 
                 compose(ctx, next);
 
                 // guck in unseren park
                 while (head != null && head.seg.seq() == tcb.rcvNxt) {
-                    tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), head.seg.content().readableBytes());
-                    compose(ctx, head.seg.content());
+                    tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
+                    compose(ctx, next);
 
                     head = head.next;
                 }
             }
             else {
                 // irgendwo anders parken yumad
+                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ {} but got SEQ {}. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt);
                 final ReceiveBufferEntry receive = new ReceiveBufferEntry(seg);
                 ReceiveBufferEntry currentHead = head;
                 if (currentHead == null) {
                     // erstes element
                     head = receive;
+
+                    tcb.rcvWnd -= bytesToReceive;
+                    bytes += bytesToReceive;
+                    LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                 }
                 else {
                     // n tes element. packe an die richtige stelle
+                    // FIXME: add support für sich überlappende SEGs
+                    // FIXME: add support for duplicate SEGs
                     ReceiveBufferEntry current = currentHead;
                     while (current != null) {
+                        // duplicate?
+                        if (seg.seq() == current.seg.seq()) {
+                            LOG.trace("{} Got duplicate SEG `{}`. Ignore.", ctx.channel(),seg);
+                            break;
+                        }
                         // add before?
                         if (lessThan(seg.seq(), current.seg.seq(), SEQ_NO_SPACE)) {
                             final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
                             x.next = head;
                             head = x;
+
+                            tcb.rcvWnd -= bytesToReceive;
+                            bytes += bytesToReceive;
+                            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                             break;
                         }
                         // add after?
@@ -131,6 +148,10 @@ public class ReceiveBuffer {
                             final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
                             x.next = current.next;
                             current.next = x;
+
+                            tcb.rcvWnd -= bytesToReceive;
+                            bytes += bytesToReceive;
+                            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                             break;
                         }
 
@@ -156,7 +177,7 @@ public class ReceiveBuffer {
         }
         else {
             // create composite
-            final CompositeByteBuf composite = ctx.alloc().compositeBuffer(2);
+            final CompositeByteBuf composite = ctx.alloc().compositeBuffer();
             composite.addComponent(true, cumulation);
             composite.addComponent(true, next);
             cumulation = composite;

@@ -399,7 +399,7 @@ public class TransmissionControlBlock {
             if (duplicateAcks != 0) {
                 duplicateAcks = 0;
                 cwnd = ssthresh;
-                LOG.error("{} ACKed new data. Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel());
+                LOG.error("{} ACKed new data (`{}`). Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel(), seg);
             }
         }
     }
