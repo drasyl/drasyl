@@ -30,6 +30,7 @@ import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -42,6 +43,7 @@ import static io.netty.util.concurrent.ImmediateEventExecutor.INSTANCE;
  * <a
  * href="https://github.com/netty/netty/issues/639#issuecomment-9263566">https://github.com/netty/netty/issues/639#issuecomment-9263566</a>
  */
+@UnstableApi
 public final class DrasylNodeSharedEventLoopGroupHolder {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeSharedEventLoopGroupHolder.class);
     // pool should have at least all available processors minus two threads

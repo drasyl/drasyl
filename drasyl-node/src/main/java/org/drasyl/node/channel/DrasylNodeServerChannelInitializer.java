@@ -72,6 +72,7 @@ import org.drasyl.node.handler.PeersManagerHandler;
 import org.drasyl.node.handler.plugin.PluginsHandler;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -89,6 +90,7 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 /**
  * Initialize the {@link DrasylServerChannel} used by {@link DrasylNode}.
  */
+@UnstableApi
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup());

@@ -47,6 +47,10 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
+/**
+ * Make sure that any {@link picocli.CommandLine.Command} inherating this class is using
+ * {@link ChannelOptionsDefaultProvider} as {@code defaultValueProvider}.
+ */
 @SuppressWarnings("java:S118")
 public abstract class ChannelOptions extends GlobalOptions implements Callable<Integer> {
     public static final short MIN_DERIVED_PORT = 22528;
@@ -87,7 +91,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             names = { "--super-peers" },
             description = "The super peers the server joins to.",
             paramLabel = "<public-key>=<host:port>",
-            defaultValue = "c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fra1.drasyl.org:22527,5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c=sp-nbg2.drasyl.org:22527,0ccdb446f1024574969ad88230cffd3c9dced798dd1b52e9e9e1ad964835927f=sp-rjl1.drasyl.org:22527",
+            defaultValue = "", // Provided by ChannelOptionsDefaultProvider
             split = ","
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;

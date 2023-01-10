@@ -29,6 +29,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 
 /**
  * This class models the public header of a drasyl protocol message. The header is structured as
@@ -45,6 +46,7 @@ import org.drasyl.util.internal.Nullable;
  */
 @SuppressWarnings({ "java:S118", "java:S2047", "java:S2301" })
 @AutoValue
+@UnstableApi
 public abstract class PublicHeader {
     public static final int LENGTH = 97;
 
@@ -79,7 +81,7 @@ public abstract class PublicHeader {
         // 000. ....
         hopCount = HopCount.of(flags >> 5);
         // ...0 ....
-        isArmed = flags >> 4 > 0;
+        isArmed = (flags & (byte) (1 << 4)) != 0;
 
         networkId = byteBuf.readInt();
 

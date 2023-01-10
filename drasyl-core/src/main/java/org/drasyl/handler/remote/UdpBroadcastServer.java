@@ -36,6 +36,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -55,6 +56,7 @@ import static java.util.Objects.requireNonNull;
  * @see LocalNetworkDiscovery
  */
 @Sharable
+@UnstableApi
 public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     private static final String BROADCAST_ADDRESS_PROPERTY = "org.drasyl.remote.broadcast.address";
     private static final String BROADCAST_BIND_HOST_PROPERTY = "org.drasyl.remote.broadcast.bind-host";

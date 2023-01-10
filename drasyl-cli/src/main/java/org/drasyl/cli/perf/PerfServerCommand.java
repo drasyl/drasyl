@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.perf.channel.PerfServerChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer;
 import org.drasyl.identity.Identity;
@@ -42,7 +43,8 @@ import java.util.Map;
 
 @Command(
         name = "server",
-        header = "Runs in server mode, waiting for connections from client nodes"
+        header = "Runs in server mode, waiting for connections from client nodes",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class PerfServerCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(PerfServerCommand.class);

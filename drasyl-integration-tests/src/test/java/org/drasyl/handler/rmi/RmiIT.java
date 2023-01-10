@@ -36,28 +36,25 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
 import org.drasyl.handler.rmi.annotation.RmiCaller;
 import org.drasyl.handler.rmi.annotation.RmiTimeout;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.net.SocketAddress;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RmiIT {
+    @Timeout(5)
     @Test
     void shouldPerformInvocation() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(2);
-
         // server
         final RmiServerHandler server = new RmiServerHandler();
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
@@ -97,24 +94,8 @@ class RmiIT {
             final MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
             stub.doNothing();
-            final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> {
-                if (f.isSuccess()) {
-                    latch.countDown();
-                }
-                else {
-                    throw new RuntimeException(f.cause());
-                }
-            });
-            final Future<String> whoAmIFuture = stub.whoAmI().addListener((FutureListener<String>) f -> {
-                if (f.isSuccess()) {
-                    latch.countDown();
-                }
-                else {
-                    throw new RuntimeException(f.cause());
-                }
-            });
-
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            final Future<Integer> additionFuture = stub.doAddition(4, 2).syncUninterruptibly();
+            final Future<String> whoAmIFuture = stub.whoAmI().syncUninterruptibly();
 
             assertTrue(additionFuture.isSuccess());
             assertEquals(4 + 2, additionFuture.getNow());
@@ -130,10 +111,9 @@ class RmiIT {
         }
     }
 
+    @Timeout(5)
     @Test
     void shouldFailWhenBindingDoesNotExist() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-
         // server
         final RmiServerHandler server = new RmiServerHandler();
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
@@ -171,11 +151,7 @@ class RmiIT {
         try {
             final MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
-            final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) f -> latch.countDown());
-
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
-
-            assertThat(additionFuture.cause(), instanceOf(RmiException.class));
+            assertThrows(RmiException.class, () -> stub.doAddition(4, 2).syncUninterruptibly());
         }
         finally {
             server.unbind("MyService");

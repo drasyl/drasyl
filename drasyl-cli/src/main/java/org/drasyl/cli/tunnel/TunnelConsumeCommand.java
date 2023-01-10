@@ -27,6 +27,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChildChannelInitializer;
 import org.drasyl.cli.wormhole.WormholeCodeConverter;
@@ -50,7 +51,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 
 @Command(
         name = "consume",
-        header = "Consumes an exposed service"
+        header = "Consumes an exposed service",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class TunnelConsumeCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunnelConsumeCommand.class);

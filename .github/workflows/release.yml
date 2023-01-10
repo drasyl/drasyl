@@ -27,7 +27,7 @@ jobs:
       - name: Build with Maven
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
-        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -DskipTests --projects drasyl-cli --also-make package
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles fast --projects drasyl-cli --also-make package
       - name: Build hash
         run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
       - name: Upload Package
@@ -97,8 +97,8 @@ jobs:
       # build native image
       - name: Build Native Image
         env:
-          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true -Dmaven.javadoc.skip=true"
-        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-shared-library --also-make package
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles native,fast --projects drasyl-shared-library --also-make package
 
       # package native image
       - name: Build Package on *nix x86
@@ -222,7 +222,7 @@ jobs:
           $VERSION > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
-      - uses: actions/setup-python@v4.3.1
+      - uses: actions/setup-python@v4.4.0
         with:
           python-version: '3.10'
           check-latest: true
@@ -336,8 +336,8 @@ jobs:
       # build native image
       - name: Build Native Image
         env:
-          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true -Dmaven.javadoc.skip=true"
-        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true -Pnative -DskipTests --projects drasyl-cli --also-make package
+          MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles native,fast --projects drasyl-cli --also-make package
 
       # package native image
       - name: Build Package on *nix x86

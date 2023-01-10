@@ -417,8 +417,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
+        LOG.warn("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
-        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
     }
 
     protected static class SuperPeer {

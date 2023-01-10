@@ -42,6 +42,7 @@ import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.converter.SubnetConverter;
 import org.drasyl.cli.tun.channel.TunChannelInitializer;
@@ -80,7 +81,8 @@ import static picocli.CommandLine.Command;
 
 @Command(
         name = "tun",
-        header = "Create a local network interface routing traffic to given peers."
+        header = "Create a local network interface routing traffic to given peers.",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class TunCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunCommand.class);

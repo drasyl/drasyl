@@ -36,6 +36,7 @@ import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -62,6 +63,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Sharable
 @SuppressWarnings({ "java:S112", "java:S2974" })
+@UnstableApi
 public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private static final String MULTICAST_ADDRESS_PROPERTY = "org.drasyl.remote.multicast.address";
     private static final String MULTICAST_BIND_HOST_PROPERTY = "org.drasyl.remote.multicast.bind-host";
