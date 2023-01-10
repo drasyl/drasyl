@@ -1,10 +1,13 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.CoalescingBufferQueue;
+import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +21,20 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ReceiveBufferTest {
+    @Nested
+    class Receive {
+        @Test
+        void name(@Mock final Channel channel,
+                  @Mock final ChannelHandlerContext ctx,
+                  @Mock final TransmissionControlBlock tcb) {
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+
+            ByteBuf data1 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 100, data1);
+            buffer.receive(ctx, tcb, seg1);
+        }
+    }
+
 //    @Nested
 //    class Add {
 //        @Test
@@ -85,7 +102,7 @@ class ReceiveBufferTest {
         void shouldReturnTheNumberOfBytesInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
             final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
             final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
             queue.add(buf1);

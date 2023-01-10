@@ -845,7 +845,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
+                    tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
 
                     if (readPending) {
                         readPending = false;
@@ -879,7 +879,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
 
             // advance receive state
-            tcb.receiveBuffer().receive(ctx, seg.retain(), tcb);
+            tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
 
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());

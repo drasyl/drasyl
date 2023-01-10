@@ -76,8 +76,8 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
     // Receive Sequence Variables
-    long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    long rcvWnd; // receive window
+    private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
+    private long rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
     // Send Sequence Variables
     private long sndUna; // oldest unacknowledged sequence number
@@ -495,5 +495,17 @@ public class TransmissionControlBlock {
             //       cwnd MUST be incremented by SMSS.
             cwnd += mss;
         }
+    }
+
+    public void advanceRcvNxt(final int advancement) {
+        rcvNxt = advanceSeq(rcvNxt, advancement);
+    }
+
+    public void decrementRcvWnd(final int decrement) {
+        rcvWnd -= decrement;
+    }
+
+    public void incrementRcvWnd(final int increment) {
+        rcvWnd += increment;
     }
 }

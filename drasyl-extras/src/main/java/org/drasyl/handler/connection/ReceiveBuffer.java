@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.CoalescingBufferQueue;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -33,7 +32,6 @@ import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 
 // FIXME: add support for out-of-order?
@@ -46,13 +44,8 @@ public class ReceiveBuffer {
     private int bytes;
     private ByteBuf cumulation = null;
 
-    ReceiveBuffer(final Channel channel,
-                  final CoalescingBufferQueue queue) {
-        this.channel = requireNonNull(channel);
-    }
-
     ReceiveBuffer(final Channel channel) {
-        this(channel, new CoalescingBufferQueue(channel, 4, false));
+        this.channel = requireNonNull(channel);
     }
 
     /**
@@ -82,27 +75,27 @@ public class ReceiveBuffer {
     }
 
     public void receive(final ChannelHandlerContext ctx,
-                        final ConnectionHandshakeSegment seg,
-                        final TransmissionControlBlock tcb) {
+                        final TransmissionControlBlock tcb,
+                        final ConnectionHandshakeSegment seg) {
         final ByteBuf content = seg.content();
         if (content.isReadable()) {
-            final int bytesToReceive = (int) Math.min(tcb.rcvWnd, seg.len());
+            final int bytesToReceive = (int) Math.min(tcb.rcvWnd(), seg.len());
             final ByteBuf next = content.slice(content.readerIndex(), bytesToReceive);
 
             // left edge?
-            if (seg.seq() == tcb.rcvNxt) {
-                tcb.rcvWnd -= bytesToReceive;
+            if (seg.seq() == tcb.rcvNxt()) {
+                tcb.decrementRcvWnd(bytesToReceive);
                 bytes += bytesToReceive;
                 LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
 
                 // advance RCV.NXT
-                tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
+                tcb.advanceRcvNxt(bytesToReceive);
 
                 compose(ctx, next);
 
                 // guck in unseren park
-                while (head != null && head.seg.seq() == tcb.rcvNxt) {
-                    tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), bytesToReceive);
+                while (head != null && head.seg.seq() == tcb.rcvNxt()) {
+                    tcb.advanceRcvNxt(bytesToReceive);
                     compose(ctx, next);
 
                     head = head.next;
@@ -110,14 +103,14 @@ public class ReceiveBuffer {
             }
             else {
                 // irgendwo anders parken yumad
-                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ `{}` but got SEQ `{}`. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt);
+                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ `{}` but got SEQ `{}`. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt());
                 final ReceiveBufferEntry receive = new ReceiveBufferEntry(seg);
                 ReceiveBufferEntry currentHead = head;
                 if (currentHead == null) {
                     // erstes element
                     head = receive;
 
-                    tcb.rcvWnd -= bytesToReceive;
+                    tcb.decrementRcvWnd(bytesToReceive);
                     bytes += bytesToReceive;
                     LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                 }
@@ -138,7 +131,7 @@ public class ReceiveBuffer {
                             x.next = head;
                             head = x;
 
-                            tcb.rcvWnd -= bytesToReceive;
+                            tcb.decrementRcvWnd(bytesToReceive);
                             bytes += bytesToReceive;
                             LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                             break;
@@ -149,7 +142,7 @@ public class ReceiveBuffer {
                             x.next = current.next;
                             current.next = x;
 
-                            tcb.rcvWnd -= bytesToReceive;
+                            tcb.decrementRcvWnd(bytesToReceive);
                             bytes += bytesToReceive;
                             LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
                             break;
@@ -161,7 +154,7 @@ public class ReceiveBuffer {
             }
         }
         else if (seg.len() > 0) {
-            tcb.rcvNxt = advanceSeq(tcb.rcvNxt(), seg.len());
+            tcb.advanceRcvNxt(seg.len());
         }
     }
 
@@ -186,7 +179,7 @@ public class ReceiveBuffer {
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (cumulation != null) {
-            tcb.rcvWnd += cumulation.readableBytes();
+            tcb.incrementRcvWnd(cumulation.readableBytes());
             bytes -= cumulation.readableBytes();
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
             ctx.fireChannelRead(cumulation);
