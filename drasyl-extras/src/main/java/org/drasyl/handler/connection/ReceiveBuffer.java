@@ -39,10 +39,9 @@ public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
-    // head and tail pointers for the linked-list structure. If empty head and tail are null.
+    private ByteBuf cumulation = null;
     private ReceiveBufferEntry head;
     private int bytes;
-    private ByteBuf cumulation = null;
 
     ReceiveBuffer(final Channel channel) {
         this.channel = requireNonNull(channel);
@@ -82,6 +81,9 @@ public class ReceiveBuffer {
             final int bytesToReceive = (int) Math.min(tcb.rcvWnd(), seg.len());
             final ByteBuf next = content.slice(content.readerIndex(), bytesToReceive);
 
+            // left edge
+            
+
             // left edge?
             if (seg.seq() == tcb.rcvNxt()) {
                 tcb.decrementRcvWnd(bytesToReceive);
@@ -93,6 +95,7 @@ public class ReceiveBuffer {
 
                 compose(ctx, next);
 
+                // FIXME: was wenn im park der vordere teil bereits existiert?
                 // guck in unseren park
                 while (head != null && head.seg.seq() == tcb.rcvNxt()) {
                     tcb.advanceRcvNxt(bytesToReceive);
@@ -185,6 +188,10 @@ public class ReceiveBuffer {
             ctx.fireChannelRead(cumulation);
             cumulation = null;
         }
+    }
+
+    public int readableBytes() {
+        return cumulation != null ? cumulation.readableBytes() : 0;
     }
 
     private static class ReceiveBufferEntry {

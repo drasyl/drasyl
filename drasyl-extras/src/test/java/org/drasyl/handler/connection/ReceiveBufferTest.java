@@ -1,13 +1,11 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.CoalescingBufferQueue;
-import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,14 +22,138 @@ class ReceiveBufferTest {
     @Nested
     class Receive {
         @Test
-        void name(@Mock final Channel channel,
-                  @Mock final ChannelHandlerContext ctx,
-                  @Mock final TransmissionControlBlock tcb) {
+        void receiveInOrder(@Mock final Channel channel,
+                            @Mock final ChannelHandlerContext ctx,
+                            @Mock final SendBuffer sendBuffer) {
+            when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 100, 0, 100, 0, 64_000, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), 1000);
             final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
             ByteBuf data1 = Unpooled.buffer(100).writeBytes(randomBytes(100));
-            ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 100, data1);
+            ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(0, 100, data1);
             buffer.receive(ctx, tcb, seg1);
+            assertEquals(63_900, tcb.rcvWnd());
+            assertEquals(100, tcb.rcvNxt());
+            assertEquals(100, buffer.bytes());
+            assertEquals(100, buffer.readableBytes());
+
+            ByteBuf data2 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 100, data2);
+            buffer.receive(ctx, tcb, seg2);
+            assertEquals(63_800, tcb.rcvWnd());
+            assertEquals(200, tcb.rcvNxt());
+            assertEquals(200, buffer.bytes());
+            assertEquals(200, buffer.readableBytes());
+        }
+
+        @Test
+        void receiveOutOfOrder(@Mock final Channel channel,
+                               @Mock final ChannelHandlerContext ctx,
+                               @Mock final SendBuffer sendBuffer) {
+            when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 100, 0, 100, 0, 64_000, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+
+            ByteBuf data2 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 100, data2);
+            buffer.receive(ctx, tcb, seg2);
+            assertEquals(63_900, tcb.rcvWnd());
+            assertEquals(0, tcb.rcvNxt());
+            assertEquals(100, buffer.bytes());
+            assertEquals(0, buffer.readableBytes());
+
+            ByteBuf data1 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(0, 100, data1);
+            buffer.receive(ctx, tcb, seg1);
+            assertEquals(63_800, tcb.rcvWnd());
+            assertEquals(200, tcb.rcvNxt());
+            assertEquals(200, buffer.bytes());
+            assertEquals(200, buffer.readableBytes());
+
+            ByteBuf data4 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg4 = ConnectionHandshakeSegment.ack(300, 100, data4);
+            buffer.receive(ctx, tcb, seg4);
+            assertEquals(63_700, tcb.rcvWnd());
+            assertEquals(200, tcb.rcvNxt());
+            assertEquals(300, buffer.bytes());
+            assertEquals(200, buffer.readableBytes());
+
+            ByteBuf data3 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg3 = ConnectionHandshakeSegment.ack(200, 100, data3);
+            buffer.receive(ctx, tcb, seg3);
+            assertEquals(63_600, tcb.rcvWnd());
+            assertEquals(400, tcb.rcvNxt());
+            assertEquals(400, buffer.bytes());
+            assertEquals(400, buffer.readableBytes());
+        }
+
+        // FIXME: duplicate/overlapping (same & partial (vorne oder hinten))
+        @Test
+        void receiveDuplicates(@Mock final Channel channel,
+                               @Mock final ChannelHandlerContext ctx,
+                               @Mock final SendBuffer sendBuffer) {
+            when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
+
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 100, 0, 100, 0, 64_000, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+
+            // neues SEG (0-99)
+            ByteBuf data1 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(0, 100, data1);
+            buffer.receive(ctx, tcb, seg1);
+            assertEquals(63_900, tcb.rcvWnd());
+            assertEquals(100, tcb.rcvNxt());
+            assertEquals(100, buffer.bytes());
+            assertEquals(100, buffer.readableBytes());
+
+            // identisches SEG (0-99)
+            ByteBuf data1copy = Unpooled.buffer(100).writeBytes(randomBytes(100));
+            ConnectionHandshakeSegment seg1copy = ConnectionHandshakeSegment.ack(0, 100, data1copy);
+            buffer.receive(ctx, tcb, seg1copy);
+            assertEquals(63_900, tcb.rcvWnd());
+            assertEquals(100, tcb.rcvNxt());
+            assertEquals(100, buffer.bytes());
+            assertEquals(100, buffer.readableBytes());
+
+//            // erste 50 bytes doppelt (0-149)
+//            ByteBuf data2 = Unpooled.buffer(150).writeBytes(randomBytes(150));
+//            ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(0, 100, data2);
+//            buffer.receive(ctx, tcb, seg2);
+//            assertEquals(63_850, tcb.rcvWnd());
+//            assertEquals(150, tcb.rcvNxt());
+//            assertEquals(150, buffer.bytes());
+//            assertEquals(150, buffer.readableBytes());
+//
+//            // vorbereitung (250-299)
+//            ByteBuf data3 = Unpooled.buffer(50).writeBytes(randomBytes(50));
+//            ConnectionHandshakeSegment seg3 = ConnectionHandshakeSegment.ack(250, 100, data3);
+//            buffer.receive(ctx, tcb, seg3);
+//            assertEquals(63_800, tcb.rcvWnd());
+//            assertEquals(150, tcb.rcvNxt());
+//            assertEquals(200, buffer.bytes());
+//            assertEquals(150, buffer.readableBytes());
+//
+//            // letze 50 bytes doppelt (200-299)
+//            ByteBuf data4 = Unpooled.buffer(100).writeBytes(randomBytes(100));
+//            ConnectionHandshakeSegment seg4 = ConnectionHandshakeSegment.ack(200, 100, data4);
+//            buffer.receive(ctx, tcb, seg4);
+//            assertEquals(63_750, tcb.rcvWnd());
+//            assertEquals(150, tcb.rcvNxt());
+//            assertEquals(250, buffer.bytes());
+//            assertEquals(100, buffer.readableBytes());
+//
+//            // vorne und hinten doppelt (100-249)
+//            ByteBuf data5 = Unpooled.buffer(150).writeBytes(randomBytes(150));
+//            ConnectionHandshakeSegment seg5 = ConnectionHandshakeSegment.ack(100, 100, data5);
+//            buffer.receive(ctx, tcb, seg5);
+//            assertEquals(63_700, tcb.rcvWnd());
+//            assertEquals(300, tcb.rcvNxt());
+//            assertEquals(300, buffer.bytes());
+//            assertEquals(300, buffer.readableBytes());
+
+            // FIXME: in der mitte doppelt
         }
     }
 
