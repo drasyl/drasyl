@@ -32,6 +32,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -47,14 +48,16 @@ public class ReceiveBuffer {
     private ReceiveBufferEntry head;
     private int bytes;
 
-    ReceiveBuffer(final Channel channel, final ByteBuf headBuf, final ReceiveBufferEntry head) {
+    ReceiveBuffer(final Channel channel, final ByteBuf headBuf, final ReceiveBufferEntry head,
+                  final int bytes) {
         this.channel = requireNonNull(channel);
         this.headBuf = headBuf;
         this.head = head;
+        this.bytes = requireNonNegative(bytes);
     }
 
     ReceiveBuffer(final Channel channel) {
-        this(channel, null, null);
+        this(channel, null, null, 0);
     }
 
     /**
@@ -66,7 +69,7 @@ public class ReceiveBuffer {
         }
 
         while (head != null) {
-            head.seg.release();
+            head.buf().release();
             head = head.next;
         }
     }
@@ -88,143 +91,102 @@ public class ReceiveBuffer {
                         final ConnectionHandshakeSegment seg) {
         final ByteBuf content = seg.content();
         if (content.isReadable()) {
-            // does SEG contain data for the left edge of our window?
-            if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
-                // ok ab wo lesen wir?
-                final int index = (int) sub(tcb.rcvNxt(), seg.seq(), SEQ_NO_SPACE);
-                // bis wohin lesen wir?
-                final int l = head != null ? (int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE) : seg.content().readableBytes();
-                final int length = Math.min((int) tcb.rcvWnd(), l) - index;
-                final ByteBuf next = content.slice(index, length);
+            if (head == null) {
+                // vorne am
+                final long seq;
+                final int index;
+                final int length;
+                if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+                    seq = tcb.rcvNxt();
+                    // ok ab wo lesen wir?
+                    index = (int) sub(tcb.rcvNxt(), seg.seq(), SEQ_NO_SPACE);
+                    // wie viel lesen wir?
+                    length = Math.min((int) tcb.rcvWnd(), seg.len()) - index;
+                }
+                else if (greaterThan(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
+                    seq = seg.seq();
+                    // ok ab wo lesen wir?
+                    index = 0;
+                    // wie viel lesen wir?
+                    length = Math.min((int) (tcb.rcvWnd() - sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE)), seg.len());
+                }
+                else {
+                    // drop!
+                    return;
+                }
+
+                final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
+                entry.next = head;
+                head = entry;
 
                 tcb.decrementRcvWnd(length);
-                tcb.advanceRcvNxt(length);
                 bytes += length;
-                LOG.trace("{} Got SEG `{}`. Add {} bytes to RCV.BUF. Advance RCV.NXT to {}. Reduce RCV.WND to {}.", ctx.channel(), seg, length, tcb.rcvWnd(), tcb.rcvWnd());
-                addToHeadBuf(ctx, next);
-
-                while (head != null && head.seq() == tcb.rcvNxt()) {
-                    bytes += head.len();
-                    tcb.advanceRcvNxt(head.len());
-                    addToHeadBuf(ctx, head.buf());
-                    head = head.next;
-                }
             }
-            // does SEG contain data for our window?
-            else if (greaterThan(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
-                // add to fragments backlog
-                if (head == null) {
-                    final int index = 0;
-                    final int length = Math.min((int) tcb.rcvWnd(), seg.content().readableBytes()) - index;
-                    final ByteBuf next = content.slice(index, length);
+            else {
+                // something to add before the head?
+                final long seq;
+                final int index;
+                final int length;
+                if (lessThan(seg.seq(), head.seq(), SEQ_NO_SPACE)) {
+                    if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+                        seq = tcb.rcvNxt();
+                        // ok ab wo lesen wir?
+                        index = (int) sub(tcb.rcvNxt(), seg.seq(), SEQ_NO_SPACE);
+                        // wie viel lesen wir?
+                        length = Math.min((int) tcb.rcvWnd(), Math.min((int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE), seg.len())) - index;
+                    }
+                    else if (greaterThan(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
+                        seq = seg.seq();
+                        // ok ab wo lesen wir?
+                        index = 0;
+                        // wie viel lesen wir?
+                        length = Math.min((int) (tcb.rcvWnd() - sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE)), Math.min((int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE), seg.len()));
+                    }
+                    else {
+                        // drop!
+                        return;
+                    }
+
+                    final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
+                    entry.next = head;
+                    head = entry;
 
                     tcb.decrementRcvWnd(length);
                     bytes += length;
-                    LOG.trace("{} Got SEG `{}`. Add {} bytes to RCV.BUF. Advance RCV.NXT to {}. Reduce RCV.WND to {}.", ctx.channel(), seg, length, tcb.rcvWnd(), tcb.rcvWnd());
-                    head = new ReceiveBufferEntry(seg, next);
-                }
-                else {
-                    ReceiveBufferEntry current = head;
-                    while (current != null) {
-                        // add before?
-                        if (lessThan(seg.seq(), current.seq(), SEQ_NO_SPACE)) { // FIXME: überschneidungen
-                            final int index = 0;
-                            final int l = (int) sub(current.seq(), seg.seq(), SEQ_NO_SPACE);
-                            final int length = Math.min((int) tcb.rcvWnd(), l) - index;
-                            final ByteBuf next = content.slice(index, length);
-
-                            final ReceiveBufferEntry x = new ReceiveBufferEntry(seg, next);
-                            x.next = head;
-                            head = x;
-
-                            tcb.decrementRcvWnd(length);
-                            bytes += length;
-                            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), length);
-                            break;
-                        }
-
-                        current = head.next;
-                    }
                 }
             }
-            else {
-                // not expected
+
+            ReceiveBufferEntry current = head;
+            while (current != null) {
+                // gibt es in SEQ etwas, was HINTER current gepackt werden kann?
+                // something to add after?
+                if (lessThanOrEqualTo(seg.seq(), current.lastSeq(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), current.lastSeq(), SEQ_NO_SPACE) && (current.next == null || lessThan(add(current.lastSeq(), 1, SEQ_NO_SPACE), current.next.seq(), SEQ_NO_SPACE))) {
+                    final long seq = add(current.seq(), current.len(), SEQ_NO_SPACE);
+                    // ok ab wo lesen wir? // 120
+                    final int index = (int) sub(add(current.seq(), current.len(), SEQ_NO_SPACE), seg.seq(), SEQ_NO_SPACE);
+                    // wie viel lesen wir? // 80
+                    final int length = seg.len() - index;
+
+                    final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
+                    entry.next = current.next;
+                    current.next = entry;
+
+                    tcb.decrementRcvWnd(length);
+                    bytes += length;
+
+                    break;
+                }
+
+                current = current.next;
             }
-//
-//            final int bytesToReceive = (int) Math.min(tcb.rcvWnd(), seg.len());
-//            final ByteBuf next = content.slice(content.readerIndex(), bytesToReceive);
-//
-//            // left edge?
-//            if (seg.seq() == tcb.rcvNxt()) {
-//                tcb.decrementRcvWnd(bytesToReceive);
-//                tcb.advanceRcvNxt(bytesToReceive);
-//                bytes += bytesToReceive;
-//                LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
-//
-//                // advance RCV.NXT
-//
-//                compose(ctx, next);
-//
-//                // FIXME: was wenn im park der vordere teil bereits existiert?
-//                // guck in unseren park
-//                while (head != null && head.seg.seq() == tcb.rcvNxt()) {
-//                    tcb.advanceRcvNxt(bytesToReceive);
-//                    compose(ctx, next);
-//
-//                    head = head.next;
-//                }
-//            }
-//            else {
-//                // irgendwo anders parken yumad
-//                LOG.warn("{} Got out-of-order SEG `{}`. Expected SEQ `{}` but got SEQ `{}`. Add to buffer.", ctx.channel(), seg, seg.seq(), tcb.rcvNxt());
-//                final ReceiveBufferEntry receive = new ReceiveBufferEntry(seg);
-//                ReceiveBufferEntry currentHead = head;
-//                if (currentHead == null) {
-//                    // erstes element
-//                    head = receive;
-//
-//                    tcb.decrementRcvWnd(bytesToReceive);
-//                    bytes += bytesToReceive;
-//                    LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
-//                }
-//                else {
-//                    // n tes element. packe an die richtige stelle
-//                    // FIXME: add support für sich überlappende SEGs
-//                    // FIXME: add support for duplicate SEGs
-//                    ReceiveBufferEntry current = currentHead;
-//                    while (current != null) {
-//                        // duplicate?
-//                        if (seg.seq() == current.seg.seq()) {
-//                            LOG.trace("{} Got duplicate SEG `{}`. Ignore.", ctx.channel(),seg);
-//                            break;
-//                        }
-//                        // add before?
-//                        if (lessThan(seg.seq(), current.seg.seq(), SEQ_NO_SPACE)) {
-//                            final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
-//                            x.next = head;
-//                            head = x;
-//
-//                            tcb.decrementRcvWnd(bytesToReceive);
-//                            bytes += bytesToReceive;
-//                            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
-//                            break;
-//                        }
-//                        // add after?
-//                        else if (current.next == null || lessThan(seg.seq(), current.next.seg.seq(), SEQ_NO_SPACE)) {
-//                            final ReceiveBufferEntry x = new ReceiveBufferEntry(seg);
-//                            x.next = current.next;
-//                            current.next = x;
-//
-//                            tcb.decrementRcvWnd(bytesToReceive);
-//                            bytes += bytesToReceive;
-//                            LOG.trace("{} Added SEG `{}` to RCV.BUF ({} bytes). Reduce RCV.WND to {} bytes (-{}).", ctx.channel(), seg, bytes(), tcb.rcvWnd(), bytesToReceive);
-//                            break;
-//                        }
-//
-//                        current = current.next;
-//                    }
-//                }
-//            }
+
+            // aggregieren?
+            while (head != null && head.seq() == tcb.rcvNxt()) {
+                // consume head
+                addToHeadBuf(ctx, head.buf());
+                tcb.advanceRcvNxt(head.len());
+                head = head.next;
+            }
         }
         else if (seg.len() > 0) {
             tcb.advanceRcvNxt(seg.len());
@@ -265,24 +227,30 @@ public class ReceiveBuffer {
     }
 
     static class ReceiveBufferEntry {
-        private final ConnectionHandshakeSegment seg;
+        private final long seq;
         private final ByteBuf buf;
         private ReceiveBufferEntry next;
 
-        public ReceiveBufferEntry(ConnectionHandshakeSegment seg, ByteBuf buf) {
-            this.seg = requireNonNull(seg);
+        public ReceiveBufferEntry(long seq, ByteBuf buf) {
+            this.seq = seq;
             this.buf = requireNonNull(buf);
+        }
+
+        public ReceiveBufferEntry(ConnectionHandshakeSegment seg, ByteBuf buf) {
+            this(seg.seq(), buf);
         }
 
         @Override
         public String toString() {
             return "ReceiveBufferEntry{" +
-                    "seg=" + seg +
+                    "seq=" + seq +
+                    ", len=" + len() +
+                    ", next=" + (next != null ? next.seq() : "null") +
                     '}';
         }
 
         public long seq() {
-            return seg.seq();
+            return seq;
         }
 
         public ByteBuf buf() {
@@ -291,6 +259,10 @@ public class ReceiveBuffer {
 
         public int len() {
             return buf.readableBytes();
+        }
+
+        public long lastSeq() {
+            return add(seq(), len() - 1L, SEQ_NO_SPACE);
         }
     }
 }
