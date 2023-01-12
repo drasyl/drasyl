@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,6 +39,7 @@ import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
+import static org.drasyl.util.SerialNumberArithmetic.sub;
 
 /**
  * <pre>
@@ -380,7 +380,7 @@ public class TransmissionControlBlock {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
-            ackedBytes = SerialNumberArithmetic.sub(seg.ack(), sndUna, SEQ_NO_SPACE);
+            ackedBytes = sub(seg.ack(), sndUna, SEQ_NO_SPACE);
             sndUna = seg.ack();
         }
 

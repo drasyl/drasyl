@@ -182,7 +182,7 @@ public class SendBuffer {
                 // ack part of buf
                 acknowledgementIndex += bytes;
                 this.acknowledgeableBytes -= bytes;
-                queue.remove(bytes, channel.newPromise());
+                queue.remove(bytes, channel.newPromise()).release();
                 this.bytes -= bytes;
                 bytes = 0;
             }
@@ -201,7 +201,7 @@ public class SendBuffer {
 
                 this.size -= 1;
                 this.acknowledgeableBytes -= remainingBytes;
-                queue.remove(remainingBytes, channel.newPromise());
+                queue.remove(remainingBytes, channel.newPromise()).release();
                 this.bytes -= remainingBytes;
             }
         }

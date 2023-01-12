@@ -35,6 +35,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SP
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
+import static org.drasyl.util.SerialNumberArithmetic.greaterThanOrEqualTo;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 import static org.drasyl.util.SerialNumberArithmetic.sub;
@@ -92,89 +93,112 @@ public class ReceiveBuffer {
         final ByteBuf content = seg.content();
         if (content.isReadable()) {
             if (head == null) {
-                // vorne am
                 final long seq;
                 final int index;
                 final int length;
-                if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+
+                // first SEG to be added to RCV.WND?
+                // SEG is located at the left edge of our RCV.WND?
+                if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThanOrEqualTo(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+                    // as SEG might start before RCV.NXT we should start reading RCV.NXT
                     seq = tcb.rcvNxt();
-                    // ok ab wo lesen wir?
                     index = (int) sub(tcb.rcvNxt(), seg.seq(), SEQ_NO_SPACE);
-                    // wie viel lesen wir?
+                    // ensure that we do not exceed RCV.WND
                     length = Math.min((int) tcb.rcvWnd(), seg.len()) - index;
                 }
+                // SEG is within RCV.WND, but not at the left edge
                 else if (greaterThan(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
+                    // start SEG as from the beginning
                     seq = seg.seq();
-                    // ok ab wo lesen wir?
                     index = 0;
-                    // wie viel lesen wir?
-                    length = Math.min((int) (tcb.rcvWnd() - sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE)), seg.len());
+                    // ensure that we do not exceed RCV.WND
+                    final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE);
+                    length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
                 }
                 else {
-                    // drop!
+                    // SEG contains no elements within RCV.WND. Drop!
                     return;
                 }
 
-                final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
+                final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                LOG.trace("{} Received `{}` and added `{}` to the RCV.BUF.", channel, seg, entry);
                 entry.next = head;
                 head = entry;
-
                 tcb.decrementRcvWnd(length);
                 bytes += length;
             }
             else {
-                // something to add before the head?
-                final long seq;
-                final int index;
-                final int length;
+                // buffer contains already segments. Check if SEG contains data that are before existing segments
                 if (lessThan(seg.seq(), head.seq(), SEQ_NO_SPACE)) {
-                    if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+                    final long seq;
+                    final int index;
+                    final int length;
+
+                    // SEG is located at the left edge of our RCV.WND?
+                    if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && greaterThanOrEqualTo(seg.lastSeq(), tcb.rcvNxt(), SEQ_NO_SPACE)) {
+                        // as SEG might start before RCV.NXT we should start reading RCV.NXT
                         seq = tcb.rcvNxt();
-                        // ok ab wo lesen wir?
                         index = (int) sub(tcb.rcvNxt(), seg.seq(), SEQ_NO_SPACE);
-                        // wie viel lesen wir?
-                        length = Math.min((int) tcb.rcvWnd(), Math.min((int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE), seg.len())) - index;
+                        // ensure that we do not exceed RCV.WND or read data already contained in head
+                        final int offsetSegToHead = (int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE);
+                        length = Math.min((int) tcb.rcvWnd(), Math.min(offsetSegToHead, seg.len())) - index;
                     }
+                    // SEG is within RCV.WND, but not at the left edge
                     else if (greaterThan(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
+                        // start SEG as from the beginning
                         seq = seg.seq();
-                        // ok ab wo lesen wir?
                         index = 0;
-                        // wie viel lesen wir?
-                        length = Math.min((int) (tcb.rcvWnd() - sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE)), Math.min((int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE), seg.len()));
+                        // ensure that we do not exceed RCV.WND or read data already contained in head
+                        final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE);
+                        final int offsetSeqHead = (int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE);
+                        length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), Math.min(offsetSeqHead, seg.len()));
                     }
                     else {
-                        // drop!
+                        // SEG contains no elements within RCV.WND. Drop!
                         return;
                     }
 
-                    final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
+                    final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                    LOG.trace("{} Received `{}` and added `{}` to the RCV.BUF.", channel, seg, entry);
                     entry.next = head;
                     head = entry;
-
                     tcb.decrementRcvWnd(length);
                     bytes += length;
                 }
             }
 
+            // does SEG contain something we can add after the header (or other segments)
             ReceiveBufferEntry current = head;
-            while (current != null) {
-                // gibt es in SEQ etwas, was HINTER current gepackt werden kann?
-                // something to add after?
-                if (lessThanOrEqualTo(seg.seq(), current.lastSeq(), SEQ_NO_SPACE) && greaterThan(seg.lastSeq(), current.lastSeq(), SEQ_NO_SPACE) && (current.next == null || lessThan(add(current.lastSeq(), 1, SEQ_NO_SPACE), current.next.seq(), SEQ_NO_SPACE))) {
-                    final long seq = add(current.seq(), current.len(), SEQ_NO_SPACE);
-                    // ok ab wo lesen wir? // 120
-                    final int index = (int) sub(add(current.seq(), current.len(), SEQ_NO_SPACE), seg.seq(), SEQ_NO_SPACE);
-                    // wie viel lesen wir? // 80
-                    final int length = seg.len() - index;
+            while (current != null && tcb.rcvWnd() > 0) {
+                // first, check if there is space between current and any next segment
+                if (current.next == null || lessThan(add(current.seq(), current.len(), SEQ_NO_SPACE), current.next.seq(), SEQ_NO_SPACE)) {
+                    // second, does SEQ contain data that can be placed after current
+                    if (lessThan(current.lastSeq(), seg.lastSeq(), SEQ_NO_SPACE)) {
+                        final long seq;
+                        final int index;
+                        final int length;
+                        // überschneidung von SEG mit current?
+                        if (lessThan(current.lastSeq(), seg.seq(), SEQ_NO_SPACE)) {
+                            // keine Überschneidung
+                            seq = seg.seq();
+                            index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
+                            length = seg.len() - index;  // eventuell hinten abschneiden?
+                        }
+                        else {
+                            // Überschneidung
+                            seq = add(current.lastSeq(), 1, SEQ_NO_SPACE);
+                            index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
+                            length = seg.len() - index; // eventuell hinten abschneiden?
+                        }
 
-                    final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, seg.content().slice(index, length));
-                    entry.next = current.next;
-                    current.next = entry;
+                        final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                        LOG.trace("{} Received `{}` and added `{}` to the RCV.BUF.", channel, seg, entry);
+                        entry.next = current.next;
+                        current.next = entry;
 
-                    tcb.decrementRcvWnd(length);
-                    bytes += length;
-
-                    break;
+                        tcb.decrementRcvWnd(length);
+                        bytes += length;
+                    }
                 }
 
                 current = current.next;
@@ -214,11 +238,14 @@ public class ReceiveBuffer {
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (headBuf != null) {
-            tcb.incrementRcvWnd(headBuf.readableBytes());
-            bytes -= headBuf.readableBytes();
-            LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. Increase RCV.WND to {} bytes (+{})", ctx.channel(), bytes, tcb.rcvWnd(), bytes);
-            ctx.fireChannelRead(headBuf);
-            headBuf = null;
+            final int readableBytes = headBuf.readableBytes();
+            if (readableBytes > 0) {
+                tcb.incrementRcvWnd(readableBytes);
+                bytes -= readableBytes;
+                LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
+                ctx.fireChannelRead(headBuf);
+                headBuf = null;
+            }
         }
     }
 
@@ -245,6 +272,7 @@ public class ReceiveBuffer {
             return "ReceiveBufferEntry{" +
                     "seq=" + seq +
                     ", len=" + len() +
+                    ", lastSeq=" + lastSeq() +
                     ", next=" + (next != null ? next.seq() : "null") +
                     '}';
         }
