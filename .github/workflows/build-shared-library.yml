@@ -191,7 +191,7 @@ jobs:
           $VERSION.replace('-SNAPSHOT', '.dev0') > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
-      - uses: actions/setup-python@v4.4.0
+      - uses: actions/setup-python@v4.5.0
         with:
           python-version: '3.10'
           check-latest: true
