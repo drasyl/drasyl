@@ -86,7 +86,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private final boolean activeOpen;
     private final int initialMss;
     private final int initialWindow;
-    ScheduledFuture<?> userTimeoutFuture;
+    ScheduledFuture<?> userTimeoutTimer;
     State state;
     TransmissionControlBlock tcb;
     private UserCallPromise userCallFuture;
@@ -231,6 +231,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        ReferenceCountUtil.touch(msg, "channelRead");
         if (msg instanceof ConnectionHandshakeSegment) {
             segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
         }
@@ -294,11 +295,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // start user call timeout guard
         if (userTimeout.toMillis() > 0) {
-            userTimeoutFuture = ctx.executor().schedule(() -> {
+            userTimeoutTimer = ctx.executor().schedule(() -> {
                 // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                 LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
-                ctx.fireExceptionCaught(new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel."));
+                final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel.");
+                deleteTcb(cause);
+                ctx.fireExceptionCaught(cause);
                 ctx.close();
             }, userTimeout.toMillis(), MILLISECONDS);
         }
@@ -408,10 +411,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                 if (userTimeout.toMillis() > 0) {
                     // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
-                    userTimeoutFuture = ctx.executor().schedule(() -> {
+                    userTimeoutTimer = ctx.executor().schedule(() -> {
                         LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                         switchToNewState(ctx, CLOSED);
-                        promise.tryFailure(new ConnectionHandshakeException("User timeout for CLOSE user call after " + userTimeout.toMillis() + "ms. Close channel."));
+                        final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for CLOSE user call after " + userTimeout.toMillis() + "ms. Close channel.");
+                        promise.tryFailure(cause);
+                        deleteTcb(cause);
                         ctx.close();
                     }, userTimeout.toMillis(), MILLISECONDS);
                 }
@@ -824,7 +829,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         ctx.close(userCallFuture);
                     }
                     else {
-                        ctx.channel().close();
+                        ctx.close();
                     }
                     return;
 
@@ -845,7 +850,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
+                    tcb.receiveBuffer().receive(ctx, tcb, seg);
 
                     if (readPending) {
                         readPending = false;
@@ -879,7 +884,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             }
 
             // advance receive state
-            tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
+            tcb.receiveBuffer().receive(ctx, tcb, seg);
 
             // send ACK for the FIN
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
@@ -964,9 +969,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void cancelUserTimeoutGuard() {
-        if (userTimeoutFuture != null) {
-            userTimeoutFuture.cancel(false);
-            userTimeoutFuture = null;
+        if (userTimeoutTimer != null) {
+            userTimeoutTimer.cancel(false);
+            userTimeoutTimer = null;
         }
     }
 }

@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -126,6 +127,7 @@ public class OutgoingSegmentQueue {
                        final TransmissionControlBlock tcb,
                        final ConnectionHandshakeSegment seg,
                        final ChannelPromise promise) {
+        ReferenceCountUtil.touch(seg, "OutgoingSegmentQueue write " + seg.toString());
         LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         // RTTM
@@ -133,7 +135,7 @@ public class OutgoingSegmentQueue {
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            tcb.retransmissionQueue().add(ctx, seg.copy(), tcb);
+            tcb.retransmissionQueue().add(ctx, seg, tcb);
             ctx.write(seg);
         }
         else {

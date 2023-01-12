@@ -190,6 +190,7 @@ public class SendBuffer {
                 // ack whole buf
                 if (head.promise != null) {
                     head.promise.trySuccess();
+                    head.release();
                 }
                 head = head.next;
                 if (head == null) {

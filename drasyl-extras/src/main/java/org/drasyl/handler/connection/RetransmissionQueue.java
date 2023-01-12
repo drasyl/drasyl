@@ -24,6 +24,7 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
@@ -60,6 +61,7 @@ public class RetransmissionQueue {
     public void add(final ChannelHandlerContext ctx,
                     final ConnectionHandshakeSegment seg,
                     final TransmissionControlBlock tcb) {
+        ReferenceCountUtil.touch(seg, "RetransmissionQueue add " + seg.toString());
         if (seg.isSyn()) {
             synSeq = seg.seq();
         }

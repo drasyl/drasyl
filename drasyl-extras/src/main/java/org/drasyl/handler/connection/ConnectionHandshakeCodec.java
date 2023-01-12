@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 
 import java.util.EnumMap;
@@ -52,7 +53,9 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void encode(final ChannelHandlerContext ctx,
                           final ConnectionHandshakeSegment seg,
                           final List<Object> out) throws Exception {
+        ReferenceCountUtil.touch(seg, "ConnectionHandshakeCodec encode " + seg.toString());
         final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH + seg.content().readableBytes());
+        ReferenceCountUtil.touch(buf, "encode");
         buf.writeInt(MAGIC_NUMBER);
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
@@ -78,36 +81,41 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= MIN_MESSAGE_LENGTH) {
-            in.markReaderIndex();
-            if (MAGIC_NUMBER == in.readInt()) {
-                final long seq = in.readUnsignedInt();
-                final long ack = in.readUnsignedInt();
-                final byte ctl = in.readByte();
-                final long window = in.readUnsignedInt();
+        try {
+            if (in.readableBytes() >= MIN_MESSAGE_LENGTH) {
+                in.markReaderIndex();
+                if (MAGIC_NUMBER == in.readInt()) {
+                    final long seq = in.readUnsignedInt();
+                    final long ack = in.readUnsignedInt();
+                    final byte ctl = in.readByte();
+                    final long window = in.readUnsignedInt();
 
-                // options
-                final Map<Option, Object> options = new EnumMap<>(Option.class);
-                byte kind;
-                while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
-                    final Option option = Option.ofKind(kind);
-                    final Object value = option.readValueFrom(in);
+                    // options
+                    final Map<Option, Object> options = new EnumMap<>(Option.class);
+                    byte kind;
+                    while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
+                        final Option option = Option.ofKind(kind);
+                        final Object value = option.readValueFrom(in);
 
-                    options.put(option, value);
+                        options.put(option, value);
+                    }
+
+                    final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, window, options, in.retain());
+                    out.add(seg);
                 }
-
-                final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, window, options, in.retain());
-                out.add(seg);
+                else {
+                    // wrong magic number -> pass through message
+                    in.resetReaderIndex();
+                    out.add(in.retain());
+                }
             }
             else {
-                // wrong magic number -> pass through message
-                in.resetReaderIndex();
+                // wrong length -> pass through message
                 out.add(in.retain());
             }
         }
-        else {
-            // wrong length -> pass through message
-            out.add(in.retain());
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

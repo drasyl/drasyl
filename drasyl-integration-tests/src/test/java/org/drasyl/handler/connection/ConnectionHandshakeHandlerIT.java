@@ -288,6 +288,13 @@ class ConnectionHandshakeHandlerIT {
                         // greater purpose. No greater meaning. Nothing to be rushing for. We will
                         // all soon be dead. So just f*cking chill. When you learn to do nothing,
                         // then you'll find the real purpose of life: Do nothing.
+                        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(final ChannelHandlerContext ctx,
+                                                    final Object msg) {
+                                ReferenceCountUtil.release(msg);
+                            }
+                        });
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -356,6 +363,13 @@ class ConnectionHandshakeHandlerIT {
                         // greater purpose. No greater meaning. Nothing to be rushing for. We will
                         // all soon be dead. So just f*cking chill. When you learn to do nothing,
                         // then you'll find the real purpose of life: Do nothing.
+                        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(final ChannelHandlerContext ctx,
+                                                    final Object msg) {
+                                ReferenceCountUtil.release(msg);
+                            }
+                        });
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -553,6 +567,9 @@ class ConnectionHandshakeHandlerIT {
 
             assertTrue(future.isSuccess());
             assertEquals(sentBuf, receivedBuf);
+
+            sentBuf.release();
+            receivedBuf.release();
         }
         finally {
             clientChannel.close().sync();
@@ -656,6 +673,11 @@ class ConnectionHandshakeHandlerIT {
             //FIXME: add suport for cancel beim write. dann
 
             assertEquals(sentBuf, receivedBuf);
+
+            sentBuf.release();
+            receivedBuf.release();
+
+            clientChannel.closeFuture().await();
         }
         finally {
             clientChannel.close().sync();
