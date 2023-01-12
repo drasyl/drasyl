@@ -497,8 +497,9 @@ public class TransmissionControlBlock {
         }
     }
 
-    public void advanceRcvNxt(final int advancement) {
+    public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
         rcvNxt = advanceSeq(rcvNxt, advancement);
+        LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
     }
 
     public void decrementRcvWnd(final int decrement) {

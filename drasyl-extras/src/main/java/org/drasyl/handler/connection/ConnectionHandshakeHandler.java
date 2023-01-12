@@ -560,6 +560,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return;
         }
 
+        if (seg.isAck() || seg.isSyn()) {
+            // create TCB
+            createTcb(ctx);
+        }
+
         // check ACK
         if (seg.isAck()) {
             // we are on a state were we have never sent anything that must be ACKed
@@ -588,8 +593,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             // yay, peer SYNced with us
             switchToNewState(ctx, SYN_RECEIVED);
-
-            createTcb(ctx);
 
             // synchronize receive state
             tcb.synchronizeState(seg);

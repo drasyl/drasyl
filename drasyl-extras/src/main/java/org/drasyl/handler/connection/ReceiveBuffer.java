@@ -211,12 +211,12 @@ public class ReceiveBuffer {
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
                 addToHeadBuf(ctx, head.buf());
-                tcb.advanceRcvNxt(head.len());
+                tcb.advanceRcvNxt(ctx, head.len());
                 head = head.next;
             }
         }
         else if (seg.len() > 0) {
-            tcb.advanceRcvNxt(seg.len());
+            tcb.advanceRcvNxt(ctx, seg.len());
         }
     }
 
