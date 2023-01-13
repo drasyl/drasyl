@@ -58,10 +58,10 @@ public class RetransmissionQueue {
         this.channel = requireNonNull(channel);
     }
 
-    public void add(final ChannelHandlerContext ctx,
-                    final ConnectionHandshakeSegment seg,
-                    final TransmissionControlBlock tcb) {
-        ReferenceCountUtil.touch(seg, "RetransmissionQueue add " + seg.toString());
+    public void enqueue(final ChannelHandlerContext ctx,
+                        final ConnectionHandshakeSegment seg,
+                        final TransmissionControlBlock tcb) {
+        ReferenceCountUtil.touch(seg, "RetransmissionQueue enqueue " + seg.toString());
         if (seg.isSyn()) {
             synSeq = seg.seq();
         }
@@ -121,7 +121,8 @@ public class RetransmissionQueue {
             if (tcb.sendBuffer().acknowledgeableBytes() == 0) {
                 // everything was ACKed, cancel retransmission timer
                 cancelRetransmissionTimer();
-            } else if (somethingWasAcked) {
+            }
+            else if (somethingWasAcked) {
                 // as something was ACKed, recreate retransmission timer
                 recreateRetransmissionTimer(ctx, tcb);
             }
@@ -160,9 +161,11 @@ public class RetransmissionQueue {
         byte ctl = ACK;
         if (synSeq != -1) {
             ctl |= SYN;
-        } else if (pshSeq != -1) {
+        }
+        else if (pshSeq != -1) {
             ctl |= PSH;
-        } else if (finSeq != -1) {
+        }
+        else if (finSeq != -1) {
             ctl |= FIN;
         }
         if (ctl == ACK && data.readableBytes() == 0) {

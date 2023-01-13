@@ -135,7 +135,7 @@ public class OutgoingSegmentQueue {
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            tcb.retransmissionQueue().add(ctx, seg, tcb);
+            tcb.retransmissionQueue().enqueue(ctx, seg, tcb);
             ctx.write(seg);
         }
         else {
