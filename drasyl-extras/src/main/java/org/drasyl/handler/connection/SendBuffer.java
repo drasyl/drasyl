@@ -178,6 +178,7 @@ public class SendBuffer {
         while (bytes > 0 && head != null) {
             final ByteBuf headBuf = head.content();
             final int remainingBytes = readMark != null && readMark.entry.content() == head.content() ? readMark.index - acknowledgementIndex : headBuf.readableBytes() - acknowledgementIndex;
+            assert remainingBytes > 0;
             if (bytes < remainingBytes) {
                 // ack part of buf
                 acknowledgementIndex += bytes;

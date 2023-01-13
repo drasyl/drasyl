@@ -301,12 +301,13 @@ public class ReceiveBuffer {
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
                 LOG.error(
-                        "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it and advance RCV.NXT by {}.",
+                        "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it, advance RCV.NXT by {}, and set head to {}.",
                         channel,
                         head,
                         tcb.rcvNxt(),
                         add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE),
-                        head.len()
+                        head.len(),
+                        head.next
                 );
                 addToHeadBuf(ctx, head.buf());
                 tcb.advanceRcvNxt(ctx, head.len());
