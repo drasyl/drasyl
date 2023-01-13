@@ -173,7 +173,7 @@ public class ReceiveBuffer {
                         final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
                         entry.next = head;
                         LOG.error(
-                                "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head [{},{}]. Use data [{},{}]: {}.",
+                                "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
                                 channel,
                                 seg,
                                 seg.seq(),
@@ -202,7 +202,7 @@ public class ReceiveBuffer {
                         final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
                         entry.next = head;
                         LOG.error(
-                                "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head [{},{}]. Use data [{},{}]: {}.",
+                                "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
                                 channel,
                                 seg,
                                 seg.seq(),
@@ -300,6 +300,14 @@ public class ReceiveBuffer {
             // aggregieren?
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
+                LOG.error(
+                        "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it and advance RCV.NXT by {}.",
+                        channel,
+                        head,
+                        tcb.rcvNxt(),
+                        add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE),
+                        head.len()
+                );
                 addToHeadBuf(ctx, head.buf());
                 tcb.advanceRcvNxt(ctx, head.len());
                 head = head.next;
