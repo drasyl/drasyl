@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -88,6 +89,7 @@ public class TransmissionControlBlock {
     private long iss; // initial send sequence number
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
+    // congestion control
     private long cwnd; // congestion window
     private long ssthresh; // slow start threshold
     private int duplicateAcks;
@@ -379,7 +381,7 @@ public class TransmissionControlBlock {
                                       final ConnectionHandshakeSegment seg) {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
+            LOG.error("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
             ackedBytes = sub(seg.ack(), sndUna, SEQ_NO_SPACE);
             sndUna = seg.ack();
         }
@@ -451,7 +453,7 @@ public class TransmissionControlBlock {
         }
     }
 
-    private boolean doSlowStart() {
+    boolean doSlowStart() {
         return cwnd < ssthresh;
     }
 
@@ -472,6 +474,15 @@ public class TransmissionControlBlock {
     }
 
     public void gotDuplicateAck(final ChannelHandlerContext ctx) {
+        // An acknowledgment is considered a
+        //      "duplicate" in the following algorithms when (a) the receiver of
+        //      the ACK has outstanding data, (b) the incoming acknowledgment
+        //      carries no data, (c) the SYN and FIN bits are both off, (d) the
+        //      acknowledgment number is equal to the greatest acknowledgment
+        //      received on the given connection (TCP.UNA from [RFC793]) and (e)
+        //      the advertised window in the incoming acknowledgment equals the
+        //      advertised window in the last incoming acknowledgment.
+
         duplicateAcks += 1;
         if (duplicateAcks == 3) {
             LOG.error("{} Got {} duplicate ACKs (in a row?).", ctx.channel(), duplicateAcks);

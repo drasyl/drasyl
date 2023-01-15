@@ -870,7 +870,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     // Ack receival of segment text
                     final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
-                    LOG.error("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
+                    LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
                     tcb.write(response);
 
                     break;

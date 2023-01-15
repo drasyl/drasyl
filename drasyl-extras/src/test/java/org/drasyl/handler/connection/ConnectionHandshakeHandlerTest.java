@@ -779,6 +779,26 @@ class ConnectionHandshakeHandlerTest {
 
                 channel.close();
             }
+
+            // slow start?
+            @Test
+            void name() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 100L, 200L, 64 * 1000, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), (int) tcb.sndWnd(), tcb);
+                channel.pipeline().addLast(handler);
+
+                // initial cwnd is 3 segments
+                assertEquals(3 * 1000, tcb.cwnd());
+                // The initial value of ssthresh SHOULD be set arbitrarily high (e.g.,
+                //   to the size of the largest possible advertised window)
+                assertEquals(64 * 1000, tcb.ssthresh());
+                // do slow start
+                assertTrue(tcb.doSlowStart());
+
+                // During slow start, a TCP increments cwnd by at most SMSS bytes for
+                //   each ACK received that cumulatively acknowledges new data.
+            }
         }
     }
 
