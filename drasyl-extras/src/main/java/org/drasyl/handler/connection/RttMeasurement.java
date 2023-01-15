@@ -136,7 +136,7 @@ public class RttMeasurement {
         }
     }
 
-    void timeoutOccured() {
+    void timeoutOccurred() {
         RTO *= 2;
 
         if (RTO > UPPER_BOUND) {

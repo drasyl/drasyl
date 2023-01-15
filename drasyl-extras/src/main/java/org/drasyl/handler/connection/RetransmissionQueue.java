@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -153,7 +152,7 @@ public class RetransmissionQueue {
             ctx.writeAndFlush(retransmission);
 
             // The host MUST set RTO <- RTO * 2 ("back off the timer")
-            tcb.rttMeasurement().timeoutOccured();
+            tcb.rttMeasurement().timeoutOccurred();
 
             // Start the retransmission timer, such that it expires after RTO seconds
             recreateRetransmissionTimer(ctx, tcb);
