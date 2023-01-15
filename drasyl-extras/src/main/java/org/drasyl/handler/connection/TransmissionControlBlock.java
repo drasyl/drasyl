@@ -256,8 +256,8 @@ public class TransmissionControlBlock {
                 '}';
     }
 
-    public void delete(final Throwable cause) {
-        sendBuffer.releaseAndFailAll(cause);
+    public void delete() {
+        sendBuffer.release();
         retransmissionQueue.releaseAndFailAll();
         receiveBuffer.release();
     }

@@ -32,9 +32,12 @@ import io.netty.channel.CoalescingBufferQueue;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Objects;
+
 import static io.netty.util.ReferenceCountUtil.safeRelease;
 import static io.netty.util.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Holds data enqueued by the application to be written to the network. This FIFO queue also updates
@@ -42,24 +45,45 @@ import static java.util.Objects.requireNonNull;
  */
 public class SendBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(SendBuffer.class);
+    // used to get ByteBufAllocator
     private final Channel channel;
-    private SendBufferEntry head;
-    private SendBufferEntry tail;
-    private ReadMark readMark; // Welcher Buffer in der linked list bis wohin gelesen wurde...
-    private int acknowledgementIndex; // Bis wohin der head.buf ACKed wurde...
+    // only used for controlling the channel writability according to the bytes contained in this buffer
+    private final CoalescingBufferQueue queue;
+    // linked list of ByteBuf/Promise pairs of data to be sent
+    SendBufferEntry head;
+    SendBufferEntry tail;
+    // indicates what element in our linked list and how many of it bytes have been read
+    ReadMark readMark;
+    // indicate how many bytes of linked list head have been ACKed
+    int acknowledgementIndex;
+    // number of entries in our linked list
     private int size;
+    // number of bytes in our linked list
     private int bytes;
     private int acknowledgeableBytes;
-    private CoalescingBufferQueue queue;
 
     SendBuffer(final Channel channel,
-               final CoalescingBufferQueue queue) {
+               final CoalescingBufferQueue queue,
+               final SendBufferEntry head,
+               final SendBufferEntry tail,
+               final ReadMark readMark,
+               final int acknowledgementIndex,
+               final int size,
+               final int bytes,
+               final int acknowledgeableBytes) {
         this.channel = requireNonNull(channel);
+        this.head = head;
+        this.tail = tail;
+        this.readMark = readMark;
+        this.acknowledgementIndex = requireNonNegative(acknowledgementIndex);
+        this.size = requireNonNegative(size);
+        this.bytes = requireNonNegative(bytes);
+        this.acknowledgeableBytes = acknowledgeableBytes;
         this.queue = requireNonNull(queue);
     }
 
     SendBuffer(final Channel channel) {
-        this(channel, new CoalescingBufferQueue(channel, 4, true));
+        this(channel, new CoalescingBufferQueue(channel, 4, true), null, null, null, 0, 0, 0, 0);
     }
 
     /**
@@ -70,19 +94,20 @@ public class SendBuffer {
      * @param promise to complete when all the bytes have been consumed and written, can be void.
      */
     public void enqueue(final ByteBuf buf, final ChannelPromise promise) {
-        queue.add(buf.retainedSlice(), promise);
+        incrementPendingOutboundBytes(buf);
 
         SendBufferEntry entry = new SendBufferEntry(buf, promise);
         if (head == null) {
-            // first entry
+            // first entry, set as head
             head = tail = entry;
             readMark = new ReadMark(head);
         }
         else {
-            // add to end
+            // add as tail
             tail.next = entry;
             tail = entry;
 
+            // if previous tail has been fully read, we need to update the ReadMark
             if (readMark.remainingBytes() == 0) {
                 readMark = new ReadMark(readMark.entry.next);
             }
@@ -191,9 +216,9 @@ public class SendBuffer {
             LOG.trace("{} bytes in headBuf are ByteBuf-readable.", headBuf.readableBytes());
             LOG.trace("{} bytes in headBuf have been read.", readBytesInHead);
             LOG.trace("{} bytes in headBuf have already been ACKed.", acknowledgementIndex);
-            final int ackableBytes = readBytesInHead - acknowledgementIndex;
-            final int bytesToAck = Math.min(ackableBytes, bytes);
-            LOG.trace("{} bytes in headBuf can be ACKed.", ackableBytes);
+            final int acknowledgeableBytesInHead = readBytesInHead - acknowledgementIndex;
+            final int bytesToAck = Math.min(acknowledgeableBytesInHead, bytes);
+            LOG.trace("{} bytes in headBuf can be ACKed.", acknowledgeableBytesInHead);
             final int totalBytesAcked = acknowledgementIndex + bytesToAck;
             LOG.trace("{} bytes in headBuf are ACKed after this call.", totalBytesAcked);
 
@@ -201,8 +226,8 @@ public class SendBuffer {
                 // ack part of buf
                 LOG.trace("First {} bytes of entry {} have been ACKed.", bytesToAck, head);
                 acknowledgementIndex += bytesToAck;
-                this.acknowledgeableBytes -= bytesToAck;
-                queue.remove(bytesToAck, channel.newPromise()).release();
+                acknowledgeableBytes -= bytesToAck;
+                decrementPendingOutboundBytes(bytesToAck);
                 this.bytes -= bytesToAck;
                 bytes = 0;
             }
@@ -223,28 +248,30 @@ public class SendBuffer {
 
                 this.size -= 1;
                 this.acknowledgeableBytes -= bytesToAck;
-                queue.remove(bytesToAck, channel.newPromise()).release();
+                decrementPendingOutboundBytes(bytesToAck);
                 this.bytes -= bytesToAck;
                 assert head != null || this.bytes == 0;
             }
         }
     }
 
-    protected ByteBuf compose(ByteBufAllocator alloc, ByteBuf cumulation, ByteBuf next) {
+    protected ByteBuf compose(final ByteBufAllocator alloc,
+                              final ByteBuf cumulation,
+                              final ByteBuf next) {
         if (cumulation instanceof CompositeByteBuf) {
-            CompositeByteBuf composite = (CompositeByteBuf) cumulation;
+            final CompositeByteBuf composite = (CompositeByteBuf) cumulation;
             composite.addComponent(true, next);
             return composite;
         }
         return composeIntoComposite(alloc, cumulation, next);
     }
 
-    protected final ByteBuf composeIntoComposite(ByteBufAllocator alloc,
-                                                 ByteBuf cumulation,
-                                                 ByteBuf next) {
+    protected final ByteBuf composeIntoComposite(final ByteBufAllocator alloc,
+                                                 final ByteBuf cumulation,
+                                                 final ByteBuf next) {
         // Create a composite buffer to accumulate this pair and potentially all the buffers
         // in the queue. Using +2 as we have already dequeued current and next.
-        CompositeByteBuf composite = alloc.compositeBuffer(size() + 2);
+        final CompositeByteBuf composite = alloc.compositeBuffer(size() + 2);
         try {
             composite.addComponent(true, cumulation);
             composite.addComponent(true, next);
@@ -286,7 +313,7 @@ public class SendBuffer {
     /**
      * Release all buffers in the queue and complete all listeners and promises.
      */
-    public void releaseAndFailAll(final Throwable cause) {
+    public void release() {
         while (head != null) {
             head.release();
             head = head.next;
@@ -296,32 +323,38 @@ public class SendBuffer {
         readMark = null;
         acknowledgementIndex = 0;
         size = 0;
+        decrementPendingOutboundBytes(bytes);
         bytes = 0;
         acknowledgeableBytes = 0;
     }
 
     @Override
     public String toString() {
-        return "SendBuffer{" +
-                "channel=" + channel +
-                ", head=" + head +
-                ", tail=" + tail +
-                ", readMark=" + readMark +
-                ", acknowledgementIndex=" + acknowledgementIndex +
-                ", size=" + size +
-                ", bytes=" + bytes +
-                ", acknowledgeableBytes=" + acknowledgeableBytes +
-                ", queue=" + queue +
-                '}';
+        return "SND.BUF(rd: " + readableBytes() + ", ack: " + acknowledgeableBytes() + ", len: " + bytes() + ")";
     }
 
-    private static class SendBufferEntry extends DefaultByteBufHolder {
+    private void incrementPendingOutboundBytes(final ByteBuf buf) {
+        queue.add(buf.retainedSlice(), channel.newPromise());
+    }
+
+    private void decrementPendingOutboundBytes(final int bytes) {
+        queue.remove(bytes, channel.newPromise()).release();
+    }
+
+    static class SendBufferEntry extends DefaultByteBufHolder {
         protected final ChannelPromise promise;
         private SendBufferEntry next;
 
-        public SendBufferEntry(final ByteBuf buf, final ChannelPromise promise) {
+        SendBufferEntry(final ByteBuf buf,
+                        final ChannelPromise promise,
+                        final SendBufferEntry next) {
             super(buf);
-            this.promise = promise;
+            this.promise = requireNonNull(promise);
+            this.next = next;
+        }
+
+        SendBufferEntry(final ByteBuf buf, final ChannelPromise promise) {
+            this(buf, promise, null);
         }
 
         @Override
@@ -329,21 +362,41 @@ public class SendBuffer {
             return "SendBufferEntry{" +
                     "content=" + content() +
                     ", promise=" + promise +
-                    ", next=" + next +
+                    ", next=" + (next != null ? next.content() : "null") +
                     '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            SendBufferEntry that = (SendBufferEntry) o;
+            return Objects.equals(promise, that.promise) && Objects.equals(next, that.next);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), promise, next);
         }
     }
 
-    private static class ReadMark {
+    static class ReadMark {
         private final SendBufferEntry entry;
         private int index;
 
-        public ReadMark(final SendBufferEntry entry, final int index) {
+        ReadMark(final SendBufferEntry entry, final int index) {
             this.entry = requireNonNull(entry);
-            this.index = index;
+            this.index = requireNonNegative(index);
         }
 
-        public ReadMark(final SendBufferEntry entry) {
+        ReadMark(final SendBufferEntry entry) {
             this(entry, 0);
         }
 
@@ -357,6 +410,23 @@ public class SendBuffer {
                     "entry=" + entry +
                     ", index=" + index +
                     '}';
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            ReadMark readMark = (ReadMark) o;
+            return index == readMark.index && Objects.equals(entry, readMark.entry);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(entry, index);
         }
     }
 }

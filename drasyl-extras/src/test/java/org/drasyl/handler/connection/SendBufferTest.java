@@ -28,6 +28,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
 import io.netty.channel.DefaultChannelPromise;
+import org.drasyl.handler.connection.SendBuffer.ReadMark;
+import org.drasyl.handler.connection.SendBuffer.SendBufferEntry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,38 +50,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SendBufferTest {
-    @Test
-    @Disabled
-    void spielwiese(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-        final SendBuffer buffer = new SendBuffer(channel);
-
-        final ByteBuf buf = Unpooled.buffer(30).writeBytes(randomBytes(30));
-
-        // enqueue 10 bytes
-        ChannelPromise promise1 = mock(ChannelPromise.class);
-        buffer.enqueue(buf.slice(0, 10), promise1);
-
-        // enqueue 10 bytes
-        promise1 = mock(ChannelPromise.class);
-        buffer.enqueue(buf.slice(10, 10), promise1);
-
-        // enqueue 10 bytes
-        promise1 = mock(ChannelPromise.class);
-        buffer.enqueue(buf.slice(20, 10), promise1);
-
-        // read 5 bytes
-        assertEquals(buf.slice(0, 5), buffer.read(5));
-
-        // ack 5 bytes
-        buffer.acknowledge(4);
-
-        // read 2 bytes
-        assertEquals(buf.slice(5, 2), buffer.read(2));
-
-        // try to ack 99 bytes
-        buffer.acknowledge(99);
-    }
-
     @Nested
     class Enqueue {
         @Test
@@ -87,20 +58,32 @@ class SendBufferTest {
 
             final SendBuffer buffer = new SendBuffer(channel);
 
-            final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
-
             // enqueue 10 bytes
+            final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise promise1 = mock(ChannelPromise.class);
             buffer.enqueue(buf.slice(0, 10), promise1);
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(0, 10), promise1));
+            assertEquals(buffer.readMark, new ReadMark(buffer.head));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 1);
+            assertEquals(buffer.bytes(), 10);
             assertEquals(10, buffer.readableBytes());
             assertEquals(0, buffer.acknowledgeableBytes());
 
             // enqueue another 5 bytes
             final ChannelPromise promise2 = mock(ChannelPromise.class);
             buffer.enqueue(buf.slice(10, 5), promise2);
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.head));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 15);
             assertEquals(15, buffer.readableBytes());
             assertEquals(0, buffer.acknowledgeableBytes());
 
+            // read everything
             assertEquals(buf, buffer.read(999));
             assertEquals(0, buffer.readableBytes());
             assertEquals(15, buffer.acknowledgeableBytes());
@@ -113,35 +96,56 @@ class SendBufferTest {
         void shouldReadGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-            final ByteBuf addBuf = Unpooled.buffer(15).writeBytes(randomBytes(15));
-
-            // fill buffer
             final SendBuffer buffer = new SendBuffer(channel);
-            final ChannelPromise promise1 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(0, 10), promise1);
-            final ChannelPromise promise2 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(10, 5), promise2);
 
-            // read part of first buf
-            final ByteBuf readBuf1 = buffer.read(5);
-            assertEquals(addBuf.slice(0, 5), readBuf1);
+            // preparation: fill buffer (10 and 5 bytes)
+            final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
+            final ChannelPromise promise1 = new DefaultChannelPromise(channel);
+            buffer.enqueue(buf.slice(0, 10), promise1);
+            final ChannelPromise promise2 = new DefaultChannelPromise(channel);
+            buffer.enqueue(buf.slice(10, 5), promise2);
+
+            // read 5 bytes (part of first buf)
+            assertEquals(buf.slice(0, 5), buffer.read(5));
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.head, 5));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 15);
             assertEquals(10, buffer.readableBytes());
             assertEquals(5, buffer.acknowledgeableBytes());
 
-            // read remaining part of first buf and part of second buf
-            final ByteBuf readBuf2 = buffer.read(6);
-            assertEquals(addBuf.slice(5, 6), readBuf2);
+            // read 6 bytes (remainder of first buf and start of second buf)
+            assertEquals(buf.slice(5, 6), buffer.read(6));
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.tail, 1));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 15);
             assertEquals(4, buffer.readableBytes());
             assertEquals(11, buffer.acknowledgeableBytes());
 
-            // read remainder
-            final ByteBuf readBuf3 = buffer.read(10);
-            assertEquals(addBuf.slice(11, 4), readBuf3);
+            // read 10 bytes (remainder of second buf; only 4 bytes)
+            assertEquals(buf.slice(11, 4), buffer.read(10));
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.tail, 5));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 15);
             assertEquals(0, buffer.readableBytes());
             assertEquals(15, buffer.acknowledgeableBytes());
 
-            // nothing remain
+            // read 99 bytes (nothing remain)
             assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99));
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.tail, 5));
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 15);
             assertEquals(0, buffer.readableBytes());
             assertEquals(15, buffer.acknowledgeableBytes());
         }
@@ -153,30 +157,30 @@ class SendBufferTest {
         void shouldReadGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-            final ByteBuf addBuf = Unpooled.buffer(15).writeBytes(randomBytes(15));
-
-            // fill buffer
             final SendBuffer buffer = new SendBuffer(channel);
+
+            // preparation: fill buffer (10 and 5 bytes) and read 13 bytes
+            final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise promise1 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(0, 10), promise1);
+            buffer.enqueue(buf.slice(0, 10), promise1);
             final ChannelPromise promise2 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(10, 5), promise2);
+            buffer.enqueue(buf.slice(10, 5), promise2);
             buffer.read(13);
 
-            // read a few bytes
-            assertEquals(addBuf.slice(0, 4), buffer.unacknowledged(4));
+            // get a few bytes
+            assertEquals(buf.slice(0, 4), buffer.unacknowledged(4));
 
-            // read all bytes
-            assertEquals(addBuf.slice(0, 13), buffer.unacknowledged(13));
+            // get all bytes
+            assertEquals(buf.slice(0, 13), buffer.unacknowledged(13));
 
-            // read too many bytes
-            assertEquals(addBuf.slice(0, 13), buffer.unacknowledged(20));
+            // try to get too many bytes
+            assertEquals(buf.slice(0, 13), buffer.unacknowledged(20));
+            assertEquals(buffer.acknowledgementIndex, 0);
 
-            // ACKing should shift further
+            // ACKed bytes should be removed
             buffer.acknowledge(1);
-
-            // read too many bytes
-            assertEquals(addBuf.slice(1, 12), buffer.unacknowledged(20));
+            assertEquals(buffer.acknowledgementIndex, 1);
+            assertEquals(buf.slice(1, 12), buffer.unacknowledged(20));
         }
 
         @Test
@@ -193,29 +197,48 @@ class SendBufferTest {
         void shouldAcknowledgeGivenBytesFromBeginOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-            final ByteBuf addBuf = Unpooled.buffer(15).writeBytes(randomBytes(15));
-
             final SendBuffer buffer = new SendBuffer(channel);
+
+            // preparation: fill buffer (10 and 5 bytes) and read 13 bytes
+            final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise promise1 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(0, 10), promise1);
+            buffer.enqueue(buf.slice(0, 10), promise1);
             final ChannelPromise promise2 = new DefaultChannelPromise(channel);
-            buffer.enqueue(addBuf.slice(10, 5), promise2);
+            buffer.enqueue(buf.slice(10, 5), promise2);
             buffer.read(13);
 
-            // ack 5 bytes (as no buf is completely acked, not promise should be done)
+            // ack 5 bytes (as no buf is completely acked, no promise should be done)
             buffer.acknowledge(5);
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.tail, 3));
+            assertEquals(buffer.acknowledgementIndex, 5);
+            assertEquals(buffer.size(), 2);
+            assertEquals(buffer.bytes(), 10);
             assertFalse(promise1.isDone());
             assertFalse(promise2.isDone());
             assertEquals(8, buffer.acknowledgeableBytes());
 
             // ack another 6 bytes (first buf done)
             buffer.acknowledge(6);
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.head, 3));
+            assertEquals(buffer.acknowledgementIndex, 1);
+            assertEquals(buffer.size(), 1);
+            assertEquals(buffer.bytes(), 4);
             assertTrue(promise1.isDone());
             assertFalse(promise2.isDone());
             assertEquals(2, buffer.acknowledgeableBytes());
 
             // ack another 10 bytes (but only 2 are allowed)
             buffer.acknowledge(10);
+            assertEquals(buffer.head, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
+            assertEquals(buffer.readMark, new ReadMark(buffer.head, 3));
+            assertEquals(buffer.acknowledgementIndex, 3);
+            assertEquals(buffer.size(), 1);
+            assertEquals(buffer.bytes(), 2);
             assertTrue(promise1.isDone());
             assertFalse(promise2.isDone());
             assertEquals(0, buffer.acknowledgeableBytes());
@@ -224,8 +247,15 @@ class SendBufferTest {
             buffer.acknowledge(99);
             assertEquals(0, buffer.acknowledgeableBytes());
 
+            // read remainder to ACK remainder
             buffer.read(2);
             buffer.acknowledge(2);
+            assertNull(buffer.head);
+            assertNull(buffer.tail);
+            assertNull(buffer.readMark);
+            assertEquals(buffer.acknowledgementIndex, 0);
+            assertEquals(buffer.size(), 0);
+            assertEquals(buffer.bytes(), 0);
             assertTrue(promise2.isDone());
         }
     }
@@ -260,15 +290,14 @@ class SendBufferTest {
     class ReleaseAndFailAll {
         @Test
         @Disabled
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                                       @Mock final Throwable cause) {
+        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
             final SendBuffer buffer = null;//new SendBuffer(channel, queue, bufAndListenerPairs);
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
             final ChannelPromise promise = mock(ChannelPromise.class);
             buffer.enqueue(buf, promise);
 
-            buffer.releaseAndFailAll(cause);
+            buffer.release();
 
             assertEquals(0, buf.refCnt());
             verify(promise).tryFailure(any());
