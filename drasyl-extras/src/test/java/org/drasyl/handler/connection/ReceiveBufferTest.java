@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +28,21 @@ class ReceiveBufferTest {
 
     @Nested
     class Receive {
+        @Test
+        void test(@Mock final Channel channel,
+                  @Mock final ChannelHandlerContext ctx,
+                  @Mock final SendBuffer sendBuffer) {
+            final ByteBuf data = Unpooled.buffer(100_000).writeBytes(randomBytes(100_000));
+
+            ReceiveBufferEntry head = new ReceiveBufferEntry(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
+            head.next = new ReceiveBufferEntry(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, head, 60);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 918402327, 930467719-918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
+
+            ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.pshAck(110, 1751431617, data.slice(0, 100));
+            buffer.receive(ctx, tcb, seg2);
+        }
+
         @Nested
         class InOrderWithNoOverlappingSegments {
             @Test
@@ -46,6 +63,7 @@ class ReceiveBufferTest {
                 assertEquals(110, tcb.rcvNxt());
                 assertEquals(110, buffer.bytes());
                 assertEquals(110, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // expected 110, got [110,200)
                 final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(110, 100, data.slice(110, 90));
@@ -54,6 +72,7 @@ class ReceiveBufferTest {
                 assertEquals(200, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // expected 200, got [200,201)
                 final ConnectionHandshakeSegment seg3 = ConnectionHandshakeSegment.ack(200, 100, data.slice(200, 1));
@@ -62,6 +81,7 @@ class ReceiveBufferTest {
                 assertEquals(201, tcb.rcvNxt());
                 assertEquals(201, buffer.bytes());
                 assertEquals(201, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -87,6 +107,7 @@ class ReceiveBufferTest {
                 assertEquals(0, tcb.rcvNxt());
                 assertEquals(100, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // expected 0, got [130,230)
                 final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(130, 100, data.slice(130, 100));
@@ -95,6 +116,7 @@ class ReceiveBufferTest {
                 assertEquals(0, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNotNull(buffer.head);
             }
         }
 
@@ -116,6 +138,7 @@ class ReceiveBufferTest {
                 assertEquals(0, tcb.rcvNxt());
                 assertEquals(100, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // expected 0, got [50,150)
                 final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(50, 100, data.slice(50, 100));
@@ -124,6 +147,7 @@ class ReceiveBufferTest {
                 assertEquals(0, tcb.rcvNxt());
                 assertEquals(120, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNotNull(buffer.head);
             }
 
             @Test
@@ -145,6 +169,7 @@ class ReceiveBufferTest {
                 assertEquals(160, tcb.rcvNxt());
                 assertEquals(160, buffer.bytes());
                 assertEquals(160, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -180,6 +205,7 @@ class ReceiveBufferTest {
                 assertEquals(0, tcb.rcvNxt());
                 assertEquals(80, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // expected 0, got [0,120)
                 final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(0, 100, data.slice(0, 120));
@@ -188,6 +214,7 @@ class ReceiveBufferTest {
                 assertEquals(200, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // expected 200, got [410,500)
                 final ConnectionHandshakeSegment seg5 = ConnectionHandshakeSegment.ack(410, 100, data.slice(410, 90));
@@ -196,6 +223,7 @@ class ReceiveBufferTest {
                 assertEquals(200, tcb.rcvNxt());
                 assertEquals(290, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // expected 200, got [300,400)
                 final ConnectionHandshakeSegment seg4 = ConnectionHandshakeSegment.ack(300, 100, data.slice(300, 110));
@@ -204,6 +232,7 @@ class ReceiveBufferTest {
                 assertEquals(200, tcb.rcvNxt());
                 assertEquals(400, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // expected 200, got [200,300)
                 ConnectionHandshakeSegment seg3 = ConnectionHandshakeSegment.ack(200, 100, data.slice(200, 100));
@@ -212,6 +241,7 @@ class ReceiveBufferTest {
                 assertEquals(500, tcb.rcvNxt());
                 assertEquals(500, buffer.bytes());
                 assertEquals(500, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -240,6 +270,7 @@ class ReceiveBufferTest {
                 assertEquals(210, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -267,6 +298,7 @@ class ReceiveBufferTest {
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(100, buffer.bytes());
                 assertEquals(100, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // identisches SEG (0-99)
                 final ConnectionHandshakeSegment seg1copy = ConnectionHandshakeSegment.ack(0, 100, data.slice(0, 100));
@@ -275,6 +307,7 @@ class ReceiveBufferTest {
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(100, buffer.bytes());
                 assertEquals(100, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // erste 100 bytes doppelt (0-149)
                 final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(0, 100, data.slice(0, 150));
@@ -283,6 +316,7 @@ class ReceiveBufferTest {
                 assertEquals(150, tcb.rcvNxt());
                 assertEquals(150, buffer.bytes());
                 assertEquals(150, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 // vorbereitung für nächstes SEG, landet als fragment (250-299)
                 final ConnectionHandshakeSegment seg3 = ConnectionHandshakeSegment.ack(250, 100, data.slice(250, 50));
@@ -291,6 +325,7 @@ class ReceiveBufferTest {
                 assertEquals(150, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(150, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // letze 50 bytes doppelt (200-299)
                 final ConnectionHandshakeSegment seg4 = ConnectionHandshakeSegment.ack(200, 100, data.slice(200, 100));
@@ -299,6 +334,7 @@ class ReceiveBufferTest {
                 assertEquals(150, tcb.rcvNxt());
                 assertEquals(250, buffer.bytes());
                 assertEquals(150, buffer.readableBytes());
+                assertNotNull(buffer.head);
 
                 // vorne und hinten doppelt (100-249)
                 final ConnectionHandshakeSegment seg5 = ConnectionHandshakeSegment.ack(100, 100, data.slice(100, 150));
@@ -307,6 +343,7 @@ class ReceiveBufferTest {
                 assertEquals(300, tcb.rcvNxt());
                 assertEquals(300, buffer.bytes());
                 assertEquals(300, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -335,6 +372,7 @@ class ReceiveBufferTest {
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(40, buffer.bytes());
                 assertEquals(40, buffer.readableBytes());
+                assertNull(buffer.head);
 
                 buffer.fireRead(ctx, tcb);
                 verify(ctx).fireChannelRead(receivedBuf.capture());
@@ -360,6 +398,7 @@ class ReceiveBufferTest {
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(0, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNull(buffer.head);
             }
 
             @Test
@@ -378,6 +417,7 @@ class ReceiveBufferTest {
                 assertEquals(150, tcb.rcvNxt());
                 assertEquals(50, buffer.bytes());
                 assertEquals(50, buffer.readableBytes());
+                assertNull(buffer.head);
             }
 
             @Test
@@ -396,6 +436,7 @@ class ReceiveBufferTest {
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(0, buffer.bytes());
                 assertEquals(0, buffer.readableBytes());
+                assertNull(buffer.head);
             }
         }
     }

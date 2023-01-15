@@ -46,8 +46,8 @@ public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
+    ReceiveBufferEntry head;
     private ByteBuf headBuf = null;
-    private ReceiveBufferEntry head;
     private int bytes;
 
     ReceiveBuffer(final Channel channel, final ByteBuf headBuf, final ReceiveBufferEntry head,
@@ -109,7 +109,7 @@ public class ReceiveBuffer {
                     // ensure that we do not exceed RCV.WND
                     length = Math.min((int) tcb.rcvWnd(), seg.len()) - index;
                     final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
-                    LOG.error(
+                    LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
                             channel,
                             seg,
@@ -134,7 +134,7 @@ public class ReceiveBuffer {
                     final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt(), SEQ_NO_SPACE);
                     length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
                     final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
-                    LOG.error(
+                    LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}]. Use data [{},{}]: {}.",
                             channel,
                             seg,
@@ -171,8 +171,9 @@ public class ReceiveBuffer {
                         final int offsetSegToHead = (int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE);
                         length = Math.min((int) tcb.rcvWnd(), Math.min(offsetSegToHead, seg.len())) - index;
                         final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                        assert lessThan(entry.seq(), head.seq(), SEQ_NO_SPACE);
                         entry.next = head;
-                        LOG.error(
+                        LOG.trace(
                                 "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
                                 channel,
                                 seg,
@@ -200,8 +201,9 @@ public class ReceiveBuffer {
                         final int offsetSeqHead = (int) sub(head.seq(), seg.seq(), SEQ_NO_SPACE);
                         length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), Math.min(offsetSeqHead, seg.len()));
                         final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                        assert lessThan(entry.seq(), head.seq(), SEQ_NO_SPACE);
                         entry.next = head;
-                        LOG.error(
+                        LOG.trace(
                                 "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
                                 channel,
                                 seg,
@@ -226,13 +228,13 @@ public class ReceiveBuffer {
                 }
             }
 
-            // does SEG contain something we can add after the header (or other segments)
+            // does SEG contain something we can add after the header (or other fragments)
             ReceiveBufferEntry current = head;
             while (current != null && tcb.rcvWnd() > 0) {
-                // first, check if there is space between current and any next segment
+                // first, check if there is space between current and any next fragment
                 if (current.next == null || lessThan(add(current.seq(), current.len(), SEQ_NO_SPACE), current.next.seq(), SEQ_NO_SPACE)) {
-                    // second, does SEQ contain data that can be placed after current
-                    if (lessThan(current.lastSeq(), seg.lastSeq(), SEQ_NO_SPACE)) {
+                    // second, does SEQ contain data that can be placed after current AND is SEG before any present next fragment?
+                    if (lessThan(current.lastSeq(), seg.lastSeq(), SEQ_NO_SPACE) && (current.next == null || lessThan(seg.seq(), current.next.seq(), SEQ_NO_SPACE))) {
                         final long seq;
                         final int index;
                         final int length;
@@ -241,10 +243,16 @@ public class ReceiveBuffer {
                             // keine Überschneidung
                             seq = seg.seq();
                             index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
-                            length = seg.len() - index;  // eventuell hinten abschneiden?
+                            if (current.next != null) {
+                                length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq(), SEQ_NO_SPACE)) - index;
+                            }
+                            else {
+                                length = seg.len() - index;
+                            }
                             final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+//                            assert current.next == null || lessThan(entry.seq(), current.next.seq(), SEQ_NO_SPACE);
                             entry.next = current.next;
-                            LOG.error(
+                            LOG.trace(
                                     "{} 1 Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
@@ -253,7 +261,7 @@ public class ReceiveBuffer {
                                     current.seq(),
                                     current.lastSeq(),
                                     current.next != null ? current.next.seq() : "null",
-                                    current.next != null ? current.next.lastSeq(): "null",
+                                    current.next != null ? current.next.lastSeq() : "null",
                                     tcb.rcvNxt(),
                                     add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE),
                                     seq,
@@ -268,10 +276,15 @@ public class ReceiveBuffer {
                             // Überschneidung
                             seq = add(current.lastSeq(), 1, SEQ_NO_SPACE);
                             index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
-                            length = seg.len() - index; // eventuell hinten abschneiden?
-                            final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                            if (current.next != null) {
+                                length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq(), SEQ_NO_SPACE)) - index;
+                            }
+                            else {
+                                length = seg.len() - index;
+                            }                            final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                            assert current.next == null || lessThan(entry.seq(), current.next.seq(), SEQ_NO_SPACE);
                             entry.next = current.next;
-                            LOG.error(
+                            LOG.trace(
                                     "{} 2 Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
@@ -280,11 +293,11 @@ public class ReceiveBuffer {
                                     current.seq(),
                                     current.lastSeq(),
                                     current.next != null ? current.next.seq() : "null",
-                                    current.next != null ? current.next.lastSeq(): "null",
+                                    current.next != null ? current.next.lastSeq() : "null",
                                     tcb.rcvNxt(),
                                     add(tcb.rcvNxt(), tcb.rcvWnd(), SEQ_NO_SPACE),
                                     seq,
-                                    add(seq,length - 1,SEQ_NO_SPACE),
+                                    add(seq, length - 1, SEQ_NO_SPACE),
                                     entry
                             );
                             current.next = entry;
@@ -294,13 +307,15 @@ public class ReceiveBuffer {
                     }
                 }
 
+                LOG.trace("Go to next fragment {}.", current.next);
                 current = current.next;
             }
 
             // aggregieren?
+            LOG.trace("head = {}; RCV.NXT = {}", head, tcb.rcvNxt());
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
-                LOG.error(
+                LOG.trace(
                         "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it, advance RCV.NXT by {}, and set head to {}.",
                         channel,
                         head,
@@ -312,6 +327,7 @@ public class ReceiveBuffer {
                 addToHeadBuf(ctx, head.buf());
                 tcb.advanceRcvNxt(ctx, head.len());
                 head = head.next;
+                assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq(), SEQ_NO_SPACE) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
         }
         else if (seg.len() > 0) {
@@ -358,7 +374,7 @@ public class ReceiveBuffer {
     static class ReceiveBufferEntry {
         private final long seq;
         private final ByteBuf buf;
-        private ReceiveBufferEntry next;
+        ReceiveBufferEntry next;
 
         public ReceiveBufferEntry(long seq, ByteBuf buf) {
             this.seq = seq;

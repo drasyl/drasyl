@@ -331,7 +331,7 @@ public class TransmissionControlBlock {
     }
 
     void addToSendBuffer(final ByteBuf data, final ChannelPromise promise) {
-        sendBuffer.add(data, promise);
+        sendBuffer.enqueue(data, promise);
     }
 
     void flush(final ChannelHandlerContext ctx,
@@ -379,7 +379,7 @@ public class TransmissionControlBlock {
                                       final ConnectionHandshakeSegment seg) {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
-            LOG.error("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {}.", ctx.channel(), seg, sndUna(), seg.ack());
             ackedBytes = sub(seg.ack(), sndUna, SEQ_NO_SPACE);
             sndUna = seg.ack();
         }

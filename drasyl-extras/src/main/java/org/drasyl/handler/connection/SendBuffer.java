@@ -27,10 +27,8 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
-import io.netty.channel.DelegatingChannelPromiseNotifier;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -47,8 +45,8 @@ public class SendBuffer {
     private final Channel channel;
     private SendBufferEntry head;
     private SendBufferEntry tail;
-    private ReadMark readMark;
-    private int acknowledgementIndex;
+    private ReadMark readMark; // Welcher Buffer in der linked list bis wohin gelesen wurde...
+    private int acknowledgementIndex; // Bis wohin der head.buf ACKed wurde...
     private int size;
     private int bytes;
     private int acknowledgeableBytes;
@@ -64,10 +62,6 @@ public class SendBuffer {
         this(channel, new CoalescingBufferQueue(channel, 4, true));
     }
 
-    private static ChannelFutureListener toChannelFutureListener(ChannelPromise promise) {
-        return promise.isVoid() ? null : new DelegatingChannelPromiseNotifier(promise);
-    }
-
     /**
      * Add a buffer to the end of the queue and associate a promise with it that should be completed
      * when all the buffer's bytes have been consumed from the queue and written.
@@ -75,7 +69,7 @@ public class SendBuffer {
      * @param buf     to add to the tail of the queue
      * @param promise to complete when all the bytes have been consumed and written, can be void.
      */
-    public void add(final ByteBuf buf, final ChannelPromise promise) {
+    public void enqueue(final ByteBuf buf, final ChannelPromise promise) {
         queue.add(buf.retainedSlice(), promise);
 
         SendBufferEntry entry = new SendBufferEntry(buf, promise);
@@ -144,19 +138,28 @@ public class SendBuffer {
         SendBufferEntry currentEntry = head;
         while (bytes > 0 && currentEntry != null) {
             ByteBuf currentBuf = currentEntry.content();
-            final int remainingBytes = readMark != null && readMark.entry.content() == currentBuf ? readMark.entry.content().readableBytes() - readMark.remainingBytes() : currentBuf.readableBytes();
-            if (bytes < remainingBytes) {
-                // take part of buf
-                currentBuf = currentBuf.retainedSlice(0, bytes);
-                bytes = 0;
-                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+            final int index;
+            int length;
+            if (currentEntry == head) {
+                index = acknowledgementIndex;
             }
             else {
-                // read whole buf
-                currentBuf = currentBuf.retainedSlice(0, remainingBytes);
-                bytes -= remainingBytes;
-                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+                index = 0;
             }
+            if (readMark != null && readMark.entry.content() == currentBuf) {
+                length = readMark.entry.content().readableBytes() - readMark.remainingBytes() - index;
+            }
+            else {
+                length = currentBuf.readableBytes() - index;
+            }
+
+            if (length > bytes) {
+                length = bytes;
+            }
+
+            currentBuf = currentBuf.retainedSlice(index, length);
+            bytes -= length;
+            toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
 
             currentEntry = currentEntry.next;
         }
@@ -168,27 +171,44 @@ public class SendBuffer {
         return toReturn;
     }
 
-    public ByteBuf unacknowledged(int bytes) {
+    public ByteBuf unacknowledged(final int bytes) {
         return unacknowledged(channel.alloc(), bytes);
     }
 
     public void acknowledge(int bytes) {
+        LOG.trace("ACKnowledgement of {} bytes requested ({} ACKnowledgable bytes available}.", bytes, acknowledgeableBytes);
         bytes = Math.min(bytes, acknowledgeableBytes);
 
         while (bytes > 0 && head != null) {
             final ByteBuf headBuf = head.content();
-            final int remainingBytes = readMark != null && readMark.entry.content() == head.content() ? readMark.index - acknowledgementIndex : headBuf.readableBytes() - acknowledgementIndex;
-            assert remainingBytes > 0;
-            if (bytes < remainingBytes) {
+            final int readBytesInHead;
+            if (readMark != null && readMark.entry.content() == headBuf) {
+                readBytesInHead = readMark.index;
+            }
+            else {
+                readBytesInHead = headBuf.readableBytes();
+            }
+            LOG.trace("{} bytes in headBuf are ByteBuf-readable.", headBuf.readableBytes());
+            LOG.trace("{} bytes in headBuf have been read.", readBytesInHead);
+            LOG.trace("{} bytes in headBuf have already been ACKed.", acknowledgementIndex);
+            final int ackableBytes = readBytesInHead - acknowledgementIndex;
+            final int bytesToAck = Math.min(ackableBytes, bytes);
+            LOG.trace("{} bytes in headBuf can be ACKed.", ackableBytes);
+            final int totalBytesAcked = acknowledgementIndex + bytesToAck;
+            LOG.trace("{} bytes in headBuf are ACKed after this call.", totalBytesAcked);
+
+            if (totalBytesAcked < headBuf.readableBytes()) {
                 // ack part of buf
-                acknowledgementIndex += bytes;
-                this.acknowledgeableBytes -= bytes;
-                queue.remove(bytes, channel.newPromise()).release();
-                this.bytes -= bytes;
+                LOG.trace("First {} bytes of entry {} have been ACKed.", bytesToAck, head);
+                acknowledgementIndex += bytesToAck;
+                this.acknowledgeableBytes -= bytesToAck;
+                queue.remove(bytesToAck, channel.newPromise()).release();
+                this.bytes -= bytesToAck;
                 bytes = 0;
             }
             else {
                 // ack whole buf
+                LOG.trace("All {} bytes of entry {} have been ACKed.", bytes, head);
                 if (head.promise != null) {
                     head.promise.trySuccess();
                     head.release();
@@ -199,12 +219,13 @@ public class SendBuffer {
                     readMark = null;
                 }
                 acknowledgementIndex = 0;
-                bytes -= remainingBytes;
+                bytes -= bytesToAck;
 
                 this.size -= 1;
-                this.acknowledgeableBytes -= remainingBytes;
-                queue.remove(remainingBytes, channel.newPromise()).release();
-                this.bytes -= remainingBytes;
+                this.acknowledgeableBytes -= bytesToAck;
+                queue.remove(bytesToAck, channel.newPromise()).release();
+                this.bytes -= bytesToAck;
+                assert head != null || this.bytes == 0;
             }
         }
     }
@@ -281,7 +302,17 @@ public class SendBuffer {
 
     @Override
     public String toString() {
-        return "SND.BUF(rd: " + readableBytes() + ", ack: " + acknowledgeableBytes + ", len: " + bytes + ")";
+        return "SendBuffer{" +
+                "channel=" + channel +
+                ", head=" + head +
+                ", tail=" + tail +
+                ", readMark=" + readMark +
+                ", acknowledgementIndex=" + acknowledgementIndex +
+                ", size=" + size +
+                ", bytes=" + bytes +
+                ", acknowledgeableBytes=" + acknowledgeableBytes +
+                ", queue=" + queue +
+                '}';
     }
 
     private static class SendBufferEntry extends DefaultByteBufHolder {
@@ -291,6 +322,15 @@ public class SendBuffer {
         public SendBufferEntry(final ByteBuf buf, final ChannelPromise promise) {
             super(buf);
             this.promise = promise;
+        }
+
+        @Override
+        public String toString() {
+            return "SendBufferEntry{" +
+                    "content=" + content() +
+                    ", promise=" + promise +
+                    ", next=" + next +
+                    '}';
         }
     }
 
@@ -309,6 +349,14 @@ public class SendBuffer {
 
         public int remainingBytes() {
             return entry.content().readableBytes() - index;
+        }
+
+        @Override
+        public String toString() {
+            return "ReadMark{" +
+                    "entry=" + entry +
+                    ", index=" + index +
+                    '}';
         }
     }
 }

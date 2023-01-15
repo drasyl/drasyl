@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -96,10 +97,13 @@ public class RetransmissionQueue {
                                       final RttMeasurement rttMeasurement,
                                       final long ackedBytes) {
         boolean somethingWasAcked = ackedBytes > 0;
+        boolean synWasAcked = false;
+        boolean finWasAcked = false;
         if (synSeq != -1 && lessThan(synSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
             // SYN has been ACKed
             synSeq = -1;
             somethingWasAcked = true;
+            synWasAcked = true;
         }
         if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
             // PSH has been ACKed
@@ -110,9 +114,10 @@ public class RetransmissionQueue {
             // FIN has been ACKed
             finSeq = -1;
             somethingWasAcked = true;
+            finWasAcked = true;
         }
 
-        if (somethingWasAcked) {
+        if (somethingWasAcked && !((synWasAcked || finWasAcked) && ackedBytes == 1)) {
             tcb.sendBuffer().acknowledge((int) ackedBytes);
         }
 

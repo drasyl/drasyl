@@ -68,6 +68,8 @@ public class OutgoingSegmentQueue {
 
     public void flush(final ChannelHandlerContext ctx,
                       final TransmissionControlBlock tcb) {
+        LOG.trace("Flush triggered.");
+
         final boolean doFlush = len != 0 || ctl != 0;
         while (len != 0 || ctl != 0) {
             final ChannelPromise promise = ctx.newPromise();
