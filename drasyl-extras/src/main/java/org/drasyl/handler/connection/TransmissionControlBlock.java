@@ -249,7 +249,7 @@ public class TransmissionControlBlock {
                 ", " + sendBuffer +
                 ", OG.SEG.Q=" + outgoingSegmentQueue +
                 ", " + retransmissionQueue +
-                ", RCV.BUF=" + receiveBuffer +
+                ", " + receiveBuffer +
                 ", MSS=" + mss +
                 ", CWND=" + cwnd +
                 ", SSTHRESH=" + ssthresh +

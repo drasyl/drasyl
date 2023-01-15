@@ -29,8 +29,6 @@ import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.nio.channels.ClosedChannelException;
-
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.util.Preconditions.requireNonNegative;
@@ -41,25 +39,32 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 import static org.drasyl.util.SerialNumberArithmetic.sub;
 
-// FIXME: add support for out-of-order?
 public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
-    private static final ClosedChannelException DUMMY_CAUSE = new ClosedChannelException();
     private final Channel channel;
+    // linked list of bufs we are unable to read as preceding bytes are missing
     ReceiveBufferEntry head;
-    private ByteBuf headBuf = null;
+    // cumulated buf if bytes we can read
+    ByteBuf headBuf;
+    // number of entries on our linked list
+    private int size;
+    // number of bytes in our linked list
     private int bytes;
 
-    ReceiveBuffer(final Channel channel, final ByteBuf headBuf, final ReceiveBufferEntry head,
+    ReceiveBuffer(final Channel channel,
+                  final ReceiveBufferEntry head,
+                  final ByteBuf headBuf,
+                  final int size,
                   final int bytes) {
         this.channel = requireNonNull(channel);
         this.headBuf = headBuf;
         this.head = head;
+        this.size = requireNonNegative(size);
         this.bytes = requireNonNegative(bytes);
     }
 
     ReceiveBuffer(final Channel channel) {
-        this(channel, null, null, 0);
+        this(channel, null, null, 0, 0);
     }
 
     /**
@@ -75,6 +80,9 @@ public class ReceiveBuffer {
             head.buf().release();
             head = head.next;
         }
+
+        size = 0;
+        bytes = 0;
     }
 
     /**
@@ -84,9 +92,13 @@ public class ReceiveBuffer {
         return bytes;
     }
 
+    public int size() {
+        return size;
+    }
+
     @Override
     public String toString() {
-        return String.valueOf(bytes());
+        return "RCV.BUF(len: " + bytes() + ", frg: " + size() + ")";
     }
 
     public void receive(final ChannelHandlerContext ctx,
@@ -123,6 +135,7 @@ public class ReceiveBuffer {
                     );
                     head = entry;
                     tcb.decrementRcvWnd(length);
+                    size += 1;
                     bytes += length;
                 }
                 // SEG is within RCV.WND, but not at the left edge
@@ -148,6 +161,7 @@ public class ReceiveBuffer {
                     );
                     head = entry;
                     tcb.decrementRcvWnd(length);
+                    size += 1;
                     bytes += length;
                 }
                 else {
@@ -189,6 +203,7 @@ public class ReceiveBuffer {
                         );
                         head = entry;
                         tcb.decrementRcvWnd(length);
+                        size += 1;
                         bytes += length;
                     }
                     // SEG is within RCV.WND, but not at the left edge
@@ -219,6 +234,7 @@ public class ReceiveBuffer {
                         );
                         head = entry;
                         tcb.decrementRcvWnd(length);
+                        size += 1;
                         bytes += length;
                     }
                     else {
@@ -270,6 +286,7 @@ public class ReceiveBuffer {
                             );
                             current.next = entry;
                             tcb.decrementRcvWnd(length);
+                            size += 1;
                             bytes += length;
                         }
                         else {
@@ -281,7 +298,8 @@ public class ReceiveBuffer {
                             }
                             else {
                                 length = seg.len() - index;
-                            }                            final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
+                            }
+                            final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
                             assert current.next == null || lessThan(entry.seq(), current.next.seq(), SEQ_NO_SPACE);
                             entry.next = current.next;
                             LOG.trace(
@@ -302,6 +320,7 @@ public class ReceiveBuffer {
                             );
                             current.next = entry;
                             tcb.decrementRcvWnd(length);
+                            size += 1;
                             bytes += length;
                         }
                     }
@@ -379,10 +398,6 @@ public class ReceiveBuffer {
         public ReceiveBufferEntry(long seq, ByteBuf buf) {
             this.seq = seq;
             this.buf = requireNonNull(buf);
-        }
-
-        public ReceiveBufferEntry(ConnectionHandshakeSegment seg, ByteBuf buf) {
-            this(seg.seq(), buf);
         }
 
         @Override

@@ -36,7 +36,7 @@ class ReceiveBufferTest {
 
             ReceiveBufferEntry head = new ReceiveBufferEntry(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
             head.next = new ReceiveBufferEntry(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
-            final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, head, 60);
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
             final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 918402327, 930467719-918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
             ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.pshAck(110, 1751431617, data.slice(0, 100));
@@ -159,7 +159,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(160).writeBytes(randomBytes(160));
 
                 final ReceiveBufferEntry head = new ReceiveBufferEntry(60, data.slice(60, 100));
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, head, 100);
+                final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 100);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 100, 0, 100, 0, 64_000 - 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
                 // expected [0,60), got [0,100)
@@ -260,7 +260,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(200).writeBytes(randomBytes(200));
 
                 final ReceiveBufferEntry head = new ReceiveBufferEntry(70, data.slice(60, 60));
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, head, 60);
+                final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 10, 64_000 - 60, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
                 // expected [10,70) and [130,210), got [10,210)
@@ -386,7 +386,7 @@ class ReceiveBufferTest {
             void receiveSegmentThatIsFullyBeforeTheReceiveWindow(@Mock final Channel channel,
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 100, 64_000, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
                 final ByteBuf data = Unpooled.buffer(90).writeBytes(randomBytes(90));
@@ -405,7 +405,7 @@ class ReceiveBufferTest {
             void receiveSegmentThatIsPartiallyBehindTheReceiveWindow(@Mock final Channel channel,
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 100, 50, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
@@ -424,7 +424,7 @@ class ReceiveBufferTest {
             void receiveSegmentThatIsFullyBehindTheReceiveWindow(@Mock final Channel channel,
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 100, 64_000, 0, sendBuffer, new RetransmissionQueue(channel), buffer, new RttMeasurement(), 1000);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));

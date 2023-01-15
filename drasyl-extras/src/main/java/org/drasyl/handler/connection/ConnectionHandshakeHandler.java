@@ -450,6 +450,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     private void createTcb(final ChannelHandlerContext ctx) {
         // window size sollte ein vielfaches von mss betragen
+        assert tcb == null;
         tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong(), initialWindow, initialMss);
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
 

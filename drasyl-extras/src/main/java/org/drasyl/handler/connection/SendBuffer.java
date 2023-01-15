@@ -108,8 +108,8 @@ public class SendBuffer {
             tail = entry;
 
             // if previous tail has been fully read, we need to update the ReadMark
-            if (readMark.remainingBytes() == 0) {
-                readMark = new ReadMark(readMark.entry.next);
+            if (!readMark.hasRemainingBytes()) {
+                readMark = new ReadMark(readMark.next());
             }
         }
 
@@ -119,32 +119,28 @@ public class SendBuffer {
 
     public final ByteBuf read(final ByteBufAllocator alloc, int bytes) {
         ByteBuf toReturn = null;
-        while (bytes > 0 && readMark != null && readMark.remainingBytes() > 0) {
-            final SendBufferEntry currentEntry = readMark.entry;
-            ByteBuf currentBuf = currentEntry.content();
-            final int remainingBytes = readMark.remainingBytes();
-            if (bytes < remainingBytes) {
-                // take part of buf
-                currentBuf = currentBuf.retainedSlice(readMark.index, bytes);
-                readMark.index += bytes;
-                acknowledgeableBytes += bytes;
-                bytes = 0;
-                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
-            }
-            else {
-                // read whole buf
-                currentBuf = currentBuf.retainedSlice(readMark.index, remainingBytes);
-                readMark.index += remainingBytes;
-                acknowledgeableBytes += remainingBytes;
-                bytes -= remainingBytes;
-                toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+        while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {
+            // read as many bytes as requested and available
+            final int bytesToRead = Math.min(bytes, readMark.remainingBytes());
+            final ByteBuf buf = readMark.content().retainedSlice(readMark.index, bytesToRead);
 
-                if (currentEntry.next != null) {
-                    readMark = new ReadMark(currentEntry.next);
-                }
+            // update counter
+            readMark.index += bytesToRead;
+            acknowledgeableBytes += bytesToRead;
+
+            bytes -= bytesToRead;
+
+            // compose buf
+            toReturn = toReturn == null ? buf : compose(alloc, toReturn, buf);
+
+            // if necessary, move ReadMark to next buf
+            if (!readMark.hasRemainingBytes() && readMark.next() != null) {
+                // whole buf read, move ReadMark to next buf
+                readMark = new ReadMark(readMark.next());
             }
         }
 
+        // if nothing was available to read, return empty buf
         if (toReturn == null) {
             toReturn = Unpooled.EMPTY_BUFFER;
         }
@@ -157,38 +153,49 @@ public class SendBuffer {
     }
 
     public ByteBuf unacknowledged(final ByteBufAllocator alloc, int bytes) {
+        // ensure that only as many bytes are requested as are available
         bytes = Math.min(bytes, acknowledgeableBytes);
 
         ByteBuf toReturn = null;
         SendBufferEntry currentEntry = head;
         while (bytes > 0 && currentEntry != null) {
-            ByteBuf currentBuf = currentEntry.content();
             final int index;
             int length;
             if (currentEntry == head) {
+                // do not return bytes that have already been ACKed
                 index = acknowledgementIndex;
             }
             else {
+                // nothing ACKed in currentEntry, start from beginning
                 index = 0;
             }
-            if (readMark != null && readMark.entry.content() == currentBuf) {
-                length = readMark.entry.content().readableBytes() - readMark.remainingBytes() - index;
+
+            if (readMark != null && readMark.content() == currentEntry.content()) {
+                // do not return bytes that have not been read yet
+                length = readMark.content().readableBytes() - readMark.remainingBytes() - index;
             }
             else {
-                length = currentBuf.readableBytes() - index;
+                // whole buf has been read, return all bytes
+                length = currentEntry.content().readableBytes() - index;
             }
 
+            // do not return more bytes than requested
             if (length > bytes) {
                 length = bytes;
             }
 
-            currentBuf = currentBuf.retainedSlice(index, length);
-            bytes -= length;
-            toReturn = toReturn == null ? currentBuf : compose(alloc, toReturn, currentBuf);
+            final ByteBuf buf = currentEntry.content().retainedSlice(index, length);
 
+            bytes -= length;
+
+            // compose buf
+            toReturn = toReturn == null ? buf : compose(alloc, toReturn, buf);
+
+            // go to next entry
             currentEntry = currentEntry.next;
         }
 
+        // if nothing unacknowledged is present, return empty buf
         if (toReturn == null) {
             toReturn = Unpooled.EMPTY_BUFFER;
         }
@@ -207,7 +214,7 @@ public class SendBuffer {
         while (bytes > 0 && head != null) {
             final ByteBuf headBuf = head.content();
             final int readBytesInHead;
-            if (readMark != null && readMark.entry.content() == headBuf) {
+            if (readMark != null && readMark.content() == headBuf) {
                 readBytesInHead = readMark.index;
             }
             else {
@@ -401,7 +408,15 @@ public class SendBuffer {
         }
 
         public int remainingBytes() {
-            return entry.content().readableBytes() - index;
+            return content().readableBytes() - index;
+        }
+
+        public boolean hasRemainingBytes() {
+            return remainingBytes() > 0;
+        }
+
+        public ByteBuf content() {
+            return entry.content();
         }
 
         @Override
@@ -427,6 +442,10 @@ public class SendBuffer {
         @Override
         public int hashCode() {
             return Objects.hash(entry, index);
+        }
+
+        public SendBufferEntry next() {
+            return entry.next;
         }
     }
 }
