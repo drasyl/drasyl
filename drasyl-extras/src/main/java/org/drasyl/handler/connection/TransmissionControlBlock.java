@@ -355,7 +355,7 @@ public class TransmissionControlBlock {
             LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
 
             // at least one byte is required for Zero-Window Probing
-            final long max = Math.max(newFlush ? 1 : 0, Math.min(sendWindow, congestionWindow) - flightSize);
+            final long max = Math.max(newFlush ? 1 : 0, sendWindow - flightSize);
             long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             LOG.trace("{}[{}] Write {} bytes to network.", ctx.channel(), state, remainingBytes);
@@ -388,22 +388,22 @@ public class TransmissionControlBlock {
 
         retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement, ackedBytes);
 
-        if (ackedBytes > 0) {
-            if (doSlowStart()) {
-                // Slow Start -> +1 MSS after each ACK
-                cwnd += Math.min(mss, ackedBytes);
-            }
-            else {
-                // Congestion Avoidance -> +1 MSS after each RTT
-                cwnd += Math.ceil(((long) mss * mss) / (float) cwnd);
-            }
-
-            if (duplicateAcks != 0) {
-                duplicateAcks = 0;
-                cwnd = ssthresh;
-                LOG.error("{} ACKed new data (`{}`). Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel(), seg);
-            }
-        }
+//        if (ackedBytes > 0) {
+//            if (doSlowStart()) {
+//                // Slow Start -> +1 MSS after each ACK
+//                cwnd += Math.min(mss, ackedBytes);
+//            }
+//            else {
+//                // Congestion Avoidance -> +1 MSS after each RTT
+//                cwnd += Math.ceil(((long) mss * mss) / (float) cwnd);
+//            }
+//
+//            if (duplicateAcks != 0) {
+//                duplicateAcks = 0;
+//                cwnd = ssthresh;
+//                LOG.error("{} ACKed new data (`{}`). Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel(), seg);
+//            }
+//        }
     }
 
     public void synchronizeState(final ConnectionHandshakeSegment seg) {
@@ -453,9 +453,9 @@ public class TransmissionControlBlock {
         }
     }
 
-    boolean doSlowStart() {
-        return cwnd < ssthresh;
-    }
+//    boolean doSlowStart() {
+//        return cwnd < ssthresh;
+//    }
 
     public long cwnd() {
         return cwnd;
@@ -483,29 +483,29 @@ public class TransmissionControlBlock {
         //      the advertised window in the incoming acknowledgment equals the
         //      advertised window in the last incoming acknowledgment.
 
-        duplicateAcks += 1;
-        if (duplicateAcks == 3) {
-            LOG.error("{} Got {} duplicate ACKs (in a row?).", ctx.channel(), duplicateAcks);
-
-            // When the third duplicate ACK is received, a TCP MUST set ssthresh
-            //       to no more than the value given in equation (4)
-            ssthresh = Math.max(sendBuffer.acknowledgeableBytes() / 2, 2L * mss);
-            LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
-
-            // The lost segment starting at SND.UNA MUST be retransmitted...
-            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
-            LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
-            ctx.writeAndFlush(current);
-
-            // ... and cwnd set to ssthresh plus 3*SMSS.
-            cwnd = ssthresh + 3L * mss;
-            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
-        }
-        else if (duplicateAcks > 3) {
-            // For each additional duplicate ACK received (after the third),
-            //       cwnd MUST be incremented by SMSS.
-            cwnd += mss;
-        }
+//        duplicateAcks += 1;
+//        if (duplicateAcks == 3) {
+//            LOG.error("{} Got {} duplicate ACKs (in a row?).", ctx.channel(), duplicateAcks);
+//
+//            // When the third duplicate ACK is received, a TCP MUST set ssthresh
+//            //       to no more than the value given in equation (4)
+//            ssthresh = Math.max(sendBuffer.acknowledgeableBytes() / 2, 2L * mss);
+//            LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
+//
+//            // The lost segment starting at SND.UNA MUST be retransmitted...
+//            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
+//            LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
+//            ctx.writeAndFlush(current);
+//
+//            // ... and cwnd set to ssthresh plus 3*SMSS.
+//            cwnd = ssthresh + 3L * mss;
+//            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
+//        }
+//        else if (duplicateAcks > 3) {
+//            // For each additional duplicate ACK received (after the third),
+//            //       cwnd MUST be incremented by SMSS.
+//            cwnd += mss;
+//        }
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
