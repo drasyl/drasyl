@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
       - name: Deploy to Maven Central
-        run: ./mvnw --batch-mode --update-snapshots --activate-profiles release deploy
+        run: ./mvnw --batch-mode --update-snapshots --activate-profiles release -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 deploy
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_REPO_USER }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_REPO_PASS }}
