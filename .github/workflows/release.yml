@@ -399,13 +399,13 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Get actual patch version
         id: actual_patch_version
-        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
+        run: echo ACTUAL_PATCH_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3) >> $GITHUB_OUTPUT
       - name: Get actual minor version
         id: actual_minor_version
-        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2)
+        run: echo ACTUAL_MINOR_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2) >> $GITHUB_OUTPUT
       - name: Get actual major version
         id: actual_major_version
-        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1)
+        run: echo ACTUAL_MAJOR_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1) >> $GITHUB_OUTPUT
       - name: Build and publish image
         uses: ilteoood/docker_buildx@1.1.0
         with:
@@ -433,7 +433,7 @@ jobs:
         run: |
           s=$(sha256sum drasyl.zip | awk  '{ print $1 }')
           echo "SHA256 is: $s"
-          echo ::set-output name=sha::${s}
+          echo sha=${s} >> $GITHUB_OUTPUT
       - name: Update Formula
         run: |
           sed -i -e "s/  version.*/  version \"$(echo ${{ github.event.release.tag_name }} | sed 's/v//')\"/" Formula/drasyl.rb
@@ -472,7 +472,7 @@ jobs:
           (Get-Content ./tools/chocolateyinstall.ps1) -replace 'checksum\s+=.*', "checksum       = `"$SHA`"" | Set-Content ./tools/chocolateyinstall.ps1
           Get-Content ./tools/chocolateyinstall.ps1
 
-          echo "::set-output name=version::$Version"
+          echo "version=$Version" >> $GITHUB_OUTPUT
       - name: Create package
         run: choco pack
       - name: Push package

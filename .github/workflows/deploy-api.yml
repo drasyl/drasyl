@@ -45,7 +45,7 @@ jobs:
           repository: drasyl/api.drasyl.org
       - name: Get branch name
         id: vars
-        run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}
+        run: echo short_ref=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
       - name: Delete old Java API
         run: rm -rf ${{ steps.vars.outputs.short_ref }}
       - name: Download artifact
