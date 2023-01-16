@@ -77,13 +77,14 @@ jobs:
         uses: microsoft/setup-msbuild@v1
         if: matrix.os == 'windows-latest'
 
-      # set up graalvm
+      # set up GraalVM
       - name: Set up GraalVM environment
-        uses: ayltai/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 22.2.0
-          native-image: true
+          version: latest
+          java-version: 17
+          components: native-image
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Cache Maven packages
         uses: actions/cache@v3
