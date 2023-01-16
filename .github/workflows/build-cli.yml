@@ -22,12 +22,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'adopt'
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
       - name: Build with Maven
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -92,14 +87,8 @@ jobs:
           version: latest
           java-version: 17
           components: native-image
+          cache: 'maven'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
 
       # build native image
       - name: Build Native Image
