@@ -521,7 +521,7 @@ class ConnectionHandshakeHandlerIT {
                                                            final Object evt) {
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }
@@ -547,7 +547,7 @@ class ConnectionHandshakeHandlerIT {
                                 // start dropping segments once handshake is completed
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropRandomOutboundMessagesHandler(1, 1));
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }

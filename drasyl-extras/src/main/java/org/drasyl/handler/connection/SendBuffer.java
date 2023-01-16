@@ -117,6 +117,10 @@ public class SendBuffer {
         this.bytes += buf.readableBytes();
     }
 
+    public void enqueue(final ByteBuf buf) {
+        enqueue(buf, channel.newPromise());
+    }
+
     public final ByteBuf read(final ByteBufAllocator alloc, int bytes) {
         ByteBuf toReturn = null;
         while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {
@@ -308,6 +312,10 @@ public class SendBuffer {
 
     public long acknowledgeableBytes() {
         return acknowledgeableBytes;
+    }
+
+    public boolean hasOutstandingData() {
+        return acknowledgeableBytes > 0;
     }
 
     /**

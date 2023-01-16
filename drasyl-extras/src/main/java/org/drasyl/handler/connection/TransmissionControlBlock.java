@@ -76,6 +76,7 @@ public class TransmissionControlBlock {
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     private final RttMeasurement rttMeasurement;
+    protected long ssthresh; // slow start threshold
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     private long rcvWnd; // receive window
@@ -91,7 +92,6 @@ public class TransmissionControlBlock {
     private int mss; // maximum segment size
     // congestion control
     private long cwnd; // congestion window
-    private long ssthresh; // slow start threshold
     private int duplicateAcks;
 
     @SuppressWarnings("java:S107")
@@ -140,36 +140,36 @@ public class TransmissionControlBlock {
                              final ReceiveBuffer receiveBuffer,
                              final RttMeasurement rttMeasurement,
                              final int mss) {
-        // IW, the initial value of cwnd, MUST be set using the following guidelines as an upper bound.
-        //
-        // If SMSS > 2190 bytes:
-        //  IW = 2 * SMSS bytes and MUST NOT be more than 2 segments
-        // If (SMSS > 1095 bytes) and (SMSS <= 2190 bytes):
-        //  IW = 3 * SMSS bytes and MUST NOT be more than 3 segments
-        // if SMSS <= 1095 bytes:
-        //  IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, rttMeasurement, mss, 3 * mss, rcvWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, rttMeasurement, mss, mss, rcvWnd);
     }
 
-    public TransmissionControlBlock(final Channel channel,
-                                    final long sndUna,
-                                    final long sndNxt,
-                                    final int sndWnd,
-                                    final long iss,
-                                    final int rcvWnd,
-                                    final long irs,
-                                    final int mss) {
+    TransmissionControlBlock(final Channel channel,
+                             final long sndUna,
+                             final long sndNxt,
+                             final int sndWnd,
+                             final long iss,
+                             final int rcvWnd,
+                             final long irs,
+                             final int mss) {
         this(sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
-    public TransmissionControlBlock(final Channel channel,
-                                    final long sndUna,
-                                    final long sndNxt,
-                                    final long iss,
-                                    final long irs,
-                                    final int windowSize,
-                                    final int mss) {
+    TransmissionControlBlock(final Channel channel,
+                             final long sndUna,
+                             final long sndNxt,
+                             final long iss,
+                             final long irs,
+                             final int windowSize,
+                             final int mss) {
         this(sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+    }
+
+    TransmissionControlBlock(final Channel channel,
+                             final long iss,
+                             final long irs,
+                             final int windowSize,
+                             final int mss) {
+        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
@@ -177,14 +177,6 @@ public class TransmissionControlBlock {
                                     final int rcvWnd,
                                     final int mss) {
         this(iss, iss, 0, iss, 0, rcvWnd, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
-    }
-
-    public TransmissionControlBlock(final Channel channel,
-                                    final long iss,
-                                    final long irs,
-                                    final int windowSize,
-                                    final int mss) {
-        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
     }
 
     public long sndUna() {
@@ -352,13 +344,19 @@ public class TransmissionControlBlock {
             final long flightSize = sendBuffer.acknowledgeableBytes();
             final long sendWindow = sndWnd();
             final long congestionWindow = cwnd();
+            final long window = Math.min(sendWindow, congestionWindow);
             LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
 
             // at least one byte is required for Zero-Window Probing
-            final long max = Math.max(newFlush ? 1 : 0, sendWindow - flightSize);
-            long remainingBytes = Math.min(Math.min(max, sendBuffer.readableBytes()), allowedBytesToFlush);
+            long unusedSendWindow = Math.max(0, window - flightSize);
+            if (newFlush && window == 0 && flightSize == 0 && unusedSendWindow == 0) {
+                // zero window probing
+                unusedSendWindow = 1;
+            }
 
-            LOG.trace("{}[{}] Write {} bytes to network.", ctx.channel(), state, remainingBytes);
+            long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
+
+            LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
             allowedBytesToFlush -= remainingBytes;
@@ -381,29 +379,42 @@ public class TransmissionControlBlock {
                                       final ConnectionHandshakeSegment seg) {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
-            LOG.error("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
             ackedBytes = sub(seg.ack(), sndUna, SEQ_NO_SPACE);
             sndUna = seg.ack();
         }
 
-        retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement, ackedBytes);
+        final byte ackedCtl = retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement, ackedBytes);
 
-//        if (ackedBytes > 0) {
-//            if (doSlowStart()) {
-//                // Slow Start -> +1 MSS after each ACK
-//                cwnd += Math.min(mss, ackedBytes);
-//            }
-//            else {
-//                // Congestion Avoidance -> +1 MSS after each RTT
-//                cwnd += Math.ceil(((long) mss * mss) / (float) cwnd);
-//            }
-//
+        // FIXME: If the SYN or SYN/ACK is lost, the initial window used by a
+        //   sender after a correctly transmitted SYN MUST be one segment
+        //   consisting of at most SMSS bytes.
+        final boolean synAcked = (ackedCtl & ConnectionHandshakeSegment.SYN) != 0;
+        // only when new data is acked
+        // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
+        if (ackedBytes > 0 && !synAcked) {
+            if (doSlowStart()) {
+                // During slow start, a TCP increments cwnd by at most SMSS bytes for
+                //   each ACK received that cumulatively acknowledges new data.
+
+                // Slow Start -> +1 MSS after each ACK
+                final long increment = Math.min(mss, ackedBytes);
+                LOG.error("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cmd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                cwnd += increment;
+            }
+            else {
+                // Congestion Avoidance -> +1 MSS after each RTT
+                final double increment = Math.ceil(((long) mss * mss) / (float) cwnd);
+                LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cmd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                cwnd += increment;
+            }
+
 //            if (duplicateAcks != 0) {
 //                duplicateAcks = 0;
 //                cwnd = ssthresh;
 //                LOG.error("{} ACKed new data (`{}`). Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel(), seg);
 //            }
-//        }
+        }
     }
 
     public void synchronizeState(final ConnectionHandshakeSegment seg) {
@@ -453,9 +464,9 @@ public class TransmissionControlBlock {
         }
     }
 
-//    boolean doSlowStart() {
-//        return cwnd < ssthresh;
-//    }
+    boolean doSlowStart() {
+        return cwnd < ssthresh;
+    }
 
     public long cwnd() {
         return cwnd;
@@ -473,7 +484,8 @@ public class TransmissionControlBlock {
         return ssthresh;
     }
 
-    public void gotDuplicateAck(final ChannelHandlerContext ctx) {
+    public void gotDuplicateAckCandidate(final ChannelHandlerContext ctx,
+                                         final ConnectionHandshakeSegment seg) {
         // An acknowledgment is considered a
         //      "duplicate" in the following algorithms when (a) the receiver of
         //      the ACK has outstanding data, (b) the incoming acknowledgment
@@ -482,30 +494,66 @@ public class TransmissionControlBlock {
         //      received on the given connection (TCP.UNA from [RFC793]) and (e)
         //      the advertised window in the incoming acknowledgment equals the
         //      advertised window in the last incoming acknowledgment.
+        long lastAdvertisedWindow = seg.window(); // FIXME
+        if (sendBuffer.hasOutstandingData() && seg.len() == 0 && !seg.isSyn() && !seg.isFin() && seg.ack() == sndUna && seg.window() == lastAdvertisedWindow) {
+            final long currentWindowSize = Math.min(cwnd, sndWnd);
+            final long newSsthresh = Math.max(currentWindowSize / 2, 2L * mss);
+            LOG.error("{} Congestion Control: Duplicate ACK. Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
+            ssthresh = newSsthresh;
 
-//        duplicateAcks += 1;
-//        if (duplicateAcks == 3) {
-//            LOG.error("{} Got {} duplicate ACKs (in a row?).", ctx.channel(), duplicateAcks);
-//
+            // fast retransmit
+            duplicateAcks += 1;
+        }
+        else {
+            // fast retransmit
+            duplicateAcks = 0;
+        }
+
+        // fast retransmit
+        // Since TCP does not know whether a duplicate ACK is caused by a lost
+        //   segment or just a reordering of segments, it waits for a small number
+        //   of duplicate ACKs to be received.  It is assumed that if there is
+        //   just a reordering of the segments, there will be only one or two
+        //   duplicate ACKs before the reordered segment is processed, which will
+        //   then generate a new ACK.  If three or more duplicate ACKs are
+        //   received in a row, it is a strong indication that a segment has been
+        //   lost.
+        if (duplicateAcks == 3) {
+            LOG.error("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row.", ctx.channel(), duplicateAcks);
+
+            // TCP then performs a retransmission of what appears to be the
+            //   missing segment, without waiting for a retransmission timer to
+            //   expire.
+            // The lost segment starting at SND.UNA MUST be retransmitted...
+            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
+            LOG.error("{} Congestion Control: Fast Retransmit: Retransmit SEG `{}`.", ctx.channel(), current);
+            ctx.writeAndFlush(current);
+
+            // Fast recovery
+            final long newSsthresh = Math.max(cwnd / 2, 2L * mss);
+            LOG.error("{} Congestion Control: Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
+            ssthresh = newSsthresh;
+
+            LOG.error("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd, ssthresh + 3L * mss);
+            cwnd = ssthresh + 3L * mss;
+
 //            // When the third duplicate ACK is received, a TCP MUST set ssthresh
 //            //       to no more than the value given in equation (4)
 //            ssthresh = Math.max(sendBuffer.acknowledgeableBytes() / 2, 2L * mss);
 //            LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
 //
-//            // The lost segment starting at SND.UNA MUST be retransmitted...
-//            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
-//            LOG.error("{} Retransmit SEG `{}`.", ctx.channel(), current);
-//            ctx.writeAndFlush(current);
+
 //
 //            // ... and cwnd set to ssthresh plus 3*SMSS.
 //            cwnd = ssthresh + 3L * mss;
 //            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
 //        }
-//        else if (duplicateAcks > 3) {
-//            // For each additional duplicate ACK received (after the third),
-//            //       cwnd MUST be incremented by SMSS.
-//            cwnd += mss;
-//        }
+        }
+        else {
+            LOG.error("{} Congestion Control: Fast Recovery: Another duplicate ACK. Set cwnd from {} to {}.", ctx.channel(), cwnd, cwnd + mss);
+            cwnd += mss;
+
+        }
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {

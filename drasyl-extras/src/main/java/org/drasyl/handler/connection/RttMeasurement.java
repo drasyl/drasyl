@@ -61,7 +61,7 @@ public class RttMeasurement {
                 tsRecent = tsVal;
 
                 // calculate RTO
-                calculateRto(ctx, tsEcr, smss, flightSize);
+//                calculateRto(ctx, tsEcr, smss, flightSize);
             }
         }
     }
@@ -107,6 +107,7 @@ public class RttMeasurement {
             SRTT = r;
             RTTVAR = r / 2.0;
             RTO = SRTT + Math.max(G, K * RTTVAR);
+            assert RTO > 0;
         }
         else {
             // subsequent measurement
@@ -118,6 +119,7 @@ public class RttMeasurement {
             RTTVAR = (1 - betaDash) * RTTVAR + betaDash * Math.abs(SRTT - rDash);
             SRTT = (1 - alphaDash) * SRTT + alphaDash * rDash;
             RTO = SRTT + Math.max(G, K * RTTVAR);
+            assert RTO > 0;
         }
 
         if (RTO < LOWER_BOUND) {

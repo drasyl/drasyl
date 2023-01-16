@@ -141,7 +141,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, activeOpen, 1220, 10_000 * 1220);
+        this(userTimeout, activeOpen, 1220, 1 * 1220);
     }
 
     /*
@@ -958,7 +958,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (duplicateAck) {
             // ACK is duplicate. ignore
             LOG.warn("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
-            tcb.gotDuplicateAck(ctx);
+            tcb.gotDuplicateAckCandidate(ctx, seg);
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {
             // FIXME: add support for window!

@@ -130,7 +130,7 @@ public class OutgoingSegmentQueue {
                        final ConnectionHandshakeSegment seg,
                        final ChannelPromise promise) {
         ReferenceCountUtil.touch(seg, "OutgoingSegmentQueue write " + seg.toString());
-        LOG.error("{} Write SEG `{}` to network.", ctx.channel(), seg);
+        LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         // RTTM
         tcb.rttMeasurement().write(seg);

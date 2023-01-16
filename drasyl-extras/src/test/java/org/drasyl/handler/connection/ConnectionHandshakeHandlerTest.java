@@ -780,11 +780,10 @@ class ConnectionHandshakeHandlerTest {
                 channel.close();
             }
 
-            // slow start?
             @Test
-            void name() {
+            void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 100L, 200L, 64 * 1000, 1000);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);
                 final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), (int) tcb.sndWnd(), tcb);
                 channel.pipeline().addLast(handler);
 
@@ -792,12 +791,67 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(3 * 1000, tcb.cwnd());
                 // The initial value of ssthresh SHOULD be set arbitrarily high (e.g.,
                 //   to the size of the largest possible advertised window)
-                assertEquals(64 * 1000, tcb.ssthresh());
+                assertEquals(4 * 1000, tcb.ssthresh());
+
+                //
                 // do slow start
+                //
                 assertTrue(tcb.doSlowStart());
 
                 // During slow start, a TCP increments cwnd by at most SMSS bytes for
                 //   each ACK received that cumulatively acknowledges new data.
+
+                // old data
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 300));
+                assertEquals(3000, tcb.cwnd());
+
+                // new data
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 310));
+                assertEquals(3010, tcb.cwnd());
+
+                // limit to SMSS
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 2000));
+                assertEquals(4010, tcb.cwnd());
+
+                //
+                // do congestion avoidance
+                //
+                assertFalse(tcb.doSlowStart());
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 3000));
+                assertEquals(4010 + 250, tcb.cwnd());
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4000));
+                assertEquals(4260 + 235, tcb.cwnd());
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4100));
+                assertEquals(4495 + 223, tcb.cwnd());
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4105));
+                assertEquals(4718 + 212, tcb.cwnd());
+            }
+
+            // slow start?
+            @Test
+            void fastRetransmit() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), (int) tcb.sndWnd(), tcb);
+                channel.pipeline().addLast(handler);
+
+                // we need outstanding data first
+                final ByteBuf outstandingData = Unpooled.buffer(100).writeBytes(randomBytes(100));
+                tcb.sendBuffer().enqueue(outstandingData);
+                tcb.sendBuffer().read(100);
+                assertTrue(tcb.sendBuffer().hasOutstandingData());
+
+                // three duplicate ACKs in a row
+                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
+                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
+
+                // fast retransmit
+                assertEquals(ConnectionHandshakeSegment.ack(300, 200, outstandingData), channel.readOutbound());
             }
         }
     }

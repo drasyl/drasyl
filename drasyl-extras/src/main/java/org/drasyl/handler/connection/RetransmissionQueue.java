@@ -33,7 +33,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.EnumMap;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
@@ -90,11 +89,13 @@ public class RetransmissionQueue {
         return "RTNS.Q(SYN=" + synSeq + ", PSH=" + pshSeq + ", FIN=" + finSeq + ")";
     }
 
-    public void handleAcknowledgement(final ChannelHandlerContext ctx,
+    public byte handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final ConnectionHandshakeSegment seg,
                                       final TransmissionControlBlock tcb,
                                       final RttMeasurement rttMeasurement,
                                       final long ackedBytes) {
+        byte ackedCtl = 0;
+
         boolean somethingWasAcked = ackedBytes > 0;
         boolean synWasAcked = false;
         boolean finWasAcked = false;
@@ -103,6 +104,7 @@ public class RetransmissionQueue {
             synSeq = -1;
             somethingWasAcked = true;
             synWasAcked = true;
+            ackedCtl |= SYN;
         }
         if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
             // PSH has been ACKed
@@ -131,6 +133,8 @@ public class RetransmissionQueue {
                 recreateRetransmissionTimer(ctx, tcb);
             }
         }
+
+        return ackedCtl;
     }
 
     private void recreateRetransmissionTimer(final ChannelHandlerContext ctx,
@@ -142,21 +146,25 @@ public class RetransmissionQueue {
 
         // create new timer
         long rto = (long) tcb.rttMeasurement().rto();
-        retransmissionTimer = ctx.executor().schedule(() -> {
-            // https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
-
-            // retransmit the earliest segment that has not been acknowledged
-            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
-            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
-
-            ctx.writeAndFlush(retransmission);
-
-            // The host MUST set RTO <- RTO * 2 ("back off the timer")
-            tcb.rttMeasurement().timeoutOccurred();
-
-            // Start the retransmission timer, such that it expires after RTO seconds
-            recreateRetransmissionTimer(ctx, tcb);
-        }, rto, MILLISECONDS);
+//        retransmissionTimer = ctx.executor().schedule(() -> {
+//            // FIXME: https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
+//
+//            LOG.error("{} Congestion Control: Timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), tcb.mss());
+//            tcb.ssthresh = tcb.mss();
+//
+//            // retransmit the earliest segment that has not been acknowledged
+//            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
+//            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
+//
+//            // send immediately
+//            ctx.writeAndFlush(retransmission);
+//
+//            // The host MUST set RTO <- RTO * 2 ("back off the timer")
+//            tcb.rttMeasurement().timeoutOccurred();
+//
+//            // Start the retransmission timer, such that it expires after RTO seconds
+//            recreateRetransmissionTimer(ctx, tcb);
+//        }, rto, MILLISECONDS);
     }
 
     ConnectionHandshakeSegment retransmissionSegment(final TransmissionControlBlock tcb) {
