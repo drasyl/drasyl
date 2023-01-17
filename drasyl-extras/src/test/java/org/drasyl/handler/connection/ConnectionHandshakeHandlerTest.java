@@ -27,6 +27,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.handler.connection.RetransmissionQueue.Clock;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import static java.time.Duration.ZERO;
 import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -790,8 +792,6 @@ class ConnectionHandshakeHandlerTest {
             }
         }
 
-        // FIXME: Retransmission: Karn's algorithm	MUST-18
-        // https://www.rfc-editor.org/rfc/rfc6298#section-3
         @Nested
         class Retransmission {
             @Test
@@ -918,6 +918,57 @@ class ConnectionHandshakeHandlerTest {
                     // start timer
                     assertNotSame(timer, queue.retransmissionTimer);
                 });
+            }
+
+            // FIXME: Retransmission: Karn's algorithm	MUST-18
+            // https://www.rfc-editor.org/rfc/rfc6298#section-3
+
+            @Test
+            void rtoFirst(@Mock final Clock clock) {
+                when(clock.time()).thenReturn(816L);
+                when(clock.g()).thenReturn(0.001);
+
+//    (2.2) When the first RTT measurement R is made, the host MUST set
+//
+//            SRTT <- R
+//            RTTVAR <- R/2
+//            RTO <- SRTT + max (G, K*RTTVAR)
+//
+//         where K = 4.
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, clock);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(0, 301);
+                seg.options().put(TIMESTAMPS, new long[]{ 401, 808 });
+                channel.writeInbound(seg);
+
+                // R <- 816 - 808 = 8
+                assertEquals(8, queue.sRtt);
+                assertEquals(4, queue.rttVar);
+                assertEquals(1000, queue.rto());
+            }
+
+            @Test
+            void rtoSubsequent() {
+//    (2.3) When a subsequent RTT measurement R' is made, a host MUST set
+//
+//            RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
+//            SRTT <- (1 - alpha) * SRTT + alpha * R'
+//
+//         The value of SRTT used in the update to RTTVAR is its value
+//         before updating SRTT itself using the second assignment.  That
+//         is, updating RTTVAR and SRTT MUST be computed in the above
+//         order.
+//
+//         The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
+//         suggested in [JK88]).
+//
+//         After the computation, a host MUST update
+//         RTO <- SRTT + max (G, K*RTTVAR)
             }
 
             // FIXME: haben wir das so umgesetzt?

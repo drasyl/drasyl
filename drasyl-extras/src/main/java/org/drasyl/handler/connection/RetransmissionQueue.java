@@ -40,6 +40,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TI
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
@@ -57,7 +58,6 @@ public class RetransmissionQueue {
     private long pshSeq = -1;
     private long finSeq = -1;
     public static final int K = 4;
-    public static final double G = 1.0 / 1_000; // clock granularity in seconds
     static final float ALPHA = .8F; // smoothing factor (e.g., .8 to .9)
     static final float BETA = 1.3F; // delay variance factor (e.g., 1.3 to 2.0)
     static final long LOWER_BOUND = 1_000; // lower bound for retransmission (e.g., 1 second)
@@ -66,12 +66,45 @@ public class RetransmissionQueue {
     long lastAckSent; // holds the ACK field from the last segment sent
     boolean addTimestamps;
     // FIXME: move these variables to RetransmissionQueue?
-    private double RTTVAR;
-    private double SRTT = -1; // default value
-    private double RTO = 1000; //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
+    double rttVar; // round-trip time variation
+    double sRtt;// smoothed round-trip time
+    private double rto; // retransmission timeout
+    private static final double INITIAL_SRTT = -1;
+    private final Clock clock;
+
+    RetransmissionQueue(final Channel channel,
+                        final long tsRecent,
+                        final double rttVar,
+                        final double sRtt,
+                        final double rto,
+                        final Clock clock) {
+        this.channel = requireNonNull(channel);
+        this.tsRecent = tsRecent;
+        this.rttVar = rttVar;
+        this.sRtt = sRtt;
+        this.rto = requirePositive(rto);
+        this.clock = requireNonNull(clock);
+    }
+
+    RetransmissionQueue(final Channel channel,
+                        final long tsRecent,
+                        final Clock clock) {
+        //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
+        this(channel, tsRecent, 0, INITIAL_SRTT, 1000, clock);
+    }
 
     RetransmissionQueue(final Channel channel) {
-        this.channel = requireNonNull(channel);
+        this(channel, 0, new Clock() {
+            @Override
+            public long time() {
+                return System.nanoTime() / 1_000_000; // convert to ms
+            }
+
+            @Override
+            public double g() {
+                return 1.0 / 1_000;
+            }
+        });
     }
 
     public void enqueue(final ChannelHandlerContext ctx,
@@ -160,7 +193,7 @@ public class RetransmissionQueue {
         }
 
         // create new timer
-        long rto = (long) RTO;
+        long rto = (long) this.rto;
         retransmissionTimer = ctx.executor().schedule(() -> {
 //            // FIXME: https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
@@ -173,7 +206,7 @@ public class RetransmissionQueue {
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
             //         maximum value discussed in (2.5) above may be used to provide
             //         an upper bound to this doubling operation.
-            timeoutOccurred();
+            rto(this.rto * 2);
 
             // (5.6) Start the retransmission timer, such that it expires after RTO
             //         seconds (for the value of RTO after the doubling operation
@@ -226,7 +259,7 @@ public class RetransmissionQueue {
                 tsRecent = tsVal;
 
                 // calculate RTO
-//                calculateRto(ctx, tsEcr, smss, flightSize);
+                calculateRto(ctx, tsEcr, smss, flightSize);
             }
         }
     }
@@ -240,7 +273,7 @@ public class RetransmissionQueue {
 
         if (addTimestamps) {
             // TSval contains current value of the sender's timestamp clock
-            final long tsVal = System.nanoTime() / 1_000_000;
+            final long tsVal = clock.time();
 
             // tsEcr is only valid if ACK bit is set
             final long tsEcr;
@@ -265,55 +298,56 @@ public class RetransmissionQueue {
                               final long tsEcr,
                               final int smss,
                               final long flightSize) {
-        double oldRto = RTO;
-        if (SRTT == -1) {
-            // first measurement
-            int r = (int) (System.nanoTime() / 1_000_000 - tsEcr);
-            SRTT = r;
-            RTTVAR = r / 2.0;
-            RTO = SRTT + Math.max(G, K * RTTVAR);
-            assert RTO > 0;
+        double oldRto = rto;
+        if (sRtt == INITIAL_SRTT) {
+            // first RTT measurement
+            int r = (int) (clock.time() - tsEcr);
+            sRtt = r;
+            rttVar = r / 2.0;
+            rto(sRtt + Math.max(clock.g(), K * rttVar));
         }
         else {
-            // subsequent measurement
-            int rDash = (int) (System.nanoTime() / 1_000_000 - tsEcr);
+            // subsequent RTT measurement
+            int rDash = (int) (clock.time() - tsEcr);
 
             int ExpectedSamples = (int) Math.ceil(flightSize / (smss * 2));
             double alphaDash = ALPHA / ExpectedSamples;
             double betaDash = BETA / ExpectedSamples;
-            RTTVAR = (1 - betaDash) * RTTVAR + betaDash * Math.abs(SRTT - rDash);
-            SRTT = (1 - alphaDash) * SRTT + alphaDash * rDash;
-            RTO = SRTT + Math.max(G, K * RTTVAR);
-            assert RTO > 0;
+            rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
+            sRtt = (1 - alphaDash) * sRtt + alphaDash * rDash;
+            rto(sRtt + Math.max(clock.g(), K * rttVar));
         }
 
-        if (RTO < LOWER_BOUND) {
-            // Whenever RTO is computed, if it is less than 1 second, then the
-            //         RTO SHOULD be rounded up to 1 second.
-            RTO = LOWER_BOUND;
-        }
-        else if (RTO > UPPER_BOUND) {
-            // A maximum value MAY be placed on RTO provided it is at least 60
-            //         seconds.
-            RTO = UPPER_BOUND;
-        }
-
-        if (RTO != oldRto) {
-            LOG.trace("{} RTO set to {}ms.", ctx.channel(), RTO);
-        }
-    }
-
-    void timeoutOccurred() {
-        RTO *= 2;
-
-        if (RTO > UPPER_BOUND) {
-            // A maximum value MAY be placed on RTO provided it is at least 60
-            //         seconds.
-            RTO = UPPER_BOUND;
+        if (rto != oldRto) {
+            LOG.trace("{} RTO set to {}ms.", ctx.channel(), rto);
         }
     }
 
     public double rto() {
-        return RTO;
+        return rto;
+    }
+
+    void rto(final double rto) {
+        assert rto > 0;
+        if (rto < LOWER_BOUND) {
+            // (2.4) Whenever RTO is computed, if it is less than 1 second, then the
+            //         RTO SHOULD be rounded up to 1 second.
+            this.rto = LOWER_BOUND;
+        }
+        else if (rto > UPPER_BOUND) {
+            // (2.5) A maximum value MAY be placed on RTO provided it is at least 60
+            //         seconds.
+            this.rto = UPPER_BOUND;
+        }
+        else {
+            this.rto = rto;
+        }
+    }
+
+    public interface Clock {
+        long time();
+
+        // clock granularity in seconds
+        double g();
     }
 }
