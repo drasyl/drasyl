@@ -831,7 +831,6 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(4718 + 212, tcb.cwnd());
             }
 
-            // slow start?
             @Test
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -850,7 +849,7 @@ class ConnectionHandshakeHandlerTest {
                 channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
                 channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
 
-                // fast retransmit
+                // dup ACKs should trigger immediate retransmission
                 assertEquals(ConnectionHandshakeSegment.ack(300, 200, outstandingData), channel.readOutbound());
             }
         }

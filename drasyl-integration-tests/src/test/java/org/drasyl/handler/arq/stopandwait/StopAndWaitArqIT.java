@@ -36,7 +36,8 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import org.junit.jupiter.api.Test;
-import test.DropEveryNthInboundMessageHandler;
+import test.DropMessagesHandler;
+import test.DropMessagesHandler.DropEveryNthMessage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,7 @@ class StopAndWaitArqIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new DropEveryNthInboundMessageHandler(3));
+                        p.addLast(new DropMessagesHandler(msg -> false, new DropEveryNthMessage(3)));
                         p.addLast(new SimpleChannelInboundHandler<ByteBuf>() {
                             private ByteBuf prevMsg;
 
@@ -113,7 +114,7 @@ class StopAndWaitArqIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new DropEveryNthInboundMessageHandler(3));
+                        p.addLast(new DropMessagesHandler(msg -> false, new DropEveryNthMessage(3)));
                         p.addLast(new StopAndWaitArqCodec());
                         p.addLast(new StopAndWaitArqHandler(10));
                         p.addLast(new ByteToStopAndWaitArqDataCodec());
