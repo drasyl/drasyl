@@ -44,6 +44,7 @@ public class RttMeasurement {
     long tsRecent; // holds a timestamp to be echoed in TSecr whenever a segment is sent
     long lastAckSent; // holds the ACK field from the last segment sent
     boolean addTimestamps;
+    // FIXME: move these variables to RetransmissionQueue?
     private double RTTVAR;
     private double SRTT = -1; // default value
     private double RTO = 1000; //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second

@@ -70,7 +70,6 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * <p>
  * Wire format ist nicht kompatibel.
  */
-// Slow Start and Congestion Avoidance
 // Fast Retransmit/Fast Recovery
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
@@ -296,7 +295,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // start user call timeout guard
         if (userTimeout.toMillis() > 0) {
             userTimeoutTimer = ctx.executor().schedule(() -> {
-                // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
+                // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                 LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                 switchToNewState(ctx, CLOSED);
                 final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel.");
@@ -410,7 +409,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 switchToNewState(ctx, FIN_WAIT_1);
 
                 if (userTimeout.toMillis() > 0) {
-                    // FIXME: For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
+                    // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                     userTimeoutTimer = ctx.executor().schedule(() -> {
                         LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
                         switchToNewState(ctx, CLOSED);
@@ -874,6 +873,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
                     tcb.write(response);
 
+                    // FIXME: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
+
                     break;
                 default:
                     LOG.trace("{}[{}] Got `{}`. This should not occur. Ignore the segment text.", ctx.channel(), state, seg);
@@ -961,7 +962,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.gotDuplicateAckCandidate(ctx, seg);
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {
-            // FIXME: add support for window!
             // something not yet sent has been ACKed
             LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
             final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());

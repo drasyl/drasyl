@@ -33,6 +33,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.EnumMap;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
@@ -45,10 +46,11 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThan;
  * acknowledged yet. This FIFO queue also updates the {@link io.netty.channel.Channel} writability
  * for the bytes it holds.
  */
+// https://www.rfc-editor.org/rfc/rfc6298
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
     private final Channel channel;
-    private ScheduledFuture<?> retransmissionTimer;
+    ScheduledFuture<?> retransmissionTimer;
     private long synSeq = -1;
     private long pshSeq = -1;
     private long finSeq = -1;
@@ -71,17 +73,11 @@ public class RetransmissionQueue {
             finSeq = seg.seq();
         }
 
+        // (5.1) Every time a packet containing data is sent (including a
+        //         retransmission), if the timer is not running, start it running
+        //         so that it will expire after RTO seconds (for the current value
+        //         of RTO).
         recreateRetransmissionTimer(ctx, tcb);
-    }
-
-    /**
-     * Release all buffers in the queue and complete all listeners and promises.
-     */
-    public void releaseAndFailAll() {
-        synSeq = -1;
-        pshSeq = -1;
-        finSeq = -1;
-        // FIXME: fail stuff in SendBuffer?
     }
 
     @Override
@@ -125,10 +121,15 @@ public class RetransmissionQueue {
         boolean queueWasNotEmpty = ackedBytes != 0;
         if (queueWasNotEmpty) {
             if (tcb.sendBuffer().acknowledgeableBytes() == 0) {
+                // (5.2) When all outstanding data has been acknowledged, turn off the
+                //         retransmission timer.
                 // everything was ACKed, cancel retransmission timer
                 cancelRetransmissionTimer();
             }
             else if (somethingWasAcked) {
+                //    (5.3) When an ACK is received that acknowledges new data, restart the
+                //         retransmission timer so that it will expire after RTO seconds
+                //         (for the current value of RTO).
                 // as something was ACKed, recreate retransmission timer
                 recreateRetransmissionTimer(ctx, tcb);
             }
@@ -146,25 +147,28 @@ public class RetransmissionQueue {
 
         // create new timer
         long rto = (long) tcb.rttMeasurement().rto();
-//        retransmissionTimer = ctx.executor().schedule(() -> {
+        retransmissionTimer = ctx.executor().schedule(() -> {
 //            // FIXME: https://www.rfc-editor.org/rfc/rfc6298 kapitel 5
-//
+            //  (5.4) Retransmit the earliest segment that has not been acknowledged
+            //         by the TCP receiver.
+            // retransmit the earliest segment that has not been acknowledged
+            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
+            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
+            ctx.writeAndFlush(retransmission);
+
+            //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
+            //         maximum value discussed in (2.5) above may be used to provide
+            //         an upper bound to this doubling operation.
+            tcb.rttMeasurement().timeoutOccurred();
+
+            // (5.6) Start the retransmission timer, such that it expires after RTO
+            //         seconds (for the value of RTO after the doubling operation
+            //         outlined in 5.5).
+            recreateRetransmissionTimer(ctx, tcb);
+
 //            LOG.error("{} Congestion Control: Timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), tcb.mss());
 //            tcb.ssthresh = tcb.mss();
-//
-//            // retransmit the earliest segment that has not been acknowledged
-//            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
-//            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
-//
-//            // send immediately
-//            ctx.writeAndFlush(retransmission);
-//
-//            // The host MUST set RTO <- RTO * 2 ("back off the timer")
-//            tcb.rttMeasurement().timeoutOccurred();
-//
-//            // Start the retransmission timer, such that it expires after RTO seconds
-//            recreateRetransmissionTimer(ctx, tcb);
-//        }, rto, MILLISECONDS);
+        }, rto, MILLISECONDS);
     }
 
     ConnectionHandshakeSegment retransmissionSegment(final TransmissionControlBlock tcb) {

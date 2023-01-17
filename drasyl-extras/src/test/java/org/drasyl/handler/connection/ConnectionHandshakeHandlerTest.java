@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,9 +54,12 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ConnectionHandshakeHandlerTest {
@@ -568,6 +572,12 @@ class ConnectionHandshakeHandlerTest {
                     channel.close();
                 }
 
+                // FIXME: Generating ACKs: Implement SWS avoidance algorithm in the receiver (MUST-39)
+                // FIXME: Sending Data: A TCP implementation MUST include a SWS avoidance algorithm in the sender (MUST-38).
+                // haben wir das nicht quasi implizit schon durch write and flush? (nur bei flush wird gesendet, was ja quasi einem PUSH entspricht)
+
+                // FIXME: Die ganzen Connection Failures MUSTS aus Appendinx B aus rfc9293 fehlen noch
+
                 @Test
                 void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
                     // FIXME: ist das überhaupt teil des handlers oder eher TCB?
@@ -661,7 +671,6 @@ class ConnectionHandshakeHandlerTest {
                 }
             }
         }
-
 
         @Nested
         class CongestionControl {
@@ -779,7 +788,12 @@ class ConnectionHandshakeHandlerTest {
 
                 channel.close();
             }
+        }
 
+        // FIXME: Retransmission: Karn's algorithm	MUST-18
+        // https://www.rfc-editor.org/rfc/rfc6298#section-3
+        @Nested
+        class Retransmission {
             @Test
             void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -832,6 +846,90 @@ class ConnectionHandshakeHandlerTest {
             }
 
             @Test
+            void timerShouldBeStartedWhenSegmentWithDataIsSent() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
+
+                assertNotNull(queue.retransmissionTimer);
+            }
+
+            @Test
+            void timerShouldBeCancelledWhenAllSegmentsHaveBeenAcked(@Mock final SendBuffer buffer,
+                                                                    @Mock final ScheduledFuture timer) {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+                queue.retransmissionTimer = timer;
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 301));
+
+                verify(timer).cancel(false);
+                assertNull(queue.retransmissionTimer);
+            }
+
+            @Test
+            void timerShouldBeRestartedWhenNewSegmentsHaveBeenAcked(@Mock final SendBuffer buffer,
+                                                                    @Mock final ScheduledFuture timer) {
+                when(buffer.acknowledgeableBytes()).thenReturn(100L);
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), new RttMeasurement(), 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+                queue.retransmissionTimer = timer;
+
+                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 301));
+
+                verify(timer).cancel(false);
+                assertNotNull(queue.retransmissionTimer);
+            }
+
+            @Test
+            void onTimeout() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                final RttMeasurement rttMeasurement = new RttMeasurement();
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), rttMeasurement, 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
+                final ConnectionHandshakeSegment seg = channel.readOutbound();
+                final ScheduledFuture<?> timer = queue.retransmissionTimer;
+
+                // wait for timeout
+                await().untilAsserted(() -> {
+                    channel.runScheduledPendingTasks();
+
+                    // retransmit
+                    assertEquals(seg, channel.readOutbound());
+
+                    // back off timer
+                    assertEquals(2_000, rttMeasurement.rto());
+
+                    // start timer
+                    assertNotSame(timer, queue.retransmissionTimer);
+                });
+            }
+
+            // FIXME: haben wir das so umgesetzt?
+            //    Note that after retransmitting, once a new RTT measurement is
+            //   obtained (which can only happen when new data has been sent and
+            //   acknowledged), the computations outlined in Section 2 are performed,
+            //   including the computation of RTO, which may result in "collapsing"
+            //   RTO back down after it has been subject to exponential back off (rule
+            //   5.5).
+
+            @Test
+            @Disabled
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);

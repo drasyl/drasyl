@@ -250,7 +250,6 @@ public class TransmissionControlBlock {
 
     public void delete() {
         sendBuffer.release();
-        retransmissionQueue.releaseAndFailAll();
         receiveBuffer.release();
     }
 
@@ -501,41 +500,43 @@ public class TransmissionControlBlock {
             LOG.error("{} Congestion Control: Duplicate ACK. Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
             ssthresh = newSsthresh;
 
-            // fast retransmit
-            duplicateAcks += 1;
+            if (doFastRetransmit()) {
+                duplicateAcks += 1;
+            }
         }
         else {
-            // fast retransmit
-            duplicateAcks = 0;
+            if (doFastRetransmit()) {
+                duplicateAcks = 0;
+            }
         }
 
-        // fast retransmit
-        // Since TCP does not know whether a duplicate ACK is caused by a lost
-        //   segment or just a reordering of segments, it waits for a small number
-        //   of duplicate ACKs to be received.  It is assumed that if there is
-        //   just a reordering of the segments, there will be only one or two
-        //   duplicate ACKs before the reordered segment is processed, which will
-        //   then generate a new ACK.  If three or more duplicate ACKs are
-        //   received in a row, it is a strong indication that a segment has been
-        //   lost.
-        if (duplicateAcks == 3) {
-            LOG.error("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row.", ctx.channel(), duplicateAcks);
+        if (doFastRetransmit()) {
+            // Since TCP does not know whether a duplicate ACK is caused by a lost
+            //   segment or just a reordering of segments, it waits for a small number
+            //   of duplicate ACKs to be received.  It is assumed that if there is
+            //   just a reordering of the segments, there will be only one or two
+            //   duplicate ACKs before the reordered segment is processed, which will
+            //   then generate a new ACK.  If three or more duplicate ACKs are
+            //   received in a row, it is a strong indication that a segment has been
+            //   lost.
+            if (duplicateAcks == 3) {
+                LOG.error("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row.", ctx.channel(), duplicateAcks);
 
-            // TCP then performs a retransmission of what appears to be the
-            //   missing segment, without waiting for a retransmission timer to
-            //   expire.
-            // The lost segment starting at SND.UNA MUST be retransmitted...
-            final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
-            LOG.error("{} Congestion Control: Fast Retransmit: Retransmit SEG `{}`.", ctx.channel(), current);
-            ctx.writeAndFlush(current);
+                // TCP then performs a retransmission of what appears to be the
+                //   missing segment, without waiting for a retransmission timer to
+                //   expire.
+                // The lost segment starting at SND.UNA MUST be retransmitted...
+                final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
+                LOG.error("{} Congestion Control: Fast Retransmit: Retransmit SEG `{}`.", ctx.channel(), current);
+                ctx.writeAndFlush(current);
 
-            // Fast recovery
-            final long newSsthresh = Math.max(cwnd / 2, 2L * mss);
-            LOG.error("{} Congestion Control: Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
-            ssthresh = newSsthresh;
+                // Fast recovery
+                final long newSsthresh = Math.max(cwnd / 2, 2L * mss);
+                LOG.error("{} Congestion Control: Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
+                ssthresh = newSsthresh;
 
-            LOG.error("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd, ssthresh + 3L * mss);
-            cwnd = ssthresh + 3L * mss;
+                LOG.error("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd, ssthresh + 3L * mss);
+                cwnd = ssthresh + 3L * mss;
 
 //            // When the third duplicate ACK is received, a TCP MUST set ssthresh
 //            //       to no more than the value given in equation (4)
@@ -548,12 +549,16 @@ public class TransmissionControlBlock {
 //            cwnd = ssthresh + 3L * mss;
 //            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
 //        }
+            }
+            else {
+                LOG.error("{} Congestion Control: Fast Recovery: Another duplicate ACK. Set cwnd from {} to {}.", ctx.channel(), cwnd, cwnd + mss);
+                cwnd += mss;
+            }
         }
-        else {
-            LOG.error("{} Congestion Control: Fast Recovery: Another duplicate ACK. Set cwnd from {} to {}.", ctx.channel(), cwnd, cwnd + mss);
-            cwnd += mss;
+    }
 
-        }
+    private boolean doFastRetransmit() {
+        return false;
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {

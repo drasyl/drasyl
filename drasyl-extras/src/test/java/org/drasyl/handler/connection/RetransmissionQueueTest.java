@@ -71,24 +71,6 @@ class RetransmissionQueueTest {
     }
 
     @Nested
-    class ReleaseAndFailAll {
-        @Test
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-            when(channel.eventLoop().inEventLoop()).thenReturn(true);
-            final PendingWriteQueue pendingWrites = new PendingWriteQueue(channel);
-            final RetransmissionQueue buffer = new RetransmissionQueue(channel);
-            final ConnectionHandshakeSegment seg = mock(ConnectionHandshakeSegment.class);
-            final ChannelPromise promise = mock(ChannelPromise.class);
-            pendingWrites.add(seg, promise);
-
-            buffer.releaseAndFailAll();
-
-            verify(seg).release();
-            verify(promise).tryFailure(any());
-        }
-    }
-
-    @Nested
     class Current {
 //        @Test
 //        void shouldReturnCurrentSegment(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
