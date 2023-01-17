@@ -133,7 +133,7 @@ public class OutgoingSegmentQueue {
         LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         // RTTM
-        tcb.rttMeasurement().write(seg);
+        tcb.retransmissionQueue().write(seg);
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission

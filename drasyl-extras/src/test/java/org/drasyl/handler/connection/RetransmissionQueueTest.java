@@ -41,7 +41,6 @@ import static org.mockito.Mockito.when;
 class RetransmissionQueueTest {
     private ChannelHandlerContext ctx;
     private TransmissionControlBlock tcb;
-    private RttMeasurement rttMeasurement;
 
     @Nested
     class Add {

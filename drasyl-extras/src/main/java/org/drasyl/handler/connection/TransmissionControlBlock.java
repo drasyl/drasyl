@@ -75,7 +75,6 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
-    private final RttMeasurement rttMeasurement;
     protected long ssthresh; // slow start threshold
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
@@ -106,7 +105,6 @@ public class TransmissionControlBlock {
                              final OutgoingSegmentQueue outgoingSegmentQueue,
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
-                             final RttMeasurement rttMeasurement,
                              final int mss,
                              final long cwnd,
                              final long ssthresh) {
@@ -121,7 +119,6 @@ public class TransmissionControlBlock {
         this.outgoingSegmentQueue = outgoingSegmentQueue;
         this.retransmissionQueue = retransmissionQueue;
         this.receiveBuffer = receiveBuffer;
-        this.rttMeasurement = rttMeasurement;
         this.mss = mss;
         this.cwnd = cwnd;
         this.ssthresh = ssthresh;
@@ -138,9 +135,8 @@ public class TransmissionControlBlock {
                              final SendBuffer sendBuffer,
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
-                             final RttMeasurement rttMeasurement,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, rttMeasurement, mss, mss, rcvWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, mss * 3, rcvWnd);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -151,7 +147,7 @@ public class TransmissionControlBlock {
                              final int rcvWnd,
                              final long irs,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -161,7 +157,7 @@ public class TransmissionControlBlock {
                              final long irs,
                              final int windowSize,
                              final int mss) {
-        this(sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -169,14 +165,14 @@ public class TransmissionControlBlock {
                              final long irs,
                              final int windowSize,
                              final int mss) {
-        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     public TransmissionControlBlock(final Channel channel,
                                     final long iss,
                                     final int rcvWnd,
                                     final int mss) {
-        this(iss, iss, 0, iss, 0, rcvWnd, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), new RttMeasurement(), mss);
+        this(iss, iss, 0, iss, 0, rcvWnd, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     public long sndUna() {
@@ -255,10 +251,6 @@ public class TransmissionControlBlock {
 
     public ReceiveBuffer receiveBuffer() {
         return receiveBuffer;
-    }
-
-    public RttMeasurement rttMeasurement() {
-        return rttMeasurement;
     }
 
     public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
@@ -383,7 +375,7 @@ public class TransmissionControlBlock {
             sndUna = seg.ack();
         }
 
-        final byte ackedCtl = retransmissionQueue.handleAcknowledgement(ctx, seg, this, rttMeasurement, ackedBytes);
+        final byte ackedCtl = retransmissionQueue.handleAcknowledgement(ctx, seg, this, ackedBytes);
 
         // FIXME: If the SYN or SYN/ACK is lost, the initial window used by a
         //   sender after a correctly transmitted SYN MUST be one segment
