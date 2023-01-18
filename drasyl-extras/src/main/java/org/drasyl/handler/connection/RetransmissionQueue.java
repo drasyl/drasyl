@@ -57,15 +57,15 @@ public class RetransmissionQueue {
     private long synSeq = -1;
     private long pshSeq = -1;
     private long finSeq = -1;
-    public static final int K = 4;
-    static final float ALPHA = .8F; // smoothing factor (e.g., .8 to .9)
-    static final float BETA = 1.3F; // delay variance factor (e.g., 1.3 to 2.0)
+    // https://www.rfc-editor.org/rfc/rfc6298#section-3
+    static final int K = 4;
+    static final float ALPHA = 1f / 8; // smoothing factor
+    static final float BETA = 1f / 4; // delay variance factor
     static final long LOWER_BOUND = 1_000; // lower bound for retransmission (e.g., 1 second)
     static final long UPPER_BOUND = 60_000; // upper bound for retransmission (e.g., 1 minute)
     long tsRecent; // holds a timestamp to be echoed in TSecr whenever a segment is sent
     long lastAckSent; // holds the ACK field from the last segment sent
     boolean addTimestamps;
-    // FIXME: move these variables to RetransmissionQueue?
     double rttVar; // round-trip time variation
     double sRtt;// smoothed round-trip time
     private double rto; // retransmission timeout
@@ -248,18 +248,20 @@ public class RetransmissionQueue {
     public void segmentArrives(final ChannelHandlerContext ctx,
                                final ConnectionHandshakeSegment seg,
                                final TransmissionControlBlock tcb) {
-        final int smss = tcb.mss();
-        final long flightSize = tcb.sndWnd();
+        // we use the timestamp option (RFC 7323, Section 3.2) for RTT measurement.
+        // Using this option we satify Karn's algorithm that state that RTT sampling must not be
+        // made using retransmitted segments
         final Object timestampsOption = seg.options().get(TIMESTAMPS);
         if (timestampsOption != null) {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
+            // Use procedure explained in RFC 1323 to be able to handle timestamps in retransmitted segments
             if (lessThanOrEqualTo(tsRecent, tsVal, SEQ_NO_SPACE) && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE)) {
                 tsRecent = tsVal;
 
                 // calculate RTO
-                calculateRto(ctx, tsEcr, smss, flightSize);
+                calculateRto(ctx, tsEcr, tcb);
             }
         }
     }
@@ -296,30 +298,45 @@ public class RetransmissionQueue {
 
     private void calculateRto(final ChannelHandlerContext ctx,
                               final long tsEcr,
-                              final int smss,
-                              final long flightSize) {
-        double oldRto = rto;
+                              final TransmissionControlBlock tcb) {
+        // With the timestamp option applied by us, we perform multiple RTT measurements per RTT.
+        // RFC 7323, Section 4.2. state that too many samples will truncate the RTT history
+        // (applied by ALPHA and BETA) too soon.
+        // To handle this, we apply the implementation suggestion statet in RFC 7323, Appendix G.
+
+        final double oldRto = rto;
         if (sRtt == INITIAL_SRTT) {
-            // first RTT measurement
-            int r = (int) (clock.time() - tsEcr);
+            // (2.2) When the first RTT measurement R is made, the host MUST set
+            final int r = (int) (clock.time() - tsEcr);
+            // SRTT <- R
             sRtt = r;
+            // RTTVAR <- R/2
             rttVar = r / 2.0;
+            // RTO <- SRTT + max (G, K*RTTVAR)
             rto(sRtt + Math.max(clock.g(), K * rttVar));
         }
         else {
-            // subsequent RTT measurement
-            int rDash = (int) (clock.time() - tsEcr);
+            // Taking multiple RTT samples per window would shorten the history
+            //   calculated by the RTO mechanism in [RFC6298]
+            final int smss = tcb.mss();
+            final float flightSize = tcb.sendBuffer().acknowledgeableBytes();
+            int expectedSamples = Math.max((int) Math.ceil(flightSize / (smss * 2)), 1);
+            double alphaDash = ALPHA / expectedSamples;
+            double betaDash = BETA / expectedSamples;
+            // Instead of using alpha and beta in the algorithm of [RFC6298], use
+            //   alpha' and beta' instead:
 
-            int ExpectedSamples = (int) Math.ceil(flightSize / (smss * 2));
-            double alphaDash = ALPHA / ExpectedSamples;
-            double betaDash = BETA / ExpectedSamples;
+            // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
+            final int rDash = (int) (clock.time() - tsEcr);
+            // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
             rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
+            // SRTT <- (1 - alpha) * SRTT + alpha * R'
             sRtt = (1 - alphaDash) * sRtt + alphaDash * rDash;
             rto(sRtt + Math.max(clock.g(), K * rttVar));
         }
 
         if (rto != oldRto) {
-            LOG.trace("{} RTO set to {}ms.", ctx.channel(), rto);
+            LOG.trace("{} Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto);
         }
     }
 

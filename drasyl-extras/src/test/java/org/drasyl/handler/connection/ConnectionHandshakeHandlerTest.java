@@ -53,6 +53,10 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.RandomUtil.randomBytes;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -920,21 +924,10 @@ class ConnectionHandshakeHandlerTest {
                 });
             }
 
-            // FIXME: Retransmission: Karn's algorithm	MUST-18
-            // https://www.rfc-editor.org/rfc/rfc6298#section-3
-
             @Test
             void rtoFirst(@Mock final Clock clock) {
-                when(clock.time()).thenReturn(816L);
+                when(clock.time()).thenReturn(2816L);
                 when(clock.g()).thenReturn(0.001);
-
-//    (2.2) When the first RTT measurement R is made, the host MUST set
-//
-//            SRTT <- R
-//            RTTVAR <- R/2
-//            RTO <- SRTT + max (G, K*RTTVAR)
-//
-//         where K = 4.
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, clock);
@@ -946,29 +939,41 @@ class ConnectionHandshakeHandlerTest {
                 seg.options().put(TIMESTAMPS, new long[]{ 401, 808 });
                 channel.writeInbound(seg);
 
-                // R <- 816 - 808 = 8
-                assertEquals(8, queue.sRtt);
-                assertEquals(4, queue.rttVar);
-                assertEquals(1000, queue.rto());
+                // (2.2) When the first RTT measurement R is made, the host MUST set
+                // R <- 2816 - 808 = 2008
+                // SRTT <- R
+                assertEquals(2008, queue.sRtt);
+                // RTTVAR <- R/2
+                assertEquals(1004, queue.rttVar);
+                // RTO <- SRTT + max (G, K*RTTVAR)
+                // where K = 4
+                assertEquals(6024, queue.rto());
             }
 
             @Test
-            void rtoSubsequent() {
-//    (2.3) When a subsequent RTT measurement R' is made, a host MUST set
-//
-//            RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
-//            SRTT <- (1 - alpha) * SRTT + alpha * R'
-//
-//         The value of SRTT used in the update to RTTVAR is its value
-//         before updating SRTT itself using the second assignment.  That
-//         is, updating RTTVAR and SRTT MUST be computed in the above
-//         order.
-//
-//         The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
-//         suggested in [JK88]).
-//
-//         After the computation, a host MUST update
-//         RTO <- SRTT + max (G, K*RTTVAR)
+            void rtoSubsequent(@Mock final Clock clock, @Mock final SendBuffer sendBuffer) {
+                when(clock.time()).thenReturn(2846L);
+                when(clock.g()).thenReturn(0.001);
+                when(sendBuffer.acknowledgeableBytes()).thenReturn(8_000L);
+
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 1004, 2008, 6024, clock);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 1000);
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
+                channel.pipeline().addLast(handler);
+
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(0, 301);
+                seg.options().put(TIMESTAMPS, new long[]{ 401, 808 });
+                channel.writeInbound(seg);
+
+                // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
+                // R' <- 2846 - 808 = 2038
+                // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
+                assertEquals(943.125, queue.rttVar);
+                // SRTT <- (1 - alpha) * SRTT + alpha * R'
+                assertEquals(2008.9375, queue.sRtt);
+                // RTO <- SRTT + max (G, K*RTTVAR)
+                assertEquals(5781.4375, queue.rto());
             }
 
             // FIXME: haben wir das so umgesetzt?
