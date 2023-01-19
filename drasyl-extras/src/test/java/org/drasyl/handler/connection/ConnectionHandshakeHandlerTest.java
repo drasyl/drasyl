@@ -489,7 +489,6 @@ class ConnectionHandshakeHandlerTest {
 
         @Test
         void shouldPassReceivedDataCorrectlyToApplication() {
-            // FIXME: ist das überhaupt teil des handlers oder eher TCB?
             final EmbeddedChannel channel = new EmbeddedChannel();
             TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 100, 100L, 1000);
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, tcb.mss(), 64_000, tcb);
@@ -508,7 +507,6 @@ class ConnectionHandshakeHandlerTest {
         class Mss {
             @Test
             void shouldSegmentizeDataIntoSegmentsToLargerThenMss() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                 final int bytes = 250;
                 final int mss = 100;
 
@@ -535,7 +533,6 @@ class ConnectionHandshakeHandlerTest {
             class SendWindow {
                 @Test
                 void senderShouldRespectSndWndWhenWritingToNetwork() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final int bytes = 600;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
@@ -562,7 +559,6 @@ class ConnectionHandshakeHandlerTest {
 
                 @Test
                 void zeroWindowProbing() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 0, 100L, 1000, 100L, 1000);
@@ -586,7 +582,6 @@ class ConnectionHandshakeHandlerTest {
 
                 @Test
                 void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 0, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1000);
@@ -607,7 +602,6 @@ class ConnectionHandshakeHandlerTest {
             class ReceiveWindow {
                 @Test
                 void receiverShouldUpdateRcvWnd() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final int bytes = 600;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
@@ -634,7 +628,6 @@ class ConnectionHandshakeHandlerTest {
 
                 @Test
                 void shouldOnlyAcceptAsManyBytesAsSpaceAvailableInReceiveBuffer() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000);
@@ -655,7 +648,6 @@ class ConnectionHandshakeHandlerTest {
                 @Disabled
                 @Test
                 void receiverShouldAbleToAckSegmentWhichContainsOnlyPartiallyNewSegments() {
-                    // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000);
@@ -684,7 +676,6 @@ class ConnectionHandshakeHandlerTest {
             // can be caused by a lost SEG
             @Test
             void receiverShouldRespondWithExpectedSegToUnexpectedSeg() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                 final int bytes = 600;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -704,7 +695,6 @@ class ConnectionHandshakeHandlerTest {
 
             @Test
             void receiverShouldBufferReceivedOutOfOrderSegments() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                 final int bytes = 300;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -766,7 +756,6 @@ class ConnectionHandshakeHandlerTest {
 
             @Test
             void receiverShouldNotBufferReceivedDuplicateSegments() {
-                // FIXME: ist das überhaupt teil des handlers oder eher TCB?
                 final int bytes = 300;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();

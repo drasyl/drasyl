@@ -503,7 +503,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // RTTM
         if (tcb != null) {
-            tcb.retransmissionQueue().segmentArrives(ctx, seg, tcb); // FIXME: platzhalter. eigentlich müssen wir hier SMSS und FlightSize nehmen
+            tcb.retransmissionQueue().segmentArrives(ctx, seg, tcb);
         }
 
         try {
