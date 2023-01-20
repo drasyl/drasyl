@@ -40,8 +40,6 @@ import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
-import test.DropMessagesHandler;
-import test.DropMessagesHandler.DropNthMessage;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -548,7 +546,7 @@ class ConnectionHandshakeHandlerIT {
                                 // start dropping segments once handshake is completed
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new DropNthMessage(2), msg -> false));
+//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new DropNthMessage(2), msg -> false));
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }

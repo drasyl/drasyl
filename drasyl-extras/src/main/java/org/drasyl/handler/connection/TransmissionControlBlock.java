@@ -345,9 +345,9 @@ public class TransmissionControlBlock {
                 unusedSendWindow = 1;
             }
 
-            long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
+            final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
-            LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+            LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
             allowedBytesToFlush -= remainingBytes;
@@ -390,13 +390,13 @@ public class TransmissionControlBlock {
 
                 // Slow Start -> +1 MSS after each ACK
                 final long increment = Math.min(mss, ackedBytes);
-                LOG.error("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cmd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                LOG.error("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
             else {
                 // Congestion Avoidance -> +1 MSS after each RTT
                 final double increment = Math.ceil(((long) mss * mss) / (float) cwnd);
-                LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cmd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
 

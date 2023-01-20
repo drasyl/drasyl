@@ -140,7 +140,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, activeOpen, 1220, 1 * 1220);
+        this(userTimeout, activeOpen, 1220, 64 * 1220);
     }
 
     /*
@@ -501,11 +501,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.touch(seg, "segmentArrives");
         LOG.trace("{}[{}] Read `{}`.", ctx.channel(), state, seg);
 
-        // RTTM
-        if (tcb != null) {
-            tcb.retransmissionQueue().segmentArrives(ctx, seg, tcb);
-        }
-
         try {
             switch (state) {
                 case CLOSED:
@@ -591,6 +586,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 }, userTimeout.toMillis(), MILLISECONDS);
             }
 
+            // RTTM
+            tcb.retransmissionQueue().segmentArrivesOnListenState(ctx, seg, tcb);
+
             // yay, peer SYNced with us
             switchToNewState(ctx, SYN_RECEIVED);
 
@@ -666,6 +664,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
+            tcb.retransmissionQueue().segmentArrivesOnSynSentState(ctx, seg, tcb);
+
             if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
@@ -699,6 +699,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check SEQ
         final boolean validSeg = seg.seq() == tcb.rcvNxt();
         final boolean acceptableAck = tcb.isAcceptableAck2(seg);
+
+        // RTTM
+        tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb);
 
         if (!validSeg && !acceptableAck) {
             // not expected seq
