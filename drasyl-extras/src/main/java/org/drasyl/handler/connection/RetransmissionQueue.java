@@ -263,7 +263,7 @@ public class RetransmissionQueue {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
-            LOG.error("< TSval = {}; TSecr = {}", tsVal, tsEcr);
+            LOG.trace("< TSval = {}; TSecr = {}", tsVal, tsEcr);
             // Use procedure explained in RFC 1323 to be able to handle timestamps in retransmitted segments
             if (lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE) && lessThan(lastAckSent, add(seg.seq(), seg.len(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
                 tsRecent = tsVal;
@@ -295,7 +295,7 @@ public class RetransmissionQueue {
                 // when ACK bit is not set, set TSecr field to zero
                 tsEcr = 0;
             }
-            LOG.error("> TSval = {}; TSecr = {}", tsVal, tsEcr);
+            LOG.trace("> TSval = {}; TSecr = {}", tsVal, tsEcr);
 
             // add timestamps to segment
             seg.options().put(TIMESTAMPS, new long[]{ tsVal, tsEcr });
