@@ -41,6 +41,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
 import static org.drasyl.util.Preconditions.requirePositive;
+import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
@@ -74,12 +75,16 @@ public class RetransmissionQueue {
 
     RetransmissionQueue(final Channel channel,
                         final long tsRecent,
+                        final long lastAckSent,
+                        final boolean addTimestamps,
                         final double rttVar,
                         final double sRtt,
                         final double rto,
                         final Clock clock) {
         this.channel = requireNonNull(channel);
         this.tsRecent = tsRecent;
+        this.lastAckSent = lastAckSent;
+        this.addTimestamps = addTimestamps;
         this.rttVar = rttVar;
         this.sRtt = sRtt;
         this.rto = requirePositive(rto);
@@ -88,13 +93,15 @@ public class RetransmissionQueue {
 
     RetransmissionQueue(final Channel channel,
                         final long tsRecent,
+                        final long lastAckSent,
+                        final boolean addTimestamps,
                         final Clock clock) {
         //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
-        this(channel, tsRecent, 0, INITIAL_SRTT, 1000, clock);
+        this(channel, tsRecent, lastAckSent, addTimestamps, 0, INITIAL_SRTT, 1000, clock);
     }
 
     RetransmissionQueue(final Channel channel) {
-        this(channel, 0, new Clock() {
+        this(channel, 0, 0, false, new Clock() {
             @Override
             public long time() {
                 return System.nanoTime() / 1_000_000; // convert to ms
@@ -256,8 +263,9 @@ public class RetransmissionQueue {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
+            LOG.error("< TSval = {}; TSecr = {}", tsVal, tsEcr);
             // Use procedure explained in RFC 1323 to be able to handle timestamps in retransmitted segments
-            if (lessThanOrEqualTo(tsRecent, tsVal, SEQ_NO_SPACE) && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE)) {
+            if (lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE) && lessThan(lastAckSent, add(seg.seq(), seg.len(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
                 tsRecent = tsVal;
 
                 // calculate RTO
@@ -287,6 +295,7 @@ public class RetransmissionQueue {
                 // when ACK bit is not set, set TSecr field to zero
                 tsEcr = 0;
             }
+            LOG.error("> TSval = {}; TSecr = {}", tsVal, tsEcr);
 
             // add timestamps to segment
             seg.options().put(TIMESTAMPS, new long[]{ tsVal, tsEcr });

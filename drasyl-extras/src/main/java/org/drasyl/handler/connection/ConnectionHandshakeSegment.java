@@ -345,7 +345,7 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
                 case TIMESTAMPS:
                     final long[] timestamps = (long[]) value;
                     out.writeLong(timestamps[0]);
-                    out.writeLong(timestamps[0]);
+                    out.writeLong(timestamps[1]);
                     return;
                 default:
                     throw new CodecException("Unable to write value of option " + this);
