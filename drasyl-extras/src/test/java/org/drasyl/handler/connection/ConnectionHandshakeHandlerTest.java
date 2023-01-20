@@ -984,7 +984,7 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(5781.4375, queue.rto());
             }
 
-            // RFC 1323: consider delayed ACKs
+            // https://www.rfc-editor.org/rfc/rfc7323#section-4.3   consider delayed ACKs
             @Test
             void timestampFromOldestUnacknowledgedSegmentIsEchoed(@Mock final Clock clock) {
                 when(clock.time()).thenReturn(1L);
@@ -1026,7 +1026,7 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(1, tsEcr);
             }
 
-            // RFC 1323: consider holes in sequence space and filling these holes later
+            // https://www.rfc-editor.org/rfc/rfc7323#section-4.3   consider holes in sequence space and filling these holes later
             @Test
             void timestampFromTheLastSegmentThatAdvancesLeftWindowEdgeIsEchoed(@Mock final Clock clock) {
                 when(clock.time()).thenReturn(1L);

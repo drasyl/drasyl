@@ -90,7 +90,7 @@ public class TransmissionControlBlock {
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
     // congestion control
-    private long cwnd; // congestion window
+    long cwnd; // congestion window
     private int duplicateAcks;
 
     @SuppressWarnings("java:S107")
@@ -347,7 +347,7 @@ public class TransmissionControlBlock {
 
             final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
-            LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+            LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
             allowedBytesToFlush -= remainingBytes;

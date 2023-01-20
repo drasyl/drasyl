@@ -41,7 +41,7 @@ import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
 import static org.drasyl.util.Preconditions.requirePositive;
-import static org.drasyl.util.SerialNumberArithmetic.add;
+import static org.drasyl.util.SerialNumberArithmetic.greaterThanOrEqualTo;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
@@ -213,8 +213,9 @@ public class RetransmissionQueue {
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
             //         maximum value discussed in (2.5) above may be used to provide
             //         an upper bound to this doubling operation.
-            LOG.error("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), this.rto, this.rto * 2);
+            final double oldRto = this.rto;
             rto(this.rto * 2);
+            LOG.error("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto());
 
             // (5.6) Start the retransmission timer, such that it expires after RTO
             //         seconds (for the value of RTO after the doubling operation
@@ -228,7 +229,12 @@ public class RetransmissionQueue {
             //   than the value given in equation (4):
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-            System.out.println();
+            final int smss = tcb.mss();
+            final float flightSize = tcb.sendBuffer().acknowledgeableBytes();
+            final long newSsthresh = (long) Math.max(flightSize / 2, 2 * smss);
+            LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+            tcb.ssthresh = newSsthresh;
+
 
             // Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be
             //   set to no more than the loss window, LW, which equals 1 full-sized
@@ -237,8 +243,8 @@ public class RetransmissionQueue {
             //   algorithm to increase the window from 1 full-sized segment to the new
             //   value of ssthresh, at which point congestion avoidance again takes
             //   over.
-            LOG.error("{} Congestion Control: Timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), tcb.mss());
-//            tcb.ssthresh = tcb.mss();
+            LOG.error("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
+            tcb.cwnd = tcb.mss();
         }, rto, MILLISECONDS);
     }
 
@@ -280,9 +286,10 @@ public class RetransmissionQueue {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
-            LOG.error("< TSval = {}; TSecr = {}", tsVal, tsEcr);
-            // Use procedure explained in RFC 1323 to be able to handle timestamps in retransmitted segments
-            if (lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE) && lessThan(lastAckSent, add(seg.seq(), seg.len(), SEQ_NO_SPACE), SEQ_NO_SPACE)) {
+            // Use procedure explained in RFC 7323 to be able to handle timestamps in retransmitted segments
+            final boolean b = greaterThanOrEqualTo(tsVal, tsRecent, SEQ_NO_SPACE) && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE);
+            LOG.error("< TSval = {}; TSecr = {}; b = {}", tsVal, tsEcr, b);
+            if (b) {
                 tsRecent = tsVal;
 
                 // calculate RTO
@@ -312,7 +319,7 @@ public class RetransmissionQueue {
                 // when ACK bit is not set, set TSecr field to zero
                 tsEcr = 0;
             }
-            LOG.error("> TSval = {}; TSecr = {}", tsVal, tsEcr);
+            LOG.trace("> TSval = {}; TSecr = {}", tsVal, tsEcr);
 
             // add timestamps to segment
             seg.options().put(TIMESTAMPS, new long[]{ tsVal, tsEcr });
@@ -336,6 +343,7 @@ public class RetransmissionQueue {
         if (sRtt == INITIAL_SRTT) {
             // (2.2) When the first RTT measurement R is made, the host MUST set
             final int r = (int) (clock.time() - tsEcr);
+            LOG.error("RTT R = {}", r);
             // SRTT <- R
             sRtt = r;
             // RTTVAR <- R/2
@@ -356,6 +364,7 @@ public class RetransmissionQueue {
 
             // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
             final int rDash = (int) (clock.time() - tsEcr);
+            LOG.error("RTT R' = {}", rDash);
             // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
             rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
             // SRTT <- (1 - alpha) * SRTT + alpha * R'
@@ -364,7 +373,7 @@ public class RetransmissionQueue {
         }
 
         if (rto != oldRto) {
-            LOG.error("{} New RTT measurement: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto);
+            LOG.trace("{} New RTT measurement: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto);
         }
     }
 
@@ -399,11 +408,8 @@ public class RetransmissionQueue {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
-            LOG.error("< TSval = {}; TSecr = {}", tsVal, tsEcr);
+            LOG.trace("{} RTT measurement: Set TS.Recent to {} (SEG.TSval) and LAST.ACK.sent to {} (RCV.NXT).", ctx.channel(), tsVal, tcb.rcvNxt());
             tsRecent = tsVal;
-
-            // calculate RTO
-            calculateRto(ctx, tsEcr, tcb);
 
             // Last.ACK.sent is set to RCV.NXT
             lastAckSent = tcb.rcvNxt();
@@ -422,7 +428,7 @@ public class RetransmissionQueue {
             final long[] timestamps = (long[]) timestampsOption;
             final long tsVal = timestamps[0];
             final long tsEcr = timestamps[1];
-            LOG.error("< TSval = {}; TSecr = {}", tsVal, tsEcr);
+            LOG.trace("{} RTT measurement: Set TS.Recent to {} (SEG.TSval).", ctx.channel(), tsVal);
             tsRecent = tsVal;
 
             if (seg.isAck()) {

@@ -66,8 +66,6 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * once the handshake has been issued. The handshake process will result either in a
  * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  * <p>
- * https://www.rfc-editor.org/rfc/rfc1323#page-11
- * <p>
  * Wire format ist nicht kompatibel.
  */
 // Fast Retransmit/Fast Recovery
@@ -961,7 +959,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
         if (duplicateAck) {
             // ACK is duplicate. ignore
-            LOG.warn("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
+            LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
             tcb.gotDuplicateAckCandidate(ctx, seg);
         }
         if (tcb.isAckSomethingNotYetSent(seg)) {
