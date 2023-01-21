@@ -139,9 +139,6 @@ public class OutgoingSegmentQueue {
         ReferenceCountUtil.touch(seg, "OutgoingSegmentQueue write " + seg.toString());
         LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
-        // RTTM
-        tcb.retransmissionQueue().write(seg);
-
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
             tcb.retransmissionQueue().enqueue(ctx, seg, tcb);

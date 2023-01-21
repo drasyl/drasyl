@@ -77,7 +77,7 @@ public class RetransmissionQueue {
     private long synSeq = -1;
     private long pshSeq = -1;
     private long finSeq = -1;
-    private double rto; // RTO: retransmission timeout
+    private long rto; // RTO: retransmission timeout
 
     RetransmissionQueue(final Channel channel,
                         final long tsRecent,
@@ -85,7 +85,7 @@ public class RetransmissionQueue {
                         final boolean sndTsOk,
                         final double rttVar,
                         final double sRtt,
-                        final double rto,
+                        final long rto,
                         final Clock clock) {
         this.channel = requireNonNull(channel);
         this.tsRecent = tsRecent;
@@ -217,7 +217,7 @@ public class RetransmissionQueue {
         }
 
         // create new timer
-        long rto = (long) this.rto;
+        long rto = this.rto;
         retransmissionTimer = ctx.executor().schedule(() -> {
             // RFC 6298: https://www.rfc-editor.org/rfc/rfc6298#section-5
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
@@ -230,7 +230,7 @@ public class RetransmissionQueue {
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
             //         maximum value discussed in (2.5) above may be used to provide
             //         an upper bound to this doubling operation.
-            final double oldRto = this.rto;
+            final long oldRto = this.rto;
             rto(this.rto * 2);
             LOG.error("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto());
 
@@ -247,10 +247,12 @@ public class RetransmissionQueue {
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
             final int smss = tcb.mss();
-            final float flightSize = tcb.sendBuffer().acknowledgeableBytes();
-            final long newSsthresh = (long) Math.max(flightSize / 2, 2 * smss);
-            LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-            tcb.ssthresh = newSsthresh;
+            final long flightSize = tcb.sendBuffer().acknowledgeableBytes();
+            final long newSsthresh = Math.max(flightSize / 2, 2 * smss);
+            if (tcb.ssthresh != newSsthresh) {
+                LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+                tcb.ssthresh = newSsthresh;
+            }
 
             // Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be
             //   set to no more than the loss window, LW, which equals 1 full-sized
@@ -276,7 +278,7 @@ public class RetransmissionQueue {
             ctl |= FIN;
         }
         if (ctl == ACK && data.readableBytes() == 0) {
-            System.out.printf("");
+            System.out.print("");
         }
         final long seq = tcb.sndUna();
         final long ack = tcb.rcvNxt();
@@ -292,39 +294,6 @@ public class RetransmissionQueue {
         }
     }
 
-    public void write(final ConnectionHandshakeSegment seg) {
-//        if (!sndTsOk && seg.isSyn()) {
-//            // we start adding timestamps only with the first SYN
-//            // otherwise, RST messages caused by unexpected segments before the handshake will contain timestamps
-//            sndTsOk = true;
-//        }
-//
-//        if (sndTsOk) {
-//            // TSval contains current value of the sender's timestamp clock
-//            final long tsVal = clock.time();
-//
-//            // tsEcr is only valid if ACK bit is set
-//            final long tsEcr;
-//            if (seg.isAck()) {
-//                // when timestamps are sent, the TSecr field is set to the current TS.Recent value
-//                tsEcr = tsRecent;
-//            }
-//            else {
-//                // when ACK bit is not set, set TSecr field to zero
-//                tsEcr = 0;
-//            }
-//            LOG.trace("> TSval = {}; TSecr = {}", tsVal, tsEcr);
-//
-//            // add timestamps to segment
-//            seg.options().put(TIMESTAMPS, new TimestampsOption(tsVal, tsEcr));
-//
-//            // record ACK field from the last segment sent
-//            if (seg.isAck()) {
-//                lastAckSent = seg.ack();
-//            }
-//        }
-    }
-
     private void calculateRto(final ChannelHandlerContext ctx,
                               final long tsEcr,
                               final TransmissionControlBlock tcb) {
@@ -333,7 +302,7 @@ public class RetransmissionQueue {
         // (applied by ALPHA and BETA) too soon.
         // To handle this, we apply the implementation suggestion statet in RFC 7323, Appendix G.
 
-        final double oldRto = rto;
+        final long oldRto = rto;
         if (sRtt == INITIAL_SRTT) {
             // (2.2) When the first RTT measurement R is made, the host MUST set
             final int r = (int) (clock.time() - tsEcr);
@@ -343,7 +312,7 @@ public class RetransmissionQueue {
             // RTTVAR <- R/2
             rttVar = r / 2.0;
             // RTO <- SRTT + max (G, K*RTTVAR)
-            rto(sRtt + Math.max(clock.g(), K * rttVar));
+            rto((long) (sRtt + Math.max(clock.g(), K * rttVar)));
         } else {
             // Taking multiple RTT samples per window would shorten the history
             //   calculated by the RTO mechanism in [RFC6298]
@@ -362,7 +331,7 @@ public class RetransmissionQueue {
             rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
             // SRTT <- (1 - alpha) * SRTT + alpha * R'
             sRtt = (1 - alphaDash) * sRtt + alphaDash * rDash;
-            rto(sRtt + Math.max(clock.g(), K * rttVar));
+            rto((long) (sRtt + Math.max(clock.g(), K * rttVar)));
         }
 
         if (rto != oldRto) {
@@ -370,11 +339,11 @@ public class RetransmissionQueue {
         }
     }
 
-    public double rto() {
+    public long rto() {
         return rto;
     }
 
-    void rto(final double rto) {
+    void rto(final long rto) {
         assert rto > 0;
         if (rto < LOWER_BOUND) {
             // (2.4) Whenever RTO is computed, if it is less than 1 second, then the
@@ -435,10 +404,10 @@ public class RetransmissionQueue {
         }
     }
 
-    public void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
-                                            final ConnectionHandshakeSegment seg,
-                                            final TransmissionControlBlock tcb,
-                                            final State state) {
+    public boolean segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
+                                               final ConnectionHandshakeSegment seg,
+                                               final TransmissionControlBlock tcb,
+                                               final State state) {
         // RFC 7323, Appendix D
         // Check whether the segment contains a Timestamps option and if bit Snd.TS.OK is on. If so:
         TimestampsOption tsOpt = null;
@@ -451,7 +420,7 @@ public class RetransmissionQueue {
                     // FIXME: If the connection has been idle more than 24 days, save SEG.TSval in
                     //  variable TS.Recent, else the segment is not acceptable; follow the steps
                     //  below for an unacceptable segment.
-                    throw new UnsupportedOperationException("Not implemented yet");
+                    throw new UnsupportedOperationException("Not implemented yet: " + seg);
                 } else if (tsOpt.tsVal >= tsRecent && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE)) {
                     // If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent, then save SEG.TSval in variable TS.Recent.
                     tsRecent = tsOpt.tsVal;

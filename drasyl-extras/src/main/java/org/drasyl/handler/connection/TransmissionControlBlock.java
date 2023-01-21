@@ -343,7 +343,9 @@ public class TransmissionControlBlock {
 
             final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
-            LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, sendWindow, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+            if (remainingBytes > 0) {
+                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+            }
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
             allowedBytesToFlush -= remainingBytes;
@@ -391,7 +393,7 @@ public class TransmissionControlBlock {
             }
             else {
                 // Congestion Avoidance -> +1 MSS after each RTT
-                final double increment = Math.ceil(((long) mss * mss) / (float) cwnd);
+                final long increment = (long) Math.ceil(((long) mss * mss) / (float) cwnd);
                 LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
@@ -485,8 +487,10 @@ public class TransmissionControlBlock {
         if (sendBuffer.hasOutstandingData() && seg.len() == 0 && !seg.isSyn() && !seg.isFin() && seg.ack() == sndUna && seg.window() == lastAdvertisedWindow) {
             final long currentWindowSize = Math.min(cwnd, sndWnd);
             final long newSsthresh = Math.max(currentWindowSize / 2, 2L * mss);
-            LOG.error("{} Congestion Control: Duplicate ACK. Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
-            ssthresh = newSsthresh;
+            if (ssthresh != newSsthresh) {
+                LOG.error("{} Congestion Control: Duplicate ACK. Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
+                ssthresh = newSsthresh;
+            }
 
             if (doFastRetransmit()) {
                 duplicateAcks += 1;
