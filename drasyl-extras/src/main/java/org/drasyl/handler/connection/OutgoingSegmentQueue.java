@@ -51,11 +51,12 @@ public class OutgoingSegmentQueue {
     private long ack = -1;
     private byte ctl;
     private int len;
+    private Map<Option, Object> options;
 
     void addBytes(final long seq,
                   final long readableBytes,
                   final long ack,
-                  final int ctl) {
+                  final int ctl, Map<Option, Object> options) {
         if (this.seq == -1) {
             this.seq = seq;
         }
@@ -64,6 +65,7 @@ public class OutgoingSegmentQueue {
             this.ack = ack;
         }
         this.ctl |= ctl;
+        this.options = options;
     }
 
     public void flush(final ChannelHandlerContext ctx,
@@ -88,10 +90,12 @@ public class OutgoingSegmentQueue {
                 ctl |= PSH;
             }
 
-            final Map<Option, Object> options = new EnumMap<>(Option.class);
+            final Map<Option, Object> options = new EnumMap<>(this.options);
             if ((ctl & SYN) != 0) {
+                // add MSS option to SYN
                 options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
+            tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
 
             final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.rcvWnd(), options, data);
             seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
@@ -112,6 +116,9 @@ public class OutgoingSegmentQueue {
 
                 // remove RST after last write
                 ctl &= ~RST;
+
+                // remote options after last write
+                this.options = new EnumMap<>(Option.class);
             }
         }
 

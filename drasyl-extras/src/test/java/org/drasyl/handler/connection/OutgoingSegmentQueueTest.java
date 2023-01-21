@@ -6,11 +6,14 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -36,7 +39,8 @@ class OutgoingSegmentQueueTest {
             final int readableBytes = seg.content().readableBytes();
             final long ack1 = seg.ack();
             final int ctl1 = seg.ctl();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1);
+            Map<Option, Object> options = seg.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
         }
     }
 
@@ -52,7 +56,8 @@ class OutgoingSegmentQueueTest {
                 final int readableBytes = seg.content().readableBytes();
                 final long ack1 = seg.ack();
                 final int ctl1 = seg.ctl();
-                queue.addBytes(seq1, readableBytes, ack1, ctl1);
+                Map<Option, Object> options = seg.options();
+                queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
             }
             finally {
                 queue.flush(ctx, tcb);
@@ -92,12 +97,14 @@ class OutgoingSegmentQueueTest {
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            queue.addBytes(seq11, readableBytes1, ack11, ctl11);
+            Map<Option, Object> options11 = seg1.options();
+            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1);
+            Map<Option, Object> options1 = seg2.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
 
@@ -125,12 +132,14 @@ class OutgoingSegmentQueueTest {
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            queue.addBytes(seq11, readableBytes1, ack11, ctl11);
+            Map<Option, Object> options11 = seg1.options();
+            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1);
+            Map<Option, Object> options1 = seg2.options();
+            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
 

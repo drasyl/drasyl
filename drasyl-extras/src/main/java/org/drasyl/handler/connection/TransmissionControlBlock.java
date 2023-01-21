@@ -25,10 +25,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
 
 import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
@@ -73,7 +76,7 @@ public class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     final SendBuffer sendBuffer;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
-    private final RetransmissionQueue retransmissionQueue;
+    final RetransmissionQueue retransmissionQueue;
     private final ReceiveBuffer receiveBuffer;
     protected long ssthresh; // slow start threshold
     // Receive Sequence Variables
@@ -166,13 +169,6 @@ public class TransmissionControlBlock {
                              final int windowSize,
                              final int mss) {
         this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
-    }
-
-    public TransmissionControlBlock(final Channel channel,
-                                    final long iss,
-                                    final int rcvWnd,
-                                    final int mss) {
-        this(iss, iss, 0, iss, 0, rcvWnd, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     public long sndUna() {
@@ -286,7 +282,7 @@ public class TransmissionControlBlock {
                             final long ack) {
         if (readableBytes > 0) {
             sndNxt = advanceSeq(sndNxt, readableBytes);
-            writeWithout(seg, readableBytes, ack, ACK);
+            writeWithout(seg, readableBytes, ack, ACK, new EnumMap<>(Option.class));
         }
     }
 
@@ -299,14 +295,14 @@ public class TransmissionControlBlock {
     }
 
     void writeWithout(final ConnectionHandshakeSegment seg) {
-        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl());
+        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
     }
 
     private void writeWithout(final long seq,
                               final long readableBytes,
                               final long ack,
-                              final int ctl) {
-        outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl);
+                              final int ctl, Map<Option, Object> options) {
+        outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl, options);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,

@@ -40,10 +40,8 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 
 /**
- * A message used by {@link ConnectionHandshakeHandler} to perform a handshake.
- * <p>
- * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
- * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
+ * Message used by {@link ConnectionHandshakeHandler} to provide reliable and ordered delivery of
+ * bytes between hosts.
  */
 @SuppressWarnings({ "java:S1845", "java:S3052" })
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
@@ -116,6 +114,11 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         return new ConnectionHandshakeSegment(seq, 0, RST, 0, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
 
+    public static ConnectionHandshakeSegment syn(final long seq,
+                                                 final Map<Option, Object> options) {
+        return new ConnectionHandshakeSegment(seq, 0, SYN, 0, options, Unpooled.EMPTY_BUFFER);
+    }
+
     public static ConnectionHandshakeSegment syn(final long seq, final long window) {
         return new ConnectionHandshakeSegment(seq, 0, SYN, window, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
     }
@@ -149,6 +152,12 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
                                                     final long ack,
                                                     final long window) {
         return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), window, new EnumMap<>(Option.class), Unpooled.EMPTY_BUFFER);
+    }
+
+    public static ConnectionHandshakeSegment synAck(final long seq,
+                                                    final long ack,
+                                                    final Map<Option, Object> options) {
+        return new ConnectionHandshakeSegment(seq, ack, (byte) (SYN | ACK), 0, options, Unpooled.EMPTY_BUFFER);
     }
 
     public static ConnectionHandshakeSegment synAck(final long seq, final long ack) {
@@ -343,9 +352,8 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
                     out.writeShort((Integer) value);
                     return;
                 case TIMESTAMPS:
-                    final long[] timestamps = (long[]) value;
-                    out.writeLong(timestamps[0]);
-                    out.writeLong(timestamps[1]);
+                    out.writeLong(((TimestampsOption) value).tsVal);
+                    out.writeLong(((TimestampsOption) value).tsEcr);
                     return;
                 default:
                     throw new CodecException("Unable to write value of option " + this);
@@ -357,13 +365,26 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
                 case MAXIMUM_SEGMENT_SIZE:
                     return in.readUnsignedShort();
                 case TIMESTAMPS:
-                    return new long[]{
-                            in.readLong(),
-                            in.readLong()
-                    };
+                    return new TimestampsOption(in.readLong(), in.readLong());
                 default:
                     throw new CodecException("Unable to read value of option " + this);
             }
+        }
+    }
+
+    static class TimestampsOption {
+        // TS Value (TSval): 8 bytes
+        final long tsVal;
+        // TS Echo Reply (TSecr): 8 bytes
+        final long tsEcr;
+
+        TimestampsOption(long tsVal, long tsEcr) {
+            this.tsVal = requireNonNegative(tsVal);
+            this.tsEcr = requireNonNegative(tsEcr);
+        }
+
+        public TimestampsOption(long tsVal) {
+            this(tsVal, 0);
         }
     }
 }

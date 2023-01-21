@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -34,7 +35,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
-import java.util.function.LongSupplier;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -49,26 +50,31 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomInt;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
 /**
- * This handler partially implements the Transmission Control Protocol know from <a
- * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>. Only the
- * three-way-handshake and tear-down handshake are currently supported. Segments just contain
- * parameters required for that operations.
+ * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
+ * heavily inspired by the Transmission Control Protocol (TCP), but neither implement all features
+ * nor it is compatible with it.
+ * <p>
+ * This handler mainly implements <a href="https://www.rfc-editor.org/rfc/rfc9293.html">RFC 9293
+ * Transmission Control Protocol (TCP)</a>, but also includes TCP Timestamps Option and RTTM
+ * Mechanism as described in <a href="https://www.rfc-editor.org/rfc/rfc7323">RFC 7323 TCP
+ * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start
+ * and congestion avoidance as described in <a
+ * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
+ * implemented as well.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
- * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
- * once the handshake has been issued. The handshake process will result either in a
- * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
- * <p>
- * Wire format ist nicht kompatibel.
+ * If the handler is configured for active OPEN, a
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeIssued} will be emitted once the
+ * handshake has been issued. The handshake process will result either in a
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted} event or
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
  */
-// Fast Retransmit/Fast Recovery
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
@@ -79,10 +85,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private final Duration userTimeout;
-    private final LongSupplier issProvider;
+    private final Function<Channel, TransmissionControlBlock> tcbProvider;
     private final boolean activeOpen;
-    private final int initialMss;
-    private final int initialWindow;
     ScheduledFuture<?> userTimeoutTimer;
     State state;
     TransmissionControlBlock tcb;
@@ -91,43 +95,33 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private boolean readPending;
 
     /**
-     * @param userTimeout   time in ms in which a handshake must taken place after issued
-     * @param issProvider   Provider to generate the initial send sequence number
-     * @param activeOpen    Initiate active OPEN handshake process automatically on
-     *                      {@link #channelActive(ChannelHandlerContext)}
-     * @param state         Current synchronization state
-     * @param initialMss    Maximum segment size
-     * @param initialWindow
+     * @param userTimeout time in ms in which a handshake must taken place after issued
+     * @param activeOpen  Initiate active OPEN handshake process automatically on
+     *                    {@link #channelActive(ChannelHandlerContext)}
+     * @param state       Current synchronization state
+     * @param tcbProvider
      */
-    @SuppressWarnings("java:S107")
     ConnectionHandshakeHandler(final Duration userTimeout,
-                               final LongSupplier issProvider,
                                final boolean activeOpen,
                                final State state,
-                               final int initialMss,
-                               final int initialWindow,
+                               final Function<Channel, TransmissionControlBlock> tcbProvider,
                                final TransmissionControlBlock tcb) {
         this.userTimeout = requireNonNegative(userTimeout);
-        this.issProvider = requireNonNull(issProvider);
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
-        this.initialMss = requirePositive(initialMss);
-        this.initialWindow = requirePositive(initialWindow);
+        this.tcbProvider = requireNonNull(tcbProvider);
         this.tcb = tcb;
     }
 
-    /**
-     * @param userTimeout   time in ms in which a handshake must taken place after issued
-     * @param activeOpen    if {@code true} a handshake will be issued on
-     *                      {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
-     *                      must initiate the handshake
-     * @param initialWindow
-     */
-    public ConnectionHandshakeHandler(final Duration userTimeout,
-                                      final boolean activeOpen,
-                                      final int initialMss,
-                                      final int initialWindow) {
-        this(userTimeout, () -> randomInt(Integer.MAX_VALUE - 1), activeOpen, CLOSED, initialMss, initialWindow, null);
+    ConnectionHandshakeHandler(final Duration userTimeout,
+                               final boolean activeOpen,
+                               final State state,
+                               final int initialMss,
+                               final int initialWindow) {
+        this(userTimeout, activeOpen, state, channel -> {
+            final long iss = randomInt(Integer.MAX_VALUE - 1);
+            return new TransmissionControlBlock(iss, iss, 0, iss, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss);
+        }, null);
     }
 
     /**
@@ -138,7 +132,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeHandler(final Duration userTimeout,
                                       final boolean activeOpen) {
-        this(userTimeout, activeOpen, 1220, 64 * 1220);
+        this(userTimeout, activeOpen, CLOSED, 1220, 64 * 1220);
     }
 
     /*
@@ -284,6 +278,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // send SYN
         final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss());
+        //tcb.retransmissionQueue.userCallOpen(seg);
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.writeAndFlush(ctx, seg);
 
@@ -446,9 +441,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      */
 
     private void createTcb(final ChannelHandlerContext ctx) {
-        // window size sollte ein vielfaches von mss betragen
         assert tcb == null;
-        tcb = new TransmissionControlBlock(ctx.channel(), issProvider.getAsLong(), initialWindow, initialMss);
+        tcb = tcbProvider.apply(ctx.channel());
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
 
 //        ctx.executor().scheduleAtFixedRate(() -> {
@@ -699,7 +693,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         final boolean acceptableAck = tcb.isAcceptableAck2(seg);
 
         // RTTM
-        tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb);
+        tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb, state);
 
         if (!validSeg && !acceptableAck) {
             // not expected seq

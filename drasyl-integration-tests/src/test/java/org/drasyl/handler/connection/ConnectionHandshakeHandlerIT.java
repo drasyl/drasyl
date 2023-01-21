@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -77,7 +78,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, 1000, 64_000));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -92,7 +93,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, 1000, 32_000));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 32_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -500,7 +501,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofHours(1), false, 1000, 32_000);
+                        ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 32_000);
                         p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -538,7 +539,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, 1000, 64_000));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -596,7 +597,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, 1000, 64_000));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRead(final ChannelHandlerContext ctx,
@@ -633,7 +634,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, 1000, 64_000));
+                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
