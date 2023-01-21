@@ -514,7 +514,7 @@ public class TransmissionControlBlock {
                 //   missing segment, without waiting for a retransmission timer to
                 //   expire.
                 // The lost segment starting at SND.UNA MUST be retransmitted...
-                final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(this);
+                final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(ctx, this);
                 LOG.error("{} Congestion Control: Fast Retransmit: Retransmit SEG `{}`.", ctx.channel(), current);
                 ctx.writeAndFlush(current);
 

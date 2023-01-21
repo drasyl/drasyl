@@ -223,7 +223,7 @@ public class RetransmissionQueue {
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
-            ConnectionHandshakeSegment retransmission = retransmissionSegment(tcb);
+            ConnectionHandshakeSegment retransmission = retransmissionSegment(ctx, tcb);
             LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
             ctx.writeAndFlush(retransmission);
 
@@ -264,7 +264,7 @@ public class RetransmissionQueue {
         }, rto, MILLISECONDS);
     }
 
-    ConnectionHandshakeSegment retransmissionSegment(final TransmissionControlBlock tcb) {
+    ConnectionHandshakeSegment retransmissionSegment(ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         final EnumMap<Option, Object> options = new EnumMap<>(Option.class);
         final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
         byte ctl = ACK;
@@ -278,7 +278,10 @@ public class RetransmissionQueue {
         if (ctl == ACK && data.readableBytes() == 0) {
             System.out.printf("");
         }
-        ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(tcb.sndUna(), tcb.rcvNxt(), ctl, tcb.rcvWnd(), options, data);
+        final long seq = tcb.sndUna();
+        final long ack = tcb.rcvNxt();
+        tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
+        ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.rcvWnd(), options, data);
         return retransmission;
     }
 
@@ -354,7 +357,7 @@ public class RetransmissionQueue {
 
             // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
             final int rDash = (int) (clock.time() - tsEcr);
-            LOG.error("RTT R' = {}", rDash);
+            LOG.trace("RTT R' = {}", rDash);
             // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
             rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
             // SRTT <- (1 - alpha) * SRTT + alpha * R'
@@ -391,6 +394,7 @@ public class RetransmissionQueue {
                                             final TransmissionControlBlock tcb) {
         final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
         if (tsOpt != null) {
+            LOG.trace("{} < {}", ctx.channel(), tsOpt);
             LOG.trace("{} RTT measurement: Set TS.Recent to {} (SEG.TSval) and LAST.ACK.sent to {} (RCV.NXT).", ctx.channel(), tsOpt.tsVal, tcb.rcvNxt());
             // RFC 7323, Appendix D
             // Check for a TSopt option; if one is found, save SEG.TSval in the
@@ -412,6 +416,7 @@ public class RetransmissionQueue {
         // Snd.TSclock - SEG.TSecr as the initial RTT estimate.
         final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
         if (tsOpt != null) {
+            LOG.trace("{} < {}", ctx.channel(), tsOpt);
             LOG.trace("{} RTT measurement: Set TS.Recent to {} (SEG.TSval).", ctx.channel(), tsOpt.tsVal);
             // RFC 7323, Appendix D
             // Check for a TSopt option; if one is found, save SEG.TSval in the
@@ -440,6 +445,7 @@ public class RetransmissionQueue {
         if (sndTsOk) {
             tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
             if (tsOpt != null) {
+                LOG.trace("{} < {}", ctx.channel(), tsOpt);
                 // If SEG.TSval < TS.Recent and the RST bit is off:
                 if (tsOpt.tsVal < tsRecent && !seg.isRst()) {
                     // FIXME: If the connection has been idle more than 24 days, save SEG.TSval in
@@ -477,10 +483,12 @@ public class RetransmissionQueue {
                           final byte ctl,
                           final Map<Option, Object> options) {
         if (sndTsOk) {
-            options.put(TIMESTAMPS, new TimestampsOption(clock.time(), tsRecent));
+            final TimestampsOption tsOpt = new TimestampsOption(clock.time(), tsRecent);
+            options.put(TIMESTAMPS, tsOpt);
             if ((ctl & ACK) != 0) {
                 lastAckSent = ack;
             }
+            LOG.trace("{} > {}", ctx.channel(), tsOpt);
         } else if ((ctl & SYN) != 0) {
             // add MSS option to SYN
             options.put(TIMESTAMPS, new TimestampsOption(clock.time()));

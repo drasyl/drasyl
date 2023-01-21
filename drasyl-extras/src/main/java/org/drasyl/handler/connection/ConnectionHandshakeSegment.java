@@ -378,6 +378,11 @@ public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
         // TS Echo Reply (TSecr): 8 bytes
         final long tsEcr;
 
+        @Override
+        public String toString() {
+            return "<TSval=" + tsVal + ",TSecr=" + tsEcr + ">";
+        }
+
         TimestampsOption(long tsVal, long tsEcr) {
             this.tsVal = requireNonNegative(tsVal);
             this.tsEcr = requireNonNegative(tsEcr);
