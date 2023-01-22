@@ -404,10 +404,11 @@ public class RetransmissionQueue {
         }
     }
 
-    public void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
+    public boolean segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
                                                final ConnectionHandshakeSegment seg,
                                                final TransmissionControlBlock tcb,
-                                               final State state) {
+                                               final State state,
+                                               boolean acceptableSeg) {
         // RFC 7323, Appendix D
         // Check whether the segment contains a Timestamps option and if bit Snd.TS.OK is on. If so:
         TimestampsOption tsOpt = null;
@@ -418,9 +419,9 @@ public class RetransmissionQueue {
                 // If SEG.TSval < TS.Recent and the RST bit is off:
                 if (tsOpt.tsVal < tsRecent && !seg.isRst()) {
                     // FIXME: If the connection has been idle more than 24 days, save SEG.TSval in
-                    //  variable TS.Recent, else the segment is not acceptable; follow the steps
-                    //  below for an unacceptable segment.
-                    throw new UnsupportedOperationException("Not implemented yet: " + seg);
+                    //  variable TS.Recent,
+                    // else the segment is not acceptable; follow the steps below for an unacceptable segment.
+                    acceptableSeg = false;
                 } else if (tsOpt.tsVal >= tsRecent && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE)) {
                     // If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent, then save SEG.TSval in variable TS.Recent.
                     tsRecent = tsOpt.tsVal;
@@ -444,6 +445,8 @@ public class RetransmissionQueue {
                 }
             }
         }
+
+        return acceptableSeg;
     }
 
     public void addOption(final ChannelHandlerContext ctx,

@@ -685,12 +685,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                              final ConnectionHandshakeSegment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
         // check SEQ
+        boolean acceptableSeg = tcb.isAcceptableSeg(seg);
         final boolean acceptableAck = tcb.isAcceptableAck(seg);
 
         // RTTM
-        tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb, state);
+        acceptableSeg = tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb, state, acceptableSeg);
 
-        if (!tcb.isAcceptableSeg(seg)) {
+        if (!acceptableSeg) {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
