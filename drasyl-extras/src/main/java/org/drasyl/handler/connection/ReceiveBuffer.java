@@ -163,13 +163,11 @@ public class ReceiveBuffer {
                     tcb.decrementRcvWnd(length);
                     size += 1;
                     bytes += length;
-                }
-                else {
+                } else {
                     // SEG contains no elements within RCV.WND. Drop!
                     return;
                 }
-            }
-            else {
+            } else {
                 // buffer contains already segments. Check if SEG contains data that are before existing segments
                 if (lessThan(seg.seq(), head.seq(), SEQ_NO_SPACE)) {
                     final long seq;
@@ -236,8 +234,7 @@ public class ReceiveBuffer {
                         tcb.decrementRcvWnd(length);
                         size += 1;
                         bytes += length;
-                    }
-                    else {
+                    } else {
                         // SEG contains no elements within RCV.WND. Drop!
                         return;
                     }
@@ -261,8 +258,7 @@ public class ReceiveBuffer {
                             index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
                             if (current.next != null) {
                                 length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq(), SEQ_NO_SPACE)) - index;
-                            }
-                            else {
+                            } else {
                                 length = seg.len() - index;
                             }
                             final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
@@ -288,15 +284,13 @@ public class ReceiveBuffer {
                             tcb.decrementRcvWnd(length);
                             size += 1;
                             bytes += length;
-                        }
-                        else {
+                        } else {
                             // Überschneidung
                             seq = add(current.lastSeq(), 1, SEQ_NO_SPACE);
                             index = (int) sub(seq, seg.seq(), SEQ_NO_SPACE);
                             if (current.next != null) {
                                 length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq(), SEQ_NO_SPACE)) - index;
-                            }
-                            else {
+                            } else {
                                 length = seg.len() - index;
                             }
                             final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
@@ -348,8 +342,7 @@ public class ReceiveBuffer {
                 head = head.next;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq(), SEQ_NO_SPACE) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
-        }
-        else if (seg.len() > 0) {
+        } else if (seg.len() > 0) {
             tcb.advanceRcvNxt(ctx, seg.len());
         }
     }
@@ -358,13 +351,11 @@ public class ReceiveBuffer {
         if (headBuf == null) {
             // create new cumulation
             headBuf = next;
-        }
-        else if (headBuf instanceof CompositeByteBuf) {
+        } else if (headBuf instanceof CompositeByteBuf) {
             // add component
             CompositeByteBuf composite = (CompositeByteBuf) headBuf;
             composite.addComponent(true, next);
-        }
-        else {
+        } else {
             // create composite
             final CompositeByteBuf composite = ctx.alloc().compositeBuffer();
             composite.addComponent(true, headBuf);
@@ -375,12 +366,13 @@ public class ReceiveBuffer {
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (headBuf != null) {
+            LOG.error("fireRead");
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
                 bytes -= readableBytes;
                 final ByteBuf headBuf1 = headBuf;
                 headBuf = null;
-                tcb.incrementRcvWnd();
+                tcb.incrementRcvWnd(ctx);
                 LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
                 ctx.fireChannelRead(headBuf1);
             }

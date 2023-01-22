@@ -369,7 +369,7 @@ public class TransmissionControlBlock {
                 }
 
                 if (!sendData) {
-                    LOG.error("{}[{}] Sender's SWS avoidance: No send condition met. Delay data.", ctx.channel(), ctx.channel());
+                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay data.", ctx.channel());
                     return;
                 }
             }
@@ -390,7 +390,7 @@ public class TransmissionControlBlock {
             final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             if (remainingBytes > 0) {
-                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+                LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
             }
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
@@ -433,12 +433,12 @@ public class TransmissionControlBlock {
 
                 // Slow Start -> +1 MSS after each ACK
                 final long increment = Math.min(mss, ackedBytes);
-                LOG.error("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             } else {
                 // Congestion Avoidance -> +1 MSS after each RTT
                 final long increment = (long) Math.ceil(((long) mss * mss) / (float) cwnd);
-                LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
 
@@ -602,22 +602,24 @@ public class TransmissionControlBlock {
         rcvWnd -= decrement;
     }
 
-    public void incrementRcvWnd() {
+    public void incrementRcvWnd(final ChannelHandlerContext ctx) {
         // receiver's SWS avoidance algorithms
         // RFC 9293, Section 3.8.6.2.2
         // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
 
         // total receive buffer space is RCV.BUFF
-        long rcvBuff = rcvBuff();
         // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
         long rcvUser = receiveBuffer.readableBytes();
         // effective send MSS: equal to MSS?
         final long effSndMSS = mss;
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
-        if (rcvBuff - rcvUser - rcvWnd >= Math.min(fr * rcvBuff, effSndMSS)) {
-            rcvWnd = rcvBuff - rcvUser;
+        if (rcvBuff() - rcvUser - rcvWnd >= Math.min(fr * rcvBuff(), effSndMSS)) {
+            final long newRcvWind = rcvBuff() - rcvUser;
+            LOG.error("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
+            rcvWnd = newRcvWind;
         }
+        System.err.println(rcvWnd);
     }
 
     long rcvBuff() {

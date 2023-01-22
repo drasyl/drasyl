@@ -224,7 +224,7 @@ public class RetransmissionQueue {
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
             ConnectionHandshakeSegment retransmission = retransmissionSegment(ctx, tcb);
-            LOG.error("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
+            LOG.trace("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
             ctx.writeAndFlush(retransmission);
 
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
@@ -232,7 +232,7 @@ public class RetransmissionQueue {
             //         an upper bound to this doubling operation.
             final long oldRto = this.rto;
             rto(this.rto * 2);
-            LOG.error("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto());
+            LOG.trace("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, rto());
 
             // (5.6) Start the retransmission timer, such that it expires after RTO
             //         seconds (for the value of RTO after the doubling operation
@@ -250,7 +250,7 @@ public class RetransmissionQueue {
             final long flightSize = tcb.sendBuffer().acknowledgeableBytes();
             final long newSsthresh = Math.max(flightSize / 2, 2 * smss);
             if (tcb.ssthresh != newSsthresh) {
-                LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+                LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
             }
 
@@ -261,7 +261,7 @@ public class RetransmissionQueue {
             //   algorithm to increase the window from 1 full-sized segment to the new
             //   value of ssthresh, at which point congestion avoidance again takes
             //   over.
-            LOG.error("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
+            LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
             tcb.cwnd = tcb.mss();
         }, rto, MILLISECONDS);
     }
@@ -306,7 +306,7 @@ public class RetransmissionQueue {
         if (sRtt == INITIAL_SRTT) {
             // (2.2) When the first RTT measurement R is made, the host MUST set
             final int r = (int) (clock.time() - tsEcr);
-            LOG.error("RTT R = {}", r);
+            LOG.trace("RTT R = {}", r);
             // SRTT <- R
             sRtt = r;
             // RTTVAR <- R/2
