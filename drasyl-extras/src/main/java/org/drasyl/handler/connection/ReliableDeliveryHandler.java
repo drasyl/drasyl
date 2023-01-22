@@ -39,7 +39,7 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -50,7 +50,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.RandomUtil.randomInt;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
 
@@ -77,8 +76,8 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
-public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);
+public class ReliableDeliveryHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ReliableDeliveryHandler.class);
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
     private static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
@@ -91,7 +90,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     ScheduledFuture<?> userTimeoutTimer;
     State state;
     TransmissionControlBlock tcb;
-    private UserCallPromise userCallFuture;
+    private ChannelPromise userCallFuture;
     private boolean initDone;
     private boolean readPending;
 
@@ -102,11 +101,11 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * @param state       Current synchronization state
      * @param tcbProvider
      */
-    ConnectionHandshakeHandler(final Duration userTimeout,
-                               final boolean activeOpen,
-                               final State state,
-                               final Function<Channel, TransmissionControlBlock> tcbProvider,
-                               final TransmissionControlBlock tcb) {
+    ReliableDeliveryHandler(final Duration userTimeout,
+                            final boolean activeOpen,
+                            final State state,
+                            final Function<Channel, TransmissionControlBlock> tcbProvider,
+                            final TransmissionControlBlock tcb) {
         this.userTimeout = requireNonNegative(userTimeout);
         this.activeOpen = activeOpen;
         this.state = requireNonNull(state);
@@ -114,13 +113,13 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         this.tcb = tcb;
     }
 
-    ConnectionHandshakeHandler(final Duration userTimeout,
-                               final boolean activeOpen,
-                               final State state,
-                               final int initialMss,
-                               final int initialWindow) {
+    ReliableDeliveryHandler(final Duration userTimeout,
+                            final boolean activeOpen,
+                            final State state,
+                            final int initialMss,
+                            final int initialWindow) {
         this(userTimeout, activeOpen, state, channel -> {
-            final long iss = randomInt(Integer.MAX_VALUE - 1);
+            final long iss = Segment.randomSeq();
             return new TransmissionControlBlock(iss, iss, 0, iss, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss);
         }, null);
     }
@@ -131,8 +130,8 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
      *                    must initiate the handshake
      */
-    public ConnectionHandshakeHandler(final Duration userTimeout,
-                                      final boolean activeOpen) {
+    public ReliableDeliveryHandler(final Duration userTimeout,
+                                   final boolean activeOpen) {
         this(userTimeout, activeOpen, CLOSED, 1220, 64 * 1220);
     }
 
@@ -148,7 +147,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
         // cancel all timeout guards
         cancelUserTimeoutGuard();
 
@@ -161,7 +160,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void close(final ChannelHandlerContext ctx,
-                      final ChannelPromise promise) throws Exception {
+                      final ChannelPromise promise) {
         userCallClose(ctx, promise);
     }
 
@@ -193,6 +192,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
+        // FIXME: check for ESTABLISHED?
         if (tcb != null) {
             tcb.flush(ctx, state, true);
         }
@@ -207,25 +207,21 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         initHandler(ctx);
-
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        // cancel all timeout guards
         cancelUserTimeoutGuard();
-
         deleteTcb();
-
         ctx.fireChannelInactive();
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         ReferenceCountUtil.touch(msg, "channelRead");
-        if (msg instanceof ConnectionHandshakeSegment) {
-            segmentArrives(ctx, (ConnectionHandshakeSegment) msg);
+        if (msg instanceof Segment) {
+            segmentArrives(ctx, (Segment) msg);
         }
         else {
             ReferenceCountUtil.safeRelease(msg);
@@ -234,6 +230,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
+        // FIXME: check for ESTABLISHED?
         if (tcb != null) {
             tcb.flush(ctx, state, false);
         }
@@ -246,9 +243,10 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                 final Throwable cause) {
         LOG.trace("{}[{}] Exception caught. Close channel:", ctx.channel(), state, cause);
 
+        // FIXME: remove line below
         cause.printStackTrace();
 
-        switchToNewState(ctx, CLOSED);
+        changeState(ctx, CLOSED);
         deleteTcb();
 
         ctx.close();
@@ -278,20 +276,20 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         createTcb(ctx);
 
         // send SYN
-        final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(tcb.iss());
-        //tcb.retransmissionQueue.userCallOpen(seg);
+        final Segment seg = Segment.syn(tcb.iss());
         LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
         tcb.writeAndFlush(ctx, seg);
 
-        // switch state
-        switchToNewState(ctx, SYN_SENT);
+        // change state
+        changeState(ctx, SYN_SENT);
 
         // start user call timeout guard
         if (userTimeout.toMillis() > 0) {
+            assert userTimeoutTimer == null;
             userTimeoutTimer = ctx.executor().schedule(() -> {
                 // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
                 LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
-                switchToNewState(ctx, CLOSED);
+                changeState(ctx, CLOSED);
                 final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel.");
                 deleteTcb();
                 ctx.fireExceptionCaught(cause);
@@ -380,7 +378,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             case SYN_SENT:
                 cancelUserTimeoutGuard();
                 ctx.fireExceptionCaught(CONNECTION_CLOSING_ERROR);
-                switchToNewState(ctx, CLOSED);
+                changeState(ctx, CLOSED);
                 ctx.close(promise);
                 break;
 
@@ -391,22 +389,24 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
             case ESTABLISHED:
                 // save promise for later, as it we need ACKnowledgment from remote peer
-                userCallFuture = UserCallPromise.wrapPromise(UserCall.CLOSE, promise);
+                assert userCallFuture == null;
+                userCallFuture = promise;
 
                 // signal user connection closing
                 ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
 
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.finAck(tcb.sndNxt(), tcb.rcvNxt());
+                final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
                 LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                 tcb.writeAndFlush(ctx, seg);
 
-                switchToNewState(ctx, FIN_WAIT_1);
+                changeState(ctx, FIN_WAIT_1);
 
                 if (userTimeout.toMillis() > 0) {
                     // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
+                    assert userTimeoutTimer == null;
                     userTimeoutTimer = ctx.executor().schedule(() -> {
                         LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
-                        switchToNewState(ctx, CLOSED);
+                        changeState(ctx, CLOSED);
                         final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for CLOSE user call after " + userTimeout.toMillis() + "ms. Close channel.");
                         promise.tryFailure(cause);
                         deleteTcb();
@@ -454,7 +454,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         }
     }
 
-    private void switchToNewState(final ChannelHandlerContext ctx, final State newState) {
+    private void changeState(final ChannelHandlerContext ctx, final State newState) {
         LOG.trace("{}[{} -> {}] Switched to new state.", ctx.channel(), state, newState);
         state = newState;
     }
@@ -474,7 +474,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 else {
                     // passive OPEN
                     LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
-                    switchToNewState(ctx, LISTEN);
+                    changeState(ctx, LISTEN);
                 }
             }
         }
@@ -486,7 +486,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
      * 3.10.7</a>.
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
-                                final ConnectionHandshakeSegment seg) {
+                                final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrives");
         LOG.trace("{}[{}] Read `{}`.", ctx.channel(), state, seg);
 
@@ -514,7 +514,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void segmentArrivesOnClosedState(final ChannelHandlerContext ctx,
-                                             final ConnectionHandshakeSegment seg) {
+                                             final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnClosedState");
         if (seg.isRst()) {
             // as we are already/still in CLOSED state, we can ignore the RST
@@ -523,20 +523,20 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
         // at this point we're not (longer) willing to synchronize.
         // reset the peer
-        final ConnectionHandshakeSegment response;
+        final Segment response;
         if (seg.isAck()) {
             // send normal RST as we don't want to ACK an ACK
-            response = ConnectionHandshakeSegment.rst(seg.ack());
+            response = Segment.rst(seg.ack());
         }
         else {
-            response = ConnectionHandshakeSegment.rstAck(0, seg.seq());
+            response = Segment.rstAck(0, seg.seq());
         }
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
         tcb.write(response);
     }
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
-                                             final ConnectionHandshakeSegment seg) {
+                                             final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
         // check RST
         if (seg.isRst()) {
@@ -552,7 +552,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         // check ACK
         if (seg.isAck()) {
             // we are on a state were we have never sent anything that must be ACKed
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
+            final Segment response = Segment.rst(seg.ack());
             LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
             tcb.write(response);
             return;
@@ -568,7 +568,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 ctx.executor().schedule(() -> {
                     if (state != ESTABLISHED && state != CLOSED) {
                         LOG.trace("{}[{}] Handshake initiated by remote peer has not been completed within {}ms. Abort handshake. Close channel.", ctx.channel(), state, userTimeout);
-                        switchToNewState(ctx, CLOSED);
+                        changeState(ctx, CLOSED);
                         ctx.fireExceptionCaught(new ConnectionHandshakeException("User Timeout! Handshake initiated by remote port has not been completed within " + userTimeout.toMillis() + "ms. Abort handshake. Close channel."));
                         ctx.close();
                     }
@@ -579,7 +579,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.retransmissionQueue().segmentArrivesOnListenState(ctx, seg, tcb);
 
             // yay, peer SYNced with us
-            switchToNewState(ctx, SYN_RECEIVED);
+            changeState(ctx, SYN_RECEIVED);
 
             // synchronize receive state
             tcb.synchronizeState(seg);
@@ -593,7 +593,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.negotiateMss(ctx, seg);
 
             // send SYN/ACK
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss(), tcb.rcvNxt());
+            final Segment response = Segment.synAck(tcb.iss(), tcb.rcvNxt());
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.write(response);
             return;
@@ -605,7 +605,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
-                                              final ConnectionHandshakeSegment seg) {
+                                              final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnSynSentState");
         // check ACK
         if (tcb.isAckSomethingNeverSent(seg)) {
@@ -615,7 +615,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
             }
             else {
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
+                final Segment response = Segment.rst(seg.ack());
                 LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
                 tcb.write(response);
             }
@@ -627,7 +627,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (seg.isRst()) {
             if (acceptableAck) {
                 LOG.trace("{}[{}] SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
-                switchToNewState(ctx, CLOSED);
+                changeState(ctx, CLOSED);
                 deleteTcb();
                 ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                 ctx.close();
@@ -658,23 +658,23 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
-                switchToNewState(ctx, ESTABLISHED);
+                changeState(ctx, ESTABLISHED);
                 cancelUserTimeoutGuard();
 
                 // mss negotiation
                 tcb.negotiateMss(ctx, seg);
 
                 // ACK
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                 LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
                 tcb.write(response);
 
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
             }
             else {
-                switchToNewState(ctx, SYN_RECEIVED);
+                changeState(ctx, SYN_RECEIVED);
                 // SYN/ACK
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.synAck(tcb.iss(), tcb.rcvNxt());
+                final Segment response = Segment.synAck(tcb.iss(), tcb.rcvNxt());
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 tcb.writeWithout(response);
             }
@@ -683,7 +683,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
-                                             final ConnectionHandshakeSegment seg) {
+                                             final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
         // check SEQ
         boolean acceptableSeg = tcb.isAcceptableSeg(seg);
@@ -695,7 +695,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (!acceptableSeg) {
             // not expected seq
             if (!seg.isRst()) {
-                final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                 LOG.trace("{}[{}] We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), state, seg, response);
                 tcb.write(response);
             }
@@ -709,7 +709,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     if (activeOpen) {
                         // connection has been refused by remote
                         LOG.trace("{}[{}] We got `{}`. Connection has been refused by remote peer.", ctx.channel(), state, seg);
-                        switchToNewState(ctx, CLOSED);
+                        changeState(ctx, CLOSED);
                         deleteTcb();
                         ctx.fireExceptionCaught(CONNECTION_REFUSED_EXCEPTION);
                         ctx.close();
@@ -718,7 +718,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     else {
                         // peer is no longer interested in a connection. Go back to previous state
                         LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. We're going back to the LISTEN state.", ctx.channel(), state, seg);
-                        switchToNewState(ctx, LISTEN);
+                        changeState(ctx, LISTEN);
                         return;
                     }
 
@@ -726,7 +726,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. Close channel.", ctx.channel(), state, seg);
-                    switchToNewState(ctx, CLOSED);
+                    changeState(ctx, CLOSED);
                     deleteTcb();
                     ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
                     ctx.close();
@@ -736,7 +736,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // CLOSING
                     // LAST-ACK
                     LOG.trace("{}[{}] We got `{}`. Close channel.", ctx.channel(), state, seg);
-                    switchToNewState(ctx, CLOSED);
+                    changeState(ctx, CLOSED);
                     deleteTcb();
                     ctx.close();
                     return;
@@ -750,7 +750,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // If the connection was initiated with a passive OPEN, then return this connection to the LISTEN state and return.
                     if (!activeOpen) {
                         LOG.trace("{}[{}] We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), state, seg);
-                        switchToNewState(ctx, LISTEN);
+                        changeState(ctx, LISTEN);
                         return;
                     }
                     // Otherwise, handle per the directions for synchronized states below.
@@ -758,7 +758,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 default:
                     final boolean theseSynchronizedStates = state != SYN_RECEIVED;
                     if (theseSynchronizedStates) {
-                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                        final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                         LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
                         tcb.write(response);
                         return;
@@ -781,12 +781,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
                         cancelUserTimeoutGuard();
-                        switchToNewState(ctx, ESTABLISHED);
+                        changeState(ctx, ESTABLISHED);
                         tcb.updateSndWnd(seg);
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
 
                         if (!acceptableAck) {
-                            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.rst(seg.ack());
+                            final Segment response = Segment.rst(seg.ack());
                             LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Send RST `{}` and drop received SEG.", ctx.channel(), state, seg, response);
                             tcb.write(response);
                             return;
@@ -812,7 +812,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     if (ackOurFin) {
                         // our FIN has been acknowledged
-                        switchToNewState(ctx, FIN_WAIT_2);
+                        changeState(ctx, FIN_WAIT_2);
                     }
                     break;
 
@@ -832,7 +832,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
 
                     if (ackOurFin2) {
                         LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
-                        switchToNewState(ctx, CLOSED);
+                        changeState(ctx, CLOSED);
                         ctx.close(userCallFuture);
                     }
                     else {
@@ -844,7 +844,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 case LAST_ACK:
                     // our FIN has been ACKed
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
-                    switchToNewState(ctx, CLOSED);
+                    changeState(ctx, CLOSED);
                     deleteTcb();
                     if (userCallFuture != null) {
                         ctx.close(userCallFuture);
@@ -857,7 +857,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 default:
                     // we got a retransmission of a FIN
                     // Ack it
-                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                    final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     tcb.write(response);
             }
@@ -887,7 +887,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     }
 
                     // Ack receival of segment text
-                    final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                    final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                     LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
                     tcb.write(response);
 
@@ -910,7 +910,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             tcb.receiveBuffer().receive(ctx, tcb, seg);
 
             // send ACK for the FIN
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+            final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
             tcb.write(response);
 
@@ -923,27 +923,27 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     // wir haben keinen CLOSE_WAIT state, wir gehen also direkt zu LAST_ACK
                     // daher verschicken wir schon hier das FIN, was es sonst zwischen CLOSE_WAIT und LAST_ACK geben würde
                     LOG.trace("{}[{}] This channel is going to close now. Trigger channel close.", ctx.channel(), state);
-                    final ConnectionHandshakeSegment response2 = ConnectionHandshakeSegment.fin(tcb.sndNxt());
+                    final Segment response2 = Segment.fin(tcb.sndNxt());
                     LOG.trace("{}[{}] As we're already waiting for this. We're sending our last SEG `{}` and start waiting for the final ACKnowledgment.", ctx.channel(), state, response2);
                     tcb.write(response2);
-                    switchToNewState(ctx, LAST_ACK);
+                    changeState(ctx, LAST_ACK);
                     break;
 
                 case FIN_WAIT_1:
                     if (tcb.isAckOurSynOrFin(seg)) {
                         // our FIN has been acknowledged
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
-                        switchToNewState(ctx, CLOSED);
+                        changeState(ctx, CLOSED);
                         deleteTcb();
                     }
                     else {
-                        switchToNewState(ctx, CLOSING);
+                        changeState(ctx, CLOSING);
                     }
                     break;
 
                 case FIN_WAIT_2:
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
-                    switchToNewState(ctx, CLOSED);
+                    changeState(ctx, CLOSED);
                     userCallFuture.setSuccess();
                     userCallFuture = null;
                     tcb.write(response);
@@ -957,12 +957,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     }
 
     private void unexpectedSegment(final ChannelHandlerContext ctx,
-                                   final ConnectionHandshakeSegment seg) {
+                                   final Segment seg) {
         LOG.error("{}[{}] Got unexpected segment `{}`.", ctx.channel(), state, seg);
     }
 
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
-                                          final ConnectionHandshakeSegment seg,
+                                          final Segment seg,
                                           final boolean acceptableAck) {
         final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
@@ -982,7 +982,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         if (tcb.isAckSomethingNotYetSent(seg)) {
             // something not yet sent has been ACKed
             LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
-            final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+            final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
             tcb.write(response);
             return true;

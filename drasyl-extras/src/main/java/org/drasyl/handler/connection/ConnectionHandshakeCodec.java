@@ -26,20 +26,19 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.END_OF_OPTION_LIST;
+import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 
 /**
- * Encodes {@link ByteBuf}s to {@link ConnectionHandshakeSegment}s and vice versa.
+ * Encodes {@link ByteBuf}s to {@link Segment}s and vice versa.
  */
 @Sharable
-public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, ConnectionHandshakeSegment> {
+public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     public static final int MAGIC_NUMBER = 852_550_535;
     // Magic Number: 4 bytes
     // SEQ: 4 bytes
@@ -51,7 +50,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final ConnectionHandshakeSegment seg,
+                          final Segment seg,
                           final List<Object> out) throws Exception {
         ReferenceCountUtil.touch(seg, "ConnectionHandshakeCodec encode " + seg.toString());
         final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH + seg.content().readableBytes());
@@ -63,8 +62,8 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeInt((int) seg.window());
 
         // options
-        for (final Entry<Option, Object> entry : seg.options().entrySet()) {
-            final Option option = entry.getKey();
+        for (final Entry<SegmentOption, Object> entry : seg.options().entrySet()) {
+            final SegmentOption option = entry.getKey();
             final Object value = entry.getValue();
 
             buf.writeByte(option.kind());
@@ -91,16 +90,16 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
                     final long window = in.readUnsignedInt();
 
                     // options
-                    final Map<Option, Object> options = new EnumMap<>(Option.class);
+                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     byte kind;
                     while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
-                        final Option option = Option.ofKind(kind);
+                        final SegmentOption option = SegmentOption.ofKind(kind);
                         final Object value = option.readValueFrom(in);
 
                         options.put(option, value);
                     }
 
-                    final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, window, options, in.retain());
+                    final Segment seg = new Segment(seq, ack, ctl, window, options, in.retain());
                     out.add(seg);
                 }
                 else {

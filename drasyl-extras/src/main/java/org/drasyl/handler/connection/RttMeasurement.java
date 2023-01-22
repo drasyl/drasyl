@@ -21,14 +21,6 @@
  */
 package org.drasyl.handler.connection;
 
-import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
-
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
-
 public class RttMeasurement {
 
 }

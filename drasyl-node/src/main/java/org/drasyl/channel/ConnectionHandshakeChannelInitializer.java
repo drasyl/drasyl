@@ -30,7 +30,7 @@ import io.netty.util.internal.StringUtil;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ReliableDeliveryHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeStatus;
 import org.drasyl.util.CsvLogger;
 
@@ -60,7 +60,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ConnectionHandshakeCodec());
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(handshakeTimeout, initiateHandshake);
+        final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(handshakeTimeout, initiateHandshake);
         p.addLast(handler);
         final CsvLogger logger = new CsvLogger("/Users/heiko/Development/drasyl/" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
         new DefaultEventLoop().scheduleAtFixedRate(() -> {

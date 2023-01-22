@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -34,11 +33,17 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.advanceSeq;
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
+import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.advanceSeq;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
+import static org.drasyl.util.Preconditions.requireInRange;
+import static org.drasyl.util.Preconditions.requireNonNegative;
+import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -118,22 +123,22 @@ public class TransmissionControlBlock {
                              final long cwnd,
                              final long ssthresh,
                              final long maxSndWnd) {
-        this.sndUna = sndUna;
-        this.sndNxt = sndNxt;
-        this.sndWnd = sndWnd;
-        this.iss = iss;
-        this.rcvNxt = rcvNxt;
-        this.rcvWnd = rcvWnd;
-        this.rcvBuff = rcvBuff;
-        this.irs = irs;
-        this.sendBuffer = sendBuffer;
-        this.outgoingSegmentQueue = outgoingSegmentQueue;
-        this.retransmissionQueue = retransmissionQueue;
-        this.receiveBuffer = receiveBuffer;
-        this.mss = mss;
-        this.cwnd = cwnd;
-        this.ssthresh = ssthresh;
-        this.maxSndWnd = maxSndWnd;
+        this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.sndWnd = requireNonNegative(sndWnd);
+        this.iss = requireInRange(iss, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.rcvNxt = requireInRange(rcvNxt, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.rcvWnd = requireNonNegative(rcvWnd);
+        this.rcvBuff = requirePositive(rcvWnd);
+        this.irs = requireInRange(irs, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.sendBuffer = requireNonNull(sendBuffer);
+        this.outgoingSegmentQueue = requireNonNull(outgoingSegmentQueue);
+        this.retransmissionQueue = requireNonNull(retransmissionQueue);
+        this.receiveBuffer = requireNonNull(receiveBuffer);
+        this.mss = requirePositive(mss);
+        this.cwnd = requireNonNegative(cwnd);
+        this.ssthresh = requireNonNegative(ssthresh);
+        this.maxSndWnd = requireNonNegative(maxSndWnd);
     }
 
     @SuppressWarnings("java:S107")
@@ -148,7 +153,7 @@ public class TransmissionControlBlock {
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, mss * 3, rcvWnd, sndWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, mss * 3L, rcvWnd, sndWnd);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -258,19 +263,15 @@ public class TransmissionControlBlock {
         return receiveBuffer;
     }
 
-    public boolean isDuplicateAck(final ConnectionHandshakeSegment seg) {
+    public boolean isDuplicateAck(final Segment seg) {
         return seg.isOnlyAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE) && seg.len() == 0;
     }
 
-    public boolean isAckSomethingNotYetSent(final ConnectionHandshakeSegment seg) {
+    public boolean isAckSomethingNotYetSent(final Segment seg) {
         return seg.isAck() && greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
-    public boolean isFullyAcknowledged(final ConnectionHandshakeSegment seg) {
-        return lessThanOrEqualTo(seg.lastSeq(), sndUna, SEQ_NO_SPACE);
-    }
-
-    public boolean isAcceptableAck(final ConnectionHandshakeSegment seg) {
+    public boolean isAcceptableAck(final Segment seg) {
         return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
@@ -278,11 +279,11 @@ public class TransmissionControlBlock {
         return greaterThan(sndUna, iss, SEQ_NO_SPACE);
     }
 
-    public boolean isAckOurSynOrFin(final ConnectionHandshakeSegment seg) {
+    public boolean isAckOurSynOrFin(final Segment seg) {
         return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
     }
 
-    public boolean isAckSomethingNeverSent(final ConnectionHandshakeSegment seg) {
+    public boolean isAckSomethingNeverSent(final Segment seg) {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
     }
 
@@ -291,11 +292,11 @@ public class TransmissionControlBlock {
                             final long ack) {
         if (readableBytes > 0) {
             sndNxt = advanceSeq(sndNxt, readableBytes);
-            writeWithout(seg, readableBytes, ack, ACK, new EnumMap<>(Option.class));
+            writeWithout(seg, readableBytes, ack, ACK, new EnumMap<>(SegmentOption.class));
         }
     }
 
-    void write(final ConnectionHandshakeSegment seg) {
+    void write(final Segment seg) {
         final int len = seg.len();
         if (len > 0) {
             sndNxt = advanceSeq(sndNxt, len);
@@ -303,19 +304,19 @@ public class TransmissionControlBlock {
         writeWithout(seg);
     }
 
-    void writeWithout(final ConnectionHandshakeSegment seg) {
+    void writeWithout(final Segment seg) {
         writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
     }
 
     private void writeWithout(final long seq,
                               final long readableBytes,
                               final long ack,
-                              final int ctl, Map<Option, Object> options) {
+                              final int ctl, Map<SegmentOption, Object> options) {
         outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl, options);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
-                       final ConnectionHandshakeSegment seg) {
+                       final Segment seg) {
         write(seg);
         outgoingSegmentQueue.flush(ctx, this);
     }
@@ -390,7 +391,7 @@ public class TransmissionControlBlock {
             final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             if (remainingBytes > 0) {
-                LOG.trace("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
             }
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
@@ -401,16 +402,16 @@ public class TransmissionControlBlock {
     }
 
     public void negotiateMss(final ChannelHandlerContext ctx,
-                             final ConnectionHandshakeSegment seg) {
-        final Object mssOption = seg.options().get(MAXIMUM_SEGMENT_SIZE);
-        if (mssOption != null && (int) mssOption < mss) {
+                             final Segment seg) {
+        final Integer mssOption = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
+        if (mssOption != null && mssOption < mss) {
             LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), mssOption, mss);
             mss = (int) mssOption;
         }
     }
 
     public void handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final ConnectionHandshakeSegment seg) {
+                                      final Segment seg) {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
@@ -423,7 +424,7 @@ public class TransmissionControlBlock {
         // FIXME: If the SYN or SYN/ACK is lost, the initial window used by a
         //   sender after a correctly transmitted SYN MUST be one segment
         //   consisting of at most SMSS bytes.
-        final boolean synAcked = (ackedCtl & ConnectionHandshakeSegment.SYN) != 0;
+        final boolean synAcked = (ackedCtl & Segment.SYN) != 0;
         // only when new data is acked
         // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
         if (ackedBytes > 0 && !synAcked) {
@@ -450,12 +451,12 @@ public class TransmissionControlBlock {
         }
     }
 
-    public void synchronizeState(final ConnectionHandshakeSegment seg) {
+    public void synchronizeState(final Segment seg) {
         rcvNxt = advanceSeq(seg.seq(), seg.len());
         irs = seg.seq();
     }
 
-    public void updateSndWnd(final ConnectionHandshakeSegment seg) {
+    public void updateSndWnd(final Segment seg) {
         sndWnd = seg.window();
         sndWl1 = seg.seq();
         sndWl2 = seg.ack();
@@ -476,7 +477,7 @@ public class TransmissionControlBlock {
 
     // RFC 9293: SEGMENT ARRIVES on other state
     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7.4
-    public boolean isAcceptableSeg(final ConnectionHandshakeSegment seg) {
+    public boolean isAcceptableSeg(final Segment seg) {
         // There are four cases for the acceptability test for an incoming segment:
         if (seg.len() == 0 && rcvWnd == 0) {
             // SEG.SEQ = RCV.NXT
@@ -515,7 +516,7 @@ public class TransmissionControlBlock {
     }
 
     public void gotDuplicateAckCandidate(final ChannelHandlerContext ctx,
-                                         final ConnectionHandshakeSegment seg) {
+                                         final Segment seg) {
         // An acknowledgment is considered a
         //      "duplicate" in the following algorithms when (a) the receiver of
         //      the ACK has outstanding data, (b) the incoming acknowledgment
@@ -627,5 +628,9 @@ public class TransmissionControlBlock {
 
     long rcvUser() {
         return receiveBuffer.readableBytes();
+    }
+
+    public long maxSndWnd() {
+        return maxSndWnd;
     }
 }

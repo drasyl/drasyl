@@ -6,7 +6,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,14 +31,14 @@ class OutgoingSegmentQueueTest {
     @Nested
     class Add {
         @Test
-        void shouldAddSegmentToEndOfQueue(@Mock final ConnectionHandshakeSegment seg) {
+        void shouldAddSegmentToEndOfQueue(@Mock final Segment seg) {
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
             final long seq1 = seg.seq();
             final int readableBytes = seg.content().readableBytes();
             final long ack1 = seg.ack();
             final int ctl1 = seg.ctl();
-            Map<Option, Object> options = seg.options();
+            Map<SegmentOption, Object> options = seg.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
         }
     }
@@ -47,7 +46,7 @@ class OutgoingSegmentQueueTest {
     @Nested
     class AddAndFlush {
         @Test
-        void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
+        void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
@@ -56,7 +55,7 @@ class OutgoingSegmentQueueTest {
                 final int readableBytes = seg.content().readableBytes();
                 final long ack1 = seg.ack();
                 final int ctl1 = seg.ctl();
-                Map<Option, Object> options = seg.options();
+                Map<SegmentOption, Object> options = seg.options();
                 queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
             }
             finally {
@@ -71,7 +70,7 @@ class OutgoingSegmentQueueTest {
     @Nested
     class Flush {
         @Test
-        void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final ConnectionHandshakeSegment seg,
+        void shouldFlushSegmentsToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg,
                                           @Mock final ChannelPromise writePromise,
                                           @Mock final ChannelPromise ackPromise,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
@@ -88,22 +87,22 @@ class OutgoingSegmentQueueTest {
                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
-            final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
+            final Segment seg1 = Segment.ack(100, 200, buf1);
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.ack(100, 250);
+            final Segment seg2 = Segment.ack(100, 250);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
             final long seq11 = seg1.seq();
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            Map<Option, Object> options11 = seg1.options();
+            Map<SegmentOption, Object> options11 = seg1.options();
             queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            Map<Option, Object> options1 = seg2.options();
+            Map<SegmentOption, Object> options1 = seg2.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
@@ -123,28 +122,28 @@ class OutgoingSegmentQueueTest {
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
-            final ConnectionHandshakeSegment seg1 = ConnectionHandshakeSegment.ack(100, 200, buf1);
+            final Segment seg1 = Segment.ack(100, 200, buf1);
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
             final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.fin(100);
+            final Segment seg2 = Segment.fin(100);
             final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
             final long seq11 = seg1.seq();
             final int readableBytes1 = seg1.content().readableBytes();
             final long ack11 = seg1.ack();
             final int ctl11 = seg1.ctl();
-            Map<Option, Object> options11 = seg1.options();
+            Map<SegmentOption, Object> options11 = seg1.options();
             queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final int ctl1 = seg2.ctl();
-            Map<Option, Object> options1 = seg2.options();
+            Map<SegmentOption, Object> options1 = seg2.options();
             queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
 
             // seg1 should have been piggybacked by seg2
-            verify(ctx).write(eq(ConnectionHandshakeSegment.finAck(100, 200)), eq(writePromise2));
+            verify(ctx).write(eq(Segment.finAck(100, 200)), eq(writePromise2));
             assertEquals(0, seg1.refCnt());
 
             // promises of seg2 should notify seg1

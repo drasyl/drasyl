@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.identity.DrasylAddress;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,9 +15,9 @@ import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.handler.connection.ConnectionHandshakeCodec.MIN_MESSAGE_LENGTH;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.END_OF_OPTION_LIST;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
+import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,7 +31,7 @@ class ConnectionHandshakeCodecTest {
     private final ByteBuf encodedAck = Unpooled.buffer(Integer.BYTES).writeInt((int) ack);
     private final byte ctl = ACK;
     private final ByteBuf encodedCtl = Unpooled.buffer(1).writeByte(ctl);
-    private final Map<Option, Object> options = Map.of(
+    private final Map<SegmentOption, Object> options = Map.of(
             MAXIMUM_SEGMENT_SIZE, 1300
     );
     private final ByteBuf encodedOptions = Unpooled.buffer()
@@ -46,7 +45,7 @@ class ConnectionHandshakeCodecTest {
         void shouldEncodeSegment() {
             final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
 
-            channel.writeOutbound(ConnectionHandshakeSegment.ack(seq, ack, options, content.retain()));
+            channel.writeOutbound(Segment.ack(seq, ack, options, content.retain()));
 
             final ByteBuf actual = channel.readOutbound();
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedSegment, encodedSeq, encodedAck, encodedCtl, encodedOptions, content.resetReaderIndex());
@@ -72,8 +71,8 @@ class ConnectionHandshakeCodecTest {
 
             channel.writeInbound(Unpooled.wrappedBuffer(encodedSegment, encodedSeq, encodedAck, encodedCtl, encodedOptions, content));
 
-            final ConnectionHandshakeSegment actual = channel.readInbound();
-            assertEquals(ConnectionHandshakeSegment.ack(seq, ack, options, content.retain()), actual);
+            final Segment actual = channel.readInbound();
+            assertEquals(Segment.ack(seq, ack, options, content.retain()), actual);
 
             actual.release();
         }

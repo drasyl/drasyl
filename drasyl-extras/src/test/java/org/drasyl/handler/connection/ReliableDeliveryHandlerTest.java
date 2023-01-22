@@ -28,9 +28,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.TimestampsOption;
 import org.drasyl.handler.connection.RetransmissionQueue.Clock;
+import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ import static java.time.Duration.ZERO;
 import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
+import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -58,7 +57,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static org.drasyl.util.RandomUtil.randomInt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -70,11 +68,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ConnectionHandshakeHandlerTest {
+class ReliableDeliveryHandlerTest {
     @Test
     void exceptionsShouldCloseTheConnection(@Mock final Throwable cause) {
         final EmbeddedChannel channel = new EmbeddedChannel();
-        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+        final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
         channel.pipeline().addLast(handler);
 
         channel.pipeline().fireExceptionCaught(cause);
@@ -95,15 +93,15 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void clientShouldSynchronizeWhenServerBehavesExpectedly() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, true, CLOSED, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
                     }, null);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                    ConnectionHandshakeSegment actual = channel.readOutbound();
-                    assertEquals(ConnectionHandshakeSegment.syn(100, 64_000), actual);
+                    Segment actual = channel.readOutbound();
+                    assertEquals(Segment.syn(100, 64_000), actual);
                     assertEquals(SYN_SENT, handler.state);
 
                     assertEquals(100, handler.tcb.sndUna());
@@ -111,8 +109,8 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
-                    channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101, 64_000));
-                    assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                    channel.writeInbound(Segment.synAck(300, 101, 64_000));
+                    assertEquals(Segment.ack(101, 301), channel.readOutbound());
                     assertEquals(ESTABLISHED, handler.state);
 
                     assertEquals(101, handler.tcb.sndUna());
@@ -130,14 +128,14 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void clientShouldSynchronizeIfServerPerformsSimultaneousHandshake() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, true, CLOSED, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200);
                     }, null);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                    assertEquals(ConnectionHandshakeSegment.syn(100, 64_000), channel.readOutbound());
+                    assertEquals(Segment.syn(100, 64_000), channel.readOutbound());
                     assertEquals(SYN_SENT, handler.state);
 
                     assertEquals(100, handler.tcb.sndUna());
@@ -145,16 +143,16 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     // peer SYNchronizes his SEG before our SYN has been received
-                    channel.writeInbound(ConnectionHandshakeSegment.syn(300, 64_000));
+                    channel.writeInbound(Segment.syn(300, 64_000));
                     assertEquals(SYN_RECEIVED, handler.state);
-                    assertEquals(ConnectionHandshakeSegment.synAck(100, 301, 64_000), channel.readOutbound());
+                    assertEquals(Segment.synAck(100, 301, 64_000), channel.readOutbound());
 
                     assertEquals(100, handler.tcb.sndUna());
                     assertEquals(101, handler.tcb.sndNxt());
                     assertEquals(301, handler.tcb.rcvNxt());
 
                     // peer respond to our SYN with ACK (and another SYN)
-                    channel.writeInbound(ConnectionHandshakeSegment.synAck(301, 101, 64_000));
+                    channel.writeInbound(Segment.synAck(301, 101, 64_000));
                     assertEquals(ESTABLISHED, handler.state);
 
                     assertEquals(101, handler.tcb.sndUna());
@@ -172,7 +170,7 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void passiveServerShouldSynchronizeWhenClientBehavesExpectedly() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, CLOSED, ch -> {
                         final long iss = 300;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200);
                     }, null);
@@ -182,8 +180,8 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(LISTEN, handler.state);
 
                     // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                    channel.writeInbound(ConnectionHandshakeSegment.syn(100, 64_000));
-                    assertEquals(ConnectionHandshakeSegment.synAck(300, 101, 64_000), channel.readOutbound());
+                    channel.writeInbound(Segment.syn(100, 64_000));
+                    assertEquals(Segment.synAck(300, 101, 64_000), channel.readOutbound());
                     assertEquals(SYN_RECEIVED, handler.state);
 
                     assertEquals(300, handler.tcb.sndUna());
@@ -193,7 +191,7 @@ class ConnectionHandshakeHandlerTest {
                     // peer ACKed our SYN
                     // we piggyback some data, that should also be processed by the server
                     final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    channel.writeInbound(ConnectionHandshakeSegment.pshAck(101, 301, data));
+                    channel.writeInbound(Segment.pshAck(101, 301, data));
                     assertEquals(ESTABLISHED, handler.state);
 
                     assertEquals(301, handler.tcb.sndUna());
@@ -211,7 +209,7 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void passiveServerShouldSwitchToActiveOpenOnWrite() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, CLOSED, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
                     }, null);
@@ -223,14 +221,14 @@ class ConnectionHandshakeHandlerTest {
                     // write should perform an active OPEN handshake
                     final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
                     channel.writeOutbound(data);
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
-                    assertEquals(ConnectionHandshakeSegment.syn(100, 64_000), actual);
+                    final Segment actual = channel.readOutbound();
+                    assertEquals(Segment.syn(100, 64_000), actual);
                     assertEquals(SYN_SENT, handler.state);
 
                     // after handshake, the write should be formed
-                    channel.writeInbound(ConnectionHandshakeSegment.synAck(300, 101, 64_000));
+                    channel.writeInbound(Segment.synAck(300, 101, 64_000));
                     assertEquals(ESTABLISHED, handler.state);
-                    assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
+                    assertEquals(Segment.pshAck(101, 301, data), channel.readOutbound());
 
                     channel.close();
                     data.release();
@@ -246,7 +244,7 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void clientShouldCloseChannelIfServerIsNotRespondingToSyn() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), true, CLOSED, 1200, 64_000);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, CLOSED, 1200, 64_000);
                     channel.pipeline().addLast(handler);
 
                     // peer is dead and therefore no SYN/ACK is received
@@ -268,11 +266,11 @@ class ConnectionHandshakeHandlerTest {
                 @Test
                 void serverShouldCloseChannelIfClientIsNotRespondingToSynAck() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, CLOSED, 1200, 64_000);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, CLOSED, 1200, 64_000);
                     channel.pipeline().addLast(handler);
 
                     // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                    channel.writeInbound(ConnectionHandshakeSegment.syn(100, 64_000));
+                    channel.writeInbound(Segment.syn(100, 64_000));
 
                     // peer is dead and therefore no ACK is received
                     // wait for user timeout
@@ -296,14 +294,14 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldResetPeerIfWeHaveDiscoveredThatWeHaveCrashed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, CLOSED, ch -> {
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, true, CLOSED, ch -> {
                     final long iss = 400;
                     return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200);
                 }, null);
                 channel.pipeline().addLast(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertEquals(ConnectionHandshakeSegment.syn(400, 64_000), channel.readOutbound());
+                assertEquals(Segment.syn(400, 64_000), channel.readOutbound());
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(400, handler.tcb.sndUna());
@@ -311,8 +309,8 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(0, handler.tcb.rcvNxt());
 
                 // as we got an ACK for an unexpected seq, reset the peer
-                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 100));
-                assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
+                channel.writeInbound(Segment.ack(300, 100));
+                assertEquals(Segment.rst(100), channel.readOutbound());
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(400, handler.tcb.sndUna());
@@ -329,20 +327,20 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldCloseOurConnectionIfPeerHasDiscoveredThatPeerHasCrashed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, ESTABLISHED, ch -> null, new TransmissionControlBlock(300L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, true, ESTABLISHED, ch -> null, new TransmissionControlBlock(300L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 // other wants to SYNchronize with us, ACK with our expected seq
-                channel.writeInbound(ConnectionHandshakeSegment.syn(400, 64_000));
+                channel.writeInbound(Segment.syn(400, 64_000));
                 assertEquals(ESTABLISHED, handler.state);
-                assertEquals(ConnectionHandshakeSegment.ack(300, 100), channel.readOutbound());
+                assertEquals(Segment.ack(300, 100), channel.readOutbound());
 
                 assertEquals(300, handler.tcb.sndUna());
                 assertEquals(300, handler.tcb.sndNxt());
                 assertEquals(100, handler.tcb.rcvNxt());
 
                 // as we sent an ACK for an unexpected seq, peer will reset us
-                final ConnectionHandshakeSegment msg = ConnectionHandshakeSegment.rst(100);
+                final Segment msg = Segment.rst(100);
                 assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
                 assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
@@ -352,13 +350,13 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldResetRemotePeerIfWeReceiveDataInAnUnsynchronizedState() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, 100, 64_000);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, LISTEN, 100, 64_000);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(300, 100, data);
+                final Segment seg = Segment.ack(300, 100, data);
                 channel.writeInbound(seg);
-                assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
+                assertEquals(Segment.rst(100), channel.readOutbound());
 
                 channel.close();
             }
@@ -367,7 +365,7 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void duplicateSynShouldCauseUsToReturnToListenState() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, ch -> {
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, LISTEN, ch -> {
                     final long iss = 200;
                     return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100);
                 }, null);
@@ -376,11 +374,11 @@ class ConnectionHandshakeHandlerTest {
                 // old duplicate ACK arrives at us
                 long x = 200;
                 long z = 100;
-                channel.writeInbound(ConnectionHandshakeSegment.syn(z));
-                assertEquals(ConnectionHandshakeSegment.synAck(x, z + 1), channel.readOutbound());
+                channel.writeInbound(Segment.syn(z));
+                assertEquals(Segment.synAck(x, z + 1), channel.readOutbound());
 
                 // returned SYN/ACK causes a RST, we should return to LISTEN
-                channel.writeInbound(ConnectionHandshakeSegment.rst(z + 1));
+                channel.writeInbound(Segment.rst(z + 1));
                 assertEquals(LISTEN, handler.state);
 
                 channel.close();
@@ -392,7 +390,7 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldCancelOpenCallAndCloseChannel() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(1_000), true, CLOSED, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(1_000), true, CLOSED, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 channel.pipeline().close();
@@ -410,13 +408,13 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldPerformNormalCloseSequenceOnChannelClose() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 // trigger close
                 final ChannelFuture future = channel.pipeline().close();
                 assertEquals(FIN_WAIT_1, handler.state);
-                assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
+                assertEquals(Segment.finAck(100, 300), channel.readOutbound());
                 assertFalse(future.isDone());
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -424,7 +422,7 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // my close got ACKed
-                channel.writeInbound(ConnectionHandshakeSegment.ack(300, 101));
+                channel.writeInbound(Segment.ack(300, 101));
                 assertEquals(FIN_WAIT_2, handler.state);
                 assertFalse(future.isDone());
 
@@ -433,8 +431,8 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // peer now triggers close as well
-                channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 101));
-                assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                channel.writeInbound(Segment.finAck(300, 101));
+                assertEquals(Segment.ack(101, 301), channel.readOutbound());
                 assertEquals(CLOSED, handler.state);
                 assertTrue(future.isDone());
 
@@ -448,22 +446,22 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(299L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(299L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 // peer triggers close
-                channel.writeInbound(ConnectionHandshakeSegment.finAck(100, 300));
+                channel.writeInbound(Segment.finAck(100, 300));
 
                 // we should trigger a close as well
                 assertEquals(LAST_ACK, handler.state);
-                assertEquals(ConnectionHandshakeSegment.finAck(300, 101), channel.readOutbound());
+                assertEquals(Segment.finAck(300, 101), channel.readOutbound());
 
                 assertEquals(300, handler.tcb.sndUna());
                 assertEquals(301, handler.tcb.sndNxt());
                 assertEquals(101, handler.tcb.rcvNxt());
 
                 // peer ACKed our close
-                channel.writeInbound(ConnectionHandshakeSegment.ack(101, 301));
+                channel.writeInbound(Segment.ack(101, 301));
 
                 assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
@@ -475,13 +473,13 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 // trigger close
                 final ChannelFuture future = channel.close();
                 assertEquals(FIN_WAIT_1, handler.state);
-                assertEquals(ConnectionHandshakeSegment.finAck(100, 300), channel.readOutbound());
+                assertEquals(Segment.finAck(100, 300), channel.readOutbound());
                 assertFalse(future.isDone());
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -489,16 +487,16 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // got parallel close
-                channel.writeInbound(ConnectionHandshakeSegment.finAck(300, 100));
+                channel.writeInbound(Segment.finAck(300, 100));
                 assertEquals(CLOSING, handler.state);
-                assertEquals(ConnectionHandshakeSegment.ack(101, 301), channel.readOutbound());
+                assertEquals(Segment.ack(101, 301), channel.readOutbound());
                 assertFalse(future.isDone());
 
                 assertEquals(100, handler.tcb.sndUna());
                 assertEquals(101, handler.tcb.sndNxt());
                 assertEquals(301, handler.tcb.rcvNxt());
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(301, 101));
+                channel.writeInbound(Segment.ack(301, 101));
 
                 await().untilAsserted(() -> {
                     channel.runScheduledPendingTasks();
@@ -522,7 +520,7 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void weShouldSucceedCloseSequenceIfPeerIsDead() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -555,11 +553,11 @@ class ConnectionHandshakeHandlerTest {
         void shouldPassReceivedDataCorrectlyToApplication() {
             final EmbeddedChannel channel = new EmbeddedChannel();
             TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 100, 100L, 1000);
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
             channel.pipeline().addLast(handler);
 
             final ByteBuf receivedData = Unpooled.buffer(100).writeBytes(randomBytes(100));
-            channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, receivedData));
+            channel.writeInbound(Segment.ack(100, 301L, 1000, receivedData));
 
             final ByteBuf dataPassedToApplication = channel.readInbound();
             assertEquals(receivedData, dataPassedToApplication);
@@ -575,7 +573,7 @@ class ConnectionHandshakeHandlerTest {
                 final int mss = 100;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss));
                 channel.pipeline().addLast(handler);
 
                 // as mss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -583,10 +581,10 @@ class ConnectionHandshakeHandlerTest {
                 channel.writeOutbound(data);
 
                 for (int i = 0; i < bytes - mss; i += mss) {
-                    assertEquals(ConnectionHandshakeSegment.ack(100 + i, 300, data.slice(i, 100)), channel.<ConnectionHandshakeSegment>readOutbound());
+                    assertEquals(Segment.ack(100 + i, 300, data.slice(i, 100)), channel.<Segment>readOutbound());
                 }
 
-                assertEquals(ConnectionHandshakeSegment.pshAck(300, 300, data.slice(200, 50)), channel.<ConnectionHandshakeSegment>readOutbound());
+                assertEquals(Segment.pshAck(300, 300, data.slice(200, 50)), channel.<Segment>readOutbound());
 
                 channel.close();
             }
@@ -603,23 +601,23 @@ class ConnectionHandshakeHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 600);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(3 * bytes).writeBytes(randomBytes(3 * bytes));
 
                     // SND.WND = 1000, everything should be written to network
                     channel.writeOutbound(data.slice(0, bytes));
-                    assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data.slice(0, bytes)), channel.readOutbound());
+                    assertEquals(Segment.pshAck(100, 300, data.slice(0, bytes)), channel.readOutbound());
 
                     // SND.WND = 400, just 400 bytes allowed
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 400));
+                    channel.writeInbound(Segment.ack(300, 700, 400));
                     channel.writeOutbound(data.slice(600, bytes));
-                    assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data.slice(600, 400)), channel.readOutbound());
+                    assertEquals(Segment.pshAck(700, 300, data.slice(600, 400)), channel.readOutbound());
 
                     // send ack for the first segment. The remaining 200 bytes should then be sent
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
-                    assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data.slice(1000, 200)), channel.readOutbound());
+                    channel.writeInbound(Segment.ack(300, 700, 600));
+                    assertEquals(Segment.pshAck(1100, 300, data.slice(1000, 200)), channel.readOutbound());
 
                     channel.close();
                 }
@@ -629,14 +627,14 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 300L, 0, 100L, 1000, 100L, 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
                     channel.writeOutbound(data);
 
                     // SND.WND is 0, we have to perform Zero-Window Probing
-                    assertEquals(ConnectionHandshakeSegment.pshAck(300, 100, data.slice(0, 1)), channel.readOutbound());
+                    assertEquals(Segment.pshAck(300, 100, data.slice(0, 1)), channel.readOutbound());
 
                     channel.close();
                 }
@@ -648,89 +646,16 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 0, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     // 300 bytes in flight, only first 100 are ACKed
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 400));
+                    channel.writeInbound(Segment.ack(100, 400));
 
                     assertEquals(400, tcb.sndUna());
                     assertEquals(600, tcb.sndNxt());
 
                     channel.close();
-                }
-
-                @Nested
-                class SillyWindowSyndrome {
-                    // RFC 9293, Section 3.8.6.2.1 Sender's Algorithm -- When to Send Data
-                    // https://www.rfc-editor.org/rfc/rfc9293.html#SWSsender
-                    // RFC 9293, Section 3.7.4 Nagle algorithm
-                    @Test
-                    void senderShouldAvoidTheSillyWindowSyndrome() {
-                        final EmbeddedChannel channel = new EmbeddedChannel();
-                        TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1000, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
-                        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
-                        channel.pipeline().addLast(handler);
-
-                        final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
-
-                        // as there is no unacknowledged data (i.e., SND.NXT > SND.UNA), data should be send immediately
-                        channel.writeOutbound(buf.slice(0, 50));
-                        assertEquals(ConnectionHandshakeSegment.pshAck(600, 100, 1_000, buf.slice(0, 50)), channel.readOutbound());
-
-                        // unacknowledged data, data should be delayed
-                        channel.writeOutbound(buf.slice(50, 50));
-                        assertNull(channel.readOutbound());
-
-                        // unacknowledged data, but we can send a maximum-sized segment
-                        channel.writeOutbound(buf.slice(100, 50));
-                        assertEquals(ConnectionHandshakeSegment.pshAck(650, 100, 1_000, buf.slice(50, 100)), channel.readOutbound());
-
-                        channel.close();
-                    }
-
-                    // RFC 9293, Section 3.8.6.2.2 Receiver's Algorithm -- When to Send a Window Update
-                    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
-                    @Test
-                    void receiverShouldAvoidTheSillyWindowSyndrome() {
-                        final EmbeddedChannel channel = new EmbeddedChannel();
-                        channel.config().setAutoRead(false);
-                        TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1600, 100L, 100L, 1600, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
-                        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
-                        channel.pipeline().addLast(handler);
-
-                        final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
-
-                        // we received a maximum-sized segment, therefore RCV.USER contains 20 bytes
-                        channel.writeInbound(ConnectionHandshakeSegment.ack(100, 600, buf.slice(0, 20)));
-                        assertEquals(1600, tcb.rcvBuff());
-                        assertEquals(20, tcb.rcvUser());
-                        assertEquals(1580, tcb.rcvWnd());
-
-                        ChannelHandlerContext ctx;
-
-                        // we now read RCV.USER
-                        ctx = channel.pipeline().context(handler);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
-                        assertEquals(1600, tcb.rcvBuff());
-                        assertEquals(0, tcb.rcvUser());
-                        assertEquals(1580, tcb.rcvWnd());
-
-                        // we received a maximum-sized segment, therefore RCV.USER contains 80 bytes
-                        channel.writeInbound(ConnectionHandshakeSegment.ack(120, 600, buf.slice(20, 80)));
-                        assertEquals(1600, tcb.rcvBuff());
-                        assertEquals(80, tcb.rcvUser());
-                        assertEquals(1500, tcb.rcvWnd());
-
-                        // we now read RCV.USER
-                        ctx = channel.pipeline().context(handler);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
-                        assertEquals(1600, tcb.rcvBuff());
-                        assertEquals(0, tcb.rcvUser());
-                        assertEquals(1600, tcb.rcvWnd());
-
-                        channel.close();
-                    }
                 }
             }
 
@@ -743,7 +668,7 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     // initial value
@@ -751,7 +676,7 @@ class ConnectionHandshakeHandlerTest {
 
                     // 600 bytes added to RCV.BUF
                     final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 600, data));
+                    channel.writeInbound(Segment.ack(100, 600, data));
 
                     assertEquals(400, tcb.rcvWnd());
 
@@ -767,15 +692,15 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
                     final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, data));
+                    channel.writeInbound(Segment.ack(100, 301L, 1000, data));
 
                     // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), ConnectionHandshakeSegment.ack(301, 160));
+                    assertEquals(channel.readOutbound(), Segment.ack(301, 160));
 
                     channel.close();
                 }
@@ -787,19 +712,94 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
                     final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, data));
+                    channel.writeInbound(Segment.ack(100, 301L, 1000, data));
 
                     // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), ConnectionHandshakeSegment.ack(301, 160));
+                    assertEquals(channel.readOutbound(), Segment.ack(301, 160));
 
                     // SEG not fully ACKed, we send again
                     final ByteBuf data2 = Unpooled.buffer(100).writeBytes(randomBytes(100));
-                    channel.writeInbound(ConnectionHandshakeSegment.ack(100, 301L, 1000, data2));
+                    channel.writeInbound(Segment.ack(100, 301L, 1000, data2));
+
+                    channel.close();
+                }
+            }
+
+            @Nested
+            class SillyWindowSyndrome {
+                // RFC 9293, Section 3.8.6.2.1 Sender's Algorithm -- When to Send Data
+                // https://www.rfc-editor.org/rfc/rfc9293.html#SWSsender
+                // RFC 9293, Section 3.7.4 Nagle algorithm
+                @Test
+                void senderShouldAvoidTheSillyWindowSyndrome() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1000, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
+
+                    // as there is no unacknowledged data (i.e., SND.NXT > SND.UNA), data should be send immediately
+                    channel.writeOutbound(buf.slice(0, 50));
+                    assertEquals(Segment.pshAck(600, 100, 1_000, buf.slice(0, 50)), channel.readOutbound());
+
+                    // unacknowledged data, data should be delayed
+                    channel.writeOutbound(buf.slice(50, 50));
+                    assertNull(channel.readOutbound());
+
+                    // unacknowledged data, but we can send a maximum-sized segment
+                    channel.writeOutbound(buf.slice(100, 60));
+                    assertEquals(Segment.ack(650, 100, 1_000, buf.slice(50, 100)), channel.readOutbound());
+                    // but do not send the remainder in a second small segment!
+                    assertNull(channel.readOutbound());
+
+                    channel.close();
+                }
+
+                // RFC 9293, Section 3.8.6.2.2 Receiver's Algorithm -- When to Send a Window Update
+                // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
+                @Test
+                void receiverShouldAvoidTheSillyWindowSyndrome() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    channel.config().setAutoRead(false);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1600, 100L, 100L, 1600, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
+                    channel.pipeline().addLast(handler);
+
+                    final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
+
+                    // we received a maximum-sized segment, therefore RCV.USER contains 20 bytes
+                    channel.writeInbound(Segment.ack(100, 600, buf.slice(0, 20)));
+                    assertEquals(1600, tcb.rcvBuff());
+                    assertEquals(20, tcb.rcvUser());
+                    assertEquals(1580, tcb.rcvWnd());
+
+                    ChannelHandlerContext ctx;
+
+                    // we now read RCV.USER
+                    ctx = channel.pipeline().context(handler);
+                    tcb.receiveBuffer().fireRead(ctx, tcb);
+                    assertEquals(1600, tcb.rcvBuff());
+                    assertEquals(0, tcb.rcvUser());
+                    assertEquals(1580, tcb.rcvWnd());
+
+                    // we received a maximum-sized segment, therefore RCV.USER contains 80 bytes
+                    channel.writeInbound(Segment.ack(120, 600, buf.slice(20, 80)));
+                    assertEquals(1600, tcb.rcvBuff());
+                    assertEquals(80, tcb.rcvUser());
+                    assertEquals(1500, tcb.rcvWnd());
+
+                    // we now read RCV.USER
+                    ctx = channel.pipeline().context(handler);
+                    tcb.receiveBuffer().fireRead(ctx, tcb);
+                    assertEquals(1600, tcb.rcvBuff());
+                    assertEquals(0, tcb.rcvUser());
+                    assertEquals(1600, tcb.rcvWnd());
 
                     channel.close();
                 }
@@ -816,15 +816,15 @@ class ConnectionHandshakeHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 400
                 final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(400, 600, data));
+                channel.writeInbound(Segment.ack(400, 600, data));
 
                 // we get ACK with expected SEG 100 number
-                assertEquals(ConnectionHandshakeSegment.ack(600, 100), channel.readOutbound());
+                assertEquals(Segment.ack(600, 100), channel.readOutbound());
 
                 channel.close();
             }
@@ -835,12 +835,12 @@ class ConnectionHandshakeHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 2000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
                 final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(700, 600, data1));
+                channel.writeInbound(Segment.ack(700, 600, data1));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -849,7 +849,7 @@ class ConnectionHandshakeHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 400
                 final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(400, 600, data2));
+                channel.writeInbound(Segment.ack(400, 600, data2));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1400, tcb.rcvWnd());
@@ -858,7 +858,7 @@ class ConnectionHandshakeHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 1300
                 final ByteBuf data3 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(1300, 600, data3));
+                channel.writeInbound(Segment.ack(1300, 600, data3));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1100, tcb.rcvWnd());
@@ -867,7 +867,7 @@ class ConnectionHandshakeHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 1000
                 final ByteBuf data4 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(1000, 600, data4));
+                channel.writeInbound(Segment.ack(1000, 600, data4));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(800, tcb.rcvWnd());
@@ -876,11 +876,11 @@ class ConnectionHandshakeHandlerTest {
 
                 // now send expected SEG 100 (should close the gap)
                 final ByteBuf data5 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(100, 600, data5));
+                channel.writeInbound(Segment.ack(100, 600, data5));
 
                 assertEquals(1600, tcb.rcvNxt());
                 // we should get ACK for everything
-                assertEquals(ConnectionHandshakeSegment.ack(600, 1600), channel.readOutbound());
+                assertEquals(Segment.ack(600, 1600), channel.readOutbound());
                 channel.read();
 
                 ByteBuf passedToApplication = channel.readInbound();
@@ -896,12 +896,12 @@ class ConnectionHandshakeHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 2000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
                 final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(700, 600, data1));
+                channel.writeInbound(Segment.ack(700, 600, data1));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -910,7 +910,7 @@ class ConnectionHandshakeHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 700 again!
                 final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(700, 600, data2));
+                channel.writeInbound(Segment.ack(700, 600, data2));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -929,7 +929,7 @@ class ConnectionHandshakeHandlerTest {
             void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 // initial cwnd is 3 segments
@@ -947,15 +947,15 @@ class ConnectionHandshakeHandlerTest {
                 //   each ACK received that cumulatively acknowledges new data.
 
                 // old data
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 300));
+                channel.writeInbound(Segment.ack(200, 300));
                 assertEquals(3000, tcb.cwnd());
 
                 // new data
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 310));
+                channel.writeInbound(Segment.ack(200, 310));
                 assertEquals(3010, tcb.cwnd());
 
                 // limit to SMSS
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 2000));
+                channel.writeInbound(Segment.ack(200, 2000));
                 assertEquals(4010, tcb.cwnd());
 
                 //
@@ -963,16 +963,16 @@ class ConnectionHandshakeHandlerTest {
                 //
                 assertFalse(tcb.doSlowStart());
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 3000));
+                channel.writeInbound(Segment.ack(200, 3000));
                 assertEquals(4010 + 250, tcb.cwnd());
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4000));
+                channel.writeInbound(Segment.ack(200, 4000));
                 assertEquals(4260 + 235, tcb.cwnd());
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4100));
+                channel.writeInbound(Segment.ack(200, 4100));
                 assertEquals(4495 + 223, tcb.cwnd());
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 4105));
+                channel.writeInbound(Segment.ack(200, 4105));
                 assertEquals(4718 + 212, tcb.cwnd());
             }
 
@@ -983,7 +983,7 @@ class ConnectionHandshakeHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
@@ -999,11 +999,11 @@ class ConnectionHandshakeHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
                 queue.retransmissionTimer = timer;
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 301));
+                channel.writeInbound(Segment.ack(200, 301));
 
                 verify(timer).cancel(false);
                 assertNull(queue.retransmissionTimer);
@@ -1019,11 +1019,11 @@ class ConnectionHandshakeHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
                 queue.retransmissionTimer = timer;
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(200, 301));
+                channel.writeInbound(Segment.ack(200, 301));
 
                 verify(timer).cancel(false);
                 assertNotNull(queue.retransmissionTimer);
@@ -1034,13 +1034,13 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldCreateRetransmissionTimerIfAcknowledgeableSegmentIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(50), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(50), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
                 channel.writeOutbound(data);
 
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(100, 300, data);
+                final Segment seg = Segment.pshAck(100, 300, data);
                 assertEquals(seg, channel.readOutbound());
 
                 // retransmission timer should send segment again
@@ -1060,11 +1060,11 @@ class ConnectionHandshakeHandlerTest {
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 final RttMeasurement rttMeasurement = new RttMeasurement();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
-                final ConnectionHandshakeSegment seg = channel.readOutbound();
+                final Segment seg = channel.readOutbound();
                 final ScheduledFuture<?> timer = queue.retransmissionTimer;
 
                 // wait for timeout
@@ -1088,7 +1088,7 @@ class ConnectionHandshakeHandlerTest {
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 
                 // we need outstanding data first
@@ -1098,12 +1098,12 @@ class ConnectionHandshakeHandlerTest {
                 assertTrue(tcb.sendBuffer().hasOutstandingData());
 
                 // three duplicate ACKs in a row
-                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
-                channel.writeInbound(ConnectionHandshakeSegment.ack(205, 300));
+                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(Segment.ack(205, 300));
 
                 // dup ACKs should trigger immediate retransmission
-                assertEquals(ConnectionHandshakeSegment.ack(300, 200, outstandingData), channel.readOutbound());
+                assertEquals(Segment.ack(300, 200, outstandingData), channel.readOutbound());
             }
 
             // FIXME: haben wir das so umgesetzt?
@@ -1126,11 +1126,11 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(0, 301, data);
+                    final Segment seg = Segment.ack(0, 301, data);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
                     channel.writeInbound(seg);
 
@@ -1156,11 +1156,11 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0, true, 1004, 2008, 6024, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(0, 301, data);
+                    final Segment seg = Segment.ack(0, 301, data);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
                     channel.writeInbound(seg);
 
@@ -1184,26 +1184,26 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 6001L, 4 * 1000, 100L, 200L, 4 * 1000, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
-                    ConnectionHandshakeSegment seg;
+                    Segment seg;
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
 
                     // <A, TSval=1> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(201, 310, data.copy());
+                    seg = Segment.ack(201, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
                     channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, queue.tsRecent);
 
                     // <A, TSval=2> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(202, 310, data.copy());
+                    seg = Segment.ack(202, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
                     channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, queue.tsRecent);
 
                     // <A, TSval=3> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(203, 310, data.copy());
+                    seg = Segment.ack(203, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
                     channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, queue.tsRecent);
@@ -1211,7 +1211,7 @@ class ConnectionHandshakeHandlerTest {
                     channel.pipeline().fireChannelReadComplete();
 
                     // <---- <ACK(C), TSecr=1>
-                    final ConnectionHandshakeSegment response = channel.readOutbound();
+                    final Segment response = channel.readOutbound();
                     final TimestampsOption tsOpt = (TimestampsOption) response.options().get(TIMESTAMPS);
                     assertEquals(1, tsOpt.tsEcr);
                 }
@@ -1226,16 +1226,16 @@ class ConnectionHandshakeHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 6001L, 4 * 1000, 100L, 201L, 4 * 1000, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
-                    ConnectionHandshakeSegment seg;
+                    Segment seg;
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    ConnectionHandshakeSegment response;
+                    Segment response;
                     TimestampsOption tsOpt;
 
                     // <A, TSval=1> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(201, 310, data.copy());
+                    seg = Segment.ack(201, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
                     channel.writeInbound(seg);
                     assertEquals(1, queue.tsRecent);
@@ -1246,7 +1246,7 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(1, tsOpt.tsEcr);
 
                     // <A, TSval=3> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(203, 310, data.copy());
+                    seg = Segment.ack(203, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
                     channel.writeInbound(seg);
                     assertEquals(1, queue.tsRecent);
@@ -1257,7 +1257,7 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(1, tsOpt.tsEcr);
 
                     // <A, TSval=2> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(202, 310, data.copy());
+                    seg = Segment.ack(202, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
                     channel.writeInbound(seg);
                     assertEquals(2, queue.tsRecent);
@@ -1268,7 +1268,7 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(2, tsOpt.tsEcr);
 
                     // <A, TSval=5> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(205, 310, data.copy());
+                    seg = Segment.ack(205, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(5, 0));
                     channel.writeInbound(seg);
                     assertEquals(2, queue.tsRecent);
@@ -1279,7 +1279,7 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(2, tsOpt.tsEcr);
 
                     // <A, TSval=4> ------------------->
-                    seg = ConnectionHandshakeSegment.ack(204, 310, data.copy());
+                    seg = Segment.ack(204, 310, data.copy());
                     seg.options().put(TIMESTAMPS, new TimestampsOption(4, 0));
                     channel.writeInbound(seg);
                     assertEquals(4, queue.tsRecent);
@@ -1297,14 +1297,14 @@ class ConnectionHandshakeHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, true, CLOSED, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 1200);
                     }, null);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                    ConnectionHandshakeSegment actual = channel.readOutbound();
+                    Segment actual = channel.readOutbound();
 
                     // RFC 7323
                     // on a OPEN call, the SYN must TSVal set to Snd.TSclock.
@@ -1323,7 +1323,7 @@ class ConnectionHandshakeHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, CLOSED, ch -> {
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, false, CLOSED, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 1200);
                     }, null);
@@ -1333,7 +1333,7 @@ class ConnectionHandshakeHandlerTest {
                     final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
                     channel.writeOutbound(data);
 
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
+                    final Segment actual = channel.readOutbound();
                     final TimestampsOption tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                     assertEquals(2816L, tsOpt.tsVal);
                     assertFalse(handler.tcb.retransmissionQueue.sndTsOk);
@@ -1352,7 +1352,7 @@ class ConnectionHandshakeHandlerTest {
                     final int mss = 100;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 123L), new ReceiveBuffer(channel), mss));
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 123L), new ReceiveBuffer(channel), mss));
                     channel.pipeline().addLast(handler);
 
                     // as mss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -1360,13 +1360,13 @@ class ConnectionHandshakeHandlerTest {
                     channel.writeOutbound(data);
 
                     for (int i = 0; i < bytes - mss; i += mss) {
-                        final ConnectionHandshakeSegment actual = channel.readOutbound();
+                        final Segment actual = channel.readOutbound();
                         final TimestampsOption tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                         assertEquals(2816L, tsOpt.tsVal);
                         assertEquals(123L, tsOpt.tsEcr);
                     }
 
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
+                    final Segment actual = channel.readOutbound();
                     final TimestampsOption tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                     assertEquals(2816L, tsOpt.tsVal);
                     assertEquals(123L, tsOpt.tsEcr);
@@ -1381,18 +1381,18 @@ class ConnectionHandshakeHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, ch -> {
-                        final long iss = randomInt(Integer.MAX_VALUE - 1);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, LISTEN, ch -> {
+                        final long iss = Segment.randomSeq();
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 100);
                     }, null);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
 
-                    final Map<Option, Object> options = new EnumMap<>(Option.class);
+                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(100, options);
+                    final Segment seg = Segment.syn(100, options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -1403,7 +1403,7 @@ class ConnectionHandshakeHandlerTest {
                     // If the Snd.TS.OK bit is on, include a
                     // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
                     // set to RCV.NXT.
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
+                    final Segment actual = channel.readOutbound();
                     tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                     assertEquals(2816L, tsOpt.tsVal);
                     assertEquals(handler.tcb.retransmissionQueue.tsRecent, tsOpt.tsEcr);
@@ -1419,15 +1419,15 @@ class ConnectionHandshakeHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock), new ReceiveBuffer(channel), 100));
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock), new ReceiveBuffer(channel), 100));
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
 
-                    final Map<Option, Object> options = new EnumMap<>(Option.class);
+                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.synAck(999, 101, options);
+                    final Segment seg = Segment.synAck(999, 101, options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -1440,7 +1440,7 @@ class ConnectionHandshakeHandlerTest {
                     // If the Snd.TS.OK bit is on, include a
                     // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
                     // set to RCV.NXT.
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
+                    final Segment actual = channel.readOutbound();
                     tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                     assertEquals(2816L, tsOpt.tsVal);
                     assertEquals(handler.tcb.retransmissionQueue.tsRecent, tsOpt.tsEcr);
@@ -1456,15 +1456,15 @@ class ConnectionHandshakeHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 0), new ReceiveBuffer(channel), 100));
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 0), new ReceiveBuffer(channel), 100));
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
 
-                    final Map<Option, Object> options = new EnumMap<>(Option.class);
+                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(0, 102, options);
+                    final Segment seg = Segment.ack(0, 102, options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -1477,7 +1477,7 @@ class ConnectionHandshakeHandlerTest {
                     // If the Snd.TS.OK bit is on, include a
                     // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
                     // set to RCV.NXT.
-                    final ConnectionHandshakeSegment actual = channel.readOutbound();
+                    final Segment actual = channel.readOutbound();
                     tsOpt = (TimestampsOption) actual.options().get(TIMESTAMPS);
                     assertEquals(2816L, tsOpt.tsVal);
                     assertEquals(handler.tcb.retransmissionQueue.tsRecent, tsOpt.tsEcr);
@@ -1494,7 +1494,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldRejectOutboundNonByteBufs() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
             channel.pipeline().addLast(handler);
 
             assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
@@ -1505,7 +1505,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldRejectOutboundDataIfConnectionIsClosed() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
             channel.pipeline().addLast(handler);
 
             handler.state = CLOSED;
@@ -1519,7 +1519,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
             channel.pipeline().addLast(handler);
 
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1531,7 +1531,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress2() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
             channel.pipeline().addLast(handler);
 
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1550,7 +1550,7 @@ class ConnectionHandshakeHandlerTest {
         @Test
         void shouldFailWriteIfChannelIsClosing() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, FIN_WAIT_1, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, FIN_WAIT_1, ch -> null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220));
             channel.pipeline().addLast(handler);
 
             final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
@@ -1577,10 +1577,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldResetConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, SYN_SENT, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(ConnectionHandshakeSegment.rstAck(1, 101)));
+                assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(1, 101)));
 
                 channel.close();
             }
@@ -1591,10 +1591,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldCloseConnectionIfPeerResetsConnectionAndWeAreInActiveOpenMode() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), true, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(ConnectionHandshakeSegment.rstAck(100, 101)));
+                assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(100, 101)));
 
                 channel.close();
             }
@@ -1602,10 +1602,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldReturnToListenStateIfPeerResetsConnectionAndWeAreInPassiveOpenMode() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                channel.writeInbound(ConnectionHandshakeSegment.rstAck(100, 101));
+                channel.writeInbound(Segment.rstAck(100, 101));
                 assertEquals(LISTEN, handler.state);
 
                 channel.close();
@@ -1615,11 +1615,11 @@ class ConnectionHandshakeHandlerTest {
             @Disabled
             void shouldResetConnectionIfPeerSentNotAcceptableSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), true, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 101L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, SYN_RECEIVED, ch -> null, new TransmissionControlBlock(channel, 101L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(100, 101));
-                assertEquals(ConnectionHandshakeSegment.rst(101), channel.readOutbound());
+                channel.writeInbound(Segment.ack(100, 101));
+                assertEquals(Segment.rst(101), channel.readOutbound());
 
                 channel.close();
             }
@@ -1630,11 +1630,11 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldPassReceivedContentWhenConnectionIsEstablished() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                channel.writeInbound(ConnectionHandshakeSegment.pshAck(50, 110, data));
+                channel.writeInbound(Segment.pshAck(50, 110, data));
                 assertEquals(data, channel.readInbound());
 
                 channel.close();
@@ -1645,10 +1645,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldIgnoreSegmentWithDuplicateAck() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                channel.writeInbound(ConnectionHandshakeSegment.ack(50, 109));
+                channel.writeInbound(Segment.ack(50, 109));
                 assertNull(channel.readOutbound());
 
                 channel.close();
@@ -1657,12 +1657,12 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldReplyWithExpectedAckIfWeGotAckSomethingNotYetSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                channel.writeInbound(ConnectionHandshakeSegment.pshAck(50, 200, data));
-                assertEquals(ConnectionHandshakeSegment.ack(111, 50), channel.readOutbound());
+                channel.writeInbound(Segment.pshAck(50, 200, data));
+                assertEquals(Segment.ack(111, 50), channel.readOutbound());
 
                 channel.close();
             }
@@ -1673,10 +1673,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldCloseConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), true, CLOSING, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, CLOSING, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                channel.writeInbound(ConnectionHandshakeSegment.rstAck(100, 101));
+                channel.writeInbound(Segment.rstAck(100, 101));
                 assertFalse(channel.isOpen());
 
                 channel.close();
@@ -1688,10 +1688,10 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldCloseConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), true, CLOSING, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, CLOSING, ch -> null, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220));
                 channel.pipeline().addLast(handler);
 
-                channel.writeInbound(ConnectionHandshakeSegment.rstAck(100, 101));
+                channel.writeInbound(Segment.rstAck(100, 101));
                 assertFalse(channel.isOpen());
 
                 channel.close();
@@ -1703,12 +1703,12 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldIgnoreResetSegmentsWhenConnectionIsClosed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
                 channel.pipeline().addLast(handler);
 
                 handler.state = CLOSED;
 
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.rst(1);
+                final Segment seg = Segment.rst(1);
                 channel.writeInbound(seg);
                 assertNull(channel.readOutbound());
 
@@ -1718,14 +1718,14 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldReplyWithResetWhenConnectionIsClosed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
                 channel.pipeline().addLast(handler);
 
                 handler.state = CLOSED;
 
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.syn(123, 64_000);
+                final Segment seg = Segment.syn(123, 64_000);
                 channel.writeInbound(seg);
-                assertEquals(ConnectionHandshakeSegment.rstAck(0, 123), channel.readOutbound());
+                assertEquals(Segment.rstAck(0, 123), channel.readOutbound());
 
                 channel.close();
             }
@@ -1736,7 +1736,7 @@ class ConnectionHandshakeHandlerTest {
             @Test
             void shouldRejectInboundNonByteBufs() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, ESTABLISHED, ch -> null, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100));
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));

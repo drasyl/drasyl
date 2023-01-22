@@ -30,7 +30,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.SerialNumberArithmetic.add;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
@@ -103,7 +103,7 @@ public class ReceiveBuffer {
 
     public void receive(final ChannelHandlerContext ctx,
                         final TransmissionControlBlock tcb,
-                        final ConnectionHandshakeSegment seg) {
+                        final Segment seg) {
         ReferenceCountUtil.touch(seg, "ReceiveBuffer receive " + seg.toString());
         final ByteBuf content = seg.content();
         if (content.isReadable()) {

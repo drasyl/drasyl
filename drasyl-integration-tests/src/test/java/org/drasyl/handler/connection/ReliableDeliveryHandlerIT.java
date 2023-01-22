@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ConnectionHandshakeHandlerIT {
+class ReliableDeliveryHandlerIT {
     private static final float LOSS_RATE = 0.2f;
     private static final int MAX_DROP = 3;
 
@@ -78,7 +78,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -93,7 +93,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 32_000));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 32_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -126,8 +126,8 @@ class ConnectionHandshakeHandlerIT {
         final CountDownLatch latch = new CountDownLatch(2);
 
         // server
-        final AtomicReference<ConnectionHandshakeHandler> serverHandler = new AtomicReference<>();
-        final AtomicReference<ConnectionHandshakeHandler> clientHandler = new AtomicReference<>();
+        final AtomicReference<ReliableDeliveryHandler> serverHandler = new AtomicReference<>();
+        final AtomicReference<ReliableDeliveryHandler> clientHandler = new AtomicReference<>();
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
         final Channel serverChannel = new ServerBootstrap()
@@ -139,7 +139,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        serverHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
+                        serverHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
                         p.addLast(serverHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -171,7 +171,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        clientHandler.set(new ConnectionHandshakeHandler(Duration.ofHours(1), true));
+                        clientHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
                         p.addLast(clientHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -218,7 +218,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -233,7 +233,7 @@ class ConnectionHandshakeHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -309,7 +309,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(ChannelHandlerContext ctx,
@@ -384,7 +384,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -430,17 +430,17 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new SimpleChannelInboundHandler<ConnectionHandshakeSegment>() {
+                        p.addLast(new SimpleChannelInboundHandler<Segment>() {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
-                                                        final ConnectionHandshakeSegment msg) {
+                                                        final Segment msg) {
                                 if (!msg.isFin()) {
                                     // pass through
                                     ctx.fireChannelRead(msg.retain());
                                 }
                             }
                         });
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -454,7 +454,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -501,7 +501,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 32_000);
+                        ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 32_000);
                         p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -539,7 +539,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -597,7 +597,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRead(final ChannelHandlerContext ctx,
@@ -634,7 +634,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,

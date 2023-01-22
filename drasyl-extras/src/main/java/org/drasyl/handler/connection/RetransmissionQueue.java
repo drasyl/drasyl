@@ -26,8 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.TimestampsOption;
+import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -36,12 +35,12 @@ import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.TIMESTAMPS;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
+import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.FIN;
+import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
+import static org.drasyl.handler.connection.Segment.PSH;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
@@ -133,7 +132,7 @@ public class RetransmissionQueue {
     }
 
     public void enqueue(final ChannelHandlerContext ctx,
-                        final ConnectionHandshakeSegment seg,
+                        final Segment seg,
                         final TransmissionControlBlock tcb) {
         ReferenceCountUtil.touch(seg, "RetransmissionQueue enqueue " + seg.toString());
         if (seg.isSyn()) {
@@ -159,7 +158,7 @@ public class RetransmissionQueue {
     }
 
     public byte handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final ConnectionHandshakeSegment seg,
+                                      final Segment seg,
                                       final TransmissionControlBlock tcb,
                                       final long ackedBytes) {
         byte ackedCtl = 0;
@@ -223,7 +222,7 @@ public class RetransmissionQueue {
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
-            ConnectionHandshakeSegment retransmission = retransmissionSegment(ctx, tcb);
+            Segment retransmission = retransmissionSegment(ctx, tcb);
             LOG.trace("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
             ctx.writeAndFlush(retransmission);
 
@@ -266,8 +265,8 @@ public class RetransmissionQueue {
         }, rto, MILLISECONDS);
     }
 
-    ConnectionHandshakeSegment retransmissionSegment(ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
-        final EnumMap<Option, Object> options = new EnumMap<>(Option.class);
+    Segment retransmissionSegment(ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+        final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
         final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
         byte ctl = ACK;
         if (synSeq != -1) {
@@ -283,7 +282,7 @@ public class RetransmissionQueue {
         final long seq = tcb.sndUna();
         final long ack = tcb.rcvNxt();
         tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
-        ConnectionHandshakeSegment retransmission = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.rcvWnd(), options, data);
+        Segment retransmission = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
         return retransmission;
     }
 
@@ -359,7 +358,7 @@ public class RetransmissionQueue {
     }
 
     public void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
-                                            final ConnectionHandshakeSegment seg,
+                                            final Segment seg,
                                             final TransmissionControlBlock tcb) {
         final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
         if (tsOpt != null) {
@@ -377,7 +376,7 @@ public class RetransmissionQueue {
     }
 
     public void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
-                                             final ConnectionHandshakeSegment seg,
+                                             final Segment seg,
                                              final TransmissionControlBlock tcb) {
         // RFC 7323, Appendix D
         // Check for a TSopt option; if one is found, save SEG.TSval in variable TS.Recent and turn
@@ -405,7 +404,7 @@ public class RetransmissionQueue {
     }
 
     public boolean segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
-                                               final ConnectionHandshakeSegment seg,
+                                               final Segment seg,
                                                final TransmissionControlBlock tcb,
                                                final State state,
                                                boolean acceptableSeg) {
@@ -453,7 +452,7 @@ public class RetransmissionQueue {
                           final long seq,
                           final long ack,
                           final byte ctl,
-                          final Map<Option, Object> options) {
+                          final Map<SegmentOption, Object> options) {
         if (sndTsOk) {
             final TimestampsOption tsOpt = new TimestampsOption(clock.time(), tsRecent);
             options.put(TIMESTAMPS, tsOpt);

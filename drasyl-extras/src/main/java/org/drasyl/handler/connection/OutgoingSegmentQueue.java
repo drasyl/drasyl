@@ -24,22 +24,20 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.handler.connection.ConnectionHandshakeSegment.Option;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.ACK;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.FIN;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.Option.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.PSH;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.RST;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SEQ_NO_SPACE;
-import static org.drasyl.handler.connection.ConnectionHandshakeSegment.SYN;
+import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.FIN;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
+import static org.drasyl.handler.connection.Segment.PSH;
+import static org.drasyl.handler.connection.Segment.RST;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
@@ -51,12 +49,12 @@ public class OutgoingSegmentQueue {
     private long ack = -1;
     private byte ctl;
     private int len;
-    private Map<Option, Object> options;
+    private Map<SegmentOption, Object> options;
 
     void addBytes(final long seq,
                   final long readableBytes,
                   final long ack,
-                  final int ctl, Map<Option, Object> options) {
+                  final int ctl, Map<SegmentOption, Object> options) {
         if (this.seq == -1) {
             this.seq = seq;
         }
@@ -74,13 +72,11 @@ public class OutgoingSegmentQueue {
 
         final boolean doFlush = len != 0 || ctl != 0;
         while (len != 0 || ctl != 0) {
-            final ChannelPromise promise = ctx.newPromise();
             final ByteBuf data;
             if (len > 0) {
                 final int bytes = Math.min(tcb.mss(), len);
                 data = tcb.sendBuffer().read(bytes);
-            }
-            else {
+            } else {
                 data = Unpooled.EMPTY_BUFFER;
             }
             len -= data.readableBytes();
@@ -90,17 +86,17 @@ public class OutgoingSegmentQueue {
                 ctl |= PSH;
             }
 
-            final Map<Option, Object> options = new EnumMap<>(this.options);
+            final Map<SegmentOption, Object> options = new EnumMap<>(this.options);
             if ((ctl & SYN) != 0) {
                 // add MSS option to SYN
                 options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
             tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
 
-            final ConnectionHandshakeSegment seg = new ConnectionHandshakeSegment(seq, ack, ctl, tcb.rcvWnd(), options, data);
-            seq = ConnectionHandshakeSegment.advanceSeq(seq, data.readableBytes());
+            final Segment seg = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
+            seq = Segment.advanceSeq(seq, data.readableBytes());
 
-            write(ctx, tcb, seg, promise);
+            write(ctx, tcb, seg);
 
             // use SYN once, as early as possible
             ctl &= ~SYN;
@@ -118,7 +114,7 @@ public class OutgoingSegmentQueue {
                 ctl &= ~RST;
 
                 // remote options after last write
-                this.options = new EnumMap<>(Option.class);
+                this.options = new EnumMap<>(SegmentOption.class);
             }
         }
 
@@ -134,20 +130,15 @@ public class OutgoingSegmentQueue {
 
     private void write(final ChannelHandlerContext ctx,
                        final TransmissionControlBlock tcb,
-                       final ConnectionHandshakeSegment seg,
-                       final ChannelPromise promise) {
+                       final Segment seg) {
         ReferenceCountUtil.touch(seg, "OutgoingSegmentQueue write " + seg.toString());
         LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
         if (seg.mustBeAcked()) {
             // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
             tcb.retransmissionQueue().enqueue(ctx, seg, tcb);
-            ctx.write(seg);
         }
-        else {
-            // no ACKnowledgement necessary, just write to network and succeed
-            ctx.write(seg, promise);
-        }
+        ctx.write(seg);
     }
 
     public int len() {
