@@ -343,7 +343,7 @@ public class TransmissionControlBlock {
                     // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
                     // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
-                    final long u = sub(add(sndUna, sndWnd), sndNxt);
+                    final long u = sub(add(sndUna, Math.min(sndWnd(), cwnd())), sndNxt);
                     // D is the amount of data queued in the sending TCP endpoint but not yet sent
                     final long d = allowedBytesToFlush;
                     // effective send MSS: equal to MSS?
