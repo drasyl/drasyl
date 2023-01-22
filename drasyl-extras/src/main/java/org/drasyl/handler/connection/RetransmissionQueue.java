@@ -244,10 +244,8 @@ public class RetransmissionQueue {
             //   than the value given in equation (4):
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-            final int smss = tcb.mss();
-            final long flightSize = tcb.flightSize();
-            final long newSsthresh = Math.max(flightSize / 2, 2 * smss);
-            if (tcb.ssthresh > newSsthresh) {
+            final long newSsthresh = Math.max(tcb.flightSize() / 2, 2 * tcb.mss());
+            if (tcb.ssthresh != newSsthresh) {
                 LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
             }
