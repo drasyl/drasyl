@@ -371,7 +371,7 @@ public class TransmissionControlBlock {
                     }
 
                     if (!sendData) {
-                        LOG.error("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), allowedBytesToFlush);
+                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), allowedBytesToFlush);
                         return;
                     }
                 }
@@ -389,7 +389,7 @@ public class TransmissionControlBlock {
                 final long remainingBytes = Math.min(mss, Math.min(Math.min(usableWindow, sendBuffer.readableBytes()), allowedBytesToFlush));
 
                 if (remainingBytes > 0) {
-                    LOG.error("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), Math.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
+                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), Math.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
                     writeBytes(sndNxt, remainingBytes, rcvNxt);
                     allowedBytesToFlush -= remainingBytes;
                 }
