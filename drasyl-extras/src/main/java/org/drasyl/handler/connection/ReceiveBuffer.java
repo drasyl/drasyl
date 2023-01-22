@@ -377,11 +377,12 @@ public class ReceiveBuffer {
         if (headBuf != null) {
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
-                tcb.incrementRcvWnd(readableBytes);
                 bytes -= readableBytes;
-                LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
-                ctx.fireChannelRead(headBuf);
+                final ByteBuf headBuf1 = headBuf;
                 headBuf = null;
+                tcb.incrementRcvWnd();
+                LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
+                ctx.fireChannelRead(headBuf1);
             }
         }
     }

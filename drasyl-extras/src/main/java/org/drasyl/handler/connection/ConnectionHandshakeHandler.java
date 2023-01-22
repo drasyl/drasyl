@@ -66,6 +66,7 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * and congestion avoidance as described in <a
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
  * implemented as well.
+ * The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
@@ -771,6 +772,9 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             return;
         }
         else {
+            // FIXME:
+            tcb.lastAdvertisedWindow = seg.window();
+
             switch (state) {
                 case SYN_RECEIVED:
                     if (tcb.isAckOurSynOrFin(seg)) {

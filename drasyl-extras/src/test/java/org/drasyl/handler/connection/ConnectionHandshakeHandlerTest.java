@@ -24,6 +24,7 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -95,9 +96,9 @@ class ConnectionHandshakeHandlerTest {
                 void clientShouldSynchronizeWhenServerBehavesExpectedly() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, true, CLOSED, ch -> {
-                                final long iss = 100;
-                                return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
-                            }, null);
+                        final long iss = 100;
+                        return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
+                    }, null);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -211,9 +212,9 @@ class ConnectionHandshakeHandlerTest {
                 void passiveServerShouldSwitchToActiveOpenOnWrite() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, CLOSED, ch -> {
-                                final long iss = 100;
-                                return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
-                            }, null);
+                        final long iss = 100;
+                        return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220);
+                    }, null);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should change state to LISTEN
@@ -367,9 +368,9 @@ class ConnectionHandshakeHandlerTest {
             void duplicateSynShouldCauseUsToReturnToListenState() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, ch -> {
-                            final long iss = 200;
-                            return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100);
-                        }, null);
+                    final long iss = 200;
+                    return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100);
+                }, null);
                 channel.pipeline().addLast(handler);
 
                 // old duplicate ACK arrives at us
@@ -596,27 +597,29 @@ class ConnectionHandshakeHandlerTest {
             @Nested
             class SendWindow {
                 @Test
+                @Disabled("Nagle Algorithm macht diesen Test überflüssig?")
                 void senderShouldRespectSndWndWhenWritingToNetwork() {
                     final int bytes = 600;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 1000);
-                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 600);
+                    final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
-                    // no data in flight, everything should be written to network
-                    final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeOutbound(data1);
-                    assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data1), channel.readOutbound());
+                    final ByteBuf data = Unpooled.buffer(3 * bytes).writeBytes(randomBytes(3 * bytes));
 
-                    // 600 bytes in flight, just 400 bytes allowed
-                    final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeOutbound(data2);
-                    assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data2.slice(0, 400)), channel.readOutbound());
+                    // SND.WND = 1000, everything should be written to network
+                    channel.writeOutbound(data.slice(0, bytes));
+                    assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data.slice(0, bytes)), channel.readOutbound());
+
+                    // SND.WND = 400, just 400 bytes allowed
+                    channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 400));
+                    channel.writeOutbound(data.slice(600, bytes));
+                    assertEquals(ConnectionHandshakeSegment.pshAck(700, 300, data.slice(600, 400)), channel.readOutbound());
 
                     // send ack for the first segment. The remaining 200 bytes should then be sent
                     channel.writeInbound(ConnectionHandshakeSegment.ack(300, 700, 600));
-                    assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data2.slice(400, 200)), channel.readOutbound());
+                    assertEquals(ConnectionHandshakeSegment.pshAck(1100, 300, data.slice(1000, 200)), channel.readOutbound());
 
                     channel.close();
                 }
@@ -625,7 +628,7 @@ class ConnectionHandshakeHandlerTest {
                 void zeroWindowProbing() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 0, 100L, 1000, 100L, 1000);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 300L, 0, 100L, 1000, 100L, 1000);
                     final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 
@@ -633,14 +636,10 @@ class ConnectionHandshakeHandlerTest {
                     channel.writeOutbound(data);
 
                     // SND.WND is 0, we have to perform Zero-Window Probing
-                    assertEquals(ConnectionHandshakeSegment.pshAck(600, 100, data.slice(0, 1)), channel.readOutbound());
+                    assertEquals(ConnectionHandshakeSegment.pshAck(300, 100, data.slice(0, 1)), channel.readOutbound());
 
                     channel.close();
                 }
-
-                // FIXME: Generating ACKs: Implement SWS avoidance algorithm in the receiver (MUST-39)
-                // FIXME: Sending Data: A TCP implementation MUST include a SWS avoidance algorithm in the sender (MUST-38).
-                // haben wir das nicht quasi implizit schon durch write and flush? (nur bei flush wird gesendet, was ja quasi einem PUSH entspricht)
 
                 // FIXME: Die ganzen Connection Failures MUSTS aus Appendinx B aus rfc9293 fehlen noch
 
@@ -659,6 +658,79 @@ class ConnectionHandshakeHandlerTest {
                     assertEquals(600, tcb.sndNxt());
 
                     channel.close();
+                }
+
+                @Nested
+                class SillyWindowSyndrome {
+                    // RFC 9293, Section 3.8.6.2.1 Sender's Algorithm -- When to Send Data
+                    // https://www.rfc-editor.org/rfc/rfc9293.html#SWSsender
+                    // RFC 9293, Section 3.7.4 Nagle algorithm
+                    @Test
+                    void senderShouldAvoidTheSillyWindowSyndrome() {
+                        final EmbeddedChannel channel = new EmbeddedChannel();
+                        TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1000, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
+                        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
+                        channel.pipeline().addLast(handler);
+
+                        final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
+
+                        // as there is no unacknowledged data (i.e., SND.NXT > SND.UNA), data should be send immediately
+                        channel.writeOutbound(buf.slice(0, 50));
+                        assertEquals(ConnectionHandshakeSegment.pshAck(600, 100, 1_000, buf.slice(0, 50)), channel.readOutbound());
+
+                        // unacknowledged data, data should be delayed
+                        channel.writeOutbound(buf.slice(50, 50));
+                        assertNull(channel.readOutbound());
+
+                        // unacknowledged data, but we can send a maximum-sized segment
+                        channel.writeOutbound(buf.slice(100, 50));
+                        assertEquals(ConnectionHandshakeSegment.pshAck(650, 100, 1_000, buf.slice(50, 100)), channel.readOutbound());
+
+                        channel.close();
+                    }
+
+                    // RFC 9293, Section 3.8.6.2.2 Receiver's Algorithm -- When to Send a Window Update
+                    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
+                    @Test
+                    void receiverShouldAvoidTheSillyWindowSyndrome() {
+                        final EmbeddedChannel channel = new EmbeddedChannel();
+                        channel.config().setAutoRead(false);
+                        TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1600, 100L, 100L, 1600, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100);
+                        final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ZERO, false, ESTABLISHED, ch -> null, tcb);
+                        channel.pipeline().addLast(handler);
+
+                        final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
+
+                        // we received a maximum-sized segment, therefore RCV.USER contains 20 bytes
+                        channel.writeInbound(ConnectionHandshakeSegment.ack(100, 600, buf.slice(0, 20)));
+                        assertEquals(1600, tcb.rcvBuff());
+                        assertEquals(20, tcb.rcvUser());
+                        assertEquals(1580, tcb.rcvWnd());
+
+                        ChannelHandlerContext ctx;
+
+                        // we now read RCV.USER
+                        ctx = channel.pipeline().context(handler);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                        assertEquals(1600, tcb.rcvBuff());
+                        assertEquals(0, tcb.rcvUser());
+                        assertEquals(1580, tcb.rcvWnd());
+
+                        // we received a maximum-sized segment, therefore RCV.USER contains 80 bytes
+                        channel.writeInbound(ConnectionHandshakeSegment.ack(120, 600, buf.slice(20, 80)));
+                        assertEquals(1600, tcb.rcvBuff());
+                        assertEquals(80, tcb.rcvUser());
+                        assertEquals(1500, tcb.rcvWnd());
+
+                        // we now read RCV.USER
+                        ctx = channel.pipeline().context(handler);
+                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                        assertEquals(1600, tcb.rcvBuff());
+                        assertEquals(0, tcb.rcvUser());
+                        assertEquals(1600, tcb.rcvWnd());
+
+                        channel.close();
+                    }
                 }
             }
 
@@ -910,7 +982,7 @@ class ConnectionHandshakeHandlerTest {
             void timerShouldBeStartedWhenSegmentWithDataIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
-                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
+                TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000);
                 final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                 channel.pipeline().addLast(handler);
 

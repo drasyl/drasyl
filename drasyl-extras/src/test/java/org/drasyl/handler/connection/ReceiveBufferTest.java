@@ -37,7 +37,7 @@ class ReceiveBufferTest {
             ReceiveBufferEntry head = new ReceiveBufferEntry(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
             head.next = new ReceiveBufferEntry(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
             final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 918402327, 930467719-918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 918402327, 930467719 - 918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
 
             ConnectionHandshakeSegment seg2 = ConnectionHandshakeSegment.pshAck(110, 1751431617, data.slice(0, 100));
             buffer.receive(ctx, tcb, seg2);
@@ -441,7 +441,7 @@ class ReceiveBufferTest {
         }
     }
 
-//    @Nested
+    //    @Nested
 //    class Add {
 //        @Test
 //        void shouldAddGivenBytesToTheEndOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
