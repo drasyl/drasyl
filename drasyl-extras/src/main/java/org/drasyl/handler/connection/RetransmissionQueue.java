@@ -404,7 +404,7 @@ public class RetransmissionQueue {
         }
     }
 
-    public boolean segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
+    public void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
                                                final ConnectionHandshakeSegment seg,
                                                final TransmissionControlBlock tcb,
                                                final State state) {

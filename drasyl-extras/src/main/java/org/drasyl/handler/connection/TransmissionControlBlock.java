@@ -429,11 +429,10 @@ public class TransmissionControlBlock {
         return sndWl2;
     }
 
-    public boolean isAcceptableAck2(final ConnectionHandshakeSegment seg) {
-        if (!seg.isAck()) {
-            return false;
-        }
-
+    // RFC 9293: SEGMENT ARRIVES on other state
+    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7.4
+    public boolean isAcceptableSeg(final ConnectionHandshakeSegment seg) {
+        // There are four cases for the acceptability test for an incoming segment:
         if (seg.len() == 0 && rcvWnd == 0) {
             // SEG.SEQ = RCV.NXT
             return seg.seq() == rcvNxt;

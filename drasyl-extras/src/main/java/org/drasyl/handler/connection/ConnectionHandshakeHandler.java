@@ -444,10 +444,6 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         assert tcb == null;
         tcb = tcbProvider.apply(ctx.channel());
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
-
-//        ctx.executor().scheduleAtFixedRate(() -> {
-//            System.err.println("STATUS CALL: " + new ConnectionHandshakeStatus(state, tcb));
-//        }, 0, 100, MILLISECONDS);
     }
 
     private void deleteTcb() {
@@ -689,13 +685,12 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                                              final ConnectionHandshakeSegment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
         // check SEQ
-        final boolean validSeg = seg.seq() == tcb.rcvNxt();
-        final boolean acceptableAck = tcb.isAcceptableAck2(seg);
+        final boolean acceptableAck = tcb.isAcceptableAck(seg);
 
         // RTTM
         tcb.retransmissionQueue().segmentArrivesOnOtherStates(ctx, seg, tcb, state);
 
-        if (!validSeg && !acceptableAck) {
+        if (!tcb.isAcceptableSeg(seg)) {
             // not expected seq
             if (!seg.isRst()) {
                 final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
@@ -743,6 +738,29 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                     deleteTcb();
                     ctx.close();
                     return;
+            }
+        }
+
+        // check SYN
+        if (seg.isSyn()) {
+            switch (state) {
+                case SYN_RECEIVED:
+                    // If the connection was initiated with a passive OPEN, then return this connection to the LISTEN state and return.
+                    if (!activeOpen) {
+                        LOG.trace("{}[{}] We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), state, seg);
+                        switchToNewState(ctx, LISTEN);
+                        return;
+                    }
+                    // Otherwise, handle per the directions for synchronized states below.
+
+                default:
+                    final boolean theseSynchronizedStates = state != SYN_RECEIVED;
+                    if (theseSynchronizedStates) {
+                        final ConnectionHandshakeSegment response = ConnectionHandshakeSegment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                        LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
+                        tcb.write(response);
+                        return;
+                    }
             }
         }
 

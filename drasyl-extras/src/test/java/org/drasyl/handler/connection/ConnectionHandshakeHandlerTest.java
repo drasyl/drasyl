@@ -89,6 +89,7 @@ class ConnectionHandshakeHandlerTest {
         class SuccessfulSynchronization {
             @Nested
             class ClientSide {
+                // RFC 9293, Figure 6, TCP Peer A
                 // active client, passive server
                 @Test
                 void clientShouldSynchronizeWhenServerBehavesExpectedly() {
@@ -121,6 +122,7 @@ class ConnectionHandshakeHandlerTest {
                     channel.close();
                 }
 
+                // RFC 9293, Figure 7, TCP Peer A (and also TCP Peer B)
                 // active client, active server
                 // Both peers are in CLOSED state
                 // Both peers initiate handshake simultaneous
@@ -165,6 +167,7 @@ class ConnectionHandshakeHandlerTest {
 
             @Nested
             class ServerSide {
+                // RFC 9293, Figure 6, TCP Peer B
                 @Test
                 void passiveServerShouldSynchronizeWhenClientBehavesExpectedly() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
@@ -286,6 +289,7 @@ class ConnectionHandshakeHandlerTest {
 
         @Nested
         class HalfOpenDiscovery {
+            // RFC 9293, Figure 9, TCP Peer A
             // we've crashed
             // peer is in ESTABLISHED state
             @Test
@@ -318,6 +322,7 @@ class ConnectionHandshakeHandlerTest {
                 channel.close();
             }
 
+            // RFC 9293, Figure 9, TCP Peer B
             // we're in ESTABLISHED state
             // peer has crashed
             @Test
@@ -341,6 +346,44 @@ class ConnectionHandshakeHandlerTest {
                 assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
             }
+
+            // RFC 9293, Figure 10, TC Peer A
+            @Test
+            void shouldResetRemotePeerIfWeReceiveDataInAnUnsynchronizedState() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, 100, 64_000);
+                channel.pipeline().addLast(handler);
+
+                final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(300, 100, data);
+                channel.writeInbound(seg);
+                assertEquals(ConnectionHandshakeSegment.rst(100), channel.readOutbound());
+
+                channel.close();
+            }
+
+            // RFC 9293, Figure 11, TC Peer B
+            @Test
+            void duplicateSynShouldCauseUsToReturnToListenState() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, ch -> {
+                            final long iss = 200;
+                            return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100);
+                        }, null);
+                channel.pipeline().addLast(handler);
+
+                // old duplicate ACK arrives at us
+                long x = 200;
+                long z = 100;
+                channel.writeInbound(ConnectionHandshakeSegment.syn(z));
+                assertEquals(ConnectionHandshakeSegment.synAck(x, z + 1), channel.readOutbound());
+
+                // returned SYN/ACK causes a RST, we should return to LISTEN
+                channel.writeInbound(ConnectionHandshakeSegment.rst(z + 1));
+                assertEquals(LISTEN, handler.state);
+
+                channel.close();
+            }
         }
 
         @Nested
@@ -360,6 +403,7 @@ class ConnectionHandshakeHandlerTest {
     class ConnectionClearing {
         @Nested
         class SuccessfulClearing {
+            // RFC 9293, Figure 12, TCP Peer A
             // Both peers are in ESTABLISHED state
             // we close
             @Test
@@ -397,6 +441,7 @@ class ConnectionHandshakeHandlerTest {
                 //assertNull(handler.tcb);
             }
 
+            // RFC 9293, Figure 12, TCP Peer B
             // Both peers are in ESTABLISHED state
             // other peer close
             @Test
@@ -423,6 +468,7 @@ class ConnectionHandshakeHandlerTest {
                 assertNull(handler.tcb);
             }
 
+            // RFC 9293, Figure 13, TCP Peer A (and also TCP Peer B)
             // Both peers are in ESTABLISHED state
             // Both peers initiate close simultaneous
             @Test
@@ -1053,7 +1099,7 @@ class ConnectionHandshakeHandlerTest {
                     // SRTT <- (1 - alpha) * SRTT + alpha * R'
                     assertEquals(2008.9375, queue.sRtt);
                     // RTO <- SRTT + max (G, K*RTTVAR)
-                    assertEquals(5781.4375, queue.rto());
+                    assertEquals(5781, queue.rto());
                 }
 
                 // RFC 7323, Section 4.3, Situation A: Delayed ACKs
@@ -1454,22 +1500,6 @@ class ConnectionHandshakeHandlerTest {
 
     @Nested
     class SegmentArrives {
-        @Nested
-        class OnListenState {
-            @Test
-            void shouldIgnoreResetAsThereIsNothingToReset() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(ofMillis(100), false, LISTEN, 100, 64_000);
-                channel.pipeline().addLast(handler);
-
-                final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.ack(100, 123);
-                channel.writeInbound(seg);
-                assertEquals(ConnectionHandshakeSegment.rst(123), channel.readOutbound());
-
-                channel.close();
-            }
-        }
-
         @Nested
         class OnSynSentState {
             @Test
