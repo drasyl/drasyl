@@ -147,13 +147,14 @@ public class ReceiveBuffer {
                     length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
                     final ReceiveBufferEntry entry = new ReceiveBufferEntry(seq, content.retainedSlice(content.readerIndex() + index, length));
                     LOG.error(
-                            "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                            "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
                             channel,
                             seg,
                             seg.seq(),
                             seg.lastSeq(),
                             tcb.rcvNxt(),
                             add(tcb.rcvNxt(), tcb.rcvWnd()),
+                            sub(seg.seq(), tcb.rcvNxt()),
                             seq,
                             add(seq, length - 1),
                             entry
