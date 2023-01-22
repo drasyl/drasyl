@@ -366,7 +366,6 @@ public class ReceiveBuffer {
 
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (headBuf != null) {
-            LOG.error("fireRead");
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
                 bytes -= readableBytes;

@@ -619,7 +619,6 @@ public class TransmissionControlBlock {
             LOG.error("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
         }
-        System.err.println(rcvWnd);
     }
 
     long rcvBuff() {
