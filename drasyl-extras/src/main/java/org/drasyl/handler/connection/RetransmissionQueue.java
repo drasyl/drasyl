@@ -247,8 +247,8 @@ public class RetransmissionQueue {
             final int smss = tcb.mss();
             final long flightSize = tcb.flightSize();
             final long newSsthresh = Math.max(flightSize / 2, 2 * smss);
-            if (tcb.ssthresh != newSsthresh) {
-                LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+            if (tcb.ssthresh > newSsthresh) {
+                LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
             }
 
@@ -259,7 +259,7 @@ public class RetransmissionQueue {
             //   algorithm to increase the window from 1 full-sized segment to the new
             //   value of ssthresh, at which point congestion avoidance again takes
             //   over.
-            LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
+            LOG.error("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
             tcb.cwnd = tcb.mss();
         }, rto, MILLISECONDS);
     }
