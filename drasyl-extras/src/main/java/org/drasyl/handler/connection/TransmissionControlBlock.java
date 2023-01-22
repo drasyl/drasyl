@@ -84,6 +84,7 @@ public class TransmissionControlBlock {
     final RetransmissionQueue retransmissionQueue;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
+    private final long rcvBuff;
     protected long ssthresh; // slow start threshold
     // congestion control
     long cwnd; // congestion window
@@ -99,7 +100,6 @@ public class TransmissionControlBlock {
     private long sndWl1; // segment sequence number used for last window update
     private long sndWl2; // segment acknowledgment number used for last window update
     private long iss; // initial send sequence number
-    private final long rcvBuff;
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
     // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
@@ -338,61 +338,65 @@ public class TransmissionControlBlock {
                 return;
             }
 
-            if (!NODELAY) {
-                // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
-                // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
-                // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
-                final long u = sub(add(sndUna, sndWnd), sndNxt);
-                // D is the amount of data queued in the sending TCP endpoint but not yet sent
-                final long d = allowedBytesToFlush;
-                // effective send MSS: equal to MSS?
-                final long effSndMSS = mss;
+            while (true) {
+                if (!NODELAY) {
+                    // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
+                    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
+                    // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
+                    final long u = sub(add(sndUna, sndWnd), sndNxt);
+                    // D is the amount of data queued in the sending TCP endpoint but not yet sent
+                    final long d = allowedBytesToFlush;
+                    // effective send MSS: equal to MSS?
+                    final long effSndMSS = mss;
 
-                // Send data...
-                final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
-                final boolean sendData;
-                if (Math.min(d, u) >= effSndMSS) {
-                    // ..if a maximum-sized segment can be sent, i.e., if:
-                    // min(D,U) >= Eff.snd.MSS;
-                    sendData = true;
-                } else if (sndNxt == sndUna && d <= u) {
-                    // or if the data is pushed and all queued data can be sent now, i.e., if:
-                    // SND.NXT = SND.UNA and D <= U
-                    sendData = true;
-                } else if (sndNxt == sndUna && Math.min(d, u) >= fs * maxSndWnd) {
-                    // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
-                    // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
-                    sendData = true;
+                    // Send data...
+                    final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
+                    final boolean sendData;
+                    if (Math.min(d, u) >= effSndMSS) {
+                        // ..if a maximum-sized segment can be sent, i.e., if:
+                        // min(D,U) >= Eff.snd.MSS;
+                        sendData = true;
+                    } else if (sndNxt == sndUna && d <= u) {
+                        // or if the data is pushed and all queued data can be sent now, i.e., if:
+                        // SND.NXT = SND.UNA and D <= U
+                        sendData = true;
+                    } else if (sndNxt == sndUna && Math.min(d, u) >= fs * maxSndWnd) {
+                        // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
+                        // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
+                        sendData = true;
+                    }
+                    // FIXME: or if the override timeout occurs
+                    else {
+                        sendData = false;
+                    }
+
+                    if (!sendData) {
+                        LOG.error("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), allowedBytesToFlush);
+                        return;
+                    }
                 }
-                // FIXME: or if the override timeout occurs
+
+                // at least one byte is required for Zero-Window Probing
+                final long usableWindow;
+                if (newFlush && sndWnd() == 0 && flightSize() == 0) {
+                    // zero window probing
+                    usableWindow = 1;
+                } else {
+                    final long window = Math.min(sndWnd(), cwnd());
+                    usableWindow = Math.max(0, window - flightSize());
+                }
+
+                final long remainingBytes = Math.min(mss, Math.min(Math.min(usableWindow, sendBuffer.readableBytes()), allowedBytesToFlush));
+
+                if (remainingBytes > 0) {
+                    LOG.error("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), Math.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
+                    writeBytes(sndNxt, remainingBytes, rcvNxt);
+                    allowedBytesToFlush -= remainingBytes;
+                }
                 else {
-                    sendData = false;
-                }
-
-                if (!sendData) {
-                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay data.", ctx.channel());
                     return;
                 }
             }
-
-            final long window = Math.min(sndWnd(), cwnd());
-            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), flightSize(), cwnd(), allowedBytesToFlush);
-
-            // at least one byte is required for Zero-Window Probing
-            long unusedSendWindow = Math.max(0, window - flightSize());
-            if (newFlush && window == 0 && flightSize() == 0 && unusedSendWindow == 0) {
-                // zero window probing
-                unusedSendWindow = 1;
-            }
-
-            final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
-
-            if (remainingBytes > 0) {
-                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
-            }
-
-            writeBytes(sndNxt, remainingBytes, rcvNxt);
-            allowedBytesToFlush -= remainingBytes;
         } finally {
             outgoingSegmentQueue.flush(ctx, this);
         }

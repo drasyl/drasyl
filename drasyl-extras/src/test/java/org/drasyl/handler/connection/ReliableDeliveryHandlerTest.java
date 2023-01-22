@@ -569,7 +569,7 @@ class ReliableDeliveryHandlerTest {
         class Mss {
             @Test
             void shouldSegmentizeDataIntoSegmentsToLargerThenMss() {
-                final int bytes = 250;
+                final int bytes = 300;
                 final int mss = 100;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -584,7 +584,7 @@ class ReliableDeliveryHandlerTest {
                     assertEquals(Segment.ack(100 + i, 300, data.slice(i, 100)), channel.<Segment>readOutbound());
                 }
 
-                assertEquals(Segment.pshAck(300, 300, data.slice(200, 50)), channel.<Segment>readOutbound());
+                assertEquals(Segment.pshAck(300, 300, data.slice(200, 100)), channel.<Segment>readOutbound());
 
                 channel.close();
             }
@@ -754,7 +754,7 @@ class ReliableDeliveryHandlerTest {
 
                     // unacknowledged data, but we can send a maximum-sized segment
                     channel.writeOutbound(buf.slice(100, 60));
-                    assertEquals(Segment.ack(650, 100, 1_000, buf.slice(50, 100)), channel.readOutbound());
+                    assertEquals(Segment.pshAck(650, 100, 1_000, buf.slice(50, 100)), channel.readOutbound());
                     // but do not send the remainder in a second small segment!
                     assertNull(channel.readOutbound());
 
@@ -1347,7 +1347,7 @@ class ReliableDeliveryHandlerTest {
                 void sendCallInEstablishedStateSynShouldContainCorrectTsOption(@Mock final Clock clock) {
                     when(clock.time()).thenReturn(2816L);
 
-                    final int bytes = 250;
+                    final int bytes = 300;
                     final int mss = 100;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
