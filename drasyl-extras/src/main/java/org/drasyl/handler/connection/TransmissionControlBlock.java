@@ -44,11 +44,11 @@ import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
-import static org.drasyl.util.SerialNumberArithmetic.add;
-import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
-import static org.drasyl.util.SerialNumberArithmetic.sub;
+import static org.drasyl.handler.connection.Segment.add;
+import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.Segment.lessThan;
+import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.Segment.sub;
 
 /**
  * <pre>
@@ -264,27 +264,27 @@ public class TransmissionControlBlock {
     }
 
     public boolean isDuplicateAck(final Segment seg) {
-        return seg.isOnlyAck() && lessThanOrEqualTo(seg.ack(), sndUna, SEQ_NO_SPACE) && seg.len() == 0;
+        return seg.isOnlyAck() && lessThanOrEqualTo(seg.ack(), sndUna) && seg.len() == 0;
     }
 
     public boolean isAckSomethingNotYetSent(final Segment seg) {
-        return seg.isAck() && greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE);
+        return seg.isAck() && greaterThan(seg.ack(), sndNxt);
     }
 
     public boolean isAcceptableAck(final Segment seg) {
-        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
+        return seg.isAck() && lessThan(sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), sndNxt);
     }
 
     public boolean synHasBeenAcknowledged() {
-        return greaterThan(sndUna, iss, SEQ_NO_SPACE);
+        return greaterThan(sndUna, iss);
     }
 
     public boolean isAckOurSynOrFin(final Segment seg) {
-        return seg.isAck() && lessThan(sndUna, seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), sndNxt, SEQ_NO_SPACE);
+        return seg.isAck() && lessThan(sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), sndNxt);
     }
 
     public boolean isAckSomethingNeverSent(final Segment seg) {
-        return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss, SEQ_NO_SPACE) || greaterThan(seg.ack(), sndNxt, SEQ_NO_SPACE));
+        return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss) || greaterThan(seg.ack(), sndNxt));
     }
 
     private void writeBytes(final long seg,
@@ -342,7 +342,7 @@ public class TransmissionControlBlock {
                 // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                 // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
                 // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
-                final long u = sub(add(sndUna, sndWnd, SEQ_NO_SPACE), sndNxt, SEQ_NO_SPACE);
+                final long u = sub(add(sndUna, sndWnd), sndNxt);
                 // D is the amount of data queued in the sending TCP endpoint but not yet sent
                 final long d = allowedBytesToFlush;
                 // effective send MSS: equal to MSS?
@@ -415,7 +415,7 @@ public class TransmissionControlBlock {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
-            ackedBytes = sub(seg.ack(), sndUna, SEQ_NO_SPACE);
+            ackedBytes = sub(seg.ack(), sndUna);
             sndUna = seg.ack();
         }
 
@@ -484,14 +484,14 @@ public class TransmissionControlBlock {
             return seg.seq() == rcvNxt;
         } else if (seg.len() == 0 && rcvWnd > 0) {
             // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-            return lessThanOrEqualTo(rcvNxt, seg.seq(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE);
+            return lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd));
         } else if (seg.len() > 0 && rcvWnd == 0) {
             // not acceptable
             return false;
         } else {
             // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND or RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
-            return (lessThanOrEqualTo(rcvNxt, seg.seq(), SEQ_NO_SPACE) && lessThan(seg.seq(), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE)) ||
-                    (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), SEQ_NO_SPACE) && greaterThan(add(seg.seq(), seg.len() - 1, SEQ_NO_SPACE), add(rcvNxt, rcvWnd, SEQ_NO_SPACE), SEQ_NO_SPACE));
+            return (lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd))) ||
+                    (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(rcvNxt, rcvWnd)));
         }
     }
 

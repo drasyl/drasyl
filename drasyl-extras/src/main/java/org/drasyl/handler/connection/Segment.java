@@ -36,7 +36,6 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
-import static org.drasyl.util.SerialNumberArithmetic.add;
 
 /**
  * Message used by {@link ReliableDeliveryHandler} to provide reliable and ordered delivery of
@@ -168,7 +167,7 @@ public class Segment extends DefaultByteBufHolder {
     }
 
     public static long advanceSeq(final long seq, final long advancement) {
-        return SerialNumberArithmetic.add(seq, advancement, SEQ_NO_SPACE);
+        return add(seq, advancement);
     }
 
     public static long randomSeq() {
@@ -287,7 +286,7 @@ public class Segment extends DefaultByteBufHolder {
         if (len() == 0) {
             return seq();
         }
-        return add(seq(), len() - 1L, SEQ_NO_SPACE);
+        return add(seq(), len() - 1L);
     }
 
     public boolean mustBeAcked() {
@@ -319,5 +318,56 @@ public class Segment extends DefaultByteBufHolder {
     @Override
     public Segment retain() {
         return (Segment) super.retain();
+    }
+
+    /**
+     * @param s          sequence number we want increment. Must be non-negative.
+     * @param n          number to add. Must be within range {@code [0, (2^(serialBits - 1) - 1)]}
+     * @return resulting sequence number of the addition
+     */
+    public static long add(final long s, final long n) {
+        return SerialNumberArithmetic.add(s, n, SEQ_NO_SPACE);
+    }
+
+    public static long sub(final long i1, final long i2) {
+        return SerialNumberArithmetic.sub(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1         first non-negative number
+     * @param i2         second non-negative number
+     * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
+     */
+    public static boolean lessThan(final long i1, final long i2) {
+        return SerialNumberArithmetic.lessThan(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1         first non-negative number
+     * @param i2         second non-negative number
+     * @return {@code true} if {@code i1} is less than or equal to {@code i2}. Otherwise
+     * {@code false}
+     */
+    public static boolean lessThanOrEqualTo(final long i1, final long i2) {
+        return SerialNumberArithmetic.lessThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1         first non-negative number
+     * @param i2         second non-negative number
+     * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
+     */
+    public static boolean greaterThan(final long i1, final long i2) {
+        return SerialNumberArithmetic.greaterThan(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1         first non-negative number
+     * @param i2         second non-negative number
+     * @return {@code true} if {@code i1} is greater than or equal to {@code i2}. Otherwise
+     * {@code false}
+     */
+    public static boolean greaterThanOrEqualTo(final long i1, final long i2) {
+        return SerialNumberArithmetic.greaterThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
     }
 }

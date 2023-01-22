@@ -39,7 +39,6 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -50,8 +49,8 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.SerialNumberArithmetic.lessThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.Segment.lessThan;
+import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
@@ -970,7 +969,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             tcb.handleAcknowledgement(ctx, seg);
 
             // update window
-            if (lessThan(tcb.sndWl1(), seg.seq(), SEQ_NO_SPACE) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack(), SEQ_NO_SPACE))) {
+            if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
                 tcb.updateSndWnd(seg);
             }
         }

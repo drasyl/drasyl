@@ -39,12 +39,11 @@ import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.Segment.PSH;
-import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.Preconditions.requirePositive;
-import static org.drasyl.util.SerialNumberArithmetic.lessThan;
-import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.Segment.lessThan;
+import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 
 /**
  * Holds all segments that has been written to the network (called in-flight) but have not been
@@ -166,19 +165,19 @@ public class RetransmissionQueue {
         boolean somethingWasAcked = ackedBytes > 0;
         boolean synWasAcked = false;
         boolean finWasAcked = false;
-        if (synSeq != -1 && lessThan(synSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+        if (synSeq != -1 && lessThan(synSeq, tcb.sndUna())) {
             // SYN has been ACKed
             synSeq = -1;
             somethingWasAcked = true;
             synWasAcked = true;
             ackedCtl |= SYN;
         }
-        if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+        if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna())) {
             // PSH has been ACKed
             pshSeq = -1;
             somethingWasAcked = true;
         }
-        if (finSeq != -1 && lessThan(finSeq, tcb.sndUna(), SEQ_NO_SPACE)) {
+        if (finSeq != -1 && lessThan(finSeq, tcb.sndUna())) {
             // FIN has been ACKed
             finSeq = -1;
             somethingWasAcked = true;
@@ -421,7 +420,7 @@ public class RetransmissionQueue {
                     //  variable TS.Recent,
                     // else the segment is not acceptable; follow the steps below for an unacceptable segment.
                     acceptableSeg = false;
-                } else if (tsOpt.tsVal >= tsRecent && lessThanOrEqualTo(seg.seq(), lastAckSent, SEQ_NO_SPACE)) {
+                } else if (tsOpt.tsVal >= tsRecent && lessThanOrEqualTo(seg.seq(), lastAckSent)) {
                     // If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent, then save SEG.TSval in variable TS.Recent.
                     tsRecent = tsOpt.tsVal;
                 }
@@ -431,7 +430,7 @@ public class RetransmissionQueue {
         if (seg.isAck() && state == ESTABLISHED) {
             // If SND.UNA < SEG.ACK <= SND.NXT then, set SND.UNA <- SEG.ACK.  Also compute a new
             // estimate of round-trip time.
-            if (lessThan(tcb.sndUna(), seg.ack(), SEQ_NO_SPACE) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt(), SEQ_NO_SPACE)) {
+            if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                 if (sndTsOk) {
                     // If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
                     // calculate RTO

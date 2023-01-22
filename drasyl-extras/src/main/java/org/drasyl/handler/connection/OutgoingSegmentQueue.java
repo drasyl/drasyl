@@ -36,9 +36,8 @@ import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
-import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
-import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
+import static org.drasyl.handler.connection.Segment.greaterThan;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
@@ -59,7 +58,7 @@ public class OutgoingSegmentQueue {
             this.seq = seq;
         }
         len += readableBytes;
-        if (this.ack == -1 || greaterThan(ack, this.ack, SEQ_NO_SPACE)) {
+        if (this.ack == -1 || greaterThan(ack, this.ack)) {
             this.ack = ack;
         }
         this.ctl |= ctl;
