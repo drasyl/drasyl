@@ -1151,11 +1151,10 @@ class ReliableDeliveryHandlerTest {
                 void shouldCalculateRtoProperlyForSubsequentRttMeasurements(@Mock final Clock clock, @Mock final SendBuffer sendBuffer) {
                     when(clock.time()).thenReturn(2846L);
                     when(clock.g()).thenReturn(0.001);
-                    when(sendBuffer.acknowledgeableBytes()).thenReturn(8_000L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0, true, 1004, 2008, 6024, clock);
-                    TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 1000);
+                    TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 8300L, 2000, 100L, 100L, 2000, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 1000);
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), false, ESTABLISHED, ch -> null, tcb);
                     channel.pipeline().addLast(handler);
 

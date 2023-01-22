@@ -245,7 +245,7 @@ public class RetransmissionQueue {
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
             final int smss = tcb.mss();
-            final long flightSize = tcb.sendBuffer().acknowledgeableBytes();
+            final long flightSize = tcb.flightSize();
             final long newSsthresh = Math.max(flightSize / 2, 2 * smss);
             if (tcb.ssthresh != newSsthresh) {
                 LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
@@ -315,7 +315,7 @@ public class RetransmissionQueue {
             // Taking multiple RTT samples per window would shorten the history
             //   calculated by the RTO mechanism in [RFC6298]
             final int smss = tcb.mss();
-            final float flightSize = tcb.sendBuffer().acknowledgeableBytes();
+            final float flightSize = tcb.flightSize();
             int expectedSamples = Math.max((int) Math.ceil(flightSize / (smss * 2)), 1);
             double alphaDash = ALPHA / expectedSamples;
             double betaDash = BETA / expectedSamples;

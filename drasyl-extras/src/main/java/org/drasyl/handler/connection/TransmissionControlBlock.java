@@ -375,7 +375,7 @@ public class TransmissionControlBlock {
                 }
             }
 
-            final long flightSize = sendBuffer.acknowledgeableBytes();
+            final long flightSize = flightSize();
             final long sendWindow = sndWnd();
             final long congestionWindow = cwnd();
             final long window = Math.min(sendWindow, congestionWindow);
@@ -399,6 +399,10 @@ public class TransmissionControlBlock {
         } finally {
             outgoingSegmentQueue.flush(ctx, this);
         }
+    }
+
+    long flightSize() {
+        return sub(sndNxt, sndUna);
     }
 
     public void negotiateMss(final ChannelHandlerContext ctx,
