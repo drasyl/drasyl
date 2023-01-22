@@ -375,15 +375,12 @@ public class TransmissionControlBlock {
                 }
             }
 
-            final long flightSize = flightSize();
-            final long sendWindow = sndWnd();
-            final long congestionWindow = cwnd();
-            final long window = Math.min(sendWindow, congestionWindow);
-            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sendWindow, sendBuffer.readableBytes(), flightSize, congestionWindow, allowedBytesToFlush);
+            final long window = Math.min(sndWnd(), cwnd());
+            LOG.trace("{}[{}] Flush of SND.BUF was triggered: SND.WND={}; SND.BUF={}; FLIGHT SIZE={}; CWND={}; {} flushable bytes.", ctx.channel(), state, sndWnd(), sendBuffer.readableBytes(), flightSize(), cwnd(), allowedBytesToFlush);
 
             // at least one byte is required for Zero-Window Probing
-            long unusedSendWindow = Math.max(0, window - flightSize);
-            if (newFlush && window == 0 && flightSize == 0 && unusedSendWindow == 0) {
+            long unusedSendWindow = Math.max(0, window - flightSize());
+            if (newFlush && window == 0 && flightSize() == 0 && unusedSendWindow == 0) {
                 // zero window probing
                 unusedSendWindow = 1;
             }
@@ -391,7 +388,7 @@ public class TransmissionControlBlock {
             final long remainingBytes = Math.min(Math.min(unusedSendWindow, sendBuffer.readableBytes()), allowedBytesToFlush);
 
             if (remainingBytes > 0) {
-                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize, window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
+                LOG.error("{}[{}] {} bytes in-flight. Send window of {} bytes allows us to write {} new bytes to network. {} application bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), window, unusedSendWindow, allowedBytesToFlush, remainingBytes);
             }
 
             writeBytes(sndNxt, remainingBytes, rcvNxt);
