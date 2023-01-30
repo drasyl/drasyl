@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
+import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.SYN;
@@ -221,8 +222,8 @@ public class RetransmissionQueue {
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
-            Segment retransmission = retransmissionSegment(ctx, tcb);
-            LOG.trace("{} Retransmission timeout after {}ms! Retransmit: {}. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
+            final Segment retransmission = retransmissionSegment(ctx, tcb, 0, tcb.mss());
+            LOG.trace("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
             ctx.writeAndFlush(retransmission);
 
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
@@ -246,7 +247,7 @@ public class RetransmissionQueue {
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
             final long newSsthresh = Math.max(tcb.flightSize() / 2, 2 * tcb.mss());
             if (tcb.ssthresh != newSsthresh) {
-                LOG.error("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+                LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
             }
 
@@ -257,14 +258,19 @@ public class RetransmissionQueue {
             //   algorithm to increase the window from 1 full-sized segment to the new
             //   value of ssthresh, at which point congestion avoidance again takes
             //   over.
-            LOG.error("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
-            tcb.cwnd = tcb.mss();
+            if (tcb.cwnd() != tcb.mss()) {
+                LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
+                tcb.cwnd = tcb.mss();
+            }
         }, rto, MILLISECONDS);
     }
 
-    Segment retransmissionSegment(ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+    Segment retransmissionSegment(ChannelHandlerContext ctx,
+                                  final TransmissionControlBlock tcb,
+                                  final int offset,
+                                  final int bytes) {
         final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final ByteBuf data = tcb.sendBuffer().unacknowledged(tcb.mss());
+        final ByteBuf data = tcb.sendBuffer().unacknowledged(offset, bytes);
         byte ctl = ACK;
         if (synSeq != -1) {
             ctl |= SYN;
@@ -276,7 +282,7 @@ public class RetransmissionQueue {
         if (ctl == ACK && data.readableBytes() == 0) {
             System.out.print("");
         }
-        final long seq = tcb.sndUna();
+        final long seq = add(tcb.sndUna(), offset);
         final long ack = tcb.rcvNxt();
         tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
         Segment retransmission = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);

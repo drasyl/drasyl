@@ -156,14 +156,14 @@ public class SendBuffer {
         return read(channel.alloc(), bytes);
     }
 
-    public ByteBuf unacknowledged(final ByteBufAllocator alloc, int bytes) {
+    public ByteBuf unacknowledged(final ByteBufAllocator alloc, int offset, int bytes) {
         // ensure that only as many bytes are requested as are available
         bytes = Math.min(bytes, acknowledgeableBytes);
 
         ByteBuf toReturn = null;
         SendBufferEntry currentEntry = head;
         while (bytes > 0 && currentEntry != null) {
-            final int index;
+            int index;
             int length;
             if (currentEntry == head) {
                 // do not return bytes that have already been ACKed
@@ -182,6 +182,20 @@ public class SendBuffer {
                 // whole buf has been read, return all bytes
                 length = currentEntry.content().readableBytes() - index;
             }
+
+            if (offset > 0) {
+                if (offset >= length) {
+                    // offset longer then current buf, skip hole buf
+                    offset -= length;
+                    continue;
+                }
+                else {
+                    // we need to skip start of buf
+                    index += offset;
+                    length -= offset;;
+                }
+            }
+
 
             // do not return more bytes than requested
             if (length > bytes) {
@@ -207,8 +221,12 @@ public class SendBuffer {
         return toReturn;
     }
 
+    public ByteBuf unacknowledged(final int offset, final int bytes) {
+        return unacknowledged(channel.alloc(), offset, bytes);
+    }
+
     public ByteBuf unacknowledged(final int bytes) {
-        return unacknowledged(channel.alloc(), bytes);
+        return unacknowledged(0, bytes);
     }
 
     public void acknowledge(int bytes) {

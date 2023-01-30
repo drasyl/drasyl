@@ -40,11 +40,13 @@ import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
+import test.DropMessagesHandler;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static org.awaitility.Awaitility.await;
@@ -547,7 +549,15 @@ class ReliableDeliveryHandlerIT {
                                 // start dropping segments once handshake is completed
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new DropNthMessage(2), msg -> false));
+                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new Predicate<Object>() {
+                                        int i = 0;
+
+                                        @Override
+                                        public boolean test(final Object o) {
+                                            i++;
+                                            return 50 <= i && i <= 50;
+                                        }
+                                    }, msg -> false));
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }

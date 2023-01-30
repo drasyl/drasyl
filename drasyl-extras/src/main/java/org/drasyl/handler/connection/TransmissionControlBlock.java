@@ -38,17 +38,17 @@ import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
+import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
+import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.Segment.lessThan;
+import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
-import static org.drasyl.handler.connection.Segment.add;
-import static org.drasyl.handler.connection.Segment.greaterThan;
-import static org.drasyl.handler.connection.Segment.lessThan;
-import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
-import static org.drasyl.handler.connection.Segment.sub;
 
 /**
  * <pre>
@@ -264,7 +264,7 @@ public class TransmissionControlBlock {
     }
 
     public boolean isDuplicateAck(final Segment seg) {
-        return seg.isOnlyAck() && lessThanOrEqualTo(seg.ack(), sndUna) && seg.len() == 0;
+        return lessThanOrEqualTo(seg.ack(), sndUna);
     }
 
     public boolean isAckSomethingNotYetSent(final Segment seg) {
@@ -346,7 +346,7 @@ public class TransmissionControlBlock {
                     final long u = sub(add(sndUna, Math.min(sndWnd(), cwnd())), sndNxt);
                     // D is the amount of data queued in the sending TCP endpoint but not yet sent
                     final long d = allowedBytesToFlush;
-                    // effective send MSS: equal to MSS?
+                    // FIXME: effective send MSS: equal to MSS?
                     final long effSndMSS = mss;
 
                     // Send data...
@@ -356,11 +356,13 @@ public class TransmissionControlBlock {
                         // ..if a maximum-sized segment can be sent, i.e., if:
                         // min(D,U) >= Eff.snd.MSS;
                         sendData = true;
-                    } else if (sndNxt == sndUna && d <= u) {
+                    }
+                    else if (sndNxt == sndUna && d <= u) {
                         // or if the data is pushed and all queued data can be sent now, i.e., if:
                         // SND.NXT = SND.UNA and D <= U
                         sendData = true;
-                    } else if (sndNxt == sndUna && Math.min(d, u) >= fs * maxSndWnd) {
+                    }
+                    else if (sndNxt == sndUna && Math.min(d, u) >= fs * maxSndWnd) {
                         // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
                         // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
                         sendData = true;
@@ -381,7 +383,8 @@ public class TransmissionControlBlock {
                 if (newFlush && sndWnd() == 0 && flightSize() == 0) {
                     // zero window probing
                     usableWindow = 1;
-                } else {
+                }
+                else {
                     final long window = Math.min(sndWnd(), cwnd());
                     usableWindow = Math.max(0, window - flightSize());
                 }
@@ -397,7 +400,8 @@ public class TransmissionControlBlock {
                     return;
                 }
             }
-        } finally {
+        }
+        finally {
             outgoingSegmentQueue.flush(ctx, this);
         }
     }
@@ -439,20 +443,15 @@ public class TransmissionControlBlock {
 
                 // Slow Start -> +1 MSS after each ACK
                 final long increment = Math.min(mss, ackedBytes);
-                LOG.error("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
-                cwnd += increment;
-            } else {
-                // Congestion Avoidance -> +1 MSS after each RTT
-                final long increment = 1;//(long) Math.ceil(((long) mss * mss) / (float) cwnd);
-                LOG.error("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
-
-//            if (duplicateAcks != 0) {
-//                duplicateAcks = 0;
-//                cwnd = ssthresh;
-//                LOG.error("{} ACKed new data (`{}`). Reset duplicate ACKs counter. Set CWND to SSTHRESH.", ctx.channel(), seg);
-//            }
+            else {
+                // Congestion Avoidance -> +1 MSS after each RTT
+                final long increment = 1;//(long) Math.ceil(((long) mss * mss) / (float) cwnd);
+                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
+                cwnd += increment;
+            }
         }
     }
 
@@ -487,13 +486,16 @@ public class TransmissionControlBlock {
         if (seg.len() == 0 && rcvWnd == 0) {
             // SEG.SEQ = RCV.NXT
             return seg.seq() == rcvNxt;
-        } else if (seg.len() == 0 && rcvWnd > 0) {
+        }
+        else if (seg.len() == 0 && rcvWnd > 0) {
             // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
             return lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd));
-        } else if (seg.len() > 0 && rcvWnd == 0) {
+        }
+        else if (seg.len() > 0 && rcvWnd == 0) {
             // not acceptable
             return false;
-        } else {
+        }
+        else {
             // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND or RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
             return (lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd))) ||
                     (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(rcvNxt, rcvWnd)));
@@ -530,73 +532,70 @@ public class TransmissionControlBlock {
         //      received on the given connection (TCP.UNA from [RFC793]) and (e)
         //      the advertised window in the incoming acknowledgment equals the
         //      advertised window in the last incoming acknowledgment.
-        // FIXME
-        if (sendBuffer.hasOutstandingData() && seg.len() == 0 && !seg.isSyn() && !seg.isFin() && seg.ack() == sndUna && seg.window() == lastAdvertisedWindow) {
-//            if (doFastRetransmit()) {
-//                final long currentWindowSize = Math.min(cwnd, sndWnd);
-//                final long newSsthresh = Math.max(currentWindowSize / 2, 2L * mss);
-//                if (ssthresh != newSsthresh) {
-//                    LOG.error("{} Congestion Control: Duplicate ACK. Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
-//                    ssthresh = newSsthresh;
-//                }
-//
-//                duplicateAcks += 1;
-//            }
-        } else {
-//            if (doFastRetransmit()) {
-//                duplicateAcks = 0;
-//            }
+        final boolean duplicateAck = sendBuffer.hasOutstandingData() && seg.len() == 0 && !seg.isSyn() && !seg.isFin() && seg.ack() == sndUna && seg.window() == lastAdvertisedWindow;
+        if (duplicateAck) {
+            // increment counter
+            duplicateAcks += 1;
+            LOG.error("{} Congestion Control: Fast Retransmit: Got duplicate ACK {}#{}.", ctx.channel(), seg.ack(), duplicateAcks);
+
+            // FIXME: https://www.rfc-editor.org/rfc/rfc5681#section-3.2
+            if (duplicateAcks == 3) {
+                // The fast retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
+                //   in section 2, without any intervening ACKs which move SND.UNA) as an
+                //   indication that a segment has been lost.  After receiving 3 duplicate
+                //   ACKs, TCP performs a retransmission of what appears to be the missing
+                //   segment, without waiting for the retransmission timer to expire.
+
+                // When the third duplicate ACK is received, a TCP MUST set ssthresh
+                //       to no more than the value given in equation (4).
+                //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
+                final long newSsthresh = Math.max(flightSize() / 2, 2 * mss());
+                if (ssthresh != newSsthresh) {
+                    LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
+                    ssthresh = newSsthresh;
+                }
+
+                // The lost segment starting at SND.UNA MUST be retransmitted and
+                //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
+                //       the congestion window by the number of segments (three) that have
+                //       left the network and which the receiver has buffered.
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, mss());
+                LOG.trace("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
+                ctx.writeAndFlush(retransmission);
+
+                // increase congestion window as we know that at least three segments have left the network
+                long newCwnd = ssthresh() + 3 * mss();
+                if (newCwnd != cwnd()) {
+                    LOG.error("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    this.cwnd = newCwnd;
+                }
+            }
+            else if (duplicateAcks > 3) {
+                // For each additional duplicate ACK received (after the third),
+                //       cwnd MUST be incremented by SMSS.  This artificially inflates the
+                //       congestion window in order to reflect the additional segment that
+                //       has left the network.
+
+                // increase congestion window as we know another segment has left the network
+                long newCwnd = cwnd() + mss();
+                if (newCwnd != cwnd()) {
+                    LOG.error("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    this.cwnd = newCwnd;
+                }
+
+                // When previously unsent data is available and the new value of
+                //       cwnd and the receiver's advertised window allow, a TCP SHOULD
+                //       send 1*SMSS bytes of previously unsent data.
+                final int offset = (-3 + duplicateAcks) * mss();
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, offset, mss());
+                LOG.trace("{} Congestion Control: Fast Retransmit: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
+                ctx.writeAndFlush(retransmission);
+            }
         }
-
-//        if (doFastRetransmit()) {
-//            // Since TCP does not know whether a duplicate ACK is caused by a lost
-//            //   segment or just a reordering of segments, it waits for a small number
-//            //   of duplicate ACKs to be received.  It is assumed that if there is
-//            //   just a reordering of the segments, there will be only one or two
-//            //   duplicate ACKs before the reordered segment is processed, which will
-//            //   then generate a new ACK.  If three or more duplicate ACKs are
-//            //   received in a row, it is a strong indication that a segment has been
-//            //   lost.
-//            if (duplicateAcks == 3) {
-//                LOG.error("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row.", ctx.channel(), duplicateAcks);
-//
-//                // TCP then performs a retransmission of what appears to be the
-//                //   missing segment, without waiting for a retransmission timer to
-//                //   expire.
-//                // The lost segment starting at SND.UNA MUST be retransmitted...
-//                final ConnectionHandshakeSegment current = retransmissionQueue.retransmissionSegment(ctx, this);
-//                LOG.error("{} Congestion Control: Fast Retransmit: Retransmit SEG `{}`.", ctx.channel(), current);
-//                ctx.writeAndFlush(current);
-//
-//                // Fast recovery
-//                final long newSsthresh = Math.max(cwnd / 2, 2L * mss);
-//                LOG.error("{} Congestion Control: Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh, newSsthresh);
-//                ssthresh = newSsthresh;
-//
-//                LOG.error("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd, ssthresh + 3L * mss);
-//                cwnd = ssthresh + 3L * mss;
-//
-////            // When the third duplicate ACK is received, a TCP MUST set ssthresh
-////            //       to no more than the value given in equation (4)
-////            ssthresh = Math.max(sendBuffer.acknowledgeableBytes() / 2, 2L * mss);
-////            LOG.error("{} Set SSTHRESH to {}.", ctx.channel(), ssthresh);
-////
-//
-////
-////            // ... and cwnd set to ssthresh plus 3*SMSS.
-////            cwnd = ssthresh + 3L * mss;
-////            LOG.error("{} Set CWND to {}.", ctx.channel(), cwnd);
-////        }
-//            }
-//            else {
-//                LOG.error("{} Congestion Control: Fast Recovery: Another duplicate ACK. Set cwnd from {} to {}.", ctx.channel(), cwnd, cwnd + mss);
-//                cwnd += mss;
-//            }
-//        }
-    }
-
-    private boolean doFastRetransmit() {
-        return false;
+        else {
+            // reset counter
+            duplicateAcks = 0;
+        }
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
@@ -616,7 +615,7 @@ public class TransmissionControlBlock {
         // total receive buffer space is RCV.BUFF
         // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
         long rcvUser = receiveBuffer.readableBytes();
-        // effective send MSS: equal to MSS?
+        // FIXME: effective send MSS: equal to MSS?
         final long effSndMSS = mss;
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 

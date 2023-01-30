@@ -25,10 +25,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
+import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.drasyl.handler.connection.Segment.ACK;
@@ -38,6 +43,7 @@ import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.SegmentOption.SACK;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
 // zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
@@ -91,6 +97,23 @@ public class OutgoingSegmentQueue {
                 options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
             tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
+
+            if (ctl == ACK) {
+                // SACK
+                final List<Long> edges = new ArrayList<>();
+                final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
+                ReceiveBufferBlock current = receiveBuffer.head;
+                while (current != null) {
+                    edges.add(current.seq());
+                    edges.add(current.lastSeq());
+
+                    current = current.next;
+                }
+
+                if (!edges.isEmpty()) {
+                    options.put(SACK, new SackOption(edges));
+                }
+            }
 
             final Segment seg = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
             seq = Segment.advanceSeq(seq, data.readableBytes());

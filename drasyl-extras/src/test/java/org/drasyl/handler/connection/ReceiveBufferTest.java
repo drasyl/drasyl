@@ -5,7 +5,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferEntry;
+import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,8 +34,8 @@ class ReceiveBufferTest {
                   @Mock final SendBuffer sendBuffer) {
             final ByteBuf data = Unpooled.buffer(100_000).writeBytes(randomBytes(100_000));
 
-            ReceiveBufferEntry head = new ReceiveBufferEntry(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
-            head.next = new ReceiveBufferEntry(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
+            ReceiveBufferBlock head = new ReceiveBufferBlock(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
+            head.next = new ReceiveBufferBlock(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
             final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
             final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 918402327, 930467719 - 918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
 
@@ -158,7 +158,7 @@ class ReceiveBufferTest {
 
                 final ByteBuf data = Unpooled.buffer(160).writeBytes(randomBytes(160));
 
-                final ReceiveBufferEntry head = new ReceiveBufferEntry(60, data.slice(60, 100));
+                final ReceiveBufferBlock head = new ReceiveBufferBlock(60, data.slice(60, 100));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 100);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 100, 0, 100, 0, 64_000 - 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
 
@@ -259,7 +259,7 @@ class ReceiveBufferTest {
 
                 final ByteBuf data = Unpooled.buffer(200).writeBytes(randomBytes(200));
 
-                final ReceiveBufferEntry head = new ReceiveBufferEntry(70, data.slice(60, 60));
+                final ReceiveBufferBlock head = new ReceiveBufferBlock(70, data.slice(60, 60));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 10, 64_000 - 60, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
 

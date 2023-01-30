@@ -183,7 +183,7 @@ public class Segment extends DefaultByteBufHolder {
         return ack;
     }
 
-    public int ctl() {
+    public byte ctl() {
         return ctl;
     }
 

@@ -25,15 +25,22 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.CodecException;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 enum SegmentOption {
     END_OF_OPTION_LIST((byte) 0),
     MAXIMUM_SEGMENT_SIZE((byte) 2),
-    TIMESTAMPS((byte) 8); // TS Value (TSval): 8 bytes; TS Echo Reply (TSecr): 8 bytes
+    SACK((byte) 5),
+    TIMESTAMPS((byte) 8);
     private static final Map<Byte, SegmentOption> OPTIONS;
 
     static {
@@ -66,6 +73,12 @@ enum SegmentOption {
                 out.writeLong(((TimestampsOption) value).tsVal);
                 out.writeLong(((TimestampsOption) value).tsEcr);
                 return;
+            case SACK:
+                out.writeByte(((SackOption)value).edges.size());
+                for (final long edge : ((SackOption)value).edges) {
+                   out.writeInt((int) edge);
+                }
+                return;
             default:
                 throw new CodecException("Unable to write value of option " + this);
         }
@@ -77,6 +90,13 @@ enum SegmentOption {
                 return in.readUnsignedShort();
             case TIMESTAMPS:
                 return new TimestampsOption(in.readLong(), in.readLong());
+            case SACK:
+                final int size = in.readUnsignedByte();
+                final List<Long> edges = new ArrayList<>(size);
+                for (int i = 0; i < size; i++) {
+                    edges.add(in.readUnsignedInt());
+                }
+                return new SackOption(edges);
             default:
                 throw new CodecException("Unable to read value of option " + this);
         }
@@ -100,6 +120,32 @@ enum SegmentOption {
         @Override
         public String toString() {
             return "<TSval=" + tsVal + ",TSecr=" + tsEcr + ">";
+        }
+    }
+
+    static class SackOption {
+        final List<Long> edges;
+
+        public SackOption(final List<Long> edges) {
+            this.edges = requireNonNull(edges);
+        }
+
+        public SackOption() {
+            this(new ArrayList<>());
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder blocks = new StringBuilder();
+            for (int i = 0; i < edges.size(); i += 2) {
+                if (blocks.length() != 0) {
+                    blocks.append(",");
+                }
+
+                blocks.append(edges.get(i) + "-" + edges.get(i + 1));
+            }
+
+            return "<SACK=" + blocks + ">";
         }
     }
 }

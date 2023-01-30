@@ -30,6 +30,7 @@ import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -39,6 +40,9 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.Segment.lessThan;
+import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.SegmentOption.SACK;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSING;
 import static org.drasyl.handler.connection.State.ESTABLISHED;
@@ -49,8 +53,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.handler.connection.Segment.lessThan;
-import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
@@ -61,18 +63,16 @@ import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
  * Transmission Control Protocol (TCP)</a>, but also includes TCP Timestamps Option and RTTM
  * Mechanism as described in <a href="https://www.rfc-editor.org/rfc/rfc7323">RFC 7323 TCP
  * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start
- * and congestion avoidance as described in <a
- * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
- * implemented as well.
- * The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm.
+ * and congestion avoidance as described in <a href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC
+ * 5681 TCP Congestion Control</a> are implemented as well. The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle
+ * algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
- * If the handler is configured for active OPEN, a
- * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeIssued} will be emitted once the
- * handshake has been issued. The handshake process will result either in a
- * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted} event or
- * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
+ * If the handler is configured for active OPEN, a {@link org.drasyl.handler.oldconnection.ConnectionHandshakeIssued}
+ * will be emitted once the handshake has been issued. The handshake process will result either in a
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted} event or {@link
+ * org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ReliableDeliveryHandler extends ChannelDuplexHandler {
@@ -95,8 +95,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  Initiate active OPEN handshake process automatically on
-     *                    {@link #channelActive(ChannelHandlerContext)}
+     * @param activeOpen  Initiate active OPEN handshake process automatically on {@link
+     *                    #channelActive(ChannelHandlerContext)}
      * @param state       Current synchronization state
      * @param tcbProvider
      */
@@ -125,9 +125,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  if {@code true} a handshake will be issued on
-     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
-     *                    must initiate the handshake
+     * @param activeOpen  if {@code true} a handshake will be issued on {@link
+     *                    #channelActive(ChannelHandlerContext)}. Otherwise the remote peer must
+     *                    initiate the handshake
      */
     public ReliableDeliveryHandler(final Duration userTimeout,
                                    final boolean activeOpen) {
@@ -264,9 +264,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
 
     /**
-     * OPEN call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC 9293, Section
-     * 3.10.1</a>.
+     * OPEN call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC
+     * 9293, Section 3.10.1</a>.
      */
     private void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
@@ -301,9 +300,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEND call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC 9293, Section
-     * 3.10.2</a>.
+     * SEND call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC
+     * 9293, Section 3.10.2</a>.
      */
     private void userCallSend(final ChannelHandlerContext ctx,
                               final ByteBuf data,
@@ -355,9 +353,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * CLOSE call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC 9293, Section
-     * 3.10.4</a>.
+     * CLOSE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC
+     * 9293, Section 3.10.4</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
@@ -423,9 +420,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * STATUS call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
-     * 3.10.6</a>.
+     * STATUS call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC
+     * 9293, Section 3.10.6</a>.
      *
      * @return
      */
@@ -480,9 +476,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEGMENT ARRIVES call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC 9293, Section
-     * 3.10.7</a>.
+     * SEGMENT ARRIVES call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC
+     * 9293, Section 3.10.7</a>.
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {
@@ -870,6 +865,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
+                    final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
                     tcb.receiveBuffer().receive(ctx, tcb, seg);
 
                     if (readPending) {
@@ -888,9 +884,14 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     // Ack receival of segment text
                     final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
                     LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
-                    tcb.write(response);
-
-                    // FIXME: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
+                    if (outOfOrder) {
+                        // send immediate ACK for out-of-order segments
+                        tcb.writeAndFlush(ctx, response);
+                    }
+                    else {
+                        tcb.write(response);
+                        // FIXME: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
+                    }
 
                     break;
                 default:
@@ -974,6 +975,13 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             }
         }
         if (duplicateAck) {
+            SackOption sackOption = (SackOption) seg.options().get(SACK);
+            if (sackOption != null) {
+                // retransmit?
+//                tcb.sendBuffer();
+//                System.out.println();
+            }
+
             // ACK is duplicate. ignore
             LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
             tcb.gotDuplicateAckCandidate(ctx, seg);
