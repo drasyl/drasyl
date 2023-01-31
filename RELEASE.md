@@ -19,12 +19,17 @@ An additional call of `mvn release:perform` is not necessary! A GitHub Action wo
 tasks automatically.
 
 * Wait for the GitHub Action to deploy new version to Maven Central ([Deploy](https://github.com/drasyl/drasyl/actions/workflows/deploy.yml) workflow).
-* Deploy to our public super peers (this is a manual process).
+* Deploy to our public super peers (this is done with [Ansible](https://github.com/drasyl/ansible)).
 * Create Release on GitHub:
   * Go to https://github.com/drasyl/drasyl/tags.
   * Click `Create release` for tag `v1.2.0`.
   * **Title:** `v1.2.0`
-  * **Description:** `[CHANGELOG.md](CHANGELOG.md)`
+  * **Description:**
+```bash
+[CHANGELOG.md](https://github.com/drasyl-overlay/drasyl/blob/v0.9/CHANGELOG.md)
+
+The assets below contain the drasyl command-line tool and shared native library. To learn how to integrate the overlay network into your application, please read our [documentation](https://docs.drasyl.org/getting-started/).
+```
 * Wait for GitHub Action to complete [Release](https://github.com/drasyl/drasyl/actions/workflows/release.yml) workflow.
 * Update back to next SNAPSHOT version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
