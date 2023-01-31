@@ -457,7 +457,7 @@ jobs:
           (Get-Content ./tools/chocolateyinstall.ps1) -replace 'checksum\s+=.*', "checksum       = `"$SHA`"" | Set-Content ./tools/chocolateyinstall.ps1
           Get-Content ./tools/chocolateyinstall.ps1
 
-          echo "version=$Version" >> $GITHUB_OUTPUT
+          echo "version=$Version" >> $env:GITHUB_OUTPUT
       - name: Create package
         run: choco pack
       - name: Push package
