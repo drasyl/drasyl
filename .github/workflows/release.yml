@@ -179,7 +179,7 @@ jobs:
 
     name: Build wheels on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
-    needs: native-image
+    needs: shared-library
 
     steps:
       - uses: actions/checkout@v3.3.0
@@ -403,7 +403,7 @@ jobs:
 
   homebrew:
     name: Update Homebrew cask
-    needs: [java]
+    needs: [cli-java]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl/homebrew-tap
@@ -434,7 +434,7 @@ jobs:
 
   chocolatey:
     name: Update Chocolatey package
-    needs: [java]
+    needs: [cli-java]
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl/drasyl-choco
