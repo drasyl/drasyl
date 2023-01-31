@@ -5,25 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.0] - 2022-XX-XX
+## [0.10.0] - 2023-01-31
 
 ### Added
 
--
--
--
+- `DrasylConfig.newBuilder()` will now validate serialization bindings.
+- CLI: Option `--no-application-armin` to sub-command `tun` added.
+- Boolean system property `org.drasyl.nonce.pseudorandom` added which can be used to use cheaper nonces using psuedo random source (should not be used in production environments).
 
 ### Changed
 
--
--
--
+- Dependencies have been updated.
+- Super peers in Frankfurt, Germany and Nuremberg, Germany have been replaced with globally more distributed super peers in Baden-Baden, Germany; Logroño, Spain; New York City; and Singapore.
+- General performance improvements.
+- drasyl is now using kqueue or epoll on supported platforms.
 
 ### Fixed
 
--
--
--
+- CLI: Fixed problem that prevents a `node` from being remote-controlled via HTTP.
+- Class `org.drasyl.handler.PeersRttHandler.PeerRtt` is now public.
+- 
 
 ## [0.9.0] - 2022-09-30
 
