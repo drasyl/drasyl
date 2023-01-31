@@ -38,24 +38,14 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
  * Encodes {@link ByteBuf}s to {@link Segment}s and vice versa.
  */
 @Sharable
-public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Segment> {
-    public static final int MAGIC_NUMBER = 852_550_535;
-    // Magic Number: 4 bytes
-    // SEQ: 4 bytes
-    // ACK: 4 bytes
-    // CTL: 1 byte
-    // Options: 2..bytes
-    // data: arbitrary number of bytes
-    public static final int MIN_MESSAGE_LENGTH = 15;
-
+public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
                           final List<Object> out) throws Exception {
         ReferenceCountUtil.touch(seg, "ConnectionHandshakeCodec encode " + seg.toString());
-        final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH + seg.content().readableBytes());
+        final ByteBuf buf = ctx.alloc().buffer(Segment.SEG_HDR_SIZE + seg.content().readableBytes());
         ReferenceCountUtil.touch(buf, "encode");
-        buf.writeInt(MAGIC_NUMBER);
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
@@ -81,32 +71,24 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Seg
                           final ByteBuf in,
                           final List<Object> out) {
         try {
-            if (in.readableBytes() >= MIN_MESSAGE_LENGTH) {
-                in.markReaderIndex();
-                if (MAGIC_NUMBER == in.readInt()) {
-                    final long seq = in.readUnsignedInt();
-                    final long ack = in.readUnsignedInt();
-                    final byte ctl = in.readByte();
-                    final long window = in.readUnsignedInt();
+            if (in.readableBytes() >= Segment.SEG_HDR_SIZE) {
+                final long seq = in.readUnsignedInt();
+                final long ack = in.readUnsignedInt();
+                final byte ctl = in.readByte();
+                final long window = in.readUnsignedInt();
 
-                    // options
-                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-                    byte kind;
-                    while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
-                        final SegmentOption option = SegmentOption.ofKind(kind);
-                        final Object value = option.readValueFrom(in);
+                // options
+                final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
+                byte kind;
+                while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
+                    final SegmentOption option = SegmentOption.ofKind(kind);
+                    final Object value = option.readValueFrom(in);
 
-                        options.put(option, value);
-                    }
-
-                    final Segment seg = new Segment(seq, ack, ctl, window, options, in.retain());
-                    out.add(seg);
+                    options.put(option, value);
                 }
-                else {
-                    // wrong magic number -> pass through message
-                    in.resetReaderIndex();
-                    out.add(in.retain());
-                }
+
+                final Segment seg = new Segment(seq, ack, ctl, window, options, in.retain());
+                out.add(seg);
             }
             else {
                 // wrong length -> pass through message

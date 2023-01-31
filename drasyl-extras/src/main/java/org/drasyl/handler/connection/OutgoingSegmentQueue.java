@@ -30,7 +30,6 @@ import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -38,11 +37,11 @@ import java.util.Map;
 
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
-import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.SACK;
 
 // es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
@@ -79,7 +78,7 @@ public class OutgoingSegmentQueue {
         while (len != 0 || ctl != 0) {
             final ByteBuf data;
             if (len > 0) {
-                final int bytes = Math.min(tcb.mss(), len);
+                final int bytes = Math.min(tcb.effSndMss(), len);
                 data = tcb.sendBuffer().read(bytes);
             } else {
                 data = Unpooled.EMPTY_BUFFER;

@@ -32,10 +32,10 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ReliableDeliveryHandler;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -116,7 +116,7 @@ public class ConnectionClient {
                     protected void initChannel(final DrasylChannel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(10), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override

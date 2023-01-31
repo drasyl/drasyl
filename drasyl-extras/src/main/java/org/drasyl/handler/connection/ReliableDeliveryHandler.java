@@ -739,24 +739,20 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
         // check SYN
         if (seg.isSyn()) {
-            switch (state) {
-                case SYN_RECEIVED:
-                    // If the connection was initiated with a passive OPEN, then return this connection to the LISTEN state and return.
-                    if (!activeOpen) {
-                        LOG.trace("{}[{}] We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), state, seg);
-                        changeState(ctx, LISTEN);
-                        return;
-                    }
-                    // Otherwise, handle per the directions for synchronized states below.
-
-                default:
-                    final boolean theseSynchronizedStates = state != SYN_RECEIVED;
-                    if (theseSynchronizedStates) {
-                        final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
-                        LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
-                        tcb.write(response);
-                        return;
-                    }
+            if (requireNonNull(state) == SYN_RECEIVED) {// If the connection was initiated with a passive OPEN, then return this connection to the LISTEN state and return.
+                if (!activeOpen) {
+                    LOG.trace("{}[{}] We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), state, seg);
+                    changeState(ctx, LISTEN);
+                    return;
+                }
+                // Otherwise, handle per the directions for synchronized states below.
+            }
+            final boolean theseSynchronizedStates = state != SYN_RECEIVED;
+            if (theseSynchronizedStates) {
+                final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
+                LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
+                tcb.write(response);
+                return;
             }
         }
 
@@ -890,7 +886,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     }
                     else {
                         tcb.write(response);
-                        // FIXME: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
+                        // TODO: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
                     }
 
                     break;

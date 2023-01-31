@@ -37,14 +37,14 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
-import static org.drasyl.handler.connection.Segment.add;
-import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.SYN;
-import static org.drasyl.handler.connection.State.ESTABLISHED;
-import static org.drasyl.util.Preconditions.requirePositive;
+import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
+import static org.drasyl.handler.connection.State.ESTABLISHED;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Holds all segments that has been written to the network (called in-flight) but have not been
@@ -222,7 +222,7 @@ public class RetransmissionQueue {
             //  (5.4) Retransmit the earliest segment that has not been acknowledged
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
-            final Segment retransmission = retransmissionSegment(ctx, tcb, 0, tcb.mss());
+            final Segment retransmission = retransmissionSegment(ctx, tcb, 0, tcb.effSndMss());
             LOG.trace("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
             ctx.writeAndFlush(retransmission);
 
@@ -245,7 +245,7 @@ public class RetransmissionQueue {
             //   than the value given in equation (4):
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-            final long newSsthresh = Math.max(tcb.flightSize() / 2, 2 * tcb.mss());
+            final long newSsthresh = Math.max(tcb.flightSize() / 2, 2L * tcb.mss());
             if (tcb.ssthresh != newSsthresh) {
                 LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
@@ -420,7 +420,7 @@ public class RetransmissionQueue {
                 LOG.trace("{} < {}", ctx.channel(), tsOpt);
                 // If SEG.TSval < TS.Recent and the RST bit is off:
                 if (tsOpt.tsVal < tsRecent && !seg.isRst()) {
-                    // FIXME: If the connection has been idle more than 24 days, save SEG.TSval in
+                    // TODO: If the connection has been idle more than 24 days, save SEG.TSval in
                     //  variable TS.Recent,
                     // else the segment is not acceptable; follow the steps below for an unacceptable segment.
                     acceptableSeg = false;

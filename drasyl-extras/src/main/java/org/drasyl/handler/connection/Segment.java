@@ -38,13 +38,24 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
- * Message used by {@link ReliableDeliveryHandler} to provide reliable and ordered delivery of
- * bytes between hosts.
+ * Message used by {@link ReliableDeliveryHandler} to provide reliable and ordered delivery of bytes
+ * between hosts.
  */
-@SuppressWarnings({"java:S1845", "java:S3052"})
+@SuppressWarnings({ "java:S1845", "java:S3052" })
 public class Segment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
     public static final long MAX_SEQ_NO = 4_294_967_295L;
+    // SEQ: 4 bytes
+    // ACK: 4 bytes
+    // CTL: 1 byte
+    // Window: 4 bytes
+    // Options: 18 bytes
+    //   MAXIMUM_SEGMENT_SIZE: ignored, as only used for SYN
+    //   SACK: ignored, as only used for empty(?) ACKs
+    //   TIMESTAMPS: 17 bytes
+    //   END_OF_OPTION_LIST: 1 byte
+    // data: arbitrary number of bytes
+    public static final int SEG_HDR_SIZE = 31;
     static final int SEQ_NO_SPACE = 32;
     static final byte ACK = 1 << 4;
     static final byte PSH = 1 << 3;

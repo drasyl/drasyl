@@ -78,7 +78,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                     }
@@ -93,7 +93,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 32_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -139,7 +139,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         serverHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
                         p.addLast(serverHandler.get());
@@ -171,7 +171,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         clientHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
                         p.addLast(clientHandler.get());
@@ -218,7 +218,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                     }
@@ -233,7 +233,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -310,7 +310,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -385,7 +385,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -431,7 +431,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new SimpleChannelInboundHandler<Segment>() {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
@@ -455,7 +455,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -502,7 +502,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 32_000);
                         p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -540,7 +540,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -549,13 +549,13 @@ class ReliableDeliveryHandlerIT {
                                 // start dropping segments once handshake is completed
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new Predicate<Object>() {
+                                    p.addAfter(p.context(SegmentCodec.class).name(), null, new DropMessagesHandler(new Predicate<>() {
                                         int i = 0;
 
                                         @Override
                                         public boolean test(final Object o) {
                                             i++;
-                                            return 50 <= i && i <= 50;
+                                            return 50 <= i;
                                         }
                                     }, msg -> false));
                                 }
@@ -606,7 +606,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -643,7 +643,7 @@ class ReliableDeliveryHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
-                        p.addLast(new ConnectionHandshakeCodec());
+                        p.addLast(new SegmentCodec());
                         p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override

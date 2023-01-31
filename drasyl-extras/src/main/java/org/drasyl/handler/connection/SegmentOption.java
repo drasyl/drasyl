@@ -25,22 +25,19 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.CodecException;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 enum SegmentOption {
-    END_OF_OPTION_LIST((byte) 0),
-    MAXIMUM_SEGMENT_SIZE((byte) 2),
-    SACK((byte) 5),
-    TIMESTAMPS((byte) 8);
+    END_OF_OPTION_LIST((byte) 0), // 1 byte
+    MAXIMUM_SEGMENT_SIZE((byte) 2), // 3 bytes
+    SACK((byte) 5), // at least 2 bytes
+    TIMESTAMPS((byte) 8); // 17 bytes
     private static final Map<Byte, SegmentOption> OPTIONS;
 
     static {

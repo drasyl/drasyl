@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
@@ -78,8 +80,10 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * </pre>
  */
 public class TransmissionControlBlock {
+    public static final int OVERRIDE_TIMEOUT = 100; // RFC 9293: The override timeout should be in the range 0.1 - 1.0
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private static final boolean NODELAY = false; // bypass Nagle Delays by disabling Nagle's algorithm
+    private static final int DRASYL_HDR_SIZE = 0; // FIXME: ermitteln
     final SendBuffer sendBuffer;
     final RetransmissionQueue retransmissionQueue;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
@@ -99,12 +103,13 @@ public class TransmissionControlBlock {
     private long sndWnd; // send window
     private long sndWl1; // segment sequence number used for last window update
     private long sndWl2; // segment acknowledgment number used for last window update
-    private long iss; // initial send sequence number
+    private final long iss; // initial send sequence number
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
     // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
     private long maxSndWnd;
     private int duplicateAcks;
+    private ScheduledFuture<?> overrideTimer;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -255,6 +260,7 @@ public class TransmissionControlBlock {
     }
 
     public void delete() {
+        cancelOverrideTimer();
         sendBuffer.release();
         receiveBuffer.release();
     }
@@ -327,7 +333,8 @@ public class TransmissionControlBlock {
 
     void flush(final ChannelHandlerContext ctx,
                final State state,
-               final boolean newFlush) {
+               final boolean newFlush,
+               final boolean overrideTimeoutOccurred) {
         try {
             if (newFlush) {
                 // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
@@ -338,7 +345,7 @@ public class TransmissionControlBlock {
                 return;
             }
 
-            while (true) {
+            while (allowedBytesToFlush > 0) {
                 if (!NODELAY) {
                     // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
@@ -346,13 +353,11 @@ public class TransmissionControlBlock {
                     final long u = sub(add(sndUna, Math.min(sndWnd(), cwnd())), sndNxt);
                     // D is the amount of data queued in the sending TCP endpoint but not yet sent
                     final long d = allowedBytesToFlush;
-                    // FIXME: effective send MSS: equal to MSS?
-                    final long effSndMSS = mss;
 
                     // Send data...
                     final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
                     final boolean sendData;
-                    if (Math.min(d, u) >= effSndMSS) {
+                    if (Math.min(d, u) >= (long) effSndMss()) {
                         // ..if a maximum-sized segment can be sent, i.e., if:
                         // min(D,U) >= Eff.snd.MSS;
                         sendData = true;
@@ -367,12 +372,19 @@ public class TransmissionControlBlock {
                         // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
                         sendData = true;
                     }
-                    // FIXME: or if the override timeout occurs
+                    else if (overrideTimeoutOccurred) {
+                        // or if the override timeout occurs
+                        sendData = true;
+                    }
                     else {
+                        createOverrideTimer(ctx, state, newFlush);
                         sendData = false;
                     }
 
-                    if (!sendData) {
+                    if (sendData) {
+                        cancelOverrideTimer();
+                    }
+                    else {
                         LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), allowedBytesToFlush);
                         return;
                     }
@@ -389,7 +401,7 @@ public class TransmissionControlBlock {
                     usableWindow = Math.max(0, window - flightSize());
                 }
 
-                final long remainingBytes = Math.min(mss, Math.min(Math.min(usableWindow, sendBuffer.readableBytes()), allowedBytesToFlush));
+                final long remainingBytes = Math.min(effSndMss(), Math.min(Math.min(usableWindow, sendBuffer.readableBytes()), allowedBytesToFlush));
 
                 if (remainingBytes > 0) {
                     LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), Math.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
@@ -406,6 +418,31 @@ public class TransmissionControlBlock {
         }
     }
 
+    void flush(final ChannelHandlerContext ctx,
+               final State state,
+               final boolean newFlush) {
+        flush(ctx, state, newFlush, false);
+    }
+
+    private void createOverrideTimer(final ChannelHandlerContext ctx,
+                                     final State state,
+                                     final boolean newFlush) {
+        if (overrideTimer == null) {
+            overrideTimer = ctx.executor().schedule(() -> {
+                overrideTimer = null;
+                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), OVERRIDE_TIMEOUT);
+                flush(ctx, state, newFlush, true);
+            }, OVERRIDE_TIMEOUT, MILLISECONDS);
+        }
+    }
+
+    private void cancelOverrideTimer() {
+        if (overrideTimer != null) {
+            overrideTimer.cancel(false);
+            overrideTimer = null;
+        }
+    }
+
     long flightSize() {
         return sub(sndNxt, sndUna);
     }
@@ -415,7 +452,7 @@ public class TransmissionControlBlock {
         final Integer mssOption = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
         if (mssOption != null && mssOption < mss) {
             LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), mssOption, mss);
-            mss = (int) mssOption;
+            mss = mssOption;
         }
     }
 
@@ -430,7 +467,7 @@ public class TransmissionControlBlock {
 
         final byte ackedCtl = retransmissionQueue.handleAcknowledgement(ctx, seg, this, ackedBytes);
 
-        // FIXME: If the SYN or SYN/ACK is lost, the initial window used by a
+        // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
         //   sender after a correctly transmitted SYN MUST be one segment
         //   consisting of at most SMSS bytes.
         final boolean synAcked = (ackedCtl & Segment.SYN) != 0;
@@ -538,7 +575,9 @@ public class TransmissionControlBlock {
             duplicateAcks += 1;
             LOG.error("{} Congestion Control: Fast Retransmit: Got duplicate ACK {}#{}.", ctx.channel(), seg.ack(), duplicateAcks);
 
-            // FIXME: https://www.rfc-editor.org/rfc/rfc5681#section-3.2
+            // Fast Retransmit/Fast Recovery
+            // RFC 5681, Section 3.2
+            // https://www.rfc-editor.org/rfc/rfc5681#section-3.2
             if (duplicateAcks == 3) {
                 // The fast retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
                 //   in section 2, without any intervening ACKs which move SND.UNA) as an
@@ -549,9 +588,9 @@ public class TransmissionControlBlock {
                 // When the third duplicate ACK is received, a TCP MUST set ssthresh
                 //       to no more than the value given in equation (4).
                 //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                final long newSsthresh = Math.max(flightSize() / 2, 2 * mss());
+                final long newSsthresh = Math.max(flightSize() / 2, 2L * mss());
                 if (ssthresh != newSsthresh) {
-                    LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
+                    LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
                     ssthresh = newSsthresh;
                 }
 
@@ -559,14 +598,14 @@ public class TransmissionControlBlock {
                 //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
                 //       the congestion window by the number of segments (three) that have
                 //       left the network and which the receiver has buffered.
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, mss());
-                LOG.trace("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
+                LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
                 ctx.writeAndFlush(retransmission);
 
                 // increase congestion window as we know that at least three segments have left the network
-                long newCwnd = ssthresh() + 3 * mss();
+                long newCwnd = ssthresh() + 3L * mss();
                 if (newCwnd != cwnd()) {
-                    LOG.error("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
                 }
             }
@@ -579,7 +618,7 @@ public class TransmissionControlBlock {
                 // increase congestion window as we know another segment has left the network
                 long newCwnd = cwnd() + mss();
                 if (newCwnd != cwnd()) {
-                    LOG.error("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
                 }
 
@@ -587,8 +626,8 @@ public class TransmissionControlBlock {
                 //       cwnd and the receiver's advertised window allow, a TCP SHOULD
                 //       send 1*SMSS bytes of previously unsent data.
                 final int offset = (-3 + duplicateAcks) * mss();
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, offset, mss());
-                LOG.trace("{} Congestion Control: Fast Retransmit: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, offset, effSndMss());
+                LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
                 ctx.writeAndFlush(retransmission);
             }
         }
@@ -615,11 +654,9 @@ public class TransmissionControlBlock {
         // total receive buffer space is RCV.BUFF
         // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
         long rcvUser = receiveBuffer.readableBytes();
-        // FIXME: effective send MSS: equal to MSS?
-        final long effSndMSS = mss;
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
-        if (rcvBuff() - rcvUser - rcvWnd >= Math.min(fr * rcvBuff(), effSndMSS)) {
+        if (rcvBuff() - rcvUser - rcvWnd >= Math.min(fr * rcvBuff(), (long) effSndMss())) {
             final long newRcvWind = rcvBuff() - rcvUser;
             LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
@@ -636,5 +673,12 @@ public class TransmissionControlBlock {
 
     public long maxSndWnd() {
         return maxSndWnd;
+    }
+
+    public int effSndMss() {
+        // RFC 1122, Section 4.2.2.6
+        // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
+        // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
+        return Math.min(mss() + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 }

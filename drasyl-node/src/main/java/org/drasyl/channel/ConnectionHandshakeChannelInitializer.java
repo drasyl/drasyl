@@ -27,11 +27,11 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.util.internal.StringUtil;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ReliableDeliveryHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeStatus;
+import org.drasyl.handler.connection.ReliableDeliveryHandler;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.CsvLogger;
 
 import java.nio.channels.ClosedChannelException;
@@ -59,7 +59,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new ConnectionHandshakeCodec());
+        p.addLast(new SegmentCodec());
         final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(handshakeTimeout, initiateHandshake);
         p.addLast(handler);
         final CsvLogger logger = new CsvLogger("/Users/heiko/Development/drasyl/" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");

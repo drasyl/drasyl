@@ -14,17 +14,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.drasyl.handler.connection.ConnectionHandshakeCodec.MIN_MESSAGE_LENGTH;
 import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class ConnectionHandshakeCodecTest {
-    private final ByteBuf encodedSegment = Unpooled.buffer(Integer.BYTES).writeInt(ConnectionHandshakeCodec.MAGIC_NUMBER);
+class SegmentCodecTest {
     private final long seq = 1_234_567_890;
     private final ByteBuf encodedSeq = Unpooled.buffer(Integer.BYTES).writeInt((int) seq);
     private final long ack = 987_654_321;
@@ -43,12 +41,12 @@ class ConnectionHandshakeCodecTest {
     class Encode {
         @Test
         void shouldEncodeSegment() {
-            final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
             channel.writeOutbound(Segment.ack(seq, ack, options, content.retain()));
 
             final ByteBuf actual = channel.readOutbound();
-            final ByteBuf expected = Unpooled.wrappedBuffer(encodedSegment, encodedSeq, encodedAck, encodedCtl, encodedOptions, content.resetReaderIndex());
+            final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content.resetReaderIndex());
             assertEquals(expected, actual);
 
             expected.release();
@@ -57,7 +55,7 @@ class ConnectionHandshakeCodecTest {
 
         @Test
         void shouldRejectAllOther(@Mock final ByteBuf msg) {
-            final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
         }
@@ -67,9 +65,9 @@ class ConnectionHandshakeCodecTest {
     class Decode {
         @Test
         void shouldDecodeSegment(@Mock final DrasylAddress sender) {
-            final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            channel.writeInbound(Unpooled.wrappedBuffer(encodedSegment, encodedSeq, encodedAck, encodedCtl, encodedOptions, content));
+            channel.writeInbound(Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content));
 
             final Segment actual = channel.readInbound();
             assertEquals(Segment.ack(seq, ack, options, content.retain()), actual);
@@ -79,7 +77,7 @@ class ConnectionHandshakeCodecTest {
 
         @Test
         void shouldPassThroughTooSmallByteBufs() {
-            final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
             final ByteBuf msg = Unpooled.wrappedBuffer(new byte[]{ 0, 1, 2 });
             channel.writeInbound(msg);
@@ -93,9 +91,9 @@ class ConnectionHandshakeCodecTest {
 
         @Test
         void shouldPassThroughOnWrongMagicNumber() {
-            final EmbeddedChannel channel = new EmbeddedChannel(new ConnectionHandshakeCodec());
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            final ByteBuf msg = Unpooled.buffer(MIN_MESSAGE_LENGTH).writerIndex(MIN_MESSAGE_LENGTH);
+            final ByteBuf msg = Unpooled.buffer(SEG_HDR_SIZE).writerIndex(SEG_HDR_SIZE);
             channel.writeInbound(msg);
 
             final ByteBuf actual = channel.readInbound();
