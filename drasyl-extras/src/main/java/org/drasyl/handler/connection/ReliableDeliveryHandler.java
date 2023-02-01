@@ -63,16 +63,19 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * Transmission Control Protocol (TCP)</a>, but also includes TCP Timestamps Option and RTTM
  * Mechanism as described in <a href="https://www.rfc-editor.org/rfc/rfc7323">RFC 7323 TCP
  * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start
- * and congestion avoidance as described in <a href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC
- * 5681 TCP Congestion Control</a> are implemented as well. The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle
- * algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm.
+ * and congestion avoidance as described in <a
+ * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
+ * implemented as well. The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle
+ * algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm. To improve performance of
+ * recovering from multiple losses, the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective Acknowledgment Options</a> is used in conjunction with <a href=""></a>.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
- * If the handler is configured for active OPEN, a {@link org.drasyl.handler.oldconnection.ConnectionHandshakeIssued}
- * will be emitted once the handshake has been issued. The handshake process will result either in a
- * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted} event or {@link
- * org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
+ * If the handler is configured for active OPEN, a
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeIssued} will be emitted once the
+ * handshake has been issued. The handshake process will result either in a
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeCompleted} event or
+ * {@link org.drasyl.handler.oldconnection.ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ReliableDeliveryHandler extends ChannelDuplexHandler {
@@ -95,8 +98,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  Initiate active OPEN handshake process automatically on {@link
-     *                    #channelActive(ChannelHandlerContext)}
+     * @param activeOpen  Initiate active OPEN handshake process automatically on
+     *                    {@link #channelActive(ChannelHandlerContext)}
      * @param state       Current synchronization state
      * @param tcbProvider
      */
@@ -125,9 +128,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     /**
      * @param userTimeout time in ms in which a handshake must taken place after issued
-     * @param activeOpen  if {@code true} a handshake will be issued on {@link
-     *                    #channelActive(ChannelHandlerContext)}. Otherwise the remote peer must
-     *                    initiate the handshake
+     * @param activeOpen  if {@code true} a handshake will be issued on
+     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise the remote peer
+     *                    must initiate the handshake
      */
     public ReliableDeliveryHandler(final Duration userTimeout,
                                    final boolean activeOpen) {
@@ -264,8 +267,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
 
     /**
-     * OPEN call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC
-     * 9293, Section 3.10.1</a>.
+     * OPEN call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC 9293, Section
+     * 3.10.1</a>.
      */
     private void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
@@ -300,8 +304,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEND call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC
-     * 9293, Section 3.10.2</a>.
+     * SEND call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC 9293, Section
+     * 3.10.2</a>.
      */
     private void userCallSend(final ChannelHandlerContext ctx,
                               final ByteBuf data,
@@ -353,8 +358,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * CLOSE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC
-     * 9293, Section 3.10.4</a>.
+     * CLOSE call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC 9293, Section
+     * 3.10.4</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
@@ -420,8 +426,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * STATUS call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC
-     * 9293, Section 3.10.6</a>.
+     * STATUS call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
+     * 3.10.6</a>.
      *
      * @return
      */
@@ -476,8 +483,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEGMENT ARRIVES call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC
-     * 9293, Section 3.10.7</a>.
+     * SEGMENT ARRIVES call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC 9293, Section
+     * 3.10.7</a>.
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {

@@ -616,7 +616,8 @@ public class TransmissionControlBlock {
                 //       has left the network.
 
                 // increase congestion window as we know another segment has left the network
-                long newCwnd = cwnd() + mss();
+                final int smss = effSndMss();
+                long newCwnd = cwnd() + smss;
                 if (newCwnd != cwnd()) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
@@ -625,7 +626,7 @@ public class TransmissionControlBlock {
                 // When previously unsent data is available and the new value of
                 //       cwnd and the receiver's advertised window allow, a TCP SHOULD
                 //       send 1*SMSS bytes of previously unsent data.
-                final int offset = (-3 + duplicateAcks) * mss();
+                final int offset = (-3 + duplicateAcks) * smss;
                 final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, offset, effSndMss());
                 LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
                 ctx.writeAndFlush(retransmission);
