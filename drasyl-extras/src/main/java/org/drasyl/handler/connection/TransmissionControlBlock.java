@@ -579,7 +579,7 @@ public class TransmissionControlBlock {
         if (duplicateAck) {
             // increment counter
             duplicateAcks += 1;
-            LOG.error("{} Congestion Control: Fast Retransmit: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), seg.ack(), duplicateAcks, flightSize());
+            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), seg.ack(), duplicateAcks, flightSize());
 
             // Fast Retransmit/Fast Recovery
             // RFC 5681, Section 3.2
@@ -662,7 +662,7 @@ public class TransmissionControlBlock {
             //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
             //       set in step 2).  This is termed "deflating" the window.
             if (cwnd != ssthresh()) {
-                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}. {} unACKed bytes remaining.", ctx.channel(), cwnd(), ssthresh(), flightSize());
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), ssthresh());
                 this.cwnd = ssthresh();
             }
             //
@@ -674,7 +674,7 @@ public class TransmissionControlBlock {
             //       segments sent between the lost segment and the receipt of the
             //       third duplicate ACK, if none of these were lost.
 
-            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}`. Reset duplicate ACKs counter.", ctx.channel(), seg);
+            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}`. Reset duplicate ACKs counter. {} unACKed bytes remaining.", ctx.channel(), seg, flightSize());
             duplicateAcks = 0;
         }
     }
