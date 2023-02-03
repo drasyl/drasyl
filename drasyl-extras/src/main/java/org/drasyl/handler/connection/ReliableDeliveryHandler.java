@@ -62,12 +62,14 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * This handler mainly implements <a href="https://www.rfc-editor.org/rfc/rfc9293.html">RFC 9293
  * Transmission Control Protocol (TCP)</a>, but also includes TCP Timestamps Option and RTTM
  * Mechanism as described in <a href="https://www.rfc-editor.org/rfc/rfc7323">RFC 7323 TCP
- * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start
- * and congestion avoidance as described in <a
+ * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start,
+ * congestion avoidance, fast retransmit, and fast recovery as described in <a
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
- * implemented as well. The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle
- * algorithm</a> is used as "Silly Window Syndrome" avoidance algorithm. To improve performance of
- * recovering from multiple losses, the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective Acknowledgment Options</a> is used in conjunction with <a href=""></a>.
+ * implemented as well. The <a
+ * href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as "Silly
+ * Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple losses,
+ * the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective Acknowledgment
+ * Options</a> is used in conjunction with <a href=""></a>.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
@@ -134,7 +136,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
     public ReliableDeliveryHandler(final Duration userTimeout,
                                    final boolean activeOpen) {
-        this(userTimeout, activeOpen, CLOSED, 1220, 64 * 1220);
+        this(userTimeout, activeOpen, CLOSED, 1220, 128 * 1220);
     }
 
     /*
@@ -587,7 +589,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             tcb.synchronizeState(seg);
 
             // update window
-            tcb.updateSndWnd(seg);
+            tcb.updateSndWnd(ctx, seg);
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
@@ -651,7 +653,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             }
 
             // update window
-            tcb.updateSndWnd(seg);
+            tcb.updateSndWnd(ctx, seg);
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
@@ -780,7 +782,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
                         cancelUserTimeoutGuard();
                         changeState(ctx, ESTABLISHED);
-                        tcb.updateSndWnd(seg);
+                        tcb.updateSndWnd(ctx, seg);
                         ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
 
                         if (!acceptableAck) {
@@ -968,14 +970,19 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final Segment seg,
                                           final boolean acceptableAck) {
+        // update send window
+        if (lessThanOrEqualTo(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
+            if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
+                tcb.updateSndWnd(ctx, seg);
+            }
+        }
+
         final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
             // advance send state
-            tcb.handleAcknowledgement(ctx, seg);
-
-            // update window
-            if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
-                tcb.updateSndWnd(seg);
+            final long ackedBytes = tcb.handleAcknowledgement(ctx, seg);
+            if (ackedBytes > 0) {
+                tcb.resetDuplicateAcks(ctx, seg);
             }
         }
         if (duplicateAck) {

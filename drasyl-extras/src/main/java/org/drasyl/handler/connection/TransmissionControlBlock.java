@@ -90,6 +90,7 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
+    private final long iss; // initial send sequence number
     protected long ssthresh; // slow start threshold
     // congestion control
     long cwnd; // congestion window
@@ -104,7 +105,6 @@ public class TransmissionControlBlock {
     private long sndWnd; // send window
     private long sndWl1; // segment sequence number used for last window update
     private long sndWl2; // segment acknowledgment number used for last window update
-    private final long iss; // initial send sequence number
     private long irs; // initial receive sequence number
     private int mss; // maximum segment size
     // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
@@ -457,7 +457,7 @@ public class TransmissionControlBlock {
         }
     }
 
-    public void handleAcknowledgement(final ChannelHandlerContext ctx,
+    public long handleAcknowledgement(final ChannelHandlerContext ctx,
                                       final Segment seg) {
         long ackedBytes = 0;
         if (sndUna != seg.ack()) {
@@ -491,6 +491,8 @@ public class TransmissionControlBlock {
                 cwnd += increment;
             }
         }
+
+        return ackedBytes;
     }
 
     public void synchronizeState(final Segment seg) {
@@ -498,8 +500,11 @@ public class TransmissionControlBlock {
         irs = seg.seq();
     }
 
-    public void updateSndWnd(final Segment seg) {
-        sndWnd = seg.window();
+    public void updateSndWnd(final ChannelHandlerContext ctx, final Segment seg) {
+        if (sndWnd != seg.window()) {
+            LOG.trace("{} Change SND.WND from {} to {}.", ctx.channel(), sndWnd, seg.window());
+            sndWnd = seg.window();
+        }
         sndWl1 = seg.seq();
         sndWl2 = seg.ack();
         maxSndWnd = NumberUtil.max(maxSndWnd, sndWnd);
@@ -574,11 +579,22 @@ public class TransmissionControlBlock {
         if (duplicateAck) {
             // increment counter
             duplicateAcks += 1;
-            LOG.error("{} Congestion Control: Fast Retransmit: Got duplicate ACK {}#{}.", ctx.channel(), seg.ack(), duplicateAcks);
+            LOG.error("{} Congestion Control: Fast Retransmit: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), seg.ack(), duplicateAcks, flightSize());
 
             // Fast Retransmit/Fast Recovery
             // RFC 5681, Section 3.2
             // https://www.rfc-editor.org/rfc/rfc5681#section-3.2
+            if (duplicateAcks < 3) {
+                // FIXME: 1. On the first and second duplicate ACKs received at a sender, a
+                //       TCP SHOULD send a segment of previously unsent data per [RFC3042]
+                //       provided that the receiver's advertised window allows, the total
+                //       FlightSize would remain less than or equal to cwnd plus 2*SMSS,
+                //       and that new data is available for transmission.  Further, the
+                //       TCP sender MUST NOT change cwnd to reflect these two segments
+                //       [RFC3042].  Note that a sender using SACK [RFC2018] MUST NOT send
+                //       new data unless the incoming duplicate acknowledgment contains
+                //       new SACK information.
+            }
             if (duplicateAcks == 3) {
                 // The fast retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
                 //   in section 2, without any intervening ACKs which move SND.UNA) as an
@@ -586,21 +602,22 @@ public class TransmissionControlBlock {
                 //   ACKs, TCP performs a retransmission of what appears to be the missing
                 //   segment, without waiting for the retransmission timer to expire.
 
-                // When the third duplicate ACK is received, a TCP MUST set ssthresh
+                // 2. When the third duplicate ACK is received, a TCP MUST set ssthresh
                 //       to no more than the value given in equation (4).
                 //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                final long newSsthresh = NumberUtil.max(flightSize() / 2, 2L * mss());
+                final int smss = effSndMss();
+                final long newSsthresh = NumberUtil.max(flightSize() / 2, 2L * smss);
                 if (ssthresh != newSsthresh) {
                     LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
                     ssthresh = newSsthresh;
                 }
 
-                // The lost segment starting at SND.UNA MUST be retransmitted and
+                // 3. The lost segment starting at SND.UNA MUST be retransmitted and
                 //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
                 //       the congestion window by the number of segments (three) that have
                 //       left the network and which the receiver has buffered.
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
-                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss);
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
                 ctx.writeAndFlush(retransmission);
 
                 // increase congestion window as we know that at least three segments have left the network
@@ -611,7 +628,7 @@ public class TransmissionControlBlock {
                 }
             }
             else if (duplicateAcks > 3) {
-                // For each additional duplicate ACK received (after the third),
+                // 4. For each additional duplicate ACK received (after the third),
                 //       cwnd MUST be incremented by SMSS.  This artificially inflates the
                 //       congestion window in order to reflect the additional segment that
                 //       has left the network.
@@ -627,14 +644,37 @@ public class TransmissionControlBlock {
                 // When previously unsent data is available and the new value of
                 //       cwnd and the receiver's advertised window allow, a TCP SHOULD
                 //       send 1*SMSS bytes of previously unsent data.
-                final int offset = (-3 + duplicateAcks) * smss;
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, offset, effSndMss());
-                LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
-                ctx.writeAndFlush(retransmission);
+//                final int offset = (-3 + duplicateAcks) * smss;
+//                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
+//                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
+//                ctx.writeAndFlush(retransmission);
             }
         }
-        else {
+        else if (duplicateAcks != 0) {
             // reset counter
+            duplicateAcks = 0;
+        }
+    }
+
+    public void resetDuplicateAcks(final ChannelHandlerContext ctx, final Segment seg) {
+        if (duplicateAcks != 0) {
+            // 6. When the next ACK arrives that acknowledges previously
+            //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
+            //       set in step 2).  This is termed "deflating" the window.
+            if (cwnd != ssthresh()) {
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}. {} unACKed bytes remaining.", ctx.channel(), cwnd(), ssthresh(), flightSize());
+                this.cwnd = ssthresh();
+            }
+            //
+            //       This ACK should be the acknowledgment elicited by the
+            //       retransmission from step 3, one RTT after the retransmission
+            //       (though it may arrive sooner in the presence of significant out-
+            //       of-order delivery of data segments at the receiver).
+            //       Additionally, this ACK should acknowledge all the intermediate
+            //       segments sent between the lost segment and the receipt of the
+            //       third duplicate ACK, if none of these were lost.
+
+            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}`. Reset duplicate ACKs counter.", ctx.channel(), seg);
             duplicateAcks = 0;
         }
     }

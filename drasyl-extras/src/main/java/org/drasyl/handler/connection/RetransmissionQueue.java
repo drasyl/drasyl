@@ -224,7 +224,7 @@ public class RetransmissionQueue {
             //         by the TCP receiver.
             // retransmit the earliest segment that has not been acknowledged
             final Segment retransmission = retransmissionSegment(ctx, tcb, 0, tcb.effSndMss());
-            LOG.trace("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.sendBuffer().acknowledgeableBytes());
+            LOG.error("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", channel, rto, retransmission, tcb.flightSize());
             ctx.writeAndFlush(retransmission);
 
             //    (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer").  The
