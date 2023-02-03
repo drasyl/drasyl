@@ -88,7 +88,6 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
             );
         }
         else {
-
             return UnarmedProtocolMessage.of(
                     publicHeader.getHopCount(),
                     publicHeader.getArmed(),

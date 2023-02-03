@@ -81,7 +81,7 @@ public abstract class PublicHeader {
         // 000. ....
         hopCount = HopCount.of(flags >> 5);
         // ...0 ....
-        isArmed = flags >> 4 > 0;
+        isArmed = (flags & (byte) (1 << 4)) != 0;
 
         networkId = byteBuf.readInt();
 
