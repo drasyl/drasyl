@@ -29,6 +29,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
+import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -125,7 +126,7 @@ public class SendBuffer {
         ByteBuf toReturn = null;
         while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {
             // read as many bytes as requested and available
-            final int bytesToRead = Math.min(bytes, readMark.remainingBytes());
+            final int bytesToRead = NumberUtil.min(bytes, readMark.remainingBytes());
             final ByteBuf buf = readMark.content().retainedSlice(readMark.index, bytesToRead);
 
             // update counter
@@ -158,7 +159,7 @@ public class SendBuffer {
 
     public ByteBuf unacknowledged(final ByteBufAllocator alloc, int offset, int bytes) {
         // ensure that only as many bytes are requested as are available
-        bytes = Math.min(bytes, acknowledgeableBytes);
+        bytes = NumberUtil.min(bytes, acknowledgeableBytes);
 
         ByteBuf toReturn = null;
         SendBufferEntry currentEntry = head;
@@ -231,7 +232,7 @@ public class SendBuffer {
 
     public void acknowledge(int bytes) {
         LOG.trace("ACKnowledgement of {} bytes requested ({} ACKnowledgable bytes available}.", bytes, acknowledgeableBytes);
-        bytes = Math.min(bytes, acknowledgeableBytes);
+        bytes = NumberUtil.min(bytes, acknowledgeableBytes);
 
         while (bytes > 0 && head != null) {
             final ByteBuf headBuf = head.content();
@@ -246,7 +247,7 @@ public class SendBuffer {
             LOG.trace("{} bytes in headBuf have been read.", readBytesInHead);
             LOG.trace("{} bytes in headBuf have already been ACKed.", acknowledgementIndex);
             final int acknowledgeableBytesInHead = readBytesInHead - acknowledgementIndex;
-            final int bytesToAck = Math.min(acknowledgeableBytesInHead, bytes);
+            final int bytesToAck = NumberUtil.min(acknowledgeableBytesInHead, bytes);
             LOG.trace("{} bytes in headBuf can be ACKed.", acknowledgeableBytesInHead);
             final int totalBytesAcked = acknowledgementIndex + bytesToAck;
             LOG.trace("{} bytes in headBuf are ACKed after this call.", totalBytesAcked);

@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
+import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class OutgoingSegmentQueue {
         while (len != 0 || ctl != 0) {
             final ByteBuf data;
             if (len > 0) {
-                final int bytes = Math.min(tcb.effSndMss(), len);
+                final int bytes = NumberUtil.min(tcb.effSndMss(), len);
                 data = tcb.sendBuffer().read(bytes);
             } else {
                 data = Unpooled.EMPTY_BUFFER;

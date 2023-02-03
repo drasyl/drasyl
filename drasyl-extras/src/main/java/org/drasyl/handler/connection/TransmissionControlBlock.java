@@ -26,6 +26,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.NumberUtil;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -350,14 +351,14 @@ public class TransmissionControlBlock {
                     // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
                     // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
-                    final long u = sub(add(sndUna, Math.min(sndWnd(), cwnd())), sndNxt);
+                    final long u = sub(add(sndUna, NumberUtil.min(sndWnd(), cwnd())), sndNxt);
                     // D is the amount of data queued in the sending TCP endpoint but not yet sent
                     final long d = allowedBytesToFlush;
 
                     // Send data...
                     final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
                     final boolean sendData;
-                    if (Math.min(d, u) >= (long) effSndMss()) {
+                    if (NumberUtil.min(d, u) >= (long) effSndMss()) {
                         // ..if a maximum-sized segment can be sent, i.e., if:
                         // min(D,U) >= Eff.snd.MSS;
                         sendData = true;
@@ -367,7 +368,7 @@ public class TransmissionControlBlock {
                         // SND.NXT = SND.UNA and D <= U
                         sendData = true;
                     }
-                    else if (sndNxt == sndUna && Math.min(d, u) >= fs * maxSndWnd) {
+                    else if (sndNxt == sndUna && NumberUtil.min(d, u) >= fs * maxSndWnd) {
                         // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
                         // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
                         sendData = true;
@@ -397,14 +398,14 @@ public class TransmissionControlBlock {
                     usableWindow = 1;
                 }
                 else {
-                    final long window = Math.min(sndWnd(), cwnd());
-                    usableWindow = Math.max(0, window - flightSize());
+                    final long window = NumberUtil.min(sndWnd(), cwnd());
+                    usableWindow = NumberUtil.max(0, window - flightSize());
                 }
 
-                final long remainingBytes = Math.min(effSndMss(), Math.min(Math.min(usableWindow, sendBuffer.readableBytes()), allowedBytesToFlush));
+                final long remainingBytes = NumberUtil.min(effSndMss(), usableWindow, sendBuffer.readableBytes(), allowedBytesToFlush);
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), Math.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
+                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), NumberUtil.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
                     writeBytes(sndNxt, remainingBytes, rcvNxt);
                     allowedBytesToFlush -= remainingBytes;
                 }
@@ -479,7 +480,7 @@ public class TransmissionControlBlock {
                 //   each ACK received that cumulatively acknowledges new data.
 
                 // Slow Start -> +1 MSS after each ACK
-                final long increment = Math.min(mss, ackedBytes);
+                final long increment = NumberUtil.min(mss, ackedBytes);
                 LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
@@ -501,7 +502,7 @@ public class TransmissionControlBlock {
         sndWnd = seg.window();
         sndWl1 = seg.seq();
         sndWl2 = seg.ack();
-        maxSndWnd = Math.max(maxSndWnd, sndWnd);
+        maxSndWnd = NumberUtil.max(maxSndWnd, sndWnd);
     }
 
     public SendBuffer sendBuffer() {
@@ -588,7 +589,7 @@ public class TransmissionControlBlock {
                 // When the third duplicate ACK is received, a TCP MUST set ssthresh
                 //       to no more than the value given in equation (4).
                 //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                final long newSsthresh = Math.max(flightSize() / 2, 2L * mss());
+                final long newSsthresh = NumberUtil.max(flightSize() / 2, 2L * mss());
                 if (ssthresh != newSsthresh) {
                     LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
                     ssthresh = newSsthresh;
@@ -658,7 +659,7 @@ public class TransmissionControlBlock {
         long rcvUser = receiveBuffer.readableBytes();
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
-        if (rcvBuff() - rcvUser - rcvWnd >= Math.min(fr * rcvBuff(), (long) effSndMss())) {
+        if (rcvBuff() - rcvUser - rcvWnd >= NumberUtil.min(fr * rcvBuff(), (long) effSndMss())) {
             final long newRcvWind = rcvBuff() - rcvUser;
             LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
@@ -682,6 +683,6 @@ public class TransmissionControlBlock {
         // RFC 1122, Section 4.2.2.6
         // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
         // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-        return Math.min(mss() + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
+        return NumberUtil.min(mss() + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 }

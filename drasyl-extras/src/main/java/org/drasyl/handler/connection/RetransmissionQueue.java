@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
+import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -246,7 +247,7 @@ public class RetransmissionQueue {
             //
             //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
             final int smss = tcb.effSndMss();
-            final long newSsthresh = Math.max(tcb.flightSize() / 2, 2L * smss);
+            final long newSsthresh = NumberUtil.max(tcb.flightSize() / 2, 2L * smss);
             if (tcb.ssthresh != newSsthresh) {
                 LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
                 tcb.ssthresh = newSsthresh;
@@ -315,13 +316,13 @@ public class RetransmissionQueue {
             // RTTVAR <- R/2
             rttVar = r / 2.0;
             // RTO <- SRTT + max (G, K*RTTVAR)
-            rto((long) (sRtt + Math.max(clock.g(), K * rttVar)));
+            rto((long) (sRtt + NumberUtil.max(clock.g(), K * rttVar)));
         } else {
             // Taking multiple RTT samples per window would shorten the history
             //   calculated by the RTO mechanism in [RFC6298]
             final int smss = tcb.effSndMss();
             final float flightSize = tcb.flightSize();
-            int expectedSamples = Math.max((int) Math.ceil(flightSize / (smss * 2)), 1);
+            int expectedSamples = NumberUtil.max((int) Math.ceil(flightSize / (smss * 2)), 1);
             double alphaDash = ALPHA / expectedSamples;
             double betaDash = BETA / expectedSamples;
             // Instead of using alpha and beta in the algorithm of [RFC6298], use
@@ -334,7 +335,7 @@ public class RetransmissionQueue {
             rttVar = (1 - betaDash) * rttVar + betaDash * Math.abs(sRtt - rDash);
             // SRTT <- (1 - alpha) * SRTT + alpha * R'
             sRtt = (1 - alphaDash) * sRtt + alphaDash * rDash;
-            rto((long) (sRtt + Math.max(clock.g(), K * rttVar)));
+            rto((long) (sRtt + NumberUtil.max(clock.g(), K * rttVar)));
         }
 
         if (rto != oldRto) {

@@ -26,6 +26,7 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -129,7 +130,7 @@ public class ReceiveBuffer {
                     seq = tcb.rcvNxt();
                     index = (int) sub(tcb.rcvNxt(), seg.seq());
                     // ensure that we do not exceed RCV.WND
-                    length = Math.min((int) tcb.rcvWnd(), seg.len()) - index;
+                    length = NumberUtil.min((int) tcb.rcvWnd(), seg.len()) - index;
                     final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                     LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
@@ -155,7 +156,7 @@ public class ReceiveBuffer {
                     index = 0;
                     // ensure that we do not exceed RCV.WND
                     final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
-                    length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
+                    length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
                     final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                     LOG.error(
                             "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
@@ -194,7 +195,7 @@ public class ReceiveBuffer {
                         index = (int) sub(tcb.rcvNxt(), seg.seq());
                         // ensure that we do not exceed RCV.WND or read data already contained in head
                         final int offsetSegToHead = (int) sub(head.seq(), seg.seq());
-                        length = Math.min((int) tcb.rcvWnd(), Math.min(offsetSegToHead, seg.len())) - index;
+                        length = NumberUtil.min((int) tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
                         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
@@ -225,7 +226,7 @@ public class ReceiveBuffer {
                         // ensure that we do not exceed RCV.WND or read data already contained in head
                         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                         final int offsetSeqHead = (int) sub(head.seq(), seg.seq());
-                        length = Math.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), Math.min(offsetSeqHead, seg.len()));
+                        length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), offsetSeqHead, seg.len());
                         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
@@ -271,7 +272,7 @@ public class ReceiveBuffer {
                             seq = seg.seq();
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
-                                length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
+                                length = NumberUtil.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
                             }
                             else {
                                 length = seg.len() - index;
@@ -305,7 +306,7 @@ public class ReceiveBuffer {
                             seq = add(current.lastSeq(), 1);
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
-                                length = Math.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
+                                length = NumberUtil.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
                             }
                             else {
                                 length = seg.len() - index;
