@@ -599,7 +599,7 @@ public class TransmissionControlBlock {
                 //       the congestion window by the number of segments (three) that have
                 //       left the network and which the receiver has buffered.
                 final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
-                LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs. Retransmit `{}`.", ctx.channel(), retransmission);
                 ctx.writeAndFlush(retransmission);
 
                 // increase congestion window as we know that at least three segments have left the network
@@ -619,7 +619,7 @@ public class TransmissionControlBlock {
                 final int smss = effSndMss();
                 long newCwnd = cwnd() + smss;
                 if (newCwnd != cwnd()) {
-                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
                 }
 
