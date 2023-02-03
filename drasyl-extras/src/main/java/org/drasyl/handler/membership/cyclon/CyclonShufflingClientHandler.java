@@ -106,7 +106,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) {
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
         stopShuffling();
     }
 
@@ -117,7 +117,7 @@ public class CyclonShufflingClientHandler extends SimpleChannelInboundHandler<Ad
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         stopShuffling();
         ctx.fireChannelInactive();
     }

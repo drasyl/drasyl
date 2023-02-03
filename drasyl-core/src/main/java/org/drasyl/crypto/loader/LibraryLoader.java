@@ -23,6 +23,7 @@ package org.drasyl.crypto.loader;
 
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -33,6 +34,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Helper class to load the libsodium library from the preferred location.
  */
+@UnstableApi
 public class LibraryLoader {
     public static final String PREFER_SYSTEM = "pref_system";
     public static final String PREFER_BUNDLED = "pref_bundled";

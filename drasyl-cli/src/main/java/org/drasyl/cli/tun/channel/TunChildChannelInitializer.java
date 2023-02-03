@@ -53,17 +53,20 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
     private final Channel tun;
     private final Map<InetAddress, DrasylAddress> routes;
     private final Map<IdentityPublicKey, Channel> channels;
+    private final boolean applicationArmEnabled;
 
     public TunChildChannelInitializer(final PrintStream err,
                                       final Identity identity,
                                       final Channel tun,
                                       final Map<InetAddress, DrasylAddress> routes,
-                                      final Map<IdentityPublicKey, Channel> channels) {
+                                      final Map<IdentityPublicKey, Channel> channels,
+                                      final boolean applicationArmEnabled) {
         this.err = requireNonNull(err);
         this.identity = requireNonNull(identity);
         this.tun = requireNonNull(tun);
         this.routes = requireNonNull(routes);
         this.channels = requireNonNull(channels);
+        this.applicationArmEnabled = applicationArmEnabled;
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -79,8 +82,10 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        if (applicationArmEnabled) {
+            p.addLast(new ArmHeaderCodec());
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        }
 
         p.addLast(new TunPacketCodec());
         p.addLast(new DrasylToTunHandler(tun));

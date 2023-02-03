@@ -21,7 +21,7 @@
  */
 package org.drasyl.node.plugin.groups.manager.database;
 
-import org.drasyl.node.plugin.groups.manager.database.jdbc.JDBCDatabaseAdapter;
+import org.drasyl.node.plugin.groups.manager.database.jdbc.JdbcDatabaseAdapter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,11 +36,11 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 class DatabaseAdapterManagerTest {
     @Test
     void shouldAddAdapter() {
-        assertDoesNotThrow(() -> DatabaseAdapterManager.addAdapter("jdbc", JDBCDatabaseAdapter::new));
+        assertDoesNotThrow(() -> DatabaseAdapterManager.addAdapter("jdbc", JdbcDatabaseAdapter::new));
     }
 
     @Test
     void shouldInitAdapterAndReturn() throws DatabaseException {
-        assertThat(DatabaseAdapterManager.initAdapter(URI.create("jdbc:sqlite:file:groups?mode=memory&cache=shared")), instanceOf(JDBCDatabaseAdapter.class));
+        assertThat(DatabaseAdapterManager.initAdapter(URI.create("jdbc:sqlite:file:groups?mode=memory&cache=shared")), instanceOf(JdbcDatabaseAdapter.class));
     }
 }

@@ -22,7 +22,6 @@
 package org.drasyl.cli.perf.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -61,7 +60,7 @@ public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
             if (in.readInt() == MAGIC_NUMBER_PROBE) {
                 final long messageNo = in.readLong();
                 // ignore payload
-                out.add(new Probe(Unpooled.EMPTY_BUFFER, messageNo));
+                out.add(new Probe(ctx.alloc().buffer(0), messageNo));
             }
             else {
                 // wrong magic number -> pass through message

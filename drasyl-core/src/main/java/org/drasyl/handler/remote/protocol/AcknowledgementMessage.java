@@ -157,4 +157,9 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
     protected void writeBodyTo(final ByteBuf out) {
         out.writeLong(getTime());
     }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + LENGTH;
+    }
 }

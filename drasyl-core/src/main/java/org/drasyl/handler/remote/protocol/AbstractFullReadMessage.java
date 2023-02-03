@@ -36,7 +36,7 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
     public ArmedProtocolMessage arm(final ByteBufAllocator alloc,
                                     final Crypto cryptoInstance,
                                     final SessionPair sessionPair) throws InvalidMessageFormatException {
-        final ByteBuf byteBuf = alloc.ioBuffer();
+        final ByteBuf byteBuf = alloc.buffer();
         try {
             writePrivateHeaderTo(byteBuf);
             writeBodyTo(byteBuf);

@@ -25,8 +25,8 @@ import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChildChannelInitializer;
 import org.drasyl.identity.Identity;
@@ -49,7 +49,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "receive",
-        header = "Receives a text message (from \"drasyl wormhole send\")"
+        header = "Receives a text message (from \"drasyl wormhole send\")",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class WormholeReceiveCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveCommand.class);
@@ -71,7 +72,7 @@ public class WormholeReceiveCommand extends ChannelOptions {
                            final PrintStream err,
                            final EventLoopGroup parentGroup,
                            final EventLoopGroup childGroup,
-                           final NioEventLoopGroup udpServerGroup,
+                           final EventLoopGroup udpServerGroup,
                            final Level logLevel,
                            final File identityFile,
                            final InetSocketAddress bindAddress,

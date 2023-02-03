@@ -45,6 +45,7 @@ import static org.drasyl.handler.connection.State.LAST_ACK;
 import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
+import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -380,11 +381,13 @@ class ConnectionHandshakeHandlerTest {
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            final ByteBuf data = Unpooled.buffer();
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
             channel.writeOutbound(data);
             assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data), channel.readOutbound());
 
             channel.close();
+
+            data.release();
         }
 
         @Test
@@ -392,11 +395,13 @@ class ConnectionHandshakeHandlerTest {
             final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, 100, 300);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            final ByteBuf data = Unpooled.buffer();
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
             channel.writeInbound(ConnectionHandshakeSegment.pshAck(300, 100, data));
             assertEquals(data, channel.readInbound());
 
             channel.close();
+
+            data.release();
         }
     }
 }

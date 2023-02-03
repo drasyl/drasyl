@@ -50,13 +50,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
-class JDBCDatabaseAdapterTest {
-    private JDBCDatabaseAdapter database;
+class JdbcDatabaseAdapterTest {
+    private JdbcDatabaseAdapter database;
     private IdentityPublicKey publicKey;
 
     @BeforeEach
     void setUp() throws DatabaseException {
-        database = new JDBCDatabaseAdapter(URI.create("jdbc:sqlite::memory:"));
+        database = new JdbcDatabaseAdapter(URI.create("jdbc:sqlite::memory:"));
         publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
     }
 

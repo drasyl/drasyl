@@ -67,7 +67,7 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
     }
 
     @Override
-    public boolean putAll(K key, Collection<? extends V> values) {
+    public boolean putAll(final K key, final Collection<? extends V> values) {
         boolean changed = false;
         for (final V value : values) {
             if (put(key, value)) {
@@ -79,7 +79,7 @@ public class HashSetMultimap<K, V> implements SetMultimap<K, V> {
 
     @SafeVarargs
     @Override
-    public final boolean putAll(K key, V... values) {
+    public final boolean putAll(final K key, final V... values) {
         return putAll(key, Arrays.asList(values));
     }
 

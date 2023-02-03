@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageCodec;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingBiFunction;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,6 +66,7 @@ public class JacksonCodec<T> extends ByteToMessageCodec<T> {
         this.clazz = requireNonNull(clazz);
     }
 
+    @UnstableApi
     public JacksonCodec(final ObjectMapper mapper, final Class<T> clazz) {
         this(mapper::writeValue, mapper::readValue, clazz);
     }

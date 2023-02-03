@@ -257,6 +257,11 @@ public class ExpiringMap<K, V> implements Map<K, V> {
     }
 
     private void removeExpiredEntries() {
+        if (sortedEntries.isEmpty()) {
+            // skip all housekeeping operation if map is empty
+            return;
+        }
+
         final long currentTime = currentTimeProvider.getAsLong();
 
         if (expireAfterWrite != -1 && currentTime - lastExpirationExecution < expireAfterWrite ||

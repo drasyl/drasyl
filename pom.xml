@@ -26,7 +26,7 @@
 
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-parent</artifactId>
-    <version>0.10.0-SNAPSHOT</version>
+    <version>0.11.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
@@ -96,15 +96,15 @@
     </modules>
 
     <scm>
-        <url>https://github.com/drasyl-overlay/drasyl</url>
-        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com/drasyl-overlay/drasyl.git</developerConnection>
+        <url>https://github.com/drasyl/drasyl</url>
+        <connection>scm:git:git://github.com/drasyl/drasyl.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/drasyl/drasyl.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/drasyl-overlay/drasyl/issues</url>
+        <url>https://github.com/drasyl/drasyl/issues</url>
     </issueManagement>
 
     <distributionManagement>
@@ -126,21 +126,21 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.4.4</logback.version>
-        <junit.version>5.9.1</junit.version>
-        <mockito.version>4.8.0</mockito.version>
-        <jackson.version>2.13.4</jackson.version>
+        <logback.version>1.4.5</logback.version>
+        <junit.version>5.9.2</junit.version>
+        <mockito.version>4.11.0</mockito.version>
+        <jackson.version>2.14.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
         <netty.version>4.1.85.Final-SNAPSHOT</netty.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>2.0.3</slf4j.version>
+        <slf4j.version>2.0.6</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <json-unit-assertj.version>2.36.0</json-unit-assertj.version>
-        <protobuf.version>3.21.8</protobuf.version>
-        <auto-value.version>1.10</auto-value.version>
-        <jna.version>5.12.1</jna.version>
+        <json-unit-assertj.version>2.36.1</json-unit-assertj.version>
+        <protobuf.version>3.21.12</protobuf.version>
+        <auto-value.version>1.10.1</auto-value.version>
+        <jna.version>5.13.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
@@ -216,17 +216,39 @@
                 <artifactId>netty-transport</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-handler</artifactId>
                 <version>${netty.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-buffer</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>${netty.version}</version>
+                <classifier>linux-x86_64</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-epoll</artifactId>
+                <version>${netty.version}</version>
+                <classifier>linux-aarch_64</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-kqueue</artifactId>
+                <version>${netty.version}</version>
+                <classifier>osx-x86_64</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-transport-native-kqueue</artifactId>
+                <version>${netty.version}</version>
+                <classifier>osx-aarch_64</classifier>
             </dependency>
 
             <!-- Jackson -->
@@ -277,7 +299,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.149</version>
+                <version>4.8.154</version>
             </dependency>
 
             <!-- Crypto -->
@@ -340,7 +362,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.5.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -370,7 +392,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.2.1</version>
+                    <version>4.7.3.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -380,7 +402,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>3.0.0-M8</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -415,7 +437,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.2.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -539,21 +561,67 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <configuration>
-                    <consoleOutput>true</consoleOutput>
-                    <logViolationsToConsole>true</logViolationsToConsole>
-                    <configLocation>checkstyle.xml</configLocation>
-                </configuration>
+                <version>3.2.1</version>
+                <executions>
+                    <execution>
+                        <id>check-style</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>checkstyle.xml</configLocation>
+                            <sourceDirectories>
+                                <sourceDirectory>${project.build.sourceDirectory}</sourceDirectory>
+                                <sourceDirectory>${project.build.testSourceDirectory}</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>10.7.0</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.1</version>
                 <configuration>
                     <rules>
                         <dependencyConvergence />
                     </rules>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-maven-plugin</artifactId>
+                <version>0.15.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.revapi</groupId>
+                        <artifactId>revapi-java</artifactId>
+                        <version>0.28.0</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <analysisConfigurationFiles>
+                        <configurationFile>
+                            <path>${project.parent.basedir}/api-changes.json</path>
+                        </configurationFile>
+                    </analysisConfigurationFiles>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>api-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -563,7 +631,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.2.1</version>
+                <version>4.7.3.0</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
@@ -572,7 +640,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.1</version>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
                 </configuration>
@@ -672,6 +740,7 @@
                                 </group>
                             </groups>
                             <locale>en_US</locale>
+                            <notimestamp>true</notimestamp>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -688,6 +757,18 @@
             <modules>
                 <module>drasyl-shared-library</module>
             </modules>
+        </profile>
+        <profile>
+            <!-- Skip many checks for faster turn-around in local builds. -->
+            <id>fast</id>
+            <properties>
+                <checkstyle.skip>true</checkstyle.skip>
+                <revapi.skip>true</revapi.skip>
+                <skipDeploy>true</skipDeploy>
+                <skipTests>true</skipTests>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
+                <jacoco.skip>true</jacoco.skip>
+            </properties>
         </profile>
     </profiles>
 </project>

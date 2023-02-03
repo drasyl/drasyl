@@ -99,4 +99,25 @@ public class ApplicationMessageTest {
             buffer.release();
         }
     }
+
+    @Nested
+    class GetLength {
+        @Test
+        void shouldReturnCorrectLength() {
+            final ByteBuf buffer = Unpooled.buffer();
+            final ApplicationMessage application = ApplicationMessage.of(1, recipient, sender, proofOfWork, buffer);
+            final int length = application.getLength();
+
+            final ByteBuf byteBuf = Unpooled.buffer();
+            try {
+                application.writeTo(byteBuf);
+
+                assertEquals(byteBuf.readableBytes(), length);
+            }
+            finally {
+                byteBuf.release();
+                buffer.release();
+            }
+        }
+    }
 }

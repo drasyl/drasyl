@@ -130,7 +130,7 @@ class UdpServerTest {
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(UdpServerTest.this.channel).writeAndFlush(any());
+                verify(UdpServerTest.this.channel).write(any());
             }
             finally {
                 channel.close();

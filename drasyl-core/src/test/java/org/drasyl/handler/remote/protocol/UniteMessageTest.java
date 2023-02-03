@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.remote.protocol;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +72,25 @@ public class UniteMessageTest {
 
             assertEquals(1, unite.getNetworkId());
             assertEquals(publicKey, unite.getAddress());
+        }
+    }
+
+    @Nested
+    class GetLength {
+        @Test
+        void shouldReturnCorrectLength() {
+            final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, Set.of(new InetSocketAddress(22527)));
+            final int length = unite.getLength();
+
+            final ByteBuf byteBuf = Unpooled.buffer();
+            try {
+                unite.writeTo(byteBuf);
+
+                assertEquals(byteBuf.readableBytes(), length);
+            }
+            finally {
+                byteBuf.release();
+            }
         }
     }
 }

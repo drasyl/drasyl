@@ -45,14 +45,14 @@ public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMe
                           final GoBackNArqMessage msg,
                           final List<Object> out) throws Exception {
         if (msg instanceof GoBackNArqData) {
-            final ByteBuf buf = ctx.alloc().buffer();
+            final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH + ((GoBackNArqData) msg).content().readableBytes());
             buf.writeInt(MAGIC_NUMBER_DATA);
             buf.writeBytes(msg.sequenceNo().toBytes());
             buf.writeBytes(((GoBackNArqData) msg).content());
             out.add(buf);
         }
         else if (msg instanceof GoBackNArqAck) {
-            final ByteBuf buf = ctx.alloc().buffer();
+            final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH);
             buf.writeInt(MAGIC_NUMBER_ACK);
             buf.writeBytes(msg.sequenceNo().toBytes());
             out.add(buf);

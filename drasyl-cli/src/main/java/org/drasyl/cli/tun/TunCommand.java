@@ -42,6 +42,7 @@ import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.converter.SubnetConverter;
 import org.drasyl.cli.tun.channel.TunChannelInitializer;
@@ -79,7 +80,8 @@ import static picocli.CommandLine.Command;
 
 @Command(
         name = "tun",
-        header = "Create a local network interface routing traffic to given peers."
+        header = "Create a local network interface routing traffic to given peers.",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class TunCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunCommand.class);
@@ -135,6 +137,11 @@ public class TunCommand extends ChannelOptions {
             defaultValue = "1225"
     )
     private int mtu;
+    @Option(
+            names = { "--no-application-arming" },
+            description = "Disables arming (authenticating/encrypting) of all application messages. Ensure other nodes have arming disabled as well."
+    )
+    protected boolean applicationArmDisabled;
     @ArgGroup
     private RemoteControl rc;
 
@@ -252,6 +259,30 @@ public class TunCommand extends ChannelOptions {
         }
     }
 
+    public static void printRoutingTable(final PrintStream out,
+                                         final Identity identity,
+                                         final InetAddress address,
+                                         final Map<InetAddress, DrasylAddress> routes) {
+        out.println("My routing table:");
+
+        final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>(routes);
+        routingTable.put(address, identity.getAddress());
+        final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
+        inetAddresses.sort(new InetAddressComparator());
+
+        for (final InetAddress inetAddress : inetAddresses) {
+            out.print("  ");
+            out.printf("%1$-14s", inetAddress.getHostAddress());
+            out.print(" <-> ");
+            out.print(routingTable.get(inetAddress));
+            if (address.equals(inetAddress)) {
+                out.print(" (this is me)");
+            }
+            out.println();
+        }
+        out.println();
+    }
+
     /**
      * Assign IP address and subnet to the tun device.
      */
@@ -325,7 +356,7 @@ public class TunCommand extends ChannelOptions {
 
             // create drasyl channel
             final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels);
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
@@ -352,20 +383,31 @@ public class TunCommand extends ChannelOptions {
 
             if (address.equals(dst)) {
                 // loopback
-                ctx.writeAndFlush(msg.retain());
+                ctx.write(msg.retain());
             }
             else {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst) && channels.containsKey(publicKey)) {
                     LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
                     final Channel peerChannel = channels.get(publicKey);
-                    peerChannel.writeAndFlush(msg.retain());
+                    peerChannel.write(msg.retain());
                 }
                 else {
                     LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
                     // TODO: reply with ICMP host unreachable message?
                 }
             }
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            ctx.flush();
+            for (Channel peerChannel : channels.values()) {
+                peerChannel.flush();
+            }
+            // TODO: just flush channels we have written to?
+
+            ctx.fireChannelReadComplete();
         }
 
         @Override
@@ -419,29 +461,5 @@ public class TunCommand extends ChannelOptions {
         public RemoveRoute(final IdentityPublicKey publicKey) {
             this.publicKey = requireNonNull(publicKey);
         }
-    }
-
-    public static void printRoutingTable(final PrintStream out,
-                                         final Identity identity,
-                                         final InetAddress address,
-                                         final Map<InetAddress, DrasylAddress> routes) {
-        out.println("My routing table:");
-
-        final Map<InetAddress, DrasylAddress> routingTable = new HashMap<>(routes);
-        routingTable.put(address, identity.getAddress());
-        final List<InetAddress> inetAddresses = new ArrayList<>(routingTable.keySet());
-        inetAddresses.sort(new InetAddressComparator());
-
-        for (final InetAddress inetAddress : inetAddresses) {
-            out.print("  ");
-            out.printf("%1$-14s", inetAddress.getHostAddress());
-            out.print(" <-> ");
-            out.print(routingTable.get(inetAddress));
-            if (address.equals(inetAddress)) {
-                out.print(" (this is me)");
-            }
-            out.println();
-        }
-        out.println();
     }
 }

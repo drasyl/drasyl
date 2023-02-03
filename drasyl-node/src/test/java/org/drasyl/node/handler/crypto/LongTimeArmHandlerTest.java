@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -66,7 +67,10 @@ class LongTimeArmHandlerTest {
 
                 channel.writeAndFlush(msg);
 
-                assertThat(channel.readOutbound(), instanceOf(ArmHeader.class));
+                final Object actual = channel.readOutbound();
+                assertThat(actual, instanceOf(ArmHeader.class));
+
+                ReferenceCountUtil.release(actual);
             }
             finally {
                 channel.close();
@@ -97,7 +101,10 @@ class LongTimeArmHandlerTest {
 
                 channel.writeInbound(msg);
 
-                assertThat(channel.readInbound(), instanceOf(ByteBuf.class));
+                final Object actual = channel.readInbound();
+                assertThat(actual, instanceOf(ByteBuf.class));
+
+                ReferenceCountUtil.release(actual);
             }
             finally {
                 channel.close();

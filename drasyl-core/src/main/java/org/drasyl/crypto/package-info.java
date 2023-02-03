@@ -23,4 +23,7 @@
 /**
  * Classes for crypto-related operations.
  */
+@UnstableApi
 package org.drasyl.crypto;
+
+import org.drasyl.util.internal.UnstableApi;

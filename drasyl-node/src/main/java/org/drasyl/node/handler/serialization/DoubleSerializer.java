@@ -32,13 +32,13 @@ public class DoubleSerializer extends BoundedSerializer<Double> {
     private static final short DOUBLE_LENGTH = 8;
 
     @Override
-    protected byte[] matchedToByArray(final Double o) {
+    byte[] matchedToByArray(final Double o) {
         return ByteBuffer.allocate(DOUBLE_LENGTH).putDouble(o).array();
     }
 
     @Override
-    protected Double matchedFromByteArray(final byte[] bytes,
-                                          final Class<Double> type) throws IOException {
+    Double matchedFromByteArray(final byte[] bytes,
+                                final Class<Double> type) throws IOException {
         try {
             return ByteBuffer.wrap(bytes).getDouble();
         }

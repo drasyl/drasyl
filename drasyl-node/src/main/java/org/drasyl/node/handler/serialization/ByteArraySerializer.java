@@ -26,13 +26,13 @@ package org.drasyl.node.handler.serialization;
  */
 public class ByteArraySerializer extends BoundedSerializer<byte[]> {
     @Override
-    protected byte[] matchedToByArray(final byte[] o) {
+    byte[] matchedToByArray(final byte[] o) {
         return o;
     }
 
     @Override
-    protected byte[] matchedFromByteArray(final byte[] bytes,
-                                          final Class<byte[]> type) {
+    byte[] matchedFromByteArray(final byte[] bytes,
+                                final Class<byte[]> type) {
         return bytes;
     }
 }

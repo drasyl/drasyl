@@ -317,7 +317,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.release(msg);
     }
 
-    static class ChildrenPeer {
+    protected static class ChildrenPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         private InetSocketAddress publicInetAddress;
@@ -336,10 +336,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             this.lastHelloTime = lastHelloTime;
         }
 
-        public ChildrenPeer(final LongSupplier currentTime,
-                            final long pingTimeoutMillis,
-                            final InetSocketAddress publicInetAddress,
-                            final Set<InetSocketAddress> privateInetAddresses) {
+        ChildrenPeer(final LongSupplier currentTime,
+                     final long pingTimeoutMillis,
+                     final InetSocketAddress publicInetAddress,
+                     final Set<InetSocketAddress> privateInetAddresses) {
             this(currentTime, pingTimeoutMillis, publicInetAddress, privateInetAddresses, 0L);
         }
 

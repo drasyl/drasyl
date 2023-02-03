@@ -112,26 +112,6 @@ final class LibDrasyl {
     private static DrasylNode node;
     private static boolean online;
 
-    static final class Directives implements CContext.Directives {
-        @Override
-        public List<String> getOptions() {
-            final File[] jnis = findJNIHeaders();
-            return List.of("-I" + jnis[0].getParent());
-        }
-
-        @Override
-        public List<String> getHeaderFiles() {
-            final File[] jnis = findJNIHeaders();
-            return List.of("<" + jnis[0] + ">");
-        }
-
-        private static File[] findJNIHeaders() throws IllegalStateException {
-            return new File[]{
-                    new File(System.getProperty("headerPath") + "/drasyl.h"),
-                    };
-        }
-    }
-
     private LibDrasyl() {
 
     }
@@ -148,7 +128,7 @@ final class LibDrasyl {
         final Version version = Version.identify().get("drasyl-node");
         if (version != null) {
             final String versionString = version.version();
-            Matcher matcher = VERSION_PATTERN.matcher(versionString);
+            final Matcher matcher = VERSION_PATTERN.matcher(versionString);
             if (matcher.find()) {
                 // we assume that each version will never exceed 1 byte
                 final int majorVersion = Integer.parseInt(matcher.group(1)) & 0xff;
@@ -168,7 +148,7 @@ final class LibDrasyl {
     @CEntryPoint(name = "drasyl_set_logger")
     private static int setLogger(final IsolateThread thread,
                                  final LogMessageListener listenerPointer) {
-        java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
+        final java.util.logging.Logger logger = java.util.logging.Logger.getLogger("");
         logger.setLevel(Level.FINEST);
         logger.addHandler(new Handler() {
             @SuppressWarnings("java:S6213")
@@ -554,5 +534,25 @@ final class LibDrasyl {
         @AllowNarrowingCast
         @CField("message_payload_len")
         void setMessagePayloadLength(int value);
+    }
+
+    static final class Directives implements CContext.Directives {
+        @Override
+        public List<String> getOptions() {
+            final File[] jnis = findJNIHeaders();
+            return List.of("-I" + jnis[0].getParent());
+        }
+
+        @Override
+        public List<String> getHeaderFiles() {
+            final File[] jnis = findJNIHeaders();
+            return List.of("<" + jnis[0] + ">");
+        }
+
+        private static File[] findJNIHeaders() throws IllegalStateException {
+            return new File[]{
+                    new File(System.getProperty("headerPath") + "/drasyl.h"),
+                    };
+        }
     }
 }

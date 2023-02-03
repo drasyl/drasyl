@@ -252,8 +252,7 @@ public class TcpClient extends ChannelDuplexHandler {
     static class TcpClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         private final ChannelHandlerContext drasylCtx;
 
-        public TcpClientHandler(
-                final ChannelHandlerContext drasylCtx) {
+        TcpClientHandler(final ChannelHandlerContext drasylCtx) {
             super(false);
             this.drasylCtx = requireNonNull(drasylCtx);
         }

@@ -27,6 +27,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
+import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer;
 import org.drasyl.crypto.Crypto;
@@ -48,7 +49,8 @@ import static java.util.Objects.requireNonNull;
 
 @Command(
         name = "expose",
-        header = "Exposes a (local) service"
+        header = "Exposes a (local) service",
+        defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class TunnelExposeCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunnelExposeCommand.class);

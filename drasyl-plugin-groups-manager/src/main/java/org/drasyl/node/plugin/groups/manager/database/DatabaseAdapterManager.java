@@ -21,7 +21,7 @@
  */
 package org.drasyl.node.plugin.groups.manager.database;
 
-import org.drasyl.node.plugin.groups.manager.database.jdbc.JDBCDatabaseAdapter;
+import org.drasyl.node.plugin.groups.manager.database.jdbc.JdbcDatabaseAdapter;
 import org.drasyl.util.ThrowingFunction;
 
 import java.net.URI;
@@ -32,7 +32,7 @@ public final class DatabaseAdapterManager {
     private static final Map<String, ThrowingFunction<URI, DatabaseAdapter, DatabaseException>> ADAPTERS = new HashMap<>();
 
     static {
-        addAdapter(JDBCDatabaseAdapter.SCHEME, JDBCDatabaseAdapter::new);
+        addAdapter(JdbcDatabaseAdapter.SCHEME, JdbcDatabaseAdapter::new);
     }
 
     private DatabaseAdapterManager() {

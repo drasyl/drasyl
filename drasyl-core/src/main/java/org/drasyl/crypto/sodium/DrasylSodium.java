@@ -24,6 +24,7 @@ package org.drasyl.crypto.sodium;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.loader.LibraryLoader;
 import org.drasyl.crypto.loader.NativeLoader;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,7 @@ import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
 /**
  * This class loads and binds the JNA {@link Sodium}.
  */
+@UnstableApi
 public class DrasylSodium extends Sodium {
     private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.crypto.mode", PREFER_SYSTEM);
 

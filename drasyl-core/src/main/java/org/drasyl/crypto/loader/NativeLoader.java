@@ -22,6 +22,7 @@
 package org.drasyl.crypto.loader;
 
 import com.sun.jna.Native;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,7 +39,8 @@ import java.nio.file.StandardCopyOption;
  * <p>
  * Based on: <a href="https://github.com/adamheinrich/native-utils">native-utils</a>
  */
-public class NativeLoader {
+@UnstableApi
+public final class NativeLoader {
     public static final String NATIVE_FOLDER_PATH_PREFIX = "nativeloader";
     /**
      * The minimum length a prefix for a file has to have according to
@@ -148,9 +150,9 @@ public class NativeLoader {
                     .supportedFileAttributeViews()
                     .contains("posix");
         }
-        catch (final FileSystemNotFoundException
-                     | ProviderNotFoundException
-                     | SecurityException e) {
+        catch (final FileSystemNotFoundException |
+                     ProviderNotFoundException |
+                     SecurityException e) {
             return false;
         }
     }

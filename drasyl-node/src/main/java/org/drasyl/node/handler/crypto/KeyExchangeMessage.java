@@ -25,8 +25,10 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 @AutoValue
+@UnstableApi
 public abstract class KeyExchangeMessage extends ArmMessage {
     public static final int LENGTH = 32;
 

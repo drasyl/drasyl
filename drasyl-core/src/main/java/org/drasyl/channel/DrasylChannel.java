@@ -29,11 +29,11 @@ import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
-import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -65,10 +65,11 @@ public class DrasylChannel extends AbstractChannel {
     private volatile DrasylAddress localAddress; // NOSONAR
     private final DrasylAddress remoteAddress;
 
-    public DrasylChannel(final Channel parent,
-                         final State state,
-                         final DrasylAddress localAddress,
-                         final DrasylAddress remoteAddress) {
+    @UnstableApi
+    DrasylChannel(final Channel parent,
+                  final State state,
+                  final DrasylAddress localAddress,
+                  final DrasylAddress remoteAddress) {
         super(parent);
         this.state = state;
         this.localAddress = localAddress;
@@ -86,7 +87,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected boolean isCompatible(final EventLoop loop) {
-        return loop instanceof DefaultEventLoop;
+        return true;
     }
 
     @Override

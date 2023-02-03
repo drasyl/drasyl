@@ -26,17 +26,53 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
 @SuppressWarnings("java:S110")
 @Sharable
+@UnstableApi
 public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<InetAddressedMessage<RemoteMessage>> {
+    private final Map<DrasylAddress, Long> senderCache;
+    private final int maximumCacheSize;
+    private final long expireCacheAfter;
+    private long now;
+
     public InvalidProofOfWorkFilter() {
+        this(100, 3_600_000L);
+    }
+
+    public InvalidProofOfWorkFilter(final int maximumCacheSize,
+                                    final long expireCacheAfter) {
         super(false);
+        this.maximumCacheSize = requirePositive(maximumCacheSize);
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
+        this.senderCache = new HashMap<>();
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (ctx.channel().isActive()) {
+            scheduleHousekeepingTask(ctx);
+        }
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        ctx.fireChannelActive();
+        scheduleHousekeepingTask(ctx);
     }
 
     @Override
@@ -48,14 +84,47 @@ public final class InvalidProofOfWorkFilter extends SimpleChannelInboundHandler<
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final InetAddressedMessage<RemoteMessage> msg) throws InvalidProofOfWorkException {
         final RemoteMessage remoteMsg = msg.content();
-        final boolean validProofOfWork = !ctx.channel().localAddress().equals(remoteMsg.getRecipient()) || remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY);
-        if (validProofOfWork) {
+        final boolean passThroughMessage = !ctx.channel().localAddress().equals(remoteMsg.getRecipient()) || hasValidProofOfWork(remoteMsg);
+        if (passThroughMessage) {
             ctx.fireChannelRead(msg);
         }
         else {
             msg.release();
             throw new InvalidProofOfWorkException(remoteMsg);
         }
+    }
+
+    private boolean hasValidProofOfWork(final RemoteMessage remoteMsg) {
+        if (senderCache.containsKey(remoteMsg.getSender())) {
+            return true;
+        }
+        else if (remoteMsg.getProofOfWork().isValid(remoteMsg.getSender(), POW_DIFFICULTY) && senderCache.size() < maximumCacheSize) {
+            senderCache.put(remoteMsg.getSender(), now);
+            return true;
+        }
+        return false;
+    }
+
+    private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {
+        // requesting the time triggers a system call and is therefore considered to be expensive.
+        // This is why we cache the current time
+        now = System.currentTimeMillis();
+
+        ctx.executor().schedule(() -> {
+            // remove all entries from cache after "expireAfter"
+            final Iterator<Entry<DrasylAddress, Long>> iterator = senderCache.entrySet().iterator();
+            while (iterator.hasNext()) {
+                final Entry<DrasylAddress, Long> entry = iterator.next();
+                final long lastTime = entry.getValue();
+                if (lastTime < now) {
+                    iterator.remove();
+                }
+            }
+
+            if (ctx.channel().isActive()) {
+                scheduleHousekeepingTask(ctx);
+            }
+        }, expireCacheAfter, MILLISECONDS);
     }
 
     /**

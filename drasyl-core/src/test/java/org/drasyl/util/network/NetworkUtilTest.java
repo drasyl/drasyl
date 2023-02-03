@@ -105,6 +105,7 @@ class NetworkUtilTest {
                 assertFalse(NetworkUtil.available(5555));
             }
             catch (final IOException e) {
+                // ignore
             }
 
             assertTrue(NetworkUtil.available(4444));

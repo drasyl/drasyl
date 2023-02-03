@@ -417,11 +417,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
+        LOG.warn("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
-        LOG.trace("Got unexpected message `{}`. Drop it.", msg);
     }
 
-    static class SuperPeer {
+    protected static class SuperPeer {
         private final LongSupplier currentTime;
         private final long pingTimeoutMillis;
         long lastAcknowledgementTime;
@@ -440,9 +440,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             this.rtt = rtt;
         }
 
-        public SuperPeer(final LongSupplier currentTime,
-                         final long pingTimeoutMillis,
-                         final InetSocketAddress inetAddress) {
+        SuperPeer(final LongSupplier currentTime,
+                  final long pingTimeoutMillis,
+                  final InetSocketAddress inetAddress) {
             this(currentTime, pingTimeoutMillis, inetAddress, 0L, 0L);
         }
 

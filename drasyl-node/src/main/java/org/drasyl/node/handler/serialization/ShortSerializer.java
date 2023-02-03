@@ -30,13 +30,13 @@ import java.nio.ByteBuffer;
  */
 public class ShortSerializer extends BoundedSerializer<Short> {
     @Override
-    protected byte[] matchedToByArray(final Short o) throws IOException {
+    byte[] matchedToByArray(final Short o) throws IOException {
         return ByteBuffer.allocate(Short.BYTES).putShort(o).array();
     }
 
     @Override
-    protected Short matchedFromByteArray(final byte[] bytes,
-                                         final Class<Short> type) throws IOException {
+    Short matchedFromByteArray(final byte[] bytes,
+                               final Class<Short> type) throws IOException {
         try {
             return ByteBuffer.wrap(bytes).getShort();
         }

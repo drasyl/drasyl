@@ -73,12 +73,16 @@ import java.util.Enumeration;
         "java:S1541",
         "java:S1659",
         "java:S1700",
-        "java:S3776"
-        , "CatchMayIgnoreException"
+        "java:S3776",
+        "CatchMayIgnoreException"
 })
-class DefaultInterface {
+final class DefaultInterface {
     private static final NetworkInterface defaultInterface =
             chooseDefaultInterface();
+
+    private DefaultInterface() {
+        // util class
+    }
 
     static NetworkInterface getDefault() {
         return defaultInterface;
@@ -138,7 +142,9 @@ class DefaultInterface {
                     continue;
                 }
 
-                boolean ip4 = false, ip6 = false, isNonLinkLocal = false;
+                boolean ip4 = false;
+                boolean ip6 = false;
+                boolean isNonLinkLocal = false;
                 final PrivilegedAction<Enumeration<InetAddress>> pa = ni::getInetAddresses;
                 final Enumeration<InetAddress> addrs = AccessController.doPrivileged(pa);
                 while (addrs.hasMoreElements()) {
@@ -185,7 +191,8 @@ class DefaultInterface {
                     loopback = ni;
                 }
             }
-            catch (final IOException skip) {
+            catch (final IOException e) {
+                // skip
             }
         }
 

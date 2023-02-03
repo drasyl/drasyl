@@ -287,7 +287,7 @@ public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
             stopTimer();
         }
         else {
-            final GoBackNArqData data = new GoBackNArqData(seqNo, msg.content().retainedSlice());
+            final GoBackNArqData data = new GoBackNArqData(seqNo, msg.content().retain());
             LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> data);
             ctx.write(data);
         }

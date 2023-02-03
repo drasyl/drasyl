@@ -59,11 +59,11 @@ public abstract class Identity {
      * @return identity with unmasked secret keys
      */
     public String toUnmaskedString() {
-        return "Identity{"
-                + "proofOfWork=" + getProofOfWork().toString() + ", "
-                + "identityKeyPair=" + getIdentityKeyPair().toUnmaskedString() + ", "
-                + "keyAgreementKeyPair=" + getKeyAgreementKeyPair().toUnmaskedString()
-                + "}";
+        return "Identity{" +
+                "proofOfWork=" + getProofOfWork().toString() + ", " +
+                "identityKeyPair=" + getIdentityKeyPair().toUnmaskedString() + ", " +
+                "keyAgreementKeyPair=" + getKeyAgreementKeyPair().toUnmaskedString() +
+                "}";
     }
 
     /**

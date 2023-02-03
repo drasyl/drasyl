@@ -5,10 +5,10 @@
 [Contributing](CONTRIBUTING.md) |
 [Changelog](CHANGELOG.md)
 
-[![Test](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml/badge.svg)](https://github.com/drasyl-overlay/drasyl/actions/workflows/test.yml)
+[![Test](https://github.com/drasyl/drasyl/actions/workflows/test.yml/badge.svg)](https://github.com/drasyl/drasyl/actions/workflows/test.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 [![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
-[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl-overlay/homebrew-tap/main/Info/drasyl.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl-overlay/homebrew-tap)
+[![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl/homebrew-tap/main/Info/drasyl.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl/homebrew-tap)
 [![Chocolatey](https://img.shields.io/chocolatey/v/drasyl)](https://chocolatey.org/packages/drasyl)
 [![Python Package Index](https://img.shields.io/pypi/v/drasyl.svg)](https://pypi.org/project/drasyl)
 [![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/r/drasyl/drasyl)
@@ -16,36 +16,28 @@
 
 # drasyl
 
-[drasyl](https://github.com/drasyl-overlay/drasyl) [dʁazy:l] is a general-purpose overlay network framework for rapid development of distributed
-P2P applications.
+[drasyl](https://github.com/drasyl/drasyl) [dʁazy:l] is a high-performance framework for rapid development of distributed applications.
 
-By using drasyl developers can fully concentrate on creating distributed applications. With drasyl,
-boundaries between IP-based networks will be eliminated and secure communication channels between
-any peers will be provided. Zero-configuration is required to use drasyl. Developers can run a new
-drasyl node without having to write configuration files or provide IP addresses of peers.
+drasyl enables quick and easy development of high-performance distributed applications. Driven by a secure and low-latency overlay network protocol, drasyl provides any-to-any connectivity between all Internet-enabled devices.
+
+To prevent developers from reinventing the wheel, drasyl provides extensions that address common challenges for distributed systems like identity/key management, resource discovery, and locality-aware message routing. By using drasyl, developers are unburdened of many usual tasks and can proceed directly with building their distributed application.
 
 <img src="https://docs.drasyl.org/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
 
 # Features
 
-* Provides Communication Channels between any two Nodes (on the Internet).
-* Automatic Discovery of Peers running within same Process, Computer, LAN, or the Internet.
-* Automatic Handover to most local Route.
-* Overcomes Network Barriers (Stateful Firewalls, NATs).
-* UDP Hole Punching.
-* Port Mapping (UPnP-IGD, NAT-PMP, PCP).
-* Communication is (PFS) encrypted.
-* Reacts to Network Connection Changes.
-* Asynchronous and Event-Driven.
-* Lightweight.
-* Extensible.
+* Any-to-any connectivity between all Internet-enabled devices.
+* Locality-aware message routing.
+* Middlebox traversal (like firewalls or network address translators).
+* Driven by a secure & low-latency overlay network protocol.
+* Cryptographic identity & key management.
+* Rich set of extensions for perfect forward secrecy communication, service & resource discovery, reliable transport, error control, traffic shaping, etc.
 
 # Usage & Documentation
 
-* [Getting Started](https://docs.drasyl.org/getting-started/)
-* [Configuration](https://docs.drasyl.org/configuration/)
-* [Command Line Interface](https://docs.drasyl.org/cli/)
+* [Getting Started](https://docs.drasyl.org/language-bindings/python/)
+* [Examples](https://github.com/drasyl/drasyl/tree/master/drasyl-shared-library/examples/python)
 
 # License
 
-This is free software under the terms of the [MIT License](https://github.com/drasyl-overlay/drasyl/blob/master/LICENSE).
+This is free software under the terms of the [MIT License](https://github.com/drasyl/drasyl/blob/master/LICENSE).

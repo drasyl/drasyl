@@ -25,7 +25,7 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -108,7 +108,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     public void writeTo(final ByteBuf out) {
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
-        out.writeBytes(getBytes().slice());
+        final ByteBuf bytes = getBytes();
+        bytes.markReaderIndex();
+        out.writeBytes(bytes);
+        bytes.resetReaderIndex();
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + getBytes().readableBytes();
     }
 
     /**
@@ -144,7 +152,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
                             getRecipient(),
                             getSender(),
                             getProofOfWork(),
-                            getBytes().slice().retain()
+                            getBytes().retain()
                     );
                 case UNITE:
                     return UniteMessage.of(
@@ -195,7 +203,7 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
             getBytes().markReaderIndex();
             try (final ByteBufInputStream in = new ByteBufInputStream(getBytes())) {
                 final UnsignedShort armedLength = PrivateHeader.getArmedLength(getBytes());
-                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(), getNonce(), sessionPair);
+                final byte[] encryptedPrivateHeader = cryptoInstance.encrypt(InputStreamHelper.readNBytes(in, PrivateHeader.LENGTH), buildAuthTag(alloc), getNonce(), sessionPair);
                 final byte[] encryptedBytes;
                 final byte[] unencryptedRemainder;
 
@@ -246,8 +254,8 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
         }
     }
 
-    private byte[] buildAuthTag() {
-        return buildPublicHeader().buildAuthTag();
+    private byte[] buildAuthTag(final ByteBufAllocator alloc) {
+        return buildPublicHeader().buildAuthTag(alloc);
     }
 
     /**

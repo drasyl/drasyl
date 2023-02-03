@@ -24,7 +24,7 @@ package org.drasyl.cli.perf.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
@@ -46,7 +46,7 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
 
     @SuppressWarnings("java:S107")
     public PerfServerChannelInitializer(final Identity identity,
-                                        final NioEventLoopGroup udpServerGroup,
+                                        final EventLoopGroup udpServerGroup,
                                         final InetSocketAddress bindAddress,
                                         final int networkId,
                                         final long onlineTimeoutMillis,

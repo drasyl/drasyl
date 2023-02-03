@@ -5,25 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.10.0] - 2022-XX-XX
+## [0.10.0] - 2023-01-31
 
 ### Added
 
--
--
--
+- `DrasylConfig.newBuilder()` will now validate serialization bindings.
+- CLI: Option `--no-application-arming` to sub-command `tun` added.
+- Boolean system property `org.drasyl.nonce.pseudorandom` added which can be used to use cheaper nonces using pseudorandom source (should not be used in production environments).
 
 ### Changed
 
--
--
--
+- Dependencies have been updated.
+- Super peers in Frankfurt, Germany and Nuremberg, Germany have been replaced with globally more distributed super peers in Baden-Baden, Germany; Logroño, Spain; New York City; and Singapore.
+- General performance improvements.
+- drasyl is now using kqueue or epoll on supported platforms.
 
 ### Fixed
 
--
--
--
+- CLI: Fixed problem that prevents a `node` from being remote-controlled via HTTP.
+- Class `org.drasyl.handler.PeersRttHandler.PeerRtt` is now public.
 
 ## [0.9.0] - 2022-09-30
 
@@ -78,7 +78,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: `node-rc` sub-command added.
 - CLI: Option `--rc-jsonrpc-tcp` and `--rc-jsonrpc-http` to sub-command `tun` added.
 - CLI: `tun-rc` sub-command added.
-- CLI: `tun` command will not work within docker.
+- CLI: `tun` command will now work within docker.
 
 ### Changed
 
@@ -263,9 +263,9 @@ ProofOfWork = -2144920491
   automatically be used. If one or more super peers fail (temporarily), one of the remaining super
   peers will automatically be used. By default, each node will use two of our super peers.
 - New examples have been added:
-  https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example
+  https://github.com/drasyl/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example
 - Nodes can now be implemented as finite state machines (see our example of the philosopher
-  problem: https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers)
+  problem: https://github.com/drasyl/drasyl/tree/master/drasyl-examples/src/main/java/org/drasyl/example/diningphilosophers)
   .
 
 ### Changed

@@ -22,7 +22,7 @@
 package org.drasyl.identity;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 
 /**
  * This class is a simple holder for a key pair (a {@link IdentityPublicKey} and a {@link
@@ -46,10 +46,10 @@ public abstract class KeyPair<P extends PublicKey, S extends SecretKey> {
      * @return key pair with unmasked secret key
      */
     public String toUnmaskedString() {
-        return "KeyPair{"
-                + "publicKey=" + getPublicKey() + ", "
-                + "secretKey=" + getSecretKey().toUnmaskedString()
-                + "}";
+        return "KeyPair{" +
+                "publicKey=" + getPublicKey() + ", " +
+                "secretKey=" + getSecretKey().toUnmaskedString() +
+                "}";
     }
 
     /**

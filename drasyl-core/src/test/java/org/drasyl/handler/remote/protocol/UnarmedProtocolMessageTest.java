@@ -57,7 +57,9 @@ class UnarmedProtocolMessageTest {
 
         @AfterEach
         void tearDown() {
-            ReferenceCountUtil.safeRelease(unarmedMessage);
+            if (ReferenceCountUtil.refCnt(unarmedMessage) < 0) {
+                ReferenceCountUtil.safeRelease(unarmedMessage);
+            }
         }
 
         @Test
@@ -106,6 +108,25 @@ class UnarmedProtocolMessageTest {
 
             byteBuf.release();
             byteBuf2.release();
+        }
+    }
+
+    @Nested
+    class GetLength {
+        @Test
+        void shouldReturnCorrectLength() {
+            final UnarmedProtocolMessage unarmedMessage = UnarmedProtocolMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
+            final int length = unarmedMessage.getLength();
+
+            final ByteBuf byteBuf = Unpooled.buffer();
+            try {
+                unarmedMessage.writeTo(byteBuf);
+
+                assertEquals(byteBuf.readableBytes(), length);
+            }
+            finally {
+                byteBuf.release();
+            }
         }
     }
 

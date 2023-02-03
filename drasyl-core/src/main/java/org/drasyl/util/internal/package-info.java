@@ -20,6 +20,6 @@
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * Annotations that provide meta information about drasyl's API.
+ * <em>Internal-use-only</em> utilities which should <strong>not</strong> used outside drasyl.
  */
-package org.drasyl.annotation;
+package org.drasyl.util.internal;

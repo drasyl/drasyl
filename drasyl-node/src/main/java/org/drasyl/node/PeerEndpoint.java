@@ -22,8 +22,8 @@
 package org.drasyl.node;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.annotation.NonNull;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.NonNull;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.UriUtil;
 
@@ -188,8 +188,8 @@ public abstract class PeerEndpoint {
         try {
             return of(new URI(endpoint));
         }
-        catch (final URISyntaxException x) {
-            throw new IllegalArgumentException("Invalid uri", x);
+        catch (final URISyntaxException e) {
+            throw new IllegalArgumentException("Invalid uri", e);
         }
     }
 

@@ -22,7 +22,7 @@
 package org.drasyl.cli.tunnel.channel;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
@@ -45,7 +45,7 @@ public class TunnelConsumeChannelInitializer extends AbstractChannelInitializer 
 
     @SuppressWarnings("java:S107")
     public TunnelConsumeChannelInitializer(final Identity identity,
-                                           final NioEventLoopGroup udpServerGroup,
+                                           final EventLoopGroup udpServerGroup,
                                            final InetSocketAddress bindAddress,
                                            final int networkId,
                                            final int onlineTimeoutMillis,

@@ -51,8 +51,9 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage> {
-    public static final int MIN_LENGTH = 50;
+    public static final int MIN_LENGTH = IdentityPublicKey.KEY_LENGTH_AS_BYTES + 18; // 18 bytes: at least one port+ipv6 address
     private static final int IPV6_LENGTH = 16;
+    private static final int ADDRESS_LENGTH = Short.BYTES + IPV6_LENGTH;
 
     /**
      * Creates new unit message.
@@ -154,7 +155,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
         final Set<InetSocketAddress> inetAddresses = new HashSet<>();
         try {
-            while (body.readableBytes() >= 18) {
+            while (body.readableBytes() >= ADDRESS_LENGTH) {
                 final int port = body.readUnsignedShort();
                 final byte[] addressBuffer = new byte[IPV6_LENGTH];
                 body.readBytes(addressBuffer);
@@ -198,7 +199,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
         int length = MIN_LENGTH;
-        length += getInetAddresses().size() * (IPV6_LENGTH + 2);
+        length += getInetAddresses().size() * ADDRESS_LENGTH;
         PrivateHeader.of(UNITE, UnsignedShort.of(length)).writeTo(out);
     }
 
@@ -209,5 +210,10 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
             out.writeShort(address.getPort());
             out.writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(address.getAddress()));
         }
+    }
+
+    @Override
+    public int getLength() {
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + IdentityPublicKey.KEY_LENGTH_AS_BYTES + ADDRESS_LENGTH * getInetAddresses().size();
     }
 }

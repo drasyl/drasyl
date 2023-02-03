@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.remote.protocol;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
@@ -82,6 +84,25 @@ public class HelloMessageTest {
             assertFalse(hello.isSigned());
             assertFalse(hello.verifySignature());
             assertEquals(privateInetAddresses, hello.getPrivateInetAddresses());
+        }
+    }
+
+    @Nested
+    class GetLength {
+        @Test
+        void shouldReturnCorrectLength() {
+            final HelloMessage hello = HelloMessage.of(1, recipient, sender, proofOfWork, time, 1337L, secretKey, privateInetAddresses);
+            final int length = hello.getLength();
+
+            final ByteBuf byteBuf = Unpooled.buffer();
+            try {
+                hello.writeTo(byteBuf);
+
+                assertEquals(byteBuf.readableBytes(), length);
+            }
+            finally {
+                byteBuf.release();
+            }
         }
     }
 }

@@ -26,11 +26,11 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.Worm;
@@ -47,6 +47,10 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
+/**
+ * Make sure that any {@link picocli.CommandLine.Command} inherating this class is using
+ * {@link ChannelOptionsDefaultProvider} as {@code defaultValueProvider}.
+ */
 @SuppressWarnings("java:S118")
 public abstract class ChannelOptions extends GlobalOptions implements Callable<Integer> {
     public static final short MIN_DERIVED_PORT = 22528;
@@ -54,7 +58,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected final PrintStream err;
     protected final EventLoopGroup parentGroup;
     protected final EventLoopGroup childGroup;
-    protected final NioEventLoopGroup udpServerGroup;
+    protected final EventLoopGroup udpServerGroup;
     @Option(
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
@@ -87,7 +91,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             names = { "--super-peers" },
             description = "The super peers the server joins to.",
             paramLabel = "<public-key>=<host:port>",
-            defaultValue = "c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fra1.drasyl.org:22527,5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c=sp-nbg2.drasyl.org:22527",
+            defaultValue = "", // Provided by ChannelOptionsDefaultProvider
             split = ","
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -102,7 +106,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                              final PrintStream err,
                              final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup,
+                             final EventLoopGroup udpServerGroup,
                              final Level logLevel,
                              final File identityFile,
                              final InetSocketAddress bindAddress,
@@ -124,7 +128,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup,
-                             final NioEventLoopGroup udpServerGroup) {
+                             final EventLoopGroup udpServerGroup) {
         this.out = System.out; // NOSONAR
         this.err = System.err; // NOSONAR
         this.parentGroup = requireNonNull(parentGroup);
@@ -134,11 +138,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
     protected ChannelOptions(final EventLoopGroup parentGroup,
                              final EventLoopGroup childGroup) {
-        this(parentGroup, childGroup, new NioEventLoopGroup(1));
+        this(parentGroup, childGroup, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     protected ChannelOptions(final EventLoopGroup group) {
-        this(group, group, new NioEventLoopGroup(1));
+        this(group, group, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     @Override

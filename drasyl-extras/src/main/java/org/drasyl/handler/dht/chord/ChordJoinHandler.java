@@ -55,7 +55,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) {
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
         cancelJoin();
     }
 
@@ -67,7 +67,7 @@ public class ChordJoinHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(final ChannelHandlerContext ctx) {
         cancelJoin();
 
         ctx.fireChannelInactive();

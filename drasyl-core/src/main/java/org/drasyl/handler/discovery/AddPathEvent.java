@@ -22,7 +22,7 @@
 package org.drasyl.handler.discovery;
 
 import com.google.auto.value.AutoValue;
-import org.drasyl.annotation.Nullable;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.identity.DrasylAddress;
 
 import java.net.InetSocketAddress;

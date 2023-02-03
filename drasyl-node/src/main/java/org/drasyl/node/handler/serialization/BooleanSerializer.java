@@ -32,7 +32,7 @@ public class BooleanSerializer extends BoundedSerializer<Boolean> {
     private static final byte[] FALSE_BYTES = { 0 };
 
     @Override
-    protected byte[] matchedToByArray(final Boolean o) {
+    byte[] matchedToByArray(final Boolean o) {
         if (Boolean.TRUE.equals(o)) {
             return TRUE_BYTES.clone();
         }
@@ -42,8 +42,8 @@ public class BooleanSerializer extends BoundedSerializer<Boolean> {
     }
 
     @Override
-    protected Boolean matchedFromByteArray(final byte[] bytes,
-                                           final Class<Boolean> type) throws IOException {
+    Boolean matchedFromByteArray(final byte[] bytes,
+                                 final Class<Boolean> type) throws IOException {
         if (Arrays.equals(TRUE_BYTES, bytes)) {
             return Boolean.TRUE;
         }

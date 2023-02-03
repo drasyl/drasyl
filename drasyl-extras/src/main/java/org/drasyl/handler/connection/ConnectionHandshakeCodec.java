@@ -45,7 +45,7 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
     protected void encode(final ChannelHandlerContext ctx,
                           final ConnectionHandshakeSegment seg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buf = ctx.alloc().buffer(13);
+        final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH + seg.content().readableBytes());
         buf.writeInt(MAGIC_NUMBER);
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());

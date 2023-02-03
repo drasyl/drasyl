@@ -70,10 +70,10 @@ class RmiInvocationHandler implements InvocationHandler {
     private final Map<Method, Map<Integer, Optional<Object>>> resultsCache = new HashMap<>();
     private final Map<UUID, RemoteInvocation> requests = new HashMap<>();
 
-    public RmiInvocationHandler(final RmiClientHandler handler,
-                                final Class<?> clazz,
-                                final String name,
-                                final SocketAddress address) {
+    RmiInvocationHandler(final RmiClientHandler handler,
+                         final Class<?> clazz,
+                         final String name,
+                         final SocketAddress address) {
         this.handler = requireNonNull(handler);
         this.clazz = requireNonNull(clazz);
         this.name = requireNonNull(name);
@@ -288,9 +288,9 @@ class RmiInvocationHandler implements InvocationHandler {
         private final Method method;
         private final int cacheKey;
 
-        public RemoteInvocation(final Method method,
-                                final Promise<Object> promise,
-                                final int cacheKey) {
+        RemoteInvocation(final Method method,
+                         final Promise<Object> promise,
+                         final int cacheKey) {
             this.promise = requireNonNull(promise);
             this.method = requireNonNull(method);
             this.cacheKey = cacheKey;

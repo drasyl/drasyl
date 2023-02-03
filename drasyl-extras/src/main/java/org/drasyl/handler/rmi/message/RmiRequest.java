@@ -89,7 +89,7 @@ public final class RmiRequest extends DefaultByteBufHolder implements RmiMessage
         if (!super.equals(o)) {
             return false;
         }
-        RmiRequest that = (RmiRequest) o;
+        final RmiRequest that = (RmiRequest) o;
         return name == that.name && method == that.method && Objects.equals(id, that.id);
     }
 

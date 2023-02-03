@@ -289,7 +289,7 @@ public class CountingBloomFilter<E> extends BloomFilter<E> {
     }
 
     @Override
-    public void merge(BloomFilter<E> other) {
+    public void merge(final BloomFilter<E> other) {
         throw new UnsupportedOperationException();
     }
 
@@ -302,7 +302,7 @@ public class CountingBloomFilter<E> extends BloomFilter<E> {
     @Override
     protected boolean setBit(final int index) {
         for (int i = 0; i < countingBits; i++) {
-            boolean bit = bitSet.get(index + i);
+            final boolean bit = bitSet.get(index + i);
             if (bit) {
                 if (i == countingBits - 1) {
                     throw new IllegalStateException("Counter overflow detected. Bloom filter corrupted.");
@@ -319,7 +319,7 @@ public class CountingBloomFilter<E> extends BloomFilter<E> {
 
     protected boolean unsetBit(final int index) {
         for (int i = 0; i < countingBits; i++) {
-            boolean bit = bitSet.get(index + i);
+            final boolean bit = bitSet.get(index + i);
             if (bit) {
                 bitSet.set(index + i, false);
                 break;

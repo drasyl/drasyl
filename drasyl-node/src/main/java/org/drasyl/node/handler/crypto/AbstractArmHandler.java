@@ -83,8 +83,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
             onNonAgreement(ctx);
         }
 
-        final ByteBuf byteBuf = ctx.alloc().buffer();
-        ArmMessage.fromApplication(msg, byteBuf);
+        final ByteBuf byteBuf = ArmMessage.fromApplication(msg, ctx.alloc());
         final ArmHeader arm = arm(ctx, agreement, byteBuf);
         byteBuf.release();
         out.add(arm);

@@ -21,11 +21,13 @@
  */
 package org.drasyl.util.logging;
 
+import org.drasyl.util.internal.UnstableApi;
 import org.slf4j.Logger;
 
 /**
  * <a href="https://www.slf4j.org/">SLF4J</a> logger.
  */
+@UnstableApi
 public class Slf4JLogger extends AbstractLogger {
     @SuppressWarnings("java:S1312")
     private final Logger logger;

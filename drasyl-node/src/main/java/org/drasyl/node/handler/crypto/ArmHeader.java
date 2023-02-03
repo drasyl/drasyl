@@ -83,4 +83,14 @@ public class ArmHeader extends DefaultByteBufHolder {
                 ", content=" + content() +
                 '}';
     }
+
+    public void writeTo(final ByteBuf out) {
+        out.writeBytes(getAgreementId().toBytes());
+        out.writeBytes(getNonce().toByteArray());
+        out.writeBytes(content());
+    }
+
+    public int getLength() {
+        return AgreementId.ID_LENGTH + Nonce.NONCE_LENGTH + content().readableBytes();
+    }
 }

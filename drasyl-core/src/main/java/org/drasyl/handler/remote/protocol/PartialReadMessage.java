@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCounted;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 
@@ -32,6 +33,7 @@ import java.io.IOException;
  *
  * @see FullReadMessage
  */
+@UnstableApi
 public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, AutoCloseable {
     /**
      * Returns the remainder of unread bytes of this message.
@@ -86,7 +88,6 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
             );
         }
         else {
-
             return UnarmedProtocolMessage.of(
                     publicHeader.getHopCount(),
                     publicHeader.getArmed(),
@@ -131,7 +132,7 @@ public interface PartialReadMessage extends RemoteMessage, ReferenceCounted, Aut
         }
 
         try {
-            return of(PublicHeader.of(bytes), bytes.discardSomeReadBytes().slice());
+            return of(PublicHeader.of(bytes), bytes);
         }
         catch (final IOException e) {
             throw new InvalidMessageFormatException("Can't read public header.", e);

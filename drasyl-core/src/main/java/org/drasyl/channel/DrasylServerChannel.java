@@ -29,7 +29,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
-import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
@@ -92,7 +91,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected boolean isCompatible(final EventLoop loop) {
-        return loop instanceof DefaultEventLoop;
+        return true;
     }
 
     @Override
@@ -114,14 +113,14 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doRegister() throws Exception {
         super.doRegister();
 
-        pipeline().addLast((new ChannelInitializer<>() {
+        pipeline().addLast(new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter(paths));
                 ch.pipeline().addLast(new DuplicateChannelFilter());
                 ch.pipeline().addLast(new PendingWritesFlusher());
             }
-        }));
+        });
     }
 
     @Override

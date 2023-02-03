@@ -254,7 +254,7 @@ class TcpServerTest {
         }
 
         @Test
-        void shouldRespondWithHTTPAndCloseWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
+        void shouldRespondWithHttpAndCloseWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
             when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
             when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
@@ -262,7 +262,11 @@ class TcpServerTest {
             new TcpServer.TcpServerHandler(clients, ctx).channelRead0(nettyCtx, msg);
 
             verify(nettyCtx).writeAndFlush(outboundMsg.capture());
-            assertEquals(outboundMsg.getValue(), Unpooled.buffer().writeBytes(HTTP_OK));
+            final ByteBuf httpOk = Unpooled.buffer().writeBytes(HTTP_OK);
+            assertEquals(outboundMsg.getValue(), httpOk);
+
+            httpOk.release();
+            outboundMsg.getValue().release();
         }
 
         @Test

@@ -61,8 +61,8 @@ public final class UriUtil {
         try {
             return new URI(scheme, null, host, port, null, null, null);
         }
-        catch (final URISyntaxException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
+        catch (final URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
@@ -100,8 +100,8 @@ public final class UriUtil {
         try {
             return new URI(scheme, userInfo, host, port, path, query, null);
         }
-        catch (final URISyntaxException x) {
-            throw new IllegalArgumentException(x.getMessage(), x);
+        catch (final URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 

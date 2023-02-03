@@ -79,8 +79,8 @@ public class ProtocolArmHandler extends MessageToMessageCodec<InetAddressedMessa
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ArmedProtocolMessage) {
             final ArmedProtocolMessage armedMessage = ((InetAddressedMessage<ArmedProtocolMessage>) msg).content();
 
-            return Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getRecipient())
-                    && !Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getSender());
+            return Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getRecipient()) &&
+                    !Objects.equals(myIdentity.getIdentityPublicKey(), armedMessage.getSender());
         }
         return false;
     }

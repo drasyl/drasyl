@@ -34,10 +34,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -138,7 +138,7 @@ public class UdpServer extends ChannelDuplexHandler {
         LOG.debug("Start Server...");
         bootstrap
                 .group(group)
-                .channel(NioDatagramChannel.class)
+                .channel(EventLoopGroupUtil.getBestDatagramChannel())
                 .handler(new UdpServerHandler(ctx))
                 .bind(bindAddress)
                 .addListener(new UdpServerBindListener(ctx));
@@ -168,7 +168,12 @@ public class UdpServer extends ChannelDuplexHandler {
             final InetSocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
             final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
 
-            pendingWrites.add(packet, promise);
+            if (channel.isWritable()) {
+                channel.write(packet).addListener(new PromiseNotifier<>(promise));
+            }
+            else {
+                pendingWrites.add(packet, promise);
+            }
         }
         else {
             ctx.write(msg, promise);
@@ -177,7 +182,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        writePendingWrites();
+        channel.flush();
         ctx.flush();
     }
 
@@ -202,7 +207,7 @@ public class UdpServer extends ChannelDuplexHandler {
     private class UdpServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
         private final ChannelHandlerContext drasylServerChannelCtx;
 
-        public UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
+        UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
             super(false);
             this.drasylServerChannelCtx = drasylServerChannelCtx;
         }
@@ -213,12 +218,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
             if (ctx.channel().isWritable()) {
                 // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                if (drasylServerChannelCtx.executor().inEventLoop()) {
-                    writePendingWrites();
-                }
-                else {
-                    drasylServerChannelCtx.executor().execute(UdpServer.this::writePendingWrites);
-                }
+                writePendingWrites();
             }
         }
 
@@ -228,16 +228,13 @@ public class UdpServer extends ChannelDuplexHandler {
             LOG.trace("Datagram received {}", packet);
 
             final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(packet.content(), null, packet.sender());
-            if (drasylServerChannelCtx.executor().inEventLoop()) {
-                drasylServerChannelCtx.fireChannelRead(msg);
-                drasylServerChannelCtx.fireChannelReadComplete();
-            }
-            else {
-                drasylServerChannelCtx.executor().execute(() -> {
-                    drasylServerChannelCtx.fireChannelRead(msg);
-                    drasylServerChannelCtx.fireChannelReadComplete();
-                });
-            }
+            drasylServerChannelCtx.fireChannelRead(msg);
+        }
+
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            drasylServerChannelCtx.fireChannelReadComplete();
+            ctx.fireChannelReadComplete();
         }
     }
 
@@ -247,7 +244,7 @@ public class UdpServer extends ChannelDuplexHandler {
     private class UdpServerBindListener implements ChannelFutureListener {
         private final ChannelHandlerContext ctx;
 
-        public UdpServerBindListener(final ChannelHandlerContext ctx) {
+        UdpServerBindListener(final ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 

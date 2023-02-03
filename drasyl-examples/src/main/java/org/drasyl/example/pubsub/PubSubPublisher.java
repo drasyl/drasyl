@@ -28,7 +28,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -39,6 +38,7 @@ import org.drasyl.handler.pubsub.PubSubPublishHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,7 +82,7 @@ public class PubSubPublisher {
         final Identity identity = IdentityManager.readIdentityFile(identityFile.toPath());
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
-        final NioEventLoopGroup udpServerGroup = new NioEventLoopGroup(1);
+        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
@@ -111,7 +111,7 @@ public class PubSubPublisher {
             final Scanner userInput = new Scanner(System.in);
             while (ch.isOpen()) {
                 System.out.println("\nType \"publish <topic> <content>\" or \"quit\": ");
-                String command = userInput.nextLine();
+                final String command = userInput.nextLine();
 
                 // quit
                 if (command.startsWith("quit")) {

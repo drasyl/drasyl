@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,26 +19,21 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.annotation;
+package org.drasyl.util;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.drasyl.AbstractBenchmark;
+import org.drasyl.util.network.NetworkUtil;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.infra.Blackhole;
 
-/**
- * A common annotation to declare that annotated elements can be {@code null} under some
- * circumstance. Leverages JSR 305 meta-annotations to indicate nullability in Java to common tools
- * with JSR 305 support and used by Kotlin to infer nullability of the API.
- *
- * <p>Should be used at parameter, return value, and field level. Methods override should
- * repeat parent {@code @Nullable} annotations unless they behave differently.
- *
- * @see NonNull
- */
-@Target({ ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD })
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface Nullable {
+public class NetworkUtilBenchmark extends AbstractBenchmark {
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void getAddresses(final Blackhole blackhole) {
+        blackhole.consume(NetworkUtil.getAddresses());
+    }
 }

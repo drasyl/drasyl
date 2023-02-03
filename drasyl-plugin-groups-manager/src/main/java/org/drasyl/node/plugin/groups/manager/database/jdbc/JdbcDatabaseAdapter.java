@@ -49,13 +49,13 @@ import java.util.Set;
         "SqlDialectInspection",
         "SqlNoDataSourceInspection"
 })
-public class JDBCDatabaseAdapter implements DatabaseAdapter {
+public class JdbcDatabaseAdapter implements DatabaseAdapter {
     public static final int QUERY_TIMEOUT = 15;
     public static final String SCHEME = "jdbc";
     private final String uri;
     private Connection connection;
 
-    public JDBCDatabaseAdapter(final URI uri) throws DatabaseException {
+    public JdbcDatabaseAdapter(final URI uri) throws DatabaseException {
         this.uri = uri.toString();
 
         createTables();

@@ -28,13 +28,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class StringSerializer extends BoundedSerializer<String> {
     @Override
-    protected byte[] matchedToByArray(final String o) {
+    byte[] matchedToByArray(final String o) {
         return o.getBytes(UTF_8);
     }
 
     @Override
-    protected String matchedFromByteArray(final byte[] bytes,
-                                          final Class<String> type) {
+    String matchedFromByteArray(final byte[] bytes,
+                                final Class<String> type) {
         return new String(bytes, UTF_8);
     }
 }

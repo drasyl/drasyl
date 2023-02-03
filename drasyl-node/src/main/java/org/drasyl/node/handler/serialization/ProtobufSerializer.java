@@ -37,14 +37,14 @@ public class ProtobufSerializer extends BoundedSerializer<Message> {
     private static final Map<Class<?>, Optional<Method>> typeMethods = new HashMap<>();
 
     @Override
-    protected byte[] matchedToByArray(final Message o) {
+    byte[] matchedToByArray(final Message o) {
         return o.toByteArray();
     }
 
     @SuppressWarnings("java:S3878")
     @Override
-    protected Message matchedFromByteArray(final byte[] bytes,
-                                           final Class<Message> type) throws IOException {
+    Message matchedFromByteArray(final byte[] bytes,
+                                 final Class<Message> type) throws IOException {
         final Optional<Method> method = getParseFromMethod(type);
 
         if (method.isPresent()) {

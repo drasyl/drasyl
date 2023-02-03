@@ -44,7 +44,7 @@ abstract class BoundedSerializer<B> implements Serializer {
         }
     }
 
-    protected abstract byte[] matchedToByArray(final B o) throws IOException;
+    abstract byte[] matchedToByArray(final B o) throws IOException;
 
     @SuppressWarnings("unchecked")
     @Override
@@ -57,5 +57,5 @@ abstract class BoundedSerializer<B> implements Serializer {
         }
     }
 
-    protected abstract B matchedFromByteArray(final byte[] bytes, Class<B> type) throws IOException;
+    abstract B matchedFromByteArray(final byte[] bytes, Class<B> type) throws IOException;
 }

@@ -19,29 +19,35 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.node;
+package org.drasyl.util.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Holder for the JSON serializer and JSON deserializer.
+ * Indicates a public API that can change at any time (even in minor/bugfix releases).
+ * <p>
+ * Usage guidelines:
+ *
+ * <ol>
+ *     <li>Is not needed for things located in *.internal.* packages</li>
+ *     <li>Only public accessible classes/interfaces must be annotated</li>
+ *     <li>If this annotation is not present the API is considered stable and so no backward compatibility can be
+ *         broken in a non-major release!</li>
+ * </ol>
  */
-public final class JSONUtil {
-    public static final ObjectMapper JACKSON_MAPPER;
-    public static final ObjectWriter JACKSON_WRITER;
-    public static final ObjectReader JACKSON_READER;
-
-    static {
-        JACKSON_MAPPER = new ObjectMapper();
-        JACKSON_MAPPER.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        JACKSON_WRITER = JACKSON_MAPPER.writer();
-        JACKSON_READER = JACKSON_MAPPER.reader();
-    }
-
-    private JSONUtil() {
-        // util class
-    }
+@Retention(RetentionPolicy.CLASS)
+@Target({
+        ElementType.ANNOTATION_TYPE,
+        ElementType.CONSTRUCTOR,
+        ElementType.FIELD,
+        ElementType.METHOD,
+        ElementType.PACKAGE,
+        ElementType.TYPE
+})
+@Documented
+public @interface UnstableApi {
 }

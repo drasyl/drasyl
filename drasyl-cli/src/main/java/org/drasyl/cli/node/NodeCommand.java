@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.drasyl.annotation.NonNull;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
@@ -55,7 +55,7 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.node.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
 
 /**
  * Run a drasyl node.

@@ -104,7 +104,7 @@ public final class UnsignedInteger {
     }
 
     public UnsignedInteger safeDecrement() {
-        if(value == MIN_VALUE.value) {
+        if (value == MIN_VALUE.value) {
             return MIN_VALUE;
         }
 

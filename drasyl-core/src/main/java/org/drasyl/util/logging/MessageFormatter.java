@@ -201,7 +201,7 @@ final class MessageFormatter {
 
         final StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
         int i = 0;
-        int L = 0;
+        int l = 0;
         do {
             boolean notEscaped = j == 0 || messagePattern.charAt(j - 1) != ESCAPE_CHAR;
             if (notEscaped) {
@@ -216,9 +216,9 @@ final class MessageFormatter {
 
             i = j + 2;
             if (notEscaped) {
-                deeplyAppendParameter(sbuf, argArray[L], null);
-                L++;
-                if (L > lastArrIdx) {
+                deeplyAppendParameter(sbuf, argArray[l], null);
+                l++;
+                if (l > lastArrIdx) {
                     break;
                 }
             }
@@ -230,7 +230,7 @@ final class MessageFormatter {
 
         // append the characters following the last {} pair.
         sbuf.append(messagePattern, i, messagePattern.length());
-        return new FormattingTuple(sbuf.toString(), L <= lastArrIdx ? throwable : null);
+        return new FormattingTuple(sbuf.toString(), l <= lastArrIdx ? throwable : null);
     }
 
     // special treatment of array values was suggested by 'lizongbo'
@@ -306,11 +306,11 @@ final class MessageFormatter {
             final String oAsString = o.toString();
             sbuf.append(oAsString);
         }
-        catch (final Throwable t) {
+        catch (final Throwable e) {
             System.err
-                    .println("SLF4J: Failed toString() invocation on an object of type ["
-                            + o.getClass().getName() + ']');
-            t.printStackTrace();
+                    .println("SLF4J: Failed toString() invocation on an object of type [" +
+                            o.getClass().getName() + ']');
+            e.printStackTrace();
             sbuf.append("[FAILED toString()]");
         }
     }

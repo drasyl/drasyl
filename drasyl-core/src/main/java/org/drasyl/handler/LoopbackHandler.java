@@ -34,9 +34,9 @@ import org.drasyl.identity.DrasylAddress;
 @Sharable
 public class LoopbackHandler extends ChannelOutboundHandlerAdapter {
     @Override
-    public void write(ChannelHandlerContext ctx,
-                      Object msg,
-                      ChannelPromise promise) {
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage && ctx.channel().localAddress().equals(((OverlayAddressedMessage<?>) msg).recipient())) {
             promise.setSuccess();
             ctx.fireChannelRead(new OverlayAddressedMessage<>(((OverlayAddressedMessage<?>) msg).content(), (DrasylAddress) ctx.channel().localAddress(), (DrasylAddress) ctx.channel().localAddress()));
