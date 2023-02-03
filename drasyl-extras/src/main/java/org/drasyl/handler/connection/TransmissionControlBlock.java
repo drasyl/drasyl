@@ -159,7 +159,7 @@ public class TransmissionControlBlock {
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, mss * 3L, rcvWnd, sndWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -720,9 +720,13 @@ public class TransmissionControlBlock {
     }
 
     public int effSndMss() {
+        return effSndMss(mss());
+    }
+
         // RFC 1122, Section 4.2.2.6
         // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
         // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-        return NumberUtil.min(mss() + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
+    private static int effSndMss(final int mss) {
+        return NumberUtil.min(mss + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 }

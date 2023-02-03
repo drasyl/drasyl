@@ -1089,9 +1089,10 @@ class ReliableDeliveryHandlerTest {
                 });
             }
 
-
+            // RFC 5681, Section 3.1, Rule 5.1
+            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
+            // Reno: Just one retransmission!
             @Test
-            @Disabled
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000 + SEG_HDR_SIZE);
@@ -1106,11 +1107,29 @@ class ReliableDeliveryHandlerTest {
 
                 // three duplicate ACKs in a row
                 channel.writeInbound(Segment.ack(205, 300));
+                assertEquals(3000, tcb.cwnd());
+                assertEquals(4000, tcb.ssthresh());
                 channel.writeInbound(Segment.ack(205, 300));
+                assertEquals(3000, tcb.cwnd());
+                assertEquals(4000, tcb.ssthresh());
                 channel.writeInbound(Segment.ack(205, 300));
 
                 // dup ACKs should trigger immediate retransmission
+                assertEquals(5943, tcb.cwnd());
+                assertEquals(2850, tcb.ssthresh());
                 assertEquals(Segment.ack(300, 200, outstandingData), channel.readOutbound());
+
+                // fourth duplicate ACK
+                channel.writeInbound(Segment.ack(205, 300));
+                assertEquals(6943, tcb.cwnd());
+                assertEquals(2850, tcb.ssthresh());
+                assertNull(channel.readOutbound());
+
+                // cumulative ACK
+                channel.writeInbound(Segment.ack(205, 400));
+                assertEquals(2850, tcb.cwnd());
+                assertEquals(2850, tcb.ssthresh());
+                assertNull(channel.readOutbound());
             }
 
             // FIXME: haben wir das so umgesetzt?
