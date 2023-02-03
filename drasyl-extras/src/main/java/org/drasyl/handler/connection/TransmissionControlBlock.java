@@ -645,6 +645,7 @@ public class TransmissionControlBlock {
 
     public void decrementRcvWnd(final int decrement) {
         rcvWnd -= decrement;
+        assert rcvWnd >= 0 : "RCV.WND must be non-negative";
     }
 
     public void incrementRcvWnd(final ChannelHandlerContext ctx) {
@@ -661,6 +662,7 @@ public class TransmissionControlBlock {
             final long newRcvWind = rcvBuff() - rcvUser;
             LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
+            assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
     }
 
