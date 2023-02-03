@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,6 +41,7 @@ import java.util.TimerTask;
  * io.netty.channel.EventLoop}s. If a given threshold is reached, the current number of pending
  * tasks is logged.
  */
+@UnstableApi
 public final class EventLoopBacklogMonitor {
     private static final Logger LOG = LoggerFactory.getLogger(EventLoopBacklogMonitor.class);
     public static final int THRESHOLD = Integer.parseInt(SystemPropertyUtil.get("org.drasyl.eventLoop.backlogThreshold", "10"));

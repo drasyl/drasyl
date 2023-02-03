@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -38,6 +39,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link DefaultEventLoop} that is aware of slow task executions.
  */
+@UnstableApi
 @SuppressWarnings("java:S110")
 public class SlowAwareDefaultEventLoop extends DefaultEventLoop {
     private static final Logger LOG = LoggerFactory.getLogger(SlowAwareDefaultEventLoop.class);

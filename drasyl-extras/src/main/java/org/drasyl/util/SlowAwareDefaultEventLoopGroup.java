@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@ package org.drasyl.util;
 
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoop;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
@@ -30,6 +31,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * A {@link DefaultEventLoopGroup} that is aware of slow task executions.
  */
+@UnstableApi
 public class SlowAwareDefaultEventLoopGroup extends DefaultEventLoopGroup {
     public SlowAwareDefaultEventLoopGroup() {
         super();

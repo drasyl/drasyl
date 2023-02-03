@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,13 +19,14 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler;
+package org.drasyl.handler.monitoring;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.LogLevel;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -40,6 +41,7 @@ import static java.util.Objects.requireNonNull;
  * {@link ChannelInboundHandler#channelRead(ChannelHandlerContext, Object)} for every
  * {@link ChannelInboundHandler}.
  */
+@UnstableApi
 public class SlowReadAwareHandler extends ChannelInboundHandlerAdapter {
     public static final float THRESHOLD = Float.parseFloat(SystemPropertyUtil.get("org.drasyl.channel.handler.slowReadThreshold", "0.0"));
     private static final Logger LOG = LoggerFactory.getLogger(SlowReadAwareHandler.class);
