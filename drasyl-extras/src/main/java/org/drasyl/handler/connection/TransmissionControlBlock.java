@@ -89,14 +89,14 @@ public class TransmissionControlBlock {
     final RetransmissionQueue retransmissionQueue;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
-    private final long rcvBuff;
+    private final int rcvBuff;
     protected long ssthresh; // slow start threshold
     // congestion control
     long cwnd; // congestion window
     long lastAdvertisedWindow;
     // Receive Sequence Variables
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    private long rcvWnd; // receive window
+    private int rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
     // Send Sequence Variables
     private long sndUna; // oldest unacknowledged sequence number
@@ -118,7 +118,7 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long rcvNxt,
-                             final long rcvWnd,
+                             final int rcvWnd,
                              final long rcvBuff,
                              final long irs,
                              final SendBuffer sendBuffer,
@@ -211,7 +211,7 @@ public class TransmissionControlBlock {
         return rcvNxt;
     }
 
-    public long rcvWnd() {
+    public int rcvWnd() {
         return rcvWnd;
     }
 
@@ -656,18 +656,18 @@ public class TransmissionControlBlock {
 
         // total receive buffer space is RCV.BUFF
         // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-        long rcvUser = receiveBuffer.readableBytes();
+        int rcvUser = receiveBuffer.readableBytes();
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
         if (rcvBuff() - rcvUser - rcvWnd >= NumberUtil.min(fr * rcvBuff(), (long) effSndMss())) {
-            final long newRcvWind = rcvBuff() - rcvUser;
+            final int newRcvWind = rcvBuff() - rcvUser;
             LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
             assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
     }
 
-    long rcvBuff() {
+    int rcvBuff() {
         return rcvBuff;
     }
 

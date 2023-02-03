@@ -195,7 +195,7 @@ public class ReceiveBuffer {
                         index = (int) sub(tcb.rcvNxt(), seg.seq());
                         // ensure that we do not exceed RCV.WND or read data already contained in head
                         final int offsetSegToHead = (int) sub(head.seq(), seg.seq());
-                        length = NumberUtil.min((int) tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
+                        length = NumberUtil.min(tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
                         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
@@ -272,10 +272,10 @@ public class ReceiveBuffer {
                             seq = seg.seq();
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
-                                length = NumberUtil.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
+                                length = NumberUtil.min(tcb.rcvWnd(), seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
                             }
                             else {
-                                length = seg.len() - index;
+                                length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
                             final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
 //                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
@@ -306,10 +306,10 @@ public class ReceiveBuffer {
                             seq = add(current.lastSeq(), 1);
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
-                                length = NumberUtil.min(seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
+                                length = NumberUtil.min(tcb.rcvWnd(), seg.len(), (int) sub(current.next.seq(), seg.seq())) - index;
                             }
                             else {
-                                length = seg.len() - index;
+                                length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
                             final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                             assert current.next == null || lessThan(block.seq(), current.next.seq());
