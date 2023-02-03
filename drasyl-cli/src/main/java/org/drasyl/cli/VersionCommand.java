@@ -21,6 +21,8 @@
  */
 package org.drasyl.cli;
 
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.kqueue.KQueue;
 import org.drasyl.util.Version;
 
 import java.io.PrintStream;
@@ -52,6 +54,8 @@ public class VersionCommand implements Runnable {
         for (final Version version : Version.identify().values()) {
             out.println("- " + version.artifactId() + ".version " + version.version());
         }
+        out.println("- netty.epoll " + Epoll.isAvailable());
+        out.println("- netty.kqueue " + KQueue.isAvailable());
         out.println("- java.version " + System.getProperty("java.version"));
         out.println("- os.name " + System.getProperty("os.name"));
         out.println("- os.version " + System.getProperty("os.version"));

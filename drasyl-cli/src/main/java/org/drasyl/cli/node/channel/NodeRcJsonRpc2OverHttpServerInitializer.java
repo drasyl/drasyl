@@ -23,6 +23,7 @@ package org.drasyl.cli.node.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.timeout.ReadTimeoutHandler;
@@ -57,5 +58,7 @@ public class NodeRcJsonRpc2OverHttpServerInitializer extends NodeRcJsonRpc2OverT
         p.addLast(new HttpToBytesCodec());
 
         super.initChannel(ch);
+
+        p.remove(DelimiterBasedFrameDecoder.class);
     }
 }

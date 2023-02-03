@@ -22,27 +22,93 @@
 package org.drasyl.identity;
 
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.crypto.HexUtil;
+import org.drasyl.util.ImmutableByteArray;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
+@Fork(1)
+@Warmup(iterations = 1)
+@Measurement(iterations = 1)
 @State(Scope.Benchmark)
 public class IdentityPublicKeyBenchmark extends AbstractBenchmark {
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void ofString(final Blackhole blackhole) {
-        blackhole.consume(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"));
+    private byte[] bytes;
+    private String hexString;
+    private ImmutableByteArray immutableBytes;
+    private IdentityPublicKey publicKey;
+    private IdentityPublicKey publicKey2;
+
+    @Setup
+    public void setup() {
+        hexString = "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127";
+        bytes = HexUtil.fromString(hexString);
+        immutableBytes = ImmutableByteArray.of(bytes);
+        publicKey = IdentityPublicKey.of(hexString);
+        publicKey2 = IdentityPublicKey.of("6377d1139c212ee1649a82e0388d55dbdf68ebce4bde031945b60c2e8ac94dc7");
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void ofStringWithConversionToByteArray(final Blackhole blackhole) {
-        blackhole.consume(IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127").toByteArray());
+    public void ofString(final Blackhole blackhole) {
+        blackhole.consume(IdentityPublicKey.of(hexString));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void ofBytes(final Blackhole blackhole) {
+        blackhole.consume(IdentityPublicKey.of(bytes));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void ofImmutableBytes(final Blackhole blackhole) {
+        blackhole.consume(IdentityPublicKey.of(immutableBytes));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void benchmarkHashCode(final Blackhole blackhole) {
+        blackhole.consume(publicKey.hashCode());
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void autoValueHashCode(final Blackhole blackhole) {
+        blackhole.consume(publicKey.getBytes().hashCode());
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void benchmarkEquals(final Blackhole blackhole) {
+        blackhole.consume(publicKey.equals(publicKey2));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void autoValueEquals(final Blackhole blackhole) {
+        blackhole.consume(publicKey.getBytes().equals(publicKey2.getBytes()));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void toByteArray(final Blackhole blackhole) {
+        blackhole.consume(publicKey.toByteArray());
     }
 }

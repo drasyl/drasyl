@@ -32,7 +32,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -43,20 +43,15 @@ jobs:
         uses: microsoft/setup-msbuild@v1
         if: matrix.os == 'windows-latest'
 
-      # set up graalvm
+      # set up GraalVM
       - name: Set up GraalVM environment
-        uses: ayltai/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 22.2.0
-          native-image: true
-
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          version: latest
+          java-version: 17
+          components: native-image
+          cache: 'maven'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # build native image
       - name: Build Native Image
@@ -137,7 +132,7 @@ jobs:
     needs: native-image
 
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3.3.0
 
       - name: Download shared library artifact
         uses: actions/download-artifact@v3
@@ -167,7 +162,7 @@ jobs:
           $VERSION.replace('-SNAPSHOT', '.dev0') > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
-      - uses: actions/setup-python@v4.4.0
+      - uses: actions/setup-python@v4.5.0
         with:
           python-version: '3.10'
           check-latest: true

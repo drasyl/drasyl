@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -18,12 +18,7 @@ jobs:
         with:
           java-version: 11
           distribution: 'adopt'
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
       - name: Build with Maven
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -68,7 +63,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -79,20 +74,15 @@ jobs:
         uses: microsoft/setup-msbuild@v1
         if: matrix.os == 'windows-latest'
 
-      # set up graalvm
+      # set up GraalVM
       - name: Set up GraalVM environment
-        uses: ayltai/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 22.2.0
-          native-image: true
-
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          version: latest
+          java-version: 17
+          components: native-image
+          cache: 'maven'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # build native image
       - name: Build Native Image
@@ -189,10 +179,10 @@ jobs:
 
     name: Build wheels on ${{ matrix.job_name }}
     runs-on: ${{ matrix.os }}
-    needs: native-image
+    needs: shared-library
 
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3.3.0
 
       - name: Download shared library artifact
         uses: actions/download-artifact@v3
@@ -222,7 +212,7 @@ jobs:
           $VERSION > .\drasyl-shared-library\pypi\VERSION
         if: success() && matrix.os == 'windows-latest'
 
-      - uses: actions/setup-python@v4.4.0
+      - uses: actions/setup-python@v4.5.0
         with:
           python-version: '3.10'
           check-latest: true
@@ -307,7 +297,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -318,20 +308,15 @@ jobs:
         uses: microsoft/setup-msbuild@v1
         if: matrix.os == 'windows-latest'
 
-      # set up graalvm
+      # set up GraalVM
       - name: Set up GraalVM environment
-        uses: ayltai/setup-graalvm@v1
+        uses: graalvm/setup-graalvm@v1
         with:
-          java-version: 11
-          graalvm-version: 22.2.0
-          native-image: true
-
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          version: latest
+          java-version: 17
+          components: native-image
+          cache: 'maven'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       # build native image
       - name: Build Native Image
@@ -396,16 +381,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
       - name: Get actual patch version
         id: actual_patch_version
-        run: echo ::set-output name=ACTUAL_PATCH_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3)
+        run: echo ACTUAL_PATCH_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3) >> $GITHUB_OUTPUT
       - name: Get actual minor version
         id: actual_minor_version
-        run: echo ::set-output name=ACTUAL_MINOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2)
+        run: echo ACTUAL_MINOR_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2) >> $GITHUB_OUTPUT
       - name: Get actual major version
         id: actual_major_version
-        run: echo ::set-output name=ACTUAL_MAJOR_VERSION::$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1)
+        run: echo ACTUAL_MAJOR_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1) >> $GITHUB_OUTPUT
       - name: Build and publish image
         uses: ilteoood/docker_buildx@1.1.0
         with:
@@ -418,11 +403,11 @@ jobs:
 
   homebrew:
     name: Update Homebrew cask
-    needs: [java]
+    needs: [cli-java]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl/homebrew-tap
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/homebrew-tap
@@ -433,7 +418,7 @@ jobs:
         run: |
           s=$(sha256sum drasyl.zip | awk  '{ print $1 }')
           echo "SHA256 is: $s"
-          echo ::set-output name=sha::${s}
+          echo sha=${s} >> $GITHUB_OUTPUT
       - name: Update Formula
         run: |
           sed -i -e "s/  version.*/  version \"$(echo ${{ github.event.release.tag_name }} | sed 's/v//')\"/" Formula/drasyl.rb
@@ -449,11 +434,11 @@ jobs:
 
   chocolatey:
     name: Update Chocolatey package
-    needs: [java]
+    needs: [cli-java]
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl/drasyl-choco
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/drasyl-choco
@@ -472,7 +457,7 @@ jobs:
           (Get-Content ./tools/chocolateyinstall.ps1) -replace 'checksum\s+=.*', "checksum       = `"$SHA`"" | Set-Content ./tools/chocolateyinstall.ps1
           Get-Content ./tools/chocolateyinstall.ps1
 
-          echo "::set-output name=version::$Version"
+          echo "version=$Version" >> $env:GITHUB_OUTPUT
       - name: Create package
         run: choco pack
       - name: Push package

@@ -63,11 +63,11 @@ public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
             final byte id = in.readByte();
             if (MAGIC_NUMBER_CONTENT == magicNumber) {
                 final int chunkNo = getChunkNo(in);
-                out.add(new MessageChunk(id, chunkNo, in.retainedSlice()));
+                out.add(new MessageChunk(id, chunkNo, in.retain()));
             }
             else if (MAGIC_NUMBER_LAST == magicNumber) {
                 final int totalChunks = getChunkNo(in);
-                out.add(new LastMessageChunk(id, totalChunks, in.retainedSlice()));
+                out.add(new LastMessageChunk(id, totalChunks, in.retain()));
             }
             else {
                 // wrong magic number -> pass through message

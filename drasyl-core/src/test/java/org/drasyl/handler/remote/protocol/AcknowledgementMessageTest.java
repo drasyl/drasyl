@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.remote.protocol;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +58,25 @@ public class AcknowledgementMessageTest {
 
             assertEquals(1, acknowledgement.getNetworkId());
             assertEquals(time, acknowledgement.getTime());
+        }
+    }
+
+    @Nested
+    class GetLength {
+        @Test
+        void shouldReturnCorrectLength() {
+            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time);
+            final int length = acknowledgement.getLength();
+
+            final ByteBuf byteBuf = Unpooled.buffer();
+            try {
+                acknowledgement.writeTo(byteBuf);
+
+                assertEquals(byteBuf.readableBytes(), length);
+            }
+            finally {
+                byteBuf.release();
+            }
         }
     }
 }

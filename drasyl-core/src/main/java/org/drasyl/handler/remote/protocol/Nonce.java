@@ -21,11 +21,13 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import org.drasyl.util.internal.NonNull;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
 import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.util.RandomUtil;
+import org.drasyl.util.internal.NonNull;
 
 import java.util.Objects;
 
@@ -38,6 +40,7 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("java:S2974")
 public class Nonce {
+    public static final boolean PSEUDORANDOM_NONCE = SystemPropertyUtil.getBoolean("org.drasyl.nonce.pseudorandom", false);
     public static final int NONCE_LENGTH = DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_NPUBBYTES;
     private final ImmutableByteArray bytes;
 
@@ -84,7 +87,14 @@ public class Nonce {
      * @return A randomly generated {@link Nonce}
      */
     public static Nonce randomNonce() {
-        return Nonce.of(Crypto.randomBytes(NONCE_LENGTH));
+        final byte[] bytes;
+        if (PSEUDORANDOM_NONCE) {
+            bytes = RandomUtil.randomBytes(NONCE_LENGTH);
+        }
+        else {
+            bytes = Crypto.randomBytes(NONCE_LENGTH);
+        }
+        return Nonce.of(bytes);
     }
 
     /**

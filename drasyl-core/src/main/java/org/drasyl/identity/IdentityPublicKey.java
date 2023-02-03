@@ -44,6 +44,8 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
     private final transient Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
     public static final IdentityPublicKey ZERO_ID = IdentityPublicKey.of(new byte[KEY_LENGTH_AS_BYTES]);
+    private boolean hashCodeSet;
+    private int hashCode;
 
     /**
      * @return this public key as key agreement key (curve25519)
@@ -74,6 +76,27 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     @Override
     public String toString() {
         return HexUtil.bytesToHex(getBytes().getArray());
+    }
+
+    @Override
+    public int hashCode() {
+        if (!hashCodeSet) {
+            hashCodeSet = true;
+            hashCode = getBytes().hashCode();
+        }
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdentityPublicKey) {
+            final IdentityPublicKey that = (IdentityPublicKey) o;
+            return hashCode() == that.hashCode();
+        }
+        return false;
     }
 
     /**

@@ -45,9 +45,9 @@ class ChordUtilTest {
             assertEquals(3_612_140_399L, chordId(true));
             assertEquals(2_905_308_945L, chordId(false));
             assertEquals(3_745_472_920L, chordId(0));
-            assertEquals(377_492_079L, chordId(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals(4_260_286_807L, chordId(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals(2_071_435_803L, chordId(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals(1_070_315_963L, chordId(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals(3_806_553_154L, chordId(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals(230_329_742L, chordId(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -59,9 +59,9 @@ class ChordUtilTest {
             assertEquals("d74ce36f", chordIdHex(true));
             assertEquals("ad2b7f11", chordIdHex(false));
             assertEquals("df3f6198", chordIdHex((Object) 0));
-            assertEquals("1680126f", chordIdHex(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals("fdeed157", chordIdHex(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals("7b779a1b", chordIdHex(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals("3fcbb9bb", chordIdHex(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals("e2e36442", chordIdHex(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals("0dba8d8e", chordIdHex(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -73,9 +73,9 @@ class ChordUtilTest {
             assertEquals("84%", chordIdPosition(true));
             assertEquals("67%", chordIdPosition(false));
             assertEquals("87%", chordIdPosition((Object) 0));
-            assertEquals("8%", chordIdPosition(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals("99%", chordIdPosition(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals("48%", chordIdPosition(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals("24%", chordIdPosition(IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals("88%", chordIdPosition(IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals("5%", chordIdPosition(IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 
@@ -103,9 +103,9 @@ class ChordUtilTest {
             assertEquals(4_294_967_296L - 2_199_738_337L, relativeChordId(true, "Hello"));
             assertEquals(2_906_569_791L, relativeChordId("Hello", false));
             assertEquals(2_066_405_816L, relativeChordId("Hello", (Object) 0));
-            assertEquals(1_139_419_361L, relativeChordId("Hello", IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
-            assertEquals(1_551_591_929L, relativeChordId("Hello", IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
-            assertEquals(3_740_442_933L, relativeChordId("Hello", IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
+            assertEquals(446_595_477L, relativeChordId("Hello", IdentityPublicKey.of("8cd8f4ac74d4d249558cd3682580004e35c07664bfedc639e21d1822c9e1ef40")));
+            assertEquals(2_005_325_582L, relativeChordId("Hello", IdentityPublicKey.of("c287d900954115f60894e290bd57862f13a1daca879dc03ffd310ca81d18db33")));
+            assertEquals(1_286_581_698L, relativeChordId("Hello", IdentityPublicKey.of("1e1dc25fbb645f2fdd2bca98cd8b7fda7701e2a47186b91590d6e0700ac94f9d")));
         }
     }
 }

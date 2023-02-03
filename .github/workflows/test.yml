@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -26,14 +26,9 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
       - name: Build with Maven
-        run: ./mvnw --batch-mode --update-snapshots verify | tee build.output
+        run: ./mvnw --batch-mode --update-snapshots -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 verify | tee build.output
       - name: Checking for detected leak
         run: ./.github/scripts/check_leak.sh build.output
 #      - name: Cache SonarCloud packages

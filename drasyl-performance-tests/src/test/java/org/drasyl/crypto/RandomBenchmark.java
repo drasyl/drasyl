@@ -22,15 +22,22 @@
 package org.drasyl.crypto;
 
 import org.drasyl.AbstractBenchmark;
+import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
+@Fork(1)
+@Warmup(iterations = 1)
+@Measurement(iterations = 1)
 @State(Scope.Benchmark)
 public class RandomBenchmark extends AbstractBenchmark {
     @Param({ "4", "8", "16", "24", "32", "64" })
@@ -39,7 +46,14 @@ public class RandomBenchmark extends AbstractBenchmark {
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void ownRandomBytes(final Blackhole blackhole) {
+    public void cryptoRandomBytes(final Blackhole blackhole) {
         blackhole.consume(Crypto.randomBytes(size));
+    }
+
+    @Benchmark
+    @Threads(1)
+    @BenchmarkMode(Mode.Throughput)
+    public void pseudoRandomBytes(final Blackhole blackhole) {
+        blackhole.consume(RandomUtil.randomBytes(size));
     }
 }

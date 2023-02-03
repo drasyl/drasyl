@@ -36,6 +36,7 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.SucceededFuture;
 import org.drasyl.handler.rmi.annotation.RmiCaller;
@@ -94,8 +95,18 @@ class RmiIT {
             final MyService stub = client.lookup("MyService", MyService.class, serverAddress);
 
             stub.doNothing();
-            final Future<Integer> additionFuture = stub.doAddition(4, 2).syncUninterruptibly();
-            final Future<String> whoAmIFuture = stub.whoAmI().syncUninterruptibly();
+            final Future<Integer> additionFuture = stub.doAddition(4, 2).addListener((FutureListener<Integer>) future -> {
+                if (future.cause() != null) {
+                    System.err.println("MyService#doAddition failed:");
+                    future.cause().printStackTrace();
+                }
+            }).syncUninterruptibly();
+            final Future<String> whoAmIFuture = stub.whoAmI().addListener((FutureListener<String>) future -> {
+                if (future.cause() != null) {
+                    System.err.println("MyService#whoAmI failed:");
+                    future.cause().printStackTrace();
+                }
+            }).syncUninterruptibly();
 
             assertTrue(additionFuture.isSuccess());
             assertEquals(4 + 2, additionFuture.getNow());

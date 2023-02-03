@@ -11,18 +11,13 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.2.0
+      - uses: actions/checkout@v3.3.0
       - name: Set up JDK
         uses: actions/setup-java@v3.9.0
         with:
           java-version: 17
           distribution: 'adopt'
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
+          cache: 'maven'
       - name: Build with Maven
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
@@ -39,13 +34,13 @@ jobs:
     needs: build
     steps:
       - name: Checkout https://github.com/drasyl/api.drasyl.org
-        uses: actions/checkout@v3.2.0
+        uses: actions/checkout@v3.3.0
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/api.drasyl.org
       - name: Get branch name
         id: vars
-        run: echo ::set-output name=short_ref::${GITHUB_REF#refs/*/}
+        run: echo short_ref=${GITHUB_REF#refs/*/} >> $GITHUB_OUTPUT
       - name: Delete old Java API
         run: rm -rf ${{ steps.vars.outputs.short_ref }}
       - name: Download artifact

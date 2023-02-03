@@ -138,7 +138,7 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
                     // method
                     final int method = msg.content().readInt();
                     // arguments
-                    final ByteBuf parameters = msg.content().readRetainedSlice(msg.content().readableBytes());
+                    final ByteBuf parameters = msg.content().retain();
 
                     out.add(new DefaultAddressedEnvelope<>(RmiRequest.of(id, name, method, parameters), msg.recipient(), msg.sender()));
                     break;
@@ -147,7 +147,7 @@ public class RmiCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, S
                     // id
                     final UUID id = new UUID(msg.content().readLong(), msg.content().readLong());
                     // result
-                    final ByteBuf result = msg.content().readRetainedSlice(msg.content().readableBytes());
+                    final ByteBuf result = msg.content().retain();
 
                     out.add(new DefaultAddressedEnvelope<>(RmiResponse.of(id, result), msg.recipient(), msg.sender()));
                     break;

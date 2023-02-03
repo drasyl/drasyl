@@ -70,7 +70,7 @@ public final class StopAndWaitArqCodec extends MessageToMessageCodec<ByteBuf, St
             final int magicNumber = in.readInt();
             final boolean sequenceNo = in.readBoolean();
             if (MAGIC_NUMBER_DATA == magicNumber) {
-                out.add(new StopAndWaitArqData(sequenceNo, in.retainedSlice()));
+                out.add(new StopAndWaitArqData(sequenceNo, in.retain()));
             }
             else if (MAGIC_NUMBER_ACK == magicNumber) {
                 out.add(sequenceNo ? StopAndWaitArqAck.STOP_AND_WAIT_ACK_1 : StopAndWaitArqAck.STOP_AND_WAIT_ACK_0);
