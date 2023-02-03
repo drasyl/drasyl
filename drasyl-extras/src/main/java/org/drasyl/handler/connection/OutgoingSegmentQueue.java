@@ -97,7 +97,7 @@ public class OutgoingSegmentQueue {
             }
             tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
 
-            if (ctl == ACK) {
+            if (false && ctl == ACK) {
                 // SACK
                 final List<Long> edges = new ArrayList<>();
                 final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();

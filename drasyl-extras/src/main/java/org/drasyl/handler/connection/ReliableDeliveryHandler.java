@@ -979,11 +979,13 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             }
         }
         if (duplicateAck) {
-            SackOption sackOption = (SackOption) seg.options().get(SACK);
-            if (sackOption != null) {
-                // retransmit?
+            if (false) {
+                SackOption sackOption = (SackOption) seg.options().get(SACK);
+                if (sackOption != null) {
+                    // retransmit?
 //                tcb.sendBuffer();
 //                System.out.println();
+                }
             }
 
             // ACK is duplicate. ignore
