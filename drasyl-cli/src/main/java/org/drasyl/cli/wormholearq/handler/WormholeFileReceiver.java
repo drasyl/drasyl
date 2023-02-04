@@ -65,8 +65,7 @@ public class WormholeFileReceiver extends SimpleChannelInboundHandler<ByteBuf> {
         out.println("Receiving file (" + numberToHumanData(length) + ") into: " + file.getName());
 
         if (file.exists()) {
-            ctx.fireExceptionCaught(new FileExistException(file.getName()));
-            return;
+            file.delete();
         }
 
         try {
