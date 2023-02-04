@@ -1091,7 +1091,11 @@ class ReliableDeliveryHandlerTest {
 
             // RFC 5681, Section 3.1, Rule 5.1
             // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            // Reno: Just one retransmission!
+            // algorithm known as "Reno"
+
+            // RFC 6582
+            // https://www.rfc-editor.org/rfc/rfc6582
+            // algorithm "NewReno"
             @Test
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -1127,9 +1131,11 @@ class ReliableDeliveryHandlerTest {
 
                 // cumulative ACK
                 channel.writeInbound(Segment.ack(205, 400));
-                assertEquals(2850, tcb.cwnd());
+                assertEquals(6844, tcb.cwnd());
                 assertEquals(2850, tcb.ssthresh());
-                assertNull(channel.readOutbound());
+
+                // with Reno, no message is sent. But NewReno sends new data
+                assertEquals(Segment.ack(400, 200, 4000), channel.readOutbound());
             }
 
             // FIXME: haben wir das so umgesetzt?

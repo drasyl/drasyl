@@ -44,6 +44,7 @@ import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
 import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
@@ -111,6 +112,7 @@ public class TransmissionControlBlock {
     private long maxSndWnd;
     private int duplicateAcks;
     private ScheduledFuture<?> overrideTimer;
+    private long recover;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final long sndUna,
@@ -119,7 +121,7 @@ public class TransmissionControlBlock {
                              final long iss,
                              final long rcvNxt,
                              final int rcvWnd,
-                             final long rcvBuff,
+                             final int rcvBuff,
                              final long irs,
                              final SendBuffer sendBuffer,
                              final OutgoingSegmentQueue outgoingSegmentQueue,
@@ -128,14 +130,15 @@ public class TransmissionControlBlock {
                              final int mss,
                              final long cwnd,
                              final long ssthresh,
-                             final long maxSndWnd) {
+                             final long maxSndWnd,
+                             final long recover) {
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndWnd = requireNonNegative(sndWnd);
         this.iss = requireInRange(iss, MIN_SEQ_NO, MAX_SEQ_NO);
         this.rcvNxt = requireInRange(rcvNxt, MIN_SEQ_NO, MAX_SEQ_NO);
         this.rcvWnd = requireNonNegative(rcvWnd);
-        this.rcvBuff = requirePositive(rcvWnd);
+        this.rcvBuff = requirePositive(rcvBuff);
         this.irs = requireInRange(irs, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sendBuffer = requireNonNull(sendBuffer);
         this.outgoingSegmentQueue = requireNonNull(outgoingSegmentQueue);
@@ -145,6 +148,7 @@ public class TransmissionControlBlock {
         this.cwnd = requireNonNegative(cwnd);
         this.ssthresh = requireNonNegative(ssthresh);
         this.maxSndWnd = requireNonNegative(maxSndWnd);
+        this.recover = requireInRange(recover, MIN_SEQ_NO, MAX_SEQ_NO);
     }
 
     @SuppressWarnings("java:S107")
@@ -159,7 +163,7 @@ public class TransmissionControlBlock {
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd);
+        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd, iss);
     }
 
     TransmissionControlBlock(final Channel channel,
@@ -189,6 +193,13 @@ public class TransmissionControlBlock {
                              final int windowSize,
                              final int mss) {
         this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+    }
+
+    // RFC 1122, Section 4.2.2.6
+    // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
+    // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
+    private static int effSndMss(final int mss) {
+        return NumberUtil.min(mss + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 
     public long sndUna() {
@@ -596,12 +607,23 @@ public class TransmissionControlBlock {
                 //       new SACK information.
             }
             if (duplicateAcks == 3) {
-                // The fast retransmit algorithm uses the arrival of 3 duplicate ACKs (as defined
-                //   in section 2, without any intervening ACKs which move SND.UNA) as an
-                //   indication that a segment has been lost.  After receiving 3 duplicate
-                //   ACKs, TCP performs a retransmission of what appears to be the missing
-                //   segment, without waiting for the retransmission timer to expire.
+                // RFC 6582
+                // 2)  Three duplicate ACKs:
+                //       When the third duplicate ACK is received, the TCP sender first
+                //       checks the value of recover to see if the Cumulative
+                //       Acknowledgment field covers more than recover.  If so, the value
+                //       of recover is incremented to the value of the highest sequence
+                //       number transmitted by the TCP so far.  The TCP then enters fast
+                //       retransmit (step 2 of Section 3.2 of [RFC5681]).  If not, the TCP
+                //       does not enter fast retransmit and does not reset ssthresh.
+                if (greaterThan(seg.ack(), recover)) {
+                    recover = sub(sndNxt, 1);
+                }
+                else {
+                    return;
+                }
 
+                // RFC 5681
                 // 2. When the third duplicate ACK is received, a TCP MUST set ssthresh
                 //       to no more than the value given in equation (4).
                 //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
@@ -612,6 +634,7 @@ public class TransmissionControlBlock {
                     ssthresh = newSsthresh;
                 }
 
+                // RFC 5681
                 // 3. The lost segment starting at SND.UNA MUST be retransmitted and
                 //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
                 //       the congestion window by the number of segments (three) that have
@@ -628,6 +651,7 @@ public class TransmissionControlBlock {
                 }
             }
             else if (duplicateAcks > 3) {
+                // RFC 5681
                 // 4. For each additional duplicate ACK received (after the third),
                 //       cwnd MUST be incremented by SMSS.  This artificially inflates the
                 //       congestion window in order to reflect the additional segment that
@@ -656,26 +680,97 @@ public class TransmissionControlBlock {
         }
     }
 
-    public void resetDuplicateAcks(final ChannelHandlerContext ctx, final Segment seg) {
+    public void resetDuplicateAcks(final ChannelHandlerContext ctx, final Segment seg,
+                                   final long ackedBytes) {
         if (duplicateAcks != 0) {
-            // 6. When the next ACK arrives that acknowledges previously
-            //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
-            //       set in step 2).  This is termed "deflating" the window.
-            if (cwnd != ssthresh()) {
-                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), ssthresh());
-                this.cwnd = ssthresh();
-            }
-            //
-            //       This ACK should be the acknowledgment elicited by the
-            //       retransmission from step 3, one RTT after the retransmission
-            //       (though it may arrive sooner in the presence of significant out-
-            //       of-order delivery of data segments at the receiver).
-            //       Additionally, this ACK should acknowledge all the intermediate
-            //       segments sent between the lost segment and the receipt of the
-            //       third duplicate ACK, if none of these were lost.
+            // RFC 6582
+            //    3)  Response to newly acknowledged data:
+            //       Step 6 of [RFC5681] specifies the response to the next ACK that
+            //       acknowledges previously unacknowledged data.  When an ACK arrives
+            //       that acknowledges new data, this ACK could be the acknowledgment
+            //       elicited by the initial retransmission from fast retransmit, or
+            //       elicited by a later retransmission.  There are two cases:
+            final boolean fullAcknowledgement = greaterThanOrEqualTo(seg.ack(), recover);
 
-            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}`. Reset duplicate ACKs counter. {} unACKed bytes remaining.", ctx.channel(), seg, flightSize());
-            duplicateAcks = 0;
+            if (fullAcknowledgement) {
+                // RFC 6582
+                //  Full acknowledgments:
+                //       If this ACK acknowledges all of the data up to and including
+                //       recover, then the ACK acknowledges all the intermediate segments
+                //       sent between the original transmission of the lost segment and
+                //       the receipt of the third duplicate ACK.  Set cwnd to either (1)
+                //       min (ssthresh, max(FlightSize, SMSS) + SMSS) or (2) ssthresh,
+                //       where ssthresh is the value set when fast retransmit was entered,
+                //       and where FlightSize in (1) is the amount of data presently
+                //       outstanding.  This is termed "deflating" the window.  If the
+                //       second option is selected, the implementation is encouraged to
+                //       take measures to avoid a possible burst of data, in case the
+                //       amount of data outstanding in the network is much less than the
+                //       new congestion window allows.  A simple mechanism is to limit the
+                //       number of data packets that can be sent in response to a single
+                //       acknowledgment.  Exit the fast recovery procedure.
+
+                // RFC 5681
+                // 6. When the next ACK arrives that acknowledges previously
+                //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
+                //       set in step 2).  This is termed "deflating" the window.
+                final int smss = effSndMss();
+                final long newCwnd = NumberUtil.min (ssthresh(), NumberUtil.max(flightSize(), smss) + smss);
+                if (cwnd != newCwnd) {
+                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    this.cwnd = newCwnd;
+                }
+                //
+                //       This ACK should be the acknowledgment elicited by the
+                //       retransmission from step 3, one RTT after the retransmission
+                //       (though it may arrive sooner in the presence of significant out-
+                //       of-order delivery of data segments at the receiver).
+                //       Additionally, this ACK should acknowledge all the intermediate
+                //       segments sent between the lost segment and the receipt of the
+                //       third duplicate ACK, if none of these were lost.
+
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (full ACK). Reset duplicate ACKs counter. {} unACKed bytes remaining.", ctx.channel(), seg, flightSize());
+                duplicateAcks = 0;
+            }
+            else {
+                // RFC 6582
+                // Partial acknowledgments:
+                //       If this ACK does *not* acknowledge all of the data up to and
+                //       including recover, then this is a partial ACK.  In this case,
+                //       retransmit the first unacknowledged segment.
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
+                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), seg, retransmission, flightSize());
+                // Deflate the
+                //       congestion window by the amount of new data acknowledged by the
+                //       Cumulative Acknowledgment field.
+                long newCwnd = NumberUtil.max(0, cwnd - ackedBytes);
+                //       If the partial ACK acknowledges
+                //       at least one SMSS of new data, then add back SMSS bytes to the
+                //       congestion window.
+                //       This artificially inflates the congestion
+                //       window in order to reflect the additional segment that has left
+                //       the network.
+                if (ackedBytes >= effSndMss()) {
+                    newCwnd += effSndMss();
+                }
+                if (cwnd != newCwnd) {
+                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
+                    this.cwnd = newCwnd;
+                }
+                //       Send a new segment if permitted by the new value of
+                //       cwnd.  This "partial window deflation" attempts to ensure that,
+                //       when fast recovery eventually ends, approximately ssthresh amount
+                //       of data will be outstanding in the network.  Do not exit the fast
+                //       recovery procedure (i.e., if any duplicate ACKs subsequently
+                //       arrive, execute step 4 of Section 3.2 of [RFC5681]).
+                //
+                //     FIXME: For the first partial ACK that arrives during fast recovery, also
+                //       reset the retransmit timer.  Timer management is discussed in
+                //       more detail in Section 4.
+
+
+                ctx.writeAndFlush(retransmission);
+            }
         }
     }
 
@@ -721,12 +816,5 @@ public class TransmissionControlBlock {
 
     public int effSndMss() {
         return effSndMss(mss());
-    }
-
-        // RFC 1122, Section 4.2.2.6
-        // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
-        // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-    private static int effSndMss(final int mss) {
-        return NumberUtil.min(mss + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 }

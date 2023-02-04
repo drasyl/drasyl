@@ -65,7 +65,9 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start,
  * congestion avoidance, fast retransmit, and fast recovery as described in <a
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
- * implemented as well. The <a
+ * implemented as well. The improvements presented in <a
+ * href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582 The NewReno Modification to TCP's Fast
+ * Recovery Algorithm</a> are added to the fast recovery algorithm. The <a
  * href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as "Silly
  * Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple losses,
  * the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective Acknowledgment
@@ -982,7 +984,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             // advance send state
             final long ackedBytes = tcb.handleAcknowledgement(ctx, seg);
             if (ackedBytes > 0) {
-                tcb.resetDuplicateAcks(ctx, seg);
+                tcb.resetDuplicateAcks(ctx, seg, ackedBytes);
             }
         }
         if (duplicateAck) {
