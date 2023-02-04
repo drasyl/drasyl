@@ -6,6 +6,7 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,33 @@ class ReceiveBufferTest {
 
             Segment seg2 = Segment.pshAck(110, 1751431617, data.slice(0, 100));
             buffer.receive(ctx, tcb, seg2);
+        }
+
+        // ein segment am linken fensterrand soll bei einem vollen buffer bestehende fragmente ersetzen
+        // https://www.rfc-editor.org/rfc/rfc6675.html#section-5.1
+        @Test
+        @Disabled("kann bei uns gar nicht passieren?")
+        void preventMemoryDeadlock(@Mock final Channel channel,
+                                   @Mock final ChannelHandlerContext ctx,
+                                   @Mock final SendBuffer sendBuffer) {
+            final ByteBuf data = Unpooled.buffer(100_000).writeBytes(randomBytes(100_000));
+
+            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(100, 0, 0, 100, 0, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 1000);
+
+            // 100 bytes remaining. receive [10,50)
+            // füge 40 bytes irgendwo im fenster ein
+            final Segment seg1 = Segment.pshAck(10, 100, data.slice(10, 40));
+            buffer.receive(ctx, tcb, seg1);
+            assertEquals(60, tcb.rcvWnd());
+
+            // 60 bytes remaining. receive [60,110)
+            // füge 40 bytes irgendwo im fenster ein
+            Segment seg2 = Segment.pshAck(60, 100, data.slice(60, 50));
+            buffer.receive(ctx, tcb, seg2);
+            assertEquals(0, tcb.rcvWnd());
+
+            // 0 bytes remaining. receive [0,10)
         }
 
         @Nested
