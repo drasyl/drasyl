@@ -40,6 +40,7 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.SegmentOption.SACK;
@@ -524,31 +525,42 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private void segmentArrivesOnClosedState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnClosedState");
+        // RFC 9293: all data in the incoming segment is discarded.
+        // (this is handled by handler's auto release of all arrived segments)
+
+        // RFC 9293: An incoming segment containing a RST is discarded.
         if (seg.isRst()) {
             // as we are already/still in CLOSED state, we can ignore the RST
             return;
         }
 
-        // at this point we're not (longer) willing to synchronize.
-        // reset the peer
+        // RFC 9293: An incoming segment not containing a RST causes a RST to be sent in response.
+        // RFC 9293: The acknowledgment and sequence field values are selected to make the reset
+        // RFC 9293: sequence acceptable to the TCP endpoint that sent the offending segment.
         final Segment response;
-        if (seg.isAck()) {
-            // send normal RST as we don't want to ACK an ACK
-            response = Segment.rst(seg.ack());
+        if (!seg.isAck()) {
+            // RFC 9293: If the ACK bit is off, sequence number zero is used,
+            // RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
+            response = Segment.rstAck(0, add(seg.seq(), seg.len()));
         }
         else {
-            response = Segment.rstAck(0, seg.seq());
+            // RFC 9293: If the ACK bit is on,
+            // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
+            response = Segment.rst(seg.ack());
         }
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
         tcb.write(response);
+        // RFC 9293: Return.
     }
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
-        // check RST
+        // RFC 9293: First, check for a RST:
         if (seg.isRst()) {
-            // Nothing to reset in this state. Just ignore the RST :-)
+            // RFC 9293: An incoming RST segment could not be valid since it could not have been
+            // RFC 9293: sent in response to anything sent by this incarnation of the connection. An
+            // RFC 9293: incoming RST should be ignored. Return.
             return;
         }
 
@@ -557,17 +569,27 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             createTcb(ctx);
         }
 
-        // check ACK
+        // RFC 9293: Second, check for an ACK:
         if (seg.isAck()) {
-            // we are on a state were we have never sent anything that must be ACKed
+            // RFC 9293: Any acknowledgment is bad if it arrives on a connection still in the LISTEN
+            // RFC 9293: state. An acceptable reset segment should be formed for any arriving
+            // RFC 9293: ACK-bearing segment. The RST should be formatted as follows:
+            // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
             final Segment response = Segment.rst(seg.ack());
             LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
             tcb.write(response);
+            // Return.
             return;
         }
 
-        // check SYN
+        // RFC 9293: Third, check for a SYN:
         if (seg.isSyn()) {
+            // TODO:
+            //  RFC 9293: If the SYN bit is set, check the security. If the security/compartment on
+            //  RFC 9293: the incoming segment does not exactly match the security/compartment in
+            //  RFC 9293: the TCB, then send a reset and return.
+            //  RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
+
             LOG.trace("{}[{}] Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), state, seg);
 
             // start timer that aborts the handshake if remote peer is not ACKing our SYN
@@ -589,8 +611,10 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             // yay, peer SYNced with us
             changeState(ctx, SYN_RECEIVED);
 
-            // synchronize receive state
+            // RFC 9293: Set RCV.NXT to SEG.SEQ+1, IRS is set to SEG.SEQ,
             tcb.synchronizeState(seg);
+            // TODO:
+            //  RFC 9293: and any other control or text should be queued for processing later.
 
             // update window
             tcb.updateSndWnd(ctx, seg);
@@ -600,12 +624,25 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             // mss negotiation
             tcb.negotiateMss(ctx, seg);
 
+            // RFC 9293: ISS should be selected
+            // (ISS has already been selected when TCB has been created)
+            // RFC 9293: and a SYN segment sent of the form:
+            // RFC 9293: <SEQ=ISS><ACK=RCV.NXT><CTL=SYN,ACK>
             // send SYN/ACK
+            // TODO: why ACK?
             final Segment response = Segment.synAck(tcb.iss(), tcb.rcvNxt());
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.write(response);
             return;
         }
+
+        // RFC 9293: Fourth, other data or control:
+        // RFC 9293: This should not be reached.
+        // RFC 9293: Drop the segment
+        // (this is handled by handler's auto release of all arrived segments)
+        // RFC 9293: and return. Any other control or data-bearing segment (not containing SYN) must
+        // RFC 9293: have an ACK and thus would have been discarded by the ACK processing in the
+        // RFC 9293: second step, unless it was first discarded by RST checking in the first step.
 
         // we should not reach this point. However, if it does happen, just drop the segment
         unexpectedSegment(ctx, seg);
@@ -615,23 +652,34 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
                                               final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnSynSentState");
-        // check ACK
-        if (tcb.isAckSomethingNeverSent(seg)) {
-            // segment ACKed something we never sent
-            LOG.trace("{}[{}] Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
-            if (seg.isRst()) {
-                LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
+
+        // RFC 9293: First, check the ACK bit:
+        if (seg.isAck()) {
+            // RFC 9293: If the ACK bit is set,
+            if (tcb.isAckSomethingNeverSent(seg)) {
+                // RFC 9293: If SEG.ACK =< ISS or SEG.ACK > SND.NXT, send a reset (unless the RST
+                // RFC 9293: bit is set, if so drop the segment and return)
+                // segment ACKed something we never sent
+                LOG.trace("{}[{}] Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
+                if (seg.isRst()) {
+                    LOG.trace("{}[{}] As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
+                }
+                else {
+                    final Segment response = Segment.rst(seg.ack());
+                    LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
+                    tcb.write(response);
+                }
+
+                // RFC 9293: and discard the segment.
+                // (this is handled by handler's auto release of all arrived segments)
+                // RFC 9293: Return.
+                return;
             }
-            else {
-                final Segment response = Segment.rst(seg.ack());
-                LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
-                tcb.write(response);
-            }
-            return;
         }
+
         final boolean acceptableAck = tcb.isAcceptableAck(seg);
 
-        // check RST
+        // RFC 9293: Second, check the RST bit:
         if (seg.isRst()) {
             if (acceptableAck) {
                 LOG.trace("{}[{}] SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
