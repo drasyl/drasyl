@@ -486,18 +486,19 @@ public class TransmissionControlBlock {
         // only when new data is acked
         // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
         if (ackedBytes > 0 && !synAcked) {
+            final int smss = effSndMss();
             if (doSlowStart()) {
                 // During slow start, a TCP increments cwnd by at most SMSS bytes for
                 //   each ACK received that cumulatively acknowledges new data.
 
-                // Slow Start -> +1 MSS after each ACK
-                final long increment = NumberUtil.min(mss, ackedBytes);
+                // Slow Start -> +1 SMSS after each ACK
+                final long increment = NumberUtil.min(smss, ackedBytes);
                 LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
             else {
-                // Congestion Avoidance -> +1 MSS after each RTT
-                final long increment = (long) Math.ceil(((long) mss * mss) / (float) cwnd);
+                // Congestion Avoidance -> +1 SMSS after each RTT
+                final long increment = (long) Math.ceil(((long) smss * smss) / (float) cwnd);
                 LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
@@ -662,7 +663,7 @@ public class TransmissionControlBlock {
                 ctx.writeAndFlush(retransmission);
 
                 // increase congestion window as we know that at least three segments have left the network
-                long newCwnd = ssthresh() + 3L * mss();
+                long newCwnd = ssthresh() + 3L * smss;
                 if (newCwnd != cwnd()) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
