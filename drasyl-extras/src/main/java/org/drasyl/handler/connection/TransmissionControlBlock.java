@@ -596,15 +596,33 @@ public class TransmissionControlBlock {
             // RFC 5681, Section 3.2
             // https://www.rfc-editor.org/rfc/rfc5681#section-3.2
             if (duplicateAcks < 3) {
-                // FIXME: 1. On the first and second duplicate ACKs received at a sender, a
+                // RFC 5681
+                // On the first and second duplicate ACKs received at a sender, a
                 //       TCP SHOULD send a segment of previously unsent data per [RFC3042]
                 //       provided that the receiver's advertised window allows, the total
                 //       FlightSize would remain less than or equal to cwnd plus 2*SMSS,
-                //       and that new data is available for transmission.  Further, the
-                //       TCP sender MUST NOT change cwnd to reflect these two segments
-                //       [RFC3042].  Note that a sender using SACK [RFC2018] MUST NOT send
-                //       new data unless the incoming duplicate acknowledgment contains
-                //       new SACK information.
+                //       and that new data is available for transmission.
+
+                // RFC 3042, Section 2.
+                // * The receiver's advertised window allows the transmission of the
+                //       segment.
+                // * The amount of outstanding data would remain less than or equal
+                //       to the congestion window plus 2 segments.  In other words, the
+                //       sender can only send two segments beyond the congestion window
+                //       (cwnd).
+                final int smss = effSndMss();
+                final boolean doLimitedTransmit = sndWnd() >= smss && (flightSize() + smss) <= (cwnd() + 2 * smss);
+                if (doLimitedTransmit) {
+                    final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss);
+                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got duplicate ACK. Retransmit `{}`.", ctx.channel(), retransmission);
+                    ctx.writeAndFlush(retransmission);
+                    // RFC 5681
+                    // Further, the
+                    //       TCP sender MUST NOT change cwnd to reflect these two segments
+                    //       [RFC3042].  Note that a sender using SACK [RFC2018] MUST NOT send
+                    //       new data unless the incoming duplicate acknowledgment contains
+                    //       new SACK information.
+                }
             }
             if (duplicateAcks == 3) {
                 // RFC 6582
@@ -715,7 +733,7 @@ public class TransmissionControlBlock {
                 //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                 //       set in step 2).  This is termed "deflating" the window.
                 final int smss = effSndMss();
-                final long newCwnd = NumberUtil.min (ssthresh(), NumberUtil.max(flightSize(), smss) + smss);
+                final long newCwnd = NumberUtil.min(ssthresh(), NumberUtil.max(flightSize(), smss) + smss);
                 if (cwnd != newCwnd) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
@@ -767,7 +785,6 @@ public class TransmissionControlBlock {
                 //     FIXME: For the first partial ACK that arrives during fast recovery, also
                 //       reset the retransmit timer.  Timer management is discussed in
                 //       more detail in Section 4.
-
 
                 ctx.writeAndFlush(retransmission);
             }

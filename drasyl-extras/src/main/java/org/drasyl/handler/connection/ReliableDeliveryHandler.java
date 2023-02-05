@@ -67,11 +67,13 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
  * implemented as well. The improvements presented in <a
  * href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582 The NewReno Modification to TCP's Fast
- * Recovery Algorithm</a> are added to the fast recovery algorithm. The <a
- * href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as "Silly
- * Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple losses,
- * the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective Acknowledgment
- * Options</a> is used in conjunction with <a href=""></a>.
+ * Recovery Algorithm</a> and <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042 Enhancing
+ * TCP's Loss Recovery Using Limited Transmit</a> are added to the fast recovery algorithm.
+ * <p>
+ * The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as
+ * "Silly Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple
+ * losses, the <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018 TCP Selective
+ * Acknowledgment Options</a> is used in conjunction with <a href=""></a>.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
