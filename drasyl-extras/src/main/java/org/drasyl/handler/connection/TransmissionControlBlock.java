@@ -497,7 +497,7 @@ public class TransmissionControlBlock {
             }
             else {
                 // Congestion Avoidance -> +1 MSS after each RTT
-                final long increment = 1;//(long) Math.ceil(((long) mss * mss) / (float) cwnd);
+                final long increment = (long) Math.ceil(((long) mss * mss) / (float) cwnd);
                 LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
