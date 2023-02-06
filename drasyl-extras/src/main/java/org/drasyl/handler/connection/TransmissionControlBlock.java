@@ -34,6 +34,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -91,7 +92,7 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
-    private final long iss; // initial send sequence number
+    private long iss; // initial send sequence number
     protected long ssthresh; // slow start threshold
     // congestion control
     long cwnd; // congestion window
@@ -100,9 +101,10 @@ public class TransmissionControlBlock {
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     private int rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
+    private final LongSupplier issSupplier;
     // Send Sequence Variables
-    private long sndUna; // oldest unacknowledged sequence number
-    private long sndNxt; // next sequence number to be sent
+    long sndUna; // oldest unacknowledged sequence number
+    long sndNxt; // next sequence number to be sent
     private long sndWnd; // send window
     private long sndWl1; // segment sequence number used for last window update
     private long sndWl2; // segment acknowledgment number used for last window update
@@ -115,7 +117,8 @@ public class TransmissionControlBlock {
     private long recover;
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final long sndUna,
+    TransmissionControlBlock(final LongSupplier issSupplier,
+                             final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
                              final long iss,
@@ -132,6 +135,7 @@ public class TransmissionControlBlock {
                              final long ssthresh,
                              final long maxSndWnd,
                              final long recover) {
+        this.issSupplier = requireNonNull(issSupplier);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndWnd = requireNonNegative(sndWnd);
@@ -152,7 +156,8 @@ public class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final long sndUna,
+    TransmissionControlBlock(final LongSupplier issSupplier,
+                             final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
                              final long iss,
@@ -163,10 +168,11 @@ public class TransmissionControlBlock {
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd, iss);
+        this(issSupplier, sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd, iss);
     }
 
-    TransmissionControlBlock(final Channel channel,
+    TransmissionControlBlock(final LongSupplier issSupplier,
+                             final Channel channel,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -174,25 +180,27 @@ public class TransmissionControlBlock {
                              final int rcvWnd,
                              final long irs,
                              final int mss) {
-        this(sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+        this(issSupplier, sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
-    TransmissionControlBlock(final Channel channel,
+    TransmissionControlBlock(final LongSupplier issSupplier,
+                             final Channel channel,
                              final long sndUna,
                              final long sndNxt,
                              final long iss,
                              final long irs,
                              final int windowSize,
                              final int mss) {
-        this(sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+        this(issSupplier, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
-    TransmissionControlBlock(final Channel channel,
+    TransmissionControlBlock(final LongSupplier issSupplier,
+                             final Channel channel,
                              final long iss,
                              final long irs,
                              final int windowSize,
                              final int mss) {
-        this(iss, iss, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+        this(issSupplier, iss, iss, windowSize, 0, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
     }
 
     // RFC 1122, Section 4.2.2.6
@@ -834,5 +842,16 @@ public class TransmissionControlBlock {
 
     public int effSndMss() {
         return effSndMss(mss());
+    }
+
+    public void selectIss() {
+        // FIXME:
+        long newIss = issSupplier.getAsLong();
+        iss = newIss;
+    }
+
+    public void initSndUnaSndNxt() {
+        sndUna = iss();
+        sndNxt = add(iss(), 1);
     }
 }

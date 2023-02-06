@@ -28,7 +28,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.util.logging.Logger;
@@ -87,11 +86,12 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReliableDeliveryHandler.class);
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
-    private static final ClosedChannelException CONNECTION_CLOSED_ERROR = new ClosedChannelException();
+    private static final ClosedChannelException CONNECTION_NOT_EXIST_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
+    private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
     private final Duration userTimeout;
     private final Function<Channel, TransmissionControlBlock> tcbProvider;
     private final boolean activeOpen;
@@ -137,7 +137,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                             final int initialWindow) {
         this(userTimeout, channel -> {
             final long iss = Segment.randomSeq();
-            return new TransmissionControlBlock(iss, iss, 0, iss, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss);
+            return new TransmissionControlBlock(() -> iss, 0, 0, 0, 0, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss);
         }, activeOpen, null, state, null, null, false);
     }
 
@@ -149,7 +149,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
     public ReliableDeliveryHandler(final Duration userTimeout,
                                    final boolean activeOpen) {
-        this(userTimeout, activeOpen, null, 1220, 128 * 1220);
+        this(userTimeout, activeOpen, null, 1432, 128 * 1432);
     }
 
     /*
@@ -183,13 +183,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     @Override
     public void read(final ChannelHandlerContext ctx) {
-        // TODO: set readPending = true in any states?s
-        readPending = true;
-        if (tcb != null) {
-            tcb.receiveBuffer().fireRead(ctx, tcb);
-        }
-
-        ctx.read();
+        userCallReceive(ctx);
     }
 
     @Override
@@ -289,33 +283,108 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
 
-        // create TCB
-        createTcb(ctx);
+        switch (state) {
+            case CLOSED:
+                // RFC 9293: Create a new transmission control block (TCB) to hold connection state
+                // RFC 9293: information.
+                createTcb(ctx);
 
-        // send SYN
-        final Segment seg = Segment.syn(tcb.iss());
-        LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-        tcb.writeAndFlush(ctx, seg);
+                // RFC 9293: Fill in local socket identifier, remote socket, Diffserv field,
+                // RFC 9293: security/compartment, and user timeout information.
+                // RFC 9293: Note that some parts of the remote socket may be unspecified in a
+                // RFC 9293: passive OPEN and are to be filled in by the parameters of the incoming
+                // RFC 9293: SYN segment. Verify the security and Diffserv value requested are
+                // RFC 9293: allowed for this user, if not, return "error: Diffserv value not
+                // RFC 9293: allowed" or "error: security/compartment not allowed".
+                // (not applicable for us)
 
-        // change state
-        changeState(ctx, SYN_SENT);
+                if (!activeOpen) {
+                    // RFC 9293: If passive, enter the LISTEN state
+                    LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
+                    changeState(ctx, LISTEN);
+                    // RFC 9293: and return.
+                    return;
+                }
+                else {
+                    LOG.trace("{}[{}] Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel(), state);
 
-        // start user call timeout guard
-        if (userTimeout.toMillis() > 0) {
-            assert userTimeoutTimer == null;
-            userTimeoutTimer = ctx.executor().schedule(() -> {
-                // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
-                LOG.trace("{}[{}] User timeout for OPEN user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
-                changeState(ctx, CLOSED);
-                final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel.");
-                deleteTcb();
-                ctx.fireExceptionCaught(cause);
-                ctx.close();
-            }, userTimeout.toMillis(), MILLISECONDS);
+                    // RFC 9293: If active and the remote socket is unspecified, return "error: remote
+                    // RFC 9293: socket unspecified";
+                    // (not applicable for us)
+
+                    // RFC 9293: if active and the remote socket is specified, issue a SYN segment.
+
+                    // RFC 9293: An initial send sequence number (ISS) is selected.
+                    tcb.selectIss();
+
+                    // RFC 9293: A SYN segment of the form <SEQ=ISS><CTL=SYN> is sent.
+                    final Segment seg = Segment.syn(tcb.iss());
+                    LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
+                    tcb.writeAndFlush(ctx, seg);
+                    // RFC 9293: Set SND.UNA to ISS, SND.NXT to ISS+1,
+                    tcb.initSndUnaSndNxt();
+
+                    // RFC 9293: enter SYN-SENT state,
+                    changeState(ctx, SYN_SENT);
+
+                    // start user timer
+                    startUserTimer(ctx, null);
+
+                    // inform application about issue handshake
+                    ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
+
+                    // RFC 9293: and return.
+                    return;
+
+                    // RFC 9293: If the caller does not have access to the local socket specified,
+                    // RFC 9293: return "error: connection illegal for this process". If there is no
+                    // RFC 9293: room to create a new connection, return "error: insufficient
+                    // RFC 9293: resources".
+                    // (not applicable for us)
+                }
+
+            case LISTEN:
+                // RFC 9293: If the OPEN call is active and the remote socket is specified, then
+                // RFC 9293: change the connection from passive to active,
+
+                // RFC 9293: select an ISS.
+                tcb.selectIss();
+
+                // RFC 9293: Send a SYN segment,
+                final Segment seg = Segment.syn(tcb.iss());
+                LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
+                tcb.writeAndFlush(ctx, seg);
+
+                // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
+                tcb.initSndUnaSndNxt();
+
+                //  RFC 9293: Enter SYN-SENT state.
+                changeState(ctx, SYN_SENT);
+
+                // start user timer
+                startUserTimer(ctx, null);
+
+                //  RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
+                //  RFC 9293: transmission after entering ESTABLISHED state. The urgent bit if
+                //  RFC 9293: requested in the command must be sent with the data segments sent as a
+                //  RFC 9293: result of this command. If there is no room to queue the request,
+                //  RFC 9293: respond with "error: insufficient resources". If the remote socket was
+                //  RFC 9293: not specified, then return "error: remote socket unspecified".
+                break;
+
+            default:
+                // SYN-SENT
+                // SYN-RECEIVED
+                // ESTABLISHED
+                // FIN-WAIT-1
+                // FIN-WAIT-2
+                // CLOSING
+                // LAST-ACK
+
+                // RFC 9293: Return "error: connection already exists".
+                // inform application about issue handshake
+                ctx.fireUserEventTriggered(CONNECTION_EXISTS_EXCEPTION);
         }
-
-        // inform application about issue handshake
-        ctx.fireUserEventTriggered(HANDSHAKE_ISSUED_EVENT);
     }
 
     /**
@@ -329,34 +398,72 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
         switch (state) {
             case CLOSED:
+                // RFC 9293: If the user does not have access to such a connection, then return
+                // RFC 9293: "error: connection illegal for this process".
+                // (not applicable for us)
+
+                // RFC 9293: Otherwise, return "error: connection does not exist".
                 // Connection is already closed. Reject write
                 LOG.trace("{}[{}] Connection is already closed. Reject data `{}`.", ctx.channel(), state, data);
-                promise.tryFailure(CONNECTION_CLOSED_ERROR);
+                promise.tryFailure(CONNECTION_NOT_EXIST_ERROR);
                 ReferenceCountUtil.safeRelease(data);
                 break;
 
             case LISTEN:
+                // RFC 9293: If the remote socket is specified, then change the connection from
+                // passive to active,
                 // Channel is in passive OPEN mode. SEND user call will trigger active OPEN handshake
                 LOG.trace("{}[{}] SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), state, data);
 
                 // trigger active OPEN handshake
                 userCallOpen(ctx);
 
-                // enqueue data for transmission after entering ESTABLISHED state
+                // RFC 9293: select an ISS.
+                tcb.selectIss();
+
+                // RFC 9293: Send a SYN segment,
+                // (is already done by userCallOpen)
+
+                // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
+                // (is already done by userCallOpen)
+
+                // RFC 9293: Enter SYN-SENT state.
+                // (is already done by userCallOpen)
+
+                // RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
+                // RFC 9293: transmission after entering ESTABLISHED state.
                 tcb.addToSendBuffer(data, promise);
+
+                // RFC 9293: The urgent bit if requested in the command must be sent with the data
+                // RFC 9293: segments sent as a result of this command.
+                // (URG not supported! It is only kept by TCP for legacy reasons, see SHLD-13)
+
+                // RFC 9293: If there is no room to queue the request, respond with "error:
+                // RFC 9293: insufficient resources". If the remote socket was not specified, then
+                // RFC 9293: return "error: remote socket unspecified".
+                // (not applicable for us)
                 break;
 
             case SYN_SENT:
             case SYN_RECEIVED:
-                // Queue the data for transmission after entering ESTABLISHED state.
+                // RFC 9293: Queue the data for transmission after entering ESTABLISHED state.
                 LOG.trace("{}[{}] Queue data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), state, data);
                 tcb.addToSendBuffer(data, promise);
+
+                // RFC 9293: If no space to queue, respond with "error: insufficient resources".
+                // (not applicable for us)
                 break;
 
             case ESTABLISHED:
+                // RFC 9293: Segmentize the buffer and send it with a piggybacked acknowledgment
+                // RFC 9293: (acknowledgment value = RCV.NXT).
                 // Queue the data for transmission, to allow it to be sent together with other data for transmission efficiency.
                 LOG.trace("{}[{}] Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), state, data);
                 tcb.addToSendBuffer(data, promise);
+
+                // RFC 9293: If there is insufficient space to remember this buffer, simply return
+                // RFC 9293: "error: insufficient resources".
+                // (not applicable for us)
                 break;
 
             default:
@@ -364,10 +471,67 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 // FIN-WAIT-2
                 // CLOSING
                 // LAST-ACK
+                // RFC 9293: Return "error: connection closing" and do not service request.
                 LOG.trace("{}[{}] Connection is in process of being closed. Reject data `{}`.", ctx.channel(), state, data);
                 promise.tryFailure(CONNECTION_CLOSING_ERROR);
                 ReferenceCountUtil.safeRelease(data);
                 break;
+        }
+    }
+
+    /**
+     * RECEIVE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.3">RFC
+     * 9293, Section 3.10.3</a>.
+     */
+    @SuppressWarnings("java:S128")
+    private void userCallReceive(final ChannelHandlerContext ctx) {
+        // FIXME
+
+        // TODO: set readPending = true in any states?
+        readPending = true;
+        if (tcb != null) {
+            tcb.receiveBuffer().fireRead(ctx, tcb);
+        }
+
+        ctx.read();
+
+        // FIXME:
+        switch (state) {
+            case CLOSED:
+                assert tcb == null;
+                // RFC 9293: If the user does not have access to such a connection, return
+                // RFC 9293: "error: connection illegal for this process".
+                // RFC 9293: Otherwise, return "error: connection does not exist".
+                return;
+
+            case LISTEN:
+            case SYN_SENT:
+            case SYN_RECEIVED:
+                // RFC 9293: Queue for processing after entering ESTABLISHED state. If there is no
+                // RFC 9293: room to queue this request, respond with "error: insufficient
+                // RFC 9293: resources".
+
+            case ESTABLISHED:
+            case FIN_WAIT_1:
+            case FIN_WAIT_2:
+                // RFC 9293: If insufficient incoming segments are queued to satisfy the request,
+                // RFC 9293: queue the request. If there is no queue space to remember the RECEIVE,
+                // RFC 9293: respond with "error: insufficient resources".
+
+                // RFC 9293: Reassemble queued incoming segments into receive buffer and return to
+                // RFC 9293: user. Mark "push seen" (PUSH) if this is the case.
+
+                // RFC 9293: If RCV.UP is in advance of the data currently being passed to the user,
+                // RFC 9293: notify the user of the presence of urgent data.
+
+                // RFC 9293: When the TCP endpoint takes responsibility for delivering data to the
+                // RFC 9293: user, that fact must be communicated to the sender via an
+                // RFC 9293: acknowledgment. The formation of such an acknowledgment is described
+                // RFC 9293: below in the discussion of processing an incoming segment.
+
+            case CLOSING:
+            case LAST_ACK:
+                // RFC 9293: Return "error: connection closing".
         }
     }
 
@@ -384,13 +548,32 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
         switch (state) {
             case CLOSED:
+                // RFC 9293: If the user does not have access to such a connection, return
+                // RFC 9293: "error: connection illegal for this process".
+                // (not applicable for us)
+
+                // FIXME:
+                //  RFC 9293: Otherwise, return "error: connection does not exist".
                 // normale we have to fail the given promise. But here we just pass the close call further through the pipeline
                 LOG.trace("{}[{}] Channel is already closed. Pass close call further through the pipeline.", ctx.channel(), state);
                 ctx.close(promise);
                 break;
 
             case LISTEN:
+                // FIXME:
+                //  RFC 9293: Any outstanding RECEIVEs are returned with "error: closing" responses.
+                //  RFC 9293: Delete TCB,
+                cancelUserTimeoutGuard();
+                //  RFC 9293: enter CLOSED state,
+                changeState(ctx, CLOSED);
+                ctx.close(promise);
+                //  RFC 9293: and return.
+                return;
+
             case SYN_SENT:
+                // RFC 9293: Delete the TCB
+                deleteTcb();
+                // RFC 9293: and return "error: closing" responses to any queued SENDs, or RECEIVEs.
                 cancelUserTimeoutGuard();
                 ctx.fireExceptionCaught(CONNECTION_CLOSING_ERROR);
                 changeState(ctx, CLOSED);
@@ -398,11 +581,19 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 break;
 
             case SYN_RECEIVED:
+                // FIXME:
+                //  RFC 9293: If no SENDs have been issued and there is no pending data to send,
+                //  RFC 9293: then form a FIN segment and send it,
+                //  RFC 9293: and enter FIN-WAIT-1 state;
+                //  RFC 9293: otherwise, queue for processing after entering ESTABLISHED state.
                 cancelUserTimeoutGuard();
                 ctx.fireExceptionCaught(CONNECTION_CLOSING_ERROR);
                 // continue with ESTABLISHED part
 
             case ESTABLISHED:
+                // RFC 9293: Queue this until all preceding SENDs have been segmentized,
+                // RFC 9293: then form a FIN segment and send it.
+                // RFC 9293: In any case, enter FIN-WAIT-1 state.
                 // save promise for later, as it we need ACKnowledgment from remote peer
                 assert userCallFuture == null;
                 userCallFuture = promise;
@@ -416,25 +607,29 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
                 changeState(ctx, FIN_WAIT_1);
 
-                if (userTimeout.toMillis() > 0) {
-                    // For any state if the user timeout expires, flush all queues, signal the user "error: connection aborted due to user timeout" in general and for any outstanding calls, delete the TCB, enter the CLOSED state, and return.
-                    assert userTimeoutTimer == null;
-                    userTimeoutTimer = ctx.executor().schedule(() -> {
-                        LOG.trace("{}[{}] User timeout for CLOSE user call expired after {}ms. Close channel.", ctx.channel(), state, userTimeout.toMillis());
-                        changeState(ctx, CLOSED);
-                        final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for CLOSE user call after " + userTimeout.toMillis() + "ms. Close channel.");
-                        promise.tryFailure(cause);
-                        deleteTcb();
-                        ctx.close();
-                    }, userTimeout.toMillis(), MILLISECONDS);
-                }
+                // start user timer
+                startUserTimer(ctx, promise);
                 break;
 
-            default:
-                if (userCallFuture != null) {
-                    userCallFuture.addListener(new PromiseNotifier<>(promise));
-                }
+            case FIN_WAIT_1:
+            case FIN_WAIT_2:
+                // FIXME:
+                //  RFC 9293: Strictly speaking, this is an error and should receive an
+                //  RFC 9293: "error: connection closing" response.
+                //  RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
+                //  RFC 9293: not emitted (the first FIN may be retransmitted, though).
                 break;
+
+            case CLOSING:
+            case LAST_ACK:
+                // FIXME:
+                //  RFC 9293: Respond with "error: connection closing".
+
+//            default:
+//                if (userCallFuture != null) {
+//                    userCallFuture.addListener(new PromiseNotifier<>(promise));
+//                }
+//                break;
         }
     }
 
@@ -446,7 +641,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
         if (requireNonNull(state) == CLOSED) {
-            throw CONNECTION_CLOSED_ERROR;
+            throw CONNECTION_NOT_EXIST_ERROR;
         }
         return new ConnectionHandshakeStatus(state, tcb);
     }
@@ -475,17 +670,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     private void initHandler(final ChannelHandlerContext ctx) {
         if (state == null) {
-            // check if active OPEN mode is enabled
-            if (activeOpen) {
-                // active OPEN
-                LOG.trace("{}[{}] Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel(), state);
-                userCallOpen(ctx);
-            }
-            else {
-                // passive OPEN
-                LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
-                changeState(ctx, LISTEN);
-            }
+            assert tcb == null;
+            state = CLOSED;
+            userCallOpen(ctx);
         }
     }
 
@@ -534,7 +721,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
         // RFC 9293: An incoming segment containing a RST is discarded.
         if (seg.isRst()) {
-            // as we are already/still in CLOSED state, we can ignore the RST
             return;
         }
 
@@ -555,6 +741,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
         ctx.writeAndFlush(response);
         // RFC 9293: Return.
+        return;
     }
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
@@ -568,11 +755,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             return;
         }
 
-        if (seg.isAck() || seg.isSyn()) {
-            // create TCB
-            createTcb(ctx);
-        }
-
         // RFC 9293: Second, check for an ACK:
         if (seg.isAck()) {
             // RFC 9293: Any acknowledgment is bad if it arrives on a connection still in the LISTEN
@@ -581,18 +763,18 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
             final Segment response = Segment.rst(seg.ack());
             LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
-            tcb.write(response);
+            ctx.writeAndFlush(response);
             // Return.
             return;
         }
 
         // RFC 9293: Third, check for a SYN:
         if (seg.isSyn()) {
-            // TODO:
-            //  RFC 9293: If the SYN bit is set, check the security. If the security/compartment on
-            //  RFC 9293: the incoming segment does not exactly match the security/compartment in
-            //  RFC 9293: the TCB, then send a reset and return.
-            //  RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
+            // RFC 9293: If the SYN bit is set, check the security. If the security/compartment on
+            // RFC 9293: the incoming segment does not exactly match the security/compartment in
+            // RFC 9293: the TCB, then send a reset and return.
+            // RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
+            // (not applicable for us)
 
             LOG.trace("{}[{}] Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), state, seg);
 
@@ -618,6 +800,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
             // RFC 9293: Set RCV.NXT to SEG.SEQ+1, IRS is set to SEG.SEQ,
             tcb.synchronizeState(seg);
+
             // TODO:
             //  RFC 9293: and any other control or text should be queued for processing later.
 
@@ -630,11 +813,10 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             tcb.negotiateMss(ctx, seg);
 
             // RFC 9293: ISS should be selected
-            // (ISS has already been selected when TCB has been created)
+            tcb.selectIss();
+
             // RFC 9293: and a SYN segment sent of the form:
             // RFC 9293: <SEQ=ISS><ACK=RCV.NXT><CTL=SYN,ACK>
-            // send SYN/ACK
-            // TODO: why ACK?
             final Segment response = Segment.synAck(tcb.iss(), tcb.rcvNxt());
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.write(response);
@@ -648,8 +830,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
         // RFC 9293: and return. Any other control or data-bearing segment (not containing SYN) must
         // RFC 9293: have an ACK and thus would have been discarded by the ACK processing in the
         // RFC 9293: second step, unless it was first discarded by RST checking in the first step.
-
-        // we should not reach this point. However, if it does happen, just drop the segment
         unexpectedSegment(ctx, seg);
     }
 
@@ -713,22 +893,22 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             }
             else {
                 // RFC 9293: Otherwise (no ACK), drop the segment
-                // (ISS has already been selected when TCB has been created)
+                tcb.selectIss();
                 LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Drop it.", ctx.channel(), state, seg);
                 // RFC 9293: and return.
                 return;
             }
         }
 
-        // TODO:
-        //  RFC 9293: Third, check the security:
-        //  RFC 9293: If the security/compartment in the segment does not exactly match the
-        //  RFC 9293: security/compartment in the TCB, send a reset:
-        //  RFC 9293: If there is an ACK,
-        //  RFC 9293: <SEQ=SEG.ACK><CTL=RST>
-        //  RFC 9293: Otherwise,
-        //  RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
-        //  RFC 9293: If a reset was sent, discard the segment and return.
+        // RFC 9293: Third, check the security:
+        // RFC 9293: If the security/compartment in the segment does not exactly match the
+        // RFC 9293: security/compartment in the TCB, send a reset:
+        // RFC 9293: If there is an ACK,
+        // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
+        // RFC 9293: Otherwise,
+        // RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
+        // RFC 9293: If a reset was sent, discard the segment and return.
+        // (not applicable for us)
 
         // RFC 9293: Fourth, check the SYN bit:
         // RFC 9293: This step should be reached only if the ACK is ok, or there is no ACK, and the
@@ -746,9 +926,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             // RFC 9293: and any segments on the retransmission queue that are thereby acknowledged
             // RFC 9293: should be removed.
             // (this is done by the handleAcknowledgement call above)
-
-            // update window
-            tcb.updateSndWnd(ctx, seg);
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
@@ -777,6 +954,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
 
+                // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
+                tcb.updateSndWnd(ctx, seg);
+
                 // TODO:
                 //  RFC 9293: If there are other controls or text in the segment, then continue
                 //  RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
@@ -796,11 +976,11 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                 tcb.writeWithout(response);
 
-                // TODO:
-                //  RFC 9293: Set the variables:
-                //  RFC 9293: SND.WND <- SEG.WND
-                //  RFC 9293: SND.WL1 <- SEG.SEQ
-                //  RFC 9293: SND.WL2 <- SEG.ACK
+                // RFC 9293: Set the variables:
+                // RFC 9293: SND.WND <- SEG.WND
+                // RFC 9293: SND.WL1 <- SEG.SEQ
+                // RFC 9293: SND.WL2 <- SEG.ACK
+                tcb.updateSndWnd(ctx, seg);
 
                 // TODO:
                 //  RFC 9293: If there are other controls or text in the segment, queue them for
@@ -1374,11 +1554,13 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     // TODO:
                     //  RFC 9293: Enter the TIME-WAIT state. Start the time-wait timer, turn off the
                     //  RFC 9293: other timers.
+                    // weil wir direkt in CLOSED gehen, müssen wir hier auch TCB löschen
+                    deleteTcb();
                     LOG.trace("{}[{}] Wait for our ACKnowledgment `{}` to be written to the network. Then close the channel.", ctx.channel(), state, response);
                     changeState(ctx, CLOSED);
                     userCallFuture.setSuccess();
                     userCallFuture = null;
-                    tcb.write(response);
+                    ctx.writeAndFlush(response);
                     break;
 
                 default:
@@ -1456,6 +1638,48 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             return true;
         }
         return false;
+    }
+
+    /*
+     * Timeouts
+     */
+
+    private void startUserTimer(final ChannelHandlerContext ctx,
+                                final ChannelPromise promise) {
+        if (userTimeout.toMillis() > 0) {
+            // RFC 9293: If a timeout is specified, the current user timeout for this connection is
+            // RFC 9293: changed to the new one.
+            if (userTimeoutTimer != null) {
+                userTimeoutTimer.cancel(false);
+                userTimeoutTimer = null;
+            }
+
+            userTimeoutTimer = ctx.executor().schedule(() -> userTimeout(ctx, promise), userTimeout.toMillis(), MILLISECONDS);
+        }
+    }
+
+    private void userTimeout(final ChannelHandlerContext ctx,
+                             final ChannelPromise promise) {
+        userTimeoutTimer = null;
+
+        // RFC 9293: For any state if the user timeout expires,
+        LOG.trace("{}[{}] User timeout expired after {}ms. Close channel.", ctx.channel(), userTimeout.toMillis());
+        // RFC 9293: flush all queues,
+        // RFC 9293: signal the user "error: connection aborted due to user timeout" in
+        // RFC 9293: general and for any outstanding calls,
+        // RFC 9293: delete the TCB,
+        final ConnectionHandshakeException cause = new ConnectionHandshakeException("User timeout for OPEN user call expired after " + userTimeout.toMillis() + "ms. Close channel.");
+        if (promise != null) {
+            promise.tryFailure(cause);
+        }
+        else {
+            ctx.fireExceptionCaught(cause);
+        }
+        deleteTcb();
+        // RFC 9293: enter the CLOSED state,
+        changeState(ctx, CLOSED);
+        ctx.close();
+        // RFC 9293: and return.
     }
 
     private void cancelUserTimeoutGuard() {
