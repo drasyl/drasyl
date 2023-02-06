@@ -153,8 +153,14 @@ public class Segment extends DefaultByteBufHolder {
         return pshAck(seq, ack, 0, data);
     }
 
+    public static Segment rstAck(final long seq,
+                                 final long ack,
+                                 final long window) {
+        return new Segment(seq, ack, (byte) (RST | ACK), window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+    }
+
     public static Segment rstAck(final long seq, final long ack) {
-        return new Segment(seq, ack, (byte) (RST | ACK), 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+        return rstAck(seq, ack, 0);
     }
 
     public static Segment synAck(final long seq,
