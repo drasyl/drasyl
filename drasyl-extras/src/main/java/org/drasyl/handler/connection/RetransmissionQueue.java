@@ -291,7 +291,7 @@ public class RetransmissionQueue {
         return retransmission;
     }
 
-    private void cancelRetransmissionTimer() {
+    void cancelRetransmissionTimer() {
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
             retransmissionTimer = null;
