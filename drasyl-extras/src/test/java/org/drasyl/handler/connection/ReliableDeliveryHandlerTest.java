@@ -74,7 +74,7 @@ class ReliableDeliveryHandlerTest {
     @Test
     void exceptionsShouldCloseTheConnection(@Mock final Throwable cause) {
         final EmbeddedChannel channel = new EmbeddedChannel();
-        final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+        final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
         channel.pipeline().addLast(handler);
 
         channel.pipeline().fireExceptionCaught(cause);
@@ -98,7 +98,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220 + SEG_HDR_SIZE);
-                    }, true, null, CLOSED, null, null, false, false);
+                    }, true, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -133,7 +133,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200 + SEG_HDR_SIZE);
-                    }, true, null, CLOSED, null, null, false, false);
+                    }, true, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -175,7 +175,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 300;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200 + SEG_HDR_SIZE);
-                    }, false, null, CLOSED, null, null, false, false);
+                    }, false, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should change state to LISTEN
@@ -214,7 +214,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64 * 1220, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1220 + SEG_HDR_SIZE);
-                    }, false, null, CLOSED, null, null, false, false);
+                    }, false, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should change state to LISTEN
@@ -246,7 +246,7 @@ class ReliableDeliveryHandlerTest {
                 @Test
                 void clientShouldCloseChannelIfServerIsNotRespondingToSyn() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, CLOSED, 1200 + SEG_HDR_SIZE, 64_000);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), true, null, 1200 + SEG_HDR_SIZE, 64_000);
                     channel.pipeline().addLast(handler);
 
                     // peer is dead and therefore no SYN/ACK is received
@@ -268,7 +268,7 @@ class ReliableDeliveryHandlerTest {
                 @Test
                 void serverShouldCloseChannelIfClientIsNotRespondingToSynAck() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, CLOSED, 1200 + SEG_HDR_SIZE, 64_000);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), false, null, 1200 + SEG_HDR_SIZE, 64_000);
                     channel.pipeline().addLast(handler);
 
                     // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
@@ -299,7 +299,7 @@ class ReliableDeliveryHandlerTest {
                 final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                     final long iss = 400;
                     return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 1200 + SEG_HDR_SIZE);
-                }, true, null, CLOSED, null, null, false, false);
+                }, true, null, null, null, null, false);
                 channel.pipeline().addLast(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -329,7 +329,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void weShouldCloseOurConnectionIfPeerHasDiscoveredThatPeerHasCrashed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, true, null, ESTABLISHED, new TransmissionControlBlock(300L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, true, null, ESTABLISHED, new TransmissionControlBlock(300L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // other wants to SYNchronize with us, ACK with our expected seq
@@ -355,7 +355,7 @@ class ReliableDeliveryHandlerTest {
                 final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> {
                             final long iss = Segment.randomSeq();
                             return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100 + SEG_HDR_SIZE);
-                        }, false, null, LISTEN, null, null, true, false);
+                        }, false, null, LISTEN, null, null, false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -373,7 +373,7 @@ class ReliableDeliveryHandlerTest {
                 final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> {
                     final long iss = 200;
                     return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch), new ReceiveBuffer(ch), 100 + SEG_HDR_SIZE);
-                }, false, null, LISTEN, null, null, true, false);
+                }, false, null, LISTEN, null, null, false);
                 channel.pipeline().addLast(handler);
 
                 // old duplicate ACK arrives at us
@@ -395,7 +395,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldCancelOpenCallAndCloseChannel() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(1_000), ch -> null, true, null, CLOSED, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(1_000), ch -> null, true, null, null, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.pipeline().close();
@@ -413,7 +413,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void weShouldPerformNormalCloseSequenceOnChannelClose() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -451,7 +451,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(299L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(299L, 300L, 1220 * 64, 300L, 100L, 1220 * 64, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // peer triggers close
@@ -478,7 +478,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1220 * 64, 100L, 300L, 1220 * 64, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -525,7 +525,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void weShouldSucceedCloseSequenceIfPeerIsDead() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -558,7 +558,7 @@ class ReliableDeliveryHandlerTest {
         void shouldPassReceivedDataCorrectlyToApplication() {
             final EmbeddedChannel channel = new EmbeddedChannel();
             TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 100, 100L, 1000 + SEG_HDR_SIZE);
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
             channel.pipeline().addLast(handler);
 
             final ByteBuf receivedData = Unpooled.buffer(100).writeBytes(randomBytes(100));
@@ -578,7 +578,7 @@ class ReliableDeliveryHandlerTest {
                 final int effSndMss = 100;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), effSndMss + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), effSndMss + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -606,7 +606,7 @@ class ReliableDeliveryHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 100L, 300L, 1000, 600 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, false, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(3 * bytes).writeBytes(randomBytes(3 * bytes));
@@ -632,7 +632,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 300L, 0, 100L, 1000, 100L, 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
@@ -652,7 +652,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 0, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     // 300 bytes in flight, only first 100 are ACKed
@@ -674,7 +674,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     // initial value
@@ -698,7 +698,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
@@ -718,7 +718,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 301L, 1000, 100L, 60, 100L, 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
@@ -745,7 +745,7 @@ class ReliableDeliveryHandlerTest {
                 void senderShouldAvoidTheSillyWindowSyndrome() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1000, 100L, 100L, 1000, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
@@ -779,7 +779,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(600L, 600L, 1600, 100L, 100L, 1600, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
@@ -827,7 +827,7 @@ class ReliableDeliveryHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 1000, 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 400
@@ -846,7 +846,7 @@ class ReliableDeliveryHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 2000, 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
@@ -907,7 +907,7 @@ class ReliableDeliveryHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 600L, 100L, 100L, 2000, 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
@@ -940,7 +940,7 @@ class ReliableDeliveryHandlerTest {
             void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 // initial cwnd is 3 segments
@@ -994,7 +994,7 @@ class ReliableDeliveryHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
@@ -1010,7 +1010,7 @@ class ReliableDeliveryHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
                 queue.retransmissionTimer = timer;
 
@@ -1030,7 +1030,7 @@ class ReliableDeliveryHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, buffer, queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
                 queue.retransmissionTimer = timer;
 
@@ -1045,7 +1045,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldCreateRetransmissionTimerIfAcknowledgeableSegmentIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(50), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(50), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
@@ -1070,7 +1070,7 @@ class ReliableDeliveryHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(channel);
                 TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 300L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
@@ -1103,7 +1103,7 @@ class ReliableDeliveryHandlerTest {
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 TransmissionControlBlock tcb = new TransmissionControlBlock(channel, 300L, 6001L, 100L, 200L, 4 * 1000, 1000 + SEG_HDR_SIZE);
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                 channel.pipeline().addLast(handler);
 
                 // we need outstanding data first
@@ -1161,7 +1161,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 600L, 2000, 100L, 100L, 2000, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
@@ -1190,7 +1190,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0, true, 1004, 2008, 6024, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 8300L, 2000, 100L, 100L, 2000, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
@@ -1218,7 +1218,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 6001L, 4 * 1000, 100L, 201L, 4 * 1000, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     Segment seg;
@@ -1260,7 +1260,7 @@ class ReliableDeliveryHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201, true, clock);
                     TransmissionControlBlock tcb = new TransmissionControlBlock(300L, 6001L, 4 * 1000, 100L, 201L, 4 * 1000, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 1000 + SEG_HDR_SIZE);
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofMillis(100), ch -> null, false, null, ESTABLISHED, tcb, null, false);
                     channel.pipeline().addLast(handler);
 
                     Segment seg;
@@ -1334,7 +1334,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 1200 + SEG_HDR_SIZE);
-                    }, true, null, CLOSED, null, null, false, false);
+                    }, true, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -1360,7 +1360,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ZERO, ch -> {
                         final long iss = 100;
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 1200 + SEG_HDR_SIZE);
-                    }, false, null, CLOSED, null, null, false, false);
+                    }, false, null, null, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     // write perform an active OPEN handshake
@@ -1386,7 +1386,7 @@ class ReliableDeliveryHandlerTest {
                     final int effSndMss = 100;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 123L), new ReceiveBuffer(channel), effSndMss + SEG_HDR_SIZE), null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 100L, 1000, 100L, 300L, 1000, 300L, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 123L), new ReceiveBuffer(channel), effSndMss + SEG_HDR_SIZE), null, false);
                     channel.pipeline().addLast(handler);
 
                     // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -1418,7 +1418,7 @@ class ReliableDeliveryHandlerTest {
                     final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> {
                         final long iss = Segment.randomSeq();
                         return new TransmissionControlBlock(iss, iss, 0, iss, 0, 64_000, 0, new SendBuffer(ch), new RetransmissionQueue(ch, clock), new ReceiveBuffer(ch), 100 + SEG_HDR_SIZE);
-                    }, false, null, LISTEN, null, null, true, false);
+                    }, false, null, LISTEN, null, null, false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1453,7 +1453,7 @@ class ReliableDeliveryHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE), null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE), null, false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1490,7 +1490,7 @@ class ReliableDeliveryHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 0), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE), null, true, false);
+                    final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(100L, 101L, 0, 100L, 0L, 64_000, 0, new SendBuffer(channel), new RetransmissionQueue(channel, clock, true, 0), new ReceiveBuffer(channel), 100 + SEG_HDR_SIZE), null, false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1528,7 +1528,7 @@ class ReliableDeliveryHandlerTest {
         @Test
         void shouldRejectOutboundNonByteBufs() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
             channel.pipeline().addLast(handler);
 
             assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
@@ -1539,7 +1539,7 @@ class ReliableDeliveryHandlerTest {
         @Test
         void shouldRejectOutboundDataIfConnectionIsClosed() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
             channel.pipeline().addLast(handler);
 
             handler.state = CLOSED;
@@ -1554,7 +1554,7 @@ class ReliableDeliveryHandlerTest {
         @Test
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
             channel.pipeline().addLast(handler);
 
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1566,7 +1566,7 @@ class ReliableDeliveryHandlerTest {
         @Test
         void shouldEnqueueDataIfConnectionEstablishmentIsStillInProgress2() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
             channel.pipeline().addLast(handler);
 
             final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1585,7 +1585,7 @@ class ReliableDeliveryHandlerTest {
         @Test
         void shouldFailWriteIfChannelIsClosing() {
             final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, FIN_WAIT_1, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, true, false);
+            final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, FIN_WAIT_1, new TransmissionControlBlock(100, 100, 1220 * 64, 100, 0, 1220 * 64, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 1220 + SEG_HDR_SIZE), null, false);
             channel.pipeline().addLast(handler);
 
             final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
@@ -1612,7 +1612,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldResetConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_SENT, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(1, 101)));
@@ -1626,7 +1626,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldCloseConnectionIfPeerResetsConnectionAndWeAreInActiveOpenMode() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(100, 101)));
@@ -1637,7 +1637,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldReturnToListenStateIfPeerResetsConnectionAndWeAreInPassiveOpenMode() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeInbound(Segment.rstAck(100, 101));
@@ -1650,7 +1650,7 @@ class ReliableDeliveryHandlerTest {
             @Disabled
             void shouldResetConnectionIfPeerSentNotAcceptableSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 101L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, SYN_RECEIVED, new TransmissionControlBlock(channel, 101L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeInbound(Segment.ack(100, 101));
@@ -1665,7 +1665,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldPassReceivedContentWhenConnectionIsEstablished() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1680,7 +1680,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldIgnoreSegmentWithDuplicateAck() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeInbound(Segment.ack(50, 109));
@@ -1692,7 +1692,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldReplyWithExpectedAckIfWeGotAckSomethingNotYetSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 110L, 111L, 100L, 50L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -1708,7 +1708,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldCloseConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, CLOSING, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, CLOSING, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeInbound(Segment.rstAck(100, 101));
@@ -1723,7 +1723,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldCloseConnectionOnResetSegment() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, CLOSING, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, true, null, CLOSING, new TransmissionControlBlock(channel, 100L, 101L, 100L, 100L, 1220 * 64, 1220 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 channel.writeInbound(Segment.rstAck(100, 101));
@@ -1738,10 +1738,8 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldIgnoreResetSegmentsWhenConnectionIsClosed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, CLOSED, null, null, false);
                 channel.pipeline().addLast(handler);
-
-                handler.state = CLOSED;
 
                 final Segment seg = Segment.rst(1);
                 channel.writeInbound(seg);
@@ -1753,10 +1751,8 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldReplyWithResetWhenConnectionIsClosed() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, CLOSED, null, null, false);
                 channel.pipeline().addLast(handler);
-
-                handler.state = CLOSED;
 
                 final Segment seg = Segment.syn(123, 64_000);
                 channel.writeInbound(seg);
@@ -1771,7 +1767,7 @@ class ReliableDeliveryHandlerTest {
             @Test
             void shouldRejectInboundNonByteBufs() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, true, false);
+                final ReliableDeliveryHandler handler = new ReliableDeliveryHandler(ofMillis(100), ch -> null, false, null, ESTABLISHED, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE), null, false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));

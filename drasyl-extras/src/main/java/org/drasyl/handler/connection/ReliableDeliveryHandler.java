@@ -99,7 +99,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     State state;
     TransmissionControlBlock tcb;
     private ChannelPromise userCallFuture;
-    private boolean initialized;
     private boolean readPending;
 
     /**
@@ -110,9 +109,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      * @param userTimeoutTimer
      * @param state            Current synchronization state
      * @param userCallFuture
-     * @param initialized
      * @param readPending
      */
+    @SuppressWarnings("java:S107")
     ReliableDeliveryHandler(final Duration userTimeout,
                             final Function<Channel, TransmissionControlBlock> tcbProvider,
                             final boolean activeOpen,
@@ -120,16 +119,14 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                             final State state,
                             final TransmissionControlBlock tcb,
                             final ChannelPromise userCallFuture,
-                            final boolean initialized,
                             final boolean readPending) {
         this.userTimeout = requireNonNegative(userTimeout);
         this.activeOpen = activeOpen;
         this.userTimeoutTimer = userTimeoutTimer;
-        this.state = requireNonNull(state);
+        this.state = state;
         this.tcbProvider = requireNonNull(tcbProvider);
         this.tcb = tcb;
         this.userCallFuture = userCallFuture;
-        this.initialized = initialized;
         this.readPending = readPending;
     }
 
@@ -141,7 +138,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
         this(userTimeout, channel -> {
             final long iss = Segment.randomSeq();
             return new TransmissionControlBlock(iss, iss, 0, iss, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss);
-        }, activeOpen, null, state, null, null, false, false);
+        }, activeOpen, null, state, null, null, false);
     }
 
     /**
@@ -152,7 +149,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      */
     public ReliableDeliveryHandler(final Duration userTimeout,
                                    final boolean activeOpen) {
-        this(userTimeout, activeOpen, CLOSED, 1220, 128 * 1220);
+        this(userTimeout, activeOpen, null, 1220, 128 * 1220);
     }
 
     /*
@@ -186,6 +183,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     @Override
     public void read(final ChannelHandlerContext ctx) {
+        // TODO: set readPending = true in any states?s
         readPending = true;
         if (tcb != null) {
             tcb.receiveBuffer().fireRead(ctx, tcb);
@@ -212,7 +210,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
-        // FIXME: check for ESTABLISHED?
+        // TODO: check for ESTABLISHED?
         if (tcb != null) {
             tcb.flush(ctx, state, true);
         }
@@ -476,22 +474,17 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     }
 
     private void initHandler(final ChannelHandlerContext ctx) {
-        if (!initialized) {
-            initialized = true;
-
-            // this state check is only required for some of our unit tests
-            if (state == CLOSED) {
-                // check if active OPEN mode is enabled
-                if (activeOpen) {
-                    // active OPEN
-                    LOG.trace("{}[{}] Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel(), state);
-                    userCallOpen(ctx);
-                }
-                else {
-                    // passive OPEN
-                    LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
-                    changeState(ctx, LISTEN);
-                }
+        if (state == null) {
+            // check if active OPEN mode is enabled
+            if (activeOpen) {
+                // active OPEN
+                LOG.trace("{}[{}] Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel(), state);
+                userCallOpen(ctx);
+            }
+            else {
+                // passive OPEN
+                LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
+                changeState(ctx, LISTEN);
             }
         }
     }
@@ -509,8 +502,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             switch (state) {
                 case CLOSED:
                     // RFC 9293: If the state is CLOSED (i.e., TCB does not exist), then
-                    // FIXME:
-                    // assert tcb == null;
+                    assert tcb == null;
                     segmentArrivesOnClosedState(ctx, seg);
                     break;
 
@@ -561,7 +553,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             response = Segment.rst(seg.ack());
         }
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
-        tcb.write(response);
+        ctx.writeAndFlush(response);
         // RFC 9293: Return.
     }
 
@@ -1049,12 +1041,10 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     // ESTABLISHED
                     // FIN-WAIT-1
                     // FIN-WAIT-2
-                    // CLOSE-WAIT
                     // CLOSING
                     // LAST-ACK
-                    // TIME-WAIT
 
-                    if (state != SYN_RECEIVED) {
+                    if (state.synchronizedConnection()) {
                         // RFC 9293: If the SYN bit is set in these synchronized states, it may be
                         // RFC 9293: either a legitimate new connection attempt (e.g., in the case of
                         // RFC 9293: TIME-WAIT), an error where the connection should be reset, or the

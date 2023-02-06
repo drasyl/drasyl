@@ -36,5 +36,12 @@ enum State {
     FIN_WAIT_1, // represents waiting for a connection termination request from the remote peer, or an acknowledgment of the connection termination request previously sent.
     FIN_WAIT_2, // represents waiting for a connection termination request from the remote peer.
     CLOSING, // represents waiting for a connection termination request acknowledgment from the remote peer.
-    LAST_ACK // represents waiting for an acknowledgment of the connection termination request previously sent to the remote peer (which includes an acknowledgment of its connection termination request).
+    LAST_ACK; // represents waiting for an acknowledgment of the connection termination request previously sent to the remote peer (which includes an acknowledgment of its connection termination request).
+
+    /**
+     * Is connection in a synchronized state?
+     */
+    boolean synchronizedConnection() {
+        return this == ESTABLISHED || this == FIN_WAIT_1 || this == FIN_WAIT_2 || this == CLOSING || this == LAST_ACK;
+    }
 }
