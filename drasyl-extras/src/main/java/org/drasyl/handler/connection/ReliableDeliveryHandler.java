@@ -94,6 +94,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
         "java:S1151",
         "java:S1192",
         "java:S1541",
+        "java:S1845",
         "java:S3626",
         "java:S3776"
 })
@@ -114,6 +115,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
     private final boolean activeOpen;
     private final Duration msl;
     ScheduledFuture<?> userTimeoutTimer;
+    ScheduledFuture<?> timeWaitTimer;
     State state;
     TransmissionControlBlock tcb;
     private ChannelPromise userCallFuture;
@@ -226,9 +228,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
-        // TODO: check for ESTABLISHED?
         if (tcb != null) {
-            tcb.flush(ctx, state, true);
+            tcb.flushAllBytes(ctx, state);
         }
 
         ctx.flush(); // tcb.flush macht eventuell auch schon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
@@ -264,9 +265,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        // FIXME: check for ESTABLISHED?
         if (tcb != null) {
-            tcb.flush(ctx, state, false);
+            tcb.flushPendingBytes(ctx, state);
         }
 
         ctx.fireChannelReadComplete();
@@ -517,7 +517,6 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
         ctx.read();
 
-        // FIXME:
         switch (state) {
             case CLOSED:
                 assert tcb == null;
@@ -582,12 +581,9 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 // RFC 9293: "error: connection illegal for this process".
                 // (not applicable for us)
 
-                // FIXME:
-                //  RFC 9293: Otherwise, return "error: connection does not exist".
-                // normale we have to fail the given promise. But here we just pass the close call further through the pipeline
-                LOG.trace("{}[{}] Channel is already closed. Pass close call further through the pipeline.", ctx.channel(), state);
-                ctx.close(promise);
-                break;
+                // RFC 9293: Otherwise, return "error: connection does not exist".
+                promise.tryFailure(CONNECTION_NOT_EXIST_ERROR);
+                return;
 
             case LISTEN:
                 // FIXME:
@@ -621,7 +617,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                 // continue with ESTABLISHED part
 
             case ESTABLISHED:
-                // RFC 9293: Queue this until all preceding SENDs have been segmentized,
+                // FIXME:
+                //  RFC 9293: Queue this until all preceding SENDs have been segmentized,
                 // RFC 9293: then form a FIN segment and send it.
                 // RFC 9293: In any case, enter FIN-WAIT-1 state.
                 // save promise for later, as it we need ACKnowledgment from remote peer
@@ -665,9 +662,20 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
             case CLOSING:
             case LAST_ACK:
             case TIME_WAIT:
-                // FIXME:
-                //  RFC 9293: Respond with "error: connection closing".
+                // RFC 9293: Respond with "error: connection closing".
+                promise.tryFailure(CONNECTION_CLOSING_ERROR);
         }
+    }
+
+    /**
+     * ABORT call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC
+     * 9293, Section 3.10.5</a>.
+     */
+    @SuppressWarnings("java:S128")
+    private void userCallAbort(final ChannelHandlerContext ctx,
+                               final ChannelPromise promise) {
+        LOG.trace("{}[{}] ABORT call received.", ctx.channel(), state);
+        // FIXME:
     }
 
     /**
@@ -677,6 +685,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
      * @return
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
+        LOG.trace("[{}] STATUS call received.", state);
+
         switch (state) {
             case CLOSED:
                 // RFC 9293: If the user should not have access to such a connection, return
@@ -1461,8 +1471,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
                 case LAST_ACK:
                     // RFC 9293: The only thing that can arrive in this state is an acknowledgment
-                    // FIXME: check if ACKed
-                    //  RFC 9293: of our FIN. If our FIN is now acknowledged,
+                    // RFC 9293: of our FIN. If our FIN is now acknowledged,
                     LOG.trace("{}[{}] Our sent FIN has been ACKnowledged by `{}`. Close sequence done.", ctx.channel(), state, seg);
                     // RFC 9293: delete the TCB,
                     deleteTcb();
@@ -1484,8 +1493,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     tcb.write(response);
 
-                    // FIXME:
-                    //  RFC 9293: and restart the 2 MSL timeout.
+                    // RFC 9293: and restart the 2 MSL timeout.
+                    startTimeWaitTimer(ctx, null);
             }
         }
 
@@ -1647,8 +1656,8 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
                     break;
 
                 case TIME_WAIT:
-                    // FIXME:
-                    //  RFC 9293: Remain in the TIME-WAIT state. Restart the 2 MSL time-wait timeout.
+                    // RFC 9293: Remain in the TIME-WAIT state. Restart the 2 MSL time-wait timeout.
+                    startTimeWaitTimer(ctx, null);
                     break;
             }
         }
@@ -1737,11 +1746,7 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
         if (userTimeout.toMillis() > 0) {
             // RFC 9293: If a timeout is specified, the current user timeout for this connection is
             // RFC 9293: changed to the new one.
-            if (userTimeoutTimer != null) {
-                userTimeoutTimer.cancel(false);
-                userTimeoutTimer = null;
-            }
-
+            cancelUserTimer();
             userTimeoutTimer = ctx.executor().schedule(() -> userTimeout(ctx, promise), userTimeout.toMillis(), MILLISECONDS);
         }
     }
@@ -1755,9 +1760,18 @@ public class ReliableDeliveryHandler extends ChannelDuplexHandler {
 
     private void startTimeWaitTimer(final ChannelHandlerContext ctx,
                                     final ChannelPromise promise) {
+        cancelTimeWaitTimer();
+
         // RFC 9293: When a connection is closed actively, it MUST linger in the TIME-WAIT state for
         // RFC 9293: a time 2xMSL (Maximum Segment Lifetime) (MUST-13)
-        ctx.executor().schedule(() -> timeWaitTimeout(ctx, promise), msl.multipliedBy(2).toMillis(), MILLISECONDS);
+        timeWaitTimer = ctx.executor().schedule(() -> timeWaitTimeout(ctx, promise), msl.multipliedBy(2).toMillis(), MILLISECONDS);
+    }
+
+    private void cancelTimeWaitTimer() {
+        if (timeWaitTimer != null) {
+            timeWaitTimer.cancel(false);
+            timeWaitTimer = null;
+        }
     }
 
     /**

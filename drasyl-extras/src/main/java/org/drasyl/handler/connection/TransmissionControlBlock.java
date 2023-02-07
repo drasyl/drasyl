@@ -387,7 +387,7 @@ public class TransmissionControlBlock {
                         // SND.NXT = SND.UNA and D <= U
                         sendData = true;
                     }
-                    else if (sndNxt == sndUna && NumberUtil.min(d, u) >= fs * maxSndWnd) {
+                    else if (sndNxt == sndUna && NumberUtil.min(d, u) >= fs * maxSndWnd()) {
                         // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
                         // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
                         sendData = true;
@@ -442,6 +442,16 @@ public class TransmissionControlBlock {
                final State state,
                final boolean newFlush) {
         flush(ctx, state, newFlush, false);
+    }
+
+    void flushAllBytes(final ChannelHandlerContext ctx,
+                       final State state) {
+        flush(ctx, state, true);
+    }
+
+    void flushPendingBytes(final ChannelHandlerContext ctx,
+                           final State state) {
+        flush(ctx, state, false);
     }
 
     private void createOverrideTimer(final ChannelHandlerContext ctx,
@@ -820,7 +830,7 @@ public class TransmissionControlBlock {
         int rcvUser = receiveBuffer.readableBytes();
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
-        if (rcvBuff() - rcvUser - rcvWnd >= NumberUtil.min(fr * rcvBuff(), (long) effSndMss())) {
+        if (rcvBuff() - rcvUser - rcvWnd >= NumberUtil.min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
             LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
@@ -845,9 +855,7 @@ public class TransmissionControlBlock {
     }
 
     public void selectIss() {
-        // FIXME:
-        long newIss = issSupplier.getAsLong();
-        iss = newIss;
+        iss = issSupplier.getAsLong();
     }
 
     public void initSndUnaSndNxt() {
