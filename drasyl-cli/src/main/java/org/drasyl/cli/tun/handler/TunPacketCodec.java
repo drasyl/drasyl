@@ -23,9 +23,9 @@ package org.drasyl.cli.tun.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.Tun4Packet;
+import io.netty.channel.socket.TunPacket;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.channel.tun.Tun4Packet;
-import org.drasyl.channel.tun.TunPacket;
 
 import java.util.List;
 
