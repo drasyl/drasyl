@@ -27,8 +27,11 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
+import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -38,6 +41,7 @@ import java.util.Objects;
 import static io.netty.util.ReferenceCountUtil.safeRelease;
 import static io.netty.util.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.ReliableTransportHandler.CONNECTION_CLOSING_ERROR;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -97,7 +101,7 @@ public class SendBuffer {
     public void enqueue(final ByteBuf buf, final ChannelPromise promise) {
         incrementPendingOutboundBytes(buf);
 
-        SendBufferEntry entry = new SendBufferEntry(buf, promise);
+        final SendBufferEntry entry = new SendBufferEntry(buf, promise);
         if (head == null) {
             // first entry, set as head
             head = tail = entry;
@@ -193,10 +197,10 @@ public class SendBuffer {
                 else {
                     // we need to skip start of buf
                     index += offset;
-                    length -= offset;;
+                    length -= offset;
+                    ;
                 }
             }
-
 
             // do not return more bytes than requested
             if (length > bytes) {
@@ -348,18 +352,7 @@ public class SendBuffer {
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void release() {
-        while (head != null) {
-            head.release();
-            head = head.next;
-        }
-
-        head = tail = null;
-        readMark = null;
-        acknowledgementIndex = 0;
-        size = 0;
-        decrementPendingOutboundBytes(bytes);
-        bytes = 0;
-        acknowledgeableBytes = 0;
+        fail(CONNECTION_CLOSING_ERROR);
     }
 
     @Override
@@ -373,6 +366,39 @@ public class SendBuffer {
 
     private void decrementPendingOutboundBytes(final int bytes) {
         queue.remove(bytes, channel.newPromise()).release();
+    }
+
+    public ChannelFuture allPrecedingSendsHaveBeenSegmentized(final ChannelHandlerContext ctx) {
+        if (head == null) {
+            return ctx.newSucceededFuture();
+        }
+
+        final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
+        SendBufferEntry current = head;
+        while (current != null) {
+            combiner.add(current.promise);
+            current = current.next;
+        }
+
+        final ChannelPromise aggregatePromise = ctx.newPromise();
+        combiner.finish(aggregatePromise);
+        return aggregatePromise;
+    }
+
+    public void fail(final ConnectionHandshakeException e) {
+        while (head != null) {
+            head.promise.tryFailure(e);
+            head.release();
+            head = head.next;
+        }
+
+        head = tail = null;
+        readMark = null;
+        acknowledgementIndex = 0;
+        size = 0;
+        decrementPendingOutboundBytes(bytes);
+        bytes = 0;
+        acknowledgeableBytes = 0;
     }
 
     static class SendBufferEntry extends DefaultByteBufHolder {

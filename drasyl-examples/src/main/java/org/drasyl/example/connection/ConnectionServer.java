@@ -34,7 +34,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ReliableDeliveryHandler;
+import org.drasyl.handler.connection.ReliableTransportHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
@@ -42,7 +42,6 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 
 /**
  * This node waits for connection handshake from other peers.
@@ -80,7 +79,7 @@ public class ConnectionServer {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(10), false));
+                        p.addLast(new ReliableTransportHandler(false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelInactive(final ChannelHandlerContext ctx) {

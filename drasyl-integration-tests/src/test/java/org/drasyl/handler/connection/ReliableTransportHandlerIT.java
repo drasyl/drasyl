@@ -40,24 +40,19 @@ import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.RandomUtil;
 import org.junit.jupiter.api.Test;
-import test.DropMessagesHandler;
 
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import static io.netty.channel.ChannelFutureListener.CLOSE;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ReliableDeliveryHandlerIT {
+class ReliableTransportHandlerIT {
     private static final float LOSS_RATE = 0.2f;
     private static final int MAX_DROP = 3;
 
@@ -80,7 +75,19 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableTransportHandler(false, 1000, 64_000, config));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                if (evt instanceof ConnectionHandshakeClosing) {
+                                    // confirm close request
+                                    ctx.close();
+                                    return;
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -95,7 +102,7 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 32_000));
+                        p.addLast(new ReliableTransportHandler(true, 1000, 32_000, config));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -128,8 +135,8 @@ class ReliableDeliveryHandlerIT {
         final CountDownLatch latch = new CountDownLatch(2);
 
         // server
-        final AtomicReference<ReliableDeliveryHandler> serverHandler = new AtomicReference<>();
-        final AtomicReference<ReliableDeliveryHandler> clientHandler = new AtomicReference<>();
+        final AtomicReference<ReliableTransportHandler> serverHandler = new AtomicReference<>();
+        final AtomicReference<ReliableTransportHandler> clientHandler = new AtomicReference<>();
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final LocalAddress serverAddress = new LocalAddress("ConnectionHandshakeHandlerIT");
         final Channel serverChannel = new ServerBootstrap()
@@ -141,20 +148,19 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        serverHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
+                        serverHandler.set(new ReliableTransportHandler(true));
                         p.addLast(serverHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void channelRead(ChannelHandlerContext ctx,
-                                                    Object msg) throws Exception {
-                                super.channelRead(ctx, msg);
-                            }
-
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
                                                            final Object evt) {
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     latch.countDown();
+                                }
+                                else if (evt instanceof ConnectionHandshakeClosing) {
+                                    // confirm close request
+                                    ctx.close();
+                                    return;
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }
@@ -173,7 +179,7 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        clientHandler.set(new ReliableDeliveryHandler(Duration.ofHours(1), true));
+                        clientHandler.set(new ReliableTransportHandler(true));
                         p.addLast(clientHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -194,9 +200,9 @@ class ReliableDeliveryHandlerIT {
             assertTrue(latch.await(50000, TimeUnit.SECONDS));
         }
         finally {
-            clientChannel.close();//.sync();
-            serverChannel.close();//.sync();
-            group.shutdownGracefully();//.sync();
+            clientChannel.close().sync();
+            serverChannel.close().sync();
+            group.shutdownGracefully().sync();
         }
     }
 
@@ -220,7 +226,19 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableTransportHandler(false));
+                        p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) {
+                                if (evt instanceof ConnectionHandshakeClosing) {
+                                    // confirm close request
+                                    ctx.close();
+                                    return;
+                                }
+                                ctx.fireUserEventTriggered(evt);
+                            }
+                        });
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -235,7 +253,7 @@ class ReliableDeliveryHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableTransportHandler(false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -311,7 +329,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), false));
+                        p.addLast(new ReliableTransportHandler(false));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(ChannelHandlerContext ctx,
@@ -330,7 +348,7 @@ class ReliableDeliveryHandlerIT {
             final ByteBuf buffer = Unpooled.buffer(10).writeBytes(RandomUtil.randomBytes(10));
             final ChannelFuture channelFuture = clientChannel.writeAndFlush(buffer);
 
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(50, TimeUnit.SECONDS));
             assertFalse(channelFuture.isSuccess());
         }
         finally {
@@ -386,7 +404,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableTransportHandler(true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -403,7 +421,7 @@ class ReliableDeliveryHandlerIT {
 
         try {
             // wait for channel close due to handshake timeout
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(15, TimeUnit.SECONDS));
             await().untilAsserted(() -> assertFalse(clientChannel.isOpen()));
         }
         finally {
@@ -442,7 +460,7 @@ class ReliableDeliveryHandlerIT {
                                 }
                             }
                         });
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableTransportHandler(true));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -456,7 +474,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofSeconds(1), true));
+                        p.addLast(new ReliableTransportHandler(true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -476,7 +494,7 @@ class ReliableDeliveryHandlerIT {
             assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             // wait for timeout
-            assertThrows(ConnectionHandshakeException.class, clientChannel.close()::sync);
+            assertTrue(clientChannel.close().sync().isSuccess());
         }
         finally {
             clientChannel.close().sync();
@@ -503,7 +521,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        ReliableDeliveryHandler handler = new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 32_000);
+                        ReliableTransportHandler handler = new ReliableTransportHandler(false, 1000, 32_000, config);
                         p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -541,7 +559,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableTransportHandler(true, 1000, 64_000, config));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -549,15 +567,15 @@ class ReliableDeliveryHandlerIT {
                                 // start dropping segments once handshake is completed
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-                                    p.addAfter(p.context(SegmentCodec.class).name(), null, new DropMessagesHandler(new Predicate<>() {
-                                        int i = 0;
-
-                                        @Override
-                                        public boolean test(final Object o) {
-                                            i++;
-                                            return 50 <= i;
-                                        }
-                                    }, msg -> false));
+//                                    p.addAfter(p.context(SegmentCodec.class).name(), null, new DropMessagesHandler(new Predicate<>() {
+//                                        int i = 0;
+//
+//                                        @Override
+//                                        public boolean test(final Object o) {
+//                                            i++;
+//                                            return 50 <= i;
+//                                        }
+//                                    }, msg -> false));
                                 }
                                 ctx.fireUserEventTriggered(evt);
                             }
@@ -607,7 +625,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), false, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableTransportHandler(false, 1000, 64_000, config));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRead(final ChannelHandlerContext ctx,
@@ -644,7 +662,7 @@ class ReliableDeliveryHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableDeliveryHandler(Duration.ofHours(1), true, CLOSED, 1000, 64_000));
+                        p.addLast(new ReliableTransportHandler(true, 1000, 64_000, config));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,

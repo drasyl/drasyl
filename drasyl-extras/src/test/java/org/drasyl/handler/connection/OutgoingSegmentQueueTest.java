@@ -39,7 +39,7 @@ class OutgoingSegmentQueueTest {
             final long ack1 = seg.ack();
             final byte ctl1 = seg.ctl();
             Map<SegmentOption, Object> options = seg.options();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
+            queue.place(seq1, readableBytes, ack1, ctl1, options);
         }
     }
 
@@ -56,7 +56,7 @@ class OutgoingSegmentQueueTest {
                 final long ack1 = seg.ack();
                 final byte ctl1 = seg.ctl();
                 Map<SegmentOption, Object> options = seg.options();
-                queue.addBytes(seq1, readableBytes, ack1, ctl1, options);
+                queue.place(seq1, readableBytes, ack1, ctl1, options);
             }
             finally {
                 queue.flush(ctx, tcb);
@@ -97,13 +97,13 @@ class OutgoingSegmentQueueTest {
             final long ack11 = seg1.ack();
             final byte ctl11 = seg1.ctl();
             Map<SegmentOption, Object> options11 = seg1.options();
-            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
+            queue.place(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final byte ctl1 = seg2.ctl();
             Map<SegmentOption, Object> options1 = seg2.options();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
+            queue.place(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
 
@@ -132,13 +132,13 @@ class OutgoingSegmentQueueTest {
             final long ack11 = seg1.ack();
             final byte ctl11 = seg1.ctl();
             Map<SegmentOption, Object> options11 = seg1.options();
-            queue.addBytes(seq11, readableBytes1, ack11, ctl11, options11);
+            queue.place(seq11, readableBytes1, ack11, ctl11, options11);
             final long seq1 = seg2.seq();
             final int readableBytes = seg2.content().readableBytes();
             final long ack1 = seg2.ack();
             final byte ctl1 = seg2.ctl();
             Map<SegmentOption, Object> options1 = seg2.options();
-            queue.addBytes(seq1, readableBytes, ack1, ctl1, options1);
+            queue.place(seq1, readableBytes, ack1, ctl1, options1);
 
             queue.flush(ctx, tcb);
 

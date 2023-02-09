@@ -45,9 +45,9 @@ import static org.drasyl.handler.connection.Segment.greaterThan;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.SACK;
 
-// es kann sein, dass wir in einem Rutsch (durch mehrere channelReads) Segmente empfangen und die dann z.B. alle jeweils ACKen
-// zum Zeitpunkt des channelReads wissen wir noch nicht, ob noch mehr kommt
-// daher speichern wir die nachrichten und warten auf ein channelReadComplete. Dort gucken wir dann, ob wir z.B. ACKs zusammenfassen können/etc.
+/**
+ * This queue holds all control bits and data to be sent.
+ */
 public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
     private long seq = -1;
@@ -56,10 +56,15 @@ public class OutgoingSegmentQueue {
     private int len;
     private Map<SegmentOption, Object> options;
 
-    void addBytes(final long seq,
-                  final long readableBytes,
-                  final long ack,
-                  final int ctl, Map<SegmentOption, Object> options) {
+    void place(final Segment seg) {
+        place(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
+    }
+
+    void place(final long seq,
+               final long readableBytes,
+               final long ack,
+               final int ctl,
+               final Map<SegmentOption, Object> options) {
         if (this.seq == -1) {
             this.seq = seq;
         }

@@ -38,7 +38,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
- * Message used by {@link ReliableDeliveryHandler} to provide reliable and ordered delivery of bytes
+ * Message used by {@link ReliableTransportHandler} to provide reliable and ordered delivery of bytes
  * between hosts.
  */
 @SuppressWarnings({ "java:S1845", "java:S3052" })
@@ -226,6 +226,10 @@ public class Segment extends DefaultByteBufHolder {
 
     public boolean isSyn() {
         return (ctl & SYN) != 0;
+    }
+
+    public boolean isOnlySyn() {
+        return ctl == SYN;
     }
 
     public boolean isFin() {

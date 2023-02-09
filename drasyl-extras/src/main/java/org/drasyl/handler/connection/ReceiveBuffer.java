@@ -385,7 +385,7 @@ public class ReceiveBuffer {
         }
     }
 
-    public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+    public boolean fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (headBuf != null) {
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
@@ -395,12 +395,18 @@ public class ReceiveBuffer {
                 tcb.incrementRcvWnd(ctx);
                 LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
                 ctx.fireChannelRead(headBuf1);
+                return true;
             }
         }
+        return false;
     }
 
     public int readableBytes() {
         return headBuf != null ? headBuf.readableBytes() : 0;
+    }
+
+    public boolean hasReadableBytes() {
+        return readableBytes() > 0;
     }
 
     static class ReceiveBufferBlock {

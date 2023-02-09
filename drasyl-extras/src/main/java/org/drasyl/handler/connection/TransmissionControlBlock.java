@@ -85,13 +85,13 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public class TransmissionControlBlock {
     public static final int OVERRIDE_TIMEOUT = 100; // RFC 9293: The override timeout should be in the range 0.1 - 1.0
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
-    private static final boolean NODELAY = false; // bypass Nagle Delays by disabling Nagle's algorithm
     private static final int DRASYL_HDR_SIZE = 0; // FIXME: ermitteln
     final SendBuffer sendBuffer;
     final RetransmissionQueue retransmissionQueue;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
+    public ReliableTransportConfig config;
     private long iss; // initial send sequence number
     protected long ssthresh; // slow start threshold
     // congestion control
@@ -167,8 +167,9 @@ public class TransmissionControlBlock {
                              final SendBuffer sendBuffer,
                              final RetransmissionQueue retransmissionQueue,
                              final ReceiveBuffer receiveBuffer,
-                             final int mss) {
-        this(issSupplier, sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, rcvWnd, irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, mss, effSndMss(mss) * 3L, rcvWnd, sndWnd, iss);
+                             final int mss,
+                             final ReliableTransportConfig config) {
+        this(issSupplier, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss);
     }
 
     TransmissionControlBlock(final LongSupplier issSupplier,
@@ -179,8 +180,9 @@ public class TransmissionControlBlock {
                              final long iss,
                              final int rcvWnd,
                              final long irs,
-                             final int mss) {
-        this(issSupplier, sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+                             final int mss,
+                             final ReliableTransportConfig config) {
+        this(issSupplier, sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
     }
 
     TransmissionControlBlock(final LongSupplier issSupplier,
@@ -190,8 +192,9 @@ public class TransmissionControlBlock {
                              final long iss,
                              final long irs,
                              final int windowSize,
-                             final int mss) {
-        this(issSupplier, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+                             final int mss,
+                             final ReliableTransportConfig config) {
+        this(issSupplier, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
     }
 
     TransmissionControlBlock(final LongSupplier issSupplier,
@@ -199,8 +202,8 @@ public class TransmissionControlBlock {
                              final long iss,
                              final long irs,
                              final int windowSize,
-                             final int mss) {
-        this(issSupplier, iss, iss, windowSize, 0, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss);
+                             final int mss, ReliableTransportConfig config) {
+        this(issSupplier, iss, iss, windowSize, 0, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
     }
 
     // RFC 1122, Section 4.2.2.6
@@ -283,6 +286,8 @@ public class TransmissionControlBlock {
         cancelOverrideTimer();
         sendBuffer.release();
         receiveBuffer.release();
+        retransmissionQueue.cancelUserTimer();
+        retransmissionQueue.cancelRetransmissionTimer();
     }
 
     public ReceiveBuffer receiveBuffer() {
@@ -338,7 +343,7 @@ public class TransmissionControlBlock {
                               final long readableBytes,
                               final long ack,
                               final int ctl, Map<SegmentOption, Object> options) {
-        outgoingSegmentQueue.addBytes(seq, readableBytes, ack, ctl, options);
+        outgoingSegmentQueue.place(seq, readableBytes, ack, ctl, options);
     }
 
     void writeAndFlush(final ChannelHandlerContext ctx,
@@ -347,7 +352,7 @@ public class TransmissionControlBlock {
         outgoingSegmentQueue.flush(ctx, this);
     }
 
-    void addToSendBuffer(final ByteBuf data, final ChannelPromise promise) {
+    void enqueueData(final ByteBuf data, final ChannelPromise promise) {
         sendBuffer.enqueue(data, promise);
     }
 
@@ -366,7 +371,7 @@ public class TransmissionControlBlock {
             }
 
             while (allowedBytesToFlush > 0) {
-                if (!NODELAY) {
+                if (!config().noDelay()) {
                     // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
                     // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
@@ -438,6 +443,10 @@ public class TransmissionControlBlock {
         }
     }
 
+    private ReliableTransportConfig config() {
+        return config;
+    }
+
     void flush(final ChannelHandlerContext ctx,
                final State state,
                final boolean newFlush) {
@@ -504,19 +513,18 @@ public class TransmissionControlBlock {
         // only when new data is acked
         // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
         if (ackedBytes > 0 && !synAcked) {
-            final int smss = effSndMss();
             if (doSlowStart()) {
                 // During slow start, a TCP increments cwnd by at most SMSS bytes for
                 //   each ACK received that cumulatively acknowledges new data.
 
                 // Slow Start -> +1 SMSS after each ACK
-                final long increment = NumberUtil.min(smss, ackedBytes);
+                final long increment = NumberUtil.min(smss(), ackedBytes);
                 LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
             else {
                 // Congestion Avoidance -> +1 SMSS after each RTT
-                final long increment = (long) Math.ceil(((long) smss * smss) / (float) cwnd);
+                final long increment = (long) Math.ceil(((long) smss() * smss()) / (float) cwnd);
                 LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
                 cwnd += increment;
             }
@@ -629,10 +637,9 @@ public class TransmissionControlBlock {
                 //       to the congestion window plus 2 segments.  In other words, the
                 //       sender can only send two segments beyond the congestion window
                 //       (cwnd).
-                final int smss = effSndMss();
-                final boolean doLimitedTransmit = sndWnd() >= smss && (flightSize() + smss) <= (cwnd() + 2 * smss);
+                final boolean doLimitedTransmit = sndWnd() >= smss() && (flightSize() + smss()) <= (cwnd() + 2 * smss());
                 if (doLimitedTransmit) {
-                    final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss);
+                    final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss());
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got duplicate ACK. Retransmit `{}`.", ctx.channel(), retransmission);
                     ctx.writeAndFlush(retransmission);
                     // RFC 5681
@@ -664,8 +671,7 @@ public class TransmissionControlBlock {
                 // 2. When the third duplicate ACK is received, a TCP MUST set ssthresh
                 //       to no more than the value given in equation (4).
                 //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                final int smss = effSndMss();
-                final long newSsthresh = NumberUtil.max(flightSize() / 2, 2L * smss);
+                final long newSsthresh = NumberUtil.max(flightSize() / 2, 2L * smss());
                 if (ssthresh != newSsthresh) {
                     LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), ssthresh(), newSsthresh);
                     ssthresh = newSsthresh;
@@ -676,12 +682,12 @@ public class TransmissionControlBlock {
                 //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
                 //       the congestion window by the number of segments (three) that have
                 //       left the network and which the receiver has buffered.
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss);
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss());
                 LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
                 ctx.writeAndFlush(retransmission);
 
                 // increase congestion window as we know that at least three segments have left the network
-                long newCwnd = ssthresh() + 3L * smss;
+                long newCwnd = ssthresh() + 3L * smss();
                 if (newCwnd != cwnd()) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
@@ -695,8 +701,7 @@ public class TransmissionControlBlock {
                 //       has left the network.
 
                 // increase congestion window as we know another segment has left the network
-                final int smss = effSndMss();
-                long newCwnd = cwnd() + smss;
+                long newCwnd = cwnd() + smss();
                 if (newCwnd != cwnd()) {
                     LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
@@ -751,8 +756,7 @@ public class TransmissionControlBlock {
                 // 6. When the next ACK arrives that acknowledges previously
                 //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                 //       set in step 2).  This is termed "deflating" the window.
-                final int smss = effSndMss();
-                final long newCwnd = NumberUtil.min(ssthresh(), NumberUtil.max(flightSize(), smss) + smss);
+                final long newCwnd = NumberUtil.min(ssthresh(), NumberUtil.max(flightSize(), smss()) + smss());
                 if (cwnd != newCwnd) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
                     this.cwnd = newCwnd;
@@ -787,8 +791,8 @@ public class TransmissionControlBlock {
                 //       This artificially inflates the congestion
                 //       window in order to reflect the additional segment that has left
                 //       the network.
-                if (ackedBytes >= effSndMss()) {
-                    newCwnd += effSndMss();
+                if (ackedBytes >= smss()) {
+                    newCwnd += smss();
                 }
                 if (cwnd != newCwnd) {
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), cwnd(), newCwnd);
@@ -852,6 +856,10 @@ public class TransmissionControlBlock {
 
     public int effSndMss() {
         return effSndMss(mss());
+    }
+
+    public int smss() {
+        return effSndMss();
     }
 
     public void selectIss() {
