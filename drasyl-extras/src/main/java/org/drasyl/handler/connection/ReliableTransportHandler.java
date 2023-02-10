@@ -115,15 +115,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private ChannelPromise closedPromise;
     private boolean receivePending;
 
-    /**
-     * @param config
-     * @param state              Current synchronization state
-     * @param tcb
-     * @param timeWaitTimer
-     * @param establishedPromise
-     * @param closedPromise
-     * @param receivePending
-     */
     @SuppressWarnings("java:S107")
     ReliableTransportHandler(final ReliableTransportConfig config,
                              final State state,
