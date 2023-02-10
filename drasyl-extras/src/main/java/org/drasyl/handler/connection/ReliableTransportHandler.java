@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,7 +35,6 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -109,70 +107,42 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
-    private final Function<Channel, TransmissionControlBlock> tcbProvider;
-    private final boolean activeOpen;
+    private final ReliableTransportConfig config;
     State state;
     TransmissionControlBlock tcb;
     ScheduledFuture<?> timeWaitTimer;
     private ChannelPromise establishedPromise;
     private ChannelPromise closedPromise;
     private boolean receivePending;
-    private final ReliableTransportConfig config;
 
     /**
-     * @param tcbProvider
-     * @param activeOpen         Initiate active OPEN handshake process automatically on
-     *                           {@link #channelActive(ChannelHandlerContext)}
+     * @param config
      * @param state              Current synchronization state
+     * @param tcb
      * @param timeWaitTimer
      * @param establishedPromise
      * @param closedPromise
      * @param receivePending
-     * @param config
      */
     @SuppressWarnings("java:S107")
-    ReliableTransportHandler(final Function<Channel, TransmissionControlBlock> tcbProvider,
-                             final boolean activeOpen,
+    ReliableTransportHandler(final ReliableTransportConfig config,
                              final State state,
                              final TransmissionControlBlock tcb,
                              final ScheduledFuture<?> timeWaitTimer,
                              final ChannelPromise establishedPromise,
                              final ChannelPromise closedPromise,
-                             final boolean receivePending,
-                             final ReliableTransportConfig config) {
-        this.activeOpen = activeOpen;
+                             final boolean receivePending) {
+        this.config = requireNonNull(config);
         this.state = state;
-        this.tcbProvider = requireNonNull(tcbProvider);
         this.tcb = tcb;
         this.timeWaitTimer = timeWaitTimer;
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
         this.receivePending = receivePending;
-        this.config = requireNonNull(config);
     }
 
-    ReliableTransportHandler(final boolean activeOpen,
-                             final State state,
-                             final int initialMss,
-                             final int initialWindow,
-                             final ReliableTransportConfig config) {
-        this(channel -> new TransmissionControlBlock(Segment::randomSeq, 0, 0, 0, 0, 0, initialWindow, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), initialMss, config), activeOpen, state, null, null, null, null, false, ReliableTransportConfig.newBuilder().build());
-    }
-
-    ReliableTransportHandler(final boolean activeOpen,
-                             final int initialMss,
-                             final int initialWindow,
-                             final ReliableTransportConfig config) {
-        this(activeOpen, null, initialMss, initialWindow, config);
-    }
-
-    /**
-     * @param activeOpen  if {@code true} a handshake will be issued on
-     *                    {@link #channelActive(ChannelHandlerContext)}. Otherwise, the remote peer
-     *                    must initiate the handshake
-     */
-    public ReliableTransportHandler(final boolean activeOpen) {
-        this(activeOpen, null, 1432, 128 * 1432, ReliableTransportConfig.newBuilder().baseMss(1432).rmem(128 * 1432).build());
+    public ReliableTransportHandler(final ReliableTransportConfig config) {
+        this(config, null, null, null, null, null, false);
     }
 
     /*
@@ -301,7 +271,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: allowed" or "error: security/compartment not allowed".
                 // (not applicable to us)
 
-                if (!activeOpen) {
+                if (!config.activeOpen()) {
                     // RFC 9293: If passive, enter the LISTEN state
                     LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
                     changeState(ctx, LISTEN);
@@ -832,7 +802,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     private void createTcb(final ChannelHandlerContext ctx) {
         assert tcb == null;
-        tcb = tcbProvider.apply(ctx.channel());
+        tcb = config.tcbSupplier().apply(config, ctx.channel());
         tcb.config = config;
         LOG.trace("{}[{}] TCB created: {}", ctx.channel(), state, tcb);
     }
@@ -1324,7 +1294,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case SYN_RECEIVED:
                 if (seg.isRst()) {
                     // RFC 9293: If the RST bit is set,
-                    if (!activeOpen) {
+                    if (!config.activeOpen()) {
                         // RFC 9293: If this connection was initiated with a passive OPEN (i.e.,
                         // RFC 9293: came from the LISTEN state), then return this connection to
                         // RFC 9293: LISTEN state
@@ -1345,7 +1315,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: In either case, the retransmission queue should be flushed.
                     tcb.retransmissionQueue().flush();
 
-                    if (activeOpen) {
+                    if (config.activeOpen()) {
                         // RFC 9293: And in the active OPEN case, enter the CLOSED state
                         changeState(ctx, CLOSED);
 
@@ -1410,7 +1380,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         if (seg.isSyn()) {
             switch (state) {
                 case SYN_RECEIVED:
-                    if (!activeOpen) {
+                    if (!config.activeOpen()) {
                         // RFC 9293: If the connection was initiated with a passive OPEN, then
                         // RFC 9293: return this connection to the LISTEN state and return.
                         LOG.trace("{}[{}] We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), state, seg);

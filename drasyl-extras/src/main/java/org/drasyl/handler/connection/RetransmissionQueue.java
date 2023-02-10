@@ -75,7 +75,6 @@ public class RetransmissionQueue {
     private long pshSeq = -1;
     private long finSeq = -1;
     private long rto; // RTO: retransmission timeout
-    private final long userTimeout;
 
     RetransmissionQueue(final Channel channel,
                         final long tsRecent,
@@ -84,8 +83,7 @@ public class RetransmissionQueue {
                         final double rttVar,
                         final double sRtt,
                         final long rto,
-                        final Clock clock,
-                        final long userTimeout) {
+                        final Clock clock) {
         this.channel = requireNonNull(channel);
         this.tsRecent = tsRecent;
         this.lastAckSent = lastAckSent;
@@ -94,30 +92,27 @@ public class RetransmissionQueue {
         this.sRtt = sRtt;
         this.rto = requirePositive(rto);
         this.clock = requireNonNull(clock);
-        this.userTimeout = requireNonNegative(userTimeout);
     }
 
     RetransmissionQueue(final Channel channel,
                         final long tsRecent,
                         final long lastAckSent,
                         final boolean sndTsOk,
-                        final Clock clock,
-                        final long userTimeout) {
+                        final Clock clock) {
         //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
-        this(channel, tsRecent, lastAckSent, sndTsOk, 0, INITIAL_SRTT, 1000, clock, userTimeout);
+        this(channel, tsRecent, lastAckSent, sndTsOk, 0, INITIAL_SRTT, 1000, clock);
     }
 
     RetransmissionQueue(final Channel channel,
                         final Clock clock,
                         final boolean sndTsOk,
-                        final long tsRecent,
-                        final long userTimeout) {
-        this(channel, tsRecent, 0, sndTsOk, clock, userTimeout);
+                        final long tsRecent) {
+        this(channel, tsRecent, 0, sndTsOk, clock);
     }
 
     RetransmissionQueue(final Channel channel,
                         final Clock clock) {
-        this(channel, clock, false, 0, 60_000); // FIXME: default value?
+        this(channel, clock, false, 0); // FIXME: default value?
     }
 
     RetransmissionQueue(final Channel channel) {
@@ -131,7 +126,7 @@ public class RetransmissionQueue {
             public double g() {
                 return 1.0 / 1_000;
             }
-        }, 10_000); // FIXME: default value?
+        }); // FIXME: default value?
     }
 
     public void enqueue(final ChannelHandlerContext ctx,
@@ -219,7 +214,7 @@ public class RetransmissionQueue {
 
     private void recreateUserTimer(final ChannelHandlerContext ctx,
                                    final TransmissionControlBlock tcb) {
-        if (false && userTimeout > 0) {
+        if (tcb.config().userTimeout().toMillis() > 0) {
             // reset existing timer
             if (userTimer != null) {
                 userTimer.cancel(false);
@@ -233,12 +228,12 @@ public class RetransmissionQueue {
                 // 9293, Section 3.10.8</a>.
 
                 // RFC 9293: For any state if the user timeout expires,
-                LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), userTimeout);
+                LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), tcb.config().userTimeout().toMillis());
                 // RFC 9293: flush all queues,
                 // (this is done by deleteTcb)
                 // RFC 9293: signal the user "error: connection aborted due to user timeout" in
                 // RFC 9293: general and for any outstanding calls,
-                final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + userTimeout + "ms. Close channel.");
+                final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + tcb.config().userTimeout().toMillis() + "ms. Close channel.");
                 ctx.fireExceptionCaught(cause);
 
                 final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
@@ -248,7 +243,7 @@ public class RetransmissionQueue {
                 // RFC 9293: enter the CLOSED state,
                 handler.changeState(ctx, CLOSED);
                 // RFC 9293: and return.
-            }, userTimeout, MILLISECONDS);
+            }, tcb.config().userTimeout().toMillis(), MILLISECONDS);
         }
     }
 

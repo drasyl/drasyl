@@ -34,6 +34,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
+import org.drasyl.handler.connection.ReliableTransportConfig;
 import org.drasyl.handler.connection.ReliableTransportHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -116,7 +117,7 @@ public class ConnectionClient {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(true));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,

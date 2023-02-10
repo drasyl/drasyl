@@ -34,7 +34,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -101,7 +100,6 @@ public class TransmissionControlBlock {
     private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
     private int rcvWnd; // receive window
     private long allowedBytesToFlush = -1;
-    private final LongSupplier issSupplier;
     // Send Sequence Variables
     long sndUna; // oldest unacknowledged sequence number
     long sndNxt; // next sequence number to be sent
@@ -117,7 +115,7 @@ public class TransmissionControlBlock {
     private long recover;
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final LongSupplier issSupplier,
+    TransmissionControlBlock(final ReliableTransportConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -135,7 +133,7 @@ public class TransmissionControlBlock {
                              final long ssthresh,
                              final long maxSndWnd,
                              final long recover) {
-        this.issSupplier = requireNonNull(issSupplier);
+        this.config = requireNonNull(config);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndWnd = requireNonNegative(sndWnd);
@@ -156,60 +154,48 @@ public class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final LongSupplier issSupplier,
+    TransmissionControlBlock(final ReliableTransportConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
                              final long iss,
                              final long rcvNxt,
-                             final int rcvWnd,
                              final long irs,
                              final SendBuffer sendBuffer,
                              final RetransmissionQueue retransmissionQueue,
-                             final ReceiveBuffer receiveBuffer,
-                             final int mss,
-                             final ReliableTransportConfig config) {
-        this(issSupplier, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss);
+                             final ReceiveBuffer receiveBuffer) {
+        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss);
     }
 
-    TransmissionControlBlock(final LongSupplier issSupplier,
+    TransmissionControlBlock(final ReliableTransportConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
                              final long iss,
-                             final int rcvWnd,
-                             final long irs,
-                             final int mss,
-                             final ReliableTransportConfig config) {
-        this(issSupplier, sndUna, sndNxt, sndWnd, iss, irs, rcvWnd, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
+                             final long irs) {
+        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel));
     }
 
-    TransmissionControlBlock(final LongSupplier issSupplier,
+    TransmissionControlBlock(final ReliableTransportConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
                              final long iss,
-                             final long irs,
-                             final int windowSize,
-                             final int mss,
-                             final ReliableTransportConfig config) {
-        this(issSupplier, sndUna, sndNxt, windowSize, iss, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
+                             final long irs) {
+        this(config, channel, sndUna, sndNxt, config.rmem(), iss, irs);
     }
 
-    TransmissionControlBlock(final LongSupplier issSupplier,
+    TransmissionControlBlock(final ReliableTransportConfig config,
                              final Channel channel,
-                             final long iss,
-                             final long irs,
-                             final int windowSize,
-                             final int mss, ReliableTransportConfig config) {
-        this(issSupplier, iss, iss, windowSize, 0, irs, windowSize, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), mss, config);
+                             final long irs) {
+        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel));
     }
 
     // RFC 1122, Section 4.2.2.6
     // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
     // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-    private static int effSndMss(final int mss) {
+    static int effSndMss(final int mss) {
         return NumberUtil.min(mss + DRASYL_HDR_SIZE, 1432 - DRASYL_HDR_SIZE) - Segment.SEG_HDR_SIZE;
     }
 
@@ -443,7 +429,7 @@ public class TransmissionControlBlock {
         }
     }
 
-    private ReliableTransportConfig config() {
+    ReliableTransportConfig config() {
         return config;
     }
 
@@ -863,7 +849,7 @@ public class TransmissionControlBlock {
     }
 
     public void selectIss() {
-        iss = issSupplier.getAsLong();
+        iss = config().issSupplier().getAsLong();
     }
 
     public void initSndUnaSndNxt() {

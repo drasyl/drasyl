@@ -75,7 +75,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableTransportHandler(false, 1000, 64_000, config));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).baseMss(1000).rmem(64_000).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -102,7 +102,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableTransportHandler(true, 1000, 32_000, config));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).baseMss(1000).rmem(32_000).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -148,7 +148,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        serverHandler.set(new ReliableTransportHandler(true));
+                        serverHandler.set(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                         p.addLast(serverHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -179,7 +179,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        clientHandler.set(new ReliableTransportHandler(true));
+                        clientHandler.set(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                         p.addLast(clientHandler.get());
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -226,7 +226,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableTransportHandler(false));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -253,7 +253,7 @@ class ReliableTransportHandlerIT {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
 //                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
-                        p.addLast(new ReliableTransportHandler(false));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -329,7 +329,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(false));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(ChannelHandlerContext ctx,
@@ -404,7 +404,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(true));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
@@ -460,7 +460,7 @@ class ReliableTransportHandlerIT {
                                 }
                             }
                         });
-                        p.addLast(new ReliableTransportHandler(true));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                     }
                 })
                 .bind(serverAddress).sync().channel();
@@ -474,7 +474,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(true));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -521,7 +521,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        ReliableTransportHandler handler = new ReliableTransportHandler(false, 1000, 32_000, config);
+                        ReliableTransportHandler handler = new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).baseMss(1000).rmem(32_000).build());
                         p.addLast(handler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -559,7 +559,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(true, 1000, 64_000, config));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).baseMss(1000).rmem(64_000).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -625,7 +625,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(false, 1000, 64_000, config));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(false).baseMss(1000).rmem(64_000).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelRead(final ChannelHandlerContext ctx,
@@ -662,7 +662,7 @@ class ReliableTransportHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ReliableTransportHandler(true, 1000, 64_000, config));
+                        p.addLast(new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(true).baseMss(1000).rmem(64_000).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,

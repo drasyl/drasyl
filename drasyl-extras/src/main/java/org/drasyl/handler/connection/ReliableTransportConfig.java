@@ -22,19 +22,65 @@
 package org.drasyl.handler.connection;
 
 import com.google.auto.value.AutoValue;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.time.Duration;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMinutes;
+import static java.time.Duration.ofSeconds;
 
 @AutoValue
 public abstract class ReliableTransportConfig {
+    public static final ReliableTransportConfig DEFAULT = new AutoValue_ReliableTransportConfig.Builder()
+            .issSupplier(Segment::randomSeq)
+            .sndBufSupplier(SendBuffer::new)
+            .rtnsQSupplier(RetransmissionQueue::new)
+            .rcfBufSupplier(ReceiveBuffer::new)
+            .tcbSupplier((config, channel) -> new TransmissionControlBlock(
+                    config,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    config.sndBufSupplier().apply(channel),
+                    config.rtnsQSupplier().apply(channel),
+                    config.rcfBufSupplier().apply(channel)
+            ))
+            .activeOpen(true)
+            .baseMss(1432)
+            .rmem(64 * 1432)
+            // RFC 9293: Arbitrarily defined to be 2 minutes.
+            .msl(ofMinutes(2))
+            .noDelay(false)
+            .userTimeout(ofSeconds(60))
+            .build();
+
     public static Builder newBuilder() {
-        final int baseMss = 1432;
-        // RFC 9293: Arbitrarily defined to be 2 minutes.
-        final Duration msl = ofMinutes(2);
-        return new AutoValue_ReliableTransportConfig.Builder().baseMss(baseMss).msl(msl);
+        return DEFAULT.toBuilder();
     }
+
+    public abstract LongSupplier issSupplier();
+
+    public abstract Function<Channel, SendBuffer> sndBufSupplier();
+
+    public abstract Function<Channel, RetransmissionQueue> rtnsQSupplier();
+
+    public abstract Function<Channel, ReceiveBuffer> rcfBufSupplier();
+
+    public abstract BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbSupplier();
+
+    /**
+     * @param activeOpen if {@code true} a handshake will be issued on {@link
+     *                   #channelActive(ChannelHandlerContext)}. Otherwise, the remote peer must
+     *                   initiate the handshake
+     */
+    public abstract boolean activeOpen();
 
     public abstract int baseMss();
 
@@ -49,10 +95,26 @@ public abstract class ReliableTransportConfig {
     /**
      * bypass Nagle Delays by disabling Nagle's algorithm.
      */
+    public abstract Duration userTimeout();
+
     public abstract boolean noDelay();
+
+    abstract Builder toBuilder();
 
     @AutoValue.Builder
     public abstract static class Builder {
+        public abstract Builder issSupplier(final LongSupplier issSupplier);
+
+        public abstract Builder sndBufSupplier(final Function<Channel, SendBuffer> sndBufSupplier);
+
+        public abstract Builder rtnsQSupplier(final Function<Channel, RetransmissionQueue> rtnsQSupplier);
+
+        public abstract Builder rcfBufSupplier(final Function<Channel, ReceiveBuffer> rcfBufSupplier);
+
+        public abstract Builder tcbSupplier(final BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbProvider);
+
+        public abstract Builder activeOpen(final boolean activeOpen);
+
         public abstract Builder baseMss(final int baseMss);
 
         public abstract Builder rmem(final int rmem);
@@ -60,6 +122,8 @@ public abstract class ReliableTransportConfig {
         public abstract Builder msl(final Duration msl);
 
         public abstract Builder noDelay(final boolean noDelay);
+
+        public abstract Builder userTimeout(final Duration userTimeout);
 
         abstract ReliableTransportConfig autoBuild();
 
