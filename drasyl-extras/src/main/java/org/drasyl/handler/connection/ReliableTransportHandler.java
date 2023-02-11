@@ -277,14 +277,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // (not applicable to us)
 
                     // RFC 9293: if active and the remote socket is specified, issue a SYN segment.
-
                     // RFC 9293: An initial send sequence number (ISS) is selected.
                     tcb.selectIss();
 
                     // RFC 9293: A SYN segment of the form <SEQ=ISS><CTL=SYN> is sent.
-
-                    // RFC 7323: An initial send sequence number (ISS) is selected. Send a <SYN>
-                    // RFC 7323: segment of the form:
+                    // RFC 7323: Send a <SYN> segment of the form:
                     // RFC 7323: <SEQ=ISS><CTL=SYN><TSval=Snd.TSclock>
                     // (timestamps option is automatically added by OutgoingSegmentQueue)
                     final Segment seg = Segment.syn(tcb.iss());
@@ -559,7 +556,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
-                // (not applicable to us)
+                // (not applicable to us. We instead are start listening to the initial close
+                // request result)
                 closedPromise.addListener(new PromiseNotifier<>(promise));
                 return;
 
@@ -583,6 +581,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: and return "error: closing" responses to any queued SENDs, or RECEIVEs.
                 tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
                 tcb.retransmissionQueue().flush();
+                // (deleteTcb must be called last)
                 deleteTcb();
 
                 // enter CLOSED state
@@ -722,10 +721,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.writeWithout(seg);
 
                 // RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
-                // RFC 9293: notification; all
+                // RFC 9293: notification;
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
 
-                // segments queued for transmission (except for the RST
+                // RFC 9293: all segments queued for transmission (except for the RST
                 // RFC 9293: formed above) or retransmission should be flushed.
                 tcb.retransmissionQueue().flush();
 
@@ -742,6 +741,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Respond with "ok" and delete the TCB,
+                deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
                 changeState(ctx, CLOSED);
@@ -755,8 +755,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * STATUS call as described in <a
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
      * 3.10.6</a>.
-     *
-     * @return
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
         LOG.trace("[{}] STATUS call received.", state);
@@ -820,10 +818,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.retransmissionQueue().cancelUserTimer();
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
                 break;
-
-//            case FIN_WAIT_1:
-//                ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
-//                break;
 
             case CLOSE_WAIT:
                 cancelTimeWaitTimer();
@@ -899,6 +893,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: An incoming segment not containing a RST causes a RST to be sent in response.
         // RFC 9293: The acknowledgment and sequence field values are selected to make the reset
         // RFC 9293: sequence acceptable to the TCP endpoint that sent the offending segment.
+
         final Segment response;
         if (!seg.isAck()) {
             // RFC 9293: If the ACK bit is off, sequence number zero is used,
@@ -912,6 +907,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
         LOG.trace("{}[{}] As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), state, response);
         ctx.writeAndFlush(response);
+
         // RFC 9293: Return.
         return;
     }
@@ -936,7 +932,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             final Segment response = Segment.rst(seg.ack());
             LOG.trace("{}[{}] We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), state, response);
             ctx.writeAndFlush(response);
-            // Return.
+
+            // RFC 9293: Return.
             return;
         }
 
@@ -953,14 +950,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // RTTM
             tcb.retransmissionQueue().segmentArrivesOnListenState(ctx, seg, tcb);
 
-            // yay, peer SYNced with us
-            changeState(ctx, SYN_RECEIVED);
-
             // RFC 9293: Set RCV.NXT to SEG.SEQ+1, IRS is set to SEG.SEQ,
             tcb.synchronizeState(seg);
 
-            // TODO:
-            //  RFC 9293: and any other control or text should be queued for processing later.
+            // RFC 9293: and any other control or text should be queued for processing later.
+            // (not applicable to us, as we do not implement T/TCP or TCP Fast Open)
             final boolean anyOtherControlOrText = !seg.isOnlySyn() && seg.content().isReadable();
             assert !anyOtherControlOrText : "not supported (yet)";
 
@@ -981,7 +975,17 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.writeAndFlush(ctx, response);
 
+            // RFC 9293: SND.NXT is set to ISS+1 and SND.UNA to ISS.
             tcb.initSndUnaSndNxt();
+
+            // RFC 9293: The connection state should be changed to SYN-RECEIVED.
+            changeState(ctx, SYN_RECEIVED);
+
+            // RFC 9293: Note that any other incoming control or data (combined with SYN) will be
+            // RFC 9293: processed in the SYN-RECEIVED state, but processing of SYN and ACK should
+            // RFC 9293: not be repeated. If the listen was not fully specified (i.e., the remote
+            // RFC 9293: socket was not fully specified), then the unspecified fields should be
+            // RFC 9293: filled in now.
 
             return;
         }
@@ -1125,10 +1129,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
                 tcb.updateSndWnd(ctx, seg);
 
-                // TODO:
-                //  RFC 9293: If there are other controls or text in the segment, then continue
-                //  RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
-                //  RFC 9293: is checked;
+                // RFC 9293: If there are other controls or text in the segment, then continue
+                // RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
+                // RFC 9293: is checked;
+                // (not applicable to us, as we do not implement T/TCP or TCP Fast Open)
                 final boolean anyOtherControlOrText = seg.content().isReadable();
                 assert !anyOtherControlOrText : "not supported (yet)";
 
@@ -1152,9 +1156,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: SND.WL2 <- SEG.ACK
                 tcb.updateSndWnd(ctx, seg);
 
-                // TODO:
-                //  RFC 9293: If there are other controls or text in the segment, queue them for
-                //  RFC 9293: processing after the ESTABLISHED state has been reached,
+                // RFC 9293: If there are other controls or text in the segment, queue them for
+                // RFC 9293: processing after the ESTABLISHED state has been reached,
+                // (not applicable to us, as we do not implement T/TCP or TCP Fast Open)
                 final boolean anyOtherControlOrText = !seg.isOnlySyn() && seg.content().isReadable();
                 assert !anyOtherControlOrText : "not supported (yet)";
 
@@ -1245,14 +1249,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: Timestamp Options, received on a connection in the TIME-WAIT state.
                     // (not applicable to us)
 
-                    // TODO:
-                    //  RFC 9293: In the following it is assumed that the segment is the idealized segment
-                    //  RFC 9293: that begins at RCV.NXT and does not exceed the window. One could tailor
-                    //  RFC 9293: actual segments to fit this assumption by trimming off any portions that
-                    //  RFC 9293: lie outside the window (including SYN and FIN) and only processing further
-                    //  RFC 9293: if the segment then begins at RCV.NXT. Segments with higher beginning
-                    //  RFC 9293: sequence numbers SHOULD be held for later processing (SHLD-31).
-                    assert seg.seq() != tcb.rcvNxt() : "not supported (yet)";
+                    // RFC 9293: In the following it is assumed that the segment is the idealized segment
+                    // RFC 9293: that begins at RCV.NXT and does not exceed the window. One could tailor
+                    // RFC 9293: actual segments to fit this assumption by trimming off any portions that
+                    // RFC 9293: lie outside the window (including SYN and FIN) and only processing further
+                    // RFC 9293: if the segment then begins at RCV.NXT. Segments with higher beginning
+                    // RFC 9293: sequence numbers SHOULD be held for later processing (SHLD-31).
+                    // (this is done by ReceiveBuffer)
                 }
         }
 
@@ -1676,16 +1679,17 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
 
             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-            // TODO:
-            //  RFC 9293: and return any pending RECEIVEs with same message,
-            // RFC 9293: advance RCV.NXT over the FIN,
-            // RFC 9293: and send an acknowledgment for the FIN.
-            // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
+            ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
 
-            // advance receive state
+            // RFC 9293: and return any pending RECEIVEs with same message,
+            // (not applicable to us)
+
+            // RFC 9293: advance RCV.NXT over the FIN,
             tcb.receiveBuffer().receive(ctx, tcb, seg);
 
-            // send ACK for the FIN
+            // RFC 9293: and send an acknowledgment for the FIN.
+            // FIXME:
+            //  RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
             final Segment response = Segment.ack(tcb.sndNxt(), tcb.rcvNxt());
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
             tcb.write(response);
