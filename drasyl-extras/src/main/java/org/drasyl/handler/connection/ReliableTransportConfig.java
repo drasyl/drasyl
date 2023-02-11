@@ -50,7 +50,10 @@ public abstract class ReliableTransportConfig {
                     0,
                     config.sndBufSupplier().apply(channel),
                     config.rtnsQSupplier().apply(channel),
-                    config.rcfBufSupplier().apply(channel)
+                    config.rcfBufSupplier().apply(channel),
+                    0,
+                    0,
+                    false
             ))
             .activeOpen(true)
             .baseMss(1432)
@@ -59,6 +62,24 @@ public abstract class ReliableTransportConfig {
             .msl(ofMinutes(2))
             .noDelay(false)
             .userTimeout(ofSeconds(60))
+            .timestamps(true)
+            // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
+            // RFC 6298:       suggested in [JK88]).
+            .alpha(1f / 8)
+            .beta(1f / 4)
+            // RFC 6298: where K = 4
+            .k(4)
+            .clock(new Clock() {
+                @Override
+                public long time() {
+                    return System.nanoTime() / 1_000_000; // convert to ms
+                }
+
+                @Override
+                public double g() {
+                    return 1.0 / 1_000;
+                }
+            })
             .build();
 
     public static Builder newBuilder() {
@@ -99,6 +120,25 @@ public abstract class ReliableTransportConfig {
 
     public abstract boolean noDelay();
 
+    /**
+     * see timestamp option RFC 7323
+     */
+    public abstract boolean timestamps();
+
+    /**
+     * RFC 6298: smoothing factor
+     */
+    public abstract float alpha();
+
+    /**
+     * RFC 6298: delay variance factor
+     */
+    public abstract float beta();
+
+    public abstract int k();
+
+    public abstract Clock clock();
+
     abstract Builder toBuilder();
 
     @AutoValue.Builder
@@ -125,10 +165,27 @@ public abstract class ReliableTransportConfig {
 
         public abstract Builder userTimeout(final Duration userTimeout);
 
+        public abstract Builder timestamps(final boolean timestamps);
+
+        public abstract Builder alpha(final float alpha);
+
+        public abstract Builder beta(final float beta);
+
+        public abstract Builder k(final int k);
+
+        public abstract Builder clock(final Clock clock);
+
         abstract ReliableTransportConfig autoBuild();
 
         public ReliableTransportConfig build() {
             return autoBuild();
         }
+    }
+
+    public interface Clock {
+        long time();
+
+        // clock granularity in seconds
+        double g();
     }
 }

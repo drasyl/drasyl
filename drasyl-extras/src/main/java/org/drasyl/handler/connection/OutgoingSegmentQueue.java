@@ -101,7 +101,7 @@ public class OutgoingSegmentQueue {
                 // add MSS option to SYN
                 options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
             }
-            tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options);
+            tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options, tcb);
 
             if (false && ctl == ACK) {
                 // SACK

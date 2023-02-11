@@ -38,7 +38,7 @@ class ReceiveBufferTest {
             ReceiveBufferBlock head = new ReceiveBufferBlock(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
             head.next = new ReceiveBufferBlock(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
             final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 918402327, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
             Segment seg2 = Segment.pshAck(110, 1751431617, data.slice(0, 100));
             buffer.receive(ctx, tcb, seg2);
@@ -54,7 +54,7 @@ class ReceiveBufferTest {
             final ByteBuf data = Unpooled.buffer(100_000).writeBytes(randomBytes(100_000));
 
             final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
             // 100 bytes remaining. receive [10,50)
             // füge 40 bytes irgendwo im fenster ein
@@ -79,7 +79,7 @@ class ReceiveBufferTest {
                                         @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel));
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
@@ -123,7 +123,7 @@ class ReceiveBufferTest {
             void receiveSegmentsInOrdnerWithGaps(@Mock final Channel channel,
                                                  @Mock final ChannelHandlerContext ctx,
                                                  @Mock final SendBuffer sendBuffer) {
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel));
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -154,7 +154,7 @@ class ReceiveBufferTest {
             void receiveOverlappingSegmentsInOrdner(@Mock final Channel channel,
                                                     @Mock final ChannelHandlerContext ctx,
                                                     @Mock final SendBuffer sendBuffer) {
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel));
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -188,7 +188,7 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(60, data.slice(60, 100));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 100);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 // expected [0,60), got [0,100)
                 Segment seg1 = Segment.ack(0, 100, data.slice(0, 100));
@@ -222,7 +222,7 @@ class ReceiveBufferTest {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(500).writeBytes(randomBytes(500));
 
@@ -289,7 +289,7 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(70, data.slice(60, 60));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 // expected [10,70) and [130,210), got [10,210)
                 Segment seg1 = Segment.ack(10, 100, data);
@@ -315,7 +315,7 @@ class ReceiveBufferTest {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(300).writeBytes(randomBytes(300));
 
@@ -389,7 +389,7 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -415,7 +415,7 @@ class ReceiveBufferTest {
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(90).writeBytes(randomBytes(90));
 
@@ -434,7 +434,7 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -453,7 +453,7 @@ class ReceiveBufferTest {
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(channel), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 

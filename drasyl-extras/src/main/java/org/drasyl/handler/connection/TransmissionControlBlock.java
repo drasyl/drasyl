@@ -91,28 +91,47 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
     public ReliableTransportConfig config;
-    private long iss; // initial send sequence number
     protected long ssthresh; // slow start threshold
+    // RFC 9293: initial send sequence number
+    private long iss;
+    // Receive Sequence Variables
+    // RFC 9293: RCV.NXT = next sequence number expected on an incoming segment, and is the left or
+    // RFC 9293: lower edge of the receive window
+    private long rcvNxt;
+    // RFC 9293: receive window
+    private int rcvWnd;
+    private long allowedBytesToFlush = -1;
+    // Send Sequence Variables
+    // RFC 9293: SND.UNA = oldest unacknowledged sequence number
+    long sndUna;
+    // RFC 9293: SND.NXT = next sequence number to be sent
+    long sndNxt;
+    // RFC 9293: SND.WND = send window
+    private long sndWnd;
+    // RFC 9293: SND.WL1 = segment sequence number used for last window update
+    private long sndWl1;
+    // RFC 9293: SND.WL2 = segment acknowledgment number used for last window update
+    private long sndWl2;
+    // RFC 9293: IRS = initial receive sequence number
+    private long irs;
+    // RFC 9293: MSS = maximum segment size
+    private int mss;
+    // RFC 9293: RTO = retransmission timeout
+    private long rto;
     // congestion control
     long cwnd; // congestion window
     long lastAdvertisedWindow;
-    // Receive Sequence Variables
-    private long rcvNxt; // next sequence number expected on an incoming segments, and is the left or lower edge of the receive window
-    private int rcvWnd; // receive window
-    private long allowedBytesToFlush = -1;
-    // Send Sequence Variables
-    long sndUna; // oldest unacknowledged sequence number
-    long sndNxt; // next sequence number to be sent
-    private long sndWnd; // send window
-    private long sndWl1; // segment sequence number used for last window update
-    private long sndWl2; // segment acknowledgment number used for last window update
-    private long irs; // initial receive sequence number
-    private int mss; // maximum segment size
     // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
     private long maxSndWnd;
     private int duplicateAcks;
     private ScheduledFuture<?> overrideTimer;
     private long recover;
+    // RFC 7323: TS.Recent = holds a timestamp to be echoed in TSecr whenever a segment is sent
+    long tsRecent;
+    // RFC 7323: Last.ACK.sent = holds the ACK field from the last segment sent
+    long lastAckSent;
+    // RFC 7323: Snd.TS.OK = remember successfull TSopt negotiation
+    boolean sndTsOk;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -132,7 +151,10 @@ public class TransmissionControlBlock {
                              final long cwnd,
                              final long ssthresh,
                              final long maxSndWnd,
-                             final long recover) {
+                             final long recover,
+                             final long tsRecent,
+                             final long lastAckSent,
+                             final boolean sndTsOk) {
         this.config = requireNonNull(config);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -151,6 +173,9 @@ public class TransmissionControlBlock {
         this.ssthresh = requireNonNegative(ssthresh);
         this.maxSndWnd = requireNonNegative(maxSndWnd);
         this.recover = requireInRange(recover, MIN_SEQ_NO, MAX_SEQ_NO);
+        this.tsRecent = requireNonNegative(tsRecent);
+        this.lastAckSent = requireNonNegative(lastAckSent);
+        this.sndTsOk = sndTsOk;
     }
 
     @SuppressWarnings("java:S107")
@@ -163,8 +188,11 @@ public class TransmissionControlBlock {
                              final long irs,
                              final SendBuffer sendBuffer,
                              final RetransmissionQueue retransmissionQueue,
-                             final ReceiveBuffer receiveBuffer) {
-        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss);
+                             final ReceiveBuffer receiveBuffer,
+                             final long tsRecent,
+                             final long lastAckSent,
+                             final boolean sndTsOk) {
+        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk);
     }
 
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -174,7 +202,7 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel));
+        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -189,7 +217,7 @@ public class TransmissionControlBlock {
     TransmissionControlBlock(final ReliableTransportConfig config,
                              final Channel channel,
                              final long irs) {
-        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel));
+        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     // RFC 1122, Section 4.2.2.6
