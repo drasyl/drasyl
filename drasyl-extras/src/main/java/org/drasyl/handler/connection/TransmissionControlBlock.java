@@ -116,8 +116,6 @@ public class TransmissionControlBlock {
     private long irs;
     // RFC 9293: MSS = maximum segment size
     private int mss;
-    // RFC 9293: RTO = retransmission timeout
-    private long rto;
     // congestion control
     long cwnd; // congestion window
     long lastAdvertisedWindow;
@@ -132,6 +130,13 @@ public class TransmissionControlBlock {
     long lastAckSent;
     // RFC 7323: Snd.TS.OK = remember successfull TSopt negotiation
     boolean sndTsOk;
+    // RFC 6298: RTTVAR = round-trip time variation
+    double rttVar;
+    // RFC 6298: SRTT = smoothed round-trip time
+    double sRtt;
+    // RFC 6298: RTO = retransmission timeout
+    //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
+    long rto = 1000;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -202,7 +207,7 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -217,7 +222,7 @@ public class TransmissionControlBlock {
     TransmissionControlBlock(final ReliableTransportConfig config,
                              final Channel channel,
                              final long irs) {
-        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     // RFC 1122, Section 4.2.2.6
@@ -300,8 +305,6 @@ public class TransmissionControlBlock {
         cancelOverrideTimer();
         sendBuffer.release();
         receiveBuffer.release();
-        retransmissionQueue.cancelUserTimer();
-        retransmissionQueue.cancelRetransmissionTimer();
     }
 
     public ReceiveBuffer receiveBuffer() {
@@ -350,7 +353,7 @@ public class TransmissionControlBlock {
     }
 
     void writeWithout(final Segment seg) {
-        writeWithout(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
+        outgoingSegmentQueue.place(seg);
     }
 
     private void writeWithout(final long seq,
@@ -883,5 +886,31 @@ public class TransmissionControlBlock {
     public void initSndUnaSndNxt() {
         sndUna = iss();
         sndNxt = add(iss(), 1);
+    }
+
+    public void rto(final long rto) {
+        assert rto > 0;
+        if (rto < config.lBound()) {
+            // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
+            // RFC 6298:       SHOULD be rounded up to 1 second.
+            this.rto = config.lBound();
+
+            // RFC 6298:       Traditionally, TCP implementations use coarse grain clocks to measure
+            // RFC 6298:       the RTT and trigger the RTO, which imposes a large minimum value on
+            // RFC 6298:       the RTO. Research suggests that a large minimum RTO is needed to keep
+            // RFC 6298:       TCP conservative and avoid spurious retransmissions [AP99].
+            // RFC 6298:       Therefore, this specification requires a large minimum RTO as a
+            // RFC 6298:       conservative approach, while at the same time acknowledging that at
+            // RFC 6298:       some future point, research may show that a smaller minimum RTO is
+            // RFC 6298:       acceptable or superior.
+        }
+        else if (rto > config.uBound()) {
+            // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
+            // RFC 6298:       seconds.
+            this.rto = config.uBound();
+        }
+        else {
+            this.rto = rto;
+        }
     }
 }

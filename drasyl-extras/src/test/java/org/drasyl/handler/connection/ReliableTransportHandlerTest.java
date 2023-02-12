@@ -276,7 +276,6 @@ class ReliableTransportHandlerTest {
                 void serverShouldCloseChannelIfClientIsNotRespondingToSynAck(@Mock final Clock clock) {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .rtnsQSupplier(ch -> new RetransmissionQueue(ch, 0, 0))
                             .baseMss(1200 + SEG_HDR_SIZE)
                             .userTimeout(ofSeconds(1))
                             .clock(clock)
@@ -355,7 +354,7 @@ class ReliableTransportHandlerTest {
                         100L,
                         new SendBuffer(channel),
                         new OutgoingSegmentQueue(),
-                        new RetransmissionQueue(channel),
+                        new RetransmissionQueue(),
                         new ReceiveBuffer(channel),
                         config.baseMss(),
                         TransmissionControlBlock.effSndMss(config.baseMss()) * 3L,
@@ -407,7 +406,7 @@ class ReliableTransportHandlerTest {
                         .issSupplier(() -> iss)
                         .baseMss(100 + SEG_HDR_SIZE)
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
 
                 // old duplicate ACK arrives at us
@@ -456,7 +455,7 @@ class ReliableTransportHandlerTest {
                         .baseMss(1220 + SEG_HDR_SIZE)
                         .msl(ofSeconds(1))
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -502,7 +501,7 @@ class ReliableTransportHandlerTest {
             void weShouldPerformNormalCloseSequenceWhenPeerInitiateClose() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(1220 + SEG_HDR_SIZE).build(), 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(1220 + SEG_HDR_SIZE).build(), 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
 
@@ -545,7 +544,7 @@ class ReliableTransportHandlerTest {
                         .baseMss(1220 + SEG_HDR_SIZE)
                         .msl(ofSeconds(1))
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -593,7 +592,7 @@ class ReliableTransportHandlerTest {
             @Test
             void weShouldSucceedCloseSequenceIfPeerIsDead(@Mock final Clock clock) {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 0);
+                final RetransmissionQueue queue = new RetransmissionQueue();
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                         .userTimeout(ofMillis(1000))
                         .activeOpen(false)
@@ -655,7 +654,7 @@ class ReliableTransportHandlerTest {
                 final int effSndMss = 100;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(ReliableTransportConfig.DEFAULT, ESTABLISHED, new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(effSndMss + SEG_HDR_SIZE).build(), 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(ReliableTransportConfig.DEFAULT, ESTABLISHED, new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(effSndMss + SEG_HDR_SIZE).build(), 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
 
                 // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -730,7 +729,7 @@ class ReliableTransportHandlerTest {
                 void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(1000 + SEG_HDR_SIZE).build(), 300L, 600L, 0, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().baseMss(1000 + SEG_HDR_SIZE).build(), 300L, 600L, 0, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                     final ReliableTransportHandler handler = new ReliableTransportHandler(ReliableTransportConfig.DEFAULT, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
@@ -830,7 +829,7 @@ class ReliableTransportHandlerTest {
                 void senderShouldAvoidTheSillyWindowSyndrome() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(100 + SEG_HDR_SIZE).build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1000, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1000, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                     final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
@@ -868,7 +867,7 @@ class ReliableTransportHandlerTest {
                             .baseMss(100 + SEG_HDR_SIZE)
                             .rmem(1600)
                             .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1600, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false);
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1600, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                     final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
@@ -1086,7 +1085,7 @@ class ReliableTransportHandlerTest {
             @Test
             void timerShouldBeStartedWhenSegmentWithDataIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                final RetransmissionQueue queue = new RetransmissionQueue();
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(1000 + SEG_HDR_SIZE).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
@@ -1094,7 +1093,7 @@ class ReliableTransportHandlerTest {
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
 
-                assertNotNull(queue.retransmissionTimer);
+                assertNotNull(handler.retransmissionTimer);
             }
 
             // RFC 5681, Section 3.1, Rule 5.2
@@ -1103,17 +1102,17 @@ class ReliableTransportHandlerTest {
             void timerShouldBeCancelledWhenAllSegmentsHaveBeenAcked(@Mock final SendBuffer buffer,
                                                                     @Mock final ScheduledFuture timer) {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                final RetransmissionQueue queue = new RetransmissionQueue();
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(1000 + SEG_HDR_SIZE).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
-                queue.retransmissionTimer = timer;
+                handler.retransmissionTimer = timer;
 
                 channel.writeInbound(Segment.ack(200, 301));
 
                 verify(timer).cancel(false);
-                assertNull(queue.retransmissionTimer);
+                assertNull(handler.retransmissionTimer);
             }
 
             // RFC 5681, Section 3.1, Rule 5.3
@@ -1124,17 +1123,17 @@ class ReliableTransportHandlerTest {
                 when(buffer.hasOutstandingData()).thenReturn(true);
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                final RetransmissionQueue queue = new RetransmissionQueue();
                 final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
-                queue.retransmissionTimer = timer;
+                handler.retransmissionTimer = timer;
 
                 channel.writeInbound(Segment.ack(200, 301));
 
                 verify(timer).cancel(false);
-                assertNotNull(queue.retransmissionTimer);
+                assertNotNull(handler.retransmissionTimer);
             }
 
             // RFC 5681, Section 3.1
@@ -1145,7 +1144,7 @@ class ReliableTransportHandlerTest {
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                         .baseMss(100 + SEG_HDR_SIZE)
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, config.rmem(), 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, config.rmem(), 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
@@ -1168,7 +1167,7 @@ class ReliableTransportHandlerTest {
             @Test
             void onTimeout() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(channel);
+                final RetransmissionQueue queue = new RetransmissionQueue();
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(1000 + SEG_HDR_SIZE).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, channel.newPromise(), channel.newPromise(), false);
@@ -1176,7 +1175,7 @@ class ReliableTransportHandlerTest {
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
                 final Segment seg = channel.readOutbound();
-                final ScheduledFuture<?> timer = queue.retransmissionTimer;
+                final ScheduledFuture<?> timer = handler.retransmissionTimer;
 
                 // wait for timeout
                 await().untilAsserted(() -> {
@@ -1186,10 +1185,10 @@ class ReliableTransportHandlerTest {
                     assertEquals(seg, channel.readOutbound());
 
                     // back off timer
-                    assertEquals(2_000, queue.rto());
+                    assertEquals(2_000, tcb.rto);
 
                     // start timer
-                    assertNotSame(timer, queue.retransmissionTimer);
+                    assertNotSame(timer, handler.retransmissionTimer);
                 });
             }
 
@@ -1264,7 +1263,7 @@ class ReliableTransportHandlerTest {
                     when(clock.g()).thenReturn(0.001);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue(channel, 401, 0);
+                    final RetransmissionQueue queue = new RetransmissionQueue();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                             .baseMss(1000 + SEG_HDR_SIZE)
                             .clock(clock)
@@ -1281,12 +1280,12 @@ class ReliableTransportHandlerTest {
                     // (2.2) When the first RTT measurement R is made, the host MUST set
                     // R <- 2816 - 808 = 2008
                     // SRTT <- R
-                    assertEquals(2008, queue.sRtt);
+                    assertEquals(2008, tcb.sRtt);
                     // RTTVAR <- R/2
-                    assertEquals(1004, queue.rttVar);
+                    assertEquals(1004, tcb.rttVar);
                     // RTO <- SRTT + max (G, K*RTTVAR)
                     // where K = 4
-                    assertEquals(6024, queue.rto());
+                    assertEquals(6024, tcb.rto);
                 }
 
                 // RFC 6298, Section 2, Rule 2.3
@@ -1298,7 +1297,7 @@ class ReliableTransportHandlerTest {
                     when(clock.g()).thenReturn(0.001);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue(channel, 1004, 2008, 6024);
+                    final RetransmissionQueue queue = new RetransmissionQueue();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                             .baseMss(1000 + SEG_HDR_SIZE)
                             .clock(clock)
@@ -1315,11 +1314,11 @@ class ReliableTransportHandlerTest {
                     // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
                     // R' <- 2846 - 808 = 2038
                     // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
-                    assertEquals(943.125, queue.rttVar);
+                    assertEquals(943.125, tcb.rttVar);
                     // SRTT <- (1 - alpha) * SRTT + alpha * R'
-                    assertEquals(2008.9375, queue.sRtt);
+                    assertEquals(2008.9375, tcb.sRtt);
                     // RTO <- SRTT + max (G, K*RTTVAR)
-                    assertEquals(5781, queue.rto());
+                    assertEquals(5781, tcb.rto);
                 }
 
                 // RFC 7323, Section 4.3, Situation A: Delayed ACKs
@@ -1330,7 +1329,7 @@ class ReliableTransportHandlerTest {
                     when(clock.g()).thenReturn(0.001);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201);
+                    final RetransmissionQueue queue = new RetransmissionQueue();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                             .baseMss(1000 + SEG_HDR_SIZE)
                             .clock(clock)
@@ -1376,7 +1375,7 @@ class ReliableTransportHandlerTest {
                     when(clock.g()).thenReturn(0.001);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue(channel, 0, 201);
+                    final RetransmissionQueue queue = new RetransmissionQueue();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                             .baseMss(1000 + SEG_HDR_SIZE)
                             .clock(clock)
@@ -1454,7 +1453,7 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .rtnsQSupplier(ch -> new RetransmissionQueue(ch))
+                            .rtnsQSupplier(ch -> new RetransmissionQueue())
                             .build();
                     final ReliableTransportHandler handler = new ReliableTransportHandler(config);
                     channel.pipeline().addLast(handler);
@@ -1480,7 +1479,7 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .rtnsQSupplier(ch -> new RetransmissionQueue(ch))
+                            .rtnsQSupplier(ch -> new RetransmissionQueue())
                             .build();
                     final ReliableTransportHandler handler = new ReliableTransportHandler(config);
                     channel.pipeline().addLast(handler);
@@ -1509,7 +1508,7 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(effSndMss + SEG_HDR_SIZE).build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(channel, 123L), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
                     // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -1540,7 +1539,7 @@ class ReliableTransportHandlerTest {
                     final long iss = Segment.randomSeq();
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(100 + SEG_HDR_SIZE).build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1576,7 +1575,7 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(100 + SEG_HDR_SIZE).build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1592,7 +1591,7 @@ class ReliableTransportHandlerTest {
                     assertEquals(tsOpt.tsVal, handler.tcb.tsRecent);
                     assertTrue(handler.tcb.sndTsOk);
                     // If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial RTT estimate.
-                    assertEquals(8442, handler.tcb.retransmissionQueue.rto());
+                    assertEquals(8442, handler.tcb.rto);
 
                     // If the Snd.TS.OK bit is on, include a
                     // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
@@ -1614,7 +1613,7 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().baseMss(100 + SEG_HDR_SIZE).build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(channel, 0), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1630,7 +1629,7 @@ class ReliableTransportHandlerTest {
                     assertEquals(tsOpt.tsVal, handler.tcb.tsRecent);
                     assertTrue(handler.tcb.sndTsOk);
                     // If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial RTT estimate.
-                    assertEquals(1000, handler.tcb.retransmissionQueue.rto());
+                    assertEquals(1000, handler.tcb.rto);
 
                     // If the Snd.TS.OK bit is on, include a
                     // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
@@ -1724,7 +1723,7 @@ class ReliableTransportHandlerTest {
             final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                     .baseMss(1220 + SEG_HDR_SIZE)
                     .build();
-            final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, new TransmissionControlBlock(config, 100, 100, 1220 * 64, 100, 0, 0, new SendBuffer(channel), new RetransmissionQueue(channel), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
+            final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, new TransmissionControlBlock(config, 100, 100, 1220 * 64, 100, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, channel.newPromise(), channel.newPromise(), false);
             channel.pipeline().addLast(handler);
 
             final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));

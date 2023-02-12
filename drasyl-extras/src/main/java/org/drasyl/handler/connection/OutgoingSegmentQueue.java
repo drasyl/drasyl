@@ -96,30 +96,6 @@ public class OutgoingSegmentQueue {
                 ctl |= PSH;
             }
 
-            final Map<SegmentOption, Object> options = new EnumMap<>(this.options);
-            if ((ctl & SYN) != 0) {
-                // add MSS option to SYN
-                options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
-            }
-            tcb.retransmissionQueue.addOption(ctx, seq, ack, ctl, options, tcb);
-
-            if (false && ctl == ACK) {
-                // SACK
-                final List<Long> edges = new ArrayList<>();
-                final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
-                ReceiveBufferBlock current = receiveBuffer.head;
-                while (current != null) {
-                    edges.add(current.seq());
-                    edges.add(current.lastSeq());
-
-                    current = current.next;
-                }
-
-                if (!edges.isEmpty()) {
-                    options.put(SACK, new SackOption(edges));
-                }
-            }
-
             final Segment seg = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
             seq = Segment.advanceSeq(seq, data.readableBytes());
 
@@ -141,7 +117,7 @@ public class OutgoingSegmentQueue {
                 ctl &= ~RST;
 
                 // remote options after last write
-                this.options = new EnumMap<>(SegmentOption.class);
+                options.clear();
             }
         }
 

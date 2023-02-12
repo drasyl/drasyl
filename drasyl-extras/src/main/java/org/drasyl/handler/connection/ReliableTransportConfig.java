@@ -38,7 +38,7 @@ public abstract class ReliableTransportConfig {
     public static final ReliableTransportConfig DEFAULT = new AutoValue_ReliableTransportConfig.Builder()
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
-            .rtnsQSupplier(RetransmissionQueue::new)
+            .rtnsQSupplier(channel -> new RetransmissionQueue())
             .rcfBufSupplier(ReceiveBuffer::new)
             .tcbSupplier((config, channel) -> new TransmissionControlBlock(
                     config,
@@ -80,6 +80,13 @@ public abstract class ReliableTransportConfig {
                     return 1.0 / 1_000;
                 }
             })
+            // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
+            // RFC 6298:       SHOULD be rounded up to 1 second.
+            .lBound(1_000)
+            // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
+            // RFC 6298:       seconds.
+            .uBound(60_000)
+            .sack(false)
             .build();
 
     public static Builder newBuilder() {
@@ -139,6 +146,12 @@ public abstract class ReliableTransportConfig {
 
     public abstract Clock clock();
 
+    public abstract long lBound();
+
+    public abstract long uBound();
+
+    public abstract boolean sack();
+
     abstract Builder toBuilder();
 
     @AutoValue.Builder
@@ -174,6 +187,18 @@ public abstract class ReliableTransportConfig {
         public abstract Builder k(final int k);
 
         public abstract Builder clock(final Clock clock);
+
+        /**
+         * RFC 793: LBOUND is a lower bound on the timeout (e.g., 1 second)
+         */
+        public abstract Builder lBound(final long lBound);
+
+        /**
+         * RFC 793: UBOUND is an upper bound on the timeout (e.g., 1 minute)
+         */
+        public abstract Builder uBound(final long uBound);
+
+        public abstract Builder sack(final boolean sack);
 
         abstract ReliableTransportConfig autoBuild();
 
