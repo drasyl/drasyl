@@ -30,41 +30,11 @@ class OutgoingSegmentQueueTest {
 
     @Nested
     class Add {
-        @Test
-        void shouldAddSegmentToEndOfQueue(@Mock final Segment seg) {
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
 
-            final long seq1 = seg.seq();
-            final int readableBytes = seg.content().readableBytes();
-            final long ack1 = seg.ack();
-            final byte ctl1 = seg.ctl();
-            Map<SegmentOption, Object> options = seg.options();
-            queue.place(seq1, readableBytes, ack1, ctl1, options);
-        }
     }
 
     @Nested
     class AddAndFlush {
-        @Test
-        void shouldAddSegmentToEndOfQueueAndFlushItToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
-
-            try {
-                final long seq1 = seg.seq();
-                final int readableBytes = seg.content().readableBytes();
-                final long ack1 = seg.ack();
-                final byte ctl1 = seg.ctl();
-                Map<SegmentOption, Object> options = seg.options();
-                queue.place(seq1, readableBytes, ack1, ctl1, options);
-            }
-            finally {
-                queue.flush(ctx, tcb);
-            }
-
-            verify(ctx).write(seg.copy());
-            verify(ctx).flush();
-        }
     }
 
     @Nested
@@ -80,76 +50,6 @@ class OutgoingSegmentQueueTest {
 
             verify(ctx).write(seg.copy(), writePromise);
             verify(ctx).flush();
-        }
-
-        @Test
-        void shouldCumulateAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(channel.eventLoop().inEventLoop()).thenReturn(true);
-            final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
-            final Segment seg1 = Segment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
-            final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final Segment seg2 = Segment.ack(100, 250);
-            final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            final long seq11 = seg1.seq();
-            final int readableBytes1 = seg1.content().readableBytes();
-            final long ack11 = seg1.ack();
-            final byte ctl11 = seg1.ctl();
-            Map<SegmentOption, Object> options11 = seg1.options();
-            queue.place(seq11, readableBytes1, ack11, ctl11, options11);
-            final long seq1 = seg2.seq();
-            final int readableBytes = seg2.content().readableBytes();
-            final long ack1 = seg2.ack();
-            final byte ctl1 = seg2.ctl();
-            Map<SegmentOption, Object> options1 = seg2.options();
-            queue.place(seq1, readableBytes, ack1, ctl1, options1);
-
-            queue.flush(ctx, tcb);
-
-            // seg1 should have been superseded by seg2
-            verify(ctx).write(seg2, writePromise2);
-            assertEquals(0, seg1.refCnt());
-
-            // promises of seg2 should notify seg1
-            assertFalse(writePromise1.isSuccess());
-            writePromise2.setSuccess();
-            assertTrue(writePromise1.isSuccess());
-        }
-
-        @Test
-        void shouldPiggybackAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel,
-                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(channel.eventLoop().inEventLoop()).thenReturn(true);
-            final ByteBuf buf1 = UnpooledByteBufAllocator.DEFAULT.buffer();
-            final Segment seg1 = Segment.ack(100, 200, buf1);
-            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue();
-            final ChannelPromise writePromise1 = new DefaultChannelPromise(channel);
-            final Segment seg2 = Segment.fin(100);
-            final ChannelPromise writePromise2 = new DefaultChannelPromise(channel);
-            final long seq11 = seg1.seq();
-            final int readableBytes1 = seg1.content().readableBytes();
-            final long ack11 = seg1.ack();
-            final byte ctl11 = seg1.ctl();
-            Map<SegmentOption, Object> options11 = seg1.options();
-            queue.place(seq11, readableBytes1, ack11, ctl11, options11);
-            final long seq1 = seg2.seq();
-            final int readableBytes = seg2.content().readableBytes();
-            final long ack1 = seg2.ack();
-            final byte ctl1 = seg2.ctl();
-            Map<SegmentOption, Object> options1 = seg2.options();
-            queue.place(seq1, readableBytes, ack1, ctl1, options1);
-
-            queue.flush(ctx, tcb);
-
-            // seg1 should have been piggybacked by seg2
-            verify(ctx).write(eq(Segment.finAck(100, 200)), eq(writePromise2));
-            assertEquals(0, seg1.refCnt());
-
-            // promises of seg2 should notify seg1
-            assertFalse(writePromise1.isSuccess());
-            writePromise2.setSuccess();
-            assertTrue(writePromise1.isSuccess());
         }
 
         @Test

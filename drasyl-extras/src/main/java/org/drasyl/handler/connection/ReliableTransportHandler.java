@@ -198,11 +198,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
-        if (tcb != null) {
-            tcb.flushAllBytes(ctx, state);
+        if (state == ESTABLISHED) {
+            tcb.flushAllBytes(ctx);
         }
 
-        ctx.flush(); // tcb.flush macht eventuell auch schon ein ctx.flush. also hätten wir dan zwei. das ist doof. müssen wir noch besser machen
+        ctx.flush();
     }
 
     /*
@@ -238,8 +238,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
+        // FIXME: macht doch eigentlich nur beim ACK oder einem SND.WND Update sinn, oder?
         if (tcb != null) {
-            tcb.flushPendingBytes(ctx, state);
+            tcb.flushAllBytes(ctx);
         }
 
         ctx.fireChannelReadComplete();
@@ -295,7 +296,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // (timestamps option is automatically added by OutgoingSegmentQueue)
                     final Segment seg = formSegment(ctx, tcb.iss(), SYN);
                     LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-                    tcb.writeAndFlush(ctx, seg);
+                    tcb.sendAndFlush(ctx, seg);
 
                     // RFC 9293: Set SND.UNA to ISS, SND.NXT to ISS+1,
                     tcb.initSndUnaSndNxt();
@@ -324,7 +325,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: Send a SYN segment,
                 final Segment seg = formSegment(ctx, tcb.iss(), SYN);
                 LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-                tcb.writeAndFlush(ctx, seg);
+                tcb.sendAndFlush(ctx, seg);
 
                 // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                 tcb.initSndUnaSndNxt();
@@ -390,7 +391,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // (timestamps option is automatically added by OutgoingSegmentQueue)
                 final Segment seg = formSegment(ctx, tcb.iss(), SYN);
                 LOG.trace("{}[{}] Initiate OPEN process by sending `{}`.", ctx.channel(), state, seg);
-                tcb.writeAndFlush(ctx, seg);
+                tcb.send(ctx, seg);
 
                 // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                 tcb.initSndUnaSndNxt();
@@ -400,7 +401,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
                 // RFC 9293: transmission after entering ESTABLISHED state.
-                tcb.enqueueData(data, promise);
+                tcb.enqueueData(ctx, data, promise);
+
+                tcb.flush(ctx);
 
                 // RFC 9293: The urgent bit if requested in the command must be sent with the data
                 // RFC 9293: segments sent as a result of this command.
@@ -416,7 +419,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case SYN_RECEIVED:
                 // RFC 9293: Queue the data for transmission after entering ESTABLISHED state.
                 LOG.trace("{}[{}] Queue data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), state, data);
-                tcb.enqueueData(data, promise);
+                tcb.enqueueData(ctx, data, promise);
 
                 // RFC 9293: If no space to queue, respond with "error: insufficient resources".
                 // (not applicable to us)
@@ -428,7 +431,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: (acknowledgment value = RCV.NXT).
                 // Queue the data for transmission, to allow it to be sent together with other data for transmission efficiency.
                 LOG.trace("{}[{}] Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), state, data);
-                tcb.enqueueData(data, promise);
+                tcb.segmentizeData(ctx, data, promise);
 
                 // RFC 7323: If the Snd.TS.OK flag is set, then include the TCP Timestamps option
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
@@ -602,7 +605,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     //  RFC 9293: then form a FIN segment and send it,
                     final Segment seg = Segment.fin(tcb.sndNxt());
                     LOG.trace("{}[{}] Abort handshake by sending `{}`.", ctx.channel(), state, seg);
-                    tcb.writeAndFlush(ctx, seg);
+                    tcb.sendAndFlush(ctx, seg);
 
                     //  RFC 9293: and enter FIN-WAIT-1 state;
                     changeState(ctx, FIN_WAIT_1);
@@ -620,13 +623,15 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                // RFC 9293: Queue this until all preceding SENDs have been segmentized,
+                // FIXME:
+                //  RFC 9293: Queue this until all preceding SENDs have been segmentized,
+                //  (das Promise ist erst true, wenn alle ACKed ist. dabei reicht es, wenn es in der Retransmision Queue ist)
                 tcb.sendBuffer().allPrecedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
                         LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
-                        tcb.writeAndFlush(ctx, seg);
+                        tcb.sendAndFlush(ctx, seg);
                     }
                 });
 
@@ -645,12 +650,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 promise.tryFailure(CONNECTION_CLOSING_ERROR);
 
             case CLOSE_WAIT:
-                // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
+                // FIXME:
+                //  RFC 9293: Queue this request until all preceding SENDs have been segmentized;
+                //  (das Promise ist erst true, wenn alle ACKed ist. dabei reicht es, wenn es in der Retransmision Queue ist)
                 tcb.sendBuffer().allPrecedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
                         final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
-                        tcb.writeAndFlush(ctx, seg);
+                        tcb.sendAndFlush(ctx, seg);
 
                         // RFC 9293: enter LAST-ACK state.
                         changeState(ctx, LAST_ACK);
@@ -723,7 +730,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: Send a reset segment:
                 // RFC 9293: <SEQ=SND.NXT><CTL=RST>
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
-                tcb.writeWithout(seg);
+                tcb.send(ctx, seg);
 
                 // RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
                 // RFC 9293: notification;
@@ -819,6 +826,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
+                tcb.flushAllBytes(ctx);
                 cancelUserTimer();
                 ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
                 break;
@@ -999,7 +1007,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
 
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
-            tcb.writeAndFlush(ctx, response);
+            tcb.sendAndFlush(ctx, response);
 
             // RFC 9293: SND.NXT is set to ISS+1 and SND.UNA to ISS.
             tcb.initSndUnaSndNxt();
@@ -1045,7 +1053,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 else {
                     final Segment response = formSegment(ctx, seg.ack(), RST);
                     LOG.trace("{}[{}] Inform remote peer about the desynchronization state by sending an `{}` and dropping the inbound SEG.", ctx.channel(), state, response);
-                    tcb.write(response);
+                    tcb.send(ctx, response);
                 }
 
                 // RFC 9293: and discard the segment.
@@ -1169,6 +1177,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             if (tcb.synHasBeenAcknowledged()) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
+                // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
+                tcb.updateSndWnd(ctx, seg);
+
                 // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                 // RFC 9293: to ESTABLISHED,
                 changeState(ctx, ESTABLISHED);
@@ -1188,16 +1199,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // (timestamps option is automatically added by OutgoingSegmentQueue)
                 final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                 LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
-                tcb.write(response);
+                tcb.send(ctx, response);
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                 if (config.timestamps()) {
                     // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                     tcb.lastAckSent = tcb.rcvNxt();
                 }
-
-                // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
-                tcb.updateSndWnd(ctx, seg);
 
                 // RFC 9293: If there are other controls or text in the segment, then continue
                 // RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
@@ -1218,7 +1226,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: and send it.
                 final Segment response = formSegment(ctx, tcb.iss(), tcb.rcvNxt(), (byte) (SYN | ACK));
                 LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-                tcb.writeWithout(response);
+                tcb.send(ctx, response);
 
                 // RFC 9293: Set the variables:
                 // RFC 9293: SND.WND <- SEG.WND
@@ -1338,7 +1346,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             // (timestamps option is automatically added by OutgoingSegmentQueue)
                         }
 
-                        tcb.write(response);
+                        tcb.send(ctx, response);
                     }
 
                     // RFC 9293: After sending the acknowledgment, drop the unacceptable segment and
@@ -1513,7 +1521,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
                         final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                         LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
-                        tcb.write(response);
+                        tcb.send(ctx, response);
 
                         // RFC 9293: After sending the acknowledgment, TCP implementations MUST
                         // RFC 9293: drop the unacceptable segment
@@ -1591,7 +1599,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             // RFC 9293: and send it.
                             final Segment response = formSegment(ctx, seg.ack(), RST);
                             LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Send RST `{}` and drop received SEG.", ctx.channel(), state, seg, response);
-                            tcb.write(response);
+                            tcb.send(ctx, response);
                         }
 
                         // advance send state
@@ -1684,7 +1692,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     //  RFC 9293: of the remote FIN. Acknowledge it,
                     final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-                    tcb.write(response);
+                    tcb.send(ctx, response);
 
                     // RFC 9293: and restart the 2 MSL timeout.
                     startTimeWaitTimer(ctx);
@@ -1750,10 +1758,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
                     if (outOfOrder) {
                         // send immediate ACK for out-of-order segments
-                        tcb.writeAndFlush(ctx, response);
+                        tcb.sendAndFlush(ctx, response);
                     }
                     else {
-                        tcb.write(response);
+                        tcb.send(ctx, response);
                         // TODO: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
                     }
 
@@ -1797,7 +1805,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             //  RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
             final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
-            tcb.write(response);
+            tcb.send(ctx, response);
 
             switch (state) {
                 case SYN_RECEIVED:
@@ -1857,12 +1865,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         return;
     }
 
-    private Segment formSegment(final ChannelHandlerContext ctx,
-                                final long seq,
-                                final long ack,
-                                final byte ctl) {
+    Segment formSegment(final ChannelHandlerContext ctx,
+                        final long seq,
+                        final long ack,
+                        final byte ctl,
+                        final ByteBuf data) {
         final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final Segment seg = new Segment(seq, ack, ctl, 0, options, Unpooled.EMPTY_BUFFER);
+        final Segment seg = new Segment(seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
 
         if ((ctl & SYN) != 0) {
             // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
@@ -1911,6 +1920,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         return seg;
+    }
+
+    Segment formSegment(final ChannelHandlerContext ctx,
+                        final long seq,
+                        final long ack,
+                        final byte ctl) {
+        return formSegment(ctx, seq, ack, ctl, Unpooled.EMPTY_BUFFER);
     }
 
     private Segment formSegment(final ChannelHandlerContext ctx,
@@ -2044,7 +2060,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
             final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
             LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-            tcb.write(response);
+            tcb.send(ctx, response);
             return true;
         }
         return false;
@@ -2055,6 +2071,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      */
 
     void startUserTime(final ChannelHandlerContext ctx) {
+        assert userTimer == null;
+
         userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
     }
 
@@ -2093,6 +2111,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     void startRetransmissionTimer(final ChannelHandlerContext ctx,
                                   final TransmissionControlBlock tcb) {
+        assert retransmissionTimer == null;
+
         final long rto = tcb.rto;
         retransmissionTimer = ctx.executor().schedule(() -> retransmissionTimeout(ctx, tcb, rto), rto, MILLISECONDS);
     }
@@ -2108,7 +2128,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
         // RFC 6298:       TCP receiver.
-        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb, 0, tcb.effSndMss());
+        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
         LOG.error("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
 

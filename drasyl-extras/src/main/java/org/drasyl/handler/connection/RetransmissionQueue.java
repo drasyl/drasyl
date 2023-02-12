@@ -21,20 +21,15 @@
  */
 package org.drasyl.handler.connection;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.EnumMap;
+import java.util.ArrayDeque;
 
-import static org.drasyl.handler.connection.Segment.ACK;
-import static org.drasyl.handler.connection.Segment.FIN;
-import static org.drasyl.handler.connection.Segment.PSH;
-import static org.drasyl.handler.connection.Segment.SYN;
-import static org.drasyl.handler.connection.Segment.add;
-import static org.drasyl.handler.connection.Segment.lessThan;
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.Segment.greaterThan;
 
 /**
  * Holds all segments that has been written to the network (called in-flight) but have not been
@@ -48,26 +43,22 @@ import static org.drasyl.handler.connection.Segment.lessThan;
  */
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
-    private long synSeq = -1;
-    private long pshSeq = -1;
-    private long finSeq = -1;
+    private final ArrayDeque<Segment> queue;
 
-    RetransmissionQueue() {
+    RetransmissionQueue(final ArrayDeque<Segment> queue) {
+        this.queue = requireNonNull(queue);
     }
 
-    public void enqueue(final ChannelHandlerContext ctx,
-                        final Segment seg,
-                        final TransmissionControlBlock tcb) {
+    RetransmissionQueue() {
+        this(new ArrayDeque<>());
+    }
+
+    public void add(final ChannelHandlerContext ctx,
+                    final Segment seg,
+                    final TransmissionControlBlock tcb) {
+        LOG.trace("{} Add SEG `{}` to RTNS.Q.", ctx.channel(), seg);
         ReferenceCountUtil.touch(seg, "RetransmissionQueue enqueue " + seg.toString());
-        if (seg.isSyn()) {
-            synSeq = seg.seq();
-        }
-        if (seg.isPsh()) {
-            pshSeq = seg.seq();
-        }
-        if (seg.isFin()) {
-            finSeq = seg.seq();
-        }
+        queue.add(seg);
 
         // RFC 5482: The Transmission Control Protocol (TCP) specification [RFC0793] defines a
         // RFC 5482: local, per-connection "user timeout" parameter that specifies the maximum
@@ -92,50 +83,39 @@ public class RetransmissionQueue {
 
     @Override
     public String toString() {
-        return "RTNS.Q(SYN=" + synSeq + ", PSH=" + pshSeq + ", FIN=" + finSeq + ")";
+        return "RTNS.Q(SIZE=" + queue.size() + ")";
     }
 
-    public byte handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final Segment seg,
-                                      final TransmissionControlBlock tcb,
-                                      final long ackedBytes) {
-        byte ackedCtl = 0;
-
-        boolean somethingWasAcked = ackedBytes > 0;
-        boolean synWasAcked = false;
-        boolean finWasAcked = false;
-        if (synSeq != -1 && lessThan(synSeq, tcb.sndUna())) {
-            // SYN has been ACKed
-            synSeq = -1;
-            somethingWasAcked = true;
-            synWasAcked = true;
-            ackedCtl |= SYN;
-        }
-        if (pshSeq != -1 && lessThan(pshSeq, tcb.sndUna())) {
-            // PSH has been ACKed
-            pshSeq = -1;
-            somethingWasAcked = true;
-        }
-        if (finSeq != -1 && lessThan(finSeq, tcb.sndUna())) {
-            // FIN has been ACKed
-            finSeq = -1;
-            somethingWasAcked = true;
-            finWasAcked = true;
+    public void handleAcknowledgement(final ChannelHandlerContext ctx,
+                                      final Segment ack,
+                                      final TransmissionControlBlock tcb) {
+        int ackedBytes = 0;
+        boolean somethingWasAcked = false;
+        Segment seg;
+        while ((seg = queue.peek()) != null) {
+            if (greaterThan(tcb.sndUna(), seg.lastSeq())) {
+                // fully ACKed
+                somethingWasAcked = true;
+                ackedBytes += seg.content().readableBytes();
+                queue.remove();
+            }
+            else if (greaterThan(tcb.sndUna(), seg.seq())) {
+                // partially ACKed
+                System.out.println();
+                somethingWasAcked = true;
+            }
         }
 
-        if (somethingWasAcked && !((synWasAcked || finWasAcked) && ackedBytes == 1)) {
-            tcb.sendBuffer().acknowledge((int) ackedBytes);
-        }
+        tcb.sendBuffer().acknowledge(ackedBytes);
 
-        boolean queueWasNotEmpty = ackedBytes != 0;
-        if (queueWasNotEmpty) {
+        if (somethingWasAcked) {
             final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
             if (!tcb.sendBuffer().hasOutstandingData()) {
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
                 handler.cancelRetransmissionTimer();
             }
-            else if (somethingWasAcked) {
+            else {
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
                 // RFC 6298:       (for the current value of RTO).
@@ -143,37 +123,15 @@ public class RetransmissionQueue {
                 handler.startRetransmissionTimer(ctx, tcb);
             }
         }
-
-        return ackedCtl;
     }
 
     Segment retransmissionSegment(ChannelHandlerContext ctx,
-                                  final TransmissionControlBlock tcb,
-                                  final int offset,
-                                  final int bytes) {
-        final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final ByteBuf data = tcb.sendBuffer().unacknowledged(offset, bytes);
-        byte ctl = ACK; // FIXME: das macht aus einem SYN und FIN aber ein SYN/ACK bzw. FIN/ACK :/
-        if (synSeq != -1) {
-            ctl |= SYN;
-        }
-        else if (pshSeq != -1) {
-            ctl |= PSH;
-        }
-        else if (finSeq != -1) {
-            ctl |= FIN;
-        }
-        if (ctl == ACK && data.readableBytes() == 0) {
-            System.out.print("");
-        }
-        final long seq = add(tcb.sndUna(), offset);
-        final long ack = tcb.rcvNxt();
-        // FIXME: add options
-        final Segment retransmission = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
-        return retransmission;
+                                  final TransmissionControlBlock tcb) {
+        final Segment seg = queue.peek();
+        return seg;
     }
 
     public void flush() {
-        synSeq = pshSeq = finSeq = -1;
+        queue.clear();
     }
 }

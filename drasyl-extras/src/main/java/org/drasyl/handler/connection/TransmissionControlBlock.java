@@ -31,15 +31,15 @@ import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
+import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
@@ -49,7 +49,6 @@ import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.State.ESTABLISHED;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -82,7 +81,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * </pre>
  */
 public class TransmissionControlBlock {
-    public static final int OVERRIDE_TIMEOUT = 100; // RFC 9293: The override timeout should be in the range 0.1 - 1.0
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private static final int DRASYL_HDR_SIZE = 0; // FIXME: ermitteln
     final SendBuffer sendBuffer;
@@ -100,7 +98,6 @@ public class TransmissionControlBlock {
     private long rcvNxt;
     // RFC 9293: receive window
     private int rcvWnd;
-    private long allowedBytesToFlush = -1;
     // Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     long sndUna;
@@ -335,66 +332,63 @@ public class TransmissionControlBlock {
         return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss) || greaterThan(seg.ack(), sndNxt));
     }
 
-    private void writeBytes(final long seg,
-                            final long readableBytes,
-                            final long ack) {
-        if (readableBytes > 0) {
-            sndNxt = advanceSeq(sndNxt, readableBytes);
-            writeWithout(seg, readableBytes, ack, ACK, new EnumMap<>(SegmentOption.class));
+    /**
+     * Advances SND.NXT and places the {@code seg} on the outgoing segment queue.
+     */
+    void send(final ChannelHandlerContext ctx, final Segment seg) {
+        if (sndNxt == seg.seq() && seg.len() > 0) {
+            sndNxt = add(seg.lastSeq(), 1);
         }
+        outgoingSegmentQueue.place(ctx, seg);
     }
 
-    void write(final Segment seg) {
-        final int len = seg.len();
-        if (len > 0) {
-            sndNxt = advanceSeq(sndNxt, len);
-        }
-        writeWithout(seg);
-    }
-
-    void writeWithout(final Segment seg) {
-        outgoingSegmentQueue.place(seg);
-    }
-
-    private void writeWithout(final long seq,
-                              final long readableBytes,
-                              final long ack,
-                              final int ctl, Map<SegmentOption, Object> options) {
-        outgoingSegmentQueue.place(seq, readableBytes, ack, ctl, options);
-    }
-
-    void writeAndFlush(final ChannelHandlerContext ctx,
-                       final Segment seg) {
-        write(seg);
+    /**
+     * Writes outgoing segment queue to network.
+     */
+    void flush(final ChannelHandlerContext ctx) {
         outgoingSegmentQueue.flush(ctx, this);
     }
 
-    void enqueueData(final ByteBuf data, final ChannelPromise promise) {
+    /**
+     * Advances SND.NXT, places the {@code seg} on the outgoing segment queue, and writes queue to
+     * network.
+     */
+    void sendAndFlush(final ChannelHandlerContext ctx,
+                      final Segment seg) {
+        send(ctx, seg);
+        flush(ctx);
+    }
+
+    void enqueueData(final ChannelHandlerContext ctx,
+                     final ByteBuf data,
+                     final ChannelPromise promise) {
         sendBuffer.enqueue(data, promise);
     }
 
-    void flush(final ChannelHandlerContext ctx,
-               final State state,
-               final boolean newFlush,
-               final boolean overrideTimeoutOccurred) {
+    void pushEnqueuedData(final ChannelHandlerContext ctx) {
+        sendBuffer.push();
+    }
+
+    void segmentizeData(final ChannelHandlerContext ctx,
+                        final ByteBuf data,
+                        final ChannelPromise promise) {
+        enqueueData(ctx, data, promise);
+        segmentizeData(ctx, false);
+    }
+
+    void segmentizeData(final ChannelHandlerContext ctx,
+                        final boolean overrideTimeoutOccurred) {
         try {
-            if (newFlush) {
-                // merke dir wie viel byes wir jetzt im buffer haben und verwende auch nur bis dahin
-                allowedBytesToFlush = sendBuffer.readableBytes();
-            }
+            long readableBytes = sendBuffer.readableBytes();
 
-            if (state != ESTABLISHED || allowedBytesToFlush < 1) {
-                return;
-            }
-
-            while (allowedBytesToFlush > 0) {
+            while (readableBytes > 0) {
                 if (!config().noDelay()) {
                     // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
                     // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
                     // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
                     final long u = sub(add(sndUna, NumberUtil.min(sndWnd(), cwnd())), sndNxt);
                     // D is the amount of data queued in the sending TCP endpoint but not yet sent
-                    final long d = allowedBytesToFlush;
+                    final long d = readableBytes;
 
                     // Send data...
                     final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
@@ -419,7 +413,7 @@ public class TransmissionControlBlock {
                         sendData = true;
                     }
                     else {
-                        createOverrideTimer(ctx, state, newFlush);
+                        createOverrideTimer(ctx);
                         sendData = false;
                     }
 
@@ -427,28 +421,38 @@ public class TransmissionControlBlock {
                         cancelOverrideTimer();
                     }
                     else {
-                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), allowedBytesToFlush);
+                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
                         return;
                     }
                 }
 
                 // at least one byte is required for Zero-Window Probing
                 final long usableWindow;
-                if (newFlush && sndWnd() == 0 && flightSize() == 0) {
-                    // zero window probing
-                    usableWindow = 1;
-                }
-                else {
-                    final long window = NumberUtil.min(sndWnd(), cwnd());
-                    usableWindow = NumberUtil.max(0, window - flightSize());
-                }
+//                if (sndWnd() == 0 && flightSize() == 0) {
+//                    // zero window probing
+//                    usableWindow = 1;
+//                }
+//                else {
+                final long window = NumberUtil.min(sndWnd(), cwnd());
+                usableWindow = NumberUtil.max(0, window - flightSize());
+//                }
 
-                final long remainingBytes = NumberUtil.min(effSndMss(), usableWindow, sendBuffer.readableBytes(), allowedBytesToFlush);
+                final long remainingBytes = NumberUtil.min(effSndMss(), usableWindow, sendBuffer.readableBytes(), readableBytes);
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), state, flightSize(), NumberUtil.min(sndWnd(), cwnd()), usableWindow, allowedBytesToFlush, remainingBytes);
-                    writeBytes(sndNxt, remainingBytes, rcvNxt);
-                    allowedBytesToFlush -= remainingBytes;
+                    LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), NumberUtil.min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
+                    final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+
+                    final AtomicBoolean doPush = new AtomicBoolean();
+                    final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush);
+                    byte ack = ACK;
+                    if (doPush.get()) {
+                        ack |= PSH;
+                    }
+                    final Segment segment = handler.formSegment(ctx, sndNxt, rcvNxt, ack, data);
+                    send(ctx, segment);
+
+                    readableBytes -= remainingBytes;
                 }
                 else {
                     return;
@@ -464,31 +468,18 @@ public class TransmissionControlBlock {
         return config;
     }
 
-    void flush(final ChannelHandlerContext ctx,
-               final State state,
-               final boolean newFlush) {
-        flush(ctx, state, newFlush, false);
+    void flushAllBytes(final ChannelHandlerContext ctx) {
+        pushEnqueuedData(ctx);
+        segmentizeData(ctx, false);
     }
 
-    void flushAllBytes(final ChannelHandlerContext ctx,
-                       final State state) {
-        flush(ctx, state, true);
-    }
-
-    void flushPendingBytes(final ChannelHandlerContext ctx,
-                           final State state) {
-        flush(ctx, state, false);
-    }
-
-    private void createOverrideTimer(final ChannelHandlerContext ctx,
-                                     final State state,
-                                     final boolean newFlush) {
+    private void createOverrideTimer(final ChannelHandlerContext ctx) {
         if (overrideTimer == null) {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), OVERRIDE_TIMEOUT);
-                flush(ctx, state, newFlush, true);
-            }, OVERRIDE_TIMEOUT, MILLISECONDS);
+                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
+                segmentizeData(ctx, true);
+            }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
     }
 
@@ -521,12 +512,12 @@ public class TransmissionControlBlock {
             sndUna = seg.ack();
         }
 
-        final byte ackedCtl = retransmissionQueue.handleAcknowledgement(ctx, seg, this, ackedBytes);
+        retransmissionQueue.handleAcknowledgement(ctx, seg, this);
 
         // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
         //   sender after a correctly transmitted SYN MUST be one segment
         //   consisting of at most SMSS bytes.
-        final boolean synAcked = (ackedCtl & Segment.SYN) != 0;
+        final boolean synAcked = greaterThan(sndUna, iss);
         // only when new data is acked
         // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
         if (ackedBytes > 0 && !synAcked) {
@@ -656,7 +647,7 @@ public class TransmissionControlBlock {
                 //       (cwnd).
                 final boolean doLimitedTransmit = sndWnd() >= smss() && (flightSize() + smss()) <= (cwnd() + 2 * smss());
                 if (doLimitedTransmit) {
-                    final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss());
+                    final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this);
                     LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got duplicate ACK. Retransmit `{}`.", ctx.channel(), retransmission);
                     ctx.writeAndFlush(retransmission);
                     // RFC 5681
@@ -699,7 +690,7 @@ public class TransmissionControlBlock {
                 //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
                 //       the congestion window by the number of segments (three) that have
                 //       left the network and which the receiver has buffered.
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, smss());
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this);
                 LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
                 ctx.writeAndFlush(retransmission);
 
@@ -796,7 +787,7 @@ public class TransmissionControlBlock {
                 //       If this ACK does *not* acknowledge all of the data up to and
                 //       including recover, then this is a partial ACK.  In this case,
                 //       retransmit the first unacknowledged segment.
-                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
+                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this);
                 LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), seg, retransmission, flightSize());
                 // Deflate the
                 //       congestion window by the amount of new data acknowledged by the
@@ -890,10 +881,10 @@ public class TransmissionControlBlock {
 
     public void rto(final long rto) {
         assert rto > 0;
-        if (rto < config.lBound()) {
+        if (rto < config.lBound().toMillis()) {
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
             // RFC 6298:       SHOULD be rounded up to 1 second.
-            this.rto = config.lBound();
+            this.rto = config.lBound().toMillis();
 
             // RFC 6298:       Traditionally, TCP implementations use coarse grain clocks to measure
             // RFC 6298:       the RTT and trigger the RTO, which imposes a large minimum value on
@@ -904,10 +895,10 @@ public class TransmissionControlBlock {
             // RFC 6298:       some future point, research may show that a smaller minimum RTO is
             // RFC 6298:       acceptable or superior.
         }
-        else if (rto > config.uBound()) {
+        else if (rto > config.uBound().toMillis()) {
             // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
             // RFC 6298:       seconds.
-            this.rto = config.uBound();
+            this.rto = config.uBound().toMillis();
         }
         else {
             this.rto = rto;

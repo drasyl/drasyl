@@ -37,6 +37,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.netty.util.ReferenceCountUtil.safeRelease;
 import static io.netty.util.internal.PlatformDependent.throwException;
@@ -66,6 +67,7 @@ public class SendBuffer {
     // number of bytes in our linked list
     private int bytes;
     private int acknowledgeableBytes;
+    private long pushMark = -1;
 
     SendBuffer(final Channel channel,
                final CoalescingBufferQueue queue,
@@ -126,12 +128,29 @@ public class SendBuffer {
         enqueue(buf, channel.newPromise());
     }
 
-    public final ByteBuf read(final ByteBufAllocator alloc, int bytes) {
+    public void push() {
+        pushMark = readableBytes();
+    }
+
+    public final ByteBuf read(final ByteBufAllocator alloc, int bytes, final AtomicBoolean doPush) {
         ByteBuf toReturn = null;
         while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {
             // read as many bytes as requested and available
-            final int bytesToRead = NumberUtil.min(bytes, readMark.remainingBytes());
+            int bytesToRead = NumberUtil.min(bytes, readMark.remainingBytes());
+            if (pushMark != -1) {
+                bytesToRead = NumberUtil.min(bytesToRead, (int) pushMark);
+            }
             final ByteBuf buf = readMark.content().retainedSlice(readMark.index, bytesToRead);
+
+            if (pushMark > 0) {
+                if (pushMark - bytesToRead == 0) {
+                    doPush.set(true);
+                    pushMark = -1;
+                }
+                else {
+                    pushMark -= bytesToRead;
+                }
+            }
 
             // update counter
             readMark.index += bytesToRead;
@@ -157,8 +176,8 @@ public class SendBuffer {
         return toReturn;
     }
 
-    public ByteBuf read(int bytes) {
-        return read(channel.alloc(), bytes);
+    public ByteBuf read(final int bytes, final AtomicBoolean doPush) {
+        return read(channel.alloc(), bytes, doPush);
     }
 
     public ByteBuf unacknowledged(final ByteBufAllocator alloc, int offset, int bytes) {

@@ -105,12 +105,12 @@ enum SegmentOption {
         // TS Echo Reply (TSecr): 8 bytes
         final long tsEcr;
 
-        TimestampsOption(long tsVal, long tsEcr) {
+        TimestampsOption(final long tsVal, final long tsEcr) {
             this.tsVal = requireNonNegative(tsVal);
             this.tsEcr = requireNonNegative(tsEcr);
         }
 
-        public TimestampsOption(long tsVal) {
+        public TimestampsOption(final long tsVal) {
             this(tsVal, 0);
         }
 

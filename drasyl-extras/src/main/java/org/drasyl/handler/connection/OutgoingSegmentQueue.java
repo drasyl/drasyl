@@ -21,135 +21,62 @@
  */
 package org.drasyl.handler.connection;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
-import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
-import org.drasyl.handler.connection.SegmentOption.SackOption;
-import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.ArrayDeque;
 
-import static org.drasyl.handler.connection.Segment.ACK;
-import static org.drasyl.handler.connection.Segment.FIN;
-import static org.drasyl.handler.connection.Segment.PSH;
-import static org.drasyl.handler.connection.Segment.RST;
-import static org.drasyl.handler.connection.Segment.SYN;
-import static org.drasyl.handler.connection.Segment.greaterThan;
-import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
-import static org.drasyl.handler.connection.SegmentOption.SACK;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This queue holds all control bits and data to be sent.
  */
 public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
-    private long seq = -1;
-    private long ack = -1;
-    private byte ctl;
-    private int len;
-    private Map<SegmentOption, Object> options;
+    private final ArrayDeque<Segment> queue;
 
-    void place(final Segment seg) {
-        place(seg.seq(), seg.content().readableBytes(), seg.ack(), seg.ctl(), seg.options());
+    OutgoingSegmentQueue(final ArrayDeque<Segment> queue) {
+        this.queue = requireNonNull(queue);
     }
 
-    void place(final long seq,
-               final long readableBytes,
-               final long ack,
-               final int ctl,
-               final Map<SegmentOption, Object> options) {
-        if (this.seq == -1) {
-            this.seq = seq;
-        }
-        len += readableBytes;
-        if (this.ack == -1 || greaterThan(ack, this.ack)) {
-            this.ack = ack;
-        }
-        this.ctl |= ctl;
-        this.options = options;
+    OutgoingSegmentQueue() {
+        this(new ArrayDeque<>());
+    }
+
+    void place(final ChannelHandlerContext ctx, final Segment seg) {
+        LOG.trace("{} Place SEG `{}` on the outgoing segment queue.", ctx.channel(), seg);
+        queue.add(seg);
     }
 
     public void flush(final ChannelHandlerContext ctx,
                       final TransmissionControlBlock tcb) {
-        LOG.trace("Flush triggered.");
+        LOG.trace("{} Flush outgoing segment queue.", ctx.channel());
+        final boolean doFlush = !queue.isEmpty();
+        Segment seg;
+        while ((seg = queue.poll()) != null) {
+            LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
-        final boolean doFlush = len != 0 || ctl != 0;
-        while (len != 0 || ctl != 0) {
-            final ByteBuf data;
-            if (len > 0) {
-                final int bytes = NumberUtil.min(tcb.effSndMss(), len);
-                data = tcb.sendBuffer().read(bytes);
-            } else {
-                data = Unpooled.EMPTY_BUFFER;
-            }
-            len -= data.readableBytes();
-
-            // use PSH for last data
-            if (len == 0 && data.isReadable()) {
-                ctl |= PSH;
+            if (seg.mustBeAcked()) {
+                // ACKnowledgement necessary. Add SEG to retransmission queue
+                tcb.retransmissionQueue().add(ctx, seg, tcb);
             }
 
-            final Segment seg = new Segment(seq, ack, ctl, tcb.rcvWnd(), options, data);
-            seq = Segment.advanceSeq(seq, data.readableBytes());
-
-            write(ctx, tcb, seg);
-
-            // use SYN once, as early as possible
-            ctl &= ~SYN;
-
-            if (len == 0) {
-                // remove ACK after last write
-                ctl &= ~ACK;
-
-                ctl &= ~PSH;
-
-                // remove FIN after last write
-                ctl &= ~FIN;
-
-                // remove RST after last write
-                ctl &= ~RST;
-
-                // remote options after last write
-                options.clear();
-            }
+            // write SEQ to network
+            ctx.write(seg);
         }
-
-        assert len == 0;
-        assert ctl == 0;
-        seq = -1;
-        ack = -1;
 
         if (doFlush) {
             ctx.flush();
         }
     }
 
-    private void write(final ChannelHandlerContext ctx,
-                       final TransmissionControlBlock tcb,
-                       final Segment seg) {
-        ReferenceCountUtil.touch(seg, "OutgoingSegmentQueue write " + seg.toString());
-        LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
-
-        if (seg.mustBeAcked()) {
-            // ACKnowledgement necessary. Add SEG to retransmission queue and apply retransmission
-            tcb.retransmissionQueue().enqueue(ctx, seg, tcb);
-        }
-        ctx.write(seg);
-    }
-
-    public int len() {
-        return len;
+    public int size() {
+        return queue.size();
     }
 
     @Override
     public String toString() {
-        return String.valueOf(len());
+        return String.valueOf(size());
     }
 }

@@ -37,6 +37,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -84,7 +86,7 @@ class SendBufferTest {
             assertEquals(0, buffer.acknowledgeableBytes());
 
             // read everything
-            assertEquals(buf, buffer.read(999));
+            assertEquals(buf, buffer.read(999, new AtomicBoolean()));
             assertEquals(0, buffer.readableBytes());
             assertEquals(15, buffer.acknowledgeableBytes());
         }
@@ -106,7 +108,7 @@ class SendBufferTest {
             buffer.enqueue(buf.slice(10, 5), promise2);
 
             // read 5 bytes (part of first buf)
-            assertEquals(buf.slice(0, 5), buffer.read(5));
+            assertEquals(buf.slice(0, 5), buffer.read(5, new AtomicBoolean()));
             assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
             assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
             assertEquals(buffer.readMark, new ReadMark(buffer.head, 5));
@@ -117,7 +119,7 @@ class SendBufferTest {
             assertEquals(5, buffer.acknowledgeableBytes());
 
             // read 6 bytes (remainder of first buf and start of second buf)
-            assertEquals(buf.slice(5, 6), buffer.read(6));
+            assertEquals(buf.slice(5, 6), buffer.read(6, new AtomicBoolean()));
             assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
             assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
             assertEquals(buffer.readMark, new ReadMark(buffer.tail, 1));
@@ -128,7 +130,7 @@ class SendBufferTest {
             assertEquals(11, buffer.acknowledgeableBytes());
 
             // read 10 bytes (remainder of second buf; only 4 bytes)
-            assertEquals(buf.slice(11, 4), buffer.read(10));
+            assertEquals(buf.slice(11, 4), buffer.read(10, new AtomicBoolean()));
             assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
             assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
             assertEquals(buffer.readMark, new ReadMark(buffer.tail, 5));
@@ -139,7 +141,7 @@ class SendBufferTest {
             assertEquals(15, buffer.acknowledgeableBytes());
 
             // read 99 bytes (nothing remain)
-            assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99));
+            assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99, new AtomicBoolean()));
             assertEquals(buffer.head, new SendBufferEntry(buf.slice(0, 10), promise1, new SendBufferEntry(buf.slice(10, 5), promise2)));
             assertEquals(buffer.tail, new SendBufferEntry(buf.slice(10, 5), promise2));
             assertEquals(buffer.readMark, new ReadMark(buffer.tail, 5));
@@ -165,7 +167,7 @@ class SendBufferTest {
             buffer.enqueue(buf.slice(0, 10), promise1);
             final ChannelPromise promise2 = new DefaultChannelPromise(channel);
             buffer.enqueue(buf.slice(10, 5), promise2);
-            buffer.read(13);
+            buffer.read(13, new AtomicBoolean());
 
             // get a few bytes
             assertEquals(buf.slice(0, 4), buffer.unacknowledged(4));
@@ -205,7 +207,7 @@ class SendBufferTest {
             buffer.enqueue(buf.slice(0, 10), promise1);
             final ChannelPromise promise2 = new DefaultChannelPromise(channel);
             buffer.enqueue(buf.slice(10, 5), promise2);
-            buffer.read(13);
+            buffer.read(13, new AtomicBoolean());
 
             // ack 5 bytes (as no buf is completely acked, no promise should be done)
             buffer.acknowledge(5);
@@ -248,7 +250,7 @@ class SendBufferTest {
             assertEquals(0, buffer.acknowledgeableBytes());
 
             // read remainder to ACK remainder
-            buffer.read(2);
+            buffer.read(2, new AtomicBoolean());
             buffer.acknowledge(2);
             assertNull(buffer.head);
             assertNull(buffer.tail);

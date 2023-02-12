@@ -30,6 +30,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 
@@ -60,7 +61,7 @@ public abstract class ReliableTransportConfig {
             .rmem(64 * 1432)
             // RFC 9293: Arbitrarily defined to be 2 minutes.
             .msl(ofMinutes(2))
-            .noDelay(false)
+            .noDelay(true) // FIXME: wieder deaktivieren
             .userTimeout(ofSeconds(60))
             .timestamps(true)
             // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
@@ -82,11 +83,13 @@ public abstract class ReliableTransportConfig {
             })
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
             // RFC 6298:       SHOULD be rounded up to 1 second.
-            .lBound(1_000)
+            .lBound(ofSeconds(1))
             // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
             // RFC 6298:       seconds.
-            .uBound(60_000)
+            .uBound(ofSeconds(60))
             .sack(false)
+            // RFC 9293: The override timeout should be in the range 0.1 - 1.0
+            .overrideTimeout(ofMillis(100))
             .build();
 
     public static Builder newBuilder() {
@@ -146,11 +149,13 @@ public abstract class ReliableTransportConfig {
 
     public abstract Clock clock();
 
-    public abstract long lBound();
+    public abstract Duration lBound();
 
-    public abstract long uBound();
+    public abstract Duration uBound();
 
     public abstract boolean sack();
+
+    public abstract Duration overrideTimeout();
 
     abstract Builder toBuilder();
 
@@ -191,14 +196,16 @@ public abstract class ReliableTransportConfig {
         /**
          * RFC 793: LBOUND is a lower bound on the timeout (e.g., 1 second)
          */
-        public abstract Builder lBound(final long lBound);
+        public abstract Builder lBound(final Duration lBound);
 
         /**
          * RFC 793: UBOUND is an upper bound on the timeout (e.g., 1 minute)
          */
-        public abstract Builder uBound(final long uBound);
+        public abstract Builder uBound(final Duration uBound);
 
         public abstract Builder sack(final boolean sack);
+
+        public abstract Builder overrideTimeout(final Duration overrideTimeout);
 
         abstract ReliableTransportConfig autoBuild();
 
