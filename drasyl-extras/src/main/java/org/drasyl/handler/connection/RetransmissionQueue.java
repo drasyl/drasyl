@@ -86,9 +86,8 @@ public class RetransmissionQueue {
         return "RTNS.Q(SIZE=" + queue.size() + ")";
     }
 
-    public void handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final Segment ack,
-                                      final TransmissionControlBlock tcb) {
+    public void removeAcknowledged(final ChannelHandlerContext ctx,
+                                   final TransmissionControlBlock tcb) {
         int ackedBytes = 0;
         boolean somethingWasAcked = false;
         Segment seg;

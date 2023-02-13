@@ -359,25 +359,24 @@ public class TransmissionControlBlock {
         flush(ctx);
     }
 
+    /**
+     * Enqueues data for transmission once connection has been ESTABLISHED.
+     */
     void enqueueData(final ChannelHandlerContext ctx,
                      final ByteBuf data,
                      final ChannelPromise promise) {
         sendBuffer.enqueue(data, promise);
     }
 
-    void pushEnqueuedData(final ChannelHandlerContext ctx) {
-        sendBuffer.push();
-    }
-
-    void segmentizeData(final ChannelHandlerContext ctx,
-                        final ByteBuf data,
-                        final ChannelPromise promise) {
-        enqueueData(ctx, data, promise);
+    /**
+     * Writes data to the network thas has been queued for transmission.
+     */
+    void writeEnqueuedData(final ChannelHandlerContext ctx) {
         segmentizeData(ctx, false);
     }
 
-    void segmentizeData(final ChannelHandlerContext ctx,
-                        final boolean overrideTimeoutOccurred) {
+    private void segmentizeData(final ChannelHandlerContext ctx,
+                                final boolean overrideTimeoutOccurred) {
         try {
             long readableBytes = sendBuffer.readableBytes();
 
@@ -464,13 +463,13 @@ public class TransmissionControlBlock {
         }
     }
 
-    ReliableTransportConfig config() {
-        return config;
+    void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
+        sendBuffer.push();
+        segmentizeData(ctx, false);
     }
 
-    void flushAllBytes(final ChannelHandlerContext ctx) {
-        pushEnqueuedData(ctx);
-        segmentizeData(ctx, false);
+    ReliableTransportConfig config() {
+        return config;
     }
 
     private void createOverrideTimer(final ChannelHandlerContext ctx) {
@@ -504,23 +503,22 @@ public class TransmissionControlBlock {
     }
 
     public long handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final Segment seg) {
+                                      final Segment ack) {
         long ackedBytes = 0;
-        if (sndUna != seg.ack()) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), sndUna(), SEQ_NO_SPACE));
-            ackedBytes = sub(seg.ack(), sndUna);
-            sndUna = seg.ack();
+        if (greaterThan(ack.ack(), sndUna())) {
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), ack, sndUna(), ack.ack(), SerialNumberArithmetic.sub(ack.ack(), sndUna(), SEQ_NO_SPACE));
+            ackedBytes = sub(ack.ack(), sndUna);
+            sndUna = ack.ack();
         }
 
-        retransmissionQueue.handleAcknowledgement(ctx, seg, this);
+        retransmissionQueue.removeAcknowledged(ctx, this);
 
         // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
         //   sender after a correctly transmitted SYN MUST be one segment
         //   consisting of at most SMSS bytes.
-        final boolean synAcked = greaterThan(sndUna, iss);
         // only when new data is acked
         // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
-        if (ackedBytes > 0 && !synAcked) {
+        if (ackedBytes > 0) {
             if (doSlowStart()) {
                 // During slow start, a TCP increments cwnd by at most SMSS bytes for
                 //   each ACK received that cumulatively acknowledges new data.
