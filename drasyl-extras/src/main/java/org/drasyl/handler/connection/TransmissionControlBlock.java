@@ -27,7 +27,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.NumberUtil;
-import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,7 +39,6 @@ import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.PSH;
-import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
 import static org.drasyl.handler.connection.Segment.greaterThan;
@@ -500,43 +498,6 @@ public class TransmissionControlBlock {
             LOG.trace("{}[{}] Remote peer sent MSS {}. This is smaller then our MSS {}. Reduce our MSS.", ctx.channel(), mssOption, mss);
             mss = mssOption;
         }
-    }
-
-    public long handleAcknowledgement(final ChannelHandlerContext ctx,
-                                      final Segment ack) {
-        long ackedBytes = 0;
-        if (greaterThan(ack.ack(), sndUna())) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), ack, sndUna(), ack.ack(), SerialNumberArithmetic.sub(ack.ack(), sndUna(), SEQ_NO_SPACE));
-            ackedBytes = sub(ack.ack(), sndUna);
-            sndUna = ack.ack();
-        }
-
-        retransmissionQueue.removeAcknowledged(ctx, this);
-
-        // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
-        //   sender after a correctly transmitted SYN MUST be one segment
-        //   consisting of at most SMSS bytes.
-        // only when new data is acked
-        // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
-        if (ackedBytes > 0) {
-            if (doSlowStart()) {
-                // During slow start, a TCP increments cwnd by at most SMSS bytes for
-                //   each ACK received that cumulatively acknowledges new data.
-
-                // Slow Start -> +1 SMSS after each ACK
-                final long increment = NumberUtil.min(smss(), ackedBytes);
-                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
-                cwnd += increment;
-            }
-            else {
-                // Congestion Avoidance -> +1 SMSS after each RTT
-                final long increment = (long) Math.ceil(((long) smss() * smss()) / (float) cwnd);
-                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, cwnd, cwnd + increment);
-                cwnd += increment;
-            }
-        }
-
-        return ackedBytes;
     }
 
     public void synchronizeState(final Segment seg) {

@@ -34,6 +34,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.drasyl.util.NumberUtil;
+import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -46,10 +47,12 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.RST;
+import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
+import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.handler.connection.SegmentOption.SACK;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
@@ -1948,8 +1951,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final Segment seg,
                                           final boolean acceptableAck) {
-        // TODO:
-        //  RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+        long ackedBytes = 0;
+        if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), tcb.sndUna(), SEQ_NO_SPACE));
+            ackedBytes = sub(seg.ack(), tcb.sndUna);
+            tcb.sndUna = seg.ack();
+        }
 
         // RFC 7323: Also compute a new estimate of round-trip time.
         if (config.timestamps()) {
@@ -2012,19 +2020,37 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
         }
 
-        // TODO:
-        //  RFC 9293: Any segments on the retransmission queue that are thereby entirely
-        //  RFC 9293: acknowledged are removed.
+        // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+        // RFC 9293: acknowledged are removed.
         //  RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
         //  RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
         //  RFC 9293: response).
-        //  RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
-        //  RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
-        //  RFC 9293: then send an ACK,
-        //  RFC 9293: drop the segment,
-        //  RFC 9293: and return.
+        tcb.retransmissionQueue.removeAcknowledged(ctx, tcb);
 
-        // update send window
+        if (tcb.isDuplicateAck(seg)) {
+            // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
+            LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
+            tcb.gotDuplicateAckCandidate(ctx, seg);
+
+            return true;
+        }
+
+        if (tcb.isAckSomethingNotYetSent(seg)) {
+            // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
+            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
+
+            // RFC 9293: then send an ACK,
+            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+            LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+            tcb.send(ctx, response);
+
+            // RFC 9293: drop the segment,
+            // (this is handled by handler's auto release of all arrived segments)
+
+            // RFC 9293: and return.
+            return true;
+        }
+
         if (lessThanOrEqualTo(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
             // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
             if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
@@ -2041,36 +2067,35 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
         }
 
-        final boolean duplicateAck = tcb.isDuplicateAck(seg);
         if (acceptableAck) {
-            // advance send state
-            final long ackedBytes = tcb.handleAcknowledgement(ctx, seg);
+            // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
+            //   sender after a correctly transmitted SYN MUST be one segment
+            //   consisting of at most SMSS bytes.
+            // only when new data is acked
+            // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
+            if (ackedBytes > 0) {
+                if (tcb.doSlowStart()) {
+                    // During slow start, a TCP increments cwnd by at most SMSS bytes for
+                    //   each ACK received that cumulatively acknowledges new data.
+
+                    // Slow Start -> +1 SMSS after each ACK
+                    final long increment = NumberUtil.min(tcb.smss(), ackedBytes);
+                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    tcb.cwnd += increment;
+                }
+                else {
+                    // Congestion Avoidance -> +1 SMSS after each RTT
+                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd);
+                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    tcb.cwnd += increment;
+                }
+            }
+
             if (ackedBytes > 0) {
                 tcb.resetDuplicateAcks(ctx, seg, ackedBytes);
             }
         }
-        if (duplicateAck) {
-            if (false) {
-                SackOption sackOption = (SackOption) seg.options().get(SACK);
-                if (sackOption != null) {
-                    // retransmit?
-//                tcb.sendBuffer();
-//                System.out.println();
-                }
-            }
 
-            // ACK is duplicate. ignore
-            LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
-            tcb.gotDuplicateAckCandidate(ctx, seg);
-        }
-        if (tcb.isAckSomethingNotYetSent(seg)) {
-            // something not yet sent has been ACKed
-            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
-            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-            LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-            tcb.send(ctx, response);
-            return true;
-        }
         return false;
     }
 
