@@ -31,7 +31,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
-import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -67,7 +66,9 @@ public class SendBuffer {
     // number of bytes in our linked list
     private int bytes;
     private int acknowledgeableBytes;
-    private long pushMark = -1;
+    private long pushMark;
+    private long segmentizedRemainingBytes;
+    private ChannelPromise segmentizedFuture;
 
     SendBuffer(final Channel channel,
                final CoalescingBufferQueue queue,
@@ -137,15 +138,12 @@ public class SendBuffer {
         while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {
             // read as many bytes as requested and available
             int bytesToRead = NumberUtil.min(bytes, readMark.remainingBytes());
-            if (pushMark != -1) {
-                bytesToRead = NumberUtil.min(bytesToRead, (int) pushMark);
-            }
             final ByteBuf buf = readMark.content().retainedSlice(readMark.index, bytesToRead);
 
             if (pushMark > 0) {
-                if (pushMark - bytesToRead == 0) {
+                if (pushMark - bytesToRead <= 0) {
                     doPush.set(true);
-                    pushMark = -1;
+                    pushMark = 0;
                 }
                 else {
                     pushMark -= bytesToRead;
@@ -155,6 +153,16 @@ public class SendBuffer {
             // update counter
             readMark.index += bytesToRead;
             acknowledgeableBytes += bytesToRead;
+
+            if (segmentizedRemainingBytes > 0) {
+                if (segmentizedRemainingBytes - bytesToRead <= 0) {
+                    segmentizedRemainingBytes = 0;
+                    segmentizedFuture.trySuccess();
+                }
+                else {
+                    segmentizedRemainingBytes -= bytesToRead;
+                }
+            }
 
             bytes -= bytesToRead;
 
@@ -387,21 +395,16 @@ public class SendBuffer {
         queue.remove(bytes, channel.newPromise()).release();
     }
 
-    public ChannelFuture allPrecedingSendsHaveBeenSegmentized(final ChannelHandlerContext ctx) {
-        if (head == null) {
+    public ChannelFuture allPrecedingDataHaveBeenSegmentized(final ChannelHandlerContext ctx) {
+        segmentizedRemainingBytes = readableBytes();
+        if (segmentizedRemainingBytes > 0) {
+            assert segmentizedFuture == null;
+            segmentizedFuture = ctx.newPromise();
+            return segmentizedFuture;
+        }
+        else {
             return ctx.newSucceededFuture();
         }
-
-        final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
-        SendBufferEntry current = head;
-        while (current != null) {
-            combiner.add(current.promise);
-            current = current.next;
-        }
-
-        final ChannelPromise aggregatePromise = ctx.newPromise();
-        combiner.finish(aggregatePromise);
-        return aggregatePromise;
     }
 
     public void fail(final ConnectionHandshakeException e) {

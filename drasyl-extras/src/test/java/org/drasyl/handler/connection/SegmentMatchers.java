@@ -8,7 +8,6 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.Segment.ACK;
@@ -16,6 +15,7 @@ import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SYN;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 
 public class SegmentMatchers {
@@ -35,6 +35,10 @@ public class SegmentMatchers {
         return new HasCtl(flags);
     }
 
+    public static Matcher<Segment> window(final long window) {
+        return new HasWindow(window);
+    }
+
     public static Matcher<Segment> data(final ByteBuf data) {
         return new HasData(data);
     }
@@ -42,8 +46,13 @@ public class SegmentMatchers {
     public static Matcher<Segment> tsOpt(final long tsVal, final long tsEcr) {
         return new HasTimestampsOption(tsVal, tsEcr);
     }
+
     public static Matcher<Segment> tsOpt(final long tsVal) {
         return tsOpt(tsVal, 0);
+    }
+
+    public static Matcher<Segment> mss(final int mss) {
+        return new HasMssOption(mss);
     }
 
     private static class HasSeq extends TypeSafeMatcher<Segment> {
@@ -121,6 +130,24 @@ public class SegmentMatchers {
         }
     }
 
+    private static class HasWindow extends TypeSafeMatcher<Segment> {
+        private final long window;
+
+        public HasWindow(final long window) {
+            this.window = window;
+        }
+
+        @Override
+        protected boolean matchesSafely(Segment seg) {
+            return seg.window() == window;
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("WIN=" + window);
+        }
+    }
+
     private static class HasData extends TypeSafeMatcher<Segment> {
         private final ByteBuf data;
 
@@ -157,6 +184,25 @@ public class SegmentMatchers {
         @Override
         public void describeTo(Description description) {
             description.appendText("<TSval=" + tsVal + ",TSecr=" + tsEcr + ">");
+        }
+    }
+
+    private static class HasMssOption extends TypeSafeMatcher<Segment> {
+        private final int mss;
+
+        public HasMssOption(final int mss) {
+            this.mss = mss;
+        }
+
+        @Override
+        protected boolean matchesSafely(Segment seg) {
+            Integer mss = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
+            return mss != null && this.mss == mss;
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("<MSS=" + mss + ">");
         }
     }
 }

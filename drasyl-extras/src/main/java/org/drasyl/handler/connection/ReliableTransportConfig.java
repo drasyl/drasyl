@@ -61,7 +61,7 @@ public abstract class ReliableTransportConfig {
             .rmem(64 * 1432)
             // RFC 9293: Arbitrarily defined to be 2 minutes.
             .msl(ofMinutes(2))
-            .noDelay(true) // FIXME: wieder deaktivieren
+            .noDelay(false)
             .userTimeout(ofSeconds(60))
             .timestamps(true)
             // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
@@ -90,6 +90,7 @@ public abstract class ReliableTransportConfig {
             .sack(false)
             // RFC 9293: The override timeout should be in the range 0.1 - 1.0
             .overrideTimeout(ofMillis(100))
+            .rto(ofSeconds(1))
             .build();
 
     public static Builder newBuilder() {
@@ -107,9 +108,9 @@ public abstract class ReliableTransportConfig {
     public abstract BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbSupplier();
 
     /**
-     * @param activeOpen if {@code true} a handshake will be issued on {@link
-     *                   #channelActive(ChannelHandlerContext)}. Otherwise, the remote peer must
-     *                   initiate the handshake
+     * @param activeOpen if {@code true} a handshake will be issued on
+     *                   {@link #channelActive(ChannelHandlerContext)}. Otherwise, the remote peer
+     *                   must initiate the handshake
      */
     public abstract boolean activeOpen();
 
@@ -157,7 +158,16 @@ public abstract class ReliableTransportConfig {
 
     public abstract Duration overrideTimeout();
 
+    public abstract Duration rto();
+
     abstract Builder toBuilder();
+
+    public interface Clock {
+        long time();
+
+        // clock granularity in seconds
+        double g();
+    }
 
     @AutoValue.Builder
     public abstract static class Builder {
@@ -207,17 +217,12 @@ public abstract class ReliableTransportConfig {
 
         public abstract Builder overrideTimeout(final Duration overrideTimeout);
 
+        public abstract Builder rto(final Duration rto);
+
         abstract ReliableTransportConfig autoBuild();
 
         public ReliableTransportConfig build() {
             return autoBuild();
         }
-    }
-
-    public interface Clock {
-        long time();
-
-        // clock granularity in seconds
-        double g();
     }
 }

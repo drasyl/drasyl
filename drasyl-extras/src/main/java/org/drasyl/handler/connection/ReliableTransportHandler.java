@@ -50,9 +50,11 @@ import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.add;
+import static org.drasyl.handler.connection.Segment.greaterThan;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.SACK;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
@@ -78,10 +80,10 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
  * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start,
  * congestion avoidance, fast retransmit, and fast recovery as described in <a
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
- * implemented as well. The improvements presented in <a href="https://www.rfc-editor.org/rfc/rfc6582">RFC
- * 6582 The NewReno Modification to TCP's Fast Recovery Algorithm</a> and <a
- * href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042 Enhancing TCP's Loss Recovery Using
- * Limited Transmit</a> are added to the fast recovery algorithm.
+ * implemented as well. The improvements presented in <a
+ * href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582 The NewReno Modification to TCP's Fast
+ * Recovery Algorithm</a> and <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042 Enhancing
+ * TCP's Loss Recovery Using Limited Transmit</a> are added to the fast recovery algorithm.
  * <p>
  * The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as
  * "Silly Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple
@@ -91,8 +93,8 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
  * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
- * once the handshake has been issued. The handshake process will result either in a {@link
- * ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
+ * once the handshake has been issued. The handshake process will result either in a
+ * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({
         "java:S125",
@@ -108,6 +110,7 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
         , "UnnecessaryReturnStatement"
         , "IfStatementWithIdenticalBranches"
         , "DuplicateBranchesInSwitch"
+        , "StatementWithEmptyBody"
 })
 public class ReliableTransportHandler extends ChannelDuplexHandler {
     static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
@@ -126,7 +129,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     ScheduledFuture<?> timeWaitTimer;
     private ChannelPromise establishedPromise;
     private ChannelPromise closedPromise;
-    private boolean receivePending;
+    boolean pushSeen;
 
     @SuppressWarnings("java:S107")
     ReliableTransportHandler(final ReliableTransportConfig config,
@@ -135,18 +138,18 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                              final ScheduledFuture<?> timeWaitTimer,
                              final ChannelPromise establishedPromise,
                              final ChannelPromise closedPromise,
-                             final boolean receivePending) {
+                             final boolean pushSeen) {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
         this.timeWaitTimer = timeWaitTimer;
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
-        this.receivePending = receivePending;
+        this.pushSeen = pushSeen;
     }
 
     public ReliableTransportHandler(final ReliableTransportConfig config) {
-        this(config, null, null, null, null, null, false);
+        this(config, null, null, null, null, null, true);
     }
 
     /*
@@ -201,7 +204,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) {
-        if (state == ESTABLISHED) {
+        if (tcb != null) {
             tcb.pushAndSegmentizeData(ctx);
         }
 
@@ -242,8 +245,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
         if (tcb != null) {
-            // FIXME: move next line to handleAcknowledgement method
-            tcb.writeEnqueuedData(ctx);
             tcb.flush(ctx);
         }
 
@@ -255,10 +256,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      */
 
     /**
-     * OPEN call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC
-     * 9293, Section 3.10.1</a>.
+     * OPEN call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC 9293, Section
+     * 3.10.1</a>.
      */
-    private void userCallOpen(final ChannelHandlerContext ctx) {
+    public void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
 
         switch (state) {
@@ -334,15 +336,15 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                 tcb.initSndUnaSndNxt();
 
-                //  RFC 9293: Enter SYN-SENT state.
+                // RFC 9293: Enter SYN-SENT state.
                 changeState(ctx, SYN_SENT);
 
-                //  RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
-                //  RFC 9293: transmission after entering ESTABLISHED state. The urgent bit if
-                //  RFC 9293: requested in the command must be sent with the data segments sent as a
-                //  RFC 9293: result of this command. If there is no room to queue the request,
-                //  RFC 9293: respond with "error: insufficient resources". If the remote socket was
-                //  RFC 9293: not specified, then return "error: remote socket unspecified".
+                // RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
+                // RFC 9293: transmission after entering ESTABLISHED state. The urgent bit if
+                // RFC 9293: requested in the command must be sent with the data segments sent as a
+                // RFC 9293: result of this command. If there is no room to queue the request,
+                // RFC 9293: respond with "error: insufficient resources". If the remote socket was
+                // RFC 9293: not specified, then return "error: remote socket unspecified".
                 // (not applicable to us)
                 return;
 
@@ -361,8 +363,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEND call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC
-     * 9293, Section 3.10.2</a>.
+     * SEND call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC 9293, Section
+     * 3.10.2</a>.
      */
     private void userCallSend(final ChannelHandlerContext ctx,
                               final ByteBuf data,
@@ -384,7 +387,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case LISTEN:
                 // RFC 9293: If the remote socket is specified, then change the connection from
                 // passive to active,
-                // Channel is in passive OPEN mode. SEND user call will trigger active OPEN handshake
                 LOG.trace("{}[{}] SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), state, data);
 
                 // RFC 9293: select an ISS.
@@ -433,13 +435,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case CLOSE_WAIT:
                 // RFC 9293: Segmentize the buffer and send it with a piggybacked acknowledgment
                 // RFC 9293: (acknowledgment value = RCV.NXT).
-                // Queue the data for transmission, to allow it to be sent together with other data for transmission efficiency.
-                LOG.trace("{}[{}] Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), state, data);
-                tcb.enqueueData(ctx, data, promise);
-
                 // RFC 7323: If the Snd.TS.OK flag is set, then include the TCP Timestamps option
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                 // (timestamps option is automatically added by formSegment)
+                LOG.trace("{}[{}] Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), state, data);
+                tcb.enqueueData(ctx, data, promise);
+                tcb.writeEnqueuedData(ctx);
+
 
                 // RFC 9293: If there is insufficient space to remember this buffer, simply return
                 // RFC 9293: "error: insufficient resources".
@@ -460,8 +462,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * RECEIVE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.3">RFC
-     * 9293, Section 3.10.3</a>.
+     * RECEIVE call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.3">RFC 9293, Section
+     * 3.10.3</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
@@ -493,10 +496,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    // RFC 9293: If insufficient incoming segments are queued to satisfy the
-                    // RFC 9293: request, queue the request.
+                    // FIXME:
+                    //  RFC 9293: If insufficient incoming segments are queued to satisfy the
+                    //  RFC 9293: request, queue the request.
                     if (!tcb.receiveBuffer().hasReadableBytes()) {
-                        receivePending = true;
                         break;
                     }
 
@@ -507,10 +510,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: Reassemble queued incoming segments into receive buffer and return
                     // RFC 9293: to user.
                     tcb.receiveBuffer().fireRead(ctx, tcb);
-                    receivePending = false;
 
-                    // FIXME:
-                    //  RFC 9293: Mark "push seen" (PUSH) if this is the case.
+                    // RFC 9293: Mark "push seen" (PUSH) if this is the case.
+                    pushSeen = true;
 
                     // RFC 9293: If RCV.UP is in advance of the data currently being passed to the
                     // RFC 9293: user, notify the user of the presence of urgent data.
@@ -554,8 +556,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * CLOSE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC
-     * 9293, Section 3.10.4</a>.
+     * CLOSE call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC 9293, Section
+     * 3.10.4</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
@@ -582,11 +585,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: Delete TCB,
                 deleteTcb();
 
-                //  RFC 9293: enter CLOSED state,
+                // RFC 9293: enter CLOSED state,
                 changeState(ctx, CLOSED);
                 closedPromise.addListener(new PromiseNotifier<>(promise));
 
-                //  RFC 9293: and return.
+                // RFC 9293: and return.
                 return;
 
             case SYN_SENT:
@@ -605,13 +608,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case SYN_RECEIVED:
                 if (!tcb.sendBuffer().hasOutstandingData()) {
-                    //  RFC 9293: If no SENDs have been issued and there is no pending data to send,
-                    //  RFC 9293: then form a FIN segment and send it,
+                    // RFC 9293: If no SENDs have been issued and there is no pending data to send,
+                    // RFC 9293: then form a FIN segment and send it,
                     final Segment seg = Segment.fin(tcb.sndNxt());
                     LOG.trace("{}[{}] Abort handshake by sending `{}`.", ctx.channel(), state, seg);
                     tcb.sendAndFlush(ctx, seg);
 
-                    //  RFC 9293: and enter FIN-WAIT-1 state;
+                    // RFC 9293: and enter FIN-WAIT-1 state;
                     changeState(ctx, FIN_WAIT_1);
 
                     closedPromise.addListener(new PromiseNotifier<>(promise));
@@ -627,10 +630,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                // FIXME:
-                //  RFC 9293: Queue this until all preceding SENDs have been segmentized,
-                //  (das Promise ist erst true, wenn alle ACKed ist. dabei reicht es, wenn es in der Retransmision Queue ist)
-                tcb.sendBuffer().allPrecedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
+                // RFC 9293: Queue this until all preceding SENDs have been segmentized,
+                tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
@@ -649,15 +650,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case FIN_WAIT_2:
                 // RFC 9293: Strictly speaking, this is an error and should receive an
                 // RFC 9293: "error: connection closing" response.
-                //  RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
-                //  RFC 9293: not emitted (the first FIN may be retransmitted, though).
+                // RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
+                // RFC 9293: not emitted (the first FIN may be retransmitted, though).
                 promise.tryFailure(CONNECTION_CLOSING_ERROR);
 
             case CLOSE_WAIT:
-                // FIXME:
-                //  RFC 9293: Queue this request until all preceding SENDs have been segmentized;
-                //  (das Promise ist erst true, wenn alle ACKed ist. dabei reicht es, wenn es in der Retransmision Queue ist)
-                tcb.sendBuffer().allPrecedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
+                // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
+                tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
                         final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
@@ -680,8 +679,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * ABORT call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC
-     * 9293, Section 3.10.5</a>.
+     * ABORT call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC 9293, Section
+     * 3.10.5</a>.
      */
     @SuppressWarnings("java:S128")
     public void userCallAbort(final ChannelHandlerContext ctx) throws ClosedChannelException {
@@ -697,10 +697,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 throw CONNECTION_NOT_EXIST_ERROR;
 
             case LISTEN:
-                // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
-                // RFC 9293: reset" responses.
+                // FIXME:
+                //  RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
+                //  RFC 9293: reset" responses.
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
-                tcb.retransmissionQueue().flush();
 
                 // RFC 9293: Delete TCB,
                 deleteTcb();
@@ -712,10 +712,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 return;
 
             case SYN_SENT:
-                // RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
-                // RFC 9293: notification.
+                // FIXME:
+                //  RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
+                //  RFC 9293: notification.
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
-                tcb.retransmissionQueue().flush();
 
                 // RFC 9293: Delete the TCB,
                 deleteTcb();
@@ -734,15 +734,17 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: Send a reset segment:
                 // RFC 9293: <SEQ=SND.NXT><CTL=RST>
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
-                tcb.send(ctx, seg);
 
-                // RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
-                // RFC 9293: notification;
+                // FIXME:
+                //  RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
+                //  RFC 9293: notification;
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
 
                 // RFC 9293: all segments queued for transmission (except for the RST
                 // RFC 9293: formed above) or retransmission should be flushed.
                 tcb.retransmissionQueue().flush();
+                // (RST send must be called after flush)
+                tcb.send(ctx, seg);
 
                 // RFC 9293: Delete the TCB,
                 deleteTcb();
@@ -768,8 +770,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * STATUS call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC
-     * 9293, Section 3.10.6</a>.
+     * STATUS call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
+     * 3.10.6</a>.
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
         LOG.trace("[{}] STATUS call received.", state);
@@ -797,6 +800,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 return new ConnectionHandshakeStatus(state, tcb);
         }
 
+        // unreachable statement
         return null;
     }
 
@@ -858,8 +862,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEGMENT ARRIVES event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC
-     * 9293, Section 3.10.7</a>.
+     * SEGMENT ARRIVES event as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC 9293, Section
+     * 3.10.7</a>.
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {
@@ -1047,7 +1052,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: First, check the ACK bit:
         if (seg.isAck()) {
             // RFC 9293: If the ACK bit is set,
-            if (tcb.isAckSomethingNeverSent(seg)) {
+            if (lessThanOrEqualTo(seg.ack(), tcb.iss()) || greaterThan(seg.ack(), tcb.sndNxt())) {
                 // RFC 9293: If SEG.ACK =< ISS or SEG.ACK > SND.NXT, send a reset (unless the RST
                 // RFC 9293: bit is set, if so drop the segment and return)
                 LOG.trace("{}[{}] Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), state, seg);
@@ -1067,8 +1072,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
         }
 
-        final boolean acceptableAck = tcb.isAcceptableAck(seg);
-
         // RFC 9293: Second, check the RST bit:
         if (seg.isRst()) {
             // RFC 9293: If the RST bit is set,
@@ -1085,7 +1088,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
 
             // RFC 9293: If the ACK was acceptable,
-            if (acceptableAck) {
+            if (seg.isAck() && lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                 LOG.trace("{}[{}] SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), state, seg);
 
                 // RFC 9293: then signal to the user "error: connection reset",
@@ -1131,17 +1134,16 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
             tcb.synchronizeState(seg);
 
-            // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
             if (seg.isAck()) {
                 if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
+                    // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
                     tcb.sndUna = seg.ack();
+
+                    // RFC 9293: and any segments on the retransmission queue that are thereby
+                    // RFC 9293: acknowledged should be removed.
                     tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
                 }
             }
-
-            // RFC 9293: and any segments on the retransmission queue that are thereby acknowledged
-            // RFC 9293: should be removed.
-            // (this is done by the handleAcknowledgement call above)
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
@@ -1180,7 +1182,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 }
             }
 
-            if (tcb.synHasBeenAcknowledged()) {
+            if (greaterThan(tcb.sndUna(), tcb.iss())) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
                 // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
@@ -1287,7 +1289,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: order. If a segment's contents straddle the boundary between old and
                 // RFC 9293: new, only the new parts are processed.
 
-                boolean timestampsAcceptableSeg = true;
+                Boolean acceptableSeg = null;
                 if (config.timestamps()) {
                     // RFC 7323: Check whether the segment contains a Timestamps option
                     final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
@@ -1303,7 +1305,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                             // RFC 7323: else the segment is not acceptable; follow the steps below
                             // RFC 7323: for an unacceptable segment.
-                            timestampsAcceptableSeg = false;
+                            acceptableSeg = false;
                         }
                         else if (segTsVal >= tcb.tsRecent && seg.seq() <= tcb.lastAckSent) {
                             // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
@@ -1318,21 +1320,37 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: TCP endpoint is processing a series of queued segments, it MUST process
                 // RFC 9293: them all before sending any ACK segments (MUST-59).
 
-                // RFC 9293: There are four cases for the acceptability test for an incoming segment:
-                // RFC 9293: Segment Length Receive Window  Test
-                // RFC 9293: 0              0               SEG.SEQ = RCV.NXT
-                // RFC 9293: 0              >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-                // RFC 9293: >0             0               not acceptable
-                // RFC 9293: >0             >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-                // RFC 9293:                                or
-                // RFC 9293:                                RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
+                if (acceptableSeg == null) {
+                    // RFC 9293: There are four cases for the acceptability test for an incoming
+                    // RFC 9293: segment:
+                    // RFC 9293: Segment Length Receive Window  Test
+                    // RFC 9293: 0              0               SEG.SEQ = RCV.NXT
+                    if (seg.len() == 0 && tcb.rcvWnd() == 0) {
+                        // SEG.SEQ = RCV.NXT
+                        acceptableSeg = seg.seq() == tcb.rcvWnd();
+                    }
+                    // RFC 9293: 0              >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
+                    else if (seg.len() == 0 && tcb.rcvWnd() > 0) {
+                        acceptableSeg = lessThanOrEqualTo(tcb.rcvNxt(), seg.seq()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()));
+                    }
+                    // RFC 9293: >0             0               not acceptable
+                    else if (seg.len() > 0 && tcb.rcvWnd() == 0) {
+                        acceptableSeg = false;
+                    }
+                    // RFC 9293: >0             >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
+                    // RFC 9293:                                or
+                    // RFC 9293:                                RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
+                    else {
+                        acceptableSeg = (lessThanOrEqualTo(tcb.rcvNxt(), seg.seq()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) ||
+                                (lessThanOrEqualTo(tcb.rcvNxt(), add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(tcb.rcvNxt(), tcb.rcvWnd())));
+                    }
+                }
 
                 // RFC 9293: In implementing sequence number validation as described here, please
                 // RFC 9293: note Appendix A.2.
 
                 // RFC 9293: If the RCV.WND is zero, no segments will be acceptable, but special
                 // RFC 9293: allowance should be made to accept valid ACKs, URGs, and RSTs.
-                final boolean acceptableSeg = timestampsAcceptableSeg && tcb.isAcceptableSeg(seg);
 
                 if (!acceptableSeg) {
                     // RFC 9293: If an incoming segment is not acceptable, an acknowledgment should
@@ -1383,28 +1401,43 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         // RFC 9293: Second, check the RST bit:
 
-        // TODO:
-        //  RFC 9293: RFC 5961 [9], Section 3 describes a potential blind reset attack and optional
-        //  RFC 9293: mitigation approach. This does not provide a cryptographic protection (e.g.,
-        //  RFC 9293: as in IPsec or TCP-AO) but can be applicable in situations described in
-        //  RFC 9293: RFC 5961. For stacks implementing the protection described in RFC 5961, the
-        //  RFC 9293: three checks below apply; otherwise, processing for these states is indicated
-        //  RFC 9293: further below.
-        //  RFC 9293:
-        //  RFC 9293: 1)    If the RST bit is set and the sequence number is outside the current
-        //  RFC 9293:       receive window, silently drop the segment.
-        //  RFC 9293: 2)    If the RST bit is set and the sequence number exactly matches the next
-        //  RFC 9293:       expected sequence number (RCV.NXT), then TCP endpoints MUST reset the
-        //  RFC 9293:       connection in the manner prescribed below according to the connection
-        //  RFC 9293:       state.
-        //  RFC 9293: 3)    If the RST bit is set and the sequence number does not exactly match the
-        //  RFC 9293:       next expected sequence value, yet is within the current receive window,
-        //  RFC 9293:       TCP endpoints MUST send an acknowledgment (challenge ACK):
-        //  RFC 9293:       <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-        //  RFC 9293:       After sending the challenge ACK, TCP endpoints MUST drop the
-        //  RFC 9293:       unacceptable segment and stop processing the incoming packet further.
-        //  RFC 9293:       Note that RFC 5961 and Errata ID 4772 [99] contain additional
-        //  RFC 9293:       considerations for ACK throttling in an implementation.
+        // RFC 9293: RFC 5961 [9], Section 3 describes a potential blind reset attack and optional
+        // RFC 9293: mitigation approach. This does not provide a cryptographic protection (e.g.,
+        // RFC 9293: as in IPsec or TCP-AO) but can be applicable in situations described in
+        // RFC 9293: RFC 5961. For stacks implementing the protection described in RFC 5961, the
+        // RFC 9293: three checks below apply; otherwise, processing for these states is indicated
+        // RFC 9293: further below.
+        // RFC 9293:
+        if (seg.isRst() && lessThan(seg.seq(), tcb.rcvNxt()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) {
+            // RFC 9293: 1)    If the RST bit is set and the sequence number is outside the current
+            // RFC 9293:       receive window, silently drop the segment.
+            LOG.trace("{}[{}] SEG `{}` is outside the current receive window. Blind reset attack!? Drop the segment.", ctx.channel(), state, seg);
+            return;
+        }
+        else if (seg.isRst() && seg.seq() == tcb.rcvNxt()) {
+            // RFC 9293: 2)    If the RST bit is set and the sequence number exactly matches the
+            // RFC 9293:       next expected sequence number (RCV.NXT), then TCP endpoints MUST
+            // RFC 9293:       reset the connection in the manner prescribed below according to the
+            // RFC 9293:        connection state.
+        }
+        else if (seg.isRst() && seg.seq() != tcb.rcvNxt()) {
+            // RFC 9293: 3)    If the RST bit is set and the sequence number does not exactly match
+            // RFC 9293:       the next expected sequence value, yet is within the current receive
+            // RFC 9293:       window, TCP endpoints MUST send an acknowledgment (challenge ACK):
+            // RFC 9293:       <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+            LOG.trace("{}[{}] SEG `{}` has not expected SEQ. Blind reset attack!? Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
+            tcb.send(ctx, response);
+
+            // RFC 9293:       After sending the challenge ACK, TCP endpoints MUST drop the
+            // RFC 9293:       unacceptable segment and stop processing the incoming packet
+            // RFC 9293:       further.
+            // (this is handled by handler's auto release of all arrived segments)
+
+            // RFC 9293:       Note that RFC 5961 and Errata ID 4772 [99] contain additional
+            // RFC 9293:       considerations for ACK throttling in an implementation.
+            return;
+        }
 
         switch (state) {
             case SYN_RECEIVED:
@@ -1567,27 +1600,38 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         else {
             // RFC 9293: if the ACK bit is on,
 
-            // TODO:
-            //  RFC 9293: RFC 5961 [9], Section 5 describes a potential blind data injection attack,
-            //  RFC 9293: and mitigation that implementations MAY choose to include (MAY-12). TCP
-            //  RFC 9293: stacks that implement RFC 5961 MUST add an input check that the ACK value
-            //  RFC 9293: is acceptable only if it is in the range of
-            //  RFC 9293: ((SND.UNA - MAX.SND.WND) =< SEG.ACK =< SND.NXT). All incoming segments
-            //  RFC 9293: whose ACK value doesn't satisfy the above condition MUST be discarded and
-            //  RFC 9293: an ACK sent back. The new state variable MAX.SND.WND is defined as the
-            //  RFC 9293: largest window that the local sender has ever received from its peer
-            //  RFC 9293: (subject to window scaling) or may be hard-coded to a maximum permissible
-            //  RFC 9293: window value. When the ACK value is acceptable, the per-state processing
-            //  RFC 9293: below applies:
+            // RFC 9293: RFC 5961 [9], Section 5 describes a potential blind data injection attack,
+            // RFC 9293: and mitigation that implementations MAY choose to include (MAY-12). TCP
+            // RFC 9293: stacks that implement RFC 5961 MUST add an input check that the ACK value
+            // RFC 9293: is acceptable only if it is in the range of
+            // RFC 9293: ((SND.UNA - MAX.SND.WND) =< SEG.ACK =< SND.NXT).
+            if (!(lessThanOrEqualTo(sub(tcb.sndUna(), tcb.maxSndWnd()), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt()))) {
+                // RFC 9293: All incoming segments whose ACK value doesn't satisfy the above
+                // RFC 9293: condition MUST be discarded
+                // (this is handled by handler's auto release of all arrived segments)
 
-            final boolean acceptableAck = tcb.isAcceptableAck(seg);
+                // and an ACK sent back.
+                final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+                LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+                tcb.send(ctx, response);
+
+                return;
+
+                // RFC 9293: The new state variable MAX.SND.WND is defined as the
+                // RFC 9293: largest window that the local sender has ever received from its peer
+                // RFC 9293: (subject to window scaling) or may be hard-coded to a maximum permissible
+                // RFC 9293: window value.
+            }
+
+            final boolean acceptableAck = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
+            // RFC 9293: When the ACK value is acceptable, the per-state processing below applies:
 
             // FIXME:
             tcb.lastAdvertisedWindow = seg.window();
 
             switch (state) {
                 case SYN_RECEIVED:
-                    if (tcb.isAckOurSynOrFin(seg)) {
+                    if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
                         cancelUserTimer();
@@ -1627,7 +1671,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    final boolean ackOurFin = tcb.isAckOurSynOrFin(seg);
+                    final boolean ackOurFin = seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt);
 
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
@@ -1661,7 +1705,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSING:
-                    final boolean ackOurFin2 = tcb.isAckOurSynOrFin(seg);
+                    final boolean ackOurFin2 = seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt);
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
@@ -1701,8 +1745,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     return;
 
                 case TIME_WAIT:
-                    //  RFC 9293: The only thing that can arrive in this state is a retransmission
-                    //  RFC 9293: of the remote FIN. Acknowledge it,
+                    // RFC 9293: The only thing that can arrive in this state is a retransmission
+                    // RFC 9293: of the remote FIN. Acknowledge it,
                     final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                     LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
                     tcb.send(ctx, response);
@@ -1725,10 +1769,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
                     // RFC 9293: buffers until either the buffer is full or the segment is empty.
 
-                    // TODO:
-                    //  RFC 9293: If the segment empties and carries a PUSH flag, then the user is
-                    //  RFC 9293: informed, when the buffer is returned, that a PUSH has been
-                    //  RFC 9293: received.
+                    // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
+                    // RFC 9293: informed, when the buffer is returned, that a PUSH has been
+                    // RFC 9293: received.
 
                     // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
                     // RFC 9293: to the user, it must also acknowledge the receipt of the data.
@@ -1738,27 +1781,27 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: appropriate to the current buffer availability. The total of
                     // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
 
-                    // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
-                    // RFC 9293: when a valid segment arrives that is in the window but not at the
-                    // RFC 9293: left window edge (MAY-13).
-
-                    // RFC 9293: Please note the window management suggestions in Section 3.8.
-
                     final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
                     tcb.receiveBuffer().receive(ctx, tcb, seg);
 
-                    if (receivePending) {
-                        receivePending = false;
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                    if (seg.isPsh()) {
+                        pushSeen = false;
                     }
-                    else if (seg.isPsh()) {
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PSH flag is set.", ctx.channel(), state, seg);
+
+                    if (!pushSeen) {
+                        pushSeen = true;
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
                         tcb.receiveBuffer().fireRead(ctx, tcb);
                     }
                     else {
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
                     }
+
+                    // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
+                    // RFC 9293: when a valid segment arrives that is in the window but not at the
+                    // RFC 9293: left window edge (MAY-13).
+
+                    // RFC 9293: Please note the window management suggestions in Section 3.8.
 
                     // RFC 9293: Send an acknowledgment of the form:
                     // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
@@ -1775,7 +1818,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         tcb.flush(ctx);
                     }
                     else {
-                        // TODO: We are delay ACK till channelReadComplete. We have to respect the following: the ACK delay MUST be less than 0.5 seconds (MUST-40)
+                        // otherwise, flush is automatically performed on channelReadComplete
+                        // TODO:
+                        //  RFC 9293: an ACK should not be excessively delayed; in particular, the
+                        //  RFC 9293: delay MUST be less than 0.5 seconds (MUST-40)
                     }
 
                     break;
@@ -1814,11 +1860,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             tcb.receiveBuffer().receive(ctx, tcb, seg);
 
             // RFC 9293: and send an acknowledgment for the FIN.
-            // FIXME:
-            //  RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
             final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
             tcb.send(ctx, response);
+
+            // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
+            pushSeen = false;
 
             switch (state) {
                 case SYN_RECEIVED:
@@ -1828,7 +1875,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    if (tcb.isAckOurSynOrFin(seg)) {
+                    if (seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt)) {
                         // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
 
@@ -1878,6 +1925,165 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         return;
     }
 
+    private boolean establishedProcessing(final ChannelHandlerContext ctx,
+                                          final Segment ack,
+                                          final boolean acceptableAck) {
+        final boolean isDuplicate = lessThanOrEqualTo(ack.ack(), tcb.sndUna);
+
+        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+        long ackedBytes = 0;
+        if (lessThan(tcb.sndUna(), ack.ack()) && lessThanOrEqualTo(ack.ack(), tcb.sndNxt())) {
+            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), ack, tcb.sndUna(), ack.ack(), SerialNumberArithmetic.sub(ack.ack(), tcb.sndUna(), SEQ_NO_SPACE));
+            ackedBytes = sub(ack.ack(), tcb.sndUna);
+            tcb.sndUna = ack.ack();
+        }
+
+        // RFC 7323: Also compute a new estimate of round-trip time.
+        if (config.timestamps()) {
+            final TimestampsOption tsOpt = (TimestampsOption) ack.options().get(TIMESTAMPS);
+            if (tsOpt != null) {
+                final int rDash;
+                if (tcb.sndTsOk) {
+                    // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                    final long segTsEcr = tsOpt.tsEcr;
+
+                    // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                    rDash = (int) (config.clock().time() - segTsEcr);
+                }
+                else {
+                    // RFC 7323: otherwise, use the elapsed time since the first segment in the
+                    // RFC 7323: retransmission queue was sent.
+                    rDash = (int) (tcb.config().clock().time() - tcb.retransmissionQueue().firstSegmentSentTime());
+                }
+
+                LOG.trace("RTT R' = {}", rDash);
+                // RFC 6298:       a host MUST set
+                // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
+                // RFC 6298:       SRTT <- (1 - alpha) * SRTT + alpha * R'
+
+                // RFC 6298:       The value of SRTT used in the update to RTTVAR is its value before
+                // RFC 6298:       updating SRTT itself using the second assignment. That is, updating
+                // RFC 6298:       RTTVAR and SRTT MUST be computed in the above order.
+
+                // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
+                // RFC 6298:       suggested in [JK88]).
+
+                // RFC 7323: Taking multiple RTT samples per window would shorten the history calculated
+                // RFC 7323: by the RTO mechanism in [RFC6298], and the below algorithm aims to maintain
+                // RFC 7323: a similar history as originally intended by [RFC6298].
+
+                // RFC 7323: It is roughly known how many samples a congestion window worth of data will
+                // RFC 7323: yield, not accounting for ACK compression, and ACK losses. Such events will
+                // RFC 7323: result in more history of the path being reflected in the final value for
+                // RFC 7323: RTO, and are uncritical. This modification will ensure that a similar
+                // RFC 7323: amount of time is taken into account for the RTO estimation, regardless of
+                // RFC 7323: how many samples are taken per window:
+
+                // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
+                final int expectedSamples = NumberUtil.max((int) Math.ceil((float) tcb.flightSize() / (tcb.smss() * 2)), 1);
+                // RFC 7323: alpha' = alpha / ExpectedSamples
+                final double alphaDash = config.alpha() / expectedSamples;
+                // RFC 7323: beta' = beta / ExpectedSamples
+                final double betaDash = config.beta() / expectedSamples;
+                // RFC 7323: Note that the factor 2 in ExpectedSamples is due to "Delayed ACKs".
+
+                // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
+                // RFC 7323: and beta' instead:
+                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                tcb.rttVar = (1 - betaDash) * tcb.rttVar + betaDash * Math.abs(tcb.sRtt - rDash);
+                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                tcb.sRtt = (1 - alphaDash) * tcb.sRtt + alphaDash * rDash;
+                // RFC 7323: (for each sample R')
+
+                // RFC 6298:       After the computation, a host MUST update
+                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                tcb.rto((long) Math.ceil(tcb.sRtt + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar)));
+            }
+        }
+
+        // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+        // RFC 9293: acknowledged are removed.
+        // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+        // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+        // RFC 9293: response).
+        tcb.retransmissionQueue.removeAcknowledged(ctx, tcb);
+
+        if (isDuplicate) {
+            // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
+            LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, ack);
+            tcb.gotDuplicateAckCandidate(ctx, ack);
+
+            return false;
+        }
+
+        if (greaterThan(ack.ack(), tcb.sndNxt)) {
+            // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
+            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), ack);
+
+            // RFC 9293: then send an ACK,
+            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+            LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
+            tcb.send(ctx, response);
+
+            // RFC 9293: drop the segment,
+            // (this is handled by handler's auto release of all arrived segments)
+
+            // RFC 9293: and return.
+            return true;
+        }
+
+        if (lessThanOrEqualTo(tcb.sndUna(), ack.ack()) && lessThanOrEqualTo(ack.ack(), tcb.sndNxt())) {
+            // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+            if (lessThan(tcb.sndWl1(), ack.seq()) || (tcb.sndWl1() == ack.seq() && lessThanOrEqualTo(tcb.sndWl2(), ack.ack()))) {
+                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                tcb.updateSndWnd(ctx, ack);
+
+                // RFC 9293: Note that SND.WND is an offset from SND.UNA, that SND.WL1 records the
+                // RFC 9293: sequence number of the last segment used to update SND.WND, and that
+                // RFC 9293: SND.WL2 records the acknowledgment number of the last segment used to
+                // RFC 9293: update SND.WND. The check here prevents using old segments to update
+                // RFC 9293: the window.
+            }
+        }
+
+        if (acceptableAck) {
+            // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
+            //   sender after a correctly transmitted SYN MUST be one segment
+            //   consisting of at most SMSS bytes.
+            // only when new data is acked
+            // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
+            if (ackedBytes > 0) {
+                if (tcb.doSlowStart()) {
+                    // During slow start, a TCP increments cwnd by at most SMSS bytes for
+                    //   each ACK received that cumulatively acknowledges new data.
+
+                    // Slow Start -> +1 SMSS after each ACK
+                    final long increment = NumberUtil.min(tcb.smss(), ackedBytes);
+                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    tcb.cwnd += increment;
+                }
+                else {
+                    // Congestion Avoidance -> +1 SMSS after each RTT
+                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd);
+                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    tcb.cwnd += increment;
+                }
+            }
+
+            if (ackedBytes > 0) {
+                tcb.resetDuplicateAcks(ctx, ack, ackedBytes);
+            }
+
+            if (ackedBytes > 0) {
+                tcb.writeEnqueuedData(ctx);
+            }
+        }
+
+        return false;
+    }
+
     Segment formSegment(final ChannelHandlerContext ctx,
                         final long seq,
                         final long ack,
@@ -1893,13 +2099,17 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // (not applicable to us)
 
             // RFC 9293: and MAY send it always (MAY-3).
-            options.put(TIMESTAMPS, new TimestampsOption(config.clock().time()));
+            options.put(MAXIMUM_SEGMENT_SIZE, tcb.mss());
         }
 
         if (config.timestamps()) {
-            if (tcb != null && tcb.sndTsOk) {
+            if (tcb == null && (ctl & SYN) != 0) {
                 // RFC 9293: Once TSopt has been successfully negotiated, that is both <SYN> and
                 // RFC 9293: <SYN,ACK> contain TSopt,
+                final TimestampsOption tsOpt = new TimestampsOption(tcb.config().clock().time());
+                options.put(TIMESTAMPS, tsOpt);
+            }
+            else if (tcb != null && tcb.sndTsOk) {
                 // RFC 9293: the TSopt MUST be sent in every non-<RST> segment for the duration of
                 // RFC 9293: the connection, and SHOULD be sent in an <RST> segment (see Section 5.2
                 // RFC 9293: for details). The TCP SHOULD remember this state by setting a flag,
@@ -1948,157 +2158,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         return formSegment(ctx, seq, 0, ctl);
     }
 
-    private boolean establishedProcessing(final ChannelHandlerContext ctx,
-                                          final Segment seg,
-                                          final boolean acceptableAck) {
-        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-        long ackedBytes = 0;
-        if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), tcb.sndUna(), SEQ_NO_SPACE));
-            ackedBytes = sub(seg.ack(), tcb.sndUna);
-            tcb.sndUna = seg.ack();
-        }
-
-        // RFC 7323: Also compute a new estimate of round-trip time.
-        if (config.timestamps()) {
-            final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
-            if (tsOpt != null) {
-                if (tcb.sndTsOk) {
-                    // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
-                    final long segTsEcr = tsOpt.tsEcr;
-
-                    // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
-                    final int rDash = (int) (config.clock().time() - segTsEcr);
-                    LOG.trace("RTT R' = {}", rDash);
-                    // RFC 6298:       a host MUST set
-                    // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
-                    // RFC 6298:       SRTT <- (1 - alpha) * SRTT + alpha * R'
-
-                    // RFC 6298:       The value of SRTT used in the update to RTTVAR is its value before
-                    // RFC 6298:       updating SRTT itself using the second assignment. That is, updating
-                    // RFC 6298:       RTTVAR and SRTT MUST be computed in the above order.
-
-                    // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
-                    // RFC 6298:       suggested in [JK88]).
-
-                    // RFC 7323: Taking multiple RTT samples per window would shorten the history calculated
-                    // RFC 7323: by the RTO mechanism in [RFC6298], and the below algorithm aims to maintain
-                    // RFC 7323: a similar history as originally intended by [RFC6298].
-
-                    // RFC 7323: It is roughly known how many samples a congestion window worth of data will
-                    // RFC 7323: yield, not accounting for ACK compression, and ACK losses. Such events will
-                    // RFC 7323: result in more history of the path being reflected in the final value for
-                    // RFC 7323: RTO, and are uncritical. This modification will ensure that a similar
-                    // RFC 7323: amount of time is taken into account for the RTO estimation, regardless of
-                    // RFC 7323: how many samples are taken per window:
-
-                    // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
-                    final int expectedSamples = NumberUtil.max((int) Math.ceil((float) tcb.flightSize() / (tcb.smss() * 2)), 1);
-                    // RFC 7323: alpha' = alpha / ExpectedSamples
-                    final double alphaDash = config.alpha() / expectedSamples;
-                    // RFC 7323: beta' = beta / ExpectedSamples
-                    final double betaDash = config.beta() / expectedSamples;
-                    // RFC 7323: Note that the factor 2 in ExpectedSamples is due to "Delayed ACKs".
-
-                    // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
-                    // RFC 7323: and beta' instead:
-                    // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
-                    tcb.rttVar = (1 - betaDash) * tcb.rttVar + betaDash * Math.abs(tcb.sRtt - rDash);
-                    // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                    tcb.sRtt = (1 - alphaDash) * tcb.sRtt + alphaDash * rDash;
-                    // RFC 7323: (for each sample R')
-
-                    // RFC 6298:       After the computation, a host MUST update
-                    // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                    tcb.rto((long) (tcb.sRtt + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar)));
-                }
-                else {
-                    // TODO:
-                    //  RFC 7323: otherwise, use the elapsed time since the first segment in the
-                    //  RFC 7323: retransmission queue was sent.
-                }
-            }
-        }
-
-        // RFC 9293: Any segments on the retransmission queue that are thereby entirely
-        // RFC 9293: acknowledged are removed.
-        //  RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
-        //  RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
-        //  RFC 9293: response).
-        tcb.retransmissionQueue.removeAcknowledged(ctx, tcb);
-
-        if (tcb.isDuplicateAck(seg)) {
-            // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
-            LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
-            tcb.gotDuplicateAckCandidate(ctx, seg);
-
-            return true;
-        }
-
-        if (tcb.isAckSomethingNotYetSent(seg)) {
-            // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
-            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
-
-            // RFC 9293: then send an ACK,
-            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-            LOG.trace("{}[{}] Write `{}`.", ctx.channel(), state, response);
-            tcb.send(ctx, response);
-
-            // RFC 9293: drop the segment,
-            // (this is handled by handler's auto release of all arrived segments)
-
-            // RFC 9293: and return.
-            return true;
-        }
-
-        if (lessThanOrEqualTo(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-            // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
-            if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
-                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
-                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
-                // RFC 9293: set SND.WL2 <- SEG.ACK.
-                tcb.updateSndWnd(ctx, seg);
-
-                // RFC 9293: Note that SND.WND is an offset from SND.UNA, that SND.WL1 records the
-                // RFC 9293: sequence number of the last segment used to update SND.WND, and that
-                // RFC 9293: SND.WL2 records the acknowledgment number of the last segment used to
-                // RFC 9293: update SND.WND. The check here prevents using old segments to update
-                // RFC 9293: the window.
-            }
-        }
-
-        if (acceptableAck) {
-            // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
-            //   sender after a correctly transmitted SYN MUST be one segment
-            //   consisting of at most SMSS bytes.
-            // only when new data is acked
-            // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
-            if (ackedBytes > 0) {
-                if (tcb.doSlowStart()) {
-                    // During slow start, a TCP increments cwnd by at most SMSS bytes for
-                    //   each ACK received that cumulatively acknowledges new data.
-
-                    // Slow Start -> +1 SMSS after each ACK
-                    final long increment = NumberUtil.min(tcb.smss(), ackedBytes);
-                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
-                    tcb.cwnd += increment;
-                }
-                else {
-                    // Congestion Avoidance -> +1 SMSS after each RTT
-                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd);
-                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
-                    tcb.cwnd += increment;
-                }
-            }
-
-            if (ackedBytes > 0) {
-                tcb.resetDuplicateAcks(ctx, seg, ackedBytes);
-            }
-        }
-
-        return false;
-    }
-
     /*
      * Timeouts
      */
@@ -2110,8 +2169,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * USER TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
-     * 9293, Section 3.10.8</a>.
+     * USER TIMEOUT event as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
+     * 3.10.8</a>.
      */
     private void userTimeout(final ChannelHandlerContext ctx) {
         userTimer = null;
@@ -2151,8 +2211,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * RETRANSMISSION TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
-     * 9293, Section 3.10.8</a>.
+     * RETRANSMISSION TIMEOUT event as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
+     * 3.10.8</a>.
      */
     private void retransmissionTimeout(ChannelHandlerContext ctx,
                                        TransmissionControlBlock tcb,
@@ -2217,8 +2278,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * TIME-WAIT TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
-     * 9293, Section 3.10.8</a>.
+     * TIME-WAIT TIMEOUT event as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
+     * 3.10.8</a>.
      */
     private void timeWaitTimeout(ChannelHandlerContext ctx) {
         timeWaitTimer = null;

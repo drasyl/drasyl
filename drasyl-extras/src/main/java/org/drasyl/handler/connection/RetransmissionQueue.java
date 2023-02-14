@@ -44,6 +44,7 @@ import static org.drasyl.handler.connection.Segment.greaterThan;
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
     private final ArrayDeque<Segment> queue;
+    private long firstSegmentSentTime;
 
     RetransmissionQueue(final ArrayDeque<Segment> queue) {
         this.queue = requireNonNull(queue);
@@ -79,6 +80,10 @@ public class RetransmissionQueue {
         if (handler.retransmissionTimer == null) {
             handler.startRetransmissionTimer(ctx, tcb);
         }
+
+        if (firstSegmentSentTime == 0) {
+            firstSegmentSentTime = tcb.config().clock().time();
+        }
     }
 
     @Override
@@ -102,6 +107,10 @@ public class RetransmissionQueue {
                 // partially ACKed
                 System.out.println();
                 somethingWasAcked = true;
+                break;
+            }
+            else {
+                break;
             }
         }
 
@@ -132,5 +141,9 @@ public class RetransmissionQueue {
 
     public void flush() {
         queue.clear();
+    }
+
+    public long firstSegmentSentTime() {
+        return firstSegmentSentTime;
     }
 }

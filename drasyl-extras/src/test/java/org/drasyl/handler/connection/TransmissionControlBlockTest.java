@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
+import static org.drasyl.handler.connection.Segment.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,38 +50,46 @@ class TransmissionControlBlockTest {
     class IsAcceptableAck {
         @Test
         void shouldReturnFalseIfSegmentIsNoAck() {
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 9, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
+            final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 9, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
 
-            assertFalse(tcb.isAcceptableAck(Segment.syn(1)));
+            final Segment seg = Segment.syn(1);
+            assertFalse(seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt));
         }
 
         @Test
         void shouldReturnTrueIfAckIsAcceptable() {
-            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(config, 9, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertTrue(tcb1.isAcceptableAck(Segment.ack(1, 10)));
+            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(config, 9, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg3 = Segment.ack(1, 10);
+            assertTrue(seg3.isAck() && lessThan(tcb1.sndUna, seg3.ack()) && lessThanOrEqualTo(seg3.ack(), tcb1.sndNxt));
 
-            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(config, 9, 11, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertTrue(tcb2.isAcceptableAck(Segment.ack(1, 10)));
+            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(config, 9, 11, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg2 = Segment.ack(1, 10);
+            assertTrue(seg2.isAck() && lessThan(tcb2.sndUna, seg2.ack()) && lessThanOrEqualTo(seg2.ack(), tcb2.sndNxt));
 
             // with overflow
-            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(config, MAX_SEQ_NO - 1, MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertTrue(tcb3.isAcceptableAck(Segment.ack(1, MAX_SEQ_NO)));
+            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(config, MAX_SEQ_NO - 1, MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg1 = Segment.ack(1, MAX_SEQ_NO);
+            assertTrue(seg1.isAck() && lessThan(tcb3.sndUna, seg1.ack()) && lessThanOrEqualTo(seg1.ack(), tcb3.sndNxt));
 
-            final TransmissionControlBlock tcb4 = new TransmissionControlBlock(config, MAX_SEQ_NO - 1, 0, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertTrue(tcb4.isAcceptableAck(Segment.ack(1, MAX_SEQ_NO)));
+            final TransmissionControlBlock tcb4 = new TransmissionControlBlock(config, MAX_SEQ_NO - 1, 0, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg = Segment.ack(1, MAX_SEQ_NO);
+            assertTrue(seg.isAck() && lessThan(tcb4.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb4.sndNxt));
         }
 
         @Test
         void shouldReturnFalseIfAckIsNotAcceptable() {
-            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(config, 10, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertFalse(tcb1.isAcceptableAck(Segment.ack(1, 10)));
+            final TransmissionControlBlock tcb1 = new TransmissionControlBlock(config, 10, 10, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg2 = Segment.ack(1, 10);
+            assertFalse(seg2.isAck() && lessThan(tcb1.sndUna, seg2.ack()) && lessThanOrEqualTo(seg2.ack(), tcb1.sndNxt));
 
-            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(config, 9, 9, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertFalse(tcb2.isAcceptableAck(Segment.ack(1, 10)));
+            final TransmissionControlBlock tcb2 = new TransmissionControlBlock(config, 9, 9, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg1 = Segment.ack(1, 10);
+            assertFalse(seg1.isAck() && lessThan(tcb2.sndUna, seg1.ack()) && lessThanOrEqualTo(seg1.ack(), tcb2.sndNxt));
 
             // with overflow
-            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(config, MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false);
-            assertFalse(tcb3.isAcceptableAck(Segment.ack(1, MAX_SEQ_NO - 1)));
+            final TransmissionControlBlock tcb3 = new TransmissionControlBlock(config, MAX_SEQ_NO, 0, 0, 0, 0, 0, 0, 0, sendBuffer, outoingSegmentQueue, retransmissionQueue, receiveBuffer, mss, 0, 0, 0, 0, 0, 0, false, 0, 0, 1000);
+            final Segment seg = Segment.ack(1, MAX_SEQ_NO - 1);
+            assertFalse(seg.isAck() && lessThan(tcb3.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb3.sndNxt));
         }
     }
 }

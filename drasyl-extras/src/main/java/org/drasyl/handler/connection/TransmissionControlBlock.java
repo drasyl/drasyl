@@ -43,8 +43,6 @@ import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
 import static org.drasyl.handler.connection.Segment.greaterThan;
 import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
-import static org.drasyl.handler.connection.Segment.lessThan;
-import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.util.Preconditions.requireInRange;
@@ -88,37 +86,14 @@ public class TransmissionControlBlock {
     private final int rcvBuff;
     public ReliableTransportConfig config;
     protected long ssthresh; // slow start threshold
-    // RFC 9293: initial send sequence number
-    private long iss;
-    // Receive Sequence Variables
-    // RFC 9293: RCV.NXT = next sequence number expected on an incoming segment, and is the left or
-    // RFC 9293: lower edge of the receive window
-    private long rcvNxt;
-    // RFC 9293: receive window
-    private int rcvWnd;
     // Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     long sndUna;
     // RFC 9293: SND.NXT = next sequence number to be sent
     long sndNxt;
-    // RFC 9293: SND.WND = send window
-    private long sndWnd;
-    // RFC 9293: SND.WL1 = segment sequence number used for last window update
-    private long sndWl1;
-    // RFC 9293: SND.WL2 = segment acknowledgment number used for last window update
-    private long sndWl2;
-    // RFC 9293: IRS = initial receive sequence number
-    private long irs;
-    // RFC 9293: MSS = maximum segment size
-    private int mss;
     // congestion control
     long cwnd; // congestion window
     long lastAdvertisedWindow;
-    // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
-    private long maxSndWnd;
-    private int duplicateAcks;
-    private ScheduledFuture<?> overrideTimer;
-    private long recover;
     // RFC 7323: TS.Recent = holds a timestamp to be echoed in TSecr whenever a segment is sent
     long tsRecent;
     // RFC 7323: Last.ACK.sent = holds the ACK field from the last segment sent
@@ -131,7 +106,32 @@ public class TransmissionControlBlock {
     double sRtt;
     // RFC 6298: RTO = retransmission timeout
     //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
-    long rto = 1000;
+    long rto;
+    // RFC 9293: initial send sequence number
+    private long iss;
+    // Receive Sequence Variables
+    // RFC 9293: RCV.NXT = next sequence number expected on an incoming segment, and is the left or
+    // RFC 9293: lower edge of the receive window
+    private long rcvNxt;
+    // RFC 9293: receive window
+    private int rcvWnd;
+    // RFC 9293: SND.WND = send window
+    private long sndWnd;
+    // RFC 9293: SND.WL1 = segment sequence number used for last window update
+    private long sndWl1;
+    // RFC 9293: SND.WL2 = segment acknowledgment number used for last window update
+    private long sndWl2;
+    // RFC 9293: IRS = initial receive sequence number
+    private long irs;
+    // RFC 9293: MSS = maximum segment size
+    private int mss;
+    // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
+    // RFC 5961: MAX.SND.WND = A new state variable MAX.SND.WND is defined as the largest window that the
+    // local sender has ever received from its peer.
+    private long maxSndWnd;
+    private int duplicateAcks;
+    private ScheduledFuture<?> overrideTimer;
+    private long recover;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -154,7 +154,10 @@ public class TransmissionControlBlock {
                              final long recover,
                              final long tsRecent,
                              final long lastAckSent,
-                             final boolean sndTsOk) {
+                             final boolean sndTsOk,
+                             final double rttVar,
+                             final double sRtt,
+                             final long rto) {
         this.config = requireNonNull(config);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -176,6 +179,9 @@ public class TransmissionControlBlock {
         this.tsRecent = requireNonNegative(tsRecent);
         this.lastAckSent = requireNonNegative(lastAckSent);
         this.sndTsOk = sndTsOk;
+        this.rttVar = requireNonNegative(rttVar);
+        this.sRtt = requireNonNegative(sRtt);
+        this.rto = requirePositive(rto);
     }
 
     @SuppressWarnings("java:S107")
@@ -192,7 +198,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk);
+        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.baseMss(), effSndMss(config.baseMss()) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -304,30 +310,6 @@ public class TransmissionControlBlock {
 
     public ReceiveBuffer receiveBuffer() {
         return receiveBuffer;
-    }
-
-    public boolean isDuplicateAck(final Segment seg) {
-        return lessThanOrEqualTo(seg.ack(), sndUna);
-    }
-
-    public boolean isAckSomethingNotYetSent(final Segment seg) {
-        return seg.isAck() && greaterThan(seg.ack(), sndNxt);
-    }
-
-    public boolean isAcceptableAck(final Segment seg) {
-        return seg.isAck() && lessThan(sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), sndNxt);
-    }
-
-    public boolean synHasBeenAcknowledged() {
-        return greaterThan(sndUna, iss);
-    }
-
-    public boolean isAckOurSynOrFin(final Segment seg) {
-        return seg.isAck() && lessThan(sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), sndNxt);
-    }
-
-    public boolean isAckSomethingNeverSent(final Segment seg) {
-        return seg.isAck() && (lessThanOrEqualTo(seg.ack(), iss) || greaterThan(seg.ack(), sndNxt));
     }
 
     /**
@@ -525,29 +507,6 @@ public class TransmissionControlBlock {
 
     public long sndWl2() {
         return sndWl2;
-    }
-
-    // RFC 9293: SEGMENT ARRIVES on other state
-    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7.4
-    public boolean isAcceptableSeg(final Segment seg) {
-        // There are four cases for the acceptability test for an incoming segment:
-        if (seg.len() == 0 && rcvWnd == 0) {
-            // SEG.SEQ = RCV.NXT
-            return seg.seq() == rcvNxt;
-        }
-        else if (seg.len() == 0 && rcvWnd > 0) {
-            // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-            return lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd));
-        }
-        else if (seg.len() > 0 && rcvWnd == 0) {
-            // not acceptable
-            return false;
-        }
-        else {
-            // RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND or RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
-            return (lessThanOrEqualTo(rcvNxt, seg.seq()) && lessThan(seg.seq(), add(rcvNxt, rcvWnd))) ||
-                    (lessThanOrEqualTo(rcvNxt, add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(rcvNxt, rcvWnd)));
-        }
     }
 
     boolean doSlowStart() {

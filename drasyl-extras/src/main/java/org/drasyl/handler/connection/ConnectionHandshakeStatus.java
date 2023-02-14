@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.connection;
 
+import java.util.Objects;
+
 import static java.util.Objects.requireNonNull;
 
 public class ConnectionHandshakeStatus implements ConnectionHandshakeEvent {
@@ -46,5 +48,22 @@ public class ConnectionHandshakeStatus implements ConnectionHandshakeEvent {
                 "state=" + state +
                 ", tcb=" + tcb +
                 '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ConnectionHandshakeStatus that = (ConnectionHandshakeStatus) o;
+        return state == that.state && Objects.equals(tcb, that.tcb);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state, tcb);
     }
 }
