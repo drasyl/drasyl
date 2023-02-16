@@ -1108,7 +1108,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
             else {
                 // RFC 9293: Otherwise (no ACK), drop the segment
-                tcb.selectIss();
+                tcb.selectIss(); // FIXME: was macht das hier?
                 LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Drop it.", ctx.channel(), state, seg);
 
                 // RFC 9293: and return.
@@ -1296,7 +1296,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     if (tsOpt != null) {
                         // RFC 7323: and if bit Snd.TS.OK is on. If so:
                         final long segTsVal = tsOpt.tsVal;
-                        if (segTsVal < tcb.tsRecent && !seg.isRst()) {
+                        if (segTsVal < tcb.tsRecent() && !seg.isRst()) {
                             // RFC 7323: If SEG.TSval < TS.Recent and the RST bit is off:
 
                             // TODO:

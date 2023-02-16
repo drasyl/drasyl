@@ -32,6 +32,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.ReliableTransportConfig.Clock;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.hamcrest.Matcher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -2598,19 +2600,328 @@ class ReliableTransportHandlerTest {
             @Nested
             class InSynSentState {
                 @Nested
-                class CheckAckBit {}
+                class CheckAckBit {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isAck()).thenReturn(true);
+                    }
+
+                    @Test
+                    void shouldDiscardWhenSomethingNeverSentGotAckedAndSegmentIsReset() {
+                        when(seg.ack()).thenReturn(123L);
+                        when(seg.isRst()).thenReturn(true);
+                        when(tcb.iss()).thenReturn(124L);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
+
+                        // RFC 9293: If SEG.ACK =< ISS or SEG.ACK > SND.NXT, send a reset (unless the RST
+                        // RFC 9293: bit is set, if so drop the segment and return)
+                        verify(tcb, never()).send(any(), any());
+
+                        // RFC 9293: and discard the segment.
+                        verify(seg).release();
+                    }
+
+                    @Test
+                    void shouldResetWhenSomethingNeverSentGotAckedAndSegmentIsNoReset() {
+                        when(seg.ack()).thenReturn(123L);
+                        when(seg.isRst()).thenReturn(false);
+                        when(tcb.iss()).thenReturn(124L);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+                        when(ctx.handler()).thenReturn(handler);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
+
+                        // RFC 9293: If SEG.ACK =< ISS or SEG.ACK > SND.NXT, send a reset (unless the RST
+                        // RFC 9293: bit is set, if so drop the segment and return)
+                        verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                        final Segment response = segmentCaptor.getValue();
+                        assertThat(response, allOf(seq(123L), ctl(RST)));
+
+                        // RFC 9293: and discard the segment.
+                        verify(seg).release();
+                    }
+                }
 
                 @Nested
-                class CheckRstBit {}
+                class CheckRstBit {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isRst()).thenReturn(true);
+                    }
+
+                    @Test
+                    void shouldDiscardIfPotentialBlindResetAttackHasBeenDetected() {
+                        when(seg.seq()).thenReturn(123L);
+                        when(tcb.rcvNxt()).thenReturn(456L);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
+
+                        // RFC 9293: A potential blind reset attack is described in RFC 5961 [9]. The
+                        // RFC 9293: mitigation described in that document has specific applicability explained
+                        // RFC 9293: therein, and is not a substitute for cryptographic protection (e.g., IPsec
+                        // RFC 9293: or TCP-AO). A TCP implementation that supports the mitigation described in
+                        // RFC 9293: RFC 5961 SHOULD first check that the sequence number exactly matches
+                        // RFC 9293: RCV.NXT prior to executing the action in the next paragraph.
+                        verify(seg).release();
+                    }
+
+                    @Test
+                    void shouldCloseConnectionIfAcknowledgementIsAcceptable() {
+                        when(seg.isAck()).thenReturn(true);
+                        when(seg.seq()).thenReturn(123L);
+                        when(tcb.rcvNxt()).thenReturn(123L);
+                        when(tcb.sndUna()).thenReturn(37L);
+                        when(seg.ack()).thenReturn(38L);
+                        when(tcb.sndNxt()).thenReturn(39L);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
+
+                        // RFC 9293: If the ACK was acceptable,
+                        // RFC 9293: then signal to the user "error: connection reset",
+                        verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+
+                        // RFC 9293: drop the segment,
+                        verify(seg).release();
+
+                        // RFC 9293: enter CLOSED state,
+                        assertEquals(CLOSED, handler.state);
+
+                        // RFC 9293: delete TCB,
+                        verify(tcb).delete();
+                    }
+
+                    @Test
+                    void shouldDiscardIfSegmentIsNotAcceptable() {
+                        when(seg.isAck()).thenReturn(false);
+                        when(seg.seq()).thenReturn(123L);
+                        when(tcb.rcvNxt()).thenReturn(123L);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
+
+                        // RFC 9293: Otherwise (no ACK), drop the segment
+                        verify(seg).release();
+                    }
+                }
 
                 @Nested
-                class CheckSynBit {}
+                class CheckSynBit {
+                    @Test
+                    void shouldXXXWhenOurSynHasBeenAcked() {
+                        when(seg.isSyn()).thenReturn(true);
+
+                        // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
+                        // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
+
+                        // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
+
+                        // RFC 9293: and any segments on the retransmission queue that are thereby
+                        // RFC 9293: acknowledged should be removed.
+
+                        // RFC 7323: Check for a TSopt option;
+
+                        // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
+
+                        // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
+
+                        // RFC 7323: If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial
+                        // RFC 7323: RTT estimate.
+                        // RFC 6298:       the host MUST set
+                        // RFC 6298:       SRTT <- R
+                        // RFC 6298:       RTTVAR <- R/2
+                        // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                        // RFC 6298: where K = 4
+
+                        // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
+                        // RFC 9293: to ESTABLISHED,
+
+                        // RFC 9293: form an ACK segment
+                        // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                        // RFC 9293: and send it. Data or controls that were queued for transmission MAY be
+                        // RFC 9293: included. Some TCP implementations suppress sending this segment when
+                        // RFC 9293: the received segment contains data that will anyways generate an
+                        // RFC 9293: acknowledgment in the later processing steps, saving this extra
+                        // RFC 9293: acknowledgment of the SYN from being sent.
+                        // RFC 7323: If the Snd.TS.OK bit is on, include a TSopt option
+                        // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
+
+                        // RFC 7323: Last.ACK.sent is set to RCV.NXT.
+
+                        // RFC 9293: If there are other controls or text in the segment, then continue
+                        // RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
+                        // RFC 9293: is checked;
+                    }
+                    @Test
+                    void shouldXXXWhenOurSynIsNotAcked() {
+                        when(seg.isSyn()).thenReturn(true);
+
+                        // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
+                        // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
+
+                        // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
+
+                        // RFC 9293: and any segments on the retransmission queue that are thereby
+                        // RFC 9293: acknowledged should be removed.
+
+                        // RFC 7323: Check for a TSopt option;
+
+                        // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
+
+                        // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
+
+                        // RFC 7323: If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial
+                        // RFC 7323: RTT estimate.
+                        // RFC 6298:       the host MUST set
+                        // RFC 6298:       SRTT <- R
+                        // RFC 6298:       RTTVAR <- R/2
+                        // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                        // RFC 6298: where K = 4
+
+                        // RFC 9293: Otherwise, enter SYN-RECEIVED,
+
+                        // RFC 9293: form a SYN,ACK segment
+                        // RFC 9293: <SEQ=ISS><ACK=RCV.NXT><CTL=SYN,ACK>
+                        // RFC 9293: and send it.
+
+                        // RFC 9293: Set the variables:
+                        // RFC 9293: SND.WND <- SEG.WND
+                        // RFC 9293: SND.WL1 <- SEG.SEQ
+                        // RFC 9293: SND.WL2 <- SEG.ACK
+                    }
+                }
             }
 
             @Nested
             class InAnyOtherState {
                 @Nested
-                class CheckSeq {}
+                class CheckSeq {
+                    @Nested
+                    class ForAnySynchronizedState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void shouldRejectSegmentAndSendAcknowledgementWithExpectedSeq(final State state) {
+                            when(config.timestamps()).thenReturn(true);
+                            when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(1, 2));
+                            when(tcb.tsRecent()).thenReturn(2L);
+
+                            // RFC 7323: If SEG.TSval < TS.Recent and the RST bit is off:
+                        }
+
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void name2(final State state) {
+                            // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
+                            // RFC 7323: then save SEG.TSval in variable TS.Recent.
+                        }
+
+
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void name3(final State state) {
+                            // RFC 9293: There are four cases for the acceptability test for an incoming
+                            // RFC 9293: segment:
+                            // RFC 9293: Segment Length Receive Window  Test
+                            // RFC 9293: 0              0               SEG.SEQ = RCV.NXT
+                        }
+
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void name4(final State state) {
+                            // RFC 9293: There are four cases for the acceptability test for an incoming
+                            // RFC 9293: segment:
+                            // RFC 9293: Segment Length Receive Window  Test
+                            // RFC 9293: 0              >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
+                        }
+
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void name5(final State state) {
+                            // RFC 9293: There are four cases for the acceptability test for an incoming
+                            // RFC 9293: segment:
+                            // RFC 9293: Segment Length Receive Window  Test
+                            // RFC 9293: >0             0               not acceptable
+                        }
+
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void name6(final State state) {
+                            // RFC 9293: There are four cases for the acceptability test for an incoming
+                            // RFC 9293: segment:
+                            // RFC 9293: Segment Length Receive Window  Test
+                            // RFC 9293: >0             >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
+                            // RFC 9293:                                or
+                            // RFC 9293:                                RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
+                        }
+                    }
+                }
 
                 @Nested
                 class CheckRstBit {}

@@ -822,4 +822,8 @@ public class TransmissionControlBlock {
             this.rto = rto;
         }
     }
+
+    public long tsRecent() {
+        return tsRecent;
+    }
 }
