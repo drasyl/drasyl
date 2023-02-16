@@ -482,11 +482,6 @@ public class TransmissionControlBlock {
         }
     }
 
-    public void synchronizeState(final Segment seg) {
-        rcvNxt = advanceSeq(seg.seq(), seg.len());
-        irs = seg.seq();
-    }
-
     public void updateSndWnd(final ChannelHandlerContext ctx, final Segment seg) {
         if (sndWnd != seg.window()) {
             LOG.trace("{} Change SND.WND from {} to {}.", ctx.channel(), sndWnd, seg.window());
@@ -825,5 +820,49 @@ public class TransmissionControlBlock {
 
     public long tsRecent() {
         return tsRecent;
+    }
+
+    public void sndUna(final long sndUna) {
+        this.sndUna = sndUna;
+    }
+
+    public void bla_tsRecent(final long tsRecent) {
+        this.tsRecent = tsRecent;
+    }
+
+    public void turnOnSndTsOk() {
+        sndTsOk = true;
+    }
+
+    public void bla_sRtt(final int sRtt) {
+        this.sRtt = sRtt;
+    }
+
+    public void bla_rttVar(final double rttVar) {
+        this.rttVar = rttVar;
+    }
+
+    public void lastAckSent(final long lastAckSent) {
+        this.lastAckSent = lastAckSent;
+    }
+
+    public double sRtt() {
+        return sRtt;
+    }
+
+    public double rttVar() {
+        return rttVar;
+    }
+
+    public void bla_rcvNxt(final long rcvNxt) {
+        this.rcvNxt = rcvNxt;
+    }
+
+    public void bla_irs(final long irs) {
+        this.irs = irs;
+    }
+
+    public boolean sndTsOk() {
+        return sndTsOk;
     }
 }

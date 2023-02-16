@@ -2720,34 +2720,69 @@ class ReliableTransportHandlerTest {
 
                 @Nested
                 class CheckSynBit {
-                    @Test
-                    void shouldXXXWhenOurSynHasBeenAcked() {
+                    @BeforeEach
+                    void setUp() {
                         when(seg.isSyn()).thenReturn(true);
+                    }
+
+                    @Test
+                    void shouldEstablishConnectionWhenOurSynHasBeenAcked() {
+                        when(config.timestamps()).thenReturn(true);
+                        when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(214, 90));
+                        when(tcb.tsRecent()).thenReturn(2L);
+                        when(seg.isAck()).thenReturn(true);
+                        when(seg.seq()).thenReturn(814L);
+                        when(seg.len()).thenReturn(1);
+                        when(tcb.sndUna()).thenReturn(122L);
+                        when(seg.ack()).thenReturn(123L);
+                        when(tcb.sndNxt()).thenReturn(124L);
+                        when(config.clock().time()).thenReturn(111L);
+                        when(tcb.sRtt()).thenReturn(21d);
+                        when(config.clock().g()).thenReturn(0.001);
+                        when(config.k()).thenReturn(4);
+                        when(tcb.rcvNxt()).thenReturn(815L);
+                        when(tcb.sndTsOk()).thenReturn(true);
+                        when(tcb.config()).thenReturn(config);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
 
                         // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
                         // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
+                        verify(tcb).bla_rcvNxt(815L);
+                        verify(tcb).bla_irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
+                        verify(tcb).sndUna(123L);
 
                         // RFC 9293: and any segments on the retransmission queue that are thereby
                         // RFC 9293: acknowledged should be removed.
+                        verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
                         // RFC 7323: Check for a TSopt option;
-
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
+                        verify(tcb).bla_tsRecent(214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
+                        verify(tcb).turnOnSndTsOk();
 
                         // RFC 7323: If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
+                        verify(tcb).bla_sRtt(21);
+
                         // RFC 6298:       RTTVAR <- R/2
+                        verify(tcb).bla_rttVar(10.5);
+
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        // RFC 6298: where K = 4
+                        verify(tcb).rto(21);
 
                         // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                         // RFC 9293: to ESTABLISHED,
+                        assertEquals(ESTABLISHED, handler.state);
 
                         // RFC 9293: form an ACK segment
                         // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
@@ -2758,49 +2793,90 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: acknowledgment of the SYN from being sent.
                         // RFC 7323: If the Snd.TS.OK bit is on, include a TSopt option
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
+                        verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                        final Segment response = segmentCaptor.getValue();
+                        assertThat(response, allOf(seq(124L), ack(815L), ctl(ACK), tsOpt(111, 2)));
 
                         // RFC 7323: Last.ACK.sent is set to RCV.NXT.
+                        verify(tcb).lastAckSent(815L);
 
-                        // RFC 9293: If there are other controls or text in the segment, then continue
-                        // RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
-                        // RFC 9293: is checked;
+                        verify(seg).release();
                     }
+
                     @Test
-                    void shouldXXXWhenOurSynIsNotAcked() {
-                        when(seg.isSyn()).thenReturn(true);
+                    void shouldChangeToSynReceivedWhenSynIsReceived() {
+                        when(config.timestamps()).thenReturn(true);
+                        when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(214, 90));
+                        when(tcb.tsRecent()).thenReturn(2L);
+                        when(seg.isAck()).thenReturn(true);
+                        when(seg.seq()).thenReturn(814L);
+                        when(seg.len()).thenReturn(1);
+                        when(tcb.sndUna()).thenReturn(122L);
+                        when(seg.ack()).thenReturn(123L);
+                        when(tcb.sndNxt()).thenReturn(124L);
+                        when(config.clock().time()).thenReturn(111L);
+                        when(tcb.sRtt()).thenReturn(21d);
+                        when(config.clock().g()).thenReturn(0.001);
+                        when(config.k()).thenReturn(4);
+                        when(tcb.rcvNxt()).thenReturn(815L);
+                        when(tcb.sndTsOk()).thenReturn(true);
+                        when(tcb.config()).thenReturn(config);
+                        when(tcb.iss()).thenReturn(122L);
+                        when(tcb.mss()).thenReturn(1500);
+
+                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                        handler.channelRead(ctx, seg);
+                        handler.channelReadComplete(ctx);
 
                         // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
                         // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
+                        verify(tcb).bla_rcvNxt(815L);
+                        verify(tcb).bla_irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
+                        verify(tcb).sndUna(123L);
 
                         // RFC 9293: and any segments on the retransmission queue that are thereby
                         // RFC 9293: acknowledged should be removed.
+                        verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
                         // RFC 7323: Check for a TSopt option;
-
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
+                        verify(tcb).bla_tsRecent(214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
+                        verify(tcb).turnOnSndTsOk();
 
                         // RFC 7323: If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
+                        verify(tcb).bla_sRtt(21);
+
                         // RFC 6298:       RTTVAR <- R/2
+                        verify(tcb).bla_rttVar(10.5);
+
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        // RFC 6298: where K = 4
+                        verify(tcb).rto(21);
 
                         // RFC 9293: Otherwise, enter SYN-RECEIVED,
+                        assertEquals(SYN_RECEIVED, handler.state);
 
                         // RFC 9293: form a SYN,ACK segment
                         // RFC 9293: <SEQ=ISS><ACK=RCV.NXT><CTL=SYN,ACK>
                         // RFC 9293: and send it.
+                        verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                        final Segment response = segmentCaptor.getValue();
+                        assertThat(response, allOf(seq(122L), ack(815L), ctl(SYN, ACK), mss(1500), tsOpt(111, 2)));
 
                         // RFC 9293: Set the variables:
                         // RFC 9293: SND.WND <- SEG.WND
                         // RFC 9293: SND.WL1 <- SEG.SEQ
                         // RFC 9293: SND.WL2 <- SEG.ACK
+                        verify(tcb).updateSndWnd(any(), any());
+
+                        verify(seg).release();
                     }
                 }
             }
@@ -2824,116 +2900,520 @@ class ReliableTransportHandlerTest {
                         })
                         void shouldRejectSegmentAndSendAcknowledgementWithExpectedSeq(final State state) {
                             when(config.timestamps()).thenReturn(true);
-                            when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(1, 2));
-                            when(tcb.tsRecent()).thenReturn(2L);
+                            when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(20, 30));
+                            when(tcb.tsRecent()).thenReturn(25L);
+                            when(seg.isRst()).thenReturn(false);
+                            when(tcb.sndNxt()).thenReturn(122L);
+                            when(tcb.rcvNxt()).thenReturn(815L);
+                            when(tcb.sndTsOk()).thenReturn(true);
+                            when(tcb.config()).thenReturn(config);
+                            when(config.clock().time()).thenReturn(414L);
+                            when(tcb.tsRecent()).thenReturn(99L);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
 
                             // RFC 7323: If SEG.TSval < TS.Recent and the RST bit is off:
-                        }
+                            // RFC 7323: else the segment is not acceptable; follow the steps below
+                            // RFC 7323: for an unacceptable segment.
 
-                        @ParameterizedTest
-                        @EnumSource(value = State.class, names = {
-                                "SYN_RECEIVED",
-                                "ESTABLISHED",
-                                "FIN_WAIT_1",
-                                "FIN_WAIT_2",
-                                "CLOSE_WAIT",
-                                "CLOSING",
-                                "LAST_ACK",
-                                "TIME_WAIT"
-                        })
-                        void name2(final State state) {
-                            // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
-                            // RFC 7323: then save SEG.TSval in variable TS.Recent.
-                        }
+                            // RFC 9293: If an incoming segment is not acceptable, an acknowledgment should
+                            // RFC 9293: be sent in reply (unless the RST bit is set, if so drop the segment
+                            // RFC 9293: and return):
+                            // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                            // RFC 7323: If the Snd.TS.OK bit is on, include the Timestamps option
+                            // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            final Segment response = segmentCaptor.getValue();
+                            assertThat(response, allOf(seq(122L), ack(815L), ctl(ACK), tsOpt(414, 99)));
 
-
-                        @ParameterizedTest
-                        @EnumSource(value = State.class, names = {
-                                "SYN_RECEIVED",
-                                "ESTABLISHED",
-                                "FIN_WAIT_1",
-                                "FIN_WAIT_2",
-                                "CLOSE_WAIT",
-                                "CLOSING",
-                                "LAST_ACK",
-                                "TIME_WAIT"
-                        })
-                        void name3(final State state) {
-                            // RFC 9293: There are four cases for the acceptability test for an incoming
-                            // RFC 9293: segment:
-                            // RFC 9293: Segment Length Receive Window  Test
-                            // RFC 9293: 0              0               SEG.SEQ = RCV.NXT
-                        }
-
-                        @ParameterizedTest
-                        @EnumSource(value = State.class, names = {
-                                "SYN_RECEIVED",
-                                "ESTABLISHED",
-                                "FIN_WAIT_1",
-                                "FIN_WAIT_2",
-                                "CLOSE_WAIT",
-                                "CLOSING",
-                                "LAST_ACK",
-                                "TIME_WAIT"
-                        })
-                        void name4(final State state) {
-                            // RFC 9293: There are four cases for the acceptability test for an incoming
-                            // RFC 9293: segment:
-                            // RFC 9293: Segment Length Receive Window  Test
-                            // RFC 9293: 0              >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-                        }
-
-                        @ParameterizedTest
-                        @EnumSource(value = State.class, names = {
-                                "SYN_RECEIVED",
-                                "ESTABLISHED",
-                                "FIN_WAIT_1",
-                                "FIN_WAIT_2",
-                                "CLOSE_WAIT",
-                                "CLOSING",
-                                "LAST_ACK",
-                                "TIME_WAIT"
-                        })
-                        void name5(final State state) {
-                            // RFC 9293: There are four cases for the acceptability test for an incoming
-                            // RFC 9293: segment:
-                            // RFC 9293: Segment Length Receive Window  Test
-                            // RFC 9293: >0             0               not acceptable
-                        }
-
-                        @ParameterizedTest
-                        @EnumSource(value = State.class, names = {
-                                "SYN_RECEIVED",
-                                "ESTABLISHED",
-                                "FIN_WAIT_1",
-                                "FIN_WAIT_2",
-                                "CLOSE_WAIT",
-                                "CLOSING",
-                                "LAST_ACK",
-                                "TIME_WAIT"
-                        })
-                        void name6(final State state) {
-                            // RFC 9293: There are four cases for the acceptability test for an incoming
-                            // RFC 9293: segment:
-                            // RFC 9293: Segment Length Receive Window  Test
-                            // RFC 9293: >0             >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
-                            // RFC 9293:                                or
-                            // RFC 9293:                                RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
+                            // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
+                            verify(tcb).lastAckSent(815L);
                         }
                     }
                 }
 
                 @Nested
-                class CheckRstBit {}
+                class CheckRstBit {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isRst()).thenReturn(true);
+                    }
+
+                    @Nested
+                    class BlindResetAttackDetection {
+                        @Test
+                        void shouldDiscardIfSeqIsOutsideReceiveWindow() {
+                            when(tcb.rcvNxt()).thenReturn(122L);
+                            when(seg.seq()).thenReturn(222L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: 1)    If the RST bit is set and the sequence number is outside the current
+                            // RFC 9293:       receive window, silently drop the segment.
+                            verify(tcb, never()).send(any(), any());
+                            verify(seg).release();
+                        }
+
+                        @Test
+                        void shouldPassIfSeqMatchesExpectedNumber() {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: 2)    If the RST bit is set and the sequence number exactly matches the
+                            // RFC 9293:       next expected sequence number (RCV.NXT), then TCP endpoints MUST
+                            // RFC 9293:       reset the connection in the manner prescribed below according to the
+                            // RFC 9293:        connection state.
+                            assertEquals(CLOSED, handler.state);
+                            verify(seg).release();
+                        }
+
+                        @Test
+                        void shouldSendChallengeAckIfSeqIsWithinWindow() {
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvNxt()).thenReturn(122L);
+                            when(seg.seq()).thenReturn(124L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: 3)    If the RST bit is set and the sequence number does not exactly match
+                            // RFC 9293:       the next expected sequence value, yet is within the current receive
+                            // RFC 9293:       window, TCP endpoints MUST send an acknowledgment (challenge ACK):
+                            // RFC 9293:       <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            final Segment response = segmentCaptor.getValue();
+                            assertThat(response, allOf(seq(88L), ack(122L), ctl(ACK)));
+
+                            verify(seg).release();
+                        }
+                    }
+
+                    @Nested
+                    class InSynReceivedState {
+                        @Test
+                        void shouldChangeBackToListenStateIfPassiveOpenIsUsed() {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(config.activeOpen()).thenReturn(false);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: If this connection was initiated with a passive OPEN (i.e.,
+                            // RFC 9293: came from the LISTEN state), then return this connection to
+                            // RFC 9293: LISTEN state
+                            assertEquals(LISTEN, handler.state);
+
+                            // RFC 9293: In either case, the retransmission queue should be flushed.
+                            verify(tcb.retransmissionQueue()).flush();
+
+                            verify(seg).release();
+                        }
+
+                        @Test
+                        void shouldCloseConnectionIfActiveOpenIsUsed() {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(config.activeOpen()).thenReturn(true);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: If this connection was initiated with an active OPEN (i.e.,
+                            // RFC 9293: came from SYN-SENT state), then the connection was refused;
+                            // RFC 9293: signal the user "connection refused".
+                            verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+
+                            // RFC 9293: In either case, the retransmission queue should be flushed.
+                            verify(tcb.retransmissionQueue()).flush();
+
+                            // RFC 9293: And in the active OPEN case, enter the CLOSED state
+                            assertEquals(CLOSED, handler.state);
+
+                            verify(tcb).delete();
+
+                            verify(seg).release();
+                        }
+                    }
+
+                    @Nested
+                    class InEstablishedAndFinWait1AndFinWait2AndCloseWaitState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT"
+                        })
+                        void shouldCloseConnection(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // FIXME:
+                            //  RFC 9293: If the RST bit is set, then any outstanding RECEIVEs and SEND
+                            //  RFC 9293: should receive "reset" responses.
+                            verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+
+                            // RFC 9293: All segment queues should be flushed.
+                            verify(tcb.retransmissionQueue()).flush();
+
+                            // RFC 9293: Users should also receive an unsolicited general
+                            // RFC 9293: "connection reset" signal.
+                            verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+
+                            // RFC 9293: Enter the CLOSED state, delete the TCB
+                            assertEquals(CLOSED, handler.state);
+
+                            // RFC 9293: delete the TCB,
+                            verify(tcb).delete();
+
+                            verify(seg).release();
+                        }
+                    }
+
+                    @Nested
+                    class InClosingAndLastAckAndTimeWaitState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void shouldCloseConnection(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: If the RST bit is set, then enter the CLOSED state,
+                            assertEquals(CLOSED, handler.state);
+
+                            // RFC 9293: delete the TCB,
+                            verify(tcb).delete();
+
+                            verify(seg).release();
+                        }
+                    }
+                }
 
                 @Nested
-                class CheckSynBit {}
+                class CheckSynBit {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isSyn()).thenReturn(true);
+                    }
+
+                    @Nested
+                    class InSynReceivedState {
+                        @Test
+                        void shouldSwitchToListenState() {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(config.activeOpen()).thenReturn(false);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: If the connection was initiated with a passive OPEN, then
+                            // RFC 9293: return this connection to the LISTEN state and return.
+                            assertEquals(LISTEN, handler.state);
+
+                            verify(seg).release();
+                        }
+                    }
+
+                    @Nested
+                    class ForAnySynchronizedState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2",
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                "LAST_ACK",
+                                "TIME_WAIT"
+                        })
+                        void shouldSendChallengeAck(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.sndNxt()).thenReturn(88L);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: If the SYN bit is set in these synchronized states, it may be
+                            // RFC 9293: either a legitimate new connection attempt (e.g., in the case
+                            // RFC 9293: of TIME-WAIT), an error where the connection should be reset,
+                            // RFC 9293: or the result of an attack attempt, as described in
+                            // RFC 9293: RFC 5961 [9]. For the TIME-WAIT state, new connections can be
+                            // RFC 9293: accepted if the Timestamp Option is used and meets expectations
+                            // RFC 9293: (per [40]). For all other cases, RFC 5961 provides a mitigation
+                            // RFC 9293: with applicability to some situations, though there are also
+                            // RFC 9293: alternatives that offer cryptographic protection (see
+                            // RFC 9293: Section 7). RFC 5961 recommends that in these synchronized
+                            // RFC 9293: states, if the SYN bit is set, irrespective of the sequence
+                            // RFC 9293: number, TCP endpoints MUST send a "challenge ACK" to the remote
+                            // RFC 9293: peer:
+                            // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            final Segment response = segmentCaptor.getValue();
+                            assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
+
+                            verify(seg).release();
+                        }
+                    }
+                }
 
                 @Nested
-                class CheckAckBit {}
+                class CheckAckBit {
+                    @Nested
+                    class AckBitOff {
+                        @BeforeEach
+                        void setUp() {
+                            when(seg.isAck()).thenReturn(false);
+                        }
+
+                        @Test
+                        void shouldDropSegment() {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.sndNxt()).thenReturn(88L);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: if the ACK bit is off,
+                            // RFC 9293: drop the segment
+                            verify(tcb, never()).send(any(), any());
+
+                            verify(seg).release();
+                        }
+                    }
+
+                    @Nested
+                    class AckBitOn {
+                        @BeforeEach
+                        void setUp() {
+                            when(seg.isAck()).thenReturn(true);
+                        }
+
+                        @Nested
+                        class BlindDataInjectionAttackDetection {
+                            @Test
+                            void shouldDiscardSegAndSendAck() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.sndNxt()).thenReturn(88L);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: RFC 5961 [9], Section 5 describes a potential blind data injection attack,
+                                // RFC 9293: and mitigation that implementations MAY choose to include (MAY-12). TCP
+                                // RFC 9293: stacks that implement RFC 5961 MUST add an input check that the ACK value
+                                // RFC 9293: is acceptable only if it is in the range of
+                                // RFC 9293: ((SND.UNA - MAX.SND.WND) =< SEG.ACK =< SND.NXT).
+
+                                // RFC 9293: All incoming segments whose ACK value doesn't satisfy the above
+                                // RFC 9293: condition MUST be discarded
+                                verify(seg).release();
+
+                                // RFC 9293: and an ACK sent back.
+                                verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                                final Segment response = segmentCaptor.getValue();
+                                assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
+                            }
+                        }
+
+                        @Nested
+                        class InSynReceivedState {
+                            @Test
+                            void shouldEstablishConnectionWhenAckIsAcceptable() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(88L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
+                                assertEquals(ESTABLISHED, handler.state);
+
+                                // RFC 9293: and continue processing with the variables below set to:
+                                // RFC 9293: SND.WND <- SEG.WND
+                                // RFC 9293: SND.WL1 <- SEG.SEQ
+                                // RFC 9293: SND.WL2 <- SEG.ACK
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                verify(seg).release();
+                            }
+
+                            @Test
+                            void shouldResetIfAckIsNotAcceptable() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(88L);
+                                when(tcb.sndNxt()).thenReturn(88L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If the segment acknowledgment is not acceptable, form a
+                                // RFC 9293: reset segment
+                                // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
+                                // RFC 9293: and send it.
+                                verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                                final Segment response = segmentCaptor.getValue();
+                                assertThat(response, allOf(seq(88L), ctl(RST)));
+
+                                verify(seg).release();
+                            }
+                        }
+
+                        @Nested
+                        class InEstablishedState {
+                            // FIXME
+                        }
+
+                        @Nested
+                        class InFinWait1State {
+                            // FIXME
+                        }
+
+                        @Nested
+                        class InFinWait2State {
+                            // FIXME
+                        }
+
+                        @Nested
+                        class InCloseWaitState {
+                            // FIXME
+                        }
+
+                        @Nested
+                        class InClosingState {
+                            // FIXME
+                        }
+
+                        @Nested
+                        class InLastAckState {
+                            @Test
+                            void shouldCloseConnection() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(88L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, LAST_ACK, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: The only thing that can arrive in this state is an acknowledgment
+                                // RFC 9293: of our FIN. If our FIN is now acknowledged,
+
+                                // RFC 9293: delete the TCB,
+                                verify(tcb).delete();
+
+                                // RFC 9293: enter the CLOSED state,
+                                assertEquals(CLOSED, handler.state);
+
+                                verify(seg).release();
+                            }
+                        }
+
+                        @Nested
+                        class InTimeWaitState {
+                            @Test
+                            void shouldAcknowledge() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(88L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, TIME_WAIT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: The only thing that can arrive in this state is a retransmission
+                                // RFC 9293: of the remote FIN. Acknowledge it,
+                                verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                                final Segment response = segmentCaptor.getValue();
+                                assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
+
+                                // FIXME:
+                                //  RFC 9293: and restart the 2 MSL timeout.
+
+                                verify(seg).release();
+                            }
+                        }
+                    }
+                }
 
                 @Nested
-                class CheckData {}
+                class CheckData {
+
+                }
 
                 @Nested
                 class CheckFinBit {}
