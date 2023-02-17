@@ -1878,7 +1878,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    if (seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt)) {
+                    if (lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt)) {
                         // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
 
@@ -1894,7 +1894,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     }
                     else {
                         // RFC 9293: otherwise, enter the CLOSING state.
-                        // RFC 9293: our FIN has been acknowledged
                         changeState(ctx, CLOSING);
                     }
                     break;
@@ -2009,7 +2008,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
         // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
         // RFC 9293: response).
-        tcb.retransmissionQueue.removeAcknowledged(ctx, tcb);
+        tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (isDuplicate) {
             // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
@@ -2019,7 +2018,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             return false;
         }
 
-        if (greaterThan(ack.ack(), tcb.sndNxt)) {
+        if (greaterThan(ack.ack(), tcb.sndNxt())) {
             // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
             LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), ack);
 
@@ -2064,13 +2063,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                     // Slow Start -> +1 SMSS after each ACK
                     final long increment = NumberUtil.min(tcb.smss(), ackedBytes);
-                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
                     tcb.cwnd += increment;
                 }
                 else {
                     // Congestion Avoidance -> +1 SMSS after each RTT
-                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd);
-                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd, tcb.cwnd + increment);
+                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd());
+                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
                     tcb.cwnd += increment;
                 }
             }

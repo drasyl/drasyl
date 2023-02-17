@@ -1710,7 +1710,7 @@ class ReliableTransportHandlerTest {
             @Nested
             class UserCallOpen {
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void withPassiveOpen() {
                         final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
@@ -1773,7 +1773,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InListenState {
+                class OnListenState {
                     @Test
                     void shouldChangeFromPassiveToActive() {
                         final long iss = 123L;
@@ -1810,7 +1810,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InAnyOtherState {
+                class OnAnyOtherState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "SYN_SENT",
@@ -1842,7 +1842,7 @@ class ReliableTransportHandlerTest {
                 ChannelPromise promise;
 
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void shouldFailPromise() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -1857,7 +1857,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InListenState {
+                class OnListenState {
                     @Test
                     void shouldChangeFromPassiveToActive(@Mock final SendBuffer sendBuffer) {
                         final long iss = 123L;
@@ -1899,7 +1899,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InSynSentAndSynReceivedState {
+                class OnSynSentAndSynReceivedState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "SYN_SENT",
@@ -1920,7 +1920,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InEstablishedAndCloseWaitState {
+                class OnEstablishedAndCloseWaitState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "ESTABLISHED",
@@ -1956,7 +1956,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InAnyOtherState {
+                class OnAnyOtherState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "FIN_WAIT_1",
@@ -1997,7 +1997,7 @@ class ReliableTransportHandlerTest {
             @Nested
             class UserCallReceive {
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void shouldDoNothing() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2010,7 +2010,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InListenAndSynSentAndSynReceivedState {
+                class OnListenAndSynSentAndSynReceivedState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "LISTEN",
@@ -2029,7 +2029,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InEstablishedAndFinWait1AndFinWait2State {
+                class OnEstablishedAndFinWait1AndFinWait2State {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "ESTABLISHED",
@@ -2058,7 +2058,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InCloseWaitState {
+                class OnCloseWaitState {
                     @Test
                     void shouldPassReceivedDataToUser() {
                         when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
@@ -2075,7 +2075,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InClosingAndLastAckAndTimeWaitState {
+                class OnClosingAndLastAckAndTimeWaitState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "CLOSING",
@@ -2101,7 +2101,7 @@ class ReliableTransportHandlerTest {
                 ChannelPromise promise;
 
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void shouldConnectPromiseToClosedPromise() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2113,7 +2113,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InListenState {
+                class OnListenState {
                     @Test
                     void shouldCloseConnection() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2135,7 +2135,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InSynSentState {
+                class OnSynSentState {
                     @Test
                     void shouldCloseConnection() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2157,7 +2157,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InSynReceivedState {
+                class OnSynReceivedState {
                     @Test
                     void shouldCloseConnectionIfNoDataIsOutstanding() {
                         when(tcb.sendBuffer().hasOutstandingData()).thenReturn(false);
@@ -2194,7 +2194,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InEstablishedState {
+                class OnEstablishedState {
                     @Test
                     void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2213,7 +2213,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InFinWait1AndFinWait2State {
+                class OnFinWait1AndFinWait2State {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "FIN_WAIT_1",
@@ -2234,7 +2234,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InCloseWaitState {
+                class OnCloseWaitState {
                     @Test
                     void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2250,7 +2250,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InClosingAndLastAckAndTimeWaitState {
+                class OnClosingAndLastAckAndTimeWaitState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "CLOSING",
@@ -2286,7 +2286,7 @@ class ReliableTransportHandlerTest {
             @Nested
             class UserCallAbort {
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void shouldThrowException() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2296,7 +2296,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InListenState {
+                class OnListenState {
                     @Test
                     void shouldCloseConnection() throws ClosedChannelException {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2316,7 +2316,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InSynSentState {
+                class OnSynSentState {
                     @Test
                     void shouldCloseConnection() throws ClosedChannelException {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2336,7 +2336,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InSynReceivedAndEstablishedAndFinWait1AndFinWait2AndCloseWaitState {
+                class OnSynReceivedAndEstablishedAndFinWait1AndFinWait2AndCloseWaitState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "SYN_RECEIVED",
@@ -2374,7 +2374,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InClosingAndLastAckAndTimeWaitState {
+                class OnClosingAndLastAckAndTimeWaitState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "CLOSING",
@@ -2401,7 +2401,7 @@ class ReliableTransportHandlerTest {
             @Nested
             class UserCallStatus {
                 @Nested
-                class InClosedState {
+                class OnClosedState {
                     @Test
                     void shouldThrowException() {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2411,7 +2411,7 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class InAnyOtherState {
+                class OnAnyOtherState {
                     @ParameterizedTest
                     @EnumSource(value = State.class, names = {
                             "LISTEN",
@@ -2442,7 +2442,7 @@ class ReliableTransportHandlerTest {
             Segment seg;
 
             @Nested
-            class InClosedState {
+            class OnClosedState {
                 @Test
                 void shouldDiscardRst() {
                     when(seg.isRst()).thenReturn(true);
@@ -2501,7 +2501,7 @@ class ReliableTransportHandlerTest {
             }
 
             @Nested
-            class InListenState {
+            class OnListenState {
                 @Nested
                 class CheckRstBit {
                     @Test
@@ -2598,7 +2598,7 @@ class ReliableTransportHandlerTest {
             }
 
             @Nested
-            class InSynSentState {
+            class OnSynSentState {
                 @Nested
                 class CheckAckBit {
                     @BeforeEach
@@ -2882,7 +2882,7 @@ class ReliableTransportHandlerTest {
             }
 
             @Nested
-            class InAnyOtherState {
+            class OnAnyOtherState {
                 @Nested
                 class CheckSeq {
                     @Nested
@@ -3005,7 +3005,7 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Nested
-                    class InSynReceivedState {
+                    class OnSynReceivedState {
                         @Test
                         void shouldChangeBackToListenStateIfPassiveOpenIsUsed() {
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -3059,7 +3059,7 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Nested
-                    class InEstablishedAndFinWait1AndFinWait2AndCloseWaitState {
+                    class OnEstablishedAndFinWait1AndFinWait2AndCloseWaitState {
                         @ParameterizedTest
                         @EnumSource(value = State.class, names = {
                                 "ESTABLISHED",
@@ -3100,7 +3100,7 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Nested
-                    class InClosingAndLastAckAndTimeWaitState {
+                    class OnClosingAndLastAckAndTimeWaitState {
                         @ParameterizedTest
                         @EnumSource(value = State.class, names = {
                                 "CLOSING",
@@ -3136,7 +3136,7 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Nested
-                    class InSynReceivedState {
+                    class OnSynReceivedState {
                         @Test
                         void shouldSwitchToListenState() {
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -3272,7 +3272,7 @@ class ReliableTransportHandlerTest {
                         }
 
                         @Nested
-                        class InSynReceivedState {
+                        class OnSynReceivedState {
                             @Test
                             void shouldEstablishConnectionWhenAckIsAcceptable() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
@@ -3326,32 +3326,32 @@ class ReliableTransportHandlerTest {
                         }
 
                         @Nested
-                        class InEstablishedState {
+                        class OnEstablishedState {
                             // FIXME
                         }
 
                         @Nested
-                        class InFinWait1State {
+                        class OnFinWait1State {
                             // FIXME
                         }
 
                         @Nested
-                        class InFinWait2State {
+                        class OnFinWait2State {
                             // FIXME
                         }
 
                         @Nested
-                        class InCloseWaitState {
+                        class OnCloseWaitState {
                             // FIXME
                         }
 
                         @Nested
-                        class InClosingState {
+                        class OnClosingState {
                             // FIXME
                         }
 
                         @Nested
-                        class InLastAckState {
+                        class OnLastAckState {
                             @Test
                             void shouldCloseConnection() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
@@ -3380,7 +3380,7 @@ class ReliableTransportHandlerTest {
                         }
 
                         @Nested
-                        class InTimeWaitState {
+                        class OnTimeWaitState {
                             @Test
                             void shouldAcknowledge() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
@@ -3416,238 +3416,148 @@ class ReliableTransportHandlerTest {
                 }
 
                 @Nested
-                class CheckFinBit {}
-            }
+                class CheckFinBit {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isAck()).thenReturn(true);
+                        when(seg.isFin()).thenReturn(true);
+                    }
 
-            @Nested
-            class OnSynSentState {
-                @Test
-                @Disabled
-                void shouldResetConnectionOnResetSegment() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, new TransmissionControlBlock(config, channel, 100L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                    @Nested
+                    class OnClosingAndLastAckAndTimeWaitState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "CLOSED",
+                                "LISTEN",
+                                "SYN_SENT"
+                        })
+                        void shouldNotProcessFin(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(seg.ack()).thenReturn(88L);
+                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvWnd()).thenReturn(10);
 
-                    assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(1, 101)));
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
-                    channel.close();
-                }
-            }
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
 
-            @Disabled
-            @Nested
-            class OnSynReceivedState {
-                @Test
-                void shouldCloseConnectionIfPeerResetsConnectionAndWeAreInActiveOpenMode() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, new TransmissionControlBlock(config, channel, 100L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            // RFC 9293: Do not process the FIN if the state is CLOSED, LISTEN, or SYN-SENT
+                            // RFC 9293: since the SEG.SEQ cannot be validated;
+                            assertEquals(state, handler.state);
 
-                    assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(Segment.rstAck(100, 101)));
+                            // RFC 9293: drop the segment and return.
+                            verify(seg).release();
+                        }
+                    }
 
-                    channel.close();
-                }
+                    @Nested
+                    class OnSynReceivedAndEstablishedState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "SYN_RECEIVED",
+                                "ESTABLISHED"
+                        })
+                        void shouldChangeToCloseWait(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(seg.ack()).thenReturn(88L);
+                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvWnd()).thenReturn(10);
 
-                @Test
-                void shouldReturnToListenStateIfPeerResetsConnectionAndWeAreInPassiveOpenMode() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .issSupplier(() -> 100)
-                            .activeOpen(false)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, new TransmissionControlBlock(config, channel, 100L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
-                    channel.writeInbound(Segment.rstAck(100, 101));
-                    assertEquals(LISTEN, handler.state);
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
 
-                    channel.close();
-                }
+                            // RFC 9293: If the FIN bit is set, signal the user "connection closing"
+                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
 
-                @Test
-                @Disabled
-                void shouldResetConnectionIfPeerSentNotAcceptableSegment() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(true)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, new TransmissionControlBlock(config, channel, 101L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            // RFC 9293: advance RCV.NXT over the FIN,
+                            verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
-                    channel.writeInbound(Segment.ack(100, 101));
-                    assertThat(channel.readOutbound(), allOf(ctl(RST), seq(101)));
+                            // RFC 9293: and send an acknowledgment for the FIN.
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            final Segment response = segmentCaptor.getValue();
+                            assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
-                    channel.close();
-                }
-            }
+                            // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
+                            assertFalse(handler.pushSeen);
 
-            @Nested
-            class OnEstablishedState {
-                @Test
-                void shouldPassReceivedContentWhenConnectionIsEstablished() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, channel, 110L, 111L, 100L, 50L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            // RFC 9293: Enter the CLOSE-WAIT state.
+                            assertEquals(CLOSE_WAIT, handler.state);
 
-                    final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    channel.writeInbound(Segment.pshAck(50, 110, data));
-                    assertEquals(data, channel.readInbound());
+                            verify(seg).release();
+                        }
+                    }
 
-                    channel.close();
+                    @Nested
+                    class OnFinWait1State {
+                        @Test
+                        void shouldChangeToTimeWaitIfFinHasBeenAcked() {
+                            // RFC 9293: then enter TIME-WAIT,
 
-                    data.release();
-                }
+                            // RFC 9293: start the time-wait timer,
 
-                @Test
-                void shouldIgnoreSegmentWithDuplicateAck() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, channel, 110L, 111L, 100L, 50L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            // RFC 9293: turn off the other timers;
+                        }
+                        @Test
+                        void shouldChangeToClosingIfFinHasNotBeenAcked() {
+                            // RFC 9293: otherwise, enter the CLOSING state.
+                        }
+                    }
 
-                    channel.writeInbound(Segment.ack(50, 109));
-                    assertNull(channel.readOutbound());
+                    @Nested
+                    class OnFinWait2State {
+                        @Test
+                        void shouldEnterTimeWaitState() {
+                            // RFC 9293: Enter the TIME-WAIT state.
+                            
+                            // RFC 9293: Start the time-wait timer,
+                            
+                            // RFC 9293: turn off the other timers;
+                        }
+                    }
 
-                    channel.close();
-                }
+                    @Nested
+                    class OnCloseWaitAndClosingAndLastAckState {
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "CLOSED",
+                                "LISTEN",
+                                "SYN_SENT"
+                        })
+                        void shouldRemainInState(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(seg.ack()).thenReturn(88L);
+                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvWnd()).thenReturn(10);
 
-                @Test
-                void shouldReplyWithExpectedAckIfWeGotAckSomethingNotYetSent() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, channel, 110L, 111L, 100L, 50L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
-                    final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    channel.writeInbound(Segment.pshAck(50, 200, data));
-                    assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(111), ack(50)));
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
 
-                    channel.close();
-                }
-            }
+                            // RFC 9293: remain in the state.
+                            assertEquals(state, handler.state);
+                        }
+                    }
 
-            @Nested
-            class OnClosingState {
-                @Test
-                void shouldCloseConnectionOnResetSegment() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(true)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSING, new TransmissionControlBlock(config, channel, 100L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
+                    @Nested
+                    class OnTimeWaitState {
+                        @Test
+                        void shouldRemainInStateAndRestartTimeWaitTimer(final State state) {
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, TIME_WAIT, tcb, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
-                    channel.writeInbound(Segment.rstAck(100, 101));
-                    assertFalse(channel.isOpen());
-
-                    channel.close();
-                }
-            }
-
-            @Nested
-            class OnLastAckState {
-                @Test
-                void shouldCloseConnectionOnResetSegment() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(true)
-                            .baseMss(1220 + SEG_HDR_SIZE)
-                            .rmem(1220 * 64)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSING, new TransmissionControlBlock(config, channel, 100L, 101L, 100L, 100L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
-
-                    channel.writeInbound(Segment.rstAck(100, 101));
-                    assertFalse(channel.isOpen());
-
-                    channel.close();
-                }
-            }
-
-            @Nested
-            class OnClosedState {
-                @Test
-                void shouldIgnoreResetSegmentsWhenConnectionIsClosed() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, null, null, null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
-
-                    final Segment seg = Segment.rst(1);
-                    channel.writeInbound(seg);
-                    assertNull(channel.readOutbound());
-
-                    channel.close();
-                }
-
-                @Test
-                void shouldReplyWithResetWhenConnectionIsClosed() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .issSupplier(() -> 0)
-                            .rmem(1000)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
-
-                    final Segment seg = Segment.syn(123, 64_000);
-                    channel.writeInbound(seg);
-                    assertThat(channel.readOutbound(), allOf(ctl(RST, ACK), seq(0), ack(124)));
-
-                    channel.close();
-                }
-            }
-
-            @Nested
-            class OnAnyState {
-                @Test
-                void shouldRejectInboundNonByteBufs() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .activeOpen(false)
-                            .baseMss(100 + SEG_HDR_SIZE)
-                            .rmem(1000)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, channel, 300L), null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    channel.writeInbound(buf);
-
-                    assertNull(channel.readInbound());
-                    assertEquals(0, buf.refCnt());
-
-                    channel.close();
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+                        }
+                    }
                 }
             }
         }
