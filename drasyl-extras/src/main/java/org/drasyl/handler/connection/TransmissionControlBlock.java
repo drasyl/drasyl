@@ -88,25 +88,25 @@ public class TransmissionControlBlock {
     protected long ssthresh; // slow start threshold
     // Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
-    long sndUna;
+    private long sndUna;
     // RFC 9293: SND.NXT = next sequence number to be sent
-    long sndNxt;
+    private long sndNxt;
     // congestion control
     long cwnd; // congestion window
     long lastAdvertisedWindow;
     // RFC 7323: TS.Recent = holds a timestamp to be echoed in TSecr whenever a segment is sent
-    long tsRecent;
+    private long tsRecent;
     // RFC 7323: Last.ACK.sent = holds the ACK field from the last segment sent
-    long lastAckSent;
+    private long lastAckSent;
     // RFC 7323: Snd.TS.OK = remember successfull TSopt negotiation
-    boolean sndTsOk;
+    private boolean sndTsOk;
     // RFC 6298: RTTVAR = round-trip time variation
-    double rttVar;
+    private double rttVar;
     // RFC 6298: SRTT = smoothed round-trip time
-    double sRtt;
+    private double sRtt;
     // RFC 6298: RTO = retransmission timeout
     //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
-    long rto;
+    private long rto;
     // RFC 9293: initial send sequence number
     private long iss;
     // Receive Sequence Variables
@@ -864,5 +864,21 @@ public class TransmissionControlBlock {
 
     public boolean sndTsOk() {
         return sndTsOk;
+    }
+
+    public long lastAckSent() {
+        return lastAckSent;
+    }
+
+    public long rto() {
+        return rto;
+    }
+
+    public void bla_ssthresh(final long ssthresh) {
+        this.ssthresh = ssthresh;
+    }
+
+    public void bla_cwnd(long cwnd) {
+        this.cwnd = cwnd;
     }
 }

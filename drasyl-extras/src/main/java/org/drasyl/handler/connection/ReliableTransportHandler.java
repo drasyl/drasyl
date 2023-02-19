@@ -136,6 +136,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     ReliableTransportHandler(final ReliableTransportConfig config,
                              final State state,
                              final TransmissionControlBlock tcb,
+                             final ScheduledFuture<?> userTimer,
+                             final ScheduledFuture<?> retransmissionTimer,
                              final ScheduledFuture<?> timeWaitTimer,
                              final ChannelPromise establishedPromise,
                              final ChannelPromise closedPromise,
@@ -143,6 +145,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
+        this.userTimer = userTimer;
+        this.retransmissionTimer = retransmissionTimer;
         this.timeWaitTimer = timeWaitTimer;
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
@@ -150,7 +154,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     public ReliableTransportHandler(final ReliableTransportConfig config) {
-        this(config, null, null, null, null, null, true);
+        this(config, null, null, null, null, null, null, null, true);
     }
 
     /*
@@ -842,7 +846,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case CLOSE_WAIT:
                 cancelTimeWaitTimer();
-                ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
                 break;
 
             case CLOSED:
@@ -977,10 +980,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     LOG.trace("{}[{}] RTT measurement: Set TS.Recent to SEG.TSval ({}) and turn on Snd.TS.OK.", ctx.channel(), state, segTsVal);
 
                     // RFC 7323: if one is found, save SEG.TSval in the variable TS.Recent
-                    tcb.tsRecent = segTsVal;
+                    tcb.bla_tsRecent(segTsVal);
 
                     // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block
-                    tcb.sndTsOk = true;
+                    tcb.turnOnSndTsOk();
                 }
             }
 
@@ -1014,7 +1017,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // (timestamps option is automatically added by formSegment)
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                tcb.lastAckSent = tcb.rcvNxt();
+                tcb.lastAckSent(tcb.rcvNxt());
             }
 
             LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
@@ -1213,10 +1216,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.send(ctx, response);
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                if (config.timestamps()) {
-                    // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                    tcb.lastAckSent(tcb.rcvNxt());
-                }
+                // (is automatically done by formSegment)
 
                 // RFC 9293: If there are other controls or text in the segment, then continue
                 // RFC 9293: processing at the sixth step under Section 3.10.7.4 where the URG bit
@@ -1310,7 +1310,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             // RFC 7323: for an unacceptable segment.
                             acceptableSeg = false;
                         }
-                        else if (segTsVal >= tcb.tsRecent && seg.seq() <= tcb.lastAckSent) {
+                        else if (segTsVal >= tcb.tsRecent() && seg.seq() <= tcb.lastAckSent()) {
                             // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
                             // RFC 7323: then save SEG.TSval in variable TS.Recent.
                             tcb.bla_tsRecent(segTsVal);
@@ -1364,14 +1364,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                         LOG.trace("{}[{}] We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), state, seg, response);
 
-                        if (config.timestamps()) {
-                            // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
-                            tcb.lastAckSent(response.ack());
+                        // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
+                        // (is automatically done by formSegment)
 
-                            // RFC 7323: If the Snd.TS.OK bit is on, include the Timestamps option
-                            // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
-                            // (timestamps option is automatically added by formSegment)
-                        }
+                        // RFC 7323: If the Snd.TS.OK bit is on, include the Timestamps option
+                        // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
+                        // (timestamps option is automatically added by formSegment)
 
                         tcb.send(ctx, response);
                     }
@@ -1674,7 +1672,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    final boolean ackOurFin = seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt);
+                    final boolean ackOurFin = seg.isAck() && lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
 
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
@@ -1708,7 +1706,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSING:
-                    final boolean ackOurFin2 = seg.isAck() && lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt);
+                    final boolean ackOurFin2 = seg.isAck() && lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
@@ -1723,8 +1721,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         startTimeWaitTimer(ctx);
 
                         // turn off the other timers
-                        cancelRetransmissionTimer();
                         cancelUserTimer();
+                        cancelRetransmissionTimer();
                     }
                     else {
                         // RFC 9293: otherwise, ignore the segment.
@@ -1841,17 +1839,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         // RFC 9293: Eighth, check the FIN bit:
         if (seg.isFin()) {
-            switch (state) {
-                case CLOSED:
-                case LISTEN:
-                case SYN_SENT:
-                    // RFC 9293: Do not process the FIN if the state is CLOSED, LISTEN, or SYN-SENT
-                    // RFC 9293: since the SEG.SEQ cannot be validated; drop the segment and return.
-                    // RFC 9293: we cannot validate SEG.SEQ.
-                    // RFC 9293: drop the segment
-                    // (this is handled by handler's auto release of all arrived segments)
-                    return;
-            }
+            // RFC 9293: Do not process the FIN if the state is CLOSED, LISTEN, or SYN-SENT
+            // RFC 9293: since the SEG.SEQ cannot be validated; drop the segment and return.
+            // RFC 9293: we cannot validate SEG.SEQ.
+            // RFC 9293: drop the segment
+            // (can not be reached with our implementation)
 
             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
             ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
@@ -1878,7 +1870,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    if (lessThan(tcb.sndUna, seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt)) {
+                    if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
                         LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
 
@@ -1889,8 +1881,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         startTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers;
-                        cancelRetransmissionTimer();
                         cancelUserTimer();
+                        cancelRetransmissionTimer();
                     }
                     else {
                         // RFC 9293: otherwise, enter the CLOSING state.
@@ -1906,8 +1898,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     startTimeWaitTimer(ctx);
 
                     // RFC 9293: turn off the other timers;
-                    cancelRetransmissionTimer();
                     cancelUserTimer();
+                    cancelRetransmissionTimer();
                     break;
 
                 case CLOSE_WAIT:
@@ -1917,7 +1909,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case TIME_WAIT:
-                    // RFC 9293: Remain in the TIME-WAIT state. Restart the 2 MSL time-wait timeout.
+                    // RFC 9293: Remain in the TIME-WAIT state.
+                    // RFC 9293: Restart the 2 MSL time-wait timeout.
                     startTimeWaitTimer(ctx);
                     break;
             }
@@ -1930,14 +1923,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private boolean establishedProcessing(final ChannelHandlerContext ctx,
                                           final Segment ack,
                                           final boolean acceptableAck) {
-        final boolean isDuplicate = lessThanOrEqualTo(ack.ack(), tcb.sndUna);
+        final boolean isDuplicate = lessThanOrEqualTo(ack.ack(), tcb.sndUna());
 
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), ack.ack()) && lessThanOrEqualTo(ack.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), ack, tcb.sndUna(), ack.ack(), SerialNumberArithmetic.sub(ack.ack(), tcb.sndUna(), SEQ_NO_SPACE));
-            ackedBytes = sub(ack.ack(), tcb.sndUna);
-            tcb.sndUna = ack.ack();
+            ackedBytes = sub(ack.ack(), tcb.sndUna());
+            tcb.sndUna(ack.ack());
         }
 
         // RFC 7323: Also compute a new estimate of round-trip time.
@@ -1945,7 +1938,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             final TimestampsOption tsOpt = (TimestampsOption) ack.options().get(TIMESTAMPS);
             if (tsOpt != null) {
                 final int rDash;
-                if (tcb.sndTsOk) {
+                if (tcb.sndTsOk()) {
                     // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
                     final long segTsEcr = tsOpt.tsEcr;
 
@@ -1992,14 +1985,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
                 // RFC 7323: and beta' instead:
                 // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
-                tcb.rttVar = (1 - betaDash) * tcb.rttVar + betaDash * Math.abs(tcb.sRtt - rDash);
+                tcb.bla_rttVar((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash));
                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                tcb.sRtt = (1 - alphaDash) * tcb.sRtt + alphaDash * rDash;
+                tcb.bla_sRtt((int) ((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash));
                 // RFC 7323: (for each sample R')
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                tcb.rto((long) Math.ceil(tcb.sRtt + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar)));
+                tcb.rto((long) Math.ceil(tcb.sRtt() + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
 
@@ -2119,7 +2112,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 final TimestampsOption tsOpt = new TimestampsOption(tcb.config().clock().time(), tcb.tsRecent());
                 options.put(TIMESTAMPS, tsOpt);
                 if ((ctl & ACK) != 0) {
-                    tcb.lastAckSent = ack;
+                    tcb.lastAckSent(ack);
                 }
                 LOG.trace("{}[{}] RTT measurement: {} > {}", ctx.channel(), state, tsOpt);
             }
@@ -2175,7 +2168,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
      * 3.10.8</a>.
      */
-    private void userTimeout(final ChannelHandlerContext ctx) {
+    void userTimeout(final ChannelHandlerContext ctx) {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
@@ -2208,7 +2201,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                                   final TransmissionControlBlock tcb) {
         assert retransmissionTimer == null;
 
-        final long rto = tcb.rto;
+        final long rto = tcb.rto();
         retransmissionTimer = ctx.executor().schedule(() -> retransmissionTimeout(ctx, tcb, rto), rto, MILLISECONDS);
     }
 
@@ -2217,9 +2210,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
      * 3.10.8</a>.
      */
-    private void retransmissionTimeout(ChannelHandlerContext ctx,
-                                       TransmissionControlBlock tcb,
-                                       long rto) {
+    void retransmissionTimeout(final ChannelHandlerContext ctx,
+                               final TransmissionControlBlock tcb,
+                               final long rto) {
         retransmissionTimer = null;
 
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
@@ -2231,9 +2224,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
         // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
         // RFC 6298:       to this doubling operation.
-        final long oldRto = tcb.rto;
-        tcb.rto(tcb.rto * 2);
-        LOG.trace("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto);
+        final long oldRto = tcb.rto();
+        tcb.rto(tcb.rto() * 2);
+        LOG.trace("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -2246,9 +2239,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 5681: equation (4):
         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
         final long newSsthresh = NumberUtil.max(tcb.flightSize() / 2, 2L * tcb.smss());
-        if (tcb.ssthresh != newSsthresh) {
+        if (tcb.ssthresh() != newSsthresh) {
             LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-            tcb.ssthresh = newSsthresh;
+            tcb.bla_ssthresh(newSsthresh);
         }
 
         // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
@@ -2284,7 +2277,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
      * 3.10.8</a>.
      */
-    private void timeWaitTimeout(ChannelHandlerContext ctx) {
+    void timeWaitTimeout(ChannelHandlerContext ctx) {
         timeWaitTimer = null;
 
         final long timeWaitTimeout = config.msl().multipliedBy(2).toMillis();
