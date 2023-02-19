@@ -1550,29 +1550,31 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 case CLOSING:
                 case LAST_ACK:
                 case TIME_WAIT:
-                    // RFC 9293: If the SYN bit is set in these synchronized states, it may be
-                    // RFC 9293: either a legitimate new connection attempt (e.g., in the case
-                    // RFC 9293: of TIME-WAIT), an error where the connection should be reset,
-                    // RFC 9293: or the result of an attack attempt, as described in
-                    // RFC 9293: RFC 5961 [9]. For the TIME-WAIT state, new connections can be
-                    // RFC 9293: accepted if the Timestamp Option is used and meets expectations
-                    // RFC 9293: (per [40]). For all other cases, RFC 5961 provides a mitigation
-                    // RFC 9293: with applicability to some situations, though there are also
-                    // RFC 9293: alternatives that offer cryptographic protection (see
-                    // RFC 9293: Section 7). RFC 5961 recommends that in these synchronized
-                    // RFC 9293: states, if the SYN bit is set, irrespective of the sequence
-                    // RFC 9293: number, TCP endpoints MUST send a "challenge ACK" to the remote
-                    // RFC 9293: peer:
-                    // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-                    final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-                    LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
-                    tcb.send(ctx, response);
+                    if (state.synchronizedConnection()) {
+                        // RFC 9293: If the SYN bit is set in these synchronized states, it may be
+                        // RFC 9293: either a legitimate new connection attempt (e.g., in the case
+                        // RFC 9293: of TIME-WAIT), an error where the connection should be reset,
+                        // RFC 9293: or the result of an attack attempt, as described in
+                        // RFC 9293: RFC 5961 [9]. For the TIME-WAIT state, new connections can be
+                        // RFC 9293: accepted if the Timestamp Option is used and meets expectations
+                        // RFC 9293: (per [40]). For all other cases, RFC 5961 provides a mitigation
+                        // RFC 9293: with applicability to some situations, though there are also
+                        // RFC 9293: alternatives that offer cryptographic protection (see
+                        // RFC 9293: Section 7). RFC 5961 recommends that in these synchronized
+                        // RFC 9293: states, if the SYN bit is set, irrespective of the sequence
+                        // RFC 9293: number, TCP endpoints MUST send a "challenge ACK" to the remote
+                        // RFC 9293: peer:
+                        // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                        final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+                        LOG.trace("{}[{}] We got `{}` while we're in a synchronized state. Peer might be crashed. Send challenge ACK `{}`.", ctx.channel(), state, seg, response);
+                        tcb.send(ctx, response);
 
-                    // RFC 9293: After sending the acknowledgment, TCP implementations MUST
-                    // RFC 9293: drop the unacceptable segment
-                    // (this is handled by handler's auto release of all arrived segments)
-                    // RFC 9293: and stop processing further.
-                    return;
+                        // RFC 9293: After sending the acknowledgment, TCP implementations MUST
+                        // RFC 9293: drop the unacceptable segment
+                        // (this is handled by handler's auto release of all arrived segments)
+                        // RFC 9293: and stop processing further.
+                        return;
+                    }
 
                     // RFC 9293: Note that RFC 5961 and Errata ID 4772 [99] contain additional ACK
                     // RFC 9293: throttling notes for an implementation.
@@ -2098,13 +2100,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         if (config.timestamps()) {
-            if (tcb == null && (ctl & SYN) != 0) {
-                // RFC 9293: Once TSopt has been successfully negotiated, that is both <SYN> and
-                // RFC 9293: <SYN,ACK> contain TSopt,
-                final TimestampsOption tsOpt = new TimestampsOption(tcb.config().clock().time());
-                options.put(TIMESTAMPS, tsOpt);
-            }
-            else if (tcb != null && tcb.sndTsOk()) {
+            if (tcb != null && tcb.sndTsOk()) {
                 // RFC 9293: the TSopt MUST be sent in every non-<RST> segment for the duration of
                 // RFC 9293: the connection, and SHOULD be sent in an <RST> segment (see Section 5.2
                 // RFC 9293: for details). The TCP SHOULD remember this state by setting a flag,
@@ -2115,6 +2111,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     tcb.lastAckSent(ack);
                 }
                 LOG.trace("{}[{}] RTT measurement: {} > {}", ctx.channel(), state, tsOpt);
+            }
+            else if ((ctl & SYN) != 0) {
+                // RFC 9293: Once TSopt has been successfully negotiated, that is both <SYN> and
+                // RFC 9293: <SYN,ACK> contain TSopt,
+                final TimestampsOption tsOpt = new TimestampsOption(tcb.config().clock().time());
+                options.put(TIMESTAMPS, tsOpt);
             }
         }
 
@@ -2252,7 +2254,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 5681: point congestion avoidance again takes over.
         if (tcb.cwnd() != tcb.mss()) {
             LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), tcb.mss());
-            tcb.cwnd = tcb.mss();
+            tcb.bla_cwnd(tcb.mss());
         }
     }
 

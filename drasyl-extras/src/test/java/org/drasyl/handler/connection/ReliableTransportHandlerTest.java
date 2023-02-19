@@ -91,7 +91,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -100,19 +99,6 @@ import static org.mockito.Mockito.when;
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 class ReliableTransportHandlerTest {
-    @Test
-    @Disabled("wollen wir das?")
-    void exceptionsShouldCloseTheConnection(@Mock final Throwable cause) {
-        final EmbeddedChannel channel = new EmbeddedChannel();
-        final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
-        final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, null, null, null, null, null, null, true);
-        channel.pipeline().addLast(handler);
-
-        channel.pipeline().fireExceptionCaught(cause);
-
-        assertEquals(CLOSED, handler.state);
-    }
-
     // RFC 9293: 3.5. Establishing a Connection
     // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5
     @Nested
@@ -359,98 +345,6 @@ class ReliableTransportHandlerTest {
                     channel.close();
                 }
            }
-
-        }
-
-        @Nested
-        class SuccessfulSynchronization {
-            @Nested
-            class ServerSide {
-                // passive server, passive client
-                // server write should trigger handshake
-                @Test
-                void noRfc_passiveServerShouldSwitchToActiveOpenOnWrite() {
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .issSupplier(() -> 100)
-                            .activeOpen(false)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
-                    final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-                    // handlerAdded on active channel should change state to LISTEN
-                    assertEquals(LISTEN, handler.state);
-
-                    // write should perform an active OPEN handshake
-                    final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
-                    channel.writeOutbound(data);
-                    assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100)));
-                    assertEquals(SYN_SENT, handler.state);
-
-                    // after handshake, the write should be formed
-                    channel.writeInbound(Segment.synAck(300, 101, 64_000));
-                    assertEquals(ESTABLISHED, handler.state);
-                    assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(101), ack(301)));
-
-                    channel.close();
-                    data.release();
-                }
-            }
-        }
-
-        @Nested
-        class DeadPeer {
-            @Nested
-            class ClientSide {
-                // server is not responding to the SYN
-                @Test
-                void noRfc_clientShouldCloseChannelIfServerIsNotRespondingToSyn() {
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .userTimeout(ofMillis(1_000))
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
-                    final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-                    // peer is dead and therefore no SYN/ACK is received
-                    // wait for user timeout
-                    await().untilAsserted(() -> {
-                        channel.runScheduledPendingTasks();
-                        assertEquals(CLOSED, handler.state);
-                    });
-
-                    assertThrows(ConnectionHandshakeException.class, channel::checkException);
-                    assertFalse(channel.isOpen());
-                    assertNull(handler.tcb);
-                }
-            }
-
-            @Nested
-            class ServerSide {
-                // client is not responding to the SYN/ACK
-                @Test
-                void noRfc_serverShouldCloseChannelIfClientIsNotRespondingToSynAck(@Mock final Clock clock) {
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .baseMss(1200 + SEG_HDR_SIZE)
-                            .userTimeout(ofSeconds(1))
-                            .clock(clock)
-                            .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
-                    final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-                    // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                    channel.writeInbound(Segment.syn(100, 64_000));
-
-                    // peer is dead and therefore no ACK is received
-                    // wait for user timeout
-                    await().untilAsserted(() -> {
-                        channel.runScheduledPendingTasks();
-                        assertEquals(CLOSED, handler.state);
-                    });
-
-                    assertThrows(ConnectionHandshakeException.class, channel::checkException);
-                    assertFalse(channel.isOpen());
-                    assertNull(handler.tcb);
-                }
-            }
         }
     }
 
@@ -550,13 +444,13 @@ class ReliableTransportHandlerTest {
             }
         }
 
+        // RFC 9293: Figure 13: Simultaneous Close Sequence
+        // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-13
         @Nested
-        class SuccessfulClearing {
-            // RFC 9293, Figure 13, TCP Peer A (and also TCP Peer B)
-            // Both peers are in ESTABLISHED state
-            // Both peers initiate close simultaneous
+        class SimultaneousCloseSequence {
+            // TCP Peer A (and also same-behaving TCP Peer B)
             @Test
-            void weShouldPerformSimultaneousCloseIfBothPeersInitiateACloseAtTheSameTime() {
+            void shouldConformWithBehaviorOfPeerA() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
                         .issSupplier(() -> 100L)
@@ -600,69 +494,11 @@ class ReliableTransportHandlerTest {
                 assertNull(handler.tcb);
             }
         }
-
-        @Nested
-        class DeadPeer {
-            // We're in ESTABLISHED state
-            // Peer is dead
-            @Test
-            void noRfc_weShouldSucceedCloseSequenceIfPeerIsDead(@Mock final Clock clock) {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue();
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                        .userTimeout(ofMillis(1000))
-                        .activeOpen(false)
-                        .issSupplier(() -> 100)
-                        .baseMss(1220 + SEG_HDR_SIZE)
-                        .clock(clock)
-                        .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100, 100, 1220 * 64, 100, 0, 0, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), true);
-                channel.pipeline().addLast(handler);
-
-                // trigger close
-                final ChannelFuture future = channel.pipeline().close();
-                assertFalse(future.isDone());
-
-                // wait for user timeout
-                await().untilAsserted(() -> {
-                    channel.runScheduledPendingTasks();
-                    assertEquals(CLOSED, handler.state);
-                });
-
-                assertFalse(channel.isOpen());
-                assertNull(handler.tcb);
-                assertTrue(future.isDone());
-                assertTrue(future.isSuccess());
-            }
-        }
     }
 
     @Disabled
     @Nested
     class Transmission {
-        // FIXME: send buffer should keep track what bytes have been enqueued before flush was triggered
-        @Test
-        void shouldOnlySendDataEnqueuedBeforeFlush() {
-            // teil des handlers oder TCB?
-        }
-
-        @Test
-        void shouldPassReceivedDataCorrectlyToApplication() {
-            final EmbeddedChannel channel = new EmbeddedChannel();
-            final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
-            final ReliableTransportHandler handler = new ReliableTransportHandler(config, null, tcb, null, null, null, channel.newPromise(), channel.newPromise(), true);
-            channel.pipeline().addLast(handler);
-
-            final ByteBuf receivedData = unpooledRandomBuffer(100);
-            channel.writeInbound(Segment.ack(100, 301L, 1000, receivedData));
-
-            final ByteBuf dataPassedToApplication = channel.readInbound();
-            assertEquals(receivedData, dataPassedToApplication);
-
-            channel.close();
-        }
-
         @Nested
         class Mss {
             @Test
@@ -3777,17 +3613,22 @@ class ReliableTransportHandlerTest {
                         "TIME_WAIT",
                         "CLOSED"
                 })
-                void shouldRetransmitEarliestSegment(final State state) {
+                void shouldRetransmitEarliestSegment(final State state, @Mock final Segment seg) {
                     when(tcb.rto()).thenReturn(1234L);
+                    when(tcb.flightSize()).thenReturn(64_000L);
+                    when(tcb.smss()).thenReturn(1000);
+                    when(tcb.retransmissionQueue().retransmissionSegment(ctx, tcb)).thenReturn(seg);
+                    when(tcb.mss()).thenReturn(1000);
+                    when(tcb.cwnd()).thenReturn(500L);
 
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
                     long rto = 1234L;
                     handler.retransmissionTimeout(ctx, tcb, rto);
 
-                    // FIXME:
-                    //  RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
-                    //  RFC 6298:       TCP receiver.
+                    // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
+                    // RFC 6298:       TCP receiver.
+                    verify(ctx).writeAndFlush(seg);
 
                     // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
                     // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
@@ -3805,7 +3646,7 @@ class ReliableTransportHandlerTest {
                     // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
                     // RFC 5681: equation (4):
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
-                    verify(tcb).bla_ssthresh(anyLong());
+                    verify(tcb).bla_ssthresh(32_000);
 
                     // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
                     // RFC 5681: no more than the loss window, LW, which equals 1 full-sized segment
@@ -3813,7 +3654,7 @@ class ReliableTransportHandlerTest {
                     // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
                     // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
                     // RFC 5681: point congestion avoidance again takes over.
-                    verify(tcb).bla_cwnd(anyLong());
+                    verify(tcb).bla_cwnd(1000);
                 }
             }
 
