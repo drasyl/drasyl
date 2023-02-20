@@ -231,7 +231,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     public void channelInactive(final ChannelHandlerContext ctx) {
         if (tcb != null) {
             tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
-            tcb.retransmissionQueue().flush();
+            tcb.retransmissionQueue().release();
         }
         deleteTcb();
         ctx.fireChannelInactive();
@@ -585,8 +585,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case LISTEN:
                 // RFC 9293: Any outstanding RECEIVEs are returned with "error: closing" responses.
-                tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
-                tcb.retransmissionQueue().flush();
+                // (not applicable to us)
 
                 // RFC 9293: Delete TCB,
                 deleteTcb();
@@ -600,9 +599,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
                 // RFC 9293: Delete the TCB
-                // RFC 9293: and return "error: closing" responses to any queued SENDs, or RECEIVEs.
+                // RFC 9293: and return "error: closing" responses to any queued SENDs,
                 tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
-                tcb.retransmissionQueue().flush();
+                tcb.retransmissionQueue().release();
+                // RFC 9293: or RECEIVEs.
+                // (not applicable to us)
                 // (deleteTcb must be called last)
                 deleteTcb();
 
@@ -616,7 +617,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 if (!tcb.sendBuffer().hasOutstandingData()) {
                     // RFC 9293: If no SENDs have been issued and there is no pending data to send,
                     // RFC 9293: then form a FIN segment and send it,
-                    final Segment seg = Segment.fin(tcb.sndNxt());
+                    final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
                     LOG.trace("{}[{}] Abort handshake by sending `{}`.", ctx.channel(), state, seg);
                     tcb.sendAndFlush(ctx, seg);
 
@@ -640,7 +641,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
-                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), FIN);
+                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
                         LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                         tcb.sendAndFlush(ctx, seg);
                     }
@@ -665,7 +666,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
-                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), FIN);
+                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
                         tcb.sendAndFlush(ctx, seg);
 
                         // RFC 9293: enter LAST-ACK state.
@@ -703,10 +704,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 throw CONNECTION_NOT_EXIST_ERROR;
 
             case LISTEN:
-                // FIXME:
-                //  RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
-                //  RFC 9293: reset" responses.
-                tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
+                // RFC 9293: reset" responses.
+                // (not applicable to us)
 
                 // RFC 9293: Delete TCB,
                 deleteTcb();
@@ -718,10 +718,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 return;
 
             case SYN_SENT:
-                // FIXME:
-                //  RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
-                //  RFC 9293: notification.
+                // RFC 9293: All queued SENDs
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                //  RFC 9293: and RECEIVEs should be given "connection reset" notification.
+                // (not applicable to us)
 
                 // RFC 9293: Delete the TCB,
                 deleteTcb();
@@ -741,14 +741,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: <SEQ=SND.NXT><CTL=RST>
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
 
-                // FIXME:
-                //  RFC 9293: All queued SENDs and RECEIVEs should be given "connection reset"
-                //  RFC 9293: notification;
+                // RFC 9293: All queued SENDs
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                // RFC 9293: and RECEIVEs should be given "connection reset" notification;
+                // (not applicable to us)
 
                 // RFC 9293: all segments queued for transmission (except for the RST
                 // RFC 9293: formed above) or retransmission should be flushed.
-                tcb.retransmissionQueue().flush();
+                tcb.retransmissionQueue().release();
                 // (RST send must be called after flush)
                 tcb.send(ctx, seg);
 
@@ -1454,7 +1454,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                         // RFC 9293: and return. The user need not be informed.
                         // RFC 9293: In either case, the retransmission queue should be flushed.
-                        tcb.retransmissionQueue().flush();
+                        tcb.retransmissionQueue().release();
                         return;
                     }
                     else {
@@ -1466,7 +1466,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     }
 
                     // RFC 9293: In either case, the retransmission queue should be flushed.
-                    tcb.retransmissionQueue().flush();
+                    tcb.retransmissionQueue().release();
 
                     if (config.activeOpen()) {
                         // RFC 9293: And in the active OPEN case, enter the CLOSED state
@@ -1486,12 +1486,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case FIN_WAIT_2:
             case CLOSE_WAIT:
                 if (seg.isRst()) {
-                    // FIXME:
-                    //  RFC 9293: If the RST bit is set, then any outstanding RECEIVEs and SEND
-                    //  RFC 9293: should receive "reset" responses.
+                    // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs
+                    // (not applicable to us)
+                    // RFC 9293: and SEND should receive "reset" responses.
                     tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
                     // RFC 9293: All segment queues should be flushed.
-                    tcb.retransmissionQueue().flush();
+                    tcb.retransmissionQueue().release();
 
                     LOG.trace("{}[{}] We got `{}`. Remote peer is not longer interested in a connection. Close channel.", ctx.channel(), state, seg);
 
@@ -2182,10 +2182,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: For any state if the user timeout expires,
         LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
-        // (this is done by deleteTcb)
+        final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
+        tcb.sendBuffer().fail(cause);
+        tcb.retransmissionQueue().release();
+        tcb.receiveBuffer().release();
+
         // RFC 9293: signal the user "error: connection aborted due to user timeout" in
         // RFC 9293: general and for any outstanding calls,
-        final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
         ctx.fireExceptionCaught(cause);
 
         // RFC 9293: delete the TCB,

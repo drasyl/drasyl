@@ -40,7 +40,8 @@ class ReceiveBufferTest {
             final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
             final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 918402327, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
-            Segment seg2 = Segment.pshAck(110, 1751431617, data.slice(0, 100));
+            final ByteBuf data1 = data.slice(0, 100);
+            Segment seg2 = new Segment(110, 1751431617, (byte) (Segment.PSH | Segment.ACK), data1);
             buffer.receive(ctx, tcb, seg2);
         }
 
@@ -58,13 +59,15 @@ class ReceiveBufferTest {
 
             // 100 bytes remaining. receive [10,50)
             // füge 40 bytes irgendwo im fenster ein
-            final Segment seg1 = Segment.pshAck(10, 100, data.slice(10, 40));
+            final ByteBuf data2 = data.slice(10, 40);
+            final Segment seg1 = new Segment(10, 100, (byte) (Segment.PSH | Segment.ACK), data2);
             buffer.receive(ctx, tcb, seg1);
             assertEquals(60, tcb.rcvWnd());
 
             // 60 bytes remaining. receive [60,110)
             // füge 40 bytes irgendwo im fenster ein
-            Segment seg2 = Segment.pshAck(60, 100, data.slice(60, 50));
+            final ByteBuf data1 = data.slice(60, 50);
+            Segment seg2 = new Segment(60, 100, (byte) (Segment.PSH | Segment.ACK), data1);
             buffer.receive(ctx, tcb, seg2);
             assertEquals(0, tcb.rcvWnd());
 
@@ -85,7 +88,8 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
 
                 // expected 0, got [0,110)
-                final Segment seg1 = Segment.ack(0, 100, data.slice(0, 110));
+                final ByteBuf data3 = data.slice(0, 110);
+                final Segment seg1 = new Segment(0, 100, Segment.ACK, data3);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_890, tcb.rcvWnd());
                 assertEquals(110, tcb.rcvNxt());
@@ -94,7 +98,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // expected 110, got [110,200)
-                final Segment seg2 = Segment.ack(110, 100, data.slice(110, 90));
+                final ByteBuf data2 = data.slice(110, 90);
+                final Segment seg2 = new Segment(110, 100, Segment.ACK, data2);
                 buffer.receive(ctx, tcb, seg2);
                 assertEquals(63_800, tcb.rcvWnd());
                 assertEquals(200, tcb.rcvNxt());
@@ -103,7 +108,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // expected 200, got [200,201)
-                final Segment seg3 = Segment.ack(200, 100, data.slice(200, 1));
+                final ByteBuf data1 = data.slice(200, 1);
+                final Segment seg3 = new Segment(200, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg3);
                 assertEquals(63_799, tcb.rcvWnd());
                 assertEquals(201, tcb.rcvNxt());
@@ -129,7 +135,8 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
 
                 // expected 0, got [30,130)
-                final Segment seg1 = Segment.ack(30, 100, data.slice(30, 100));
+                final ByteBuf data2 = data.slice(30, 100);
+                final Segment seg1 = new Segment(30, 100, Segment.ACK, data2);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_900, tcb.rcvWnd());
                 assertEquals(0, tcb.rcvNxt());
@@ -138,7 +145,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // expected 0, got [130,230)
-                final Segment seg2 = Segment.ack(130, 100, data.slice(130, 100));
+                final ByteBuf data1 = data.slice(130, 100);
+                final Segment seg2 = new Segment(130, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg2);
                 assertEquals(63_800, tcb.rcvWnd());
                 assertEquals(0, tcb.rcvNxt());
@@ -160,7 +168,8 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
 
                 // expected 0, got [30,130)
-                final Segment seg1 = Segment.ack(30, 100, data.slice(30, 100));
+                final ByteBuf data2 = data.slice(30, 100);
+                final Segment seg1 = new Segment(30, 100, Segment.ACK, data2);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_900, tcb.rcvWnd());
                 assertEquals(0, tcb.rcvNxt());
@@ -169,7 +178,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // expected 0, got [50,150)
-                final Segment seg2 = Segment.ack(50, 100, data.slice(50, 100));
+                final ByteBuf data1 = data.slice(50, 100);
+                final Segment seg2 = new Segment(50, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg2);
                 assertEquals(63_880, tcb.rcvWnd());
                 assertEquals(0, tcb.rcvNxt());
@@ -191,7 +201,8 @@ class ReceiveBufferTest {
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [0,60), got [0,100)
-                Segment seg1 = Segment.ack(0, 100, data.slice(0, 100));
+                final ByteBuf data1 = data.slice(0, 100);
+                Segment seg1 = new Segment(0, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_840, tcb.rcvWnd());
                 assertEquals(160, tcb.rcvNxt());
@@ -227,7 +238,8 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(500).writeBytes(randomBytes(500));
 
                 // expected 0, got [120,200)
-                final Segment seg2 = Segment.ack(120, 100, data.slice(120, 80));
+                final ByteBuf data5 = data.slice(120, 80);
+                final Segment seg2 = new Segment(120, 100, Segment.ACK, data5);
                 buffer.receive(ctx, tcb, seg2);
                 assertEquals(63_920, tcb.rcvWnd());
                 assertEquals(0, tcb.rcvNxt());
@@ -236,7 +248,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // expected 0, got [0,120)
-                final Segment seg1 = Segment.ack(0, 100, data.slice(0, 120));
+                final ByteBuf data4 = data.slice(0, 120);
+                final Segment seg1 = new Segment(0, 100, Segment.ACK, data4);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_800, tcb.rcvWnd());
                 assertEquals(200, tcb.rcvNxt());
@@ -245,7 +258,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // expected 200, got [410,500)
-                final Segment seg5 = Segment.ack(410, 100, data.slice(410, 90));
+                final ByteBuf data3 = data.slice(410, 90);
+                final Segment seg5 = new Segment(410, 100, Segment.ACK, data3);
                 buffer.receive(ctx, tcb, seg5);
                 assertEquals(63_710, tcb.rcvWnd());
                 assertEquals(200, tcb.rcvNxt());
@@ -254,7 +268,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // expected 200, got [300,400)
-                final Segment seg4 = Segment.ack(300, 100, data.slice(300, 110));
+                final ByteBuf data2 = data.slice(300, 110);
+                final Segment seg4 = new Segment(300, 100, Segment.ACK, data2);
                 buffer.receive(ctx, tcb, seg4);
                 assertEquals(63_600, tcb.rcvWnd());
                 assertEquals(200, tcb.rcvNxt());
@@ -263,7 +278,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // expected 200, got [200,300)
-                Segment seg3 = Segment.ack(200, 100, data.slice(200, 100));
+                final ByteBuf data1 = data.slice(200, 100);
+                Segment seg3 = new Segment(200, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg3);
                 assertEquals(63_500, tcb.rcvWnd());
                 assertEquals(500, tcb.rcvNxt());
@@ -292,7 +308,7 @@ class ReceiveBufferTest {
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableTransportConfig.newBuilder().build(), 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [10,70) and [130,210), got [10,210)
-                Segment seg1 = Segment.ack(10, 100, data);
+                Segment seg1 = new Segment(10, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_800, tcb.rcvWnd());
                 assertEquals(210, tcb.rcvNxt());
@@ -320,7 +336,8 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(300).writeBytes(randomBytes(300));
 
                 // neues SEG (0-99)
-                final Segment seg1 = Segment.ack(0, 100, data.slice(0, 100));
+                final ByteBuf data6 = data.slice(0, 100);
+                final Segment seg1 = new Segment(0, 100, Segment.ACK, data6);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_900, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());
@@ -329,7 +346,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // identisches SEG (0-99)
-                final Segment seg1copy = Segment.ack(0, 100, data.slice(0, 100));
+                final ByteBuf data5 = data.slice(0, 100);
+                final Segment seg1copy = new Segment(0, 100, Segment.ACK, data5);
                 buffer.receive(ctx, tcb, seg1copy);
                 assertEquals(63_900, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());
@@ -338,7 +356,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // erste 100 bytes doppelt (0-149)
-                final Segment seg2 = Segment.ack(0, 100, data.slice(0, 150));
+                final ByteBuf data4 = data.slice(0, 150);
+                final Segment seg2 = new Segment(0, 100, Segment.ACK, data4);
                 buffer.receive(ctx, tcb, seg2);
                 assertEquals(63_850, tcb.rcvWnd());
                 assertEquals(150, tcb.rcvNxt());
@@ -347,7 +366,8 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
 
                 // vorbereitung für nächstes SEG, landet als fragment (250-299)
-                final Segment seg3 = Segment.ack(250, 100, data.slice(250, 50));
+                final ByteBuf data3 = data.slice(250, 50);
+                final Segment seg3 = new Segment(250, 100, Segment.ACK, data3);
                 buffer.receive(ctx, tcb, seg3);
                 assertEquals(63_800, tcb.rcvWnd());
                 assertEquals(150, tcb.rcvNxt());
@@ -356,7 +376,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // letze 50 bytes doppelt (200-299)
-                final Segment seg4 = Segment.ack(200, 100, data.slice(200, 100));
+                final ByteBuf data2 = data.slice(200, 100);
+                final Segment seg4 = new Segment(200, 100, Segment.ACK, data2);
                 buffer.receive(ctx, tcb, seg4);
                 assertEquals(63_750, tcb.rcvWnd());
                 assertEquals(150, tcb.rcvNxt());
@@ -365,7 +386,8 @@ class ReceiveBufferTest {
                 assertNotNull(buffer.head);
 
                 // vorne und hinten doppelt (100-249)
-                final Segment seg5 = Segment.ack(100, 100, data.slice(100, 150));
+                final ByteBuf data1 = data.slice(100, 150);
+                final Segment seg5 = new Segment(100, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg5);
                 assertEquals(63_700, tcb.rcvWnd());
                 assertEquals(300, tcb.rcvNxt());
@@ -394,7 +416,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
                 // expected 60, got [0,100)
-                final Segment seg1 = Segment.ack(0, 100, data);
+                final Segment seg1 = new Segment(0, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_960, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());
@@ -420,7 +442,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(90).writeBytes(randomBytes(90));
 
                 // expected [100,64100), got [10,100)
-                Segment seg1 = Segment.ack(10, 100, data);
+                Segment seg1 = new Segment(10, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(64000, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());
@@ -439,7 +461,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
                 // expected [100,150), got [100,200)
-                Segment seg1 = Segment.ack(100, 100, data);
+                Segment seg1 = new Segment(100, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(0, tcb.rcvWnd());
                 assertEquals(150, tcb.rcvNxt());
@@ -458,7 +480,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
                 // expected [100,64100), got [64100,64200)
-                Segment seg1 = Segment.ack(64100, 100, data);
+                Segment seg1 = new Segment(64100, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(64000, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());

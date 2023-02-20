@@ -43,7 +43,8 @@ class SegmentCodecTest {
         void shouldEncodeSegment() {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            channel.writeOutbound(Segment.ack(seq, ack, options, content.retain()));
+            final ByteBuf data = content.retain();
+            channel.writeOutbound(new Segment(seq, ack, ACK, options, data));
 
             final ByteBuf actual = channel.readOutbound();
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content.resetReaderIndex());
@@ -70,7 +71,8 @@ class SegmentCodecTest {
             channel.writeInbound(Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content));
 
             final Segment actual = channel.readInbound();
-            assertEquals(Segment.ack(seq, ack, options, content.retain()), actual);
+            final ByteBuf data = content.retain();
+            assertEquals(new Segment(seq, ack, ACK, options, data), actual);
 
             actual.release();
         }

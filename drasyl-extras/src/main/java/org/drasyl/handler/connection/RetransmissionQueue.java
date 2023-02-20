@@ -139,7 +139,7 @@ public class RetransmissionQueue {
         return seg;
     }
 
-    public void flush() {
+    public void release() {
         queue.clear();
     }
 

@@ -42,7 +42,7 @@ class SegmentTest {
         @Test
         void shouldReturnLengthOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = Segment.ack(100, 0, data);
+            final Segment seg = new Segment(100, 0, Segment.ACK, data);
 
             assertEquals(10, seg.len());
 
@@ -51,14 +51,14 @@ class SegmentTest {
 
         @Test
         void shouldCountSyn() {
-            final Segment seg = Segment.syn(100);
+            final Segment seg = new Segment(100, Segment.SYN);
 
             assertEquals(1, seg.len());
         }
 
         @Test
         void shouldCountFin() {
-            final Segment seg = Segment.fin(100);
+            final Segment seg = new Segment(100, Segment.FIN);
 
             assertEquals(1, seg.len());
         }
@@ -69,7 +69,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = Segment.ack(100, 0, data);
+            final Segment seg = new Segment(100, 0, Segment.ACK, data);
 
             assertEquals(109, seg.lastSeq());
 
@@ -79,7 +79,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegmentDespiteOverflow() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = Segment.ack(MAX_SEQ_NO - 9, 0, data);
+            final Segment seg = new Segment(MAX_SEQ_NO - 9, 0, Segment.ACK, data);
 
             assertEquals(MAX_SEQ_NO, seg.lastSeq());
 
@@ -88,7 +88,7 @@ class SegmentTest {
 
         @Test
         void shouldReturnLastSegmentOfZeroLengthSegment() {
-            final Segment seg = Segment.ack(100, 0);
+            final Segment seg = new Segment(100, 0, Segment.ACK);
 
             assertEquals(100, seg.lastSeq());
 
@@ -100,24 +100,25 @@ class SegmentTest {
     class CanPiggybackAck {
         @Test
         void shouldReturnTrueIfOtherSegmentIsHigherAck() {
-            final Segment current = Segment.ack(10, 1);
-            final Segment next = Segment.ack(10, 2);
+            final Segment current = new Segment(10, 1, Segment.ACK);
+            final Segment next = new Segment(10, 2, Segment.ACK);
 
             assertTrue(next.canPiggybackAck(current));
         }
 
         @Test
         void shouldReturnTrueIfOtherSegmentCanPiggybackAck() {
-            final Segment current = Segment.ack(10, 1);
-            final Segment next = Segment.fin(10);
+            final Segment current = new Segment(10, 1, Segment.ACK);
+            final Segment next = new Segment(10, Segment.FIN);
 
             assertTrue(next.canPiggybackAck(current));
         }
 
         @Test
         void shouldReturnTrueIfOtherSegmentContainsHigherAck() {
-            final Segment current = Segment.ack(10, 1);
-            final Segment next = Segment.pshAck(10, 1, Unpooled.buffer(10).writerIndex(10));
+            final Segment current = new Segment(10, 1, Segment.ACK);
+            final ByteBuf data = Unpooled.buffer(10).writerIndex(10);
+            final Segment next = new Segment(10, 1, (byte) (Segment.PSH | Segment.ACK), data);
 
             assertTrue(next.canPiggybackAck(current));
 
@@ -126,8 +127,8 @@ class SegmentTest {
 
         @Test
         void shouldReturnFalseIfCurrentSegmentIsNotOnlyAck() {
-            final Segment current = Segment.pshAck(10, 1, Unpooled.EMPTY_BUFFER);
-            final Segment next = Segment.pshAck(20, 1, Unpooled.EMPTY_BUFFER);
+            final Segment current = new Segment(10, 1, (byte) (Segment.PSH | Segment.ACK), Unpooled.EMPTY_BUFFER);
+            final Segment next = new Segment(20, 1, (byte) (Segment.PSH | Segment.ACK), Unpooled.EMPTY_BUFFER);
 
             assertFalse(next.canPiggybackAck(current));
         }
@@ -137,18 +138,18 @@ class SegmentTest {
     class PiggybackAck {
         @Test
         void shouldReplaceCurrentAckIfOtherSegmentIsHigherAck() {
-            final Segment current = Segment.ack(10, 1);
-            final Segment next = Segment.ack(10, 2);
+            final Segment current = new Segment(10, 1, Segment.ACK);
+            final Segment next = new Segment(10, 2, Segment.ACK);
 
             assertSame(next, next.piggybackAck(current));
         }
 
         @Test
         void shouldPiggybackAckToOtherSegment() {
-            final Segment current = Segment.ack(10, 1);
-            final Segment next = Segment.fin(10);
+            final Segment current = new Segment(10, 1, Segment.ACK);
+            final Segment next = new Segment(10, Segment.FIN);
 
-            assertEquals(Segment.finAck(10, 1), next.piggybackAck(current));
+            assertEquals(new Segment(10, 1, (byte) (Segment.FIN | Segment.ACK)), next.piggybackAck(current));
         }
     }
 

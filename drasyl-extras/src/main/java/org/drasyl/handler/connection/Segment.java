@@ -84,104 +84,64 @@ public class Segment extends DefaultByteBufHolder {
         this.options = requireNonNull(options);
     }
 
-    public static Segment ack(final long seq,
-                              final long ack,
-                              final long window,
-                              final ByteBuf data) {
-        return new Segment(seq, ack, ACK, window, new EnumMap<>(SegmentOption.class), data);
+    public Segment(final long seq,
+                   final byte ctl,
+                   final Map<SegmentOption, Object> options) {
+        this(seq, 0, ctl, 0, options, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment ack(final long seq,
-                              final long ack,
-                              final Map<SegmentOption, Object> options,
-                              final ByteBuf data) {
-        return new Segment(seq, ack, ACK, 0, options, data);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final Map<SegmentOption, Object> options,
+                   final ByteBuf data) {
+        this(seq, ack, ctl, 0, options, data);
     }
 
-    public static Segment ack(final long seq,
-                              final long ack,
-                              final Map<SegmentOption, Object> options) {
-        return new Segment(seq, ack, ACK, 0, options, Unpooled.EMPTY_BUFFER);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final Map<SegmentOption, Object> options) {
+        this(seq, ack, ctl, 0, options, Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment ack(final long seq,
-                              final long ack,
-                              final long window) {
-        return new Segment(seq, ack, ACK, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final long window,
+                   final ByteBuf data) {
+        this(seq, ack, ctl, window, new EnumMap<>(SegmentOption.class), data);
     }
 
-    public static Segment ack(final long seq, final long ack) {
-        return ack(seq, ack, 0);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final ByteBuf data) {
+        this(seq, ack, ctl, 0, data);
     }
 
-    public static Segment ack(final long seq,
-                              final long ack,
-                              final ByteBuf data) {
-        return new Segment(seq, ack, ACK, 0, new EnumMap<>(SegmentOption.class), data);
+    public Segment(final long seq,
+                   final byte ctl) {
+        this(seq, 0, ctl, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment rst(final long seq) {
-        return new Segment(seq, 0, RST, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+    public Segment(final long seq,
+                   final byte ctl,
+                   final long window) {
+        this(seq, 0, ctl, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment syn(final long seq,
-                              final Map<SegmentOption, Object> options) {
-        return new Segment(seq, 0, SYN, 0, options, Unpooled.EMPTY_BUFFER);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final long window) {
+        this(seq, ack, ctl, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public static Segment syn(final long seq, final long window) {
-        return new Segment(seq, 0, SYN, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment syn(final long seq) {
-        return syn(seq, 0);
-    }
-
-    public static Segment fin(final long seq) {
-        return new Segment(seq, 0, FIN, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment pshAck(final long seq,
-                                 final long ack,
-                                 final long window,
-                                 final ByteBuf data) {
-        return new Segment(seq, ack, (byte) (PSH | ACK), window, new EnumMap<>(SegmentOption.class), data);
-    }
-
-    public static Segment pshAck(final long seq,
-                                 final long ack,
-                                 final ByteBuf data) {
-        return pshAck(seq, ack, 0, data);
-    }
-
-    public static Segment rstAck(final long seq,
-                                 final long ack,
-                                 final long window) {
-        return new Segment(seq, ack, (byte) (RST | ACK), window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment rstAck(final long seq, final long ack) {
-        return rstAck(seq, ack, 0);
-    }
-
-    public static Segment synAck(final long seq,
-                                 final long ack,
-                                 final long window) {
-        return new Segment(seq, ack, (byte) (SYN | ACK), window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment synAck(final long seq,
-                                 final long ack,
-                                 final Map<SegmentOption, Object> options) {
-        return new Segment(seq, ack, (byte) (SYN | ACK), 0, options, Unpooled.EMPTY_BUFFER);
-    }
-
-    public static Segment synAck(final long seq, final long ack) {
-        return synAck(seq, ack, 0);
-    }
-
-    public static Segment finAck(final long seq, final long ack) {
-        return new Segment(seq, ack, (byte) (FIN | ACK), 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl) {
+        this(seq, ack, ctl, 0);
     }
 
     public static long advanceSeq(final long seq, final long advancement) {

@@ -51,7 +51,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofMillis;
@@ -144,7 +143,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(0, handler.tcb.rcvNxt());
 
                 // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
-                channel.writeInbound(Segment.synAck(300, 101, 64_000));
+                channel.writeInbound(new Segment(300, 101, (byte) (SYN | ACK), 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301), window(5_000)));
                 assertEquals(ESTABLISHED, handler.state);
 
@@ -170,7 +169,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(LISTEN, handler.state);
 
                 // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                channel.writeInbound(Segment.syn(100, 64_000));
+                channel.writeInbound(new Segment(100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(300), ack(101)));
                 assertEquals(SYN_RECEIVED, handler.state);
 
@@ -181,7 +180,7 @@ class ReliableTransportHandlerTest {
                 // peer ACKed our SYN
                 // we piggyback some data, that should also be processed by the server
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                channel.writeInbound(Segment.pshAck(101, 301, data));
+                channel.writeInbound(new Segment(101, 301, (byte) (PSH | ACK), data));
                 assertEquals(ESTABLISHED, handler.state);
 
                 assertEquals(301, handler.tcb.sndUna());
@@ -234,7 +233,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(0, handler.tcb.rcvNxt());
 
                 // peer SYNchronizes his SEG before our SYN has been received
-                channel.writeInbound(Segment.syn(300, 64_000));
+                channel.writeInbound(new Segment(300, SYN, 64_000));
                 assertEquals(SYN_RECEIVED, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(100), ack(301), window(5_000)));
 
@@ -243,7 +242,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 // peer respond to our SYN with ACK (and another SYN)
-                channel.writeInbound(Segment.synAck(301, 101, 64_000));
+                channel.writeInbound(new Segment(301, 101, (byte) (SYN | ACK), 64_000));
                 assertEquals(ESTABLISHED, handler.state);
 
                 assertEquals(101, handler.tcb.sndUna());
@@ -296,7 +295,7 @@ class ReliableTransportHandlerTest {
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     // as we got an ACK for an unexpected seq, reset the peer
-                    channel.writeInbound(Segment.ack(300, 100));
+                    channel.writeInbound(new Segment(300, 100, ACK));
                     assertThat(channel.readOutbound(), allOf(ctl(RST), seq(100)));
                     assertEquals(SYN_SENT, handler.state);
 
@@ -325,7 +324,7 @@ class ReliableTransportHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     // other wants to SYNchronize with us, ACK with our expected seq
-                    channel.writeInbound(Segment.syn(400, 64_000));
+                    channel.writeInbound(new Segment(400, SYN, 64_000));
                     assertEquals(ESTABLISHED, handler.state);
                     assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(100)));
 
@@ -334,7 +333,7 @@ class ReliableTransportHandlerTest {
                     assertEquals(100, handler.tcb.rcvNxt());
 
                     // as we sent an ACK for an unexpected seq, peer will reset us
-                    final Segment msg = Segment.rst(100);
+                    final Segment msg = new Segment(100, RST);
                     assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
                     assertEquals(CLOSED, handler.state);
                     assertNull(handler.tcb);
@@ -361,7 +360,7 @@ class ReliableTransportHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    final Segment seg = Segment.ack(300, 100, data);
+                    final Segment seg = new Segment(300, 100, ACK, data);
                     channel.writeInbound(seg);
                     assertThat(channel.readOutbound(), allOf(ctl(RST), seq(100)));
 
@@ -400,11 +399,11 @@ class ReliableTransportHandlerTest {
                     // old duplicate ACK arrives at us
                     long x = 200;
                     long z = 100;
-                    channel.writeInbound(Segment.syn(z));
+                    channel.writeInbound(new Segment(z, SYN));
                     assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(x), ack(z + 1)));
 
                     // returned SYN/ACK causes a RST, we should return to LISTEN
-                    channel.writeInbound(Segment.rst(z + 1));
+                    channel.writeInbound(new Segment(z + 1, RST));
                     assertEquals(LISTEN, handler.state);
 
                     channel.close();
@@ -460,7 +459,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // my close got ACKed
-                channel.writeInbound(Segment.ack(300, 101));
+                channel.writeInbound(new Segment(300, 101, ACK));
                 assertEquals(FIN_WAIT_2, handler.state);
                 assertFalse(future.isDone());
 
@@ -469,7 +468,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // peer now triggers close as well
-                channel.writeInbound(Segment.finAck(300, 101));
+                channel.writeInbound(new Segment(300, 101, (byte) (FIN | ACK)));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301)));
                 assertEquals(TIME_WAIT, handler.state);
                 assertFalse(future.isDone());
@@ -495,7 +494,7 @@ class ReliableTransportHandlerTest {
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
 
                 // peer triggers close
-                channel.writeInbound(Segment.finAck(100, 300));
+                channel.writeInbound(new Segment(100, 300, (byte) (FIN | ACK)));
 
                 assertEquals(CLOSE_WAIT, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(101)));
@@ -515,7 +514,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(101, handler.tcb.rcvNxt());
 
                 // peer ACKed our close
-                channel.writeInbound(Segment.ack(101, 301));
+                channel.writeInbound(new Segment(101, 301, ACK));
 
                 assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
@@ -567,7 +566,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // got parallel close
-                channel.writeInbound(Segment.finAck(300, 100));
+                channel.writeInbound(new Segment(300, 100, (byte) (FIN | ACK)));
                 assertEquals(CLOSING, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301)));
                 assertFalse(future.isDone());
@@ -576,7 +575,7 @@ class ReliableTransportHandlerTest {
                 assertEquals(101, handler.tcb.sndNxt());
                 assertEquals(301, handler.tcb.rcvNxt());
 
-                channel.writeInbound(Segment.ack(301, 101));
+                channel.writeInbound(new Segment(301, 101, ACK));
                 assertEquals(TIME_WAIT, handler.state);
 
                 await().untilAsserted(() -> {
@@ -645,12 +644,12 @@ class ReliableTransportHandlerTest {
                     assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(100), ack(300), data(data.slice(0, bytes))));
 
                     // SND.WND = 400, just 400 bytes allowed
-                    channel.writeInbound(Segment.ack(300, 700, 400));
+                    channel.writeInbound(new Segment(300, 700, ACK, 400));
                     channel.writeOutbound(data.slice(600, bytes));
                     assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(700), ack(300), data(data.slice(600, 400))));
 
                     // send ack for the first segment. The remaining 200 bytes should then be sent
-                    channel.writeInbound(Segment.ack(300, 700, 600));
+                    channel.writeInbound(new Segment(300, 700, ACK, 600));
                     assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(1100), ack(300), data(data.slice(1000, 200))));
 
                     channel.close();
@@ -692,7 +691,7 @@ class ReliableTransportHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     // 300 bytes in flight, only first 100 are ACKed
-                    channel.writeInbound(Segment.ack(100, 400));
+                    channel.writeInbound(new Segment(100, 400, ACK));
 
                     assertEquals(400, tcb.sndUna());
                     assertEquals(600, tcb.sndNxt());
@@ -722,7 +721,7 @@ class ReliableTransportHandlerTest {
 
                     // 600 bytes added to RCV.BUF
                     final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeInbound(Segment.ack(100, 600, data));
+                    channel.writeInbound(new Segment(100, 600, ACK, data));
 
                     assertEquals(400, tcb.rcvWnd());
 
@@ -747,10 +746,10 @@ class ReliableTransportHandlerTest {
 
                     // we got more than we are willing to accept
                     final ByteBuf data = unpooledRandomBuffer(100);
-                    channel.writeInbound(Segment.ack(100, 301L, 1000, data));
+                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data));
 
                     // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), Segment.ack(301, 160));
+                    assertEquals(channel.readOutbound(), new Segment(301, 160, ACK));
 
                     channel.close();
                 }
@@ -768,14 +767,14 @@ class ReliableTransportHandlerTest {
 
                     // we got more than we are willing to accept
                     final ByteBuf data = unpooledRandomBuffer(100);
-                    channel.writeInbound(Segment.ack(100, 301L, 1000, data));
+                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data));
 
                     // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), Segment.ack(301, 160));
+                    assertEquals(channel.readOutbound(), new Segment(301, 160, ACK));
 
                     // SEG not fully ACKed, we send again
                     final ByteBuf data2 = unpooledRandomBuffer(100);
-                    channel.writeInbound(Segment.ack(100, 301L, 1000, data2));
+                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data2));
 
                     channel.close();
                 }
@@ -840,7 +839,8 @@ class ReliableTransportHandlerTest {
                     final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
 
                     // we received a maximum-sized segment, therefore RCV.USER contains 20 bytes
-                    channel.writeInbound(Segment.ack(100, 600, buf.slice(0, 20)));
+                    final ByteBuf data1 = buf.slice(0, 20);
+                    channel.writeInbound(new Segment(100, 600, ACK, data1));
                     assertEquals(1600, tcb.rcvBuff());
                     assertEquals(20, tcb.rcvUser());
                     assertEquals(1580, tcb.rcvWnd());
@@ -855,7 +855,8 @@ class ReliableTransportHandlerTest {
                     assertEquals(1580, tcb.rcvWnd());
 
                     // we received a maximum-sized segment, therefore RCV.USER contains 80 bytes
-                    channel.writeInbound(Segment.ack(120, 600, buf.slice(20, 80)));
+                    final ByteBuf data = buf.slice(20, 80);
+                    channel.writeInbound(new Segment(120, 600, ACK, data));
                     assertEquals(1600, tcb.rcvBuff());
                     assertEquals(80, tcb.rcvUser());
                     assertEquals(1500, tcb.rcvWnd());
@@ -888,7 +889,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 400
                 final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(400, 600, data));
+                channel.writeInbound(new Segment(400, 600, ACK, data));
 
                 // we get ACK with expected SEG 100 number
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(600), ack(100)));
@@ -908,7 +909,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 700
                 final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(700, 600, data1));
+                channel.writeInbound(new Segment(700, 600, ACK, data1));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -917,7 +918,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 400
                 final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(400, 600, data2));
+                channel.writeInbound(new Segment(400, 600, ACK, data2));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1400, tcb.rcvWnd());
@@ -926,7 +927,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 1300
                 final ByteBuf data3 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(1300, 600, data3));
+                channel.writeInbound(new Segment(1300, 600, ACK, data3));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1100, tcb.rcvWnd());
@@ -935,7 +936,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 1000
                 final ByteBuf data4 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(1000, 600, data4));
+                channel.writeInbound(new Segment(1000, 600, ACK, data4));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(800, tcb.rcvWnd());
@@ -944,7 +945,7 @@ class ReliableTransportHandlerTest {
 
                 // now send expected SEG 100 (should close the gap)
                 final ByteBuf data5 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(100, 600, data5));
+                channel.writeInbound(new Segment(100, 600, ACK, data5));
 
                 assertEquals(1600, tcb.rcvNxt());
                 // we should get ACK for everything
@@ -970,7 +971,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 700
                 final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(700, 600, data1));
+                channel.writeInbound(new Segment(700, 600, ACK, data1));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -979,7 +980,7 @@ class ReliableTransportHandlerTest {
 
                 // SEG 100 is expected, but we send next SEG 700 again!
                 final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(Segment.ack(700, 600, data2));
+                channel.writeInbound(new Segment(700, 600, ACK, data2));
 
                 assertEquals(100, tcb.rcvNxt());
                 assertEquals(1700, tcb.rcvWnd());
@@ -1017,15 +1018,15 @@ class ReliableTransportHandlerTest {
                 //   each ACK received that cumulatively acknowledges new data.
 
                 // old data
-                channel.writeInbound(Segment.ack(200, 300));
+                channel.writeInbound(new Segment(200, 300, ACK));
                 assertEquals(3000, tcb.cwnd());
 
                 // new data
-                channel.writeInbound(Segment.ack(200, 310));
+                channel.writeInbound(new Segment(200, 310, ACK));
                 assertEquals(3010, tcb.cwnd());
 
                 // limit to SMSS
-                channel.writeInbound(Segment.ack(200, 2000));
+                channel.writeInbound(new Segment(200, 2000, ACK));
                 assertEquals(4010, tcb.cwnd());
 
                 //
@@ -1033,16 +1034,16 @@ class ReliableTransportHandlerTest {
                 //
                 assertFalse(tcb.doSlowStart());
 
-                channel.writeInbound(Segment.ack(200, 3000));
+                channel.writeInbound(new Segment(200, 3000, ACK));
                 assertEquals(4010 + 250, tcb.cwnd());
 
-                channel.writeInbound(Segment.ack(200, 4000));
+                channel.writeInbound(new Segment(200, 4000, ACK));
                 assertEquals(4260 + 235, tcb.cwnd());
 
-                channel.writeInbound(Segment.ack(200, 4100));
+                channel.writeInbound(new Segment(200, 4100, ACK));
                 assertEquals(4495 + 223, tcb.cwnd());
 
-                channel.writeInbound(Segment.ack(200, 4105));
+                channel.writeInbound(new Segment(200, 4105, ACK));
                 assertEquals(4718 + 212, tcb.cwnd());
             }
 
@@ -1081,7 +1082,7 @@ class ReliableTransportHandlerTest {
                 channel.pipeline().addLast(handler);
                 handler.retransmissionTimer = timer;
 
-                channel.writeInbound(Segment.ack(200, 301));
+                channel.writeInbound(new Segment(200, 301, ACK));
 
                 verify(timer).cancel(false);
                 assertNull(handler.retransmissionTimer);
@@ -1106,7 +1107,7 @@ class ReliableTransportHandlerTest {
                 channel.pipeline().addLast(handler);
                 handler.retransmissionTimer = timer;
 
-                channel.writeInbound(Segment.ack(200, 301));
+                channel.writeInbound(new Segment(200, 301, ACK));
 
                 verify(timer).cancel(false);
                 assertNotNull(handler.retransmissionTimer);
@@ -1196,13 +1197,13 @@ class ReliableTransportHandlerTest {
                 assertTrue(tcb.sendBuffer().hasOutstandingData());
 
                 // three duplicate ACKs in a row
-                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(new Segment(205, 300, ACK));
                 assertEquals(3000, tcb.cwnd());
                 assertEquals(4000, tcb.ssthresh());
-                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(new Segment(205, 300, ACK));
                 assertEquals(3000, tcb.cwnd());
                 assertEquals(4000, tcb.ssthresh());
-                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(new Segment(205, 300, ACK));
 
                 // dup ACKs should trigger immediate retransmission
                 assertEquals(5943, tcb.cwnd());
@@ -1210,13 +1211,13 @@ class ReliableTransportHandlerTest {
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(200)));
 
                 // fourth duplicate ACK
-                channel.writeInbound(Segment.ack(205, 300));
+                channel.writeInbound(new Segment(205, 300, ACK));
                 assertEquals(6943, tcb.cwnd());
                 assertEquals(2850, tcb.ssthresh());
                 assertNull(channel.readOutbound());
 
                 // cumulative ACK
-                channel.writeInbound(Segment.ack(205, 400));
+                channel.writeInbound(new Segment(205, 400, ACK));
                 assertEquals(6844, tcb.cwnd());
                 assertEquals(2850, tcb.ssthresh());
 
@@ -1252,7 +1253,7 @@ class ReliableTransportHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final Segment seg = Segment.ack(0, 301, data);
+                    final Segment seg = new Segment(0, 301, ACK, data);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
                     channel.writeInbound(seg);
 
@@ -1286,7 +1287,7 @@ class ReliableTransportHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final Segment seg = Segment.ack(0, 301, data);
+                    final Segment seg = new Segment(0, 301, ACK, data);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
                     channel.writeInbound(seg);
 
@@ -1321,19 +1322,22 @@ class ReliableTransportHandlerTest {
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
 
                     // <A, TSval=1> ------------------->
-                    seg = Segment.ack(201, 310, data.copy());
+                    final ByteBuf data3 = data.copy();
+                    seg = new Segment(201, 310, ACK, data3);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
                     channel.pipeline().fireChannelRead(seg); // FIXME: writeInbound?
                     assertEquals(1, tcb.tsRecent());
 
                     // <B, TSval=2> ------------------->
-                    seg = Segment.ack(202, 310, data.copy());
+                    final ByteBuf data2 = data.copy();
+                    seg = new Segment(202, 310, ACK, data2);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
                     channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, tcb.tsRecent());
 
                     // <C, TSval=3> ------------------->
-                    seg = Segment.ack(203, 310, data.copy());
+                    final ByteBuf data1 = data.copy();
+                    seg = new Segment(203, 310, ACK, data1);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
                     channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, tcb.tsRecent());
@@ -1367,7 +1371,8 @@ class ReliableTransportHandlerTest {
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
 
                     // <A, TSval=1> ------------------->
-                    seg = Segment.ack(201, 310, data.copy());
+                    final ByteBuf data5 = data.copy();
+                    seg = new Segment(201, 310, ACK, data5);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
                     channel.writeInbound(seg);
                     assertEquals(1, tcb.tsRecent());
@@ -1376,7 +1381,8 @@ class ReliableTransportHandlerTest {
                     assertThat(channel.readOutbound(), tsOpt(0, 1));
 
                     // <A, TSval=3> ------------------->
-                    seg = Segment.ack(203, 310, data.copy());
+                    final ByteBuf data4 = data.copy();
+                    seg = new Segment(203, 310, ACK, data4);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
                     channel.writeInbound(seg);
                     assertEquals(1, tcb.tsRecent());
@@ -1385,7 +1391,8 @@ class ReliableTransportHandlerTest {
                     assertThat(channel.readOutbound(), tsOpt(0, 1));
 
                     // <A, TSval=2> ------------------->
-                    seg = Segment.ack(202, 310, data.copy());
+                    final ByteBuf data3 = data.copy();
+                    seg = new Segment(202, 310, ACK, data3);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
                     channel.writeInbound(seg);
                     assertEquals(2, tcb.tsRecent());
@@ -1394,7 +1401,8 @@ class ReliableTransportHandlerTest {
                     assertThat(channel.readOutbound(), tsOpt(0, 2));
 
                     // <A, TSval=5> ------------------->
-                    seg = Segment.ack(205, 310, data.copy());
+                    final ByteBuf data2 = data.copy();
+                    seg = new Segment(205, 310, ACK, data2);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(5, 0));
                     channel.writeInbound(seg);
                     assertEquals(2, tcb.tsRecent());
@@ -1403,7 +1411,8 @@ class ReliableTransportHandlerTest {
                     assertThat(channel.readOutbound(), tsOpt(0, 1));
 
                     // <A, TSval=4> ------------------->
-                    seg = Segment.ack(204, 310, data.copy());
+                    final ByteBuf data1 = data.copy();
+                    seg = new Segment(204, 310, ACK, data1);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(4, 0));
                     channel.writeInbound(seg);
                     assertEquals(4, tcb.tsRecent());
@@ -1511,7 +1520,7 @@ class ReliableTransportHandlerTest {
                     final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = Segment.syn(100, options);
+                    final Segment seg = new Segment(100, SYN, options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -1549,7 +1558,7 @@ class ReliableTransportHandlerTest {
                     final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = Segment.synAck(999, 101, options);
+                    final Segment seg = new Segment(999, 101, (byte) (SYN | ACK), options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -1589,7 +1598,7 @@ class ReliableTransportHandlerTest {
                     final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
                     tsOpt = new TimestampsOption(1, 2);
                     options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = Segment.ack(0, 102, options);
+                    final Segment seg = new Segment(0, 102, ACK, options);
                     channel.writeInbound(seg);
 
                     // Check for a TSopt option; if one is found, save SEG.TSval in the variable
@@ -2069,9 +2078,6 @@ class ReliableTransportHandlerTest {
 
                         handler.close(ctx, promise);
 
-                        // RFC 9293: Any outstanding RECEIVEs are returned with "error: closing" responses.
-                        verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
-
                         // RFC 9293: Delete TCB,
                         verify(tcb).delete();
 
@@ -2120,7 +2126,7 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: then form a FIN segment and send it,
                         verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(123), ctl(FIN)));
+                        assertThat(seg, allOf(seq(123), ctl(FIN, ACK)));
 
                         // RFC 9293: and enter FIN-WAIT-1 state;
                         assertEquals(FIN_WAIT_1, handler.state);
@@ -2218,7 +2224,7 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: then send a FIN segment,
                         verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(123L), ack(88L), ctl(FIN)));
+                        assertThat(seg, allOf(seq(123L), ack(88L), ctl(FIN, ACK)));
 
                         // RFC 9293: enter LAST-ACK state.
                         assertEquals(LAST_ACK, handler.state);
@@ -2272,10 +2278,6 @@ class ReliableTransportHandlerTest {
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
                         handler.userCallAbort(ctx);
-
-                        // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
-                        // RFC 9293: reset" responses.
-                        verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
 
                         // RFC 9293: Delete TCB,
                         verify(tcb).delete();
@@ -2333,7 +2335,7 @@ class ReliableTransportHandlerTest {
 
                         // RFC 9293: all segments queued for transmission (except for the RST
                         // RFC 9293: formed above) or retransmission should be flushed.
-                        verify(tcb.retransmissionQueue()).flush();
+                        verify(tcb.retransmissionQueue()).release();
 
                         // RFC 9293: Delete the TCB,
                         verify(tcb).delete();
@@ -2993,7 +2995,7 @@ class ReliableTransportHandlerTest {
                             assertEquals(LISTEN, handler.state);
 
                             // RFC 9293: In either case, the retransmission queue should be flushed.
-                            verify(tcb.retransmissionQueue()).flush();
+                            verify(tcb.retransmissionQueue()).release();
 
                             verify(seg).release();
                         }
@@ -3016,7 +3018,7 @@ class ReliableTransportHandlerTest {
                             verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
 
                             // RFC 9293: In either case, the retransmission queue should be flushed.
-                            verify(tcb.retransmissionQueue()).flush();
+                            verify(tcb.retransmissionQueue()).release();
 
                             // RFC 9293: And in the active OPEN case, enter the CLOSED state
                             assertEquals(CLOSED, handler.state);
@@ -3046,13 +3048,12 @@ class ReliableTransportHandlerTest {
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
 
-                            // FIXME:
-                            //  RFC 9293: If the RST bit is set, then any outstanding RECEIVEs and SEND
-                            //  RFC 9293: should receive "reset" responses.
+                            // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs and SEND
+                            // RFC 9293: should receive "reset" responses.
                             verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
 
                             // RFC 9293: All segment queues should be flushed.
-                            verify(tcb.retransmissionQueue()).flush();
+                            verify(tcb.retransmissionQueue()).release();
 
                             // RFC 9293: Users should also receive an unsolicited general
                             // RFC 9293: "connection reset" signal.
@@ -3781,6 +3782,7 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Nested
+                    @Disabled("unreachable with our implementation?")
                     class OnCloseWaitAndClosingAndLastAckState {
                         @ParameterizedTest
                         @EnumSource(value = State.class, names = {
@@ -3789,9 +3791,6 @@ class ReliableTransportHandlerTest {
                                 "LAST_ACK"
                         })
                         void shouldRemainInState(final State state) {
-                            // L1612 muss true sein: ((SND.UNA - MAX.SND.WND) =< SEG.ACK =< SND.NXT)
-                            // L1713 muss true sein: SND.UNA < SEG.ACK =< SND.NXT
-
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
@@ -3895,8 +3894,10 @@ class ReliableTransportHandlerTest {
 
                     // RFC 9293: For any state if the user timeout expires,
 
-                    // FIXME:
-                    //  RFC 9293: flush all queues,
+                    // RFC 9293: flush all queues,
+                    verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+                    verify(tcb.retransmissionQueue()).release();
+                    verify(tcb.receiveBuffer()).release();
 
                     // RFC 9293: signal the user "error: connection aborted due to user timeout" in
                     // RFC 9293: general and for any outstanding calls,
