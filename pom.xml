@@ -93,6 +93,7 @@
         <module>drasyl-all</module>
         <module>drasyl-node</module>
         <module>drasyl-extras</module>
+        <module>drasyl-jtasklet</module>
     </modules>
 
     <scm>

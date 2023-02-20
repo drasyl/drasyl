@@ -202,7 +202,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         private long best;
         private long worst;
 
-        PeerRtt(final Role role,
+        public PeerRtt(final Role role,
                 final InetSocketAddress inetAddress,
                 final long rtt) {
             this.role = requireNonNull(role);
