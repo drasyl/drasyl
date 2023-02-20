@@ -120,7 +120,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
     private static final ClosedChannelException CONNECTION_NOT_EXIST_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
-    private static final ConnectionHandshakeClosing HANDSHAKE_CLOSING_EVENT = new ConnectionHandshakeClosing();
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
     private final ReliableTransportConfig config;
@@ -156,6 +155,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     public ReliableTransportHandler(final ReliableTransportConfig config) {
         this(config, null, null, null, null, null, null, null, true);
+    }
+
+    @Override
+    public String toString() {
+        return "ReliableTransportHandler{" +
+                "state=" + state +
+                ", tcb=" + tcb +
+                '}';
     }
 
     /*
@@ -692,7 +699,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S128")
     public void userCallAbort(final ChannelHandlerContext ctx) throws ClosedChannelException {
-        LOG.trace("{}[{}] ABORT call received.", ctx.channel(), state);
+        LOG.trace("{}[{}] ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
         switch (state) {
             case CLOSED:
@@ -750,7 +757,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: formed above) or retransmission should be flushed.
                 tcb.retransmissionQueue().release();
                 // (RST send must be called after flush)
-                tcb.send(ctx, seg);
+                tcb.sendAndFlush(ctx, seg);
 
                 // RFC 9293: Delete the TCB,
                 deleteTcb();
@@ -835,22 +842,24 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         switch (newState) {
             case SYN_SENT:
             case SYN_RECEIVED:
-                ctx.fireUserEventTriggered(new ConnectionHandshakeIssued());
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
-                cancelUserTimer();
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt()));
+                cancelUserTimer(ctx);
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt())));
                 break;
 
             case CLOSE_WAIT:
-                cancelTimeWaitTimer();
+                cancelTimeWaitTimer(ctx);
                 break;
 
             case CLOSED:
-                cancelTimeWaitTimer();
+                cancelUserTimer(ctx);
+                cancelRetransmissionTimer(ctx);
+                cancelTimeWaitTimer(ctx);
                 ctx.close(closedPromise);
                 break;
         }
@@ -976,7 +985,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 7323: Check for a TSopt option;
                 final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
                 if (tsOpt != null) {
-                    LOG.trace("{}[{}] RTT measurement: {} < {}", ctx.channel(), state, tsOpt);
+                    LOG.trace("{}[{}] RTT measurement: < {}", ctx.channel(), state, tsOpt);
                     final long segTsVal = tsOpt.tsVal;
                     LOG.trace("{}[{}] RTT measurement: Set TS.Recent to SEG.TSval ({}) and turn on Snd.TS.OK.", ctx.channel(), state, segTsVal);
 
@@ -1144,7 +1153,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             if (seg.isAck()) {
                 if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                     // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
-                    tcb.sndUna(seg.ack());
+                    tcb.sndUna(ctx, seg.ack());
 
                     // RFC 9293: and any segments on the retransmission queue that are thereby
                     // RFC 9293: acknowledged should be removed.
@@ -1158,7 +1167,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 7323: Check for a TSopt option;
                 final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
                 if (tsOpt != null) {
-                    LOG.trace("{}[{}] RTT measurement: {} < {}", ctx.channel(), state, tsOpt);
+                    LOG.trace("{}[{}] RTT measurement: < {}", ctx.channel(), state, tsOpt);
                     final long segTsVal = tsOpt.tsVal;
                     LOG.trace("{}[{}] RTT measurement: Set TS.Recent to SEG.TSval ({}) and turn on Snd.TS.OK.", ctx.channel(), state, segTsVal);
 
@@ -1639,7 +1648,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
-                        cancelUserTimer();
+                        cancelUserTimer(ctx);
 
                         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
                         changeState(ctx, ESTABLISHED);
@@ -1652,7 +1661,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                         // advance send state
                         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-                            tcb.sndUna(seg.ack());
+                            tcb.sndUna(ctx, seg.ack());
                             tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
                         }
                     }
@@ -1723,8 +1732,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         startTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers
-                        cancelUserTimer();
-                        cancelRetransmissionTimer();
+                        cancelUserTimer(ctx);
+                        cancelRetransmissionTimer(ctx);
                     }
                     else {
                         // RFC 9293: otherwise, ignore the segment.
@@ -1848,7 +1857,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // (can not be reached with our implementation)
 
             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-            ctx.fireUserEventTriggered(HANDSHAKE_CLOSING_EVENT);
+            ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state)));
 
             // RFC 9293: and return any pending RECEIVEs with same message,
             // (not applicable to us)
@@ -1859,7 +1868,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // RFC 9293: and send an acknowledgment for the FIN.
             final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
             LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
-            tcb.send(ctx, response);
+            tcb.sendAndFlush(ctx, response);
 
             // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
             pushSeen = false;
@@ -1883,8 +1892,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         startTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers;
-                        cancelUserTimer();
-                        cancelRetransmissionTimer();
+                        cancelUserTimer(ctx);
+                        cancelRetransmissionTimer(ctx);
                     }
                     else {
                         // RFC 9293: otherwise, enter the CLOSING state.
@@ -1900,8 +1909,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     startTimeWaitTimer(ctx);
 
                     // RFC 9293: turn off the other timers;
-                    cancelUserTimer();
-                    cancelRetransmissionTimer();
+                    cancelUserTimer(ctx);
+                    cancelRetransmissionTimer(ctx);
                     break;
 
                 case CLOSE_WAIT:
@@ -1938,7 +1947,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         if (lessThan(tcb.sndUna(), ack.ack()) && lessThanOrEqualTo(ack.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), ack, tcb.sndUna(), ack.ack(), SerialNumberArithmetic.sub(ack.ack(), tcb.sndUna(), SEQ_NO_SPACE));
             ackedBytes = sub(ack.ack(), tcb.sndUna());
-            tcb.sndUna(ack.ack());
+            tcb.sndUna(ctx, ack.ack());
         }
 
         // RFC 7323: Also compute a new estimate of round-trip time.
@@ -2116,7 +2125,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 if ((ctl & ACK) != 0) {
                     tcb.lastAckSent(ack);
                 }
-                LOG.trace("{}[{}] RTT measurement: {} > {}", ctx.channel(), state, tsOpt);
+                LOG.trace("{}[{}] RTT measurement: > {}", ctx.channel(), state, tsOpt);
             }
             else if ((ctl & SYN) != 0) {
                 // RFC 9293: Once TSopt has been successfully negotiated, that is both <SYN> and
@@ -2168,6 +2177,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     void startUserTime(final ChannelHandlerContext ctx) {
         assert userTimer == null;
 
+        LOG.trace("{}[{}] USER timer created: Timeout {}ms.", ctx.channel(), state, config.userTimeout().toMillis());
         userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
     }
 
@@ -2180,7 +2190,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
-        LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
+        LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
         final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
         tcb.sendBuffer().fail(cause);
@@ -2201,10 +2211,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         return;
     }
 
-    void cancelUserTimer() {
+    void cancelUserTimer(final ChannelHandlerContext ctx) {
         if (userTimer != null) {
             userTimer.cancel(false);
             userTimer = null;
+            LOG.trace("{}[{}] USER TIMEOUT timer cancelled.", ctx.channel(), state);
         }
     }
 
@@ -2213,6 +2224,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         assert retransmissionTimer == null;
 
         final long rto = tcb.rto();
+        LOG.trace("{}[{}] RETRANSMISSION timer created: Timeout {}ms.", ctx.channel(), state, rto);
         retransmissionTimer = ctx.executor().schedule(() -> retransmissionTimeout(ctx, tcb, rto), rto, MILLISECONDS);
     }
 
@@ -2267,19 +2279,21 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
     }
 
-    void cancelRetransmissionTimer() {
+    void cancelRetransmissionTimer(final ChannelHandlerContext ctx) {
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
             retransmissionTimer = null;
+            LOG.trace("{}[{}] RETRANSMISSION TIMEOUT timer cancelled.", ctx.channel(), state);
         }
     }
 
     private void startTimeWaitTimer(final ChannelHandlerContext ctx) {
-        cancelTimeWaitTimer();
+        cancelTimeWaitTimer(ctx);
 
         // RFC 9293: When a connection is closed actively, it MUST linger in the TIME-WAIT state for
         // RFC 9293: a time 2xMSL (Maximum Segment Lifetime) (MUST-13)
         final long timeWaitTimeout = config.msl().multipliedBy(2).toMillis();
+        LOG.trace("{}[{}] TIME-WAIT timer created: Timeout {}ms.", ctx.channel(), state, timeWaitTimeout);
         timeWaitTimer = ctx.executor().schedule(() -> timeWaitTimeout(ctx), timeWaitTimeout, MILLISECONDS);
     }
 
@@ -2305,10 +2319,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         return;
     }
 
-    private void cancelTimeWaitTimer() {
+    private void cancelTimeWaitTimer(final ChannelHandlerContext ctx) {
         if (timeWaitTimer != null) {
             timeWaitTimer.cancel(false);
             timeWaitTimer = null;
+            LOG.trace("{}[{}] TIME-WAIT timer cancelled.", ctx.channel(), state);
         }
     }
 }

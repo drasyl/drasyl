@@ -822,8 +822,9 @@ public class TransmissionControlBlock {
         return tsRecent;
     }
 
-    public void sndUna(final long sndUna) {
+    public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
         this.sndUna = sndUna;
+        LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
     }
 
     public void bla_tsRecent(final long tsRecent) {

@@ -59,7 +59,7 @@ public class RetransmissionQueue {
                     final TransmissionControlBlock tcb) {
         LOG.trace("{} Add SEG `{}` to RTNS.Q.", ctx.channel(), seg);
         ReferenceCountUtil.touch(seg, "RetransmissionQueue enqueue " + seg.toString());
-        queue.add(seg);
+        queue.add(seg.copy());
 
         // RFC 5482: The Transmission Control Protocol (TCP) specification [RFC0793] defines a
         // RFC 5482: local, per-connection "user timeout" parameter that specifies the maximum
@@ -70,7 +70,7 @@ public class RetransmissionQueue {
         // RFC 9293: changed to the new one.
         final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
         if (tcb.config().userTimeout().toMillis() > 0) {
-            handler.cancelUserTimer();
+            handler.cancelUserTimer(ctx);
             handler.startUserTime(ctx);
         }
 
@@ -121,13 +121,13 @@ public class RetransmissionQueue {
             if (!tcb.sendBuffer().hasOutstandingData()) {
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
-                handler.cancelRetransmissionTimer();
+                handler.cancelRetransmissionTimer(ctx);
             }
             else {
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
                 // RFC 6298:       (for the current value of RTO).
-                handler.cancelRetransmissionTimer();
+                handler.cancelRetransmissionTimer(ctx);
                 handler.startRetransmissionTimer(ctx, tcb);
             }
         }
@@ -136,7 +136,10 @@ public class RetransmissionQueue {
     Segment retransmissionSegment(ChannelHandlerContext ctx,
                                   final TransmissionControlBlock tcb) {
         final Segment seg = queue.peek();
-        return seg;
+        if (seg != null) {
+            return seg.copy();
+        }
+        return null;
     }
 
     public void release() {

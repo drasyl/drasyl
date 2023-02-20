@@ -21,12 +21,26 @@
  */
 package org.drasyl.handler.connection;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Signals that the connection is closing.
  */
-public class ConnectionHandshakeClosing implements ConnectionHandshakeEvent {
+public class ConnectionClosing implements ConnectionHandshakeEvent {
+    private final State state;
+
+    public ConnectionClosing(final State state) {
+        this.state = requireNonNull(state);
+    }
+
+    public State state() {
+        return state;
+    }
+
     @Override
     public String toString() {
-        return "ConnectionHandshakeClosing{}";
+        return "ConnectionClosing{" +
+                "state=" + state +
+                '}';
     }
 }

@@ -2726,7 +2726,7 @@ class ReliableTransportHandlerTest {
                         verify(tcb).bla_irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
-                        verify(tcb).sndUna(123L);
+                        verify(tcb).sndUna(ctx, 123L);
 
                         // RFC 9293: and any segments on the retransmission queue that are thereby
                         // RFC 9293: acknowledged should be removed.
@@ -2806,7 +2806,7 @@ class ReliableTransportHandlerTest {
                         verify(tcb).bla_irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
-                        verify(tcb).sndUna(123L);
+                        verify(tcb).sndUna(ctx, 123L);
 
                         // RFC 9293: and any segments on the retransmission queue that are thereby
                         // RFC 9293: acknowledged should be removed.
@@ -3321,7 +3321,7 @@ class ReliableTransportHandlerTest {
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-                                verify(tcb).sndUna(88L);
+                                verify(tcb).sndUna(ctx, 88L);
 
                                 // RFC 9293: Any segments on the retransmission queue that are thereby entirely
                                 // RFC 9293: acknowledged are removed.
@@ -3359,7 +3359,7 @@ class ReliableTransportHandlerTest {
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-                                verify(tcb).sndUna(88L);
+                                verify(tcb).sndUna(ctx, 88L);
 
                                 // RFC 9293: Any segments on the retransmission queue that are thereby entirely
                                 // RFC 9293: acknowledged are removed.
@@ -3401,7 +3401,7 @@ class ReliableTransportHandlerTest {
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-                                verify(tcb).sndUna(88L);
+                                verify(tcb).sndUna(ctx, 88L);
 
                                 // RFC 9293: Any segments on the retransmission queue that are thereby entirely
                                 // RFC 9293: acknowledged are removed.
@@ -3439,7 +3439,7 @@ class ReliableTransportHandlerTest {
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-                                verify(tcb).sndUna(88L);
+                                verify(tcb).sndUna(ctx, 88L);
 
                                 // RFC 9293: Any segments on the retransmission queue that are thereby entirely
                                 // RFC 9293: acknowledged are removed.
@@ -3477,7 +3477,7 @@ class ReliableTransportHandlerTest {
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
-                                verify(tcb).sndUna(88L);
+                                verify(tcb).sndUna(ctx, 88L);
 
                                 // RFC 9293: Any segments on the retransmission queue that are thereby entirely
                                 // RFC 9293: acknowledged are removed.
@@ -3643,7 +3643,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
@@ -3680,7 +3680,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
@@ -3721,7 +3721,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
@@ -3756,7 +3756,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
@@ -3805,7 +3805,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
@@ -3840,7 +3840,7 @@ class ReliableTransportHandlerTest {
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-                            verify(ctx).fireUserEventTriggered(any(ConnectionHandshakeClosing.class));
+                            verify(ctx).fireUserEventTriggered(any(ConnectionClosing.class));
 
                             // RFC 9293: advance RCV.NXT over the FIN,
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
