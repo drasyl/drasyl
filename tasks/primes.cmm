@@ -1,0 +1,27 @@
+int low,high,result;
+
+procedure	int	checkprime	(int	a){
+	int	c;
+	c:=2;
+	while(c<=(a-1)){
+		if((a%c)=0){
+			return	0;
+		}
+		c:=c+1;
+	}
+	if(c=a){
+	return	a;
+	}	
+}
+
+>>low;	
+>>high;
+
+
+while(low<high){
+	result:=checkprime(low);
+	if(result	#	0){
+		<<result;
+	}
+	low:=low+1;
+}

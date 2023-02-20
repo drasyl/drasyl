@@ -1,0 +1,17 @@
+int l, i, avg;
+int[1048576] red;
+int[1048576] green;
+int[1048576] blue;
+
+>>l;
+>>red;
+>>green;
+>>blue;
+
+i:=0;
+while(i<l){
+    avg:=0;
+    avg:=(red[i] + green[i] + blue[i])/3;
+    <<avg;
+    i++;
+}

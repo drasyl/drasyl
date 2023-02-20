@@ -1,0 +1,123 @@
+float S, dt, sigma,K, r, T, value, nSimulationsF, vsqrdt, drift, price;
+int nSimulations, call, matrixSize,randmatSize,nSteps;
+
+
+procedure float uniformInterval(float a, float b){
+	return a + random(1.0) * (b-a);
+}
+
+procedure float marsagliaPolar(){
+	float d, x, y, n;
+	       
+	x:=uniformInterval(-1.0, 1.0);
+	y:=uniformInterval(-1.0, 1.0);
+	d:=x*x + y*y;
+	n:=d;
+		         	
+	while (n >= 0.0){
+		    
+		if(n < 1.0){
+			if( n > 0.0){
+				n := -1.0;
+			}
+		}
+			    
+		if(n > 0.0){
+			x:=uniformInterval(-1.0, 1.0);
+			y:=uniformInterval(-1.0, 1.0);
+			d:=x*x + y*y;
+			n:=d;
+		}
+	}
+	         
+	return x * sqrt(-2.0 * log(d) / d);
+}
+
+procedure float optionPricing(){
+	float[matrixSize] smat;
+	float[randmatSize] randmat;
+	float[nSimulations] pvec;
+	int i, j, k;
+	float temp;
+	i:=0;
+	j:=0;
+	while(i<nSimulations){
+		smat[i*nSteps]:=S;
+		j:=0;
+		while(j<nSteps-1){
+			randmat[i*(nSteps-1)+j]:=marsagliaPolar();
+			j++;
+		}
+		i++;
+	}
+	
+	i:=0;
+	while(i<nSimulations){
+		j:=1;
+		while(j<nSteps){
+			smat[i*nSteps+j]:=exp(drift+vsqrdt*randmat[i*(nSteps-1)+j-1]);
+			j++;
+		}
+		i++;
+	}
+	
+	i:=0;
+	temp:=0.0;
+	while(i<nSimulations){
+		j:=nSteps-1;
+		while(j>0){
+			temp:=smat[nSteps*i];
+			k:=1;
+			while(k<=j){
+				temp:=temp*smat[i*nSteps+k];
+				k++;
+			}
+			smat[i*nSteps+j]:=temp;
+			j--;
+		}
+		i++;
+	}
+
+	value:=0.0;
+	i:=0;
+	while(i<nSimulations){
+		if(call=1){
+			if(smat[i*nSteps+(nSteps-1)]>K){
+				pvec[i]:=smat[i*nSteps+(nSteps-1)]-K;
+			}else{
+				pvec[i]:=0.0;
+			}
+		}else{
+		
+	
+			if(K-(smat[i*nSteps+(nSteps-1)])>=0.0){
+				pvec[i]:=K-smat[i*nSteps+(nSteps-1)];
+
+			}else{
+				pvec[i]:=0.0;
+			}
+		}
+		value:=value+pvec[i];
+		i++;
+	}
+	value:=(value/nSimulationsF)*exp(-r*T);
+	return value;
+}
+
+>>nSimulations;
+>>S;
+>>K;
+>>r;
+>>sigma;
+>>dt;
+>>T;
+>>call;
+>>nSimulationsF;
+>>nSteps;
+price:=0.0;
+matrixSize:=nSimulations*nSteps;
+randmatSize:=nSimulations*(nSteps-1);
+vsqrdt:=sigma*sqrt(dt);
+drift:=(r-sigma*sigma/2.0)*dt;
+price:=optionPricing();
+<<price;
