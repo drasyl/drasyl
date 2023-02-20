@@ -21,6 +21,10 @@
  */
 package org.drasyl.handler;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -49,6 +53,7 @@ import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.NumberUtil.sampleStandardDeviation;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
@@ -146,8 +151,10 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         private final long time;
         private final Map<DrasylAddress, PeerRtt> peers;
 
-        PeersRttReport(final long time, final Map<DrasylAddress, PeerRtt> peers) {
-            this.time = requirePositive(time);
+        @JsonCreator
+        public PeersRttReport(@JsonProperty("time") final long time,
+                              @JsonProperty("peers") final Map<DrasylAddress, PeerRtt> peers) {
+            this.time = requireNonNegative(time);
             this.peers = requireNonNull(peers);
         }
 
@@ -202,9 +209,10 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         private long best;
         private long worst;
 
-        public PeerRtt(final Role role,
-                final InetSocketAddress inetAddress,
-                final long rtt) {
+        @JsonCreator
+        public PeerRtt(@JsonProperty("role") final Role role,
+                       @JsonProperty("inetAddress") final InetSocketAddress inetAddress,
+                       @JsonProperty("last") final long rtt) {
             this.role = requireNonNull(role);
             this.inetAddress = requireNonNull(inetAddress);
             this.records = new EvictingQueue<>(RTTS_COUNT);
@@ -215,10 +223,12 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             this.worst = rtt;
         }
 
+        @JsonGetter
         public Role role() {
             return role;
         }
 
+        @JsonGetter
         public InetSocketAddress inetAddress() {
             return inetAddress;
         }
@@ -226,6 +236,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return number of pings sent
          */
+        @JsonIgnore
         public long sent() {
             return sent;
         }
@@ -233,6 +244,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return RTT of last ping
          */
+        @JsonGetter
         public long last() {
             return last;
         }
@@ -252,6 +264,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return average RTT
          */
+        @JsonIgnore
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         public double average() {
             return records.stream().mapToLong(l -> l).average().getAsDouble();
@@ -260,6 +273,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return best RTT
          */
+        @JsonIgnore
         public long best() {
             return best;
         }
@@ -267,6 +281,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return worst RTT
          */
+        @JsonIgnore
         public long worst() {
             return worst;
         }
@@ -274,6 +289,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         /**
          * @return RTT standard deviation
          */
+        @JsonIgnore
         public double stDev() {
             return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
         }

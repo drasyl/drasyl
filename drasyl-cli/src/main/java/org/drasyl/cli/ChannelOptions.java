@@ -97,14 +97,6 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;
     @Option(
-            names = { "--static-routes" },
-            description = "Some static routes.",
-            paramLabel = "<public-key>=<host:port>",
-            defaultValue = "", // Provided by ChannelOptionsDefaultProvider
-            split = ","
-    )
-    protected Map<DrasylAddress, InetSocketAddress> staticRoutes;
-    @Option(
             names = { "--no-protocol-arming" },
             description = "Disables arming (authenticating/encrypting) of all protocol messages. Ensure other nodes have arming disabled as well."
     )
