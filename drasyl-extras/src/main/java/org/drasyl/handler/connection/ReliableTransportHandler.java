@@ -46,6 +46,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
@@ -639,7 +640,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
-                        final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
+                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), FIN);
                         LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                         tcb.sendAndFlush(ctx, seg);
                     }
@@ -664,7 +665,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
-                        final Segment seg = Segment.finAck(tcb.sndNxt(), tcb.rcvNxt());
+                        final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), FIN);
                         tcb.sendAndFlush(ctx, seg);
 
                         // RFC 9293: enter LAST-ACK state.
@@ -1674,7 +1675,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case FIN_WAIT_1:
-                    final boolean ackOurFin = seg.isAck() && lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
+                    final boolean ackOurFin = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
 
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
@@ -1684,7 +1685,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     if (ackOurFin) {
                         // RFC 9293: if the FIN segment is now acknowledged, then enter FIN-WAIT-2
                         // RFC 9293: and continue processing in that state.
-                        // our FIN has been acknowledged
                         changeState(ctx, FIN_WAIT_2);
                     }
                     break;
@@ -1708,7 +1708,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSING:
-                    final boolean ackOurFin2 = seg.isAck() && lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
+                    final boolean ackOurFin2 = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
                     if (establishedProcessing(ctx, seg, acceptableAck)) {
                         return;
@@ -1719,10 +1719,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 9293: state;
                         changeState(ctx, TIME_WAIT);
 
-                        // start the time-wait timer
+                        // RFC 9293: start the time-wait timer
                         startTimeWaitTimer(ctx);
 
-                        // turn off the other timers
+                        // RFC 9293: turn off the other timers
                         cancelUserTimer();
                         cancelRetransmissionTimer();
                     }
@@ -1905,9 +1905,15 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     break;
 
                 case CLOSE_WAIT:
+                    // RFC 9293: Remain in the CLOSE-WAIT state.
+                    break;
+
                 case CLOSING:
+                    // RFC 9293: Remain in the CLOSING state.
+                    break;
+
                 case LAST_ACK:
-                    // RFC 9293: remain in the state.
+                    // RFC 9293: Remain in the LAST-ACK state.
                     break;
 
                 case TIME_WAIT:

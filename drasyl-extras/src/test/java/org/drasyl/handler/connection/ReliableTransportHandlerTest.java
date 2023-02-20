@@ -24,6 +24,7 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -42,17 +43,21 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
+import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
@@ -93,6 +98,7 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -105,6 +111,17 @@ class ReliableTransportHandlerTest {
     class EstablishingAConnection {
         // RFC 9293: Figure 6: Basic Three-Way Handshake for Connection Synchronization
         // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-6
+        //     TCP Peer A                                           TCP Peer B
+        //
+        // 1.  CLOSED                                               LISTEN
+        //
+        // 2.  SYN-SENT    --> <SEQ=100><CTL=SYN>               --> SYN-RECEIVED
+        //
+        // 3.  ESTABLISHED <-- <SEQ=300><ACK=101><CTL=SYN,ACK>  <-- SYN-RECEIVED
+        //
+        // 4.  ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK>       --> ESTABLISHED
+        //
+        // 5.  ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK><DATA> --> ESTABLISHED
         @Nested
         class BasicThreeWayHandshakeForConnectionSynchronization {
             // TCP Peer A
@@ -180,6 +197,21 @@ class ReliableTransportHandlerTest {
 
         // RFC 9293: Figure 7: Simultaneous Connection Synchronization
         // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-7
+        //     TCP Peer A                                       TCP Peer B
+        //
+        // 1.  CLOSED                                           CLOSED
+        //
+        // 2.  SYN-SENT     --> <SEQ=100><CTL=SYN>              ...
+        //
+        // 3.  SYN-RECEIVED <-- <SEQ=300><CTL=SYN>              <-- SYN-SENT
+        //
+        // 4.               ... <SEQ=100><CTL=SYN>              --> SYN-RECEIVED
+        //
+        // 5.  SYN-RECEIVED --> <SEQ=100><ACK=301><CTL=SYN,ACK> ...
+        //
+        // 6.  ESTABLISHED  <-- <SEQ=300><ACK=101><CTL=SYN,ACK> <-- SYN-RECEIVED
+        //
+        // 7.               ... <SEQ=100><ACK=301><CTL=SYN,ACK> --> ESTABLISHED
         @Nested
         class SimultaneousConnectionSynchronization {
             // TCP Peer A (and also same-behaving TCP Peer B)
@@ -229,6 +261,21 @@ class ReliableTransportHandlerTest {
         class HalfOpenConnectionsAndOtherAnomalies {
             // RFC 9293: Figure 9: Half-Open Connection Discovery
             // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-9
+            //       TCP Peer A                                      TCP Peer B
+            //
+            //   1.  (REBOOT)                              (send 300,receive 100)
+            //
+            //   2.  CLOSED                                           ESTABLISHED
+            //
+            //   3.  SYN-SENT --> <SEQ=400><CTL=SYN>              --> (??)
+            //
+            //   4.  (!!)     <-- <SEQ=300><ACK=100><CTL=ACK>     <-- ESTABLISHED
+            //
+            //   5.  SYN-SENT --> <SEQ=100><CTL=RST>              --> (Abort!!)
+            //
+            //   6.  SYN-SENT                                         CLOSED
+            //
+            //   7.  SYN-SENT --> <SEQ=400><CTL=SYN>              -->
             @Nested
             class HalfOpenConnectionDiscovery {
                 // TCP Peer A
@@ -296,6 +343,13 @@ class ReliableTransportHandlerTest {
 
             // RFC 9293: Figure 10: Active Side Causes Half-Open Connection Discovery
             // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-10
+            //       TCP Peer A                                         TCP Peer B
+            //
+            // 1.  (REBOOT)                                  (send 300,receive 100)
+            //
+            // 2.  (??)    <-- <SEQ=300><ACK=100><DATA=10><CTL=ACK> <-- ESTABLISHED
+            //
+            // 3.          --> <SEQ=100><CTL=RST>                   --> (ABORT!!)
             @Nested
             class ActiveSideCausesHalfOpenConnectionDiscovery {
                 // TCP Peer A
@@ -317,8 +371,19 @@ class ReliableTransportHandlerTest {
 
             // RFC 9293: Figure 11: Old Duplicate SYN Initiates a Reset on Two Passive Sockets
             // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-11
-           @Nested
-           class OldDuplicateSynInitiatesAResetOnTwoPassiveSockets {
+            //     TCP Peer A                                    TCP Peer B
+            //
+            // 1.  LISTEN                                        LISTEN
+            //
+            // 2.       ... <SEQ=Z><CTL=SYN>                -->  SYN-RECEIVED
+            //
+            // 3.  (??) <-- <SEQ=X><ACK=Z+1><CTL=SYN,ACK>   <--  SYN-RECEIVED
+            //
+            // 4.       --> <SEQ=Z+1><CTL=RST>              -->  (return to LISTEN!)
+            //
+            // 5.  LISTEN                                        LISTEN
+            @Nested
+            class OldDuplicateSynInitiatesAResetOnTwoPassiveSockets {
                 // TCP Peer B
                 @Test
                 void shouldConformWithBehaviorOfPeerB() {
@@ -344,7 +409,7 @@ class ReliableTransportHandlerTest {
 
                     channel.close();
                 }
-           }
+            }
         }
     }
 
@@ -354,6 +419,22 @@ class ReliableTransportHandlerTest {
     class ClosingAConnection {
         // RFC 9293: Figure 12: Normal Close Sequence
         // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-12
+        //     TCP Peer A                                           TCP Peer B
+        //
+        // 1.  ESTABLISHED                                          ESTABLISHED
+        //
+        // 2.  (Close)
+        //     FIN-WAIT-1  --> <SEQ=100><ACK=300><CTL=FIN,ACK>  --> CLOSE-WAIT
+        //
+        // 3.  FIN-WAIT-2  <-- <SEQ=300><ACK=101><CTL=ACK>      <-- CLOSE-WAIT
+        //
+        // 4.                                                       (Close)
+        //     TIME-WAIT   <-- <SEQ=300><ACK=101><CTL=FIN,ACK>  <-- LAST-ACK
+        //
+        // 5.  TIME-WAIT   --> <SEQ=101><ACK=301><CTL=ACK>      --> CLOSED
+        //
+        // 6.  (2 MSL)
+        //     CLOSED
         @Nested
         class NormalCloseSequence {
             // TCP Peer A
@@ -399,9 +480,6 @@ class ReliableTransportHandlerTest {
                     assertEquals(CLOSED, handler.state);
                     assertTrue(future.isDone());
                 });
-
-                // FIXME: wieder einbauen?
-                //assertNull(handler.tcb);
             }
 
             // TCP Peer B
@@ -446,6 +524,22 @@ class ReliableTransportHandlerTest {
 
         // RFC 9293: Figure 13: Simultaneous Close Sequence
         // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#figure-13
+        //     TCP Peer A                                           TCP Peer B
+        //
+        // 1.  ESTABLISHED                                          ESTABLISHED
+        //
+        // 2.  (Close)                                              (Close)
+        //     FIN-WAIT-1  --> <SEQ=100><ACK=300><CTL=FIN,ACK>  ... FIN-WAIT-1
+        //                 <-- <SEQ=300><ACK=100><CTL=FIN,ACK>  <--
+        //                 ... <SEQ=100><ACK=300><CTL=FIN,ACK>  -->
+        //
+        // 3.  CLOSING     --> <SEQ=101><ACK=301><CTL=ACK>      ... CLOSING
+        //                 <-- <SEQ=301><ACK=101><CTL=ACK>      <--
+        //                 ... <SEQ=101><ACK=301><CTL=ACK>      -->
+        //
+        // 4.  TIME-WAIT                                            TIME-WAIT
+        //     (2 MSL)                                              (2 MSL)
+        //     CLOSED                                               CLOSED
         @Nested
         class SimultaneousCloseSequence {
             // TCP Peer A (and also same-behaving TCP Peer B)
@@ -1518,7 +1612,6 @@ class ReliableTransportHandlerTest {
         }
     }
 
-
     // RFC 9293: 3.10. Event Processing
     // https://www.rfc-editor.org/rfc/rfc9293.html#name-event-processing
     @Nested
@@ -1860,14 +1953,27 @@ class ReliableTransportHandlerTest {
                             "SYN_SENT",
                             "SYN_RECEIVED"
                     })
-                    void shouldQueueCallForProcessingAfterEnteringEstablishedState(final State state) {
+                    void shouldQueueCallForProcessingAfterEnteringEstablishedState(final State state, @Mock final ChannelPromise promise) {
+                        when(promise.isSuccess()).thenReturn(true);
+
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
                         when(ctx.handler()).thenReturn(handler);
+                        when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
+                            @Override
+                            public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
+                                handler.state = ESTABLISHED;
+                                invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
+                                return promise;
+                            }
+                        });
 
                         handler.read(ctx);
 
                         // RFC 9293: Queue for processing after entering ESTABLISHED state.
                         verify(establishedPromise).addListener(any());
+
+                        // this is done by the enqueued call
+                        verify(tcb.receiveBuffer()).hasReadableBytes();
                     }
                 }
 
@@ -2024,22 +2130,39 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Test
-                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding() {
-                        when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true);
+                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding(@Mock final ChannelPromise promise) {
+                        when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true).thenReturn(false);
+                        when(promise.isSuccess()).thenReturn(true);
 
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+                        when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
+                            @Override
+                            public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
+                                handler.state = ESTABLISHED;
+                                invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
+                                return promise;
+                            }
+                        });
 
-                        handler.close(ctx, promise);
+                        handler.close(ctx, UserCallClose.this.promise);
 
                         // RFC 9293: otherwise, queue for processing after entering ESTABLISHED state.
                         verify(establishedPromise).addListener(any());
+
+                        // this is done by the enqueued call
+                        assertEquals(FIN_WAIT_1, handler.state);
                     }
                 }
 
                 @Nested
                 class OnEstablishedState {
                     @Test
-                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
+                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized(@Mock final ChannelFuture future) {
+                        when(tcb.sndNxt()).thenReturn(123L);
+                        when(tcb.rcvNxt()).thenReturn(88L);
+                        when(future.isSuccess()).thenReturn(true);
+                        when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
+
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
                         handler.close(ctx, promise);
@@ -2079,13 +2202,26 @@ class ReliableTransportHandlerTest {
                 @Nested
                 class OnCloseWaitState {
                     @Test
-                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
+                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized(@Mock final ChannelFuture future) {
+                        when(tcb.sndNxt()).thenReturn(123L);
+                        when(tcb.rcvNxt()).thenReturn(88L);
+                        when(future.isSuccess()).thenReturn(true);
+                        when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
+
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
                         handler.close(ctx, promise);
 
                         // RFC 9293: Queue this until all preceding SENDs have been segmentized,
                         verify(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx)).addListener(any());
+
+                        // RFC 9293: then send a FIN segment,
+                        verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
+                        final Segment seg = segmentCaptor.getValue();
+                        assertThat(seg, allOf(seq(123L), ack(88L), ctl(FIN)));
+
+                        // RFC 9293: enter LAST-ACK state.
+                        assertEquals(LAST_ACK, handler.state);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -2113,15 +2249,6 @@ class ReliableTransportHandlerTest {
                         verify(promise).tryFailure(any(ConnectionHandshakeException.class));
                     }
                 }
-
-//        @Test
-//        void name() {
-//            final EmbeddedChannel channel = new EmbeddedChannel();
-//            final ConnectionHandshakeHandler handler = new ConnectionHandshakeHandler(Duration.ofMillis(100), () -> 100, false, ESTABLISHED, 100, new TransmissionControlBlock(channel, 100L, 300L, 1000, 100 + SEG_HDR_SIZE));
-//            channel.pipeline().addLast(handler);
-//
-//            final ChannelFuture future = channel.pipeline().close();
-//        }
             }
 
             // RFC 9293: 3.10.5.  ABORT Call
@@ -2235,7 +2362,6 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: enter CLOSED state,
                         assertEquals(CLOSED, handler.state);
                     }
-
                 }
             }
 
@@ -3179,27 +3305,209 @@ class ReliableTransportHandlerTest {
 
                         @Nested
                         class OnEstablishedState {
-                            // FIXME
+                            @Test
+                            void shouldXXX() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+                                verify(tcb).sndUna(88L);
+
+                                // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+                                // RFC 9293: acknowledged are removed.
+                                // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+                                // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+                                // RFC 9293: response).
+                                verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
+
+                                // FIXME: RFC 6298 stuff?
+
+                                // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+                                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                verify(seg).release();
+                            }
                         }
 
                         @Nested
                         class OnFinWait1State {
-                            // FIXME
+                            @Test
+                            void shouldXXX() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+                                verify(tcb).sndUna(88L);
+
+                                // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+                                // RFC 9293: acknowledged are removed.
+                                // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+                                // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+                                // RFC 9293: response).
+                                verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
+
+                                // FIXME: RFC 6298 stuff?
+
+                                // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+                                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                // RFC 9293: if the FIN segment is now acknowledged, then enter FIN-WAIT-2
+                                // RFC 9293: and continue processing in that state.
+                                assertEquals(FIN_WAIT_2, handler.state);
+
+                                verify(seg).release();
+                            }
                         }
 
                         @Nested
                         class OnFinWait2State {
-                            // FIXME
+                            @Test
+                            void shouldXXX() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+                                verify(tcb).sndUna(88L);
+
+                                // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+                                // RFC 9293: acknowledged are removed.
+                                // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+                                // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+                                // RFC 9293: response).
+                                verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
+
+                                // FIXME: RFC 6298 stuff?
+
+                                // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+                                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                verify(seg).release();
+                            }
                         }
 
                         @Nested
                         class OnCloseWaitState {
-                            // FIXME
+                            @Test
+                            void shouldXXX() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+                                verify(tcb).sndUna(88L);
+
+                                // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+                                // RFC 9293: acknowledged are removed.
+                                // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+                                // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+                                // RFC 9293: response).
+                                verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
+
+                                // FIXME: RFC 6298 stuff?
+
+                                // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+                                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                verify(seg).release();
+                            }
                         }
 
                         @Nested
                         class OnClosingState {
-                            // FIXME
+                            @Test
+                            void shouldXXX() {
+                                when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.seq()).thenReturn(123L);
+                                when(seg.ack()).thenReturn(88L);
+                                when(tcb.sndUna()).thenReturn(87L);
+                                when(tcb.sndNxt()).thenReturn(89L);
+                                when(tcb.rcvWnd()).thenReturn(10);
+
+                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
+
+                                handler.channelRead(ctx, seg);
+                                handler.channelReadComplete(ctx);
+
+                                // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
+                                verify(tcb).sndUna(88L);
+
+                                // RFC 9293: Any segments on the retransmission queue that are thereby entirely
+                                // RFC 9293: acknowledged are removed.
+                                // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
+                                // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
+                                // RFC 9293: response).
+                                verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
+
+                                // FIXME: RFC 6298 stuff?
+
+                                // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
+                                // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
+                                // RFC 9293: set SND.WND <- SEG.WND, set SND.WL1 <- SEG.SEQ, and
+                                // RFC 9293: set SND.WL2 <- SEG.ACK.
+                                verify(tcb).updateSndWnd(any(), any());
+
+                                // RFC 9293: if the ACK acknowledges our FIN, then enter the TIME-WAIT
+                                // RFC 9293: state;
+                                assertEquals(TIME_WAIT, handler.state);
+
+                                // RFC 9293: start the time-wait timer
+                                verify(timeWaitTimer).cancel(false);
+                                assertNotNull(handler.timeWaitTimer);
+                                assertNotSame(timeWaitTimer, handler.timeWaitTimer);
+
+                                // RFC 9293: turn off the other timers
+                                userTimer.cancel(false);
+                                retransmissionTimer.cancel(false);
+
+                                verify(seg).release();
+                            }
                         }
 
                         @Nested
@@ -3253,8 +3561,10 @@ class ReliableTransportHandlerTest {
                                 final Segment response = segmentCaptor.getValue();
                                 assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
-                                // FIXME:
-                                //  RFC 9293: and restart the 2 MSL timeout.
+                                // RFC 9293: and restart the 2 MSL timeout.
+                                verify(timeWaitTimer).cancel(false);
+                                assertNotNull(handler.timeWaitTimer);
+                                assertNotSame(timeWaitTimer, handler.timeWaitTimer);
 
                                 verify(seg).release();
                             }
@@ -3479,12 +3789,16 @@ class ReliableTransportHandlerTest {
                                 "LAST_ACK"
                         })
                         void shouldRemainInState(final State state) {
+                            // L1612 muss true sein: ((SND.UNA - MAX.SND.WND) =< SEG.ACK =< SND.NXT)
+                            // L1713 muss true sein: SND.UNA < SEG.ACK =< SND.NXT
+
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
-                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndUna()).thenReturn(88L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.maxSndWnd()).thenReturn(64000L);
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3533,7 +3847,8 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            // FIXME: times(2)?
+                            verify(tcb, times(2)).send(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -3694,5 +4009,19 @@ class ReliableTransportHandlerTest {
 
     private static ByteBuf unpooledRandomBuffer(final int bytes) {
         return Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+    }
+
+    private static class ChannelFutureAnswer implements Answer<ChannelFuture> {
+        private final ChannelFuture future;
+
+        public ChannelFutureAnswer(final ChannelFuture future) {
+            this.future = requireNonNull(future);
+        }
+
+        @Override
+        public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
+            invocation.getArgument(0, ChannelFutureListener.class).operationComplete(future);
+            return future;
+        }
     }
 }
