@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.ReliableTransportConfig.Clock;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
@@ -96,14 +97,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
 class ReliableTransportHandlerTest {
+    private static ByteBuf unpooledRandomBuffer(final int bytes) {
+        return Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
+    }
+
+    private static class ChannelFutureAnswer implements Answer<ChannelFuture> {
+        private final ChannelFuture future;
+
+        public ChannelFutureAnswer(final ChannelFuture future) {
+            this.future = requireNonNull(future);
+        }
+
+        @Override
+        public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
+            invocation.getArgument(0, ChannelFutureListener.class).operationComplete(future);
+            return future;
+        }
+    }
+
     // RFC 9293: 3.5. Establishing a Connection
     // RFC 9293: https://www.rfc-editor.org/rfc/rfc9293.html#section-3.5
     @Nested
@@ -1785,6 +1804,21 @@ class ReliableTransportHandlerTest {
                 @Mock(answer = RETURNS_DEEP_STUBS)
                 ChannelPromise promise;
 
+                @Test
+                void shouldRejectOutboundNonByteBufs() {
+                    final EmbeddedChannel channel = new EmbeddedChannel();
+                    ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                            .baseMss(100 + SEG_HDR_SIZE)
+                            .build();
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
+                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), true);
+                    channel.pipeline().addLast(handler);
+
+                    assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
+
+                    channel.close();
+                }
+
                 @Nested
                 class OnClosedState {
                     @Test
@@ -1920,21 +1954,6 @@ class ReliableTransportHandlerTest {
                         verify(data).release();
                     }
                 }
-
-                @Test
-                void shouldRejectOutboundNonByteBufs() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
-                            .baseMss(100 + SEG_HDR_SIZE)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), true);
-                    channel.pipeline().addLast(handler);
-
-                    assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
-
-                    channel.close();
-                }
             }
 
             // RFC 9293: 3.10.3.  RECEIVE Call
@@ -1962,7 +1981,8 @@ class ReliableTransportHandlerTest {
                             "SYN_SENT",
                             "SYN_RECEIVED"
                     })
-                    void shouldQueueCallForProcessingAfterEnteringEstablishedState(final State state, @Mock final ChannelPromise promise) {
+                    void shouldQueueCallForProcessingAfterEnteringEstablishedState(final State state,
+                                                                                   @Mock final ChannelPromise promise) {
                         when(promise.isSuccess()).thenReturn(true);
 
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
@@ -2136,7 +2156,8 @@ class ReliableTransportHandlerTest {
                     }
 
                     @Test
-                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding(@Mock final ChannelPromise promise) {
+                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding(
+                            @Mock final ChannelPromise promise) {
                         when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true).thenReturn(false);
                         when(promise.isSuccess()).thenReturn(true);
 
@@ -2326,7 +2347,7 @@ class ReliableTransportHandlerTest {
 
                         // RFC 9293: Send a reset segment:
                         // RFC 9293: <SEQ=SND.NXT><CTL=RST>
-                        verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                        verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                         final Segment seg = segmentCaptor.getValue();
                         assertThat(seg, allOf(seq(123), ctl(RST)));
 
@@ -3629,13 +3650,18 @@ class ReliableTransportHandlerTest {
                                 "SYN_RECEIVED",
                                 "ESTABLISHED"
                         })
-                        void shouldChangeToCloseWait(final State state) {
+                        void shouldChangeToCloseWait(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3649,7 +3675,7 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -3666,13 +3692,18 @@ class ReliableTransportHandlerTest {
                     @Nested
                     class OnFinWait1State {
                         @Test
-                        void shouldChangeToTimeWaitIfFinHasBeenAcked() {
+                        void shouldChangeToTimeWaitIfFinHasBeenAcked(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3686,7 +3717,7 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -3707,13 +3738,18 @@ class ReliableTransportHandlerTest {
                         }
 
                         @Test
-                        void shouldChangeToClosingIfFinHasNotBeenAcked() {
+                        void shouldChangeToClosingIfFinHasNotBeenAcked(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(88L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3727,7 +3763,7 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -3742,13 +3778,18 @@ class ReliableTransportHandlerTest {
                     @Nested
                     class OnFinWait2State {
                         @Test
-                        void shouldEnterTimeWaitState() {
+                        void shouldEnterTimeWaitState(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3762,7 +3803,7 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -3826,13 +3867,18 @@ class ReliableTransportHandlerTest {
                     @Nested
                     class OnTimeWaitState {
                         @Test
-                        void shouldRemainInStateAndRestartTimeWaitTimer() {
+                        void shouldRemainInStateAndRestartTimeWaitTimer(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvWnd()).thenReturn(10);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
                             final ReliableTransportHandler handler = new ReliableTransportHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, pushSeen);
 
@@ -3846,8 +3892,7 @@ class ReliableTransportHandlerTest {
                             verify(tcb.receiveBuffer()).receive(any(), any(), any());
 
                             // RFC 9293: and send an acknowledgment for the FIN.
-                            // FIXME: times(2)?
-                            verify(tcb, times(2)).send(eq(ctx), segmentCaptor.capture());
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
                             final Segment response = segmentCaptor.getValue();
                             assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
@@ -4005,24 +4050,6 @@ class ReliableTransportHandlerTest {
                     assertNull(handler.timeWaitTimer);
                 }
             }
-        }
-    }
-
-    private static ByteBuf unpooledRandomBuffer(final int bytes) {
-        return Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-    }
-
-    private static class ChannelFutureAnswer implements Answer<ChannelFuture> {
-        private final ChannelFuture future;
-
-        public ChannelFutureAnswer(final ChannelFuture future) {
-            this.future = requireNonNull(future);
-        }
-
-        @Override
-        public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
-            invocation.getArgument(0, ChannelFutureListener.class).operationComplete(future);
-            return future;
         }
     }
 }

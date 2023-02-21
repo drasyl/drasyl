@@ -113,13 +113,13 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
         , "IfStatementWithIdenticalBranches"
         , "DuplicateBranchesInSwitch"
         , "StatementWithEmptyBody"
+        , "ConstantValue"
 })
 public class ReliableTransportHandler extends ChannelDuplexHandler {
     static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final Logger LOG = LoggerFactory.getLogger(ReliableTransportHandler.class);
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
     private static final ClosedChannelException CONNECTION_NOT_EXIST_ERROR = new ClosedChannelException();
-    private static final ConnectionHandshakeIssued HANDSHAKE_ISSUED_EVENT = new ConnectionHandshakeIssued();
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
     private final ReliableTransportConfig config;
@@ -295,6 +295,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: If passive, enter the LISTEN state
                     LOG.trace("{}[{}] Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), state, LISTEN);
                     changeState(ctx, LISTEN);
+
                     // RFC 9293: and return.
                     return;
                 }
@@ -399,7 +400,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             case LISTEN:
                 // RFC 9293: If the remote socket is specified, then change the connection from
-                // passive to active,
+                // RFC 9293: passive to active,
                 LOG.trace("{}[{}] SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), state, data);
 
                 // RFC 9293: select an ISS.
@@ -727,7 +728,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case SYN_SENT:
                 // RFC 9293: All queued SENDs
                 tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
-                //  RFC 9293: and RECEIVEs should be given "connection reset" notification.
+                // RFC 9293: and RECEIVEs should be given "connection reset" notification.
                 // (not applicable to us)
 
                 // RFC 9293: Delete the TCB,
@@ -1006,11 +1007,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             final boolean anyOtherControlOrText = !seg.isOnlySyn() && seg.content().isReadable();
             assert !anyOtherControlOrText : "not supported (yet)";
 
-            // update window
-            tcb.updateSndWnd(ctx, seg);
-
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
+            // FIXME:
             // mss negotiation
             tcb.negotiateMss(ctx, seg);
 
@@ -1123,7 +1122,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
             else {
                 // RFC 9293: Otherwise (no ACK), drop the segment
-                tcb.selectIss(); // FIXME: was macht das hier?
                 LOG.trace("{}[{}] SEG `{}` is not an acceptable ACK. Drop it.", ctx.channel(), state, seg);
 
                 // RFC 9293: and return.
@@ -1201,6 +1199,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             if (greaterThan(tcb.sndUna(), tcb.iss())) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
+                // FIXME:
                 // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
                 tcb.updateSndWnd(ctx, seg);
 
@@ -1208,6 +1207,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: to ESTABLISHED,
                 changeState(ctx, ESTABLISHED);
 
+                // FIXME:
                 // mss negotiation
                 tcb.negotiateMss(ctx, seg);
 
@@ -1339,7 +1339,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: Segment Length Receive Window  Test
                     // RFC 9293: 0              0               SEG.SEQ = RCV.NXT
                     if (seg.len() == 0 && tcb.rcvWnd() == 0) {
-                        // SEG.SEQ = RCV.NXT
                         acceptableSeg = seg.seq() == tcb.rcvNxt();
                     }
                     // RFC 9293: 0              >0              RCV.NXT =< SEG.SEQ < RCV.NXT+RCV.WND
@@ -1499,6 +1498,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // (not applicable to us)
                     // RFC 9293: and SEND should receive "reset" responses.
                     tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+
                     // RFC 9293: All segment queues should be flushed.
                     tcb.retransmissionQueue().release();
 
@@ -1648,6 +1648,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
 
+                        // FIXME:
                         cancelUserTimer(ctx);
 
                         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
@@ -1659,6 +1660,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 9293: SND.WL2 <- SEG.ACK
                         tcb.updateSndWnd(ctx, seg);
 
+                        // FIXME:
                         // advance send state
                         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                             tcb.sndUna(ctx, seg.ack());
@@ -2136,6 +2138,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         if (config.sack()) {
+            // FIXME:
             // SACK
             if (ctl == ACK) {
                 final List<Long> edges = new ArrayList<>();
