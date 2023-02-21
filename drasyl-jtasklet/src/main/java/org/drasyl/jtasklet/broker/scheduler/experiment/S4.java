@@ -29,6 +29,10 @@ import org.drasyl.util.Pair;
 
 import java.util.Map;
 
+/**
+ * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud
+ * Low-Prio Tasks: @Cloud
+ */
 public class S4 implements SchedulingStrategy {
     @Override
     public String toString() {
