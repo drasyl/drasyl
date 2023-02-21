@@ -60,7 +60,8 @@ public abstract class ReliableTransportConfig {
             .baseMss(1432)
             .rmem(64 * 1432)
             // RFC 9293: Arbitrarily defined to be 2 minutes.
-            .msl(ofMinutes(2))
+            // FIXME: change back to 2 minutes?
+            .msl(ofSeconds(2))
             .noDelay(false)
             .userTimeout(ofSeconds(60))
             .timestamps(true)

@@ -101,6 +101,7 @@ public class RetransmissionQueue {
                 // fully ACKed
                 somethingWasAcked = true;
                 ackedBytes += seg.content().readableBytes();
+                seg.release();
                 queue.remove();
             }
             else if (greaterThan(tcb.sndUna(), seg.seq())) {
@@ -119,11 +120,14 @@ public class RetransmissionQueue {
         if (somethingWasAcked) {
             final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
             if (!tcb.sendBuffer().hasOutstandingData()) {
+                handler.cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
                 handler.cancelRetransmissionTimer(ctx);
             }
             else {
+                handler.cancelUserTimer(ctx);
+                handler.startUserTime(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
                 // RFC 6298:       (for the current value of RTO).
@@ -143,7 +147,10 @@ public class RetransmissionQueue {
     }
 
     public void release() {
-        queue.clear();
+        Segment seg;
+        while ((seg = queue.poll()) != null) {
+            seg.release();
+        }
     }
 
     public long firstSegmentSentTime() {

@@ -173,7 +173,7 @@ class ReliableTransportHandlerIT {
                 .connect(peerBAddress).sync().channel();
 
         try {
-            int bytes = 5_000_000;
+            final int bytes = 5_000_000;
             final ByteBuf sentBuf = peerAChannel.alloc().buffer(bytes);
             sentBuf.writeBytes(randomBytes(bytes));
 

@@ -51,10 +51,5 @@ class OutgoingSegmentQueueTest {
             verify(ctx).write(seg.copy(), writePromise);
             verify(ctx).flush();
         }
-
-        @Test
-        void shouldApplyRetransmissionTimeout() {
-            // TODO
-        }
     }
 }

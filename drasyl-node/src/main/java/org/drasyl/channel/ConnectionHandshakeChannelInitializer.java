@@ -27,6 +27,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.util.internal.StringUtil;
+import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeException;
 import org.drasyl.handler.connection.ConnectionHandshakeStatus;
@@ -61,7 +62,10 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
-        final ReliableTransportHandler handler = new ReliableTransportHandler(ReliableTransportConfig.newBuilder().activeOpen(initiateHandshake).build());
+        final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                .activeOpen(initiateHandshake)
+                .build();
+        final ReliableTransportHandler handler = new ReliableTransportHandler(config);
         p.addLast(handler);
         final CsvLogger logger = new CsvLogger("/Users/heiko/Development/drasyl/" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
         new DefaultEventLoop().scheduleAtFixedRate(() -> {
@@ -81,6 +85,10 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                     handshakeCompleted((DrasylChannel) ctx.channel());
 
                     ctx.pipeline().remove(this);
+                }
+                else if (evt instanceof ConnectionClosing) {
+                    // confirm close request
+                    ctx.close();
                 }
                 else {
                     ctx.fireUserEventTriggered(evt);

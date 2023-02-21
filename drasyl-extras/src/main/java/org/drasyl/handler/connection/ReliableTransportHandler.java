@@ -130,7 +130,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     ScheduledFuture<?> timeWaitTimer;
     private ChannelPromise establishedPromise;
     private ChannelPromise closedPromise;
-    boolean pushSeen;
+    private boolean readPending;
 
     @SuppressWarnings("java:S107")
     ReliableTransportHandler(final ReliableTransportConfig config,
@@ -140,8 +140,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                              final ScheduledFuture<?> retransmissionTimer,
                              final ScheduledFuture<?> timeWaitTimer,
                              final ChannelPromise establishedPromise,
-                             final ChannelPromise closedPromise,
-                             final boolean pushSeen) {
+                             final ChannelPromise closedPromise) {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -150,11 +149,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         this.timeWaitTimer = timeWaitTimer;
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
-        this.pushSeen = pushSeen;
     }
 
     public ReliableTransportHandler(final ReliableTransportConfig config) {
-        this(config, null, null, null, null, null, null, null, true);
+        this(config, null, null, null, null, null, null, null);
     }
 
     @Override
@@ -510,12 +508,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 case ESTABLISHED:
                 case FIN_WAIT_1:
                 case FIN_WAIT_2:
-                    // FIXME:
-                    //  RFC 9293: If insufficient incoming segments are queued to satisfy the
-                    //  RFC 9293: request, queue the request.
+                    // RFC 9293: If insufficient incoming segments are queued to satisfy the
+                    // RFC 9293: request, queue the request.
                     if (!tcb.receiveBuffer().hasReadableBytes()) {
+                        readPending = true;
                         break;
                     }
+                    readPending = false;
 
                     // RFC 9293: If there is no queue space to remember the RECEIVE, respond with
                     // RFC 9293: "error: insufficient resources".
@@ -526,7 +525,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     tcb.receiveBuffer().fireRead(ctx, tcb);
 
                     // RFC 9293: Mark "push seen" (PUSH) if this is the case.
-                    pushSeen = true;
+                    // (not applicable to us)
 
                     // RFC 9293: If RCV.UP is in advance of the data currently being passed to the
                     // RFC 9293: user, notify the user of the presence of urgent data.
@@ -849,7 +848,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
-                cancelUserTimer(ctx);
                 ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt())));
                 break;
 
@@ -1009,8 +1007,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
             LOG.trace("{}[{}] TCB synchronized: {}", ctx.channel(), state, tcb);
 
-            // FIXME:
-            // mss negotiation
+            // FIXME: mss negotiation
             tcb.negotiateMss(ctx, seg);
 
             // RFC 9293: ISS should be selected
@@ -1199,16 +1196,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             if (greaterThan(tcb.sndUna(), tcb.iss())) {
                 LOG.trace("{}[{}] Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), state, seg);
 
-                // FIXME:
-                // ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
+                // FIXME: ohne das funktioniert das direkte anhängen von Daten am ACK nicht...(weil SND.WND = 0 ist)
                 tcb.updateSndWnd(ctx, seg);
 
                 // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                 // RFC 9293: to ESTABLISHED,
                 changeState(ctx, ESTABLISHED);
 
-                // FIXME:
-                // mss negotiation
+                // FIXME: mss negotiation
                 tcb.negotiateMss(ctx, seg);
 
                 // RFC 9293: form an ACK segment
@@ -1640,16 +1635,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             final boolean acceptableAck = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
             // RFC 9293: When the ACK value is acceptable, the per-state processing below applies:
 
-            // FIXME:
+            // FIXME: tcb.lastAdvertisedWindow = seg.window();
             tcb.lastAdvertisedWindow = seg.window();
 
             switch (state) {
                 case SYN_RECEIVED:
                     if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         LOG.trace("{}[{}] Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), state, seg);
-
-                        // FIXME:
-                        cancelUserTimer(ctx);
 
                         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
                         changeState(ctx, ESTABLISHED);
@@ -1799,13 +1791,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     tcb.receiveBuffer().receive(ctx, tcb, seg);
 
                     if (seg.isPsh()) {
-                        pushSeen = false;
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), state, seg);
+                        ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
                     }
-
-                    if (!pushSeen) {
-                        pushSeen = true;
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because read is pending.", ctx.channel(), state, seg);
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
+                    else if (readPending) {
+                        readPending = false;
+                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because a RECEIVE call has been queued.", ctx.channel(), state, seg);
+                        ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
                     }
                     else {
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
@@ -1873,7 +1865,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             tcb.sendAndFlush(ctx, response);
 
             // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
-            pushSeen = false;
+            ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
 
             switch (state) {
                 case SYN_RECEIVED:
@@ -2138,8 +2130,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         if (config.sack()) {
-            // FIXME:
-            // SACK
+            // FIXME: SACK
             if (ctl == ACK) {
                 final List<Long> edges = new ArrayList<>();
                 final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
