@@ -5,6 +5,7 @@ import org.drasyl.jtasklet.LoggableRecord;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
@@ -14,6 +15,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
     private DrasylAddress provider;
     private long benchmark;
     private String token;
+    private String[] tags;
     private Instant assignResourceTime;
     private Instant resourceRespondedTime;
 
@@ -22,10 +24,11 @@ public class BrokerLoggableRecord implements LoggableRecord {
         this.resourceRequestTime = Instant.now();
     }
 
-    public void assignResource(final DrasylAddress provider, final long benchmark, final String token) {
+    public void assignResource(final DrasylAddress provider, final long benchmark, final String token, final String[] tags) {
         this.provider = provider;
         this.benchmark = benchmark;
         this.token = token;
+        this.tags = tags;
         this.assignResourceTime = Instant.now();
     }
 
@@ -42,6 +45,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
                 "provider",
                 "benchmark",
                 "token",
+                "tags",
                 "assignResourceTime",
                 "assignResourceTimeDelta",
                 "resourceRespondedTime",
@@ -60,6 +64,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
             provider,
             benchmark,
             token,
+            Arrays.toString(tags),
             assignResourceTime != null ? assignResourceTime.toEpochMilli() : -1,
             assignResourceTime != null ? Duration.between(resourceRequestTime, assignResourceTime).toMillis() : -1,
             // resource responded

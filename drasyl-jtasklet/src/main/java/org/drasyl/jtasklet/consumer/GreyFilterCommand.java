@@ -46,6 +46,14 @@ public class GreyFilterCommand extends ChannelOptions {
             defaultValue = "images/Risoni-Bowl.jpg"
     )
     private File image;
+    @Option(
+            names = { "--tags" },
+            description = "Tags of the VM.",
+            paramLabel = "tag",
+            defaultValue = "",
+            split = ","
+    )
+    private String[] tags;
     private String source;
     private Object[] input;
     private int height;
@@ -80,7 +88,7 @@ public class GreyFilterCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, eventGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input, 1);
+        return new ConsumerChannelInitializer(identity, eventGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input, 1, tags);
     }
 
     @Override

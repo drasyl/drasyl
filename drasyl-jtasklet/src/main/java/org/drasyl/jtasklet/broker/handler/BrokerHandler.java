@@ -14,23 +14,8 @@ import org.drasyl.jtasklet.broker.BrokerLoggableRecord;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
-import org.drasyl.jtasklet.event.ConnectionClosed;
-import org.drasyl.jtasklet.event.ConnectionEvent;
-import org.drasyl.jtasklet.event.MessageReceived;
-import org.drasyl.jtasklet.event.NodeOffline;
-import org.drasyl.jtasklet.event.NodeOnline;
-import org.drasyl.jtasklet.event.TaskletEvent;
-import org.drasyl.jtasklet.message.ProviderReset;
-import org.drasyl.jtasklet.message.RegisterProvider;
-import org.drasyl.jtasklet.message.ResourceRequest;
-import org.drasyl.jtasklet.message.ResourceResponse;
-import org.drasyl.jtasklet.message.RttReport;
-import org.drasyl.jtasklet.message.TaskExecuted;
-import org.drasyl.jtasklet.message.TaskExecuting;
-import org.drasyl.jtasklet.message.TaskFailed;
-import org.drasyl.jtasklet.message.TaskOffloaded;
-import org.drasyl.jtasklet.message.TaskResultReceived;
-import org.drasyl.jtasklet.message.TaskletMessage;
+import org.drasyl.jtasklet.event.*;
+import org.drasyl.jtasklet.message.*;
 import org.drasyl.jtasklet.util.CsvLogger;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
@@ -38,13 +23,8 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
@@ -141,7 +121,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         if (state == ONLINE && msg instanceof RegisterProvider) {
             LOG.info("Provider {} registered: {}", sender, msg);
-            final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken());
+            final ResourceProvider provider = new ResourceProvider(((RegisterProvider) msg).getBenchmark(), ((RegisterProvider) msg).getToken(), ((RegisterProvider) msg).getTags());
             providers.put(sender, provider);
             providerChannels.put(sender, channel);
             printResourceProviders();
@@ -151,7 +131,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             loggableRecord = new BrokerLoggableRecord(sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
-            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender);
+            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender, ((ResourceRequest) msg).getTags());
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
             final String token = vm != null ? vm.token() : null;
@@ -160,7 +140,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 printResourceProviders();
             }
             LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
-            loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token);
+            loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token, vm != null ? vm.tags() : new String[]{});
 
             final ResourceResponse response = new ResourceResponse(publicKey, token);
             LOG.info("Send Consumer {} the resource response {}.", sender, response);
@@ -310,7 +290,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
         // table header
         builder.append(String.format("Time: %-35s%n", RFC_1123_DATE_TIME.format(ZonedDateTime.now())));
-        builder.append(String.format("%-64s  %-6s  %-7s  %7s  %-9s  %8s  %-64s  %-6s%n", "Resource Provider", "Tasks", "ErrRt", "Bnchmrk", "State", "LstStChg", "Assigned To", "Token"));
+        builder.append(String.format("%-64s  %-6s  %-7s  %7s  %-9s  %8s  %-64s  %-6s %-64s%n", "Resource Provider", "Tasks", "ErrRt", "Bnchmrk", "State", "LstStChg", "Assigned To", "Token", "Tags"));
 
         // table body
         for (final Entry<DrasylAddress, ResourceProvider> entry : providers.entrySet()) {
@@ -319,7 +299,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
 
             // table row
             builder.append(String.format(
-                    "%-64s  %6d  %,6.2f%%  %7d  %-9s  %s%2ds ago  %-64s  %-6s%n",
+                    "%-64s  %6d  %,6.2f%%  %7d  %-9s  %s%2ds ago  %-64s  %-6s %-64s%n",
                     address,
                     vm.succeededTasks() + vm.failedTasks(),
                     vm.errorRate() * 100,
@@ -328,7 +308,8 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                     vm.timeSinceLastStateChange() > 99_999 ? ">" : " ",
                     Math.min(vm.timeSinceLastStateChange() / 1_000, 99),
                     vm.assignedTo() != null ? vm.assignedTo() : "-",
-                    vm.token()
+                    vm.token(),
+                    Arrays.toString(vm.tags())
             ));
         }
 

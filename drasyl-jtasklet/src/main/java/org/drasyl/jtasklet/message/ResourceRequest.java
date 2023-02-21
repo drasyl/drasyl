@@ -21,9 +21,23 @@
  */
 package org.drasyl.jtasklet.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ResourceRequest implements TaskletMessage {
+    private final String[] tags;
+
+    @JsonCreator
+    public ResourceRequest(@JsonProperty("tags") final String[] tags) {
+        this.tags = tags;
+    }
+
     @Override
     public String toString() {
         return "ResourceRequest{}";
+    }
+
+    public String[] getTags() {
+        return tags;
     }
 }

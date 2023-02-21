@@ -3,6 +3,7 @@ package org.drasyl.jtasklet.broker;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.RandomUtil;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -23,10 +24,12 @@ public class ResourceProvider {
     private int succeededTasks;
     private int failedTasks;
     private String nextToken;
+    private String[] tags;
 
-    public ResourceProvider(final long benchmark, final String token) {
+    public ResourceProvider(final long benchmark, final String token, final String[] tags) {
         this.benchmark = benchmark;
         this.token = requireNonNull(token);
+        this.tags = requireNonNull(tags);
         this.providerState = READY;
         this.stateTime = System.currentTimeMillis();
     }
@@ -148,6 +151,7 @@ public class ResourceProvider {
         return "ResourceProvider{" +
                 "benchmark=" + benchmark +
                 ", token=" + token +
+                ", tags=" + Arrays.toString(tags) +
                 '}';
     }
 
@@ -181,6 +185,10 @@ public class ResourceProvider {
 
     public String token() {
         return token;
+    }
+
+    public String[] tags() {
+        return tags;
     }
 
     public ProviderState state() {

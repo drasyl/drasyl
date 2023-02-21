@@ -18,6 +18,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
     private Instant resourceRequestedTime;
     private DrasylAddress provider;
     private String token;
+    private String[] tags;
     private Instant resourceRespondedTime;
     private Instant offloadTaskTime;
     private Instant offloadedTaskTime;
@@ -47,6 +48,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 ", resourceRequestedTime=" + resourceRequestedTime +
                 ", provider=" + provider +
                 ", token='" + token + '\'' +
+                ", tags='" + Arrays.toString(tags) + '\'' +
                 ", resourceRespondedTime=" + resourceRespondedTime +
                 ", offloadTaskTime=" + offloadTaskTime +
                 ", offloadedTaskTime=" + offloadedTaskTime +
@@ -60,9 +62,10 @@ public class ConsumerLoggableRecord implements LoggableRecord {
         resourceRequestedTime = Instant.now();
     }
 
-    public void resourceResponded(final DrasylAddress provider, final String token) {
+    public void resourceResponded(final DrasylAddress provider, final String token, final String[] tags) {
         this.provider = provider;
         this.token = token;
+        this.tags = tags;
         resourceRespondedTime = Instant.now();
     }
 
@@ -93,6 +96,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 "resourceRequestedTimeDelta",
                 "provider",
                 "token",
+                "tags",
                 "resourceRespondedTime",
                 "resourceRespondedTimeDelta",
                 "offloadTaskTime",
@@ -121,6 +125,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 // resource responded
                 provider,
                 token,
+                Arrays.toString(tags),
                 resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
                 resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
                 // offload task

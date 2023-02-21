@@ -42,6 +42,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private final long benchmark;
     private final EventLoopGroup taskEventLoop = new NioEventLoopGroup(1);
     private final RuntimeEnvironment runtimeEnvironment;
+    private final String[] tags;
     private ProviderLoggableRecord taskRecord;
     private DrasylChannel brokerChannel;
     private String token;
@@ -53,11 +54,13 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                            final DrasylAddress address,
                            final DrasylAddress broker,
                            final long benchmark,
-                           final RuntimeEnvironment runtimeEnvironment) {
+                           final RuntimeEnvironment runtimeEnvironment,
+                           final String[] tags) {
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
         this.benchmark = benchmark;
         this.runtimeEnvironment = requireNonNull(runtimeEnvironment);
+        this.tags = tags;
         logger = new CsvLogger("provider-" + address.toString().substring(0, 8) + ".csv");
     }
 
@@ -187,7 +190,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
             consumerChannel = channel;
             token = ((OffloadTask) msg).getToken();
-            taskRecord = new ProviderLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
+            taskRecord = new ProviderLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput(), tags);
 
             // inform broker
             brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);
@@ -255,7 +258,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
 
     private void registerAtBroker(final ChannelHandlerContext ctx) {
         token = ResourceProvider.randomToken();
-        final RegisterProvider msg = new RegisterProvider(benchmark, token);
+        final RegisterProvider msg = new RegisterProvider(benchmark, token, tags);
         LOG.info("Register {} at Broker {}.", msg, broker);
         brokerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {

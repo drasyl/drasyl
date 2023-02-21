@@ -50,6 +50,14 @@ public class OffloadCommand extends ChannelOptions {
             defaultValue = "1"
     )
     private int cycles;
+    @Option(
+            names = { "--tags" },
+            description = "Tags of the VM.",
+            paramLabel = "tag",
+            defaultValue = "",
+            split = ","
+    )
+    private String[] tags;
     private String source;
 
     public OffloadCommand() {
@@ -76,7 +84,7 @@ public class OffloadCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles);
+        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags);
     }
 
     @Override

@@ -20,6 +20,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
     private final Instant offloadTaskTime;
     private Instant executingTime;
     private Object[] output;
+    private String[] tags;
     private long executionTime;
     private Instant executedTime;
     private Instant returnedResult;
@@ -30,7 +31,8 @@ public class ProviderLoggableRecord implements LoggableRecord {
                                   final DrasylAddress consumer,
                                   final String token,
                                   final String source,
-                                  final Object[] input) {
+                                  final Object[] input,
+                                  final String[] tags) {
         this.provider = provider;
         this.broker = broker;
         this.benchmark = benchmark;
@@ -38,6 +40,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
         this.token = token;
         this.source = source;
         this.input = input;
+        this.tags = tags;
         offloadTaskTime = Instant.now();
     }
 
@@ -49,6 +52,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 ", benchmark=" + benchmark +
                 ", consumer=" + consumer +
                 ", token='" + token + '\'' +
+                ", tags=" + Arrays.toString(tags) +
                 ", source='" + source + '\'' +
                 ", input=" + Arrays.toString(input) +
                 ", offloadTaskTime=" + offloadTaskTime +
@@ -83,6 +87,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 // offload task
                 "consumer",
                 "token",
+                "tags",
                 "source",
                 "input",
                 "offloadTaskTime",
@@ -109,6 +114,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 // offload task
                 consumer,
                 token,
+                Arrays.toString(tags),
                 minifySource(source),
                 Arrays.toString(input),
                 offloadTaskTime.toEpochMilli(),

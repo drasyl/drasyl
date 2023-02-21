@@ -54,6 +54,14 @@ public class VmCommand extends ChannelOptions {
             }
     )
     private double cpuThrottle;
+    @Option(
+            names = { "--tags" },
+            description = "Tags of the VM.",
+            paramLabel = "tag",
+            defaultValue = "",
+            split = ","
+    )
+    private String[] tags;
     private long benchmark;
 
     public VmCommand() {
@@ -87,7 +95,7 @@ public class VmCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ProviderChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, benchmark, runtimeEnvironment);
+        return new ProviderChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, benchmark, runtimeEnvironment, tags);
     }
 
     @Override

@@ -21,6 +21,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final String source;
     private final Object[] input;
     private final int cycles;
+    private final String[] tags;
 
     @SuppressWarnings("java:S107")
     public ConsumerChannelInitializer(final Identity identity,
@@ -34,19 +35,21 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
                                       final IdentityPublicKey broker,
                                       final String source,
                                       final Object[] input,
-                                      final int cycles) {
+                                      final int cycles,
+                                      final String[] tags) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
         this.cycles = requirePositive(cycles);
+        this.tags = requireNonNull(tags);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
-        ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles));
+        ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles, tags));
     }
 }

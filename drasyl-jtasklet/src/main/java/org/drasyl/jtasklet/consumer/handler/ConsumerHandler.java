@@ -75,6 +75,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private final String source;
     private final Object[] input;
     private int remainingCycles;
+    private final String[] tags;
     private ConsumerLoggableRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
 
@@ -83,12 +84,14 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                            final IdentityPublicKey broker,
                            final String source,
                            final Object[] input,
-                           final int remainingCycles) {
+                           final int remainingCycles,
+                           final String[] tags) {
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
         this.remainingCycles = requirePositive(remainingCycles);
+        this.tags = requireNonNull(tags);
         logger = new CsvLogger("consumer-" + address.toString().substring(0, 8) + ".csv");
     }
 
@@ -227,7 +230,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         state = RESOURCE_REQUESTING;
         LOG.info("[{}] Request resource at Broker {}.", state, broker);
         this.taskRecord = new ConsumerLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
-        final ResourceRequest request = new ResourceRequest();
+        final ResourceRequest request = new ResourceRequest(tags);
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 state = RESOURCE_REQUESTED;
@@ -266,7 +269,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         }
         token = ((ResourceResponse) msg).getToken();
         provider = ((ResourceResponse) msg).getPublicKey();
-        taskRecord.resourceResponded(provider, token);
+        taskRecord.resourceResponded(provider, token, tags);
         if (provider == null) {
             LOG.info("[{}] Broker has not found any resource for us. Retry in {}ms. {} cycles remaining.", state, RETRY_INTERVAL, remainingCycles);
             logger.log(taskRecord);

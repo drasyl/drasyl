@@ -1,23 +1,26 @@
-FROM eclipse-temurin:11-jdk AS build
+FROM container-registry.oracle.com/os/oraclelinux:7-slim AS build-dependencies
 
-COPY . /build
+RUN yum update -y \
+    && yum install -y unzip
 
-WORKDIR /build/
+FROM ghcr.io/graalvm/jdk:java11 AS build
 
-RUN ./mvnw --quiet --projects drasyl-cli --also-make --activate-profiles fast package
+ADD . /build
 
-FROM crazymax/7zip AS unzip
+COPY --from=build-dependencies /bin/unzip /bin/
 
-COPY --from=build /build/drasyl-*.zip /
+RUN cd /build && \
+    ./mvnw --quiet --projects drasyl-jtasklet --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
+    unzip -qq ./jtasklet-*.zip -d /
 
-RUN 7za x -y ./drasyl-*.zip && rm drasyl-*.zip
+FROM ghcr.io/graalvm/graalvm-ce:java11
 
-FROM eclipse-temurin:11-jre
+RUN mkdir /usr/local/share/jtasklet && \
+    ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
 
-RUN mkdir /usr/local/share/drasyl && \
-    ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
+COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
 
-COPY --from=unzip /drasyl-* /usr/local/share/drasyl/
+ADD ./tasks/ /tasks/
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -35,26 +38,14 @@ RUN echo '<configuration>\n\
     <root level="warn">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
-</configuration>' >> /usr/local/share/drasyl/logback.xml
-
-# install "ip" command for drasyl's "tun" subcommand
-RUN apt-get update \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iproute2 \
-  && rm -rf /var/lib/apt/lists/*
-
-# run as non-root user
-RUN groupadd --gid 22527 drasyl && \
-    useradd --system --uid 22527 --gid drasyl --home-dir /drasyl/ --no-log-init drasyl && \
-    mkdir /drasyl/ && \
-    chown drasyl:drasyl /drasyl/
-
-USER drasyl
+</configuration>' >> /usr/local/share/jtasklet/logback.xml
 
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
-WORKDIR /drasyl/
+WORKDIR /jtasklet/
 
-ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
+ENV JAVA_SCC_OPTS ""
+ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
-ENTRYPOINT ["drasyl"]
+ENTRYPOINT ["jtasklet"]
