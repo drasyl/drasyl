@@ -18,13 +18,14 @@ public class BrokerLoggableRecord implements LoggableRecord {
     private String[] tags;
     private Instant assignResourceTime;
     private Instant resourceRespondedTime;
+    private int priority;
 
     public BrokerLoggableRecord(final DrasylAddress consumer) {
         this.consumer = requireNonNull(consumer);
         this.resourceRequestTime = Instant.now();
     }
 
-    public void assignResource(final DrasylAddress provider, final long benchmark, final String token, final String[] tags) {
+    public void assignResource(final DrasylAddress provider, final long benchmark, final String token, final String[] tags, final int priority) {
         this.provider = provider;
         this.benchmark = benchmark;
         this.token = token;
@@ -46,6 +47,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
                 "benchmark",
                 "token",
                 "tags",
+                "priority",
                 "assignResourceTime",
                 "assignResourceTimeDelta",
                 "resourceRespondedTime",
@@ -65,6 +67,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
             benchmark,
             token,
             Arrays.toString(tags),
+            priority,
             assignResourceTime != null ? assignResourceTime.toEpochMilli() : -1,
             assignResourceTime != null ? Duration.between(resourceRequestTime, assignResourceTime).toMillis() : -1,
             // resource responded

@@ -10,7 +10,7 @@ ADD . /build
 COPY --from=build-dependencies /bin/unzip /bin/
 
 RUN cd /build && \
-    ./mvnw --quiet --projects drasyl-jtasklet --also-make -DskipTests -Dmaven.javadoc.skip=true package && \
+    ./mvnw --quiet --projects drasyl-jtasklet --also-make -Pfast -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./jtasklet-*.zip -d /
 
 FROM ghcr.io/graalvm/graalvm-ce:java11
@@ -35,6 +35,9 @@ RUN echo '<configuration>\n\
     <logger name="io.netty" level="warn">\n\
     </logger>\n\
 \n\
+    <logger name="org.drasyl.jtasklet" level="DEBUG">\n\
+    </logger>\n\
+\n\
     <root level="warn">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
@@ -45,7 +48,7 @@ EXPOSE 443/tcp
 
 WORKDIR /jtasklet/
 
-ENV JAVA_SCC_OPTS ""
+ENV JAVA_SCC_OPTS "-XX:-UseJVMCICompiler -Djava.compiler=NONE"
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["jtasklet"]

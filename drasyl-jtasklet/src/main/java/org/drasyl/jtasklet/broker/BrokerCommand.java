@@ -10,6 +10,10 @@ import org.drasyl.jtasklet.broker.scheduler.BenchmarkSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.RandomSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.RttSchedulingStrategy;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
+import org.drasyl.jtasklet.broker.scheduler.experiment.S1;
+import org.drasyl.jtasklet.broker.scheduler.experiment.S2;
+import org.drasyl.jtasklet.broker.scheduler.experiment.S3;
+import org.drasyl.jtasklet.broker.scheduler.experiment.S4;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
@@ -62,7 +66,11 @@ public class BrokerCommand extends ChannelOptions {
     enum SchedulingStrategyType {
         random(new RandomSchedulingStrategy()),
         benchmark(new BenchmarkSchedulingStrategy()),
-        rtt(new RttSchedulingStrategy());
+        rtt(new RttSchedulingStrategy()),
+        s1(new S1()),
+        s2(new S2()),
+        s3(new S3()),
+        s4(new S4());
         private final SchedulingStrategy schedulingStrategy;
 
         SchedulingStrategyType(final SchedulingStrategy schedulingStrategy) {

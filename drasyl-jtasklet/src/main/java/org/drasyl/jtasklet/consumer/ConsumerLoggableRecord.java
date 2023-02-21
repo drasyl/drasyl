@@ -25,6 +25,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
     private Object[] output;
     private long executionTime;
     private Instant resultReturnedTime;
+    private int priority;
 
     public ConsumerLoggableRecord(final DrasylAddress consumer,
                                   final DrasylAddress broker,
@@ -49,6 +50,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 ", provider=" + provider +
                 ", token='" + token + '\'' +
                 ", tags='" + Arrays.toString(tags) + '\'' +
+                ", priority='" + priority + '\'' +
                 ", resourceRespondedTime=" + resourceRespondedTime +
                 ", offloadTaskTime=" + offloadTaskTime +
                 ", offloadedTaskTime=" + offloadedTaskTime +
@@ -58,11 +60,14 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 '}';
     }
 
-    public void resourceRequested() {
-        resourceRequestedTime = Instant.now();
+    public void resourceRequested(final int priority) {
+        this.resourceRequestedTime = Instant.now();
+        this.priority = priority;
     }
 
-    public void resourceResponded(final DrasylAddress provider, final String token, final String[] tags) {
+    public void resourceResponded(final DrasylAddress provider,
+                                  final String token,
+                                  final String[] tags) {
         this.provider = provider;
         this.token = token;
         this.tags = tags;
@@ -97,6 +102,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 "provider",
                 "token",
                 "tags",
+                "priority",
                 "resourceRespondedTime",
                 "resourceRespondedTimeDelta",
                 "offloadTaskTime",
@@ -126,6 +132,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 provider,
                 token,
                 Arrays.toString(tags),
+                priority,
                 resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
                 resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
                 // offload task

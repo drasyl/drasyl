@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,34 +19,28 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.jtasklet.message;
+package org.drasyl.jtasklet.broker.scheduler.experiment;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.handler.PeersRttHandler;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.jtasklet.broker.ResourceProvider;
+import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
+import org.drasyl.util.Pair;
 
-import static org.drasyl.util.Preconditions.requireNonNegative;
+import java.util.Map;
 
-public class ResourceRequest implements TaskletMessage {
-    private final String[] tags;
-    private final int priority;
-
-    @JsonCreator
-    public ResourceRequest(@JsonProperty("tags") final String[] tags,
-                           @JsonProperty("priority") final int priority) {
-        this.tags = tags;
-        this.priority = requireNonNegative(priority);
+public class S4 implements SchedulingStrategy {
+    @Override
+    public String toString() {
+        return "S4{}";
     }
 
     @Override
-    public String toString() {
-        return "ResourceRequest{}";
-    }
-
-    public String[] getTags() {
-        return tags;
-    }
-
-    public int getPriority() {
-        return priority;
+    public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
+                                                          final Map<DrasylAddress, PeersRttHandler.PeersRttReport> rttReports,
+                                                          final DrasylAddress consumer,
+                                                          final String[] tags,
+                                                          final int priority) {
+        return null;
     }
 }

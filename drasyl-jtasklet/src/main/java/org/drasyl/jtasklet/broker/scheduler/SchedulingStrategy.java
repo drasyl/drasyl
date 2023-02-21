@@ -11,5 +11,6 @@ public interface SchedulingStrategy {
     Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                    final Map<DrasylAddress, PeersRttHandler.PeersRttReport> rttReports,
                                                    final DrasylAddress consumer,
-                                                   final String[] tags);
+                                                   final String[] tags,
+                                                   final int priority);
 }

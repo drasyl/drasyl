@@ -58,6 +58,11 @@ public class OffloadCommand extends ChannelOptions {
             split = ","
     )
     private String[] tags;
+    @Option(
+            names = { "--priority" },
+            defaultValue = "0"
+    )
+    private int priority;
     private String source;
 
     public OffloadCommand() {
@@ -84,7 +89,7 @@ public class OffloadCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags);
+        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
     }
 
     @Override

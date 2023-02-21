@@ -13,6 +13,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class ConsumerChannelInitializer extends AbstractChannelInitializer {
@@ -22,6 +23,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final Object[] input;
     private final int cycles;
     private final String[] tags;
+    private final int priority;
 
     @SuppressWarnings("java:S107")
     public ConsumerChannelInitializer(final Identity identity,
@@ -36,7 +38,8 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
                                       final String source,
                                       final Object[] input,
                                       final int cycles,
-                                      final String[] tags) {
+                                      final String[] tags,
+                                      final int priority) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
@@ -44,12 +47,13 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
         this.input = requireNonNull(input);
         this.cycles = requirePositive(cycles);
         this.tags = requireNonNull(tags);
+        this.priority = requireNonNegative(priority);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
-        ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles, tags));
+        ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles, tags, priority));
     }
 }

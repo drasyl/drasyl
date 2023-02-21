@@ -28,7 +28,8 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttReport> rttReports,
                                                           final DrasylAddress consumer,
-                                                          final String[] tags) {
+                                                          final String[] tags,
+                                                          final int priority) {
         final Map<Pair<DrasylAddress, DrasylAddress>, Double> rtts = new HashMap<>();
         for (final Entry<DrasylAddress, PeersRttReport> entry : rttReports.entrySet()) {
             final DrasylAddress source = entry.getKey();
@@ -64,7 +65,7 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
 
             if (bestAddress == null) {
                 LOG.info("No RTT information between any available Providers and Consumer {} available. Fall back to {} scheduling", consumer, FALLBACK);
-                return FALLBACK.schedule(providers, rttReports, consumer, tags);
+                return FALLBACK.schedule(providers, rttReports, consumer, tags, priority);
             }
             else {
                 LOG.info("Schedule request from Consumer {} to Provider {}. The have a RTT of {}ms", consumer, bestProvider, minRtt);

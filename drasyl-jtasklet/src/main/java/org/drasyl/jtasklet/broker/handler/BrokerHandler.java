@@ -131,7 +131,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             loggableRecord = new BrokerLoggableRecord(sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
-            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender, ((ResourceRequest) msg).getTags());
+            final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender, ((ResourceRequest) msg).getTags(), ((ResourceRequest) msg).getPriority());
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
             final String token = vm != null ? vm.token() : null;
@@ -140,7 +140,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 printResourceProviders();
             }
             LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
-            loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token, vm != null ? vm.tags() : new String[]{});
+            loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token, vm != null ? vm.tags() : new String[]{}, ((ResourceRequest) msg).getPriority());
 
             final ResourceResponse response = new ResourceResponse(publicKey, token);
             LOG.info("Send Consumer {} the resource response {}.", sender, response);

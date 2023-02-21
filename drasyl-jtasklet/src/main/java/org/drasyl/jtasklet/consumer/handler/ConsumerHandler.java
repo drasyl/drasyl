@@ -56,6 +56,7 @@ import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.RESULT_
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.STARTED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADED;
 import static org.drasyl.jtasklet.consumer.handler.ConsumerHandler.State.TASK_OFFLOADING;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class ConsumerHandler extends ChannelInboundHandlerAdapter {
@@ -76,6 +77,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private final Object[] input;
     private int remainingCycles;
     private final String[] tags;
+    private final int priority;
     private ConsumerLoggableRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
 
@@ -85,13 +87,15 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                            final String source,
                            final Object[] input,
                            final int remainingCycles,
-                           final String[] tags) {
+                           final String[] tags,
+                           final int priority) {
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
         this.source = requireNonNull(source);
         this.input = requireNonNull(input);
         this.remainingCycles = requirePositive(remainingCycles);
         this.tags = requireNonNull(tags);
+        this.priority = requireNonNegative(priority);
         logger = new CsvLogger("consumer-" + address.toString().substring(0, 8) + ".csv");
     }
 
@@ -230,12 +234,12 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
         state = RESOURCE_REQUESTING;
         LOG.info("[{}] Request resource at Broker {}.", state, broker);
         this.taskRecord = new ConsumerLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, source, input);
-        final ResourceRequest request = new ResourceRequest(tags);
+        final ResourceRequest request = new ResourceRequest(tags, priority);
         brokerChannel.writeAndFlush(request).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 state = RESOURCE_REQUESTED;
                 LOG.info("[{}] Request {} at Broker {} arrived!", state, request, broker);
-                taskRecord.resourceRequested();
+                taskRecord.resourceRequested(priority);
             }
             else {
                 state = CLOSED;
