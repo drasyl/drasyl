@@ -139,7 +139,7 @@ public class SegmentMatchers {
 
         @Override
         protected boolean matchesSafely(Segment seg) {
-            return seg.window() == window;
+            return seg.wnd() == window;
         }
 
         @Override

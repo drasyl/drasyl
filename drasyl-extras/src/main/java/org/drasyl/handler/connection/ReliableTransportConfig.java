@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 
 @AutoValue
@@ -57,7 +56,6 @@ public abstract class ReliableTransportConfig {
                     false
             ))
             .activeOpen(true)
-            .baseMss(1432)
             .rmem(64 * 1432)
             // RFC 9293: Arbitrarily defined to be 2 minutes.
             // FIXME: change back to 2 minutes?
@@ -92,6 +90,8 @@ public abstract class ReliableTransportConfig {
             // RFC 9293: The override timeout should be in the range 0.1 - 1.0
             .overrideTimeout(ofMillis(100))
             .rto(ofSeconds(1))
+            .mmsR(1432)
+            .mmsS(1432)
             .build();
 
     public static Builder newBuilder() {
@@ -114,8 +114,6 @@ public abstract class ReliableTransportConfig {
      *                   must initiate the handshake
      */
     public abstract boolean activeOpen();
-
-    public abstract int baseMss();
 
     public abstract int rmem();
 
@@ -161,6 +159,19 @@ public abstract class ReliableTransportConfig {
 
     public abstract Duration rto();
 
+    /**
+     * RFC 9293: MMS_S is the maximum size for a transport-layer message that TCP may send.
+     */
+    public abstract int mmsS();
+
+    /**
+     * RFC 9293: MMS_R is the maximum size for a transport-layer message that can be received (and
+     * reassembled at the IP layer) (MUST-67)
+     *
+     * @return
+     */
+    public abstract int mmsR();
+
     abstract Builder toBuilder();
 
     public interface Clock {
@@ -183,8 +194,6 @@ public abstract class ReliableTransportConfig {
         public abstract Builder tcbSupplier(final BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbProvider);
 
         public abstract Builder activeOpen(final boolean activeOpen);
-
-        public abstract Builder baseMss(final int baseMss);
 
         public abstract Builder rmem(final int rmem);
 
@@ -219,6 +228,10 @@ public abstract class ReliableTransportConfig {
         public abstract Builder overrideTimeout(final Duration overrideTimeout);
 
         public abstract Builder rto(final Duration rto);
+
+        public abstract Builder mmsS(final int mmsS);
+
+        public abstract Builder mmsR(final int mmsR);
 
         abstract ReliableTransportConfig autoBuild();
 

@@ -49,7 +49,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
-        buf.writeInt((int) seg.window());
+        buf.writeInt((int) seg.wnd());
 
         // options
         for (final Entry<SegmentOption, Object> entry : seg.options().entrySet()) {

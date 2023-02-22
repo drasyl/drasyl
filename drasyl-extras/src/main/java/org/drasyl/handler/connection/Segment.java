@@ -67,20 +67,20 @@ public class Segment extends DefaultByteBufHolder {
     private final long seq;
     private final long ack;
     private final byte ctl;
-    private final long window;
+    private final long wnd;
     private final Map<SegmentOption, Object> options;
 
     public Segment(final long seq,
                    final long ack,
                    final byte ctl,
-                   final long window,
+                   final long wnd,
                    final Map<SegmentOption, Object> options,
                    final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
-        this.window = requireNonNegative(window);
+        this.wnd = requireNonNegative(wnd);
         this.options = requireNonNull(options);
     }
 
@@ -108,9 +108,9 @@ public class Segment extends DefaultByteBufHolder {
     public Segment(final long seq,
                    final long ack,
                    final byte ctl,
-                   final long window,
+                   final long wnd,
                    final ByteBuf data) {
-        this(seq, ack, ctl, window, new EnumMap<>(SegmentOption.class), data);
+        this(seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), data);
     }
 
     public Segment(final long seq,
@@ -127,15 +127,15 @@ public class Segment extends DefaultByteBufHolder {
 
     public Segment(final long seq,
                    final byte ctl,
-                   final long window) {
-        this(seq, 0, ctl, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+                   final long wnd) {
+        this(seq, 0, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
     public Segment(final long seq,
                    final long ack,
                    final byte ctl,
-                   final long window) {
-        this(seq, ack, ctl, window, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+                   final long wnd) {
+        this(seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
     public Segment(final long seq,
@@ -216,8 +216,8 @@ public class Segment extends DefaultByteBufHolder {
         return ctl;
     }
 
-    public long window() {
-        return window;
+    public long wnd() {
+        return wnd;
     }
 
     public boolean isAck() {
@@ -310,12 +310,12 @@ public class Segment extends DefaultByteBufHolder {
             optionsLabel.add(option.toString() + "=" + value);
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + window + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override
     public Segment copy() {
-        return new Segment(seq, ack, ctl, window, new EnumMap<>(options), content().copy());
+        return new Segment(seq, ack, ctl, wnd, new EnumMap<>(options), content().copy());
     }
 
     public long lastSeq() {
@@ -345,7 +345,7 @@ public class Segment extends DefaultByteBufHolder {
             }
 
             // attach ACK
-            return new Segment(seq, other.ack(), (byte) (ctl | other.ctl()), window, options, content());
+            return new Segment(seq, other.ack(), (byte) (ctl | other.ctl()), wnd, options, content());
         }
         finally {
             other.release();

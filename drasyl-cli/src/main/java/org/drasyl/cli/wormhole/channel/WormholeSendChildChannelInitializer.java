@@ -86,9 +86,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
         p.addLast(new ArmHeaderCodec());
         p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
 
-        // FIXME: use channel option
-//        ch.config().setWriteBufferHighWaterMark(1024 * 1024);
-
         super.initChannel(ch);
     }
 
