@@ -8,6 +8,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.jtasklet.consumer.channel.ConsumerChannelInitializer;
+import org.drasyl.jtasklet.consumer.channel.RelayOnlyConsumerChannelInitializer;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -63,6 +64,10 @@ public class OffloadCommand extends ChannelOptions {
             defaultValue = "0"
     )
     private int priority;
+    @Option(
+            names = { "--relayOnly" }
+    )
+    protected boolean relayOnly;
     private String source;
 
     public OffloadCommand() {
@@ -89,6 +94,10 @@ public class OffloadCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
+        if (relayOnly) {
+            return new RelayOnlyConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
+        }
+
         return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
     }
 
