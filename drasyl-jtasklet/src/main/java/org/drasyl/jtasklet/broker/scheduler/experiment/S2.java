@@ -35,7 +35,8 @@ import java.util.stream.Collectors;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 /**
- * Real-Time Tasks: @IKUM/@local > @Home > @Cloud Low-Prio Tasks: Random
+ * Real-Time Tasks: @IKUM/@local > @Home > @Cloud
+ * Low-Prio Tasks: Random
  */
 public class S2 implements SchedulingStrategy {
     @Override

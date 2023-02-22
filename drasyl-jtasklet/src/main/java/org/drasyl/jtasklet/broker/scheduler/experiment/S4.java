@@ -31,7 +31,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud Low-Prio Tasks: @Cloud
+ * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud
+ * Low-Prio Tasks: @Cloud
  */
 public class S4 implements SchedulingStrategy {
     @Override
