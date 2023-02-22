@@ -4,6 +4,7 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.handler.PeersRttHandler;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.consumer.handler.ConsumerHandler;
@@ -25,6 +26,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final int cycles;
     private final List<String> tags;
     private final int priority;
+    private final List<IdentityPublicKey> peers;
 
     @SuppressWarnings("java:S107")
     public ConsumerChannelInitializer(final Identity identity,
@@ -40,7 +42,8 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
                                       final Object[] input,
                                       final int cycles,
                                       final List<String> tags,
-                                      final int priority) {
+                                      final int priority,
+                                      final List<IdentityPublicKey> peers) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
@@ -49,11 +52,13 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
         this.cycles = requirePositive(cycles);
         this.tags = requireNonNull(tags);
         this.priority = requireNonNegative(priority);
+        this.peers = requireNonNull(peers);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
+        ch.parent().pipeline().addLast(new ProactiveDirectConnectionHandler(peers));
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
         ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles, tags, priority));
     }

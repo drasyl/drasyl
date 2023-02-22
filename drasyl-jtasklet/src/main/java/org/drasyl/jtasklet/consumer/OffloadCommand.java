@@ -68,6 +68,14 @@ public class OffloadCommand extends ChannelOptions {
             names = { "--relayOnly" }
     )
     protected boolean relayOnly;
+    @Option(
+            names = { "--peers" },
+            description = "List of proactive peers connections.",
+            paramLabel = "<public-key>",
+            defaultValue = "", // Provided by ChannelOptionsDefaultProvider
+            split = ","
+    )
+    protected List<IdentityPublicKey> peers;
     private String source;
 
     public OffloadCommand() {
@@ -98,7 +106,7 @@ public class OffloadCommand extends ChannelOptions {
             return new RelayOnlyConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
         }
 
-        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
+        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority, peers);
     }
 
     @Override

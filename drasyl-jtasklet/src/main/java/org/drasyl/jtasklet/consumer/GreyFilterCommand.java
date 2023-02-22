@@ -60,6 +60,14 @@ public class GreyFilterCommand extends ChannelOptions {
             defaultValue = "0"
     )
     private int priority;
+    @Option(
+            names = { "--peers" },
+            description = "List of proactive peers connections.",
+            paramLabel = "<public-key>",
+            defaultValue = "", // Provided by ChannelOptionsDefaultProvider
+            split = ","
+    )
+    protected List<IdentityPublicKey> peers;
     private String source;
     private Object[] input;
     private int height;
@@ -94,7 +102,7 @@ public class GreyFilterCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new ConsumerChannelInitializer(identity, eventGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input, 1, tags, priority);
+        return new ConsumerChannelInitializer(identity, eventGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input, 1, tags, priority, peers);
     }
 
     @Override
