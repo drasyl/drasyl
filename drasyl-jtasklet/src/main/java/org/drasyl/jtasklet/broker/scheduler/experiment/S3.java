@@ -56,8 +56,12 @@ public class S3 implements SchedulingStrategy {
                     .filter(e -> e.getValue().state() == READY && new HashSet<>(e.getValue().tags()).containsAll(tags))
                     .collect(Collectors.toList());
 
-            final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
-            return Pair.of(bestVm.getKey(), bestVm.getValue());
+            if(!availableVms.isEmpty()) {
+                final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
+                return Pair.of(bestVm.getKey(), bestVm.getValue());
+            }
+
+            return Pair.of(null, null);
         }
 
         // otherwise sort providers by the given consumer tag priority list
