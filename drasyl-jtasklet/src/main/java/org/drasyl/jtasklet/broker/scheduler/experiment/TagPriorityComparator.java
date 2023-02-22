@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,36 +19,34 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.jtasklet.message;
+package org.drasyl.jtasklet.broker.scheduler.experiment;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.jtasklet.broker.ResourceProvider;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
-import static org.drasyl.util.Preconditions.requireNonNegative;
-
-public class ResourceRequest implements TaskletMessage {
+public class TagPriorityComparator implements Comparator<Map.Entry<DrasylAddress, ResourceProvider>> {
     private final List<String> tags;
-    private final int priority;
 
-    @JsonCreator
-    public ResourceRequest(@JsonProperty("tags") final List<String> tags,
-                           @JsonProperty("priority") final int priority) {
+    public TagPriorityComparator(final List<String> tags) {
         this.tags = tags;
-        this.priority = requireNonNegative(priority);
     }
 
     @Override
-    public String toString() {
-        return "ResourceRequest{}";
-    }
+    public int compare(final Map.Entry<DrasylAddress, ResourceProvider> o1,
+                       final Map.Entry<DrasylAddress, ResourceProvider> o2) {
+        for (final String tag : tags) {
+            if (o1.getValue().tags().indexOf(tag) > o2.getValue().tags().indexOf(tag)) {
+                return 1;
+            }
+            else {
+                return -1;
+            }
+        }
 
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public int getPriority() {
-        return priority;
+        return 0;
     }
 }

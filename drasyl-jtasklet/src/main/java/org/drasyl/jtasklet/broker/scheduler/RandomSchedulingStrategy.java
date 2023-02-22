@@ -5,6 +5,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.util.Pair;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,7 +22,7 @@ public class RandomSchedulingStrategy implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttReport> rttReports,
                                                           final DrasylAddress consumer,
-                                                          final String[] tags,
+                                                          final List<String> tags,
                                                           final int priority) {
         final Map<DrasylAddress, ResourceProvider> availableVms = providers.entrySet().stream().filter(e -> e.getValue().state() == READY).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         if (!availableVms.isEmpty()) {

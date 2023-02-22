@@ -27,11 +27,11 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
+import java.util.List;
 import java.util.Map;
 
 /**
- * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud
- * Low-Prio Tasks: @Cloud
+ * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud Low-Prio Tasks: @Cloud
  */
 public class S4 implements SchedulingStrategy {
     @Override
@@ -43,8 +43,8 @@ public class S4 implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttHandler.PeersRttReport> rttReports,
                                                           final DrasylAddress consumer,
-                                                          final String[] tags,
+                                                          final List<String> tags,
                                                           final int priority) {
-        return null;
+        return new S3().schedule(providers, rttReports, consumer, tags, priority);
     }
 }

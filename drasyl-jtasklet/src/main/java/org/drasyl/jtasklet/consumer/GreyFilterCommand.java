@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -53,7 +54,7 @@ public class GreyFilterCommand extends ChannelOptions {
             defaultValue = "",
             split = ","
     )
-    private String[] tags;
+    private List<String> tags;
     @Option(
             names = { "--priority" },
             defaultValue = "0"

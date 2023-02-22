@@ -6,6 +6,7 @@ import org.drasyl.jtasklet.LoggableRecord;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.drasyl.jtasklet.util.SourceUtil.minifySource;
 
@@ -20,7 +21,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
     private final Instant offloadTaskTime;
     private Instant executingTime;
     private Object[] output;
-    private String[] tags;
+    private final List<String> tags;
     private long executionTime;
     private Instant executedTime;
     private Instant returnedResult;
@@ -32,7 +33,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                                   final String token,
                                   final String source,
                                   final Object[] input,
-                                  final String[] tags) {
+                                  final List<String> tags) {
         this.provider = provider;
         this.broker = broker;
         this.benchmark = benchmark;
@@ -52,7 +53,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 ", benchmark=" + benchmark +
                 ", consumer=" + consumer +
                 ", token='" + token + '\'' +
-                ", tags=" + Arrays.toString(tags) +
+                ", tags=" + String.join(",", tags) +
                 ", source='" + source + '\'' +
                 ", input=" + Arrays.toString(input) +
                 ", offloadTaskTime=" + offloadTaskTime +
@@ -114,7 +115,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 // offload task
                 consumer,
                 token,
-                Arrays.toString(tags),
+                String.join(",", tags),
                 minifySource(source),
                 Arrays.toString(input),
                 offloadTaskTime.toEpochMilli(),

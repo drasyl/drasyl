@@ -57,7 +57,7 @@ public class OffloadCommand extends ChannelOptions {
             defaultValue = "",
             split = ","
     )
-    private String[] tags;
+    private List<String> tags;
     @Option(
             names = { "--priority" },
             defaultValue = "0"

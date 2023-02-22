@@ -6,6 +6,7 @@ import org.drasyl.jtasklet.LoggableRecord;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.drasyl.jtasklet.util.SourceUtil.minifySource;
 
@@ -18,7 +19,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
     private Instant resourceRequestedTime;
     private DrasylAddress provider;
     private String token;
-    private String[] tags;
+    private List<String> tags;
     private Instant resourceRespondedTime;
     private Instant offloadTaskTime;
     private Instant offloadedTaskTime;
@@ -49,7 +50,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 ", resourceRequestedTime=" + resourceRequestedTime +
                 ", provider=" + provider +
                 ", token='" + token + '\'' +
-                ", tags='" + Arrays.toString(tags) + '\'' +
+                ", tags='" + String.join(",", tags) + '\'' +
                 ", priority='" + priority + '\'' +
                 ", resourceRespondedTime=" + resourceRespondedTime +
                 ", offloadTaskTime=" + offloadTaskTime +
@@ -67,7 +68,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
 
     public void resourceResponded(final DrasylAddress provider,
                                   final String token,
-                                  final String[] tags) {
+                                  final List<String> tags) {
         this.provider = provider;
         this.token = token;
         this.tags = tags;
@@ -131,7 +132,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 // resource responded
                 provider,
                 token,
-                Arrays.toString(tags),
+                String.join(",", tags),
                 priority,
                 resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
                 resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,

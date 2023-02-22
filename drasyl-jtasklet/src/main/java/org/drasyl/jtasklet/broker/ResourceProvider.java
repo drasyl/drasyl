@@ -3,7 +3,7 @@ package org.drasyl.jtasklet.broker;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.RandomUtil;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -24,9 +24,9 @@ public class ResourceProvider {
     private int succeededTasks;
     private int failedTasks;
     private String nextToken;
-    private String[] tags;
+    private final List<String> tags;
 
-    public ResourceProvider(final long benchmark, final String token, final String[] tags) {
+    public ResourceProvider(final long benchmark, final String token, final List<String> tags) {
         this.benchmark = benchmark;
         this.token = requireNonNull(token);
         this.tags = requireNonNull(tags);
@@ -35,28 +35,22 @@ public class ResourceProvider {
     }
 
     public boolean taskAssigned(final DrasylAddress assignedTo) {
-        switch (providerState) {
-            case READY:
-                this.providerState = ASSIGNED;
-                this.stateTime = System.currentTimeMillis();
-                this.assignedTo = requireNonNull(assignedTo);
-                return true;
-
-            default:
-                return false;
+        if (providerState == READY) {
+            this.providerState = ASSIGNED;
+            this.stateTime = System.currentTimeMillis();
+            this.assignedTo = requireNonNull(assignedTo);
+            return true;
         }
+        return false;
     }
 
     public boolean taskOffloaded() {
-        switch (providerState) {
-            case ASSIGNED:
-                this.providerState = OFFLOADED;
-                this.stateTime = System.currentTimeMillis();
-                return true;
-
-            default:
-                return false;
+        if (providerState == ASSIGNED) {
+            this.providerState = OFFLOADED;
+            this.stateTime = System.currentTimeMillis();
+            return true;
         }
+        return false;
     }
 
     public boolean taskExecuting() {
@@ -96,24 +90,21 @@ public class ResourceProvider {
     }
 
     public boolean taskDone() {
-        switch (providerState) {
-            case READY:
-                return false;
-
-            default:
-                if (nextToken != null) {
-                    this.providerState = READY;
-                    this.token = nextToken;
-                    this.nextToken = null;
-                    this.assignedTo = null;
-                }
-                else {
-                    this.providerState = DONE;
-                }
-                this.stateTime = System.currentTimeMillis();
-                this.succeededTasks++;
-                return true;
+        if (providerState == READY) {
+            return false;
         }
+        if (nextToken != null) {
+            this.providerState = READY;
+            this.token = nextToken;
+            this.nextToken = null;
+            this.assignedTo = null;
+        }
+        else {
+            this.providerState = DONE;
+        }
+        this.stateTime = System.currentTimeMillis();
+        this.succeededTasks++;
+        return true;
     }
 
     public boolean taskFailed() {
@@ -151,7 +142,7 @@ public class ResourceProvider {
         return "ResourceProvider{" +
                 "benchmark=" + benchmark +
                 ", token=" + token +
-                ", tags=" + Arrays.toString(tags) +
+                ", tags=" + String.join(",", tags) +
                 '}';
     }
 
@@ -187,7 +178,7 @@ public class ResourceProvider {
         return token;
     }
 
-    public String[] tags() {
+    public List<String> tags() {
         return tags;
     }
 

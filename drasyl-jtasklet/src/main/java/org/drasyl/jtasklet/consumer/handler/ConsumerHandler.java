@@ -37,6 +37,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -76,7 +77,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private final String source;
     private final Object[] input;
     private int remainingCycles;
-    private final String[] tags;
+    private final List<String> tags;
     private final int priority;
     private ConsumerLoggableRecord taskRecord;
     private ScheduledFuture<?> timeoutGuard;
@@ -87,7 +88,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
                            final String source,
                            final Object[] input,
                            final int remainingCycles,
-                           final String[] tags,
+                           final List<String> tags,
                            final int priority) {
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);

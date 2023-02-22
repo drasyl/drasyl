@@ -24,6 +24,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -42,7 +43,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private final long benchmark;
     private final EventLoopGroup taskEventLoop = new NioEventLoopGroup(1);
     private final RuntimeEnvironment runtimeEnvironment;
-    private final String[] tags;
+    private final List<String> tags;
     private ProviderLoggableRecord taskRecord;
     private DrasylChannel brokerChannel;
     private String token;
@@ -55,7 +56,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                            final DrasylAddress broker,
                            final long benchmark,
                            final RuntimeEnvironment runtimeEnvironment,
-                           final String[] tags) {
+                           final List<String> tags) {
         this.out = requireNonNull(out);
         this.broker = requireNonNull(broker);
         this.benchmark = benchmark;

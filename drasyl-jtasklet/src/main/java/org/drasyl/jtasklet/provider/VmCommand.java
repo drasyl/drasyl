@@ -20,6 +20,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
+import java.util.List;
 
 @Command(
         name = "vm",
@@ -61,7 +62,7 @@ public class VmCommand extends ChannelOptions {
             defaultValue = "",
             split = ","
     )
-    private String[] tags;
+    private List<String> tags;
     private long benchmark;
 
     public VmCommand() {

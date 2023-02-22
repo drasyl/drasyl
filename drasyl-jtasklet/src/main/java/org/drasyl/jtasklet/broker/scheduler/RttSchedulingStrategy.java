@@ -9,6 +9,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -28,7 +29,7 @@ public class RttSchedulingStrategy implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttReport> rttReports,
                                                           final DrasylAddress consumer,
-                                                          final String[] tags,
+                                                          final List<String> tags,
                                                           final int priority) {
         final Map<Pair<DrasylAddress, DrasylAddress>, Double> rtts = new HashMap<>();
         for (final Entry<DrasylAddress, PeersRttReport> entry : rttReports.entrySet()) {

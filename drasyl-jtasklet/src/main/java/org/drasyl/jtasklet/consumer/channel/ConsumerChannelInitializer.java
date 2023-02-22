@@ -10,6 +10,7 @@ import org.drasyl.jtasklet.consumer.handler.ConsumerHandler;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -22,7 +23,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     private final String source;
     private final Object[] input;
     private final int cycles;
-    private final String[] tags;
+    private final List<String> tags;
     private final int priority;
 
     @SuppressWarnings("java:S107")
@@ -38,7 +39,7 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
                                       final String source,
                                       final Object[] input,
                                       final int cycles,
-                                      final String[] tags,
+                                      final List<String> tags,
                                       final int priority) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);

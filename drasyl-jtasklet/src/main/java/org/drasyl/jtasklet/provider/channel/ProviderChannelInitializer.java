@@ -11,6 +11,7 @@ import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
@@ -20,7 +21,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
     private final IdentityPublicKey broker;
     private final long benchmark;
     private final RuntimeEnvironment runtimeEnvironment;
-    private final String[] tags;
+    private final List<String> tags;
 
     @SuppressWarnings("java:S107")
     public ProviderChannelInitializer(final Identity identity,
@@ -34,7 +35,7 @@ public class ProviderChannelInitializer extends AbstractChannelInitializer {
                                       final IdentityPublicKey broker,
                                       final long benchmark,
                                       final RuntimeEnvironment runtimeEnvironment,
-                                      final String[] tags) {
+                                      final List<String> tags) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.broker = broker;

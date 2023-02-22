@@ -27,11 +27,15 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 /**
- * Real-Time Tasks: @IKUM/@local > @Home > @Cloud
- * Low-Prio Tasks: Random
+ * Real-Time Tasks: @IKUM/@local > @Home > @Cloud Low-Prio Tasks: Random
  */
 public class S2 implements SchedulingStrategy {
     @Override
@@ -43,8 +47,24 @@ public class S2 implements SchedulingStrategy {
     public Pair<DrasylAddress, ResourceProvider> schedule(final Map<DrasylAddress, ResourceProvider> providers,
                                                           final Map<DrasylAddress, PeersRttHandler.PeersRttReport> rttReports,
                                                           final DrasylAddress consumer,
-                                                          final String[] tags,
+                                                          final List<String> tags,
                                                           final int priority) {
-        return null;
+        // check if this is a low priority task, then do random scheduling
+        if (priority == 0) {
+            return new S1().schedule(providers, rttReports, consumer, tags, priority);
+        }
+
+        // otherwise sort providers by the given consumer tag priority list
+        final List<Map.Entry<DrasylAddress, ResourceProvider>> availableVms = providers.entrySet().stream()
+                .filter(e -> e.getValue().state() == READY && new HashSet<>(e.getValue().tags()).containsAll(tags))
+                .sorted(new TagPriorityComparator(tags))
+                .collect(Collectors.toList());
+        if (!availableVms.isEmpty()) {
+            final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
+            return Pair.of(bestVm.getKey(), bestVm.getValue());
+        }
+        else {
+            return Pair.of(null, null);
+        }
     }
 }
