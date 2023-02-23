@@ -92,6 +92,7 @@ public abstract class ReliableTransportConfig {
             .rto(ofSeconds(1))
             .mmsR(1432)
             .mmsS(1432)
+            .newReno(true)
             .build();
 
     public static Builder newBuilder() {
@@ -172,6 +173,8 @@ public abstract class ReliableTransportConfig {
      */
     public abstract int mmsR();
 
+    public abstract boolean newReno();
+
     abstract Builder toBuilder();
 
     public interface Clock {
@@ -232,6 +235,8 @@ public abstract class ReliableTransportConfig {
         public abstract Builder mmsS(final int mmsS);
 
         public abstract Builder mmsR(final int mmsR);
+
+        public abstract Builder newReno(final boolean newReno);
 
         abstract ReliableTransportConfig autoBuild();
 

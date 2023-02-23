@@ -392,7 +392,7 @@ public class TransmissionControlBlock {
                         cancelOverrideTimer();
                     }
                     else {
-                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
+                        LOG.trace("{}[{}] Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, readableBytes);
                         return;
                     }
                 }
@@ -411,7 +411,7 @@ public class TransmissionControlBlock {
                 final long remainingBytes = min(effSndMss(), usableWindow, sendBuffer.readableBytes(), readableBytes);
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
+                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
 
                     final AtomicBoolean doPush = new AtomicBoolean();
@@ -448,7 +448,7 @@ public class TransmissionControlBlock {
         if (overrideTimer == null) {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
+                LOG.trace("{}[{}] Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, config.overrideTimeout().toMillis());
                 segmentizeData(ctx, true);
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
@@ -503,7 +503,7 @@ public class TransmissionControlBlock {
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
         rcvNxt = advanceSeq(rcvNxt, advancement);
-        LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
+        LOG.trace("{}[{}] Advance RCV.NXT to {}.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, rcvNxt);
     }
 
     public void decrementRcvWnd(final int decrement) {
@@ -523,7 +523,7 @@ public class TransmissionControlBlock {
 
         if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
-            LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
+            LOG.trace("{}[{}] Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
             assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
@@ -590,7 +590,7 @@ public class TransmissionControlBlock {
 
     public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
         this.sndUna = sndUna;
-        LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
+        LOG.trace("{}[{}] Advance SND.UNA to {}.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, sndUna);
     }
 
     public void bla_tsRecent(final long tsRecent) {
@@ -664,5 +664,13 @@ public class TransmissionControlBlock {
 
     public void bla_sndWl2(final long sndWl2) {
         this.sndWl2 = sndWl2;
+    }
+
+    public void bla_recover(final long recover) {
+        this.recover = recover;
+    }
+
+    public int duplicateAcks() {
+        return duplicateAcks;
     }
 }

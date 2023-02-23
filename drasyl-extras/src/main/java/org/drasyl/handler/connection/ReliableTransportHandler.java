@@ -33,7 +33,6 @@ import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
-import org.drasyl.util.NumberUtil;
 import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -43,6 +42,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
+import static java.lang.Boolean.FALSE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
@@ -72,6 +72,8 @@ import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
 import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
+import static org.drasyl.util.NumberUtil.max;
+import static org.drasyl.util.NumberUtil.min;
 
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
@@ -84,10 +86,10 @@ import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_
  * Extensions for High Performance</a>. Furthermore, the congestion control algorithms slow start,
  * congestion avoidance, fast retransmit, and fast recovery as described in <a
  * href="https://www.rfc-editor.org/rfc/rfc5681#section-3.1">RFC 5681 TCP Congestion Control</a> are
- * implemented as well. The improvements presented in <a
- * href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582 The NewReno Modification to TCP's Fast
- * Recovery Algorithm</a> and <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042 Enhancing
- * TCP's Loss Recovery Using Limited Transmit</a> are added to the fast recovery algorithm.
+ * implemented as well. The improvements presented in <a href="https://www.rfc-editor.org/rfc/rfc6582">RFC
+ * 6582 The NewReno Modification to TCP's Fast Recovery Algorithm</a> and <a
+ * href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042 Enhancing TCP's Loss Recovery Using
+ * Limited Transmit</a> are added to the fast recovery algorithm.
  * <p>
  * The <a href="https://www.rfc-editor.org/rfc/rfc9293.html#nagle">Nagle algorithm</a> is used as
  * "Silly Window Syndrome" avoidance algorithm. To improve performance of recovering from multiple
@@ -97,8 +99,8 @@ import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_
  * The handler can be configured to perform an active or passive OPEN process.
  * <p>
  * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
- * once the handshake has been issued. The handshake process will result either in a
- * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
+ * once the handshake has been issued. The handshake process will result either in a {@link
+ * ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({
         "java:S125",
@@ -269,9 +271,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      */
 
     /**
-     * OPEN call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC 9293, Section
-     * 3.10.1</a>.
+     * OPEN call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC
+     * 9293, Section 3.10.1</a>.
      */
     public void userCallOpen(final ChannelHandlerContext ctx) {
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
@@ -377,9 +378,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEND call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC 9293, Section
-     * 3.10.2</a>.
+     * SEND call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.2">RFC
+     * 9293, Section 3.10.2</a>.
      */
     private void userCallSend(final ChannelHandlerContext ctx,
                               final ByteBuf data,
@@ -475,9 +475,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * RECEIVE call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.3">RFC 9293, Section
-     * 3.10.3</a>.
+     * RECEIVE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.3">RFC
+     * 9293, Section 3.10.3</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
@@ -570,9 +569,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * CLOSE call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC 9293, Section
-     * 3.10.4</a>.
+     * CLOSE call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.4">RFC
+     * 9293, Section 3.10.4</a>.
      */
     @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
@@ -694,9 +692,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * ABORT call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC 9293, Section
-     * 3.10.5</a>.
+     * ABORT call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC
+     * 9293, Section 3.10.5</a>.
      */
     @SuppressWarnings("java:S128")
     public void userCallAbort(final ChannelHandlerContext ctx) throws ClosedChannelException {
@@ -784,9 +781,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * STATUS call as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC 9293, Section
-     * 3.10.6</a>.
+     * STATUS call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC
+     * 9293, Section 3.10.6</a>.
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
         LOG.trace("[{}] STATUS call received.", state);
@@ -876,9 +872,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * SEGMENT ARRIVES event as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC 9293, Section
-     * 3.10.7</a>.
+     * SEGMENT ARRIVES event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.7">RFC
+     * 9293, Section 3.10.7</a>.
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {
@@ -1031,7 +1026,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.lastAckSent(tcb.rcvNxt());
             }
 
-            LOG.trace("{}[{}] ACKnowlede the received segment and send our SYN `{}`.", ctx.channel(), state, response);
+            LOG.trace("{}[{}] ACKnowledge the received segment and send our SYN `{}`.", ctx.channel(), state, response);
             tcb.send(ctx, response);
 
             // RFC 9293: SND.NXT is set to ISS+1 and SND.UNA to ISS.
@@ -1193,7 +1188,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         // RFC 6298: where K = 4
-                        tcb.rto((long) (tcb.sRtt() + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar())));
+                        tcb.rto((long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
                     }
                 }
             }
@@ -1228,8 +1223,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
                 // (timestamps option is automatically added by formSegment)
                 final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-                LOG.trace("{}[{}] ACKnowlede the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
-                tcb.send(ctx, response);
+                LOG.trace("{}[{}] ACKnowledge the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), state, response);
+                tcb.outgoingSegmentQueue().place(ctx, response);
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                 // (is automatically done by formSegment)
@@ -1372,7 +1367,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: If the RCV.WND is zero, no segments will be acceptable, but special
                 // RFC 9293: allowance should be made to accept valid ACKs, URGs, and RSTs.
 
-                if (!acceptableSeg) {
+                if (FALSE.equals(acceptableSeg)) {
                     // RFC 9293: If an incoming segment is not acceptable, an acknowledgment should
                     // RFC 9293: be sent in reply (unless the RST bit is set, if so drop the segment
                     // RFC 9293: and return):
@@ -1675,7 +1670,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     }
 
                 case ESTABLISHED:
-                    if (establishedStateProcessing(ctx, seg, acceptableAck)) {
+                    if (establishedStateProcessing(ctx, seg)) {
                         return;
                     }
                     break;
@@ -1684,7 +1679,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     final boolean ackOurFin = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
 
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
-                    if (establishedStateProcessing(ctx, seg, acceptableAck)) {
+                    if (establishedStateProcessing(ctx, seg)) {
                         return;
                     }
 
@@ -1697,7 +1692,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                 case FIN_WAIT_2:
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
-                    if (establishedStateProcessing(ctx, seg, acceptableAck)) {
+                    if (establishedStateProcessing(ctx, seg)) {
                         return;
                     }
 
@@ -1708,7 +1703,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                 case CLOSE_WAIT:
                     // RFC 9293: Do the same processing as for the ESTABLISHED state.
-                    if (establishedStateProcessing(ctx, seg, acceptableAck)) {
+                    if (establishedStateProcessing(ctx, seg)) {
                         return;
                     }
                     break;
@@ -1716,7 +1711,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 case CLOSING:
                     final boolean ackOurFin2 = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
                     // RFC 9293: In addition to the processing for the ESTABLISHED state,
-                    if (establishedStateProcessing(ctx, seg, acceptableAck)) {
+                    if (establishedStateProcessing(ctx, seg)) {
                         return;
                     }
 
@@ -1938,14 +1933,20 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * @return {@code true} if segment processing should be stopped
      */
     private boolean establishedStateProcessing(final ChannelHandlerContext ctx,
-                                               final Segment seg,
-                                               final boolean acceptableAck) {
+                                               final Segment seg) {
+        // short overview of RCFs used in this method...
+        // RFC 9293: basic TCP
+        //  RFC 7323: TCP Timestamps Option and RTTM Mechanism
+        //  RFC 5681: congestion control algorithms
+        //   RFC 3042: limited transmit
+        //   RFC 6582: NewReno
+
         final boolean isRfc9293Duplicate = lessThanOrEqualTo(seg.ack(), tcb.sndUna());
 
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), tcb.sndUna(), SEQ_NO_SPACE));
+            LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), tcb.sndUna(), SEQ_NO_SPACE));
             ackedBytes = sub(seg.ack(), tcb.sndUna());
             tcb.sndUna(ctx, seg.ack());
         }
@@ -1965,7 +1966,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 else {
                     // RFC 7323: otherwise, use the elapsed time since the first segment in the
                     // RFC 7323: retransmission queue was sent.
-                    rDash = (int) (tcb.config().clock().time() - tcb.retransmissionQueue().firstSegmentSentTime());
+                    rDash = (int) (config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime());
                 }
                 LOG.trace("RTT R' = {}", rDash);
 
@@ -1991,7 +1992,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 7323: how many samples are taken per window:
 
                 // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
-                final int expectedSamples = NumberUtil.max((int) Math.ceil((float) tcb.flightSize() / (tcb.smss() * 2)), 1);
+                final int expectedSamples = max((int) Math.ceil((float) tcb.flightSize() / (tcb.smss() * 2)), 1);
                 // RFC 7323: alpha' = alpha / ExpectedSamples
                 final double alphaDash = config.alpha() / expectedSamples;
                 // RFC 7323: beta' = beta / ExpectedSamples
@@ -2008,7 +2009,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                tcb.rto((long) Math.ceil(tcb.sRtt() + NumberUtil.max(config.clock().g(), config.k() * tcb.rttVar())));
+                tcb.rto((long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
 
@@ -2033,102 +2034,230 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 seg.ack() == tcb.sndUna() &&
                 seg.wnd() == tcb.lastAdvertisedWindow;
         if (isRfc5681Duplicate) {
-            // increment counter
             tcb.duplicateAcks += 1;
-            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), seg.ack(), tcb.duplicateAcks, tcb.flightSize());
+            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks, tcb.flightSize());
 
-            // Fast Retransmit/Fast Recovery
-            // RFC 5681, Section 3.2
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.2
-            if (tcb.duplicateAcks < 3) {
-                // RFC 5681
-                // On the first and second duplicate ACKs received at a sender, a
-                //       TCP SHOULD send a segment of previously unsent data per [RFC3042]
-                //       provided that the receiver's advertised window allows, the total
-                //       FlightSize would remain less than or equal to cwnd plus 2*SMSS,
-                //       and that new data is available for transmission.
-
-                // RFC 3042, Section 2.
-                // * The receiver's advertised window allows the transmission of the
-                //       segment.
-                // * The amount of outstanding data would remain less than or equal
-                //       to the congestion window plus 2 segments.  In other words, the
-                //       sender can only send two segments beyond the congestion window
-                //       (cwnd).
-                final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() && (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss());
+            if (tcb.duplicateAcks() < 3) {
+                // RFC 5681: 1.  On the first and second duplicate ACKs received at a sender, a
+                // RFC 5681:     TCP SHOULD send a segment of previously unsent data per [RFC3042]
+                // RFC 5681:     provided that the receiver's advertised window allows, the total
+                // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
+                // RFC 5681:     and that new data is available for transmission.
+                final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
+                        (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
+                        tcb.sendBuffer().hasOutstandingData();
                 if (doLimitedTransmit) {
-                    final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got duplicate ACK. Retransmit `{}`.", ctx.channel(), retransmission);
-                    ctx.writeAndFlush(retransmission);
-                    // RFC 5681
-                    // Further, the
-                    //       TCP sender MUST NOT change cwnd to reflect these two segments
-                    //       [RFC3042].  Note that a sender using SACK [RFC2018] MUST NOT send
-                    //       new data unless the incoming duplicate acknowledgment contains
-                    //       new SACK information.
+                    LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), state, tcb.sendBuffer().readableBytes());
+                    tcb.writeEnqueuedData(ctx);
+                    // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
+                    // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
+                    // RFC 5681:     MUST NOT send new data unless the incoming duplicate
+                    // RFC 5681:     acknowledgment contains new SACK information.
+                }
+
+                if (config.newReno()) {
+                    // RFC 6582: 1)  Initialization of TCP protocol control block:
+                    // RFC 6582:     When the TCP protocol control block is initialized, recover is
+                    // RFC 6582:     set to the initial send sequence number.
+                    tcb.bla_recover(tcb.iss());
                 }
             }
-            if (tcb.duplicateAcks == 3) {
-                // RFC 6582
-                // 2)  Three duplicate ACKs:
-                //       When the third duplicate ACK is received, the TCP sender first
-                //       checks the value of recover to see if the Cumulative
-                //       Acknowledgment field covers more than recover.  If so, the value
-                //       of recover is incremented to the value of the highest sequence
-                //       number transmitted by the TCP so far.  The TCP then enters fast
-                //       retransmit (step 2 of Section 3.2 of [RFC5681]).  If not, the TCP
-                //       does not enter fast retransmit and does not reset ssthresh.
-                if (greaterThan(seg.ack(), tcb.recover)) {
-                    tcb.recover = sub(tcb.sndNxt(), 1);
-                    // RFC 5681
-                    // 2. When the third duplicate ACK is received, a TCP MUST set ssthresh
-                    //       to no more than the value given in equation (4).
-                    //      ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                    final long newSsthresh = NumberUtil.max(tcb.flightSize() / 2, 2L * tcb.smss());
+            else if (tcb.duplicateAcks() == 3) {
+                if (!config.newReno()) {
+                    // Reno
+                    // RFC 5681: 2.  When the third duplicate ACK is received, a TCP MUST
+                    // RFC 5681:     set ssthresh to no more than the value given in equation (4).
+                    // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
+                    // RFC 5681:     transmit MUST NOT be included in this calculation.
+                    // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
+                    final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
                     if (tcb.ssthresh != newSsthresh) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-                        tcb.ssthresh = newSsthresh;
-                    }// RFC 5681
-                    // 3. The lost segment starting at SND.UNA MUST be retransmitted and
-                    //       cwnd set to ssthresh plus 3*SMSS.  This artificially "inflates"
-                    //       the congestion window by the number of segments (three) that have
-                    //       left the network and which the receiver has buffered.
+                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
+                        tcb.bla_ssthresh(newSsthresh);
+                    }
+
+                    // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                     final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                    LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
-                    ctx.writeAndFlush(retransmission);// increase congestion window as we know that at least three segments have left the network
+                    LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                    ctx.writeAndFlush(retransmission);
+
+                    // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
+                    // RFC 5681:    "inflates" the congestion window by the number of segments
+                    // RFC 5681:    (three) that have left the network and which the receiver has
+                    // RFC 5681:    buffered.
                     long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                     if (newCwnd != tcb.cwnd()) {
-                        LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                        tcb.cwnd = newCwnd;
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        tcb.bla_cwnd(newCwnd);
+                    }
+                }
+                else {
+                    // NewReno
+                    // RFC 6582: 2)  Three duplicate ACKs:
+                    // RFC 6582:     When the third duplicate ACK is received, the TCP sender first
+                    // RFC 6582:     checks the value of recover to see if the Cumulative
+                    // RFC 6582:     Acknowledgment field covers more than recover.
+                    if (greaterThan(seg.ack(), tcb.recover)) {
+                        // RFC 6582:     If so, the value of recover is incremented to the value of
+                        // RFC 6582:     the highest sequence number transmitted by the TCP so far.
+                        tcb.bla_recover(sub(tcb.sndNxt(), 1));
+
+                        // RFC 6582:     The TCP then enters fast retransmit (step 2 of Section 3.2
+                        // RFC 6582:     of [RFC5681]).
+
+                        // RFC 5681: 2.  When the third duplicate ACK is received, a TCP MUST
+                        // RFC 5681:     set ssthresh to no more than the value given in equation (4).
+                        // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
+                        // RFC 5681:     transmit MUST NOT be included in this calculation.
+                        // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
+                        final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
+                        if (tcb.ssthresh != newSsthresh) {
+                            LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
+                            tcb.bla_ssthresh(newSsthresh);
+                        }
+
+                        // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
+                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                        ctx.writeAndFlush(retransmission);
+
+                        // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
+                        // RFC 5681:    "inflates" the congestion window by the number of segments
+                        // RFC 5681:    (three) that have left the network and which the receiver has
+                        // RFC 5681:    buffered.
+                        long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
+                        if (newCwnd != tcb.cwnd()) {
+                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            tcb.bla_cwnd(newCwnd);
+                        }
+                    }
+                    else {
+                        // RFC 6582:     If not, the TCP does not enter fast retransmit and does not
+                        // RFC 6582:     reset ssthresh.
                     }
                 }
             }
             else if (tcb.duplicateAcks > 3) {
-                // RFC 5681
-                // 4. For each additional duplicate ACK received (after the third),
-                //       cwnd MUST be incremented by SMSS.  This artificially inflates the
-                //       congestion window in order to reflect the additional segment that
-                //       has left the network.
-
-                // increase congestion window as we know another segment has left the network
+                // RFC 5681: 4. For each additional duplicate ACK received (after the third), cwnd
+                // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
+                // RFC 5681:    congestion window in order to reflect the additional segment that
+                // RFC 5681:    has left the network.
                 long newCwnd = tcb.cwnd() + tcb.smss();
                 if (newCwnd != tcb.cwnd()) {
-                    LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                    tcb.cwnd = newCwnd;
+                    LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                    tcb.bla_cwnd(newCwnd);
                 }
 
-                // When previously unsent data is available and the new value of
-                //       cwnd and the receiver's advertised window allow, a TCP SHOULD
-                //       send 1*SMSS bytes of previously unsent data.
-                //                final int offset = (-3 + duplicateAcks) * smss;
-                //                final Segment retransmission = retransmissionQueue().retransmissionSegment(ctx, this, 0, effSndMss());
-                //                LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got {}th duplicate ACKs. Retransmit `{}`.", ctx.channel(), duplicateAcks, retransmission);
-                //                ctx.writeAndFlush(retransmission);
+                // RFC 5681: 5.  When previously unsent data is available and the new value of
+                // RFC 5681:     cwnd and the receiver's advertised window allow, a TCP SHOULD
+                // RFC 5681:     send 1*SMSS bytes of previously unsent data.
+                // FIXME: sent only 1*SMSS
+                tcb.writeEnqueuedData(ctx);
             }
         }
-        else if (tcb.duplicateAcks != 0) {
+        else if (tcb.duplicateAcks() != 0) {
             // reset counter
             tcb.duplicateAcks = 0;
+
+            if (ackedBytes > 0) {
+                if (config.newReno()) {
+                    // Reno
+                    // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
+                    // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
+                    // RFC 5681:     set in step 2). This is termed "deflating" the window.
+                    long newCwnd = tcb.ssthresh();
+                    if (newCwnd != tcb.cwnd()) {
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        tcb.bla_cwnd(newCwnd);
+                    }
+                }
+                else {
+                    // NewReno
+                    // RFC 6582: 3)  Response to newly acknowledged data:
+                    // RFC 6582:     Step 6 of [RFC5681] specifies the response to the next ACK that
+                    // RFC 6582:     acknowledges previously unacknowledged data.  When an ACK arrives
+                    // RFC 6582:     that acknowledges new data, this ACK could be the acknowledgment
+                    // RFC 6582:     elicited by the initial retransmission from fast retransmit, or
+                    // RFC 6582:     elicited by a later retransmission. There are two cases:
+                    final boolean fullAcknowledgement = greaterThanOrEqualTo(seg.ack(), tcb.recover);
+
+                    if (fullAcknowledgement) {
+                        // RFC 6582:     Full acknowledgments:
+                        // RFC 6582:     If this ACK acknowledges all of the data up to and including
+                        // RFC 6582:     recover, then the ACK acknowledges all the intermediate segments
+                        // RFC 6582:     sent between the original transmission of the lost segment and
+                        // RFC 6582:     the receipt of the third duplicate ACK. Set cwnd to either (1)
+                        // RFC 6582:     min (ssthresh, max(FlightSize, SMSS) + SMSS) or (2) ssthresh,
+                        // RFC 6582:     where ssthresh is the value set when fast retransmit was entered,
+                        // RFC 6582:     and where FlightSize in (1) is the amount of data presently
+                        // RFC 6582:     outstanding. This is termed "deflating" the window. If the
+                        // RFC 6582:     second option is selected, the implementation is encouraged to
+                        // RFC 6582:     take measures to avoid a possible burst of data, in case the
+                        // RFC 6582:     amount of data outstanding in the network is much less than the
+                        // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
+                        // RFC 6582:     number of data packets that can be sent in response to a single
+                        // RFC 6582:     acknowledgment. Exit the fast recovery procedure.
+                        long newCwnd = tcb.ssthresh();
+                        if (newCwnd != tcb.cwnd()) {
+                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            tcb.bla_cwnd(newCwnd);
+                        }
+                    }
+                    else {
+                        // RFC 6582:     Partial acknowledgments:
+                        // RFC 6582:     If this ACK does *not* acknowledge all of the data up to and
+                        // RFC 6582:     including recover, then this is a partial ACK. In this case,
+                        // RFC 6582:     retransmit the first unacknowledged segment.
+                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
+                        ctx.writeAndFlush(retransmission);
+
+                        // RFC 6582:     Deflate the congestion window by the amount of new data
+                        // RFC 6582:     acknowledged by the Cumulative Acknowledgment field.
+                        long newCwnd = max(0, tcb.cwnd() - ackedBytes);
+
+                        // RFC 6582:     If the partial ACK acknowledges
+                        // RFC 6582:     at least one SMSS of new data, then add back SMSS bytes to the
+                        // RFC 6582:     congestion window. This artificially inflates the congestion
+                        // RFC 6582:     window in order to reflect the additional segment that has left
+                        // RFC 6582:     the network.
+                        if (ackedBytes >= tcb.smss()) {
+                            newCwnd += tcb.smss();
+                        }
+                        if (tcb.cwnd() != newCwnd) {
+                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            tcb.bla_cwnd(newCwnd);
+                        }
+
+                        // RFC 6582:     Send a new segment if permitted by the new value of
+                        // RFC 6582:     cwnd. This "partial window deflation" attempts to ensure that,
+                        // RFC 6582:     when fast recovery eventually ends, approximately ssthresh amount
+                        // RFC 6582:     of data will be outstanding in the network. Do not exit the fast
+                        // RFC 6582:     recovery procedure (i.e., if any duplicate ACKs subsequently
+                        // RFC 6582:     arrive, execute step 4 of Section 3.2 of [RFC5681]).
+
+                        // FIXME:
+                        //  RFC 6582:     For the first partial ACK that arrives during fast recovery, also
+                        //  RFC 6582:     reset the retransmit timer. Timer management is discussed in
+                        //  RFC 6582:     more detail in Section 4.
+                    }
+                }
+            }
+        }
+        else {
+            if (tcb.doSlowStart()) {
+                // RFC 5681: During slow start, a TCP increments cwnd by at most SMSS bytes for
+                // RFC 5681: each ACK received that cumulatively acknowledges new data.
+                final long increment = min(tcb.smss(), ackedBytes);
+                LOG.trace("{}[{}] Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), state, ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
+                tcb.bla_cwnd(tcb.cwnd() + increment);
+            }
+            else {
+                // Congestion Avoidance -> +1 SMSS after each RTT
+                final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd());
+                LOG.trace("{}[{}] Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), state, ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
+                tcb.bla_cwnd(tcb.cwnd() + increment);
+            }
         }
 
         if (isRfc9293Duplicate) {
@@ -2136,8 +2265,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
             return false;
         }
-
-        // FIXME: tcb.lastAdvertisedWindow = seg.window();
         tcb.lastAdvertisedWindow = seg.wnd();
 
         if (greaterThan(seg.ack(), tcb.sndNxt())) {
@@ -2175,126 +2302,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: update SND.WND. The check here prevents using old segments to update
         // RFC 9293: the window.
 
-        if (acceptableAck) {
-            // TODO: If the SYN or SYN/ACK is lost, the initial window used by a
-            //   sender after a correctly transmitted SYN MUST be one segment
-            //   consisting of at most SMSS bytes.
-            // only when new data is acked
-            // As specified in [RFC3390], the SYN/ACK and the acknowledgment of the SYN/ACK MUST NOT increase the size of the congestion window.
-            if (ackedBytes > 0) {
-                if (tcb.doSlowStart()) {
-                    // During slow start, a TCP increments cwnd by at most SMSS bytes for
-                    //   each ACK received that cumulatively acknowledges new data.
-
-                    // Slow Start -> +1 SMSS after each ACK
-                    final long increment = NumberUtil.min(tcb.smss(), ackedBytes);
-                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
-                    tcb.cwnd += increment;
-                }
-                else {
-                    // Congestion Avoidance -> +1 SMSS after each RTT
-                    final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd());
-                    LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
-                    tcb.cwnd += increment;
-                }
-            }
-
-            if (ackedBytes > 0) {
-                if (tcb.duplicateAcks != 0) {
-                    // RFC 6582
-                    //    3)  Response to newly acknowledged data:
-                    //       Step 6 of [RFC5681] specifies the response to the next ACK that
-                    //       acknowledges previously unacknowledged data.  When an ACK arrives
-                    //       that acknowledges new data, this ACK could be the acknowledgment
-                    //       elicited by the initial retransmission from fast retransmit, or
-                    //       elicited by a later retransmission.  There are two cases:
-                    final boolean fullAcknowledgement = greaterThanOrEqualTo(seg.ack(), tcb.recover);
-
-                    if (fullAcknowledgement) {
-                        // RFC 6582
-                        //  Full acknowledgments:
-                        //       If this ACK acknowledges all of the data up to and including
-                        //       recover, then the ACK acknowledges all the intermediate segments
-                        //       sent between the original transmission of the lost segment and
-                        //       the receipt of the third duplicate ACK.  Set cwnd to either (1)
-                        //       min (ssthresh, max(FlightSize, SMSS) + SMSS) or (2) ssthresh,
-                        //       where ssthresh is the value set when fast retransmit was entered,
-                        //       and where FlightSize in (1) is the amount of data presently
-                        //       outstanding.  This is termed "deflating" the window.  If the
-                        //       second option is selected, the implementation is encouraged to
-                        //       take measures to avoid a possible burst of data, in case the
-                        //       amount of data outstanding in the network is much less than the
-                        //       new congestion window allows.  A simple mechanism is to limit the
-                        //       number of data packets that can be sent in response to a single
-                        //       acknowledgment.  Exit the fast recovery procedure.
-
-                        // RFC 5681
-                        // 6. When the next ACK arrives that acknowledges previously
-                        //       unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
-                        //       set in step 2).  This is termed "deflating" the window.
-                        final long newCwnd = NumberUtil.min(tcb.ssthresh(), NumberUtil.max(tcb.flightSize(), tcb.smss()) + tcb.smss());
-                        if (tcb.cwnd != newCwnd) {
-                            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd = newCwnd;
-                        }
-                        //
-                        //       This ACK should be the acknowledgment elicited by the
-                        //       retransmission from step 3, one RTT after the retransmission
-                        //       (though it may arrive sooner in the presence of significant out-
-                        //       of-order delivery of data segments at the receiver).
-                        //       Additionally, this ACK should acknowledge all the intermediate
-                        //       segments sent between the lost segment and the receipt of the
-                        //       third duplicate ACK, if none of these were lost.
-
-                        LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (full ACK). Reset duplicate ACKs counter. {} unACKed bytes remaining.", ctx.channel(), seg, tcb.flightSize());
-                        tcb.duplicateAcks = 0;
-                    }
-                    else {
-                        // RFC 6582
-                        // Partial acknowledgments:
-                        //       If this ACK does *not* acknowledge all of the data up to and
-                        //       including recover, then this is a partial ACK.  In this case,
-                        //       retransmit the first unacknowledged segment.
-                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                        LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), seg, retransmission, tcb.flightSize());
-                        // Deflate the
-                        //       congestion window by the amount of new data acknowledged by the
-                        //       Cumulative Acknowledgment field.
-                        long newCwnd = NumberUtil.max(0, tcb.cwnd - ackedBytes);
-                        //       If the partial ACK acknowledges
-                        //       at least one SMSS of new data, then add back SMSS bytes to the
-                        //       congestion window.
-                        //       This artificially inflates the congestion
-                        //       window in order to reflect the additional segment that has left
-                        //       the network.
-                        if (ackedBytes >= tcb.smss()) {
-                            newCwnd += tcb.smss();
-                        }
-                        if (tcb.cwnd != newCwnd) {
-                            LOG.error("{} Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd = newCwnd;
-                        }
-                        //       Send a new segment if permitted by the new value of
-                        //       cwnd.  This "partial window deflation" attempts to ensure that,
-                        //       when fast recovery eventually ends, approximately ssthresh amount
-                        //       of data will be outstanding in the network.  Do not exit the fast
-                        //       recovery procedure (i.e., if any duplicate ACKs subsequently
-                        //       arrive, execute step 4 of Section 3.2 of [RFC5681]).
-                        //
-                        //     FIXME: For the first partial ACK that arrives during fast recovery, also
-                        //       reset the retransmit timer.  Timer management is discussed in
-                        //       more detail in Section 4.
-
-                        ctx.writeAndFlush(retransmission);
-                    }
-                }
-            }
-
-            if (ackedBytes > 0) {
-                tcb.writeEnqueuedData(ctx);
-            }
-        }
-
         return false;
     }
 
@@ -2313,7 +2320,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // (not applicable to us)
 
             // RFC 9293: and MAY send it always (MAY-3).
-            final int mss = tcb.config().mmsR() - DRASYL_HDR_SIZE;
+            final int mss = config.mmsR() - DRASYL_HDR_SIZE;
             assert mss > 0;
             options.put(MAXIMUM_SEGMENT_SIZE, mss);
         }
@@ -2324,7 +2331,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: the connection, and SHOULD be sent in an <RST> segment (see Section 5.2
                 // RFC 9293: for details). The TCP SHOULD remember this state by setting a flag,
                 // RFC 9293: referred to as Snd.TS.OK, to one.
-                final TimestampsOption tsOpt = new TimestampsOption(tcb.config().clock().time(), tcb.tsRecent());
+                final TimestampsOption tsOpt = new TimestampsOption(config.clock().time(), tcb.tsRecent());
                 options.put(TIMESTAMPS, tsOpt);
                 if ((ctl & ACK) != 0) {
                     tcb.lastAckSent(ack);
@@ -2340,7 +2347,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         if (config.sack()) {
-            // FIXME: SACK
+            // FIXME: add support for SACK
             if (ctl == ACK) {
                 final List<Long> edges = new ArrayList<>();
                 final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
@@ -2386,9 +2393,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * USER TIMEOUT event as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
-     * 3.10.8</a>.
+     * USER TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
+     * 9293, Section 3.10.8</a>.
      */
     void userTimeout(final ChannelHandlerContext ctx) {
         userTimer = null;
@@ -2433,9 +2439,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * RETRANSMISSION TIMEOUT event as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
-     * 3.10.8</a>.
+     * RETRANSMISSION TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
+     * 9293, Section 3.10.8</a>.
      */
     void retransmissionTimeout(final ChannelHandlerContext ctx,
                                final TransmissionControlBlock tcb,
@@ -2445,7 +2450,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
         // RFC 6298:       TCP receiver.
         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-        LOG.error("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), rto, retransmission, tcb.flightSize());
+        LOG.error("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
 
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
@@ -2453,7 +2458,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 6298:       to this doubling operation.
         final long oldRto = tcb.rto();
         tcb.rto(tcb.rto() * 2);
-        LOG.trace("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
+        LOG.trace("{}[{}] Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), state, oldRto, tcb.rto());
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -2465,9 +2470,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
         // RFC 5681: equation (4):
         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
-        final long newSsthresh = NumberUtil.max(tcb.flightSize() / 2, 2L * tcb.smss());
+        final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
         if (tcb.ssthresh() != newSsthresh) {
-            LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+            LOG.trace("{}[{}] Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
             tcb.bla_ssthresh(newSsthresh);
         }
 
@@ -2479,7 +2484,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 5681: point congestion avoidance again takes over.
         final int fullSizedSegment = tcb.effSndMss();
         if (tcb.cwnd() != fullSizedSegment) {
-            LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), fullSizedSegment);
+            LOG.trace("{}[{}] Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), fullSizedSegment);
             tcb.bla_cwnd(fullSizedSegment);
         }
     }
@@ -2503,9 +2508,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * TIME-WAIT TIMEOUT event as described in <a
-     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC 9293, Section
-     * 3.10.8</a>.
+     * TIME-WAIT TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
+     * 9293, Section 3.10.8</a>.
      */
     void timeWaitTimeout(ChannelHandlerContext ctx) {
         timeWaitTimer = null;

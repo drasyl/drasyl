@@ -70,6 +70,7 @@ import static org.drasyl.handler.connection.SegmentMatchers.mss;
 import static org.drasyl.handler.connection.SegmentMatchers.seq;
 import static org.drasyl.handler.connection.SegmentMatchers.tsOpt;
 import static org.drasyl.handler.connection.SegmentMatchers.window;
+import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
 import static org.drasyl.handler.connection.State.CLOSE_WAIT;
@@ -1358,7 +1359,7 @@ class ReliableTransportHandlerTest {
                     final ByteBuf data3 = data.copy();
                     seg = new Segment(201, 310, ACK, data3);
                     seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
-                    channel.pipeline().fireChannelRead(seg); // FIXME: writeInbound?
+                    channel.pipeline().fireChannelRead(seg);
                     assertEquals(1, tcb.tsRecent());
 
                     // <B, TSval=2> ------------------->
@@ -2557,6 +2558,7 @@ class ReliableTransportHandlerTest {
                         when(seg.len()).thenReturn(1);
                         when(seg.isSyn()).thenReturn(true);
                         when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
+                        when(seg.options().get(MAXIMUM_SEGMENT_SIZE)).thenReturn(1235);
 
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 0L);
                         final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
@@ -2568,6 +2570,9 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: Set RCV.NXT to SEG.SEQ+1, IRS is set to SEG.SEQ,
                         assertEquals(124L, tcb.rcvNxt());
                         assertEquals(123L, tcb.irs());
+
+                        // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
+                        assertEquals(1235, tcb.sendMss());
 
                         // RFC 9293: ISS should be selected
                         assertEquals(39L, tcb.iss());
@@ -2729,6 +2734,7 @@ class ReliableTransportHandlerTest {
                     void shouldEstablishConnectionWhenOurSynHasBeenAcked() {
                         when(config.timestamps()).thenReturn(true);
                         when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(214, 90));
+                        when(seg.options().get(MAXIMUM_SEGMENT_SIZE)).thenReturn(1235);
                         when(tcb.tsRecent()).thenReturn(2L);
                         when(seg.isAck()).thenReturn(true);
                         when(seg.seq()).thenReturn(814L);
@@ -2783,6 +2789,9 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                         // RFC 9293: to ESTABLISHED,
                         assertEquals(ESTABLISHED, handler.state);
+
+                        // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
+                        verify(tcb).bla_sendMss(1235);
 
                         // RFC 9293: form an ACK segment
                         // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
@@ -3139,7 +3148,7 @@ class ReliableTransportHandlerTest {
                     @Nested
                     class OnSynReceivedState {
                         @Test
-                        void shouldSwitchToListenState() {
+                        void shouldChangeToListenState() {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
@@ -3347,6 +3356,17 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10);
+                                when(config.timestamps()).thenReturn(true);
+                                when(config.clock().time()).thenReturn(3614L);
+                                when(config.alpha()).thenReturn(1f / 8);
+                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.k()).thenReturn(4);
+                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.sndTsOk()).thenReturn(true);
+                                when(tcb.flightSize()).thenReturn(64_000L);
+                                when(tcb.sRtt()).thenReturn(21d);
+                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
 
@@ -3363,7 +3383,16 @@ class ReliableTransportHandlerTest {
                                 // RFC 9293: response).
                                 verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
-                                // FIXME: RFC 6298 stuff?
+                                // RFC 7323: Also compute a new estimate of round-trip time.
+                                // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                                // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                                // RFC 6298:       After the computation, a host MUST update
+                                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                                verify(tcb).bla_rttVar(2.4671875d);
+                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -3381,13 +3410,24 @@ class ReliableTransportHandlerTest {
                         @Nested
                         class OnFinWait1State {
                             @Test
-                            void shouldXXX() {
+                            void shouldChangeToFinWait2State() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10);
+                                when(config.timestamps()).thenReturn(true);
+                                when(config.clock().time()).thenReturn(3614L);
+                                when(config.alpha()).thenReturn(1f / 8);
+                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.k()).thenReturn(4);
+                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.sndTsOk()).thenReturn(true);
+                                when(tcb.flightSize()).thenReturn(64_000L);
+                                when(tcb.sRtt()).thenReturn(21d);
+                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
 
@@ -3404,7 +3444,16 @@ class ReliableTransportHandlerTest {
                                 // RFC 9293: response).
                                 verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
-                                // FIXME: RFC 6298 stuff?
+                                // RFC 7323: Also compute a new estimate of round-trip time.
+                                // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                                // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                                // RFC 6298:       After the computation, a host MUST update
+                                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                                verify(tcb).bla_rttVar(2.4671875d);
+                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -3426,7 +3475,7 @@ class ReliableTransportHandlerTest {
                         @Nested
                         class OnFinWait2State {
                             @Test
-                            void shouldXXX() {
+                            void shouldChangeToListenState() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -3449,8 +3498,6 @@ class ReliableTransportHandlerTest {
                                 // RFC 9293: response).
                                 verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
-                                // FIXME: RFC 6298 stuff?
-
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
@@ -3467,13 +3514,24 @@ class ReliableTransportHandlerTest {
                         @Nested
                         class OnCloseWaitState {
                             @Test
-                            void shouldXXX() {
+                            void shouldRemoveAcknowledgedSegments() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10);
+                                when(config.timestamps()).thenReturn(true);
+                                when(config.clock().time()).thenReturn(3614L);
+                                when(config.alpha()).thenReturn(1f / 8);
+                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.k()).thenReturn(4);
+                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.sndTsOk()).thenReturn(true);
+                                when(tcb.flightSize()).thenReturn(64_000L);
+                                when(tcb.sRtt()).thenReturn(21d);
+                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
 
@@ -3490,7 +3548,16 @@ class ReliableTransportHandlerTest {
                                 // RFC 9293: response).
                                 verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
-                                // FIXME: RFC 6298 stuff?
+                                // RFC 7323: Also compute a new estimate of round-trip time.
+                                // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                                // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                                // RFC 6298:       After the computation, a host MUST update
+                                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                                verify(tcb).bla_rttVar(2.4671875d);
+                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -3508,13 +3575,24 @@ class ReliableTransportHandlerTest {
                         @Nested
                         class OnClosingState {
                             @Test
-                            void shouldXXX() {
+                            void shouldChangeToTimeWait() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10);
+                                when(config.timestamps()).thenReturn(true);
+                                when(config.clock().time()).thenReturn(3614L);
+                                when(config.alpha()).thenReturn(1f / 8);
+                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.k()).thenReturn(4);
+                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.sndTsOk()).thenReturn(true);
+                                when(tcb.flightSize()).thenReturn(64_000L);
+                                when(tcb.sRtt()).thenReturn(21d);
+                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
 
@@ -3531,7 +3609,16 @@ class ReliableTransportHandlerTest {
                                 // RFC 9293: response).
                                 verify(tcb.retransmissionQueue()).removeAcknowledged(any(), any());
 
-                                // FIXME: RFC 6298 stuff?
+                                // RFC 7323: Also compute a new estimate of round-trip time.
+                                // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                                // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                                // RFC 6298:       After the computation, a host MUST update
+                                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                                verify(tcb).bla_rttVar(2.4671875d);
+                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),

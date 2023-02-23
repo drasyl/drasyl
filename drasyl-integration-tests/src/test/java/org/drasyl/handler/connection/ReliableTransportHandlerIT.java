@@ -86,10 +86,12 @@ class ReliableTransportHandlerIT {
 
         // Peer B
         final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
-        ReliableTransportConfig.Builder builder1 = ReliableTransportConfig.newBuilder()
-                .activeOpen(false);
-        final ReliableTransportConfig peerBConfig = builder1.mmsS(1_432).mmsR(1_432)
+        final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
+                .activeOpen(false)
+                .mmsS(1_432)
+                .mmsR(1_432)
                 .rmem(32_000)
+                .issSupplier(() -> 1_000_000L)
                 .build();
         final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
         final Channel peerBChannel = new ServerBootstrap()
@@ -133,10 +135,12 @@ class ReliableTransportHandlerIT {
                 .bind(peerBAddress).sync().channel();
 
         // Peer A
-        ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
-                .activeOpen(true);
-        final ReliableTransportConfig peerAConfig = builder.mmsS(1_432).mmsR(1_432)
+        final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
+                .activeOpen(true)
+                .mmsS(1_432)
+                .mmsR(1_432)
                 .rmem(32_000)
+                .issSupplier(() -> 3_000_000L)
                 .build();
         final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
         final Channel peerAChannel = new Bootstrap()
