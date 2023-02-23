@@ -58,7 +58,8 @@ public class ConsumerChannelInitializer extends AbstractChannelInitializer {
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
-        ch.parent().pipeline().addLast(new ProactiveDirectConnectionHandler(peers));
+
+        ch.pipeline().addLast(new ProactiveDirectConnectionHandler(peers));
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
         ch.pipeline().addLast(new ConsumerHandler(out, identity.getAddress(), broker, source, input, cycles, tags, priority));
     }

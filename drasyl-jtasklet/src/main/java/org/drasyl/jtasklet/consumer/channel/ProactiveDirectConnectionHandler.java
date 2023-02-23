@@ -22,7 +22,6 @@
 package org.drasyl.jtasklet.consumer.channel;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.OverlayAddressedMessage;
@@ -45,7 +44,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
         ctx.fireChannelActive();
         ctx.executor().scheduleAtFixedRate(() -> {
             for (final IdentityPublicKey peer : peers) {
-                ctx.write(new OverlayAddressedMessage<>(Unpooled.buffer().writeLong(MAGIC_NUMBER), peer));
+                ctx.write(new OverlayAddressedMessage<>(ctx.alloc().buffer(Long.BYTES).writeLong(MAGIC_NUMBER), peer));
             }
             ctx.flush();
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
