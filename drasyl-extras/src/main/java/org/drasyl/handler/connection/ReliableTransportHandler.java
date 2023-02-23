@@ -33,7 +33,6 @@ import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
-import org.drasyl.util.SerialNumberArithmetic;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,7 +47,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.RST;
-import static org.drasyl.handler.connection.Segment.SEQ_NO_SPACE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
@@ -1954,12 +1952,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 !seg.isSyn() &&
                 !seg.isFin() &&
                 seg.ack() == tcb.sndUna() &&
-                seg.wnd() == tcb.lastAdvertisedWindow;
+                seg.wnd() == tcb.lastAdvertisedWindow();
 
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-            LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), SerialNumberArithmetic.sub(seg.ack(), tcb.sndUna(), SEQ_NO_SPACE));
+            LOG.trace("{}[{}] Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), state, seg, tcb.sndUna(), seg.ack(), Segment.sub(seg.ack(), tcb.sndUna()));
             ackedBytes = sub(seg.ack(), tcb.sndUna());
             tcb.sndUna(ctx, seg.ack());
         }
@@ -2035,8 +2033,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // (this is done by the write promises)
 
         if (isRfc5681Duplicate) {
-            tcb.duplicateAcks += 1;
-            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks, tcb.flightSize());
+            tcb.duplicateAcks(tcb.duplicateAcks() + 1);
+            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
 
             if (tcb.duplicateAcks() < 3) {
                 // RFC 5681: 1.  On the first and second duplicate ACKs received at a sender, a
@@ -2072,7 +2070,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681:     transmit MUST NOT be included in this calculation.
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
                     final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
-                    if (tcb.ssthresh != newSsthresh) {
+                    if (tcb.ssthresh() != newSsthresh) {
                         LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
                         tcb.bla_ssthresh(newSsthresh);
                     }
@@ -2098,7 +2096,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 6582:     When the third duplicate ACK is received, the TCP sender first
                     // RFC 6582:     checks the value of recover to see if the Cumulative
                     // RFC 6582:     Acknowledgment field covers more than recover.
-                    if (greaterThan(seg.ack(), tcb.recover)) {
+                    if (greaterThan(seg.ack(), tcb.recover())) {
                         // RFC 6582:     If so, the value of recover is incremented to the value of
                         // RFC 6582:     the highest sequence number transmitted by the TCP so far.
                         tcb.bla_recover(sub(tcb.sndNxt(), 1));
@@ -2112,7 +2110,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 5681:     transmit MUST NOT be included in this calculation.
                         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
                         final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
-                        if (tcb.ssthresh != newSsthresh) {
+                        if (tcb.ssthresh() != newSsthresh) {
                             LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
                             tcb.bla_ssthresh(newSsthresh);
                         }
@@ -2138,7 +2136,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     }
                 }
             }
-            else if (tcb.duplicateAcks > 3) {
+            else if (tcb.duplicateAcks() > 3) {
                 // RFC 5681: 4. For each additional duplicate ACK received (after the third), cwnd
                 // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
                 // RFC 5681:    congestion window in order to reflect the additional segment that
@@ -2158,7 +2156,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
         else if (tcb.duplicateAcks() != 0) {
             // reset counter
-            tcb.duplicateAcks = 0;
+            tcb.duplicateAcks(0);
 
             if (ackedBytes > 0) {
                 if (config.newReno()) {
@@ -2180,7 +2178,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 6582:     that acknowledges new data, this ACK could be the acknowledgment
                     // RFC 6582:     elicited by the initial retransmission from fast retransmit, or
                     // RFC 6582:     elicited by a later retransmission. There are two cases:
-                    final boolean fullAcknowledgement = greaterThanOrEqualTo(seg.ack(), tcb.recover);
+                    final boolean fullAcknowledgement = greaterThanOrEqualTo(seg.ack(), tcb.recover());
 
                     if (fullAcknowledgement) {
                         // RFC 6582:     Full acknowledgments:
@@ -2266,7 +2264,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Got duplicate ACK `{}`. Ignore.", ctx.channel(), state, seg);
             return false;
         }
-        tcb.lastAdvertisedWindow = seg.wnd();
+        tcb.lastAdvertisedWindow(seg.wnd());
 
         if (greaterThan(seg.ack(), tcb.sndNxt())) {
             // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),

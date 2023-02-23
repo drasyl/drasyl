@@ -83,31 +83,16 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
     public ReliableTransportConfig config;
-    protected long ssthresh; // slow start threshold
-    // congestion control
-    long cwnd; // congestion window
-    long lastAdvertisedWindow;
-    // Send Sequence Variables
+
+    // RFC 9293: Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     private long sndUna;
     // RFC 9293: SND.NXT = next sequence number to be sent
     private long sndNxt;
-    // RFC 7323: TS.Recent = holds a timestamp to be echoed in TSecr whenever a segment is sent
-    private long tsRecent;
-    // RFC 7323: Last.ACK.sent = holds the ACK field from the last segment sent
-    private long lastAckSent;
-    // RFC 7323: Snd.TS.OK = remember successfull TSopt negotiation
-    private boolean sndTsOk;
-    // RFC 6298: RTTVAR = round-trip time variation
-    private double rttVar;
-    // RFC 6298: SRTT = smoothed round-trip time
-    private double sRtt;
-    // RFC 6298: RTO = retransmission timeout
-    //  Until a round-trip time (RTT) measurement has been made for a segment sent between the sender and receiver, the sender SHOULD set RTO <- 1 second
-    private long rto;
     // RFC 9293: initial send sequence number
     private long iss;
-    // Receive Sequence Variables
+
+    // RFC 9293: Receive Sequence Variables
     // RFC 9293: RCV.NXT = next sequence number expected on an incoming segment, and is the left or
     // RFC 9293: lower edge of the receive window
     private long rcvNxt;
@@ -121,15 +106,54 @@ public class TransmissionControlBlock {
     private long sndWl2;
     // RFC 9293: IRS = initial receive sequence number
     private long irs;
-    // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4 or 1220 for IPv6, if no MSS Option is received.
+    // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
+    // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     private int sendMss = 1432 - DRASYL_HDR_SIZE;
-    // sender's silly window syndrome avoidance algorithm (Nagle algorithm)
-    // RFC 5961: MAX.SND.WND = A new state variable MAX.SND.WND is defined as the largest window that the
-    // local sender has ever received from its peer.
+
+    // RFC 9293: Silly Window Syndrome Avoidance
+    // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
+    // RFC 9293: as an estimate of RCV.BUFF
     private long maxSndWnd;
-    int duplicateAcks;
+    // RFC 9293:
     private ScheduledFuture<?> overrideTimer;
-    long recover;
+
+    // RFC 7323: Timestamps option
+    // RFC 7323: TS.Recent = holds a timestamp to be echoed in TSecr whenever a segment is sent
+    private long tsRecent;
+    // RFC 7323: Last.ACK.sent = holds the ACK field from the last segment sent
+    private long lastAckSent;
+    // RFC 7323: Snd.TS.OK = remember successfull TSopt negotiation
+    private boolean sndTsOk;
+
+    // RFC 6298: Retransmission Timer Computation
+    // RFC 6298: RTTVAR = round-trip time variation
+    private double rttVar;
+    // RFC 6298: SRTT = smoothed round-trip time
+    private double sRtt;
+    // RFC 6298: RTO = retransmission timeout
+    // RFC 6298: Until a round-trip time (RTT) measurement has been made for a segment sent between
+    // RFC 6298: the sender and receiver, the sender SHOULD set RTO <- 1 second
+    private long rto;
+
+    // RFC 5681: Congestion Control Algorithms
+    // RFC 5681: The congestion window (cwnd) is a sender-side limit on the amount of data the
+    // RFC 5681: sender can transmit into the network before receiving an acknowledgment (ACK),
+    // RFC 5681: while the receiver's advertised window (rwnd) is a receiver-side limit on the
+    // RFC 5681: amount of outstanding data.  The minimum of cwnd and rwnd governs data
+    // RFC 5681: transmission.
+    private long cwnd;
+    // RFC 5681: the slow start threshold (ssthresh), is used to determine whether the slow start or
+    // RFC 5681: congestion avoidance algorithm is used to control data transmission
+    private long ssthresh;
+    // RFC 5681:
+    private long lastAdvertisedWindow;
+    // RFC 5681:
+    private int duplicateAcks;
+
+    // RFC 6582: Fast Recovery Algorithm Modification (NewReno)
+    // RFC 6582: When in fast recovery, this variable records the send sequence number that must be
+    // RFC 6582: acknowledged before the fast recovery procedure is declared to be over.
+    private long recover;
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ReliableTransportConfig config,
@@ -672,5 +696,21 @@ public class TransmissionControlBlock {
 
     public int duplicateAcks() {
         return duplicateAcks;
+    }
+
+    public long recover() {
+        return recover;
+    }
+
+    public void lastAdvertisedWindow(long lastAdvertisedWindow) {
+        this.lastAdvertisedWindow = lastAdvertisedWindow;
+    }
+
+    public void duplicateAcks(final int duplicateAcks) {
+        this.duplicateAcks = duplicateAcks;
+    }
+
+    public long lastAdvertisedWindow() {
+        return lastAdvertisedWindow;
     }
 }
