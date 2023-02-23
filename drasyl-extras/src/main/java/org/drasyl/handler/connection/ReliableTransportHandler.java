@@ -1943,6 +1943,19 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         final boolean isRfc9293Duplicate = lessThanOrEqualTo(seg.ack(), tcb.sndUna());
 
+        // RFC 5681: An acknowledgment is considered a "duplicate" in the following algorithms when
+        // RFC 5681: (a) the receiver of the ACK has outstanding data, (b) the incoming
+        // RFC 5681: acknowledgment carries no data, (c) the SYN and FIN bits are both off, (d) the
+        // RFC 5681: acknowledgment number is equal to the greatest acknowledgment received on the
+        // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
+        // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
+        final boolean isRfc5681Duplicate = tcb.sendBuffer().hasOutstandingData() &&
+                seg.len() == 0 &&
+                !seg.isSyn() &&
+                !seg.isFin() &&
+                seg.ack() == tcb.sndUna() &&
+                seg.wnd() == tcb.lastAdvertisedWindow;
+
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
@@ -2021,18 +2034,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: response).
         // (this is done by the write promises)
 
-        // RFC 5681: An acknowledgment is considered a "duplicate" in the following algorithms when
-        // RFC 5681: (a) the receiver of the ACK has outstanding data, (b) the incoming
-        // RFC 5681: acknowledgment carries no data, (c) the SYN and FIN bits are both off, (d) the
-        // RFC 5681: acknowledgment number is equal to the greatest acknowledgment received on the
-        // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
-        // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
-        final boolean isRfc5681Duplicate = tcb.sendBuffer().hasOutstandingData() &&
-                seg.len() == 0 &&
-                !seg.isSyn() &&
-                !seg.isFin() &&
-                seg.ack() == tcb.sndUna() &&
-                seg.wnd() == tcb.lastAdvertisedWindow;
         if (isRfc5681Duplicate) {
             tcb.duplicateAcks += 1;
             LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks, tcb.flightSize());
@@ -2301,6 +2302,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: SND.WL2 records the acknowledgment number of the last segment used to
         // RFC 9293: update SND.WND. The check here prevents using old segments to update
         // RFC 9293: the window.
+
+        // FIXME: push ne data? brauchen wir das hier? kann das nicht irgendwo beim channelReadComplete hin oder so?
+        if (ackedBytes > 0) {
+            tcb.writeEnqueuedData(ctx);
+        }
 
         return false;
     }
