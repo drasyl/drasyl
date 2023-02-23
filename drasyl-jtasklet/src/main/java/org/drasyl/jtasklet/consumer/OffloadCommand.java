@@ -65,7 +65,7 @@ public class OffloadCommand extends ChannelOptions {
     )
     private int priority;
     @Option(
-            names = { "--relayOnly" }
+            names = { "--relay-only" }
     )
     protected boolean relayOnly;
     @Option(
