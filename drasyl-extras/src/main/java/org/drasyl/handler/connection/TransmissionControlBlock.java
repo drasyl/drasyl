@@ -114,7 +114,9 @@ public class TransmissionControlBlock {
     // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
     // RFC 9293: as an estimate of RCV.BUFF
     private long maxSndWnd;
-    // RFC 9293:
+    // RFC 9293: To avoid a resulting deadlock, it is necessary to have a timeout to force
+    // RFC 9293: transmission of data, overriding the SWS avoidance algorithm. In practice, this
+    // RFC 9293: timeout should seldom occur.
     private ScheduledFuture<?> overrideTimer;
 
     // RFC 7323: Timestamps option
@@ -378,33 +380,55 @@ public class TransmissionControlBlock {
 
             while (readableBytes > 0) {
                 if (!config().noDelay()) {
-                    // apply Nagle algorithm, which aims to coalesce short segments (sender's SWS avoidance algorithm)
-                    // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1
-                    // The "usable window" is: U = SND.UNA + SND.WND - SND.NXT
-                    final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
-                    // D is the amount of data queued in the sending TCP endpoint but not yet sent
-                    final long d = readableBytes;
+                    // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
+                    // RFC 9293: sender (MUST-38).
+                    // (Nagle algorithm)
 
-                    // Send data...
-                    final double fs = 0.5; // Nagle algorithm: Fs is a fraction whose recommended value is 1/2
+                    // RFC 9293: The sender's SWS avoidance algorithm is more difficult than the
+                    // RFC 9293: receiver's because the sender does not know (directly) the
+                    // RFC 9293: receiver's total buffer space (RCV.BUFF). An approach that has been
+                    // RFC 9293: found to work well is for the sender to calculate Max(SND.WND),
+                    // RFC 9293: which is the maximum send window it has seen so far on the
+                    // RFC 9293: connection, and to use this value as an estimate of RCV.BUFF.
+                    // RFC 9293: Unfortunately, this can only be an estimate; the receiver may at
+                    // RFC 9293: any time reduce the size of RCV.BUFF. To avoid a resulting
+                    // RFC 9293: deadlock, it is necessary to have a timeout to force transmission
+                    // RFC 9293: of data, overriding the SWS avoidance algorithm. In practice, this
+                    // RFC 9293: timeout should seldom occur.
+
+                    // RFC 9293: The "usable window" is:
+                    // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
+                    // RFC 9293: i.e., the offered window less the amount of data sent but not
+                    // RFC 9293: acknowledged.
+                    final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
+                    // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
+                    // RFC 9293: not yet sent,
+                    final long d = readableBytes;
+                    // RFC 9293: then the following set of rules is recommended.
+
+                    // RFC 9293: Send data...
                     final boolean sendData;
                     if (min(d, u) >= (long) effSndMss()) {
-                        // ..if a maximum-sized segment can be sent, i.e., if:
-                        // min(D,U) >= Eff.snd.MSS;
+                        // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
+                        // RFC 9293:     min(D,U) >= Eff.snd.MSS;
                         sendData = true;
                     }
                     else if (sndNxt == sndUna && d <= u) {
-                        // or if the data is pushed and all queued data can be sent now, i.e., if:
-                        // SND.NXT = SND.UNA and D <= U
+                        // RFC 9293: (2) or if the data is pushed and all queued data can be sent
+                        // RFC 9293:     now, i.e., if:
+                        // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
+                        // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
                         sendData = true;
                     }
-                    else if (sndNxt == sndUna && min(d, u) >= fs * maxSndWnd()) {
-                        // or if at least a fraction Fs of the maximum window can be sent, i.e., if:
-                        // SND.NXT = SND.UNA and min(D,U) >= Fs * Max(SND.WND);
+                    else if (sndNxt == sndUna && min(d, u) >= (double) config.fs() * maxSndWnd()) {
+                        // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
+                        // RFC 9293:     sent, i.e., if:
+                        // RFC 9293:     [SND.NXT = SND.UNA and]
+                        // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
                         sendData = true;
                     }
                     else if (overrideTimeoutOccurred) {
-                        // or if the override timeout occurs
+                        // (4) or if the override timeout occurs.
                         sendData = true;
                     }
                     else {
@@ -420,6 +444,8 @@ public class TransmissionControlBlock {
                         return;
                     }
                 }
+
+                // FIXME: Zero-Window Probing https://www.rfc-editor.org/rfc/rfc9293.html#zwp
 
                 // at least one byte is required for Zero-Window Probing
                 final long usableWindow;

@@ -2037,21 +2037,23 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
 
             if (tcb.duplicateAcks() < 3) {
-                // RFC 5681: 1.  On the first and second duplicate ACKs received at a sender, a
-                // RFC 5681:     TCP SHOULD send a segment of previously unsent data per [RFC3042]
-                // RFC 5681:     provided that the receiver's advertised window allows, the total
-                // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
-                // RFC 5681:     and that new data is available for transmission.
-                final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
-                        (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
-                        tcb.sendBuffer().hasOutstandingData();
-                if (doLimitedTransmit) {
-                    LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), state, tcb.sendBuffer().readableBytes());
-                    tcb.writeEnqueuedData(ctx);
-                    // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
-                    // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
-                    // RFC 5681:     MUST NOT send new data unless the incoming duplicate
-                    // RFC 5681:     acknowledgment contains new SACK information.
+                if (config.limitedTransport()) {
+                    // RFC 5681: 1.  On the first and second duplicate ACKs received at a sender, a
+                    // RFC 5681:     TCP SHOULD send a segment of previously unsent data per [RFC3042]
+                    // RFC 5681:     provided that the receiver's advertised window allows, the total
+                    // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
+                    // RFC 5681:     and that new data is available for transmission.
+                    final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
+                            (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
+                            tcb.sendBuffer().hasOutstandingData();
+                    if (doLimitedTransmit) {
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), state, tcb.sendBuffer().readableBytes());
+                        tcb.writeEnqueuedData(ctx);
+                        // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
+                        // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
+                        // RFC 5681:     MUST NOT send new data unless the incoming duplicate
+                        // RFC 5681:     acknowledgment contains new SACK information.
+                    }
                 }
 
                 if (config.newReno()) {

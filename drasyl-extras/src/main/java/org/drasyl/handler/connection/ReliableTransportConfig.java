@@ -93,6 +93,8 @@ public abstract class ReliableTransportConfig {
             .mmsR(1432)
             .mmsS(1432)
             .newReno(true)
+            .limitedTransport(true)
+            .fs(1f / 2)
             .build();
 
     public static Builder newBuilder() {
@@ -156,6 +158,9 @@ public abstract class ReliableTransportConfig {
 
     public abstract boolean sack();
 
+    /**
+     * RFC 9293: The override timeout should be in the range 0.1 - 1.0 seconds.
+     */
     public abstract Duration overrideTimeout();
 
     public abstract Duration rto();
@@ -174,6 +179,10 @@ public abstract class ReliableTransportConfig {
     public abstract int mmsR();
 
     public abstract boolean newReno();
+
+    public abstract boolean limitedTransport();
+
+    public abstract float fs();
 
     abstract Builder toBuilder();
 
@@ -237,6 +246,10 @@ public abstract class ReliableTransportConfig {
         public abstract Builder mmsR(final int mmsR);
 
         public abstract Builder newReno(final boolean newReno);
+
+        public abstract Builder limitedTransport(final boolean limitedTransport);
+
+        public abstract Builder fs(final float fs);
 
         abstract ReliableTransportConfig autoBuild();
 
