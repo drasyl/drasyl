@@ -1004,7 +1004,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
             final Integer mss = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
             if (mss != null) {
-                LOG.trace("{}[{}] Remote peer sent MSS {}. Set SendMSS to {}.", ctx.channel(), mss, tcb.sendMss(), tcb.sendMss());
+                LOG.trace("{}[{}] Remote peer sent MSS {}. Set SendMSS to {}.", ctx.channel(), state, mss, tcb.sendMss(), tcb.sendMss());
                 tcb.bla_sendMss(mss);
             }
 
@@ -1206,7 +1206,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
                 final Integer mss = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
                 if (mss != null) {
-                    LOG.trace("{}[{}] Remote peer sent MSS {}. Set SendMSS to {}.", ctx.channel(), mss, tcb.sendMss(), tcb.sendMss());
+                    LOG.trace("{}[{}] Remote peer sent MSS {}. Set SendMSS to {}.", ctx.channel(), state, mss, tcb.sendMss(), tcb.sendMss());
                     tcb.bla_sendMss(mss);
                 }
 

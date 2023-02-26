@@ -47,6 +47,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import test.DropMessagesHandler;
+import test.DropMessagesHandler.DropRandomMessages;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
@@ -54,6 +58,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ReliableTransportHandlerIT {
     private static final Logger LOG = LoggerFactory.getLogger(ReliableTransportHandlerIT.class);
-    private static final float LOSS_RATE = 0.2f;
     private static final int MAX_DROP = 3;
 
     @BeforeEach
@@ -121,7 +125,7 @@ class ReliableTransportHandlerIT {
                                                            final Object evt) {
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // FIXME:
-//                                    p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
+                                    //              p.addAfter(p.context(ConnectionHandshakeCodec.class).name(), null, new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                                 }
                                 else if (evt instanceof ConnectionClosing) {
                                     // confirm close request
@@ -156,19 +160,7 @@ class ReliableTransportHandlerIT {
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
                                                            final Object evt) {
-                                if (evt instanceof ConnectionHandshakeCompleted) {
-                                    // start dropping segments once handshake is completed
-                                    // FIXME:
-//                                    p.addAfter(p.context(SegmentCodec.class).name(), null, new DropMessagesHandler(new Predicate<>() {
-//                                        int i = 0;
-//
-//                                        @Override
-//                                        public boolean test(final Object o) {
-//                                            i++;
-//                                            return 50 <= i;
-//                                        }
-//                                    }, msg -> false));
-                                }
+                                p.addFirst(new DropMessagesHandler(new DropMessagesHandler.DropEveryNthMessage(5), msg -> false));
                                 ctx.fireUserEventTriggered(evt);
                             }
                         });
@@ -218,8 +210,9 @@ class ReliableTransportHandlerIT {
         // 4.  ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK>       --> ESTABLISHED
         //
         // 5.  ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK><DATA> --> ESTABLISHED
-        @Test
-        void basicThreeWayHandshakeForConnectionSynchronization() throws InterruptedException, ClosedChannelException {
+        @ParameterizedTest
+        @ValueSource(floats = { 0.0f, 0.2f })
+        void basicThreeWayHandshakeForConnectionSynchronization(final float lossRate) throws InterruptedException, ClosedChannelException {
             final CountDownLatch latch = new CountDownLatch(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
@@ -228,6 +221,8 @@ class ReliableTransportHandlerIT {
             final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
             final Channel peerBChannel = new ServerBootstrap()
@@ -238,6 +233,7 @@ class ReliableTransportHandlerIT {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -262,6 +258,8 @@ class ReliableTransportHandlerIT {
             final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -272,6 +270,7 @@ class ReliableTransportHandlerIT {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -289,7 +288,7 @@ class ReliableTransportHandlerIT {
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
+                assertTrue(latch.await(5, SECONDS));
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
@@ -319,8 +318,9 @@ class ReliableTransportHandlerIT {
         // 6.  ESTABLISHED  <-- <SEQ=300><ACK=101><CTL=SYN,ACK> <-- SYN-RECEIVED
         //
         // 7.               ... <SEQ=100><ACK=301><CTL=SYN,ACK> --> ESTABLISHED
-        @Test
-        void simultaneousConnectionSynchronization() throws InterruptedException, ClosedChannelException {
+        @ParameterizedTest
+        @ValueSource(floats = { 0.0f, 0.2f })
+        void simultaneousConnectionSynchronization(final float lossRate) throws InterruptedException, ClosedChannelException {
             final CountDownLatch latch = new CountDownLatch(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
@@ -329,6 +329,8 @@ class ReliableTransportHandlerIT {
             final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(true)
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
             final Channel peerBChannel = new ServerBootstrap()
@@ -339,6 +341,7 @@ class ReliableTransportHandlerIT {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -363,6 +366,8 @@ class ReliableTransportHandlerIT {
             final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -373,6 +378,7 @@ class ReliableTransportHandlerIT {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -390,7 +396,7 @@ class ReliableTransportHandlerIT {
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
+                assertTrue(latch.await(5, SECONDS));
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
@@ -426,8 +432,9 @@ class ReliableTransportHandlerIT {
         //
         // 6.  (2 MSL)
         //     CLOSED
-        @Test
-        void normalCloseSequence() throws InterruptedException {
+        @ParameterizedTest
+        @ValueSource(floats = { 0.0f, 0.2f })
+        void normalCloseSequence(final float lossRate) throws InterruptedException {
             final CountDownLatch latch = new CountDownLatch(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
@@ -436,6 +443,8 @@ class ReliableTransportHandlerIT {
             final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
             final Channel peerBChannel = new ServerBootstrap()
@@ -457,6 +466,7 @@ class ReliableTransportHandlerIT {
                                 }
                             });
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -482,6 +492,8 @@ class ReliableTransportHandlerIT {
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .msl(ofMillis(100))
+                    .rto(ofMillis(100))
+                    .lBound(ofMillis(100))
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -492,6 +504,7 @@ class ReliableTransportHandlerIT {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
                             p.addLast(new SegmentCodec());
+                            p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
                             p.addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
@@ -509,7 +522,7 @@ class ReliableTransportHandlerIT {
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, TimeUnit.SECONDS));
+                assertTrue(latch.await(5, SECONDS));
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Close connection"));
