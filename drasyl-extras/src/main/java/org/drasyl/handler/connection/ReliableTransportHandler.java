@@ -831,7 +831,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     void changeState(final ChannelHandlerContext ctx, final State newState) {
-        LOG.trace("{}[{} -> {}] Switched to new state.", ctx.channel(), state, newState);
+        LOG.trace("{}[{} -> {}] Changed to new state.", ctx.channel(), state, newState);
+        assert state != newState : "Illegal state change from " + state + " to " + newState;
         state = newState;
 
         switch (newState) {
@@ -2455,6 +2456,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
         // RFC 6298:       TCP receiver.
         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+        assert retransmission != null;
         LOG.error("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
 

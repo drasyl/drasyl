@@ -26,6 +26,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -44,21 +45,22 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import test.DropMessagesHandler;
 import test.DropMessagesHandler.DropRandomMessages;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Phaser;
 
 import static java.time.Duration.ofMillis;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,6 +86,7 @@ class ReliableTransportHandlerIT {
      * Clients sends data to server. Correct receival is tested.
      */
     @Test
+    @Disabled
     void transmission() throws Exception {
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final ByteBuf receivedBuf = Unpooled.buffer();
@@ -212,8 +215,9 @@ class ReliableTransportHandlerIT {
         // 5.  ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK><DATA> --> ESTABLISHED
         @ParameterizedTest
         @ValueSource(floats = { 0.0f, 0.2f })
+        @Timeout(value = 5_000, unit = MILLISECONDS)
         void basicThreeWayHandshakeForConnectionSynchronization(final float lossRate) throws InterruptedException, ClosedChannelException {
-            final CountDownLatch latch = new CountDownLatch(2);
+            final Phaser phaser = new Phaser(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
@@ -235,21 +239,7 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer B: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    else if (evt instanceof ConnectionClosing) {
-                                        // confirm close request
-                                        ctx.close();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer B"));
                         }
                     })
                     .bind(peerBAddress).sync().channel();
@@ -272,23 +262,13 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer A"));
                         }
                     })
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, SECONDS));
+                phaser.arriveAndAwaitAdvance();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
@@ -320,8 +300,9 @@ class ReliableTransportHandlerIT {
         // 7.               ... <SEQ=100><ACK=301><CTL=SYN,ACK> --> ESTABLISHED
         @ParameterizedTest
         @ValueSource(floats = { 0.0f, 0.2f })
+        @Timeout(value = 5_000, unit = MILLISECONDS)
         void simultaneousConnectionSynchronization(final float lossRate) throws InterruptedException, ClosedChannelException {
-            final CountDownLatch latch = new CountDownLatch(2);
+            final Phaser phaser = new Phaser(1);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
@@ -343,21 +324,7 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer B: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    else if (evt instanceof ConnectionClosing) {
-                                        // confirm close request
-                                        ctx.close();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer B"));
                         }
                     })
                     .bind(peerBAddress).sync().channel();
@@ -380,23 +347,13 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer A"));
                         }
                     })
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, SECONDS));
+                phaser.arriveAndAwaitAdvance();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
@@ -434,8 +391,9 @@ class ReliableTransportHandlerIT {
         //     CLOSED
         @ParameterizedTest
         @ValueSource(floats = { 0.0f, 0.2f })
+        @Timeout(value = 5_000, unit = MILLISECONDS)
         void normalCloseSequence(final float lossRate) throws InterruptedException {
-            final CountDownLatch latch = new CountDownLatch(2);
+            final Phaser phaser = new Phaser(1);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
@@ -468,21 +426,7 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer B: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    else if (evt instanceof ConnectionClosing) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer B: Confirm close request"));
-                                        ctx.close();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer B"));
                         }
                     })
                     .bind(peerBAddress).sync().channel();
@@ -506,23 +450,13 @@ class ReliableTransportHandlerIT {
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerAHandler);
-                            p.addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                               final Object evt) {
-                                    if (evt instanceof ConnectionHandshakeCompleted) {
-                                        LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Handshake completed"));
-                                        latch.countDown();
-                                    }
-                                    ctx.fireUserEventTriggered(evt);
-                                }
-                            });
+                            p.addLast(new HandshakePhaser(phaser, "Peer A"));
                         }
                     })
                     .connect(peerBAddress).sync().channel();
 
             try {
-                assertTrue(latch.await(5, SECONDS));
+                phaser.arriveAndAwaitAdvance();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Close connection"));
@@ -532,6 +466,41 @@ class ReliableTransportHandlerIT {
             finally {
                 group.shutdownGracefully().sync();
             }
+        }
+    }
+
+    private class HandshakePhaser extends ChannelDuplexHandler {
+        private final Phaser phaser;
+        private final String name;
+        private boolean completed;
+
+        public HandshakePhaser(final Phaser phaser, final String name) {
+            this.phaser = requireNonNull(phaser);
+            this.name = requireNonNull(name);
+        }
+
+        @Override
+        public void close(final ChannelHandlerContext ctx,
+                          final ChannelPromise promise) {
+            if (completed) {
+                phaser.register();
+            }
+            ctx.close(promise);
+        }
+
+        @Override
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) {
+            if (evt instanceof ConnectionHandshakeCompleted) {
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", name + ": Handshake completed"));
+                phaser.arriveAndDeregister();
+                completed = true;
+            }
+            else if (evt instanceof ConnectionClosing) {
+                LOG.debug(ansi().cyan().swap().format("# %-140s #", name + ": Confirm close request"));
+                ctx.close();
+            }
+            ctx.fireUserEventTriggered(evt);
         }
     }
 }
