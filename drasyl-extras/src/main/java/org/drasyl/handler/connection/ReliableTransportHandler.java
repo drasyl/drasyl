@@ -1770,22 +1770,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
                     // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
                     // RFC 9293: buffers until either the buffer is full or the segment is empty.
+                    final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
+                    tcb.receiveBuffer().receive(ctx, tcb, seg);
 
                     // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
                     // RFC 9293: informed, when the buffer is returned, that a PUSH has been
                     // RFC 9293: received.
-
-                    // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
-                    // RFC 9293: to the user, it must also acknowledge the receipt of the data.
-
-                    // RFC 9293: Once the TCP endpoint takes responsibility for the data, it
-                    // RFC 9293: advances RCV.NXT over the data accepted, and adjusts RCV.WND as
-                    // RFC 9293: appropriate to the current buffer availability. The total of
-                    // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
-
-                    final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
-                    tcb.receiveBuffer().receive(ctx, tcb, seg);
-
                     if (seg.isPsh()) {
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), state, seg);
                         ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
@@ -1798,6 +1788,15 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     else {
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
                     }
+
+                    // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
+                    // RFC 9293: to the user, it must also acknowledge the receipt of the data.
+
+                    // RFC 9293: Once the TCP endpoint takes responsibility for the data, it
+                    // RFC 9293: advances RCV.NXT over the data accepted, and adjusts RCV.WND as
+                    // RFC 9293: appropriate to the current buffer availability. The total of
+                    // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
+                    // (is done by ReceiveBuffer#receive)
 
                     // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
                     // RFC 9293: when a valid segment arrives that is in the window but not at the

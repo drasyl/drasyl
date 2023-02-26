@@ -3233,7 +3233,7 @@ class ReliableTransportHandlerTest {
                                 "LAST_ACK",
                                 "TIME_WAIT"
                         })
-                        void shouldDropSegment(final State state) {
+                        void shouldDiscardSegment(final State state) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
@@ -3710,42 +3710,89 @@ class ReliableTransportHandlerTest {
 
                 @Nested
                 class CheckData {
+                    @BeforeEach
+                    void setUp() {
+                        when(seg.isAck()).thenReturn(true);
+                    }
+
                     @Nested
                     class OnEstablishedAndFinWait1AndFindWait2State {
-                        // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
-                        // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
-                        // RFC 9293: buffers until either the buffer is full or the segment is empty.
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "ESTABLISHED",
+                                "FIN_WAIT_1",
+                                "FIN_WAIT_2"
+                        })
+                        void shouldAcknowledge(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(seg.ack()).thenReturn(88L);
+                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(seg.content().readableBytes()).thenReturn(100);
+                            when(seg.isPsh()).thenReturn(true);
+                            when(ctx.executor()).thenReturn(executor);
+                            doAnswer(invocation -> {
+                                invocation.getArgument(0, Runnable.class).run();
+                                return null;
+                            }).when(executor).execute(any());
 
-                        // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
-                        // RFC 9293: informed, when the buffer is returned, that a PUSH has been
-                        // RFC 9293: received.
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
 
-                        // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
-                        // RFC 9293: to the user, it must also acknowledge the receipt of the data.
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
 
-                        // RFC 9293: Once the TCP endpoint takes responsibility for the data, it
-                        // RFC 9293: advances RCV.NXT over the data accepted, and adjusts RCV.WND as
-                        // RFC 9293: appropriate to the current buffer availability. The total of
-                        // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
+                            // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
+                            // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
+                            // RFC 9293: buffers until either the buffer is full or the segment is empty.
+                            verify(tcb.receiveBuffer()).receive(ctx, tcb, seg);
 
-                        // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
-                        // RFC 9293: when a valid segment arrives that is in the window but not at the
-                        // RFC 9293: left window edge (MAY-13).
+                            // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
+                            // RFC 9293: informed, when the buffer is returned, that a PUSH has been
+                            // RFC 9293: received.
+                            verify(tcb.receiveBuffer()).fireRead(ctx, tcb);
 
-                        // RFC 9293: Please note the window management suggestions in Section 3.8.
+                            // RFC 9293: Send an acknowledgment of the form:
+                            // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                            verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                            final Segment response = segmentCaptor.getValue();
+                            assertThat(response, allOf(seq(88L), ack(123L), ctl(ACK)));
 
-                        // RFC 9293: Send an acknowledgment of the form:
-                        // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-
-                        // RFC 9293: This acknowledgment should be piggybacked on a segment being
-                        // RFC 9293: transmitted if possible without incurring undue delay.
-                        // (this is done by TCB/OutgoingSegmentQueue)
+                            verify(seg).release();
+                        }
                     }
 
                     @Nested
                     class OnCloseWaitAndClosingAndLastAckAndTimeWaitState {
-                        // RFC 9293: This should not occur since a FIN has been received from the remote
-                        // RFC 9293: side. Ignore the segment text.
+                        @ParameterizedTest
+                        @EnumSource(value = State.class, names = {
+                                "CLOSE_WAIT",
+                                "CLOSING",
+                                // "LAST_ACK", // unreachable in our implementation
+                                "TIME_WAIT"
+                        })
+                        void shouldDiscardSegment(final State state) {
+                            when(tcb.rcvNxt()).thenReturn(123L);
+                            when(seg.seq()).thenReturn(123L);
+                            when(seg.ack()).thenReturn(88L);
+                            when(tcb.sndUna()).thenReturn(87L);
+                            when(tcb.sndNxt()).thenReturn(88L);
+                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(seg.content().readableBytes()).thenReturn(100);
+
+                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise);
+
+                            handler.channelRead(ctx, seg);
+                            handler.channelReadComplete(ctx);
+
+                            // RFC 9293: This should not occur since a FIN has been received from the remote
+                            // RFC 9293: side. Ignore the segment text.
+                            verify(tcb.receiveBuffer(), never()).receive(any(), any(), any());
+
+
+                            verify(seg).release();
+                        }
                     }
                 }
 
