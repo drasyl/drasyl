@@ -365,7 +365,7 @@ public class TransmissionControlBlock {
     }
 
     /**
-     * Writes data to the network thas has been queued for transmission.
+     * Writes data to the network that has been queued for transmission.
      */
     void writeEnqueuedData(final ChannelHandlerContext ctx) {
         segmentizeData(ctx, false);

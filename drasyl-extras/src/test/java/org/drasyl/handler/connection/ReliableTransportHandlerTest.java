@@ -2802,7 +2802,7 @@ class ReliableTransportHandlerTest {
                         // RFC 9293: acknowledgment of the SYN from being sent.
                         // RFC 7323: If the Snd.TS.OK bit is on, include a TSopt option
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this <ACK> segment.
-                        verify(tcb).send(eq(ctx), segmentCaptor.capture());
+                        verify(tcb.outgoingSegmentQueue()).place(eq(ctx), segmentCaptor.capture());
                         final Segment response = segmentCaptor.getValue();
                         assertThat(response, allOf(seq(124L), ack(815L), ctl(ACK), tsOpt(111, 2)));
 

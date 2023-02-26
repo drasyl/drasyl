@@ -2301,8 +2301,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: update SND.WND. The check here prevents using old segments to update
         // RFC 9293: the window.
 
-        // FIXME: push ne data? brauchen wir das hier? kann das nicht irgendwo beim channelReadComplete hin oder so?
         if (ackedBytes > 0) {
+            // something was ACKed and therefore has left the network. Try to send more.
             tcb.writeEnqueuedData(ctx);
         }
 
