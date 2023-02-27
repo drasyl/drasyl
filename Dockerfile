@@ -13,7 +13,9 @@ RUN cd /build && \
     ./mvnw --quiet --projects drasyl-jtasklet --also-make -Pfast -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./jtasklet-*.zip -d /
 
-FROM ghcr.io/graalvm/graalvm-ce:java11
+FROM ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.1
+
+RUN gu install js
 
 RUN mkdir /usr/local/share/jtasklet && \
     ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
@@ -21,8 +23,6 @@ RUN mkdir /usr/local/share/jtasklet && \
 COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
 
 ADD ./tasks/ /tasks/
-
-RUN gu install js
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -50,7 +50,7 @@ EXPOSE 443/tcp
 
 WORKDIR /jtasklet/
 
-ENV JAVA_SCC_OPTS "-XX:+EnableJVMCI"
+ENV JAVA_SCC_OPTS "-XX:-UseJVMCICompiler -Djava.compiler=NONE"
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["jtasklet"]
