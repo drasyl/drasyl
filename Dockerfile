@@ -22,6 +22,8 @@ COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
 
 ADD ./tasks/ /tasks/
 
+RUN gu install js
+
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>\n\
@@ -48,7 +50,7 @@ EXPOSE 443/tcp
 
 WORKDIR /jtasklet/
 
-ENV JAVA_SCC_OPTS "-XX:-UseJVMCICompiler -Djava.compiler=NONE -XX:+EnableJVMCI"
+ENV JAVA_SCC_OPTS "-XX:+EnableJVMCI"
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
 ENTRYPOINT ["jtasklet"]
