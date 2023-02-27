@@ -40,7 +40,7 @@ RUN echo '<configuration>\n\
     <logger name="org.drasyl.jtasklet" level="DEBUG">\n\
     </logger>\n\
 \n\
-    <root level="warn">\n\
+    <root level="trace">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/jtasklet/logback.xml
