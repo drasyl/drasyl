@@ -13,7 +13,7 @@ RUN cd /build && \
     ./mvnw --quiet --projects drasyl-jtasklet --also-make -Pfast -DskipTests -Dmaven.javadoc.skip=true package && \
     unzip -qq ./jtasklet-*.zip -d /
 
-FROM ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.1
+FROM ghcr.io/graalvm/graalvm-ce:22.3.1
 
 RUN gu install js
 
