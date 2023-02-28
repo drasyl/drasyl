@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: ./jtasklet.Dockerfile
     hostname: broker-1
+    user: "${UID}:${GID}"
     command: > 
         broker 
         -v debug 

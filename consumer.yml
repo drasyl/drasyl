@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: ./jtasklet.Dockerfile
     hostname: consumer-1
+    user: "${UID}:${GID}"
     command: >
       offload 
       -v debug

@@ -64,7 +64,7 @@ public class ConsumerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ConsumerHandler.class);
     private static final int RESOURCE_REQUEST_TIMEOUT = 10_000;
     private static final int OFFLOAD_TASK_TIMEOUT = 60_000;
-    private static final int RETRY_INTERVAL = 5_000;
+    private static final int RETRY_INTERVAL = 1;
     private final CsvLogger logger;
     private State state = STARTED;
     private final PrintStream out;
