@@ -18,13 +18,13 @@ services:
     command: > 
         vm 
         -v debug
-        --tags uhh 
+        --tags edge 
         --benchmark-runs 1 
         --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
         --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527
     restart: always
     volumes:
-      - ./vm:/jtasklet
+      - ./vms/vm-${INDEX}:/jtasklet
   consumer:
     build: .
     hostname: consumer-${INDEX}
