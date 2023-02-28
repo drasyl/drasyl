@@ -22,7 +22,7 @@ services:
       context: .
       dockerfile: ./jtasklet.Dockerfile
     hostname: vm-2
-    user: "${UID}:${GID}"
+    user: "1000:1000"
     command: >
       vm 
       -v debug
