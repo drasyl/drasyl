@@ -45,6 +45,10 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/jtasklet/logback.xml
 
+COPY jtasklet.sh /usr/bin/jtasklet.sh
+
+RUN chmod +x /usr/bin/jtasklet.sh
+
 # Set user and group
 ARG user=appuser
 ARG group=appuser
@@ -55,10 +59,6 @@ RUN useradd -u ${uid} -g ${group} -s /bin/sh -m ${user}
 
 # Switch to user
 USER ${uid}:${gid}
-
-COPY jtasklet.sh /usr/bin/jtasklet.sh
-
-RUN chmod +x /usr/bin/jtasklet.sh
 
 EXPOSE 22527/udp
 EXPOSE 443/tcp
