@@ -3,7 +3,7 @@ version: '3.4'
 services:
   broker:
     build: .
-    hostname: broker-${INDEX}
+    hostname: broker-1
     command: > 
         broker 
         -v debug 
@@ -11,7 +11,7 @@ services:
         --scheduler s1
     restart: always
     volumes:
-      - ./broker:/jtasklet
+      - ./experiment/broker:/jtasklet
   vm:
     build: .
     hostname: vm-${INDEX}
@@ -24,10 +24,10 @@ services:
         --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527
     restart: always
     volumes:
-      - ./vms/vm-${INDEX}:/jtasklet
+      - ./experiment/vms/vm-${INDEX}:/jtasklet
   consumer:
     build: .
-    hostname: consumer-${INDEX}
+    hostname: consumer-1
     command: > 
         offload 
         -v debug
@@ -40,4 +40,4 @@ services:
         1 2500
     restart: always
     volumes:
-      - ./consumer:/jtasklet
+      - ./experiment/consumer:/jtasklet

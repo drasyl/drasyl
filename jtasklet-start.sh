@@ -22,4 +22,4 @@
 # OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-for i in $(seq 1 $2); do INDEX=$i docker-compose up $1 -d --scale $1=$i; done
+for i in $(seq 1 $1); do INDEX=$i docker-compose up vm -d --scale vm=$i; done
