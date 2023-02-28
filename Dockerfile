@@ -45,6 +45,10 @@ RUN echo '<configuration>\n\
     </root>\n\
 </configuration>' >> /usr/local/share/jtasklet/logback.xml
 
+COPY jtasklet.sh /usr/bin/jtasklet.sh
+
+RUN chmod +x /usr/bin/jtasklet.sh
+
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
@@ -53,4 +57,4 @@ WORKDIR /jtasklet/
 ENV JAVA_SCC_OPTS ""
 ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
 
-ENTRYPOINT ["jtasklet"]
+ENTRYPOINT ["jtasklet.sh"]

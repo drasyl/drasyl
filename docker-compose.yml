@@ -3,25 +3,41 @@ version: '3.4'
 services:
   broker:
     build: .
-    command: broker -v debug --identity broker.identity --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 --scheduler s1 > broker.log 2>&1
+    hostname: broker-${INDEX}
+    command: > 
+        broker 
+        -v debug 
+        --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 
+        --scheduler s1
     restart: always
-    ports:
-      - 22527:22527
     volumes:
       - ./broker:/jtasklet
   vm:
     build: .
-    command: vm -v debug --tags uhh --identity vm1.identity --benchmark-runs 1 --broker 78ed586760603df0e301dc69bd74e3b745421841afc749cca2ecd58900bbc3bf --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 > vm.log 2>&1
+    hostname: vm-${INDEX}
+    command: > 
+        vm 
+        -v debug
+        --tags uhh 
+        --benchmark-runs 1 
+        --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
+        --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527
     restart: always
-    ports:
-      - 22527:22527
     volumes:
       - ./vm:/jtasklet
   consumer:
     build: .
-    command: offload --relay-only --tags uhh,edge,cloud --priority 1 --task tasks/primes.js -v debug --identity consumer1.identity --broker 78ed586760603df0e301dc69bd74e3b745421841afc749cca2ecd58900bbc3bf --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 1 2500 > consumer.log 2>&1
+    hostname: consumer-${INDEX}
+    command: > 
+        offload 
+        -v debug
+        --relay-only 
+        --tags uhh,edge,cloud 
+        --priority 1 
+        --task tasks/primes.js 
+        --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
+        --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 
+        1 2500
     restart: always
-    ports:
-      - 22527:22527
     volumes:
       - ./consumer:/jtasklet
