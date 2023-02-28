@@ -1,9 +1,0 @@
-version: '3.4'
-
-services:
-  drasyl:
-    image: drasyl/drasyl:latest
-    command: node --verbose DEBUG
-    restart: always
-    ports:
-      - 22527:22527

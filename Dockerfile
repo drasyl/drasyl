@@ -1,28 +1,23 @@
-FROM container-registry.oracle.com/os/oraclelinux:7-slim AS build-dependencies
+FROM eclipse-temurin:11-jdk AS build
 
-RUN yum update -y \
-    && yum install -y unzip
+COPY . /build
 
-FROM ghcr.io/graalvm/jdk:java11 AS build
+WORKDIR /build/
 
-ADD . /build
+RUN ./mvnw --quiet --projects drasyl-cli --also-make --activate-profiles fast package
 
-COPY --from=build-dependencies /bin/unzip /bin/
+FROM crazymax/7zip AS unzip
 
-RUN cd /build && \
-    ./mvnw --quiet --projects drasyl-jtasklet --also-make -Pfast -DskipTests -Dmaven.javadoc.skip=true package && \
-    unzip -qq ./jtasklet-*.zip -d /
+COPY --from=build /build/drasyl-*.zip /
 
-FROM ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.1
+RUN 7za x -y ./drasyl-*.zip && rm drasyl-*.zip
 
-RUN gu install js
+FROM eclipse-temurin:11-jre
 
-RUN mkdir /usr/local/share/jtasklet && \
-    ln -s ../share/jtasklet/bin/jtasklet /usr/local/bin/jtasklet
+RUN mkdir /usr/local/share/drasyl && \
+    ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
-COPY --from=build /jtasklet-* /usr/local/share/jtasklet/
-
-ADD ./tasks/ /tasks/
+COPY --from=unzip /drasyl-* /usr/local/share/drasyl/
 
 # use logback.xml without timestamps
 RUN echo '<configuration>\n\
@@ -37,24 +32,29 @@ RUN echo '<configuration>\n\
     <logger name="io.netty" level="warn">\n\
     </logger>\n\
 \n\
-    <logger name="org.drasyl.jtasklet" level="DEBUG">\n\
-    </logger>\n\
-\n\
     <root level="warn">\n\
         <appender-ref ref="Console"/>\n\
     </root>\n\
-</configuration>' >> /usr/local/share/jtasklet/logback.xml
+</configuration>' >> /usr/local/share/drasyl/logback.xml
 
-COPY jtasklet.sh /usr/bin/jtasklet.sh
+# install "ip" command for drasyl's "tun" subcommand
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iproute2 \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN chmod +x /usr/bin/jtasklet.sh
+# run as non-root user
+RUN groupadd --gid 22527 drasyl && \
+    useradd --system --uid 22527 --gid drasyl --home-dir /drasyl/ --no-log-init drasyl && \
+    mkdir /drasyl/ && \
+    chown drasyl:drasyl /drasyl/
+
+USER drasyl
 
 EXPOSE 22527/udp
 EXPOSE 443/tcp
 
-WORKDIR /jtasklet/
+WORKDIR /drasyl/
 
-ENV JAVA_SCC_OPTS ""
-ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/jtasklet/logback.xml ${JAVA_SCC_OPTS}"
+ENV JAVA_OPTS "-Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
 
-ENTRYPOINT ["jtasklet.sh"]
+ENTRYPOINT ["drasyl"]

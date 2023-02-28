@@ -1,0 +1,33 @@
+version: '3.4'
+
+services:
+  vm-1:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    hostname: vm-1
+    command: >
+      vm 
+      -v debug
+      --tags edge 
+      --benchmark-runs 1 
+      --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
+      --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527
+    restart: always
+    volumes:
+      - ./experiment/vms/vm-1:/jtasklet
+  vm-2:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    hostname: vm-2
+    command: >
+      vm 
+      -v debug
+      --tags edge 
+      --benchmark-runs 1 
+      --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
+      --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527
+    restart: always
+    volumes:
+      - ./experiment/vms/vm-2:/jtasklet

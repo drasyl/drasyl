@@ -1,0 +1,16 @@
+version: '3.4'
+
+services:
+  broker:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    hostname: broker-1
+    command: > 
+        broker 
+        -v debug 
+        --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 
+        --scheduler s1
+    restart: always
+    volumes:
+      - ./experiment/broker:/jtasklet
