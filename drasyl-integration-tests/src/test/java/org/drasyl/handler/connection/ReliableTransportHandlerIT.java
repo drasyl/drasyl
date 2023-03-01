@@ -272,7 +272,7 @@ class ReliableTransportHandlerIT {
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
-                peerAHandler.userCallAbort(peerAChannel.pipeline().context(peerAHandler));
+                peerAHandler.userCallAbort();
             }
             finally {
                 peerAChannel.close().sync();
@@ -357,7 +357,7 @@ class ReliableTransportHandlerIT {
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
 
                 // fasted way to close channel
-                peerAHandler.userCallAbort(peerAChannel.pipeline().context(peerAHandler));
+                peerAHandler.userCallAbort();
             }
             finally {
                 peerAChannel.close().sync();

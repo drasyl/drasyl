@@ -133,6 +133,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private ChannelPromise establishedPromise;
     private ChannelPromise closedPromise;
     private boolean readPending;
+    private ChannelHandlerContext ctx;
 
     @SuppressWarnings("java:S107")
     ReliableTransportHandler(final ReliableTransportConfig config,
@@ -142,7 +143,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                              final ScheduledFuture<?> retransmissionTimer,
                              final ScheduledFuture<?> timeWaitTimer,
                              final ChannelPromise establishedPromise,
-                             final ChannelPromise closedPromise) {
+                             final ChannelPromise closedPromise,
+                             final ChannelHandlerContext ctx) {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -151,10 +153,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         this.timeWaitTimer = timeWaitTimer;
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
+        this.ctx = ctx;
     }
 
     public ReliableTransportHandler(final ReliableTransportConfig config) {
-        this(config, null, null, null, null, null, null, null);
+        this(config, null, null, null, null, null, null, null, null);
     }
 
     @Override
@@ -171,6 +174,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
         if (ctx.channel().isActive()) {
             initHandler(ctx);
         }
@@ -180,7 +184,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
         if (state != CLOSED) {
             // do an implicit ABORT call to make sure all resources are released
-            userCallAbort(ctx);
+            userCallAbort();
         }
     }
 
@@ -694,7 +698,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * 9293, Section 3.10.5</a>.
      */
     @SuppressWarnings("java:S128")
-    public void userCallAbort(final ChannelHandlerContext ctx) throws ClosedChannelException {
+    public void userCallAbort() throws ClosedChannelException {
         LOG.trace("{}[{}] ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
         switch (state) {
@@ -783,7 +787,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * 9293, Section 3.10.6</a>.
      */
     public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
-        LOG.trace("[{}] STATUS call received.", state);
+        LOG.trace("{}[{}] STATUS call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
         switch (state) {
             case CLOSED:
