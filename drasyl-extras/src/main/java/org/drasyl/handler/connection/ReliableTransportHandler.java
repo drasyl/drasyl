@@ -2073,13 +2073,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
                     final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
                     if (tcb.ssthresh() != newSsthresh) {
-                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
+                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
                         tcb.bla_ssthresh(newSsthresh);
                     }
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                     final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                    LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                    LOG.error("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                     ctx.writeAndFlush(retransmission);
 
                     // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
@@ -2088,7 +2088,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681:    buffered.
                     long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                     if (newCwnd != tcb.cwnd()) {
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                         tcb.bla_cwnd(newCwnd);
                     }
                 }
@@ -2113,13 +2113,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
                         final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
                         if (tcb.ssthresh() != newSsthresh) {
-                            LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
+                            LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), state, tcb.ssthresh(), newSsthresh);
                             tcb.bla_ssthresh(newSsthresh);
                         }
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                        LOG.error("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                         ctx.writeAndFlush(retransmission);
 
                         // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
@@ -2128,7 +2128,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 5681:    buffered.
                         long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                         if (newCwnd != tcb.cwnd()) {
-                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.error("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
                     }
@@ -2145,7 +2145,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 5681:    has left the network.
                 long newCwnd = tcb.cwnd() + tcb.smss();
                 if (newCwnd != tcb.cwnd()) {
-                    LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                    LOG.trace("{}[{}] Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                     tcb.bla_cwnd(newCwnd);
                 }
 
@@ -2168,7 +2168,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
                     long newCwnd = tcb.ssthresh();
                     if (newCwnd != tcb.cwnd()) {
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                         tcb.bla_cwnd(newCwnd);
                     }
                 }
@@ -2200,7 +2200,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     acknowledgment. Exit the fast recovery procedure.
                         long newCwnd = tcb.ssthresh();
                         if (newCwnd != tcb.cwnd()) {
-                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
                     }
@@ -2210,7 +2210,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     including recover, then this is a partial ACK. In this case,
                         // RFC 6582:     retransmit the first unacknowledged segment.
                         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
+                        LOG.error("{}[{}] Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
                         ctx.writeAndFlush(retransmission);
 
                         // RFC 6582:     Deflate the congestion window by the amount of new data
@@ -2226,7 +2226,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             newCwnd += tcb.smss();
                         }
                         if (tcb.cwnd() != newCwnd) {
-                            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
 
@@ -2237,10 +2237,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     recovery procedure (i.e., if any duplicate ACKs subsequently
                         // RFC 6582:     arrive, execute step 4 of Section 3.2 of [RFC5681]).
 
-                        // FIXME:
-                        //  RFC 6582:     For the first partial ACK that arrives during fast recovery, also
-                        //  RFC 6582:     reset the retransmit timer. Timer management is discussed in
-                        //  RFC 6582:     more detail in Section 4.
+                        // TODO:
+                        //  RFC 6582:     For the first partial ACK that arrives during fast
+                        //  RFC 6582:      recovery, also reset the retransmit timer.
                     }
                 }
             }

@@ -302,7 +302,7 @@ class ReliableTransportHandlerIT {
         @ValueSource(floats = { 0.0f, 0.2f })
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void simultaneousConnectionSynchronization(final float lossRate) throws InterruptedException, ClosedChannelException {
-            final Phaser phaser = new Phaser(1);
+            final Phaser phaser = new Phaser(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
@@ -393,7 +393,7 @@ class ReliableTransportHandlerIT {
         @ValueSource(floats = { 0.0f, 0.2f })
         @Timeout(value = 5_000, unit = MILLISECONDS)
         void normalCloseSequence(final float lossRate) throws InterruptedException {
-            final Phaser phaser = new Phaser(1);
+            final Phaser phaser = new Phaser(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
