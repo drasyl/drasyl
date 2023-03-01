@@ -44,6 +44,14 @@ public final class SerialNumberArithmetic {
         return (requireNonNegative(s) + requireInRange(n, 0, (long) Math.pow(2, serialBits - 1d) - 1)) % (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS));
     }
 
+    public static long sub(final long i1, final long i2, final int serialBits) {
+        if (i1 >= i2) {
+            return i1 - i2;
+        }
+        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS));
+        return pow + i1 - i2;
+    }
+
     /**
      * @param i1         first non-negative number
      * @param i2         second non-negative number

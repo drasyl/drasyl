@@ -28,6 +28,7 @@ import static org.drasyl.util.SerialNumberArithmetic.greaterThan;
 import static org.drasyl.util.SerialNumberArithmetic.greaterThanOrEqualTo;
 import static org.drasyl.util.SerialNumberArithmetic.lessThan;
 import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
+import static org.drasyl.util.SerialNumberArithmetic.sub;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +39,14 @@ class SerialNumberArithmeticTest {
         assertEquals(0, add(255, 1, 8));
         assertEquals(200, add(100, 100, 8));
         assertEquals(44, add(200, 100, 8));
+    }
+
+    @Test
+    void testSub() {
+        assertEquals(155, sub(255, 100, 8));
+        assertEquals(205, sub(49, 100, 8));
+        assertEquals(0, sub(100, 100, 8));
+        assertEquals(255, sub(100, 101, 8));
     }
 
     @Test
