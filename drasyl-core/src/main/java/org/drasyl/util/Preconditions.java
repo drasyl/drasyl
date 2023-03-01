@@ -35,6 +35,7 @@ public final class Preconditions {
     public static final String MUST_BE_NON_NEGATIVE = "must be non-negative";
     public static final String MUST_BE_POSITIVE = "must be positive";
     public static final String MUST_BE_IN_RANGE = "must be in range of [%d, %d]";
+    public static final String FLOAT_MUST_BE_IN_RANGE = "must be in range of [%f, %f]";
 
     private Preconditions() {
         // util class
@@ -649,9 +650,9 @@ public final class Preconditions {
     }
 
     /**
-     * Checks that the specified number is positive and throws a customized {@link
-     * IllegalArgumentException} if it is not. This method is designed primarily for doing parameter
-     * validation in methods and constructors, as demonstrated below:
+     * Checks that the specified number is positive and throws a customized
+     * {@link IllegalArgumentException} if it is not. This method is designed primarily for doing
+     * parameter validation in methods and constructors, as demonstrated below:
      * <blockquote><pre>
      * public Foo(int bar) {
      *     this.bar = Preconditions.requirePositive(bar, "bar must be positive");
@@ -884,7 +885,7 @@ public final class Preconditions {
      */
     public static float requireInRange(final float obj, final float min, final float max) {
         if (obj < min || obj > max) {
-            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+            throw new IllegalArgumentException(String.format(FLOAT_MUST_BE_IN_RANGE, min, max));
         }
 
         return obj;
@@ -933,7 +934,7 @@ public final class Preconditions {
      */
     public static double requireInRange(final double obj, final double min, final double max) {
         if (obj < min || obj > max) {
-            throw new IllegalArgumentException(String.format(MUST_BE_IN_RANGE, min, max));
+            throw new IllegalArgumentException(String.format(FLOAT_MUST_BE_IN_RANGE, min, max));
         }
 
         return obj;
