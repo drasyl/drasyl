@@ -56,6 +56,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
+import static org.drasyl.util.EventLoopGroupUtil.getBestServerSocketChannel;
 
 /**
  * Run a drasyl node.
@@ -148,7 +149,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 }
                 final ServerBootstrap rcBootstrap = new ServerBootstrap()
                         .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                        .channel(NioServerSocketChannel.class)
+                        .channel(getBestServerSocketChannel())
                         .childHandler(channelInitializer);
                 rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());

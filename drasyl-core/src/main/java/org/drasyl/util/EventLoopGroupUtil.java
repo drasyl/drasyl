@@ -22,16 +22,20 @@
 package org.drasyl.util;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.ServerChannel;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.InternetProtocolFamily;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -43,7 +47,8 @@ public final class EventLoopGroupUtil {
         // util class
     }
 
-    public static EventLoopGroup getBestEventLoopGroup(final int nThreads, final ThreadFactory threadFactory) {
+    public static EventLoopGroup getBestEventLoopGroup(final int nThreads,
+                                                       final ThreadFactory threadFactory) {
         if (Epoll.isAvailable()) {
             return new EpollEventLoopGroup(nThreads, threadFactory);
         }
@@ -80,6 +85,30 @@ public final class EventLoopGroupUtil {
         }
         else {
             return new NioDatagramChannel(family);
+        }
+    }
+
+    public static Class<? extends ServerChannel> getBestServerSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollServerSocketChannel.class;
+        }
+        else if (KQueue.isAvailable()) {
+            return KQueueServerSocketChannel.class;
+        }
+        else {
+            return NioServerSocketChannel.class;
+        }
+    }
+
+    public static ServerChannel getBestServerSocketChannel(final InternetProtocolFamily family) {
+        if (Epoll.isAvailable()) {
+            return new EpollServerSocketChannel(family);
+        }
+        else if (KQueue.isAvailable()) {
+            return new KQueueServerSocketChannel();
+        }
+        else {
+            return new NioServerSocketChannel();
         }
     }
 }

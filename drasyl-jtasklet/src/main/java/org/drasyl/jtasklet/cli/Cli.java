@@ -9,6 +9,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerCommand;
 import org.drasyl.jtasklet.consumer.GreyFilterCommand;
 import org.drasyl.jtasklet.consumer.OffloadCommand;
+import org.drasyl.jtasklet.consumer.OffloadRcJsonRpcCommand;
 import org.drasyl.jtasklet.provider.VmCommand;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -25,6 +26,7 @@ import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
                 ComputeCommand.class,
                 GreyFilterCommand.class,
                 OffloadCommand.class,
+                OffloadRcJsonRpcCommand.class,
                 HelpCommand.class,
                 VmCommand.class
         }

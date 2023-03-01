@@ -125,7 +125,13 @@ public class JsonRpc2Request {
             return defaultValue;
         }
         try {
-            return (T) ((Map) params).get(name);
+            final Map map = (Map) params;
+
+            if (map.containsKey(name)) {
+                return (T) map.get(name);
+            }
+
+            return defaultValue;
         }
         catch (final ClassCastException e) {
             return null;
