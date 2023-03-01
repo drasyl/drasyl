@@ -186,6 +186,9 @@ public class UdpServer extends ChannelDuplexHandler {
         ctx.flush();
     }
 
+    /**
+     * ensure this method is called by same ctx (thread) from which PendingWrites was created.
+     */
     private void writePendingWrites() {
         // pass all pending writes to the UDP channel while it writable
         while (channel != null && channel.isWritable()) {
@@ -218,7 +221,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
             if (ctx.channel().isWritable()) {
                 // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                writePendingWrites();
+                drasylServerChannelCtx.executor().execute(() -> writePendingWrites());
             }
         }
 
