@@ -2357,7 +2357,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         if (config.sack()) {
             // FIXME: add support for SACK
-            if (ctl == ACK) {
+            if (ctl == ACK && tcb != null) {
                 final List<Long> edges = new ArrayList<>();
                 final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
                 ReceiveBuffer.ReceiveBufferBlock current = receiveBuffer.head;
@@ -2423,8 +2423,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: delete the TCB,
         deleteTcb();
 
-        // RFC 9293: enter the CLOSED state,
-        changeState(ctx, CLOSED);
+        if (state != CLOSED) {
+            // RFC 9293: enter the CLOSED state,
+            changeState(ctx, CLOSED);
+        }
 
         // RFC 9293: and return.
         return;
@@ -2521,7 +2523,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * TIME-WAIT TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
      * 9293, Section 3.10.8</a>.
      */
-    void timeWaitTimeout(ChannelHandlerContext ctx) {
+    void timeWaitTimeout(final ChannelHandlerContext ctx) {
         timeWaitTimer = null;
 
         final long timeWaitTimeout = config.msl().multipliedBy(2).toMillis();
@@ -2531,8 +2533,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         // RFC 9293: delete the TCB,
         deleteTcb();
 
-        // RFC 9293: enter the CLOSED state,
-        changeState(ctx, CLOSED);
+        if (state != CLOSED) {
+            // RFC 9293: enter the CLOSED state,
+            changeState(ctx, CLOSED);
+        }
 
         // RFC 9293: and return.
         return;
