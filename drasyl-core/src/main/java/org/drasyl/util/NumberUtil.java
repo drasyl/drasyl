@@ -23,6 +23,7 @@ package org.drasyl.util;
 
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.stream.DoubleStream;
 
@@ -208,5 +209,65 @@ public final class NumberUtil {
      */
     public static double sampleStandardDeviation(final double... values) {
         return Math.sqrt(sampleVariance(values));
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static int min(final int... numbers) {
+        return Arrays.stream(numbers).min().getAsInt();
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long min(final long... numbers) {
+        return Arrays.stream(numbers).min().getAsLong();
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double min(final double... numbers) {
+        return Arrays.stream(numbers).min().getAsDouble();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static int max(final int... numbers) {
+        return Arrays.stream(numbers).max().getAsInt();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long max(final long... numbers) {
+        return Arrays.stream(numbers).max().getAsLong();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double max(final double... numbers) {
+        return Arrays.stream(numbers).max().getAsDouble();
     }
 }

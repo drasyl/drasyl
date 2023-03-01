@@ -24,6 +24,8 @@ package org.drasyl.util;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.NoSuchElementException;
+
 import static java.util.Locale.GERMAN;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
@@ -132,5 +134,65 @@ class NumberUtilTest {
     void testSampleStandardDeviation() {
         assertThat(sampleStandardDeviation(TWO_VALUES), is(closeTo(Math.sqrt(TWO_VALUES_SUM_OF_SQUARES_OF_DELTAS), ALLOWED_ERROR)));
         assertThat(sampleStandardDeviation(MANY_VALUES), is(closeTo(Math.sqrt(MANY_VALUES_SUM_OF_SQUARES_OF_DELTAS / (MANY_VALUES_COUNT - 1)), ALLOWED_ERROR)));
+    }
+
+    @Nested
+    class Min {
+        @Test
+        void smallestInteger() {
+            assertThrows(NoSuchElementException.class, NumberUtil::min);
+            assertEquals(23, NumberUtil.min(23));
+            assertEquals(23, 42, NumberUtil.min(23, 42));
+            assertEquals(1, NumberUtil.min(1, 2, 3));
+            assertEquals(-10, NumberUtil.min(10, -10));
+        }
+
+        @Test
+        void smallestLong() {
+            assertThrows(NoSuchElementException.class, NumberUtil::min);
+            assertEquals(23L, NumberUtil.min(23L));
+            assertEquals(23L, 42L, NumberUtil.min(23L, 42L));
+            assertEquals(1L, NumberUtil.min(1L, 2L, 3L));
+            assertEquals(-10L, NumberUtil.min(10L, -10L));
+        }
+
+        @Test
+        void smallestDouble() {
+            assertThrows(NoSuchElementException.class, NumberUtil::min);
+            assertEquals(23d, NumberUtil.min(23d));
+            assertEquals(23d, 42d, NumberUtil.min(23d, 42d));
+            assertEquals(1d, NumberUtil.min(1d, 2d, 3d));
+            assertEquals(-10d, NumberUtil.min(10d, -10d));
+        }
+    }
+
+    @Nested
+    class Max {
+        @Test
+        void largestInteger() {
+            assertThrows(NoSuchElementException.class, NumberUtil::max);
+            assertEquals(23, NumberUtil.max(23));
+            assertEquals(23, 42, NumberUtil.max(23, 42));
+            assertEquals(3, NumberUtil.max(1, 2, 3));
+            assertEquals(10, NumberUtil.max(10, -10));
+        }
+
+        @Test
+        void largestLong() {
+            assertThrows(NoSuchElementException.class, NumberUtil::max);
+            assertEquals(23L, NumberUtil.max(23L));
+            assertEquals(42L, 42L, NumberUtil.max(23L, 42L));
+            assertEquals(3L, NumberUtil.max(1L, 2L, 3L));
+            assertEquals(10L, NumberUtil.max(10L, -10L));
+        }
+
+        @Test
+        void largestDouble() {
+            assertThrows(NoSuchElementException.class, NumberUtil::max);
+            assertEquals(23d, NumberUtil.max(23d));
+            assertEquals(42d, 42d, NumberUtil.max(23d, 42d));
+            assertEquals(3d, NumberUtil.max(1d, 2d, 3d));
+            assertEquals(10d, NumberUtil.max(10d, -10d));
+        }
     }
 }
