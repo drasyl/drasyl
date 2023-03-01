@@ -28,6 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofMillis;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -36,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class PreconditionsTest {
+    public static final Duration NEGATIVE_DURATION = ofMillis(-1);
+
     @Nested
     class RequireNonNegative {
         @Test
@@ -65,8 +68,8 @@ class PreconditionsTest {
             assertThrows(IllegalArgumentException.class, () -> requireNonNegative(-1d, "invalid"));
 
             // Duration
-            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(Duration.ofMillis(-1)));
-            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(Duration.ofMillis(-1), "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(NEGATIVE_DURATION));
+            assertThrows(IllegalArgumentException.class, () -> requireNonNegative(NEGATIVE_DURATION, "invalid"));
         }
 
         @Test
@@ -111,6 +114,7 @@ class PreconditionsTest {
 
     @Nested
     class RequirePositive {
+        @SuppressWarnings("java:S5961")
         @Test
         void shouldRejectNonPositiveNumbers() {
             // byte
@@ -148,6 +152,12 @@ class PreconditionsTest {
             assertThrows(IllegalArgumentException.class, () -> requirePositive(0d, "invalid"));
             assertThrows(IllegalArgumentException.class, () -> requirePositive(-1d));
             assertThrows(IllegalArgumentException.class, () -> requirePositive(-1d, "invalid"));
+
+            // Duration
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(Duration.ZERO));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(Duration.ZERO, "invalid"));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(NEGATIVE_DURATION));
+            assertThrows(IllegalArgumentException.class, () -> requirePositive(NEGATIVE_DURATION, "invalid"));
         }
 
         @Test
