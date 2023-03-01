@@ -181,11 +181,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void handlerRemoved(final ChannelHandlerContext ctx) throws Exception {
-        if (state != CLOSED) {
-            // do an implicit ABORT call to make sure all resources are released
-            userCallAbort();
-        }
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        // release all resources/timers
+        deleteTcb();
+        cancelUserTimer(ctx);
+        cancelRetransmissionTimer(ctx);
+        cancelTimeWaitTimer(ctx);
+        establishedPromise.tryFailure(CONNECTION_CLOSING_ERROR);
+        ctx.channel().closeFuture().addListener(new PromiseNotifier<>(closedPromise));
     }
 
     /*
@@ -268,6 +271,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         ctx.fireChannelReadComplete();
     }
 
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
+        LOG.error("{}[{}] Exception caught: ", ctx.channel(), state, cause);
+        ctx.fireExceptionCaught(cause);
+    }
+
     /*
      * User Calls
      */
@@ -276,7 +285,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * OPEN call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.1">RFC
      * 9293, Section 3.10.1</a>.
      */
-    public void userCallOpen(final ChannelHandlerContext ctx) {
+    void userCallOpen(final ChannelHandlerContext ctx) {
+        assert ctx.executor().inEventLoop();
         LOG.trace("{}[{}] OPEN call received.", ctx.channel(), state);
 
         switch (state) {
@@ -699,6 +709,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S128")
     public void userCallAbort() throws ClosedChannelException {
+        assert ctx == null || ctx.executor().inEventLoop();
         LOG.trace("{}[{}] ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
         switch (state) {
@@ -829,6 +840,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
     void deleteTcb() {
         if (tcb != null) {
+            LOG.trace("{}[{}] TCB deleted: {}", ctx.channel(), state, tcb);
             tcb.delete();
             tcb = null;
         }
@@ -1181,7 +1193,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         final long segTsEcr = tsOpt.tsEcr;
 
                         final int r = (int) (config.clock().time() - segTsEcr);
-                        LOG.trace("RTT R = {}", r);
+                        LOG.trace("{}[{}] RTT R = {}", ctx.channel(), state, r);
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
                         tcb.bla_sRtt(r);
@@ -1983,7 +1995,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 7323: retransmission queue was sent.
                     rDash = (int) (config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime());
                 }
-                LOG.trace("RTT R' = {}", rDash);
+                LOG.trace("{}[{}] RTT R' = {}", ctx.channel(), state, rDash);
 
                 // RFC 6298:       a host MUST set
                 // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|

@@ -609,7 +609,7 @@ public class TransmissionControlBlock {
     }
 
     public void rto(final long rto) {
-        assert rto > 0;
+        assert rto >= 0;
         if (rto < config.lBound().toMillis()) {
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
             // RFC 6298:       SHOULD be rounded up to 1 second.

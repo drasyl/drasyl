@@ -31,7 +31,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultEventLoopGroup;
@@ -56,9 +55,12 @@ import test.DropMessagesHandler;
 import test.DropMessagesHandler.DropRandomMessages;
 
 import java.nio.channels.ClosedChannelException;
+import java.time.Duration;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Ansi.ansi;
@@ -69,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ReliableTransportHandlerIT {
     private static final Logger LOG = LoggerFactory.getLogger(ReliableTransportHandlerIT.class);
     private static final int MAX_DROP = 3;
+    public static final Duration USER_TIMEOUT = ofSeconds(1);
 
     @BeforeEach
     void setup(final TestInfo info) {
@@ -101,7 +104,7 @@ class ReliableTransportHandlerIT {
                 .issSupplier(() -> 1_000_000L)
                 .build();
         final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
-        final Channel peerBChannel = new ServerBootstrap()
+        final Channel peerBServerChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
                 .childHandler(new ChannelInitializer<>() {
@@ -191,7 +194,7 @@ class ReliableTransportHandlerIT {
         }
         finally {
             peerAChannel.close().sync();
-            peerBChannel.close().sync();
+            peerBServerChannel.close().sync();
             group.shutdownGracefully().sync();
         }
     }
@@ -227,9 +230,10 @@ class ReliableTransportHandlerIT {
                     .activeOpen(false)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
-            final Channel peerBChannel = new ServerBootstrap()
+            final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
                     .childHandler(new ChannelInitializer<>() {
@@ -250,6 +254,7 @@ class ReliableTransportHandlerIT {
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -270,13 +275,19 @@ class ReliableTransportHandlerIT {
             try {
                 phaser.arriveAndAwaitAdvance();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Handshake on both peers completed"));
-
-                // fasted way to close channel
-                peerAHandler.userCallAbort();
             }
             finally {
+                // fasted way to close channel
+                peerAChannel.eventLoop().execute(() -> {
+                    try {
+                        peerAHandler.userCallAbort();
+                    }
+                    catch (final ClosedChannelException e) {
+                        // ignore
+                    }
+                });
                 peerAChannel.close().sync();
-                peerBChannel.close().sync();
+                peerBServerChannel.close().sync();
                 group.shutdownGracefully().sync();
             }
         }
@@ -312,9 +323,10 @@ class ReliableTransportHandlerIT {
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
-            final Channel peerBChannel = new ServerBootstrap()
+            final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
                     .childHandler(new ChannelInitializer<>() {
@@ -335,6 +347,7 @@ class ReliableTransportHandlerIT {
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -361,7 +374,7 @@ class ReliableTransportHandlerIT {
             }
             finally {
                 peerAChannel.close().sync();
-                peerBChannel.close().sync();
+                peerBServerChannel.close().sync();
                 group.shutdownGracefully().sync();
             }
         }
@@ -395,6 +408,7 @@ class ReliableTransportHandlerIT {
         void normalCloseSequence(final float lossRate) throws InterruptedException {
             final Phaser phaser = new Phaser(2);
             final EventLoopGroup group = new DefaultEventLoopGroup();
+            final AtomicReference<Channel> peerBChannel = new AtomicReference<>();
 
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
@@ -403,26 +417,17 @@ class ReliableTransportHandlerIT {
                     .activeOpen(false)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
-            final Channel peerBChannel = new ServerBootstrap()
+            final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
                     .childHandler(new ChannelInitializer<>() {
                         @Override
                         protected void initChannel(final Channel ch) {
+                            peerBChannel.set(ch);
                             final ChannelPipeline p = ch.pipeline();
-                            p.addLast(new ChannelOutboundHandlerAdapter() {
-                                @Override
-                                public void close(ChannelHandlerContext ctx,
-                                                  ChannelPromise promise) {
-                                    // delay processing as LocalServerChannel will otherwise close our LocalChannel as well
-                                    ctx.executor().schedule(() -> {
-                                        ctx.close(promise);
-                                        ctx.channel().parent().close();
-                                    }, 300, MILLISECONDS);
-                                }
-                            });
                             p.addLast(new SegmentCodec());
                             p.addLast(new DropMessagesHandler(new DropRandomMessages(lossRate, MAX_DROP), msg -> false));
                             p.addLast(peerBHandler);
@@ -438,6 +443,7 @@ class ReliableTransportHandlerIT {
                     .msl(ofMillis(100))
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
+                    .userTimeout(USER_TIMEOUT)
                     .build();
             final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -461,15 +467,16 @@ class ReliableTransportHandlerIT {
 
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "Peer A: Close connection"));
                 assertTrue(peerAChannel.close().await().isSuccess());
-                assertTrue(peerBChannel.closeFuture().await().isSuccess());
+                assertTrue(peerBChannel.get().closeFuture().await().isSuccess());
             }
             finally {
+                peerBServerChannel.close().sync();
                 group.shutdownGracefully().sync();
             }
         }
     }
 
-    private class HandshakePhaser extends ChannelDuplexHandler {
+    private static class HandshakePhaser extends ChannelDuplexHandler {
         private final Phaser phaser;
         private final String name;
         private boolean completed;
