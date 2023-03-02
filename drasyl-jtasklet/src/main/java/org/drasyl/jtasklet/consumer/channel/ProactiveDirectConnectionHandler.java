@@ -22,15 +22,21 @@
 package org.drasyl.jtasklet.consumer.channel;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(ProactiveDirectConnectionHandler.class);
     private static final long PERIOD = 30_000L;
     private static final long MAGIC_NUMBER = 8989898989L;
     private final List<IdentityPublicKey> peers;
@@ -44,7 +50,12 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
         ctx.fireChannelActive();
         ctx.executor().scheduleAtFixedRate(() -> {
             for (final IdentityPublicKey peer : peers) {
-                ctx.write(new OverlayAddressedMessage<>(ctx.alloc().buffer(Long.BYTES).writeLong(MAGIC_NUMBER), peer));
+                final OverlayAddressedMessage<ByteBuf> msg = new OverlayAddressedMessage<>(ctx.alloc().buffer(Long.BYTES).writeLong(MAGIC_NUMBER), peer);
+                ctx.write(msg).addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.cause() != null) {
+                        LOG.error("Failed to write ``{}: ", msg, channelFuture.cause());
+                    }
+                });
             }
             ctx.flush();
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
@@ -60,6 +71,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
                 final long number = buf.readLong();
                 if (number == MAGIC_NUMBER) {
                     buf.release();
+                    return;
                 }
                 else {
                     buf.resetReaderIndex();
