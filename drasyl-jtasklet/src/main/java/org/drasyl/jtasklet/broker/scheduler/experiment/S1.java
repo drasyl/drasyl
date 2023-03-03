@@ -35,7 +35,8 @@ import java.util.stream.Collectors;
 import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 /**
- * Real-Time Tasks: Random Low-Prio Tasks: Random
+ * Real-Time Tasks: Random
+ * Low-Prio Tasks: Random
  */
 public class S1 implements SchedulingStrategy {
     private static final Random RANDOM = new Random(555);

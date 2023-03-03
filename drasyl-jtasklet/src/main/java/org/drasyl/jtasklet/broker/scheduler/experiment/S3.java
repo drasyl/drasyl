@@ -27,7 +27,7 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,10 +53,10 @@ public class S3 implements SchedulingStrategy {
         // check if this is a low priority task, then do cloud scheduling
         if (priority == 0) {
             final List<Map.Entry<DrasylAddress, ResourceProvider>> availableVms = providers.entrySet().stream()
-                    .filter(e -> e.getValue().state() == READY && new HashSet<>(e.getValue().tags()).containsAll(tags))
+                    .filter(e -> e.getValue().state() == READY && !Collections.disjoint(tags, e.getValue().tags()))
                     .collect(Collectors.toList());
 
-            if(!availableVms.isEmpty()) {
+            if (!availableVms.isEmpty()) {
                 final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
                 return Pair.of(bestVm.getKey(), bestVm.getValue());
             }
@@ -65,16 +65,6 @@ public class S3 implements SchedulingStrategy {
         }
 
         // otherwise sort providers by the given consumer tag priority list
-        final List<Map.Entry<DrasylAddress, ResourceProvider>> availableVms = providers.entrySet().stream()
-                .filter(e -> e.getValue().state() == READY && new HashSet<>(e.getValue().tags()).containsAll(tags))
-                .sorted(new TagPriorityComparator(tags))
-                .collect(Collectors.toList());
-        if (!availableVms.isEmpty()) {
-            final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
-            return Pair.of(bestVm.getKey(), bestVm.getValue());
-        }
-        else {
-            return Pair.of(null, null);
-        }
+        return S2.scheduleByTagPriority(providers, rttReports, consumer, tags, priority);
     }
 }

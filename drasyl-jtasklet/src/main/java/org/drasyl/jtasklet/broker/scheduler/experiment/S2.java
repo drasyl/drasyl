@@ -27,7 +27,7 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,10 +56,19 @@ public class S2 implements SchedulingStrategy {
         }
 
         // otherwise sort providers by the given consumer tag priority list
+        return scheduleByTagPriority(providers, rttReports, consumer, tags, priority);
+    }
+
+    public static Pair<DrasylAddress, ResourceProvider> scheduleByTagPriority(final Map<DrasylAddress, ResourceProvider> providers,
+                                      final Map<DrasylAddress, PeersRttHandler.PeersRttReport> rttReports,
+                                      final DrasylAddress consumer,
+                                      final List<String> tags,
+                                      final int priority) {
         final List<Map.Entry<DrasylAddress, ResourceProvider>> availableVms = providers.entrySet().stream()
-                .filter(e -> e.getValue().state() == READY && new HashSet<>(e.getValue().tags()).containsAll(tags))
+                .filter(e -> e.getValue().state() == READY && !Collections.disjoint(tags, e.getValue().tags()))
                 .sorted(new TagPriorityComparator(tags))
                 .collect(Collectors.toList());
+
         if (!availableVms.isEmpty()) {
             final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
             return Pair.of(bestVm.getKey(), bestVm.getValue());
