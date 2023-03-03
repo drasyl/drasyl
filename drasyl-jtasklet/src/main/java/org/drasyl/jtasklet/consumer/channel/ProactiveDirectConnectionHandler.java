@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProactiveDirectConnectionHandler.class);
-    private static final long PERIOD = 10_000L;
+    private static final long PERIOD = 1_000L;
     private final List<IdentityPublicKey> peers;
     private final Map<IdentityPublicKey, DrasylChannel> channelMap;
 
@@ -55,7 +55,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
             for (final IdentityPublicKey peer : peers) {
                 DrasylChannel channel = channelMap.get(peer);
 
-                if (channel == null) {
+                if (channel == null || !channel.isOpen()) {
                     channel = new DrasylChannel((DrasylServerChannel) ctx.channel(), peer);
 
                     channelMap.put(peer, channel);
@@ -63,11 +63,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
                 }
 
                 final ByteBuf msg = ctx.alloc().buffer(Long.BYTES).writeLong(NoopDiscardHandler.MAGIC_NUMBER);
-                channel.writeAndFlush(msg).addListener((ChannelFutureListener) channelFuture -> {
-                    if (channelFuture.cause() != null) {
-                        LOG.error("Failed to write ``{}: ", NoopDiscardHandler.MAGIC_NUMBER, channelFuture.cause());
-                    }
-                });
+                channel.writeAndFlush(msg);
             }
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
     }

@@ -101,7 +101,7 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     }
 
     private void codecStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
         ch.pipeline().addLast(NoopDiscardHandler.INSTANCE);
+        ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
     }
 }
