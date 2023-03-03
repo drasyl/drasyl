@@ -13,12 +13,7 @@ import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCodec;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionHandshakeHandler;
-import org.drasyl.handler.stream.ChunkedMessageAggregator;
-import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
-import org.drasyl.handler.stream.MessageChunkDecoder;
-import org.drasyl.handler.stream.MessageChunkEncoder;
-import org.drasyl.handler.stream.MessageChunksBuffer;
-import org.drasyl.handler.stream.ReassembledMessageDecoder;
+import org.drasyl.handler.stream.*;
 import org.drasyl.jtasklet.event.ConnectionEstablished;
 import org.drasyl.jtasklet.handler.ConnectionEventHandler;
 import org.drasyl.jtasklet.handler.PassInboundMessagesToParentHandler;
@@ -107,5 +102,6 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
 
     private void codecStage(final DrasylChannel ch) {
         ch.pipeline().addLast(new JacksonCodec<>(JACKSON_MAPPER, TaskletMessage.class));
+        ch.pipeline().addLast(NoopDiscardHandler.INSTANCE);
     }
 }
