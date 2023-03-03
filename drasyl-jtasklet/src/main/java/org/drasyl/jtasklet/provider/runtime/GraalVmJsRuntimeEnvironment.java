@@ -44,7 +44,7 @@ public class GraalVmJsRuntimeEnvironment extends AbstractRuntimeEnvironment {
 //                .option("sandbox.MaxCPUTime", "500ms")
 //                .option("sandbox.MaxCPUTimeCheckInterval", "5ms")
 //                .option("sandbox.MaxHeapMemory", memory + "KB")
-                        .build());
+                        .build()).allowHostClassLookup(clazz -> clazz.equals(Thread.class.getName()));
     }
 
     @Override
