@@ -32,10 +32,14 @@ import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
+import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 
 @AutoValue
 public abstract class ReliableTransportConfig {
-    public static final ReliableTransportConfig DEFAULT = new AutoValue_ReliableTransportConfig.Builder()
+    // Google Cloud applied MTU is 1460
+    static final int MTU = 1460;
+    static final ReliableTransportConfig DEFAULT = new AutoValue_ReliableTransportConfig.Builder()
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
             .rtnsQSupplier(channel -> new RetransmissionQueue())
@@ -90,8 +94,8 @@ public abstract class ReliableTransportConfig {
             // RFC 9293: The override timeout should be in the range 0.1 - 1.0
             .overrideTimeout(ofMillis(100))
             .rto(ofSeconds(1))
-            .mmsR(1432)
-            .mmsS(1432)
+            .mmsS(MTU - DRASYL_HDR_SIZE)
+            .mmsR(MTU - DRASYL_HDR_SIZE)
             .newReno(true)
             .limitedTransport(true)
             .fs(1f / 2)

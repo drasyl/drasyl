@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 
 /**
@@ -44,7 +45,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                           final Segment seg,
                           final List<Object> out) throws Exception {
         ReferenceCountUtil.touch(seg, "ConnectionHandshakeCodec encode " + seg.toString());
-        final ByteBuf buf = ctx.alloc().buffer(Segment.SEG_HDR_SIZE + seg.content().readableBytes());
+        final ByteBuf buf = ctx.alloc().buffer(SEG_HDR_SIZE + seg.content().readableBytes());
         ReferenceCountUtil.touch(buf, "encode");
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
@@ -71,7 +72,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                           final ByteBuf in,
                           final List<Object> out) {
         try {
-            if (in.readableBytes() >= Segment.SEG_HDR_SIZE) {
+            if (in.readableBytes() >= SEG_HDR_SIZE) {
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();

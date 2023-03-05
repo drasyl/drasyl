@@ -47,6 +47,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.RST;
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
@@ -2341,7 +2342,11 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // (not applicable to us)
 
             // RFC 9293: and MAY send it always (MAY-3).
-            final int mss = config.mmsR() - DRASYL_HDR_SIZE;
+
+            // RFC 9293: The MSS value to be sent in an MSS Option must be less than or equal to:
+            // RFC 9293: MMS_R - 20
+            // 20 is the TCP header size
+            final int mss = config.mmsR() - SEG_HDR_SIZE;
             assert mss > 0;
             options.put(MAXIMUM_SEGMENT_SIZE, mss);
         }
