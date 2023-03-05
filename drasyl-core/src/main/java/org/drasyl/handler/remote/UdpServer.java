@@ -55,6 +55,7 @@ import static java.util.Objects.requireNonNull;
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
+    public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
     private final Bootstrap bootstrap;
     private final EventLoopGroup group;
     private final InetSocketAddress bindAddress;
@@ -91,7 +92,7 @@ public class UdpServer extends ChannelDuplexHandler {
      */
     public UdpServer(final EventLoopGroup group,
                      final InetSocketAddress bindAddress) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR), group, bindAddress);
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress);
     }
 
     /**
