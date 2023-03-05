@@ -29,6 +29,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -39,6 +40,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -140,6 +142,7 @@ public class TcpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
+                .option(ChannelOption.IP_TOS, UdpServer.IP_TOS)
                 .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new TcpServerChannelInitializer(clientChannels, ctx, pingTimeout))
