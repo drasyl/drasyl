@@ -55,6 +55,9 @@ import static java.util.Objects.requireNonNull;
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
+    /*
+     * On MacOS -Djava.net.preferIPv4Stack=true must be set to work.
+     */
     public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
     private final Bootstrap bootstrap;
     private final EventLoopGroup group;
