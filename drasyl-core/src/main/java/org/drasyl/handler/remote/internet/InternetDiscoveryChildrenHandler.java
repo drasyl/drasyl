@@ -48,7 +48,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -249,7 +248,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         determineBestSuperPeer(ctx);
 
         // get own private address(es)
-        final Set<InetSocketAddress> privateInetAddresses = new HashSet<>();
+        final Set<InetSocketAddress> privateInetAddresses = getPrivateAddresses();
 
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {

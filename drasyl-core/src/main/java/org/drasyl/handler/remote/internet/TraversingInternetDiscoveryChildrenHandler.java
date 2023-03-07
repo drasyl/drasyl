@@ -44,6 +44,7 @@ import org.drasyl.util.network.NetworkUtil;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -307,7 +308,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             // use given host
             addresses = Set.of(bindAddress.getAddress());
         }
-        return addresses.stream().map(a -> new InetSocketAddress(a, bindAddress.getPort())).collect(Collectors.toSet());
+
+        return new HashSet<>();
+        //return addresses.stream().map(a -> new InetSocketAddress(a, bindAddress.getPort())).collect(Collectors.toSet());
     }
 
     private boolean isApplicationMessageFromTraversingPeer(final Object msg) {
