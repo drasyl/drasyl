@@ -26,6 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.NoopDiscardHandler;
 import org.drasyl.util.logging.Logger;
@@ -53,7 +54,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
         ctx.executor().scheduleAtFixedRate(() -> {
             for (final IdentityPublicKey peer : peers) {
                 final ByteBuf msg = ctx.alloc().buffer(Long.BYTES).writeLong(NoopDiscardHandler.MAGIC_NUMBER);
-                final OverlayAddressedMessage<ByteBuf> addressedMessage = new OverlayAddressedMessage<>(msg, peer);
+                final OverlayAddressedMessage<ByteBuf> addressedMessage = new OverlayAddressedMessage<>(msg, peer, (DrasylAddress) ctx.channel().localAddress());
 
                 /*
                 DrasylChannel channel = channelMap.get(peer);
@@ -65,7 +66,11 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
                     ctx.pipeline().fireChannelRead(channel);
                 }*/
 
-                ctx.pipeline().writeAndFlush(addressedMessage);
+                ctx.writeAndFlush(addressedMessage).addListener((f) -> {
+                    if(!f.isSuccess()) {
+                        LOG.error("ERRRORRRR!! ", f.cause());
+                    }
+                });
             }
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
     }
