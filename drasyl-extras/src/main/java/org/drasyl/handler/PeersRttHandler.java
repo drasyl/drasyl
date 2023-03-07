@@ -119,7 +119,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
 
             final PeerRtt peerRtt = new PeerRtt(PeerRtt.Role.SUPER, inetAddress, rtt);
             rtts.put(address, peerRtt);
-            LOG.debug("Got AddPathAndSuperPeerEvent: {}", peerRtt);
+            LOG.debug("Got AddPathAndSuperPeerEvent from `{}`: {}", address, peerRtt);
         }
         else if (evt instanceof AddPathEvent) {
             final DrasylAddress address = ((AddPathEvent) evt).getAddress();
@@ -129,7 +129,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             final PeerRtt peerRtt = new PeerRtt(PeerRtt.Role.DEFAULT, inetAddress, rtt);
             rtts.put(address, peerRtt);
 
-            LOG.debug("Got AddPathEvent: {}", peerRtt);
+            LOG.debug("Got AddPathEvent from `{}`: {}", address, peerRtt);
         }
         else if (evt instanceof PathRttEvent) {
             final DrasylAddress address = ((PathRttEvent) evt).getAddress();
@@ -140,7 +140,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
                 peerRtt.last(rtt);
             }
 
-            LOG.debug("Got PathRttEvent: {}", peerRtt);
+            LOG.debug("Got PathRttEvent from `{}`: {}", address, peerRtt);
         }
         else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemovePathEvent) {
             rtts.remove(((PathEvent) evt).getAddress());
@@ -303,6 +303,18 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         @JsonIgnore
         public double stDev() {
             return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
+        }
+
+        @Override
+        public String toString() {
+            return "PeerRtt{" +
+                    "role=" + role +
+                    ", inetAddress=" + inetAddress +
+                    ", sent=" + sent +
+                    ", last=" + last +
+                    ", best=" + best +
+                    ", worst=" + worst +
+                    '}';
         }
 
         public enum Role {
