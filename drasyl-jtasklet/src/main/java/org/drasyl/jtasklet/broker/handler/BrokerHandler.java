@@ -14,23 +14,8 @@ import org.drasyl.jtasklet.broker.BrokerLoggableRecord;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
-import org.drasyl.jtasklet.event.ConnectionClosed;
-import org.drasyl.jtasklet.event.ConnectionEvent;
-import org.drasyl.jtasklet.event.MessageReceived;
-import org.drasyl.jtasklet.event.NodeOffline;
-import org.drasyl.jtasklet.event.NodeOnline;
-import org.drasyl.jtasklet.event.TaskletEvent;
-import org.drasyl.jtasklet.message.ProviderReset;
-import org.drasyl.jtasklet.message.RegisterProvider;
-import org.drasyl.jtasklet.message.ResourceRequest;
-import org.drasyl.jtasklet.message.ResourceResponse;
-import org.drasyl.jtasklet.message.RttReport;
-import org.drasyl.jtasklet.message.TaskExecuted;
-import org.drasyl.jtasklet.message.TaskExecuting;
-import org.drasyl.jtasklet.message.TaskFailed;
-import org.drasyl.jtasklet.message.TaskOffloaded;
-import org.drasyl.jtasklet.message.TaskResultReceived;
-import org.drasyl.jtasklet.message.TaskletMessage;
+import org.drasyl.jtasklet.event.*;
+import org.drasyl.jtasklet.message.*;
 import org.drasyl.jtasklet.util.CsvLogger;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
@@ -38,14 +23,8 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
@@ -63,7 +42,6 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private final SchedulingStrategy schedulingStrategy;
     private final CsvLogger logger;
     private final Map<DrasylAddress, PeersRttReport> rttReports = new HashMap<>();
-    private BrokerLoggableRecord loggableRecord;
 
     public BrokerHandler(final PrintStream out,
                          final DrasylAddress address,
@@ -149,7 +127,7 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
         }
         else if (state == ONLINE && msg instanceof ResourceRequest) {
             LOG.info("Got resource request {} from Consumer {}.", msg, sender);
-            loggableRecord = new BrokerLoggableRecord(sender);
+            final BrokerLoggableRecord loggableRecord = new BrokerLoggableRecord(sender);
 
             LOG.info("Schedule request using {} strategy.", schedulingStrategy);
             final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender, ((ResourceRequest) msg).getTags(), ((ResourceRequest) msg).getPriority());
