@@ -6,16 +6,19 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
 public class CsvLogger {
     public static final long PID = ProcessHandle.current().pid();
+    private final ReentrantLock lock;
     private final FileWriter writer;
     private boolean headerWritten;
 
     public CsvLogger(final String fileName) {
         try {
+            lock = new ReentrantLock(true);
             headerWritten = new File(fileName).exists();
             writer = new FileWriter(fileName, true);
         }
@@ -25,6 +28,7 @@ public class CsvLogger {
     }
 
     public void log(final LoggableRecord loggableRecord) {
+        lock.lock();
         try {
             // header
             if (!headerWritten) {
@@ -53,6 +57,9 @@ public class CsvLogger {
         }
         catch (final IOException e) {
             throw new RuntimeException(e);
+        }
+        finally {
+            lock.unlock();
         }
     }
 

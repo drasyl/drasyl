@@ -115,7 +115,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 // offload task
                 consumer,
                 token,
-                String.join(",", tags),
+                String.join("/", tags),
                 minifySource(source),
                 Arrays.toString(input),
                 offloadTaskTime.toEpochMilli(),

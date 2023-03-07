@@ -71,7 +71,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
                 provider,
                 benchmark,
                 token,
-                String.join(",", tags),
+                String.join("/", tags),
                 priority,
                 assignResourceTime != null ? assignResourceTime.toEpochMilli() : -1,
                 assignResourceTime != null ? Duration.between(resourceRequestTime, assignResourceTime).toMillis() : -1,

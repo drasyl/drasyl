@@ -233,7 +233,7 @@ public class PersistentConsumerHandler extends ChannelInboundHandlerAdapter {
                 LOG.info("[{}] Request {} at Broker {} arrived!", state, request, broker);
                 taskRecord.resourceRequested(priority);
             }
-            else {
+            else if (state != CLOSED) {
                 state = CLOSED;
                 LOG.info("[{}] Failed to sent request {} to Broker {}. Shutdown Consumer.", state, request, broker, future.cause());
                 ctx.channel().pipeline().remove(this);
@@ -329,9 +329,11 @@ public class PersistentConsumerHandler extends ChannelInboundHandlerAdapter {
             final TaskFailed taskFailed = new TaskFailed(token);
             LOG.info("[{}] Provider {} has not provided results for our task {} within {}ms. Inform Broker {}.", state, provider, msg, OFFLOAD_TASK_TIMEOUT, taskFailed);
             brokerChannel.writeAndFlush(taskFailed).addListener((ChannelFutureListener) future -> {
-                state = CLOSED;
-                LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, broker, taskFailed);
-                ctx.channel().pipeline().remove(this);
+                if (state != CLOSED) {
+                    state = CLOSED;
+                    LOG.info("[{}] Broker {} informed. Shutdown Consumer.", state, broker, taskFailed);
+                    ctx.channel().pipeline().remove(this);
+                }
             });
         }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
     }
@@ -375,7 +377,7 @@ public class PersistentConsumerHandler extends ChannelInboundHandlerAdapter {
                 requestResource(ctx);
             });
         }
-        else {
+        else if (state != CLOSED) {
             state = CLOSED;
             LOG.info("[{}] Close connection to Broker {}.", state, broker);
 

@@ -132,7 +132,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 // resource responded
                 provider,
                 token,
-                String.join(",", tags),
+                String.join("/", tags),
                 priority,
                 resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
                 resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
