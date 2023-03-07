@@ -34,9 +34,12 @@ import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.EvictingQueue;
 import org.drasyl.util.internal.UnstableApi;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.time.Clock;
@@ -63,6 +66,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @UnstableApi
 public class PeersRttHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(PeersRttHandler.class);
     private final long emitEventInterval;
     private final Map<DrasylAddress, PeerRtt> rtts;
     private ScheduledFuture<?> scheduledFuture;
@@ -115,6 +119,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
 
             final PeerRtt peerRtt = new PeerRtt(PeerRtt.Role.SUPER, inetAddress, rtt);
             rtts.put(address, peerRtt);
+            LOG.debug("Got AddPathAndSuperPeerEvent: {}", peerRtt);
         }
         else if (evt instanceof AddPathEvent) {
             final DrasylAddress address = ((AddPathEvent) evt).getAddress();
@@ -123,6 +128,8 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
 
             final PeerRtt peerRtt = new PeerRtt(PeerRtt.Role.DEFAULT, inetAddress, rtt);
             rtts.put(address, peerRtt);
+
+            LOG.debug("Got AddPathEvent: {}", peerRtt);
         }
         else if (evt instanceof PathRttEvent) {
             final DrasylAddress address = ((PathRttEvent) evt).getAddress();
@@ -132,9 +139,13 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             if (peerRtt != null) {
                 peerRtt.last(rtt);
             }
+
+            LOG.debug("Got PathRttEvent: {}", peerRtt);
         }
         else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemovePathEvent) {
             rtts.remove(((PathEvent) evt).getAddress());
+
+            LOG.debug("Got RemovePathEvent for {}", ((PathEvent) evt).getAddress());
         }
 
         ctx.fireUserEventTriggered(evt);
