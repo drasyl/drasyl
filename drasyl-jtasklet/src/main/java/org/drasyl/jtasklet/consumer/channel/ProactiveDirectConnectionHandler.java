@@ -65,7 +65,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
                     ctx.pipeline().fireChannelRead(channel);
                 }*/
 
-                ctx.writeAndFlush(addressedMessage);
+                ctx.pipeline().writeAndFlush(addressedMessage);
             }
         }, 0, PERIOD, TimeUnit.MILLISECONDS);
     }

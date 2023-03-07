@@ -55,7 +55,7 @@ public class ConsumerJsonRpcChannelInitializer extends AbstractChannelInitialize
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
-        ch.pipeline().addFirst(new ProactiveDirectConnectionHandler(peers));
+        ch.pipeline().addLast(new ProactiveDirectConnectionHandler(peers));
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
     }
 }
