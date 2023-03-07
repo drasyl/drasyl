@@ -68,7 +68,7 @@ public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapt
 
                 ctx.writeAndFlush(addressedMessage).addListener((f) -> {
                     if(!f.isSuccess()) {
-                        LOG.error("ERRRORRRR!! ", f.cause());
+                        LOG.trace("ERRRORRRR!! ", f.cause());
                     }
                 });
             }
