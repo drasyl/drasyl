@@ -3,8 +3,6 @@ package org.drasyl.jtasklet.consumer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.jtasklet.LoggableRecord;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,17 +13,17 @@ public class ConsumerLoggableRecord implements LoggableRecord {
     private final DrasylAddress broker;
     private final String source;
     private final Object[] input;
-    private final Instant resourceRequestTime;
-    private Instant resourceRequestedTime;
+    private final long resourceRequestTime;
+    private long resourceRequestedTime;
     private DrasylAddress provider;
     private String token;
     private List<String> tags;
-    private Instant resourceRespondedTime;
-    private Instant offloadTaskTime;
-    private Instant offloadedTaskTime;
+    private long resourceRespondedTime;
+    private long offloadTaskTime;
+    private long offloadedTaskTime;
     private Object[] output;
     private long executionTime;
-    private Instant resultReturnedTime;
+    private long resultReturnedTime;
     private int priority;
 
     public ConsumerLoggableRecord(final DrasylAddress consumer,
@@ -36,7 +34,11 @@ public class ConsumerLoggableRecord implements LoggableRecord {
         this.broker = broker;
         this.source = source;
         this.input = input;
-        resourceRequestTime = Instant.now();
+        this.resourceRequestTime = System.nanoTime();
+        this.resourceRequestedTime = -1;
+        this.offloadTaskTime = -1;
+        this.offloadedTaskTime = -1;
+        this.resultReturnedTime = -1;
     }
 
     @Override
@@ -62,7 +64,7 @@ public class ConsumerLoggableRecord implements LoggableRecord {
     }
 
     public void resourceRequested(final int priority) {
-        this.resourceRequestedTime = Instant.now();
+        this.resourceRequestedTime = System.nanoTime();
         this.priority = priority;
     }
 
@@ -72,21 +74,21 @@ public class ConsumerLoggableRecord implements LoggableRecord {
         this.provider = provider;
         this.token = token;
         this.tags = tags;
-        resourceRespondedTime = Instant.now();
+        resourceRespondedTime = System.nanoTime();
     }
 
     public void offloadTask() {
-        offloadTaskTime = Instant.now();
+        offloadTaskTime = System.nanoTime();
     }
 
     public void offloadedTask() {
-        offloadedTaskTime = Instant.now();
+        offloadedTaskTime = System.nanoTime();
     }
 
     public void resultReturned(final Object[] output, final long executionTime) {
         this.output = output;
         this.executionTime = executionTime;
-        resultReturnedTime = Instant.now();
+        resultReturnedTime = System.nanoTime();
     }
 
     @Override
@@ -125,27 +127,27 @@ public class ConsumerLoggableRecord implements LoggableRecord {
                 minifySource(source),
                 Arrays.toString(input),
                 // resource request
-                resourceRequestTime != null ? resourceRequestTime.toEpochMilli() : -1,
+                resourceRequestTime != -1 ? Math.floorDiv(resourceRequestTime, 1000) : -1,
                 0,
-                resourceRequestedTime != null ? resourceRequestedTime.toEpochMilli() : -1,
-                resourceRequestedTime != null ? Duration.between(resourceRequestTime, resourceRequestedTime).toMillis() : -1,
+                resourceRequestedTime != -1 ? Math.floorDiv(resourceRequestedTime, 1000) : -1,
+                resourceRequestedTime != -1 ? Math.floorDiv((resourceRequestedTime - resourceRequestTime), 1000) : -1,
                 // resource responded
                 provider,
                 token,
                 String.join("/", tags),
                 priority,
-                resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
-                resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
+                resourceRespondedTime != -1 ? Math.floorDiv(resourceRespondedTime, 1000) : -1,
+                resourceRespondedTime != -1 ? Math.floorDiv((resourceRespondedTime - resourceRequestTime), 1000) : -1,
                 // offload task
-                offloadTaskTime != null ? offloadTaskTime.toEpochMilli() : -1,
-                offloadTaskTime != null ? Duration.between(resourceRequestTime, offloadTaskTime).toMillis() : -1,
-                offloadedTaskTime != null ? offloadedTaskTime.toEpochMilli() : -1,
-                offloadedTaskTime != null ? Duration.between(resourceRequestTime, offloadedTaskTime).toMillis() : -1,
+                offloadTaskTime != -1 ? Math.floorDiv(offloadTaskTime, 1000) : -1,
+                offloadTaskTime != -1 ? Math.floorDiv((offloadTaskTime - resourceRequestTime), 1000) : -1,
+                offloadedTaskTime != -1 ? Math.floorDiv(offloadedTaskTime, 1000) : -1,
+                offloadedTaskTime != -1 ? Math.floorDiv((offloadedTaskTime - resourceRequestTime), 1000) : -1,
                 // return result
                 output != null ? Arrays.toString(output) : "",
                 executionTime,
-                resultReturnedTime != null ? resultReturnedTime.toEpochMilli() : -1,
-                resultReturnedTime != null ? Duration.between(resourceRequestTime, resultReturnedTime).toMillis() : -1
+                resultReturnedTime != -1 ? Math.floorDiv(resultReturnedTime, 1000) : -1,
+                resultReturnedTime != -1 ? Math.floorDiv((resultReturnedTime - resourceRequestTime), 1000) : -1
         };
     }
 }

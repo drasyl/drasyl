@@ -7,13 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.ASSIGNED;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.DONE;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTED;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.EXECUTING;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.FAILED;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.OFFLOADED;
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.*;
 
 public class ResourceProvider {
     private final long benchmark;
@@ -31,13 +25,13 @@ public class ResourceProvider {
         this.token = requireNonNull(token);
         this.tags = requireNonNull(tags);
         this.providerState = READY;
-        this.stateTime = System.currentTimeMillis();
+        this.stateTime = System.nanoTime();
     }
 
     public boolean taskAssigned(final DrasylAddress assignedTo) {
         if (providerState == READY) {
             this.providerState = ASSIGNED;
-            this.stateTime = System.currentTimeMillis();
+            this.stateTime = System.nanoTime();
             this.assignedTo = requireNonNull(assignedTo);
             return true;
         }
@@ -47,7 +41,7 @@ public class ResourceProvider {
     public boolean taskOffloaded() {
         if (providerState == ASSIGNED) {
             this.providerState = OFFLOADED;
-            this.stateTime = System.currentTimeMillis();
+            this.stateTime = System.nanoTime();
             return true;
         }
         return false;
@@ -58,7 +52,7 @@ public class ResourceProvider {
             case ASSIGNED:
             case OFFLOADED:
                 this.providerState = EXECUTING;
-                this.stateTime = System.currentTimeMillis();
+                this.stateTime = System.nanoTime();
                 return true;
 
             default:
@@ -72,7 +66,7 @@ public class ResourceProvider {
             case OFFLOADED:
             case EXECUTING:
                 this.providerState = EXECUTED;
-                this.stateTime = System.currentTimeMillis();
+                this.stateTime = System.nanoTime();
                 this.nextToken = nextToken;
                 return true;
 
@@ -80,7 +74,7 @@ public class ResourceProvider {
                 this.providerState = READY;
                 this.token = nextToken;
                 this.nextToken = null;
-                this.stateTime = System.currentTimeMillis();
+                this.stateTime = System.nanoTime();
                 this.assignedTo = null;
                 return true;
 
@@ -102,7 +96,7 @@ public class ResourceProvider {
         else {
             this.providerState = DONE;
         }
-        this.stateTime = System.currentTimeMillis();
+        this.stateTime = System.nanoTime();
         this.succeededTasks++;
         return true;
     }
@@ -117,13 +111,13 @@ public class ResourceProvider {
                 this.token = nextToken;
                 this.nextToken = null;
                 this.assignedTo = null;
-                this.stateTime = System.currentTimeMillis();
+                this.stateTime = System.nanoTime();
                 this.failedTasks++;
                 return true;
 
             default:
                 this.providerState = FAILED;
-                this.stateTime = System.currentTimeMillis();
+                this.stateTime = System.nanoTime();
                 this.failedTasks++;
                 return true;
         }
@@ -131,7 +125,7 @@ public class ResourceProvider {
 
     public void providerReset(final String newToken) {
         this.providerState = READY;
-        this.stateTime = System.currentTimeMillis();
+        this.stateTime = System.nanoTime();
         this.failedTasks++;
         this.token = newToken;
         this.assignedTo = null;
@@ -167,7 +161,7 @@ public class ResourceProvider {
     }
 
     public long timeSinceLastStateChange() {
-        return System.currentTimeMillis() - stateTime;
+        return Math.floorDiv((System.nanoTime() - stateTime), 1000);
     }
 
     public long benchmark() {

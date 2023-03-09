@@ -25,8 +25,6 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Value;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -51,10 +49,10 @@ public class GraalVmJsRuntimeEnvironment extends AbstractRuntimeEnvironment {
     public ExecutionResult execute(final CharSequence source, final Object... input) {
         try (final Context context = contextBuilder.build()) {
             final Value function = context.eval(LANGUAGE, source);
-            final Instant start = Instant.now();
+            final long start = System.nanoTime();
             final Value output = function.execute(input);
-            final Instant end = Instant.now();
-            return new ExecutionResult(output.isNull() ? new Object[0] : output.as(Object[].class), Duration.between(start, end).toMillis());
+            final long end = System.nanoTime();
+            return new ExecutionResult(output.isNull() ? new Object[0] : output.as(Object[].class), Math.floorDiv((end - start), 1000));
         }
     }
 }

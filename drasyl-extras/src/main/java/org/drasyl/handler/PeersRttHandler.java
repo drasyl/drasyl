@@ -28,13 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.PathEvent;
-import org.drasyl.handler.discovery.PathRttEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
-import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
+import org.drasyl.handler.discovery.*;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.EvictingQueue;
 import org.drasyl.util.internal.UnstableApi;
@@ -42,8 +36,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -170,7 +164,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
         }
 
         public PeersRttReport(final Map<DrasylAddress, PeerRtt> peers) {
-            this(System.currentTimeMillis(), peers);
+            this(System.nanoTime(), peers);
         }
 
         public Map<DrasylAddress, PeerRtt> peers() {
@@ -182,7 +176,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             final StringBuilder builder = new StringBuilder();
 
             // table header
-            final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), Clock.systemDefaultZone().getZone());
+            final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(Math.floorDiv(time, 1000L)), ZoneId.systemDefault());
             builder.append(String.format("Time: %-35s%98s%n", RFC_1123_DATE_TIME.format(zonedDateTime), "RTTs"));
             builder.append(String.format("%-64s  %4s  %-45s  %4s  %4s  %4s  %4s  %4s  %5s%n", "Peer", "Role", "Inet Address", "Snt", "Last", " Avg", "Best", "Wrst", "StDev"));
 

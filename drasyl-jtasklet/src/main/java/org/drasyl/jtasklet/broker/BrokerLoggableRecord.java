@@ -3,26 +3,26 @@ package org.drasyl.jtasklet.broker;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.jtasklet.LoggableRecord;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
 public class BrokerLoggableRecord implements LoggableRecord {
     private final DrasylAddress consumer;
-    private final Instant resourceRequestTime;
+    private final long resourceRequestTime;
     private DrasylAddress provider;
     private long benchmark;
     private String token;
     private List<String> tags;
-    private Instant assignResourceTime;
-    private Instant resourceRespondedTime;
+    private long assignResourceTime;
+    private long resourceRespondedTime;
     private int priority;
 
     public BrokerLoggableRecord(final DrasylAddress consumer) {
         this.consumer = requireNonNull(consumer);
-        this.resourceRequestTime = Instant.now();
+        this.resourceRequestTime = System.nanoTime();
+        this.assignResourceTime = -1;
+        this.resourceRespondedTime = -1;
     }
 
     public void assignResource(final DrasylAddress provider,
@@ -35,11 +35,11 @@ public class BrokerLoggableRecord implements LoggableRecord {
         this.token = token;
         this.tags = tags;
         this.priority = priority;
-        this.assignResourceTime = Instant.now();
+        this.assignResourceTime = System.nanoTime();
     }
 
     public void resourceResponded() {
-        this.resourceRespondedTime = Instant.now();
+        this.resourceRespondedTime = System.nanoTime();
     }
 
     @Override
@@ -65,7 +65,7 @@ public class BrokerLoggableRecord implements LoggableRecord {
         return new Object[]{
                 // resource request
                 consumer,
-                resourceRequestTime.toEpochMilli(),
+                Math.floorDiv(resourceRequestTime, 1000),
                 0,
                 // assign resource
                 provider,
@@ -73,11 +73,11 @@ public class BrokerLoggableRecord implements LoggableRecord {
                 token,
                 String.join("/", tags),
                 priority,
-                assignResourceTime != null ? assignResourceTime.toEpochMilli() : -1,
-                assignResourceTime != null ? Duration.between(resourceRequestTime, assignResourceTime).toMillis() : -1,
+                assignResourceTime != -1 ? Math.floorDiv(assignResourceTime, 1000) : -1,
+                assignResourceTime != -1 ? Math.floorDiv((assignResourceTime-resourceRequestTime), 1000) : -1,
                 // resource responded
-                resourceRespondedTime != null ? resourceRespondedTime.toEpochMilli() : -1,
-                resourceRespondedTime != null ? Duration.between(resourceRequestTime, resourceRespondedTime).toMillis() : -1,
+                resourceRespondedTime != -1 ? Math.floorDiv(resourceRespondedTime, 1000) : -1,
+                resourceRespondedTime != -1 ? Math.floorDiv((resourceRespondedTime-resourceRequestTime), 1000) : -1,
                 };
     }
 }
