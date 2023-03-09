@@ -159,13 +159,13 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
     }
 
     public static class PeersRttReport {
-        private final long time;
+        private final ZonedDateTime time;
         private final Map<DrasylAddress, PeerRtt> peers;
 
         @JsonCreator
         public PeersRttReport(@JsonProperty("time") final long time,
                               @JsonProperty("peers") final Map<DrasylAddress, PeerRtt> peers) {
-            this.time = requireNonNegative(time);
+            this.time = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), Clock.systemDefaultZone().getZone());
             this.peers = requireNonNull(peers);
         }
 
@@ -182,8 +182,7 @@ public class PeersRttHandler extends ChannelInboundHandlerAdapter {
             final StringBuilder builder = new StringBuilder();
 
             // table header
-            final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), Clock.systemDefaultZone().getZone());
-            builder.append(String.format("Time: %-35s%98s%n", RFC_1123_DATE_TIME.format(zonedDateTime), "RTTs"));
+            builder.append(String.format("Time: %-35s%98s%n", RFC_1123_DATE_TIME.format(time), "RTTs"));
             builder.append(String.format("%-64s  %4s  %-45s  %4s  %4s  %4s  %4s  %4s  %5s%n", "Peer", "Role", "Inet Address", "Snt", "Last", " Avg", "Best", "Wrst", "StDev"));
 
             // table body
