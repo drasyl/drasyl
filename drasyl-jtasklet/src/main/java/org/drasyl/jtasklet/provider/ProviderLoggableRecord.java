@@ -18,13 +18,13 @@ public class ProviderLoggableRecord implements LoggableRecord {
     private final String token;
     private final String source;
     private final Object[] input;
-    private final long offloadTaskTime;
-    private long executingTime;
+    private final Instant offloadTaskTime;
+    private Instant executingTime;
     private Object[] output;
     private final List<String> tags;
     private long executionTime;
-    private long executedTime;
-    private long returnedResult;
+    private Instant executedTime;
+    private Instant returnedResult;
 
     public ProviderLoggableRecord(final DrasylAddress provider,
                                   final DrasylAddress broker,
@@ -42,10 +42,7 @@ public class ProviderLoggableRecord implements LoggableRecord {
         this.source = source;
         this.input = input;
         this.tags = tags;
-        this.offloadTaskTime = System.nanoTime();
-        this.executingTime = -1;
-        this.executedTime = -1;
-        this.returnedResult = -1;
+        offloadTaskTime = Instant.now();
     }
 
     @Override
@@ -69,17 +66,17 @@ public class ProviderLoggableRecord implements LoggableRecord {
     }
 
     public void executing() {
-        executingTime = System.nanoTime();
+        executingTime = Instant.now();
     }
 
     public void executed(final Object[] output, final long executionTime) {
         this.output = output;
         this.executionTime = executionTime;
-        executedTime = System.nanoTime();
+        executedTime = Instant.now();
     }
 
     public void returnedResult() {
-        returnedResult = System.nanoTime();
+        returnedResult = Instant.now();
     }
 
     @Override
@@ -121,17 +118,17 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 String.join("/", tags),
                 minifySource(source),
                 Arrays.toString(input),
-                Math.floorDiv(offloadTaskTime, 1000),
+                offloadTaskTime.toEpochMilli(),
                 0,
                 // execute task
-                executingTime != -1 ? Math.floorDiv(executingTime, 1000) : -1,
-                executingTime != -1 ? Math.floorDiv((executingTime-offloadTaskTime), 1000) : -1,
+                executingTime != null ? executingTime.toEpochMilli() : -1,
+                executingTime != null ? Duration.between(offloadTaskTime, executingTime).toMillis() : -1,
                 output != null ? Arrays.toString(output) : "",
                 executionTime,
-                executedTime != -1 ? Math.floorDiv(executedTime, 1000) : -1,
-                executedTime != -1 ? Math.floorDiv((executedTime-offloadTaskTime), 1000) : -1,
-                returnedResult != -1 ? Math.floorDiv(returnedResult, 1000) : -1,
-                returnedResult != -1 ? Math.floorDiv((returnedResult-offloadTaskTime), 1000) : -1
+                executedTime != null ? executedTime.toEpochMilli() : -1,
+                executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1,
+                returnedResult != null ? returnedResult.toEpochMilli() : -1,
+                returnedResult != null ? Duration.between(offloadTaskTime, returnedResult).toMillis() : -1
         };
     }
 }
