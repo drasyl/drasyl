@@ -185,6 +185,6 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
-        ch.pipeline().replace(InternetDiscoveryChildrenHandler.class, null, new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, pingCommunicationTimeoutMillis, maxPeers));
+        ch.pipeline().replace(InternetDiscoveryChildrenHandler.class, "TraversingInternetDiscoveryChildrenHandler", new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, pingCommunicationTimeoutMillis, maxPeers));
     }
 }

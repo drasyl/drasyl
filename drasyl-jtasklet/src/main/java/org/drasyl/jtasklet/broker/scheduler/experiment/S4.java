@@ -27,8 +27,12 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 /**
  * Real-Time Tasks: @IKUM/@local > @Home (drasyl-enabled) > @Cloud
@@ -46,6 +50,21 @@ public class S4 implements SchedulingStrategy {
                                                           final DrasylAddress consumer,
                                                           final List<String> tags,
                                                           final int priority) {
-        return new S3().schedule(providers, rttReports, consumer, tags, priority);
+        // check if this is a low priority task, then do cloud scheduling
+        if (priority == 0) {
+            final List<Map.Entry<DrasylAddress, ResourceProvider>> availableVms = providers.entrySet().stream()
+                    .filter(e -> e.getValue().state() == READY && !Collections.disjoint(tags, e.getValue().tags()))
+                    .collect(Collectors.toList());
+
+            if (!availableVms.isEmpty()) {
+                final Map.Entry<DrasylAddress, ResourceProvider> bestVm = availableVms.get(0);
+                return Pair.of(bestVm.getKey(), bestVm.getValue());
+            }
+
+            return Pair.of(null, null);
+        }
+
+        // otherwise sort providers by the given consumer tag priority list
+        return S2.scheduleByTagPriority(providers, rttReports, consumer, tags, priority);
     }
 }

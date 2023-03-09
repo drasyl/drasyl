@@ -208,13 +208,15 @@ public class JsonRpc2OffloadHandler extends JsonRpc2RequestHandler {
         final Map<String, String> superPeers = request.getParam("superPeers");
         final boolean protocolArmDisabled = request.getParam("protocolArmDisabled", false);
 
+        /*
         if (relayOnly) {
             return new RelayOnlyConsumerJsonRpcChannelInitializer(identity.get(), group, bindAddress, networkId, onlineTimeoutMillis, parsePeersMap(superPeers), !protocolArmDisabled);
         }
+        */
 
         final List<String> peers = request.getParam("peers");
 
-        return new ConsumerJsonRpcChannelInitializer(identity.get(), group, bindAddress, networkId, onlineTimeoutMillis, parsePeersMap(superPeers), !protocolArmDisabled, parsePeersList(peers));
+        return new ConsumerJsonRpcChannelInitializer(identity.get(), group, bindAddress, networkId, onlineTimeoutMillis, parsePeersMap(superPeers), !protocolArmDisabled, parsePeersList(peers), relayOnly);
     }
 
     protected ChannelHandler getChildHandler() {

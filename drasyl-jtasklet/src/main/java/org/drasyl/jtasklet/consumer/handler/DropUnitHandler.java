@@ -19,44 +19,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.jtasklet.consumer.channel;
+package org.drasyl.jtasklet.consumer.handler;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.identity.DrasylAddress;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.jtasklet.channel.NoopDiscardHandler;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-public class ProactiveDirectConnectionHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(ProactiveDirectConnectionHandler.class);
-    private static final long PERIOD = 1_000L;
+public class DropUnitHandler extends ChannelInboundHandlerAdapter {
     private final List<IdentityPublicKey> peers;
 
-    public ProactiveDirectConnectionHandler(final List<IdentityPublicKey> peers) {
+    public DropUnitHandler(final List<IdentityPublicKey> peers) {
         this.peers = peers;
     }
 
+    @SuppressWarnings({ "java:S1067", "SuspiciousMethodCalls" })
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelActive();
-        ctx.executor().scheduleAtFixedRate(() -> {
-            for (final IdentityPublicKey peer : peers) {
-                final ByteBuf msg = ctx.alloc().buffer(Long.BYTES).writeLong(NoopDiscardHandler.MAGIC_NUMBER);
-                final OverlayAddressedMessage<ByteBuf> addressedMessage = new OverlayAddressedMessage<>(msg, peer, (DrasylAddress) ctx.channel().localAddress());
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        if (msg instanceof InetAddressedMessage) {
+            if (((InetAddressedMessage<?>) msg).content() instanceof UniteMessage) {
+                final UniteMessage uniteMessage = (UniteMessage) ((InetAddressedMessage<?>) msg).content();
 
-                ctx.writeAndFlush(addressedMessage).addListener((f) -> {
-                    if (!f.isSuccess()) {
-                        LOG.trace("ERRRORRRR!! ", f.cause());
-                    }
-                });
+                if (!peers.contains(uniteMessage.getAddress())) {
+                    ((InetAddressedMessage<?>) msg).release();
+                    return;
+                }
             }
-        }, 0, PERIOD, TimeUnit.MILLISECONDS);
+        }
+
+        ctx.fireChannelRead(msg);
     }
 }

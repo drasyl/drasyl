@@ -14,6 +14,7 @@ import org.drasyl.jtasklet.broker.scheduler.experiment.S1;
 import org.drasyl.jtasklet.broker.scheduler.experiment.S2;
 import org.drasyl.jtasklet.broker.scheduler.experiment.S3;
 import org.drasyl.jtasklet.broker.scheduler.experiment.S4;
+import org.drasyl.jtasklet.broker.scheduler.experiment.S5;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
@@ -70,7 +71,8 @@ public class BrokerCommand extends ChannelOptions {
         s1(new S1()),
         s2(new S2()),
         s3(new S3()),
-        s4(new S4());
+        s4(new S4()),
+        s5(new S5());
         private final SchedulingStrategy schedulingStrategy;
 
         SchedulingStrategyType(final SchedulingStrategy schedulingStrategy) {

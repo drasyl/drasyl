@@ -28,6 +28,7 @@ import org.drasyl.handler.PeersRttHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.consumer.channel.ProactiveDirectConnectionHandler;
+import org.drasyl.jtasklet.consumer.handler.DropUnitHandler;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -37,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 
 public class ConsumerJsonRpcChannelInitializer extends AbstractChannelInitializer {
     private final List<IdentityPublicKey> peers;
+    private final boolean relayOnly;
 
     @SuppressWarnings("java:S107")
     public ConsumerJsonRpcChannelInitializer(final Identity identity,
@@ -46,15 +48,20 @@ public class ConsumerJsonRpcChannelInitializer extends AbstractChannelInitialize
                                              final long onlineTimeoutMillis,
                                              final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                              final boolean protocolArmEnabled,
-                                             final List<IdentityPublicKey> peers) {
+                                             final List<IdentityPublicKey> peers,
+                                             final boolean relayOnly) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.peers = requireNonNull(peers);
+        this.relayOnly = relayOnly;
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
+        if (relayOnly) {
+            ch.pipeline().addBefore("TraversingInternetDiscoveryChildrenHandler", null, new DropUnitHandler(peers));
+        }
         ch.pipeline().addLast(new ProactiveDirectConnectionHandler(peers));
         ch.pipeline().addLast(new PeersRttHandler(2_500L));
     }

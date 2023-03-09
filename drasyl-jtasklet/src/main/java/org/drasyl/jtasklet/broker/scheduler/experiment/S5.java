@@ -27,21 +27,17 @@ import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.util.Pair;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.drasyl.jtasklet.broker.ResourceProvider.ProviderState.READY;
 
 /**
  * Real-Time Tasks: @IKUM/@local > @Home > @Cloud
- * Low-Prio Tasks: random
+ * Low-Prio Tasks: @Cloud
  */
-public class S3 implements SchedulingStrategy {
+public class S5 implements SchedulingStrategy {
     @Override
     public String toString() {
-        return "S3{}";
+        return "S5{}";
     }
 
     @Override
@@ -50,6 +46,6 @@ public class S3 implements SchedulingStrategy {
                                                           final DrasylAddress consumer,
                                                           final List<String> tags,
                                                           final int priority) {
-        return new S2().schedule(providers, rttReports, consumer, tags, priority);
+        return new S4().schedule(providers, rttReports, consumer, tags, priority);
     }
 }
