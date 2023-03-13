@@ -63,8 +63,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -92,7 +92,7 @@ class TcpServerTest {
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
-            when(bootstrap.group(any()).channel(any()).childHandler(any()).bind(any(InetAddress.class), anyInt()).addListener(any())).then(invocation -> {
+            when(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()).bind(bindHost, bindPort).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -102,7 +102,7 @@ class TcpServerTest {
             final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                verify(bootstrap.group(any()).channel(any()).childHandler(any())).bind(any(InetAddress.class), anyInt());
+                verify(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()), times(2)).bind(bindHost, bindPort);
             }
             finally {
                 channel.close();
