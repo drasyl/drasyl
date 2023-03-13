@@ -82,17 +82,17 @@ public class ProviderLoggableRecord implements LoggableRecord {
     @Override
     public String[] logTitles() {
         return new String[]{
-                "provider",
-                "broker",
-                "benchmark",
+                "provider", // our identity
+                "broker", // the broker we're connected to
+                "benchmark", // our benchmark result
                 // offload task
-                "consumer",
-                "token",
-                "tags",
-                "source",
-                "input",
-                "offloadTaskTime",
-                "offloadTaskTimeDelta",
+                "consumer", // the consumer we provide our resources
+                "token", // unique task token
+                "tags", // task tags
+                "source", // task's sourcecode
+                "input", // task's input parameters
+                "offloadTaskTime", // timestamp we got task from consumer
+                "offloadTaskTimeDelta", // relative time, always 0, lol
                 // execute task
                 "executingTime",
                 "executingTimeDelta",
@@ -119,16 +119,16 @@ public class ProviderLoggableRecord implements LoggableRecord {
                 minifySource(source),
                 Arrays.toString(input),
                 offloadTaskTime.toEpochMilli(),
-                0,
+                0, // offloadTaskTimeDelta
                 // execute task
                 executingTime != null ? executingTime.toEpochMilli() : -1,
-                executingTime != null ? Duration.between(offloadTaskTime, executingTime).toMillis() : -1,
+                executingTime != null ? Duration.between(offloadTaskTime, executingTime).toMillis() : -1, // executingTimeDelta
                 output != null ? Arrays.toString(output) : "",
                 executionTime,
                 executedTime != null ? executedTime.toEpochMilli() : -1,
-                executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1,
+                executedTime != null ? Duration.between(offloadTaskTime, executedTime).toMillis() : -1, // executedTimeDelta
                 returnedResult != null ? returnedResult.toEpochMilli() : -1,
-                returnedResult != null ? Duration.between(offloadTaskTime, returnedResult).toMillis() : -1
+                returnedResult != null ? Duration.between(offloadTaskTime, returnedResult).toMillis() : -1 // returnedResultDelta
         };
     }
 }
