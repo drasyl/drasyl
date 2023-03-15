@@ -2411,7 +2411,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
      * Timeouts
      */
 
-    void startUserTime(final ChannelHandlerContext ctx) {
+    void startUserTimer(final ChannelHandlerContext ctx) {
         assert userTimer == null;
 
         LOG.trace("{}[{}] USER timer created: Timeout {}ms.", ctx.channel(), state, config.userTimeout().toMillis());

@@ -71,7 +71,7 @@ public class RetransmissionQueue {
         final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
         if (tcb.config().userTimeout().toMillis() > 0) {
             handler.cancelUserTimer(ctx);
-            handler.startUserTime(ctx);
+            handler.startUserTimer(ctx);
         }
 
         // RFC 6298: (5.1) Every time a packet containing data is sent (including a retransmission),
@@ -127,7 +127,7 @@ public class RetransmissionQueue {
             }
             else {
                 handler.cancelUserTimer(ctx);
-                handler.startUserTime(ctx);
+                handler.startUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
                 // RFC 6298:       (for the current value of RTO).
