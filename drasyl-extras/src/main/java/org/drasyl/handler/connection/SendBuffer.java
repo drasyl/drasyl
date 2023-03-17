@@ -133,6 +133,9 @@ public class SendBuffer {
         pushMark = readableBytes();
     }
 
+    /**
+     * FIXME: doPush parameter ist sehr hässlich gelöst
+     */
     public final ByteBuf read(final ByteBufAllocator alloc, int bytes, final AtomicBoolean doPush) {
         ByteBuf toReturn = null;
         while (bytes > 0 && readMark != null && readMark.hasRemainingBytes()) {

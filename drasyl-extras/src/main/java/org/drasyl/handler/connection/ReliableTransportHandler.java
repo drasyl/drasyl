@@ -40,6 +40,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Boolean.FALSE;
 import static java.util.Objects.requireNonNull;
@@ -70,7 +71,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
 
@@ -131,6 +131,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     ScheduledFuture<?> userTimer;
     ScheduledFuture<?> retransmissionTimer;
     ScheduledFuture<?> timeWaitTimer;
+    ScheduledFuture<?> zeroWindowProber;
     private ChannelPromise establishedPromise;
     private ChannelPromise closedPromise;
     private boolean readPending;
@@ -2310,6 +2311,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.bla_sndWl1(seg.seq());
                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
                 tcb.bla_sndWl2(seg.ack());
+
+                if (tcb.sndWnd() == 0) {
+                    startZeroWindowProbing(ctx);
+                }
+                else {
+                    cancelZeroWindowProbing(ctx);
+                }
             }
         }
 
@@ -2426,7 +2434,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
-        LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
+        LOG.error("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
         final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
         tcb.sendBuffer().fail(cause);
@@ -2564,6 +2572,33 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             timeWaitTimer.cancel(false);
             timeWaitTimer = null;
             LOG.trace("{}[{}] TIME-WAIT timer cancelled.", ctx.channel(), state);
+        }
+    }
+
+    private void startZeroWindowProbing(final ChannelHandlerContext ctx) {
+        if (zeroWindowProber == null && tcb.sendBuffer().readableBytes() > 0) {
+            // RFC 9293: The transmitting host SHOULD send the first zero-window probe when a zero
+            // RFC 9293: window has existed for the retransmission timeout period (SHLD-29)
+            // RFC 9293: (Section 3.8.1), and SHOULD increase exponentially the interval between
+            // RFC 9293: successive probes (SHLD-30).
+            final long rto = tcb.rto();
+            LOG.trace("{}[{}] Zero-window probing timer created: Timeout {}ms.", ctx.channel(), state, rto);
+            zeroWindowProber = ctx.executor().schedule(() -> {
+                zeroWindowProber = null;
+
+                LOG.error("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
+                final ByteBuf data = tcb.sendBuffer().read(1, new AtomicBoolean());
+                final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK, data);
+                tcb.sendAndFlush(ctx, segment);
+            }, rto, MILLISECONDS);
+        }
+    }
+
+    private void cancelZeroWindowProbing(final ChannelHandlerContext ctx) {
+        if (zeroWindowProber != null) {
+            zeroWindowProber.cancel(false);
+            zeroWindowProber = null;
+            LOG.trace("{}[{}] Zero-window probing timer cancelled.", ctx.channel(), state);
         }
     }
 }

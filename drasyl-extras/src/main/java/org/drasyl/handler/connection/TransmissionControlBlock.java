@@ -75,6 +75,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *         3 - future sequence numbers which are not yet allowed
  * </pre>
  */
+@SuppressWarnings("java:S125")
 public class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     static final int DRASYL_HDR_SIZE = 20 + 8 + 169; // FIXME: ergibt 1432: wie setzt sich der overhead zusammen?
@@ -457,18 +458,8 @@ public class TransmissionControlBlock {
                     }
                 }
 
-                // FIXME: Zero-Window Probing https://www.rfc-editor.org/rfc/rfc9293.html#zwp
-
-                // at least one byte is required for Zero-Window Probing
-                final long usableWindow;
-//                if (sndWnd() == 0 && flightSize() == 0) {
-//                    // zero window probing
-//                    usableWindow = 1;
-//                }
-//                else {
                 final long window = min(sndWnd(), cwnd());
-                usableWindow = max(0, window - flightSize());
-//                }
+                final long usableWindow = max(0, window - flightSize());
 
                 final long remainingBytes = min(sendMss() - SEG_HDR_SIZE, usableWindow, sendBuffer.readableBytes(), readableBytes);
                 if (remainingBytes > 0) {
