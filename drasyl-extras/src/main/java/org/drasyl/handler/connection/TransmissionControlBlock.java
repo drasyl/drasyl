@@ -101,6 +101,12 @@ public class TransmissionControlBlock {
     private long sndUna;
     // RFC 9293: SND.NXT = next sequence number to be sent
     private long sndNxt;
+    // RFC 9293: SND.WND = send window
+    private long sndWnd;
+    // RFC 9293: SND.WL1 = segment sequence number used for last window update
+    private long sndWl1;
+    // RFC 9293: SND.WL2 = segment acknowledgment number used for last window update
+    private long sndWl2;
     // RFC 9293: initial send sequence number
     private long iss;
 
@@ -110,19 +116,13 @@ public class TransmissionControlBlock {
     private long rcvNxt;
     // RFC 9293: receive window
     private int rcvWnd;
-    // RFC 9293: SND.WND = send window
-    private long sndWnd;
-    // RFC 9293: SND.WL1 = segment sequence number used for last window update
-    private long sndWl1;
-    // RFC 9293: SND.WL2 = segment acknowledgment number used for last window update
-    private long sndWl2;
     // RFC 9293: IRS = initial receive sequence number
     private long irs;
+
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     // The size does not include the TCP/IP headers and options.
     private int sendMss = DEFAULT_SEND_MSS;
-
     // RFC 9293: Silly Window Syndrome Avoidance
     // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
     // RFC 9293: as an estimate of RCV.BUFF
