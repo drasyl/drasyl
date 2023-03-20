@@ -2268,12 +2268,50 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             if (tcb.doSlowStart()) {
                 // RFC 5681: During slow start, a TCP increments cwnd by at most SMSS bytes for
                 // RFC 5681: each ACK received that cumulatively acknowledges new data.
-                final long increment = min(tcb.smss(), ackedBytes);
+                // RFC 5681: While traditionally TCP implementations have increased cwnd by
+                // RFC 5681: precisely SMSS bytes upon receipt of an ACK covering new data, we
+                // RFC 5681: RECOMMEND that TCP implementations increase cwnd, per:
+                // RFC 5681:
+                // RFC 5681:    cwnd += min (N, SMSS)                      (2)
+                // RFC 5681:
+                // RFC 5681: where N is the number of previously unacknowledged bytes acknowledged
+                // RFC 5681: in the incoming ACK.
+                final long n = ackedBytes;
+                final long increment = min(n, tcb.smss());
                 LOG.trace("{}[{}] Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), state, ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
                 tcb.bla_cwnd(tcb.cwnd() + increment);
             }
             else {
                 // Congestion Avoidance -> +1 SMSS after each RTT
+                // RFC 5681: During congestion avoidance, cwnd is incremented by roughly 1
+                // RFC 5681: full-sized segment per round-trip time (RTT).
+
+                // RFC 5681: The RECOMMENDED way to increase cwnd during congestion avoidance is to
+                // RFC 5681: count the number of bytes that have been acknowledged by ACKs for new
+                // RFC 5681: data. (A drawback of this implementation is that it requires
+                // RFC 5681: maintaining an additional state variable.) When the number of bytes
+                // RFC 5681: acknowledged reaches cwnd, then cwnd can be incremented by up to SMSS
+                // RFC 5681: bytes. Note that during congestion avoidance, cwnd MUST NOT be
+                // RFC 5681: increased by more than SMSS bytes per RTT. This method both allows TCPs
+                // RFC 5681: to increase cwnd by one segment per RTT in the face of delayed ACKs and
+                // RFC 5681: provides robustness against ACK Division attacks.
+
+                // RFC 5681: Another common formula that a TCP MAY use to update cwnd during
+                // RFC 5681: congestion avoidance is given in equation (3):
+                // RFC 5681:
+                // RFC 5681:    cwnd += SMSS*SMSS/cwnd                     (3)
+                // RFC 5681:
+                // RFC 5681: This adjustment is executed on every incoming ACK that acknowledges new
+                // RFC 5681: data. Equation (3) provides an acceptable approximation to the
+                // RFC 5681: underlying principle of increasing cwnd by 1 full-sized segment per
+                // RFC 5681: RTT. (Note that for a connection in which the receiver is acknowledging
+                // RFC 5681: every-other packet, (3) is less aggressive than allowed -- roughly
+                // RFC 5681: increasing cwnd every second RTT.)
+
+                // RFC 5681: Implementation Note: Since integer arithmetic is usually used in TCP
+                // RFC 5681: implementations, the formula given in equation (3) can fail to increase
+                // RFC 5681: cwnd when the congestion window is larger than SMSS*SMSS. If the above
+                // RFC 5681: formula yields 0, the result SHOULD be rounded up to 1 byte.
                 final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd());
                 LOG.trace("{}[{}] Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), state, ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
                 tcb.bla_cwnd(tcb.cwnd() + increment);
