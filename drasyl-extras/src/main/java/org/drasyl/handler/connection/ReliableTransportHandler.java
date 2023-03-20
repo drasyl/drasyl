@@ -2181,7 +2181,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             tcb.duplicateAcks(0);
 
             if (ackedBytes > 0) {
-                if (config.newReno()) {
+                if (!config.newReno()) {
                     // Reno
                     // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
                     // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
@@ -2282,7 +2282,6 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.bla_cwnd(tcb.cwnd() + increment);
             }
             else {
-                // Congestion Avoidance -> +1 SMSS after each RTT
                 // RFC 5681: During congestion avoidance, cwnd is incremented by roughly 1
                 // RFC 5681: full-sized segment per round-trip time (RTT).
 
