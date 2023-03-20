@@ -38,11 +38,13 @@ public class CsvLogger {
         entry.put("SND.WL1", tcb.sndWl1());
         entry.put("SND.WL2", tcb.sndWl2());
         entry.put("ISS", tcb.iss());
+        entry.put("SND.BUF", tcb.sendBuffer().readableBytes());
 
         // RFC 9293: Receive Sequence Variables
         entry.put("RCV.NXT", tcb.rcvNxt());
         entry.put("RCV.WND", tcb.rcvWnd());
         entry.put("IRS", tcb.irs());
+        entry.put("RCV.BUF", tcb.receiveBuffer().bytes());
 
         entry.put("SendMSS", tcb.sendMss());
         entry.put("Max(SND.WND)", tcb.maxSndWnd());
