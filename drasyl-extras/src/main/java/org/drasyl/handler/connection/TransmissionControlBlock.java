@@ -458,10 +458,32 @@ public class TransmissionControlBlock {
                     }
                 }
 
+                final int usableMss = sendMss() - SEG_HDR_SIZE;
                 final long window = min(sndWnd(), cwnd());
                 final long usableWindow = max(0, window - flightSize());
+                final long remainingBytes;
+                if (readableBytes <= usableMss && readableBytes <= usableWindow) {
+                    // we have less than a segment to send
+                    remainingBytes = readableBytes;
+                }
+                else if (usableMss <= readableBytes && usableMss <= usableWindow) {
+                    // we have at least one full segment to send
+                    remainingBytes = usableMss;
+                }
+                else {
+                    // we're path or receiver capped
+                    remainingBytes = usableWindow;
 
-                final long remainingBytes = min(sendMss() - SEG_HDR_SIZE, usableWindow, sendBuffer.readableBytes(), readableBytes);
+                    if (sndWnd() > cwnd()) {
+                        // path capped
+                        //LOG.error("{}[{}] Path capped.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state);
+                    }
+                    else {
+                        // receiver capped
+                        //LOG.error("{}[{}] Receiver capped.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state);
+                    }
+                }
+
                 if (remainingBytes > 0) {
                     LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();

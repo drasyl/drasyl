@@ -2175,6 +2175,8 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             }
         }
         else if (tcb.duplicateAcks() != 0) {
+            LOG.error("{}[{}] Congestion Control: Got new ACK. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
+
             // reset counter
             tcb.duplicateAcks(0);
 
