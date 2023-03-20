@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.ZonedDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 
@@ -25,91 +27,69 @@ public class CsvLogger {
     }
 
     public void log(final TransmissionControlBlock tcb) {
+        final Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("pid", PID);
+        entry.put("time", RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
+
+        // RFC 9293: Send Sequence Variables
+        entry.put("SND.UNA", tcb.sndUna());
+        entry.put("SND.NXT", tcb.sndNxt());
+        entry.put("SND.WND", tcb.sndWnd());
+        entry.put("SND.WL1", tcb.sndWl1());
+        entry.put("SND.WL2", tcb.sndWl2());
+        entry.put("ISS", tcb.iss());
+
+        // RFC 9293: Receive Sequence Variables
+        entry.put("RCV.NXT", tcb.rcvNxt());
+        entry.put("RCV.WND", tcb.rcvWnd());
+        entry.put("IRS", tcb.irs());
+
+        entry.put("SendMSS", tcb.sendMss());
+        entry.put("Max(SND.WND)", tcb.maxSndWnd());
+
+        // RFC 7323: Timestamps option
+        entry.put("TS.Recent", tcb.tsRecent());
+        entry.put("Last.ACK.sent", tcb.lastAckSent());
+        entry.put("Snd.TS.OK", tcb.sndTsOk());
+
+        // RFC 6298: Retransmission Timer Computation
+        entry.put("RTTVAR", tcb.rttVar());
+        entry.put("SRTT", tcb.sRtt());
+        entry.put("RTO", tcb.rto());
+
+        // RFC 5681: Congestion Control Algorithms
+        entry.put("cwnd", tcb.cwnd());
+        entry.put("ssthresh", tcb.ssthresh());
+
         try {
             // header
             if (!headerWritten) {
                 headerWritten = true;
-                escapedWrite(writer, "pid");
-                writer.append(",");
-                escapedWrite(writer, "time");
-                // Send Sequence Variables
-                writer.append(",");
-                escapedWrite(writer, "SND.UNA");
-                writer.append(",");
-                escapedWrite(writer, "SND.NXT");
-                writer.append(",");
-                escapedWrite(writer, "SND.WND");
-                writer.append(",");
-                escapedWrite(writer, "SND.WL1");
-                writer.append(",");
-                escapedWrite(writer, "SND.WL2");
-                writer.append(",");
-                escapedWrite(writer, "ISS");
-                // Receive Sequence Variables
-                writer.append(",");
-                escapedWrite(writer, "RCV.NXT");
-                writer.append(",");
-                escapedWrite(writer, "RCV.WND");
-                writer.append(",");
-                escapedWrite(writer, "IRS");
-
-                writer.append(",");
-                escapedWrite(writer, "SND.BUF");
-                writer.append(",");
-                escapedWrite(writer, "OG.SEG.Q");
-                writer.append(",");
-                escapedWrite(writer, "RTNS.Q");
-                writer.append(",");
-                escapedWrite(writer, "RCV.BUF");
-
-                writer.append(",");
-                escapedWrite(writer, "CWND");
-                writer.append(",");
-                escapedWrite(writer, "SSTHRESH");
-
+                boolean firstColumn = true;
+                for (final String key : entry.keySet()) {
+                    if (firstColumn) {
+                        firstColumn = false;
+                    }
+                    else {
+                        writer.append(",");
+                    }
+                    escapedWrite(writer, key);
+                }
                 writer.append('\n');
+                writer.flush();
             }
-            writer.flush();
 
             // row
-            escapedWrite(writer, PID);
-            writer.append(",");
-            escapedWrite(writer, RFC_1123_DATE_TIME.format(ZonedDateTime.now()));
-            // Send Sequence Variables
-            writer.append(",");
-            escapedWrite(writer, tcb.sndUna());
-            writer.append(",");
-            escapedWrite(writer, tcb.sndNxt());
-            writer.append(",");
-            escapedWrite(writer, tcb.sndWnd());
-            writer.append(",");
-            escapedWrite(writer, tcb.sndWl1());
-            writer.append(",");
-            escapedWrite(writer, tcb.sndWl2());
-            writer.append(",");
-            escapedWrite(writer, tcb.iss());
-            // Receive Sequence Variables
-            writer.append(",");
-            escapedWrite(writer, tcb.rcvNxt());
-            writer.append(",");
-            escapedWrite(writer, tcb.rcvWnd());
-            writer.append(",");
-            escapedWrite(writer, tcb.irs());
-
-            writer.append(",");
-            escapedWrite(writer, tcb.sendBuffer().readableBytes());
-            writer.append(",");
-            escapedWrite(writer, tcb.outgoingSegmentQueue().size());
-            writer.append(",");
-            escapedWrite(writer, -1);
-            writer.append(",");
-            escapedWrite(writer, tcb.receiveBuffer().bytes());
-
-            writer.append(",");
-            escapedWrite(writer, tcb.cwnd());
-            writer.append(",");
-            escapedWrite(writer, tcb.ssthresh());
-
+            boolean firstColumn2 = true;
+            for (final Object value : entry.values()) {
+                if (firstColumn2) {
+                    firstColumn2 = false;
+                }
+                else {
+                    writer.append(",");
+                }
+                escapedWrite(writer, value);
+            }
             writer.append('\n');
             writer.flush();
         }
