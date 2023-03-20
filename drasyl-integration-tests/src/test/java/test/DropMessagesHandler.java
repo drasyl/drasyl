@@ -117,4 +117,21 @@ public class DropMessagesHandler extends ChannelDuplexHandler {
             return ++i == n;
         }
     }
+
+    public static class DropMessageRange implements Predicate<Object> {
+        private final long from;
+        private final long to;
+        private long i;
+
+        public DropMessageRange(final long from, final long to) {
+            this.from = requirePositive(from);
+            this.to = requirePositive(to);
+        }
+
+        @Override
+        public boolean test(final Object o) {
+            i++;
+            return Math.min(from, to) <= i && i <= Math.max(from, to);
+        }
+    }
 }
