@@ -51,7 +51,7 @@ public class OutgoingSegmentQueue {
 
     public void flush(final ChannelHandlerContext ctx,
                       final TransmissionControlBlock tcb) {
-        LOG.trace("{} Flush outgoing segment queue.", ctx.channel());
+        LOG.trace("{} Flush outgoing segment queue ({} elements).", ctx.channel(), queue.size());
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
         while ((seg = queue.poll()) != null) {

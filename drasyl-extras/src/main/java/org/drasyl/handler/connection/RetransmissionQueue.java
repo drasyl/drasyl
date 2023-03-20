@@ -141,7 +141,8 @@ public class RetransmissionQueue {
                                   final TransmissionControlBlock tcb) {
         final Segment seg = queue.peek();
         if (seg != null) {
-            return seg.copy();
+            final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+            return handler.formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), seg.content().copy());
         }
         return null;
     }

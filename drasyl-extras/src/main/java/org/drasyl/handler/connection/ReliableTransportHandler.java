@@ -2038,7 +2038,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                final long oldRto = tcb.rto();
                 tcb.rto((long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+
+                if (oldRto != tcb.rto()) {
+                    LOG.error("{}[{}] Set RTO from {} to {}.", ctx.channel(), state, oldRto, tcb.rto());
+                }
             }
         }
 
@@ -2170,19 +2175,20 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
                 // RFC 5681:     cwnd and the receiver's advertised window allow, a TCP SHOULD
                 // RFC 5681:     send 1*SMSS bytes of previously unsent data.
-                // FIXME: sent only 1*SMSS
                 tcb.writeEnqueuedData(ctx);
             }
         }
         else if (tcb.duplicateAcks() != 0) {
-            LOG.error("{}[{}] Congestion Control: Got new ACK. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
+            if (!config.newReno()) {
+                // Reno
+                if (ackedBytes > 0) {
+                    // RFC 5681: the "fast recovery" algorithm governs the transmission of new data
+                    // RFC 5681: until a non-duplicate ACK arrives.
+                    LOG.error("{}[{}] Congestion Control: Got non-duplicate ACK. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
 
-            // reset counter
-            tcb.duplicateAcks(0);
+                    // exit fast recovery procedure
+                    tcb.duplicateAcks(0);
 
-            if (ackedBytes > 0) {
-                if (!config.newReno()) {
-                    // Reno
                     // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
                     // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
@@ -2192,8 +2198,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         tcb.bla_cwnd(newCwnd);
                     }
                 }
-                else {
-                    // NewReno
+            }
+            else {
+                // NewReno
+                if (ackedBytes > 0) {
                     // RFC 6582: 3)  Response to newly acknowledged data:
                     // RFC 6582:     Step 6 of [RFC5681] specifies the response to the next ACK that
                     // RFC 6582:     acknowledges previously unacknowledged data.  When an ACK arrives
@@ -2217,12 +2225,16 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     amount of data outstanding in the network is much less than the
                         // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
                         // RFC 6582:     number of data packets that can be sent in response to a single
-                        // RFC 6582:     acknowledgment. Exit the fast recovery procedure.
+                        // RFC 6582:     acknowledgment.
                         long newCwnd = tcb.ssthresh();
                         if (newCwnd != tcb.cwnd()) {
                             LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
+
+                        // RFC 6582:     Exit the fast recovery procedure.
+                        LOG.error("{}[{}] Congestion Control: Got full ACKnowledgment. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
+                        tcb.duplicateAcks(0);
                     }
                     else {
                         // RFC 6582:     Partial acknowledgments:
