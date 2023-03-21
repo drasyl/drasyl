@@ -1969,8 +1969,9 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 seg.len() == 0 &&
                 !seg.isSyn() &&
                 !seg.isFin() &&
-                seg.ack() == tcb.sndUna() &&
-                seg.wnd() == tcb.lastAdvertisedWindow();
+                seg.ack() == tcb.sndUna(); // &&
+                // FIXME: mit dem hier wirds langsam. ist SEG.WND evtl. falsch?
+                //seg.wnd() == tcb.lastAdvertisedWindow();
 
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
@@ -2042,7 +2043,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.rto((long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
 
                 if (oldRto != tcb.rto()) {
-                    LOG.error("{}[{}] Set RTO from {} to {}.", ctx.channel(), state, oldRto, tcb.rto());
+                    LOG.trace("{}[{}] Set RTO from {} to {}.", ctx.channel(), state, oldRto, tcb.rto());
                 }
             }
         }
@@ -2057,7 +2058,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
         if (isRfc5681Duplicate) {
             tcb.duplicateAcks(tcb.duplicateAcks() + 1);
-            LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
+            LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
 
             if (tcb.duplicateAcks() < 3) {
                 if (config.limitedTransport()) {
@@ -2070,7 +2071,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
                             tcb.sendBuffer().hasOutstandingData();
                     if (doLimitedTransmit) {
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), state, tcb.sendBuffer().readableBytes());
+                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), state, tcb.sendBuffer().readableBytes());
                         tcb.writeEnqueuedData(ctx);
                         // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
                         // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
@@ -2102,7 +2103,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                     final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                    LOG.error("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                    LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                     ctx.writeAndFlush(retransmission);
 
                     // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
@@ -2111,7 +2112,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681:    buffered.
                     long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                     if (newCwnd != tcb.cwnd()) {
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                         tcb.bla_cwnd(newCwnd);
                     }
                 }
@@ -2145,7 +2146,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                        LOG.error("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
+                        LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                         ctx.writeAndFlush(retransmission);
 
                         // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
@@ -2154,7 +2155,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 5681:    buffered.
                         long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                         if (newCwnd != tcb.cwnd()) {
-                            LOG.error("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
                     }
@@ -2187,7 +2188,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 if (ackedBytes > 0) {
                     // RFC 5681: the "fast recovery" algorithm governs the transmission of new data
                     // RFC 5681: until a non-duplicate ACK arrives.
-                    LOG.error("{}[{}] Congestion Control: Got non-duplicate ACK. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
+                    LOG.trace("{}[{}] Congestion Control: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
 
                     // exit fast recovery procedure
                     tcb.duplicateAcks(0);
@@ -2197,7 +2198,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
                     long newCwnd = tcb.ssthresh();
                     if (newCwnd != tcb.cwnd()) {
-                        LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                        LOG.trace("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                         tcb.bla_cwnd(newCwnd);
                     }
                 }
@@ -2231,12 +2232,12 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     acknowledgment.
                         long newCwnd = tcb.ssthresh();
                         if (newCwnd != tcb.cwnd()) {
-                            LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.trace("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
 
                         // RFC 6582:     Exit the fast recovery procedure.
-                        LOG.error("{}[{}] Congestion Control: Got full ACKnowledgment. Exit Fast Retransmit/Fast Recovery.", ctx.channel(), state);
+                        LOG.error("{}[{}] Congestion Control: Got full ACKnowledgment. Exit Fast Recovery.", ctx.channel(), state);
                         tcb.duplicateAcks(0);
                     }
                     else {
@@ -2261,7 +2262,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                             newCwnd += tcb.smss();
                         }
                         if (tcb.cwnd() != newCwnd) {
-                            LOG.error("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
+                            LOG.trace("{}[{}] Congestion Control: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), newCwnd);
                             tcb.bla_cwnd(newCwnd);
                         }
 
@@ -2653,7 +2654,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             zeroWindowProber = ctx.executor().schedule(() -> {
                 zeroWindowProber = null;
 
-                LOG.error("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
+                LOG.trace("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
                 final ByteBuf data = tcb.sendBuffer().read(1, new AtomicBoolean());
                 final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK, data);
                 tcb.sendAndFlush(ctx, segment);

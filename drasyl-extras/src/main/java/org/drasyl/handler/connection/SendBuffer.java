@@ -401,7 +401,9 @@ public class SendBuffer {
     public ChannelFuture allPrecedingDataHaveBeenSegmentized(final ChannelHandlerContext ctx) {
         segmentizedRemainingBytes = readableBytes();
         if (segmentizedRemainingBytes > 0) {
-            assert segmentizedFuture == null;
+            if (segmentizedFuture != null) {
+                segmentizedFuture.cancel(false);
+            }
             segmentizedFuture = ctx.newPromise();
             return segmentizedFuture;
         }
