@@ -94,7 +94,7 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
-    public ReliableTransportConfig config;
+    public ReliableConnectionConfig config;
 
     // RFC 9293: Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
@@ -171,7 +171,7 @@ public class TransmissionControlBlock {
     private long recover;
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final ReliableTransportConfig config,
+    TransmissionControlBlock(final ReliableConnectionConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -220,7 +220,7 @@ public class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final ReliableTransportConfig config,
+    TransmissionControlBlock(final ReliableConnectionConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -236,7 +236,7 @@ public class TransmissionControlBlock {
         this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.mmsS() * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
-    TransmissionControlBlock(final ReliableTransportConfig config,
+    TransmissionControlBlock(final ReliableConnectionConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
@@ -246,7 +246,7 @@ public class TransmissionControlBlock {
         this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
-    TransmissionControlBlock(final ReliableTransportConfig config,
+    TransmissionControlBlock(final ReliableConnectionConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
@@ -255,7 +255,7 @@ public class TransmissionControlBlock {
         this(config, channel, sndUna, sndNxt, config.rmem(), iss, irs);
     }
 
-    TransmissionControlBlock(final ReliableTransportConfig config,
+    TransmissionControlBlock(final ReliableConnectionConfig config,
                              final Channel channel,
                              final long irs) {
         this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -453,7 +453,7 @@ public class TransmissionControlBlock {
                         cancelOverrideTimer();
                     }
                     else {
-                        LOG.trace("{}[{}] Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, readableBytes);
+                        LOG.trace("{}[{}] Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, readableBytes);
                         return;
                     }
                 }
@@ -485,8 +485,8 @@ public class TransmissionControlBlock {
                 }
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
-                    final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
+                    final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
 
                     final AtomicBoolean doPush = new AtomicBoolean();
                     final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush);
@@ -514,7 +514,7 @@ public class TransmissionControlBlock {
         segmentizeData(ctx, false);
     }
 
-    ReliableTransportConfig config() {
+    ReliableConnectionConfig config() {
         return config;
     }
 
@@ -522,7 +522,7 @@ public class TransmissionControlBlock {
         if (overrideTimer == null) {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{}[{}] Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, config.overrideTimeout().toMillis());
+                LOG.trace("{}[{}] Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, config.overrideTimeout().toMillis());
                 segmentizeData(ctx, true);
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
@@ -577,7 +577,7 @@ public class TransmissionControlBlock {
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
         rcvNxt = advanceSeq(rcvNxt, advancement);
-        LOG.trace("{}[{}] Advance RCV.NXT to {}.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, rcvNxt);
+        LOG.trace("{}[{}] Advance RCV.NXT to {}.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, rcvNxt);
     }
 
     public void decrementRcvWnd(final int decrement) {
@@ -597,7 +597,7 @@ public class TransmissionControlBlock {
 
         if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
-            LOG.trace("{}[{}] Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, rcvWnd, newRcvWind, newRcvWind - rcvWnd);
+            LOG.trace("{}[{}] Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
             assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
@@ -673,7 +673,7 @@ public class TransmissionControlBlock {
 
     public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
         this.sndUna = sndUna;
-        LOG.trace("{}[{}] Advance SND.UNA to {}.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state, sndUna);
+        LOG.trace("{}[{}] Advance SND.UNA to {}.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, sndUna);
     }
 
     public void bla_tsRecent(final long tsRecent) {

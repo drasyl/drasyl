@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.netty.util.ReferenceCountUtil.safeRelease;
 import static io.netty.util.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.connection.ReliableTransportHandler.CONNECTION_CLOSING_ERROR;
+import static org.drasyl.handler.connection.ReliableConnectionHandler.CONNECTION_CLOSING_ERROR;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**

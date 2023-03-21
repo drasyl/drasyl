@@ -44,9 +44,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,8 +67,8 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ReliableTransportHandlerIT {
-    private static final Logger LOG = LoggerFactory.getLogger(ReliableTransportHandlerIT.class);
+class ReliableConnectionHandlerIT {
+    private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandlerIT.class);
     private static final int MAX_DROP = 3;
     public static final Duration USER_TIMEOUT = ofSeconds(1);
 
@@ -97,8 +95,8 @@ class ReliableTransportHandlerIT {
         final ByteBuf receivedBuf = Unpooled.buffer();
 
         // Peer B
-        final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
-        final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
+        final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+        final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                 .activeOpen(false)
                 .rmem(32_000)
                 .issSupplier(() -> 1_000_000L)
@@ -106,7 +104,7 @@ class ReliableTransportHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
+        final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
         final Channel peerBServerChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
@@ -147,7 +145,7 @@ class ReliableTransportHandlerIT {
                 .bind(peerBAddress).sync().channel();
 
         // Peer A
-        final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
+        final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
                 .activeOpen(true)
                 .rmem(32_000)
                 .issSupplier(() -> 3_000_000L)
@@ -155,7 +153,7 @@ class ReliableTransportHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
+        final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
         final Channel peerAChannel = new Bootstrap()
                 .channel(LocalChannel.class)
                 .group(group)
@@ -231,15 +229,15 @@ class ReliableTransportHandlerIT {
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
-            final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
+            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -256,14 +254,14 @@ class ReliableTransportHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
+            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
+            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -313,15 +311,15 @@ class ReliableTransportHandlerIT {
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
-            final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
+            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -338,14 +336,14 @@ class ReliableTransportHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
+            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
+            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -402,15 +400,15 @@ class ReliableTransportHandlerIT {
             final AtomicReference<Channel> peerBChannel = new AtomicReference<>();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableTransportHandlerIT.class));
-            final ReliableTransportConfig peerBConfig = ReliableTransportConfig.newBuilder()
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerBHandler = new ReliableTransportHandler(peerBConfig);
+            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -428,7 +426,7 @@ class ReliableTransportHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableTransportConfig peerAConfig = ReliableTransportConfig.newBuilder()
+            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .msl(ofMillis(100))
@@ -436,7 +434,7 @@ class ReliableTransportHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableTransportHandler peerAHandler = new ReliableTransportHandler(peerAConfig);
+            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)

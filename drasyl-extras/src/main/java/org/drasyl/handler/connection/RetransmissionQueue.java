@@ -68,7 +68,7 @@ public class RetransmissionQueue {
 
         // RFC 9293: If a timeout is specified, the current user timeout for this connection is
         // RFC 9293: changed to the new one.
-        final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+        final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
         if (tcb.config().userTimeout().toMillis() > 0) {
             handler.cancelUserTimer(ctx);
             handler.startUserTimer(ctx);
@@ -118,7 +118,7 @@ public class RetransmissionQueue {
         tcb.sendBuffer().acknowledge(ackedBytes);
 
         if (somethingWasAcked) {
-            final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+            final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
             if (!tcb.sendBuffer().hasOutstandingData()) {
                 handler.cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
@@ -141,7 +141,7 @@ public class RetransmissionQueue {
                                   final TransmissionControlBlock tcb) {
         final Segment seg = queue.peek();
         if (seg != null) {
-            final ReliableTransportHandler handler = (ReliableTransportHandler) ctx.handler();
+            final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
             return handler.formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), seg.content().copy());
         }
         return null;

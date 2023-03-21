@@ -35,10 +35,10 @@ import static java.time.Duration.ofSeconds;
 import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 
 @AutoValue
-public abstract class ReliableTransportConfig {
+public abstract class ReliableConnectionConfig {
     // Google Cloud applied MTU is 1460
     static final int MTU = 1460;
-    static final ReliableTransportConfig DEFAULT = new AutoValue_ReliableTransportConfig.Builder()
+    static final ReliableConnectionConfig DEFAULT = new AutoValue_ReliableConnectionConfig.Builder()
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
             .rtnsQSupplier(channel -> new RetransmissionQueue())
@@ -103,7 +103,7 @@ public abstract class ReliableTransportConfig {
 
     public abstract Function<Channel, ReceiveBuffer> rcfBufSupplier();
 
-    public abstract BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbSupplier();
+    public abstract BiFunction<ReliableConnectionConfig, Channel, TransmissionControlBlock> tcbSupplier();
 
     public abstract boolean activeOpen();
 
@@ -129,7 +129,9 @@ public abstract class ReliableTransportConfig {
 
     public abstract Duration uBound();
 
-    public abstract boolean sack();
+    public boolean sack() {
+        return false;
+    }
 
     public abstract Duration overrideTimeout();
 
@@ -180,7 +182,7 @@ public abstract class ReliableTransportConfig {
         /**
          * Used to create the {@link TransmissionControlBlock}.
          */
-        public abstract Builder tcbSupplier(final BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbProvider);
+        public abstract Builder tcbSupplier(final BiFunction<ReliableConnectionConfig, Channel, TransmissionControlBlock> tcbProvider);
 
         /**
          * If enabled, a handshake will be issued on
@@ -392,9 +394,9 @@ public abstract class ReliableTransportConfig {
          */
         public abstract Builder limitedTransmit(final boolean limitedTransmit);
 
-        abstract ReliableTransportConfig autoBuild();
+        abstract ReliableConnectionConfig autoBuild();
 
-        public ReliableTransportConfig build() {
+        public ReliableConnectionConfig build() {
             return autoBuild();
         }
     }

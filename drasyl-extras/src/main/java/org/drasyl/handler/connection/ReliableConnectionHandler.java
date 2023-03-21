@@ -118,14 +118,14 @@ import static org.drasyl.util.NumberUtil.min;
         , "StatementWithEmptyBody"
         , "ConstantValue"
 })
-public class ReliableTransportHandler extends ChannelDuplexHandler {
+public class ReliableConnectionHandler extends ChannelDuplexHandler {
     static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
-    private static final Logger LOG = LoggerFactory.getLogger(ReliableTransportHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandler.class);
     private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
     private static final ClosedChannelException CONNECTION_NOT_EXIST_ERROR = new ClosedChannelException();
     private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
     private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
-    private final ReliableTransportConfig config;
+    private final ReliableConnectionConfig config;
     State state;
     TransmissionControlBlock tcb;
     ScheduledFuture<?> userTimer;
@@ -138,15 +138,15 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
     private ChannelHandlerContext ctx;
 
     @SuppressWarnings("java:S107")
-    ReliableTransportHandler(final ReliableTransportConfig config,
-                             final State state,
-                             final TransmissionControlBlock tcb,
-                             final ScheduledFuture<?> userTimer,
-                             final ScheduledFuture<?> retransmissionTimer,
-                             final ScheduledFuture<?> timeWaitTimer,
-                             final ChannelPromise establishedPromise,
-                             final ChannelPromise closedPromise,
-                             final ChannelHandlerContext ctx) {
+    ReliableConnectionHandler(final ReliableConnectionConfig config,
+                              final State state,
+                              final TransmissionControlBlock tcb,
+                              final ScheduledFuture<?> userTimer,
+                              final ScheduledFuture<?> retransmissionTimer,
+                              final ScheduledFuture<?> timeWaitTimer,
+                              final ChannelPromise establishedPromise,
+                              final ChannelPromise closedPromise,
+                              final ChannelHandlerContext ctx) {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -158,7 +158,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         this.ctx = ctx;
     }
 
-    public ReliableTransportHandler(final ReliableTransportConfig config) {
+    public ReliableConnectionHandler(final ReliableConnectionConfig config) {
         this(config, null, null, null, null, null, null, null, null);
     }
 
@@ -856,12 +856,14 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         switch (newState) {
             case SYN_SENT:
             case SYN_RECEIVED:
+                // FIXME: am ende ohne scheduling ausführen?
                 ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
+                // FIXME: am ende ohne scheduling ausführen?
                 ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt())));
                 break;
 
@@ -1798,11 +1800,13 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     // RFC 9293: received.
                     if (seg.isPsh()) {
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), state, seg);
+                        // FIXME: am ende ohne scheduling ausführen?
                         ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
                     }
                     else if (readPending) {
                         readPending = false;
                         LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because a RECEIVE call has been queued.", ctx.channel(), state, seg);
+                        // FIXME: am ende ohne scheduling ausführen?
                         ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
                     }
                     else {
@@ -1866,6 +1870,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             // (can not be reached with our implementation)
 
             // RFC 9293: If the FIN bit is set, signal the user "connection closing"
+            // FIXME: am ende ohne scheduling ausführen?
             ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state)));
 
             // RFC 9293: and return any pending RECEIVEs with same message,
@@ -1880,6 +1885,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             tcb.sendAndFlush(ctx, response);
 
             // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
+            // FIXME: am ende ohne scheduling ausführen?
             ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
 
             switch (state) {
@@ -2437,7 +2443,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         }
 
         if (config.sack()) {
-            // FIXME: add support for SACK
+            // TODO: add support for SACK
             if (ctl == ACK && tcb != null) {
                 final List<Long> edges = new ArrayList<>();
                 final ReceiveBuffer receiveBuffer = tcb.receiveBuffer();
@@ -2590,7 +2596,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                 tcb.bla_recover(highestSequenceNumberTransmitted);
             }
 
-            // FIXME:
+            // TODO:
             //  RFC 6582:     and exit the fast recovery procedure if applicable.
         }
     }

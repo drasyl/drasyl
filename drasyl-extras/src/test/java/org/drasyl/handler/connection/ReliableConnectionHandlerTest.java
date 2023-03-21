@@ -31,7 +31,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.connection.ReliableTransportConfig.Clock;
+import org.drasyl.handler.connection.ReliableConnectionConfig.Clock;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
@@ -104,7 +104,7 @@ import static org.mockito.Mockito.when;
 
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
-class ReliableTransportHandlerTest {
+class ReliableConnectionHandlerTest {
     private static ByteBuf unpooledRandomBuffer(final int bytes) {
         return Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
     }
@@ -145,12 +145,12 @@ class ReliableTransportHandlerTest {
             // TCP Peer A
             @Test
             void shouldConformWithBehaviorOfPeerA() {
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
                         .mmsS(1_432)
                         .rmem(5_000)
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -177,11 +177,11 @@ class ReliableTransportHandlerTest {
             // TCP Peer A
             @Test
             void shouldConformWithBehaviorOfPeerB() {
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 300)
                         .activeOpen(false)
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should change state to LISTEN
@@ -235,13 +235,13 @@ class ReliableTransportHandlerTest {
             // TCP Peer A (and also same-behaving TCP Peer B)
             @Test
             void shouldConformWithBehaviorOfPeerA() {
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
                         .mmsS(1_432)
                         .mmsR(1_432)
                         .rmem(5_000)
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -300,10 +300,10 @@ class ReliableTransportHandlerTest {
                 // TCP Peer A
                 @Test
                 void shouldConformWithBehaviorOfPeerA() {
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                             .issSupplier(() -> 400)
                             .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                     final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
@@ -331,7 +331,7 @@ class ReliableTransportHandlerTest {
                 @Test
                 void shouldConformWithBehaviorOfPeerB() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(
                             config,
                             channel,
@@ -340,7 +340,7 @@ class ReliableTransportHandlerTest {
                             1220 * 64,
                             300L,
                             100L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // other wants to SYNchronize with us, ACK with our expected seq
@@ -374,9 +374,9 @@ class ReliableTransportHandlerTest {
                 // TCP Peer A
                 @Test
                 void shouldConformWithBehaviorOfPeerA() {
-                    final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, null, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, null, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -408,13 +408,13 @@ class ReliableTransportHandlerTest {
                 void shouldConformWithBehaviorOfPeerB() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final long iss = 200;
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> iss)
                             .mmsS(1_432)
                             .mmsR(1_432)
                             .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // old duplicate ACK arrives at us
@@ -461,13 +461,13 @@ class ReliableTransportHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerA() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .activeOpen(false)
                         .mmsS(1_432)
                         .mmsR(1_432)
                         .msl(ofMillis(100))
                         .build();
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -507,12 +507,12 @@ class ReliableTransportHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerB() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .mmsS(1_432)
                         .mmsR(1_432)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
 
@@ -567,7 +567,7 @@ class ReliableTransportHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerA() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100L)
                         .activeOpen(false)
                         .mmsS(1_432)
@@ -575,7 +575,7 @@ class ReliableTransportHandlerTest {
                         .msl(ofMillis(100))
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
@@ -623,13 +623,13 @@ class ReliableTransportHandlerTest {
                 final int effSndMss = 100;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .mmsS(1_432)
                         .mmsR(1_432)
                         .activeOpen(false)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -656,10 +656,10 @@ class ReliableTransportHandlerTest {
                     final int bytes = 600;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(3 * bytes).writeBytes(randomBytes(3 * bytes));
@@ -685,13 +685,13 @@ class ReliableTransportHandlerTest {
                 void zeroWindowProbing() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> 100L);
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 300L, 0, 100L, 100L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = unpooledRandomBuffer(100);
@@ -710,10 +710,10 @@ class ReliableTransportHandlerTest {
                 void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 0, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // 300 bytes in flight, only first 100 are ACKed
@@ -734,12 +734,12 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .rmem(1000)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // initial value
@@ -762,12 +762,12 @@ class ReliableTransportHandlerTest {
                 void shouldOnlyAcceptAsManyBytesAsSpaceAvailableInReceiveBuffer() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .rmem(60)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
@@ -786,10 +786,10 @@ class ReliableTransportHandlerTest {
                 void receiverShouldAbleToAckSegmentWhichContainsOnlyPartiallyNewSegments() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // we got more than we are willing to accept
@@ -815,14 +815,14 @@ class ReliableTransportHandlerTest {
                 @Test
                 void senderShouldAvoidTheSillyWindowSyndrome() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .noDelay(false)
                             .lBound(ofMinutes(99))
                             .overrideTimeout(ofMillis(100))
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1000, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
@@ -855,12 +855,12 @@ class ReliableTransportHandlerTest {
                 void receiverShouldAvoidTheSillyWindowSyndrome() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .rmem(1600)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1600, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
@@ -909,10 +909,10 @@ class ReliableTransportHandlerTest {
                 final int bytes = 600;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(1000).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(1000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 400
@@ -930,10 +930,10 @@ class ReliableTransportHandlerTest {
                 final int bytes = 300;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
@@ -993,10 +993,10 @@ class ReliableTransportHandlerTest {
                 final int bytes = 300;
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // SEG 100 is expected, but we send next SEG 700
@@ -1028,10 +1028,10 @@ class ReliableTransportHandlerTest {
             @Test
             void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(4 * 1000).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(4 * 1000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // initial cwnd is 3 segments
@@ -1084,10 +1084,10 @@ class ReliableTransportHandlerTest {
             void timerShouldBeStartedWhenSegmentWithDataIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
@@ -1108,10 +1108,10 @@ class ReliableTransportHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(queueQueue);
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
                 handler.retransmissionTimer = timer;
 
@@ -1134,9 +1134,9 @@ class ReliableTransportHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(queueQueue);
-                final ReliableTransportConfig config = ReliableTransportConfig.DEFAULT;
+                final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
                 handler.retransmissionTimer = timer;
 
@@ -1151,13 +1151,13 @@ class ReliableTransportHandlerTest {
             @Test
             void shouldCreateRetransmissionTimerIfAcknowledgeableSegmentIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                         .lBound(ofMillis(100))
                         .rto(ofMillis(100))
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, config.rmem(), 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf data = unpooledRandomBuffer(100);
@@ -1181,10 +1181,10 @@ class ReliableTransportHandlerTest {
             void onTimeout() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
@@ -1216,12 +1216,12 @@ class ReliableTransportHandlerTest {
             @Test
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                         .rmem(4 * 1000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
-                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // we need outstanding data first
@@ -1259,14 +1259,6 @@ class ReliableTransportHandlerTest {
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(400), ack(200)));
             }
 
-            // FIXME: haben wir das so umgesetzt?
-            //    Note that after retransmitting, once a new RTT measurement is
-            //   obtained (which can only happen when new data has been sent and
-            //   acknowledged), the computations outlined in Section 2 are performed,
-            //   including the computation of RTO, which may result in "collapsing"
-            //   RTO back down after it has been subject to exponential back off (rule
-            //   5.5).
-
             @Nested
             class TimestampsOptionTest {
                 // RFC 6298, Section 2, Rule 2.2
@@ -1278,12 +1270,12 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
@@ -1312,12 +1304,12 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 8300L, 2000, 100L, 100L, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 401, 0, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
@@ -1344,12 +1336,12 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 201, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     Segment seg;
@@ -1393,12 +1385,12 @@ class ReliableTransportHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     Segment seg;
@@ -1461,11 +1453,11 @@ class ReliableTransportHandlerTest {
                 void openCallSynShouldContainCorrectTsOption(@Mock final Clock clock) {
                     when(clock.time()).thenReturn(2816L);
 
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                             .rtnsQSupplier(ch -> new RetransmissionQueue())
                             .clock(clock)
                             .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                     final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                     // RFC 7323
@@ -1484,11 +1476,11 @@ class ReliableTransportHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                             .rtnsQSupplier(ch -> new RetransmissionQueue())
                             .clock(clock)
                             .build();
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                     channel.pipeline().addLast(handler);
 
                     // write perform an active OPEN handshake
@@ -1512,12 +1504,12 @@ class ReliableTransportHandlerTest {
                     final int effSndMss = 100;
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 123L, 0, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
@@ -1541,12 +1533,12 @@ class ReliableTransportHandlerTest {
 
                     final long iss = Segment.randomSeq();
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1579,12 +1571,12 @@ class ReliableTransportHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1619,12 +1611,12 @@ class ReliableTransportHandlerTest {
                     when(clock.time()).thenReturn(2816L);
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     TimestampsOption tsOpt;
@@ -1662,7 +1654,7 @@ class ReliableTransportHandlerTest {
         @Mock(answer = RETURNS_DEEP_STUBS)
         ChannelHandlerContext ctx;
         @Mock(answer = RETURNS_DEEP_STUBS)
-        ReliableTransportConfig config;
+        ReliableConnectionConfig config;
         @Mock(answer = RETURNS_DEEP_STUBS)
         TransmissionControlBlock tcb;
         @Mock(answer = RETURNS_DEEP_STUBS)
@@ -1691,11 +1683,11 @@ class ReliableTransportHandlerTest {
                 class OnClosedState {
                     @Test
                     void withPassiveOpen() {
-                        final ReliableTransportConfig config = ReliableTransportConfig.newBuilder()
+                        final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                                 .activeOpen(false)
                                 .build();
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.userCallOpen(ctx);
 
@@ -1713,14 +1705,14 @@ class ReliableTransportHandlerTest {
                         final int mss = 1234;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
+                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
-                        final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                                 .clock(clock)
                                 .build();
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.userCallOpen(ctx);
@@ -1758,14 +1750,14 @@ class ReliableTransportHandlerTest {
                         final int mss = 1234;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
+                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 456L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.userCallOpen(ctx);
@@ -1802,7 +1794,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldThrowException(final State state) {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         assertThrows(ConnectionHandshakeException.class, () -> handler.userCallOpen(ctx));
@@ -1822,11 +1814,11 @@ class ReliableTransportHandlerTest {
                 @Test
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder();
-                    ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
@@ -1838,7 +1830,7 @@ class ReliableTransportHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldFailPromise() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -1857,14 +1849,14 @@ class ReliableTransportHandlerTest {
                         final int mss = 1234;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
+                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -1899,10 +1891,10 @@ class ReliableTransportHandlerTest {
                             "SYN_RECEIVED"
                     })
                     void shouldQueueData(final State state, @Mock final SendBuffer sendBuffer) {
-                        final ReliableTransportConfig config = ReliableTransportConfig.newBuilder().build();
+                        final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder().build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -1924,14 +1916,14 @@ class ReliableTransportHandlerTest {
                         final int mss = 1234;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableTransportConfig.Builder builder = ReliableTransportConfig.newBuilder()
+                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableTransportConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         final ByteBuf data = unpooledRandomBuffer(100);
@@ -1959,7 +1951,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldFailPromise(final State state) {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -1979,7 +1971,7 @@ class ReliableTransportHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldDoNothing() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -2000,7 +1992,7 @@ class ReliableTransportHandlerTest {
                                                                                    @Mock final ChannelPromise promise) {
                         when(promise.isSuccess()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
                         when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
                             @Override
@@ -2032,7 +2024,7 @@ class ReliableTransportHandlerTest {
                     void shouldPassReceivedDataToUser(final State state) {
                         when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -2049,7 +2041,7 @@ class ReliableTransportHandlerTest {
                     void shouldPassReceivedDataToUser() {
                         when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -2069,7 +2061,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldDoNothing(final State state) {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -2090,7 +2082,7 @@ class ReliableTransportHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldConnectPromiseToClosedPromise() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -2102,7 +2094,7 @@ class ReliableTransportHandlerTest {
                 class OnListenState {
                     @Test
                     void shouldCloseConnection() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.close(ctx, promise);
 
@@ -2121,7 +2113,7 @@ class ReliableTransportHandlerTest {
                 class OnSynSentState {
                     @Test
                     void shouldCloseConnection() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.close(ctx, promise);
 
@@ -2146,7 +2138,7 @@ class ReliableTransportHandlerTest {
                         when(tcb.sendBuffer().hasOutstandingData()).thenReturn(false);
                         when(tcb.sndNxt()).thenReturn(123L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -2169,7 +2161,7 @@ class ReliableTransportHandlerTest {
                         when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true).thenReturn(false);
                         when(promise.isSuccess()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
                             @Override
                             public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
@@ -2198,7 +2190,7 @@ class ReliableTransportHandlerTest {
                         when(future.isSuccess()).thenReturn(true);
                         when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -2221,7 +2213,7 @@ class ReliableTransportHandlerTest {
                             "FIN_WAIT_2"
                     })
                     void shouldFailPromise(final State state) {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.close(ctx, promise);
@@ -2243,7 +2235,7 @@ class ReliableTransportHandlerTest {
                         when(future.isSuccess()).thenReturn(true);
                         when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -2272,7 +2264,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldFailPromise(final State state) {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.close(ctx, promise);
@@ -2290,11 +2282,16 @@ class ReliableTransportHandlerTest {
             // https://www.rfc-editor.org/rfc/rfc9293.html#name-abort-call
             @Nested
             class UserCallAbort {
+                @BeforeEach
+                void setUp() {
+                    when(ctx.executor().inEventLoop()).thenReturn(true);
+                }
+
                 @Nested
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         assertThrows(ClosedChannelException.class, () -> handler.userCallAbort());
                     }
@@ -2304,7 +2301,7 @@ class ReliableTransportHandlerTest {
                 class OnListenState {
                     @Test
                     void shouldCloseConnection() throws ClosedChannelException {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -2320,7 +2317,7 @@ class ReliableTransportHandlerTest {
                 class OnSynSentState {
                     @Test
                     void shouldCloseConnection() throws ClosedChannelException {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -2349,7 +2346,7 @@ class ReliableTransportHandlerTest {
                     void shouldCloseConnection(final State state) throws ClosedChannelException {
                         when(tcb.sndNxt()).thenReturn(123L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -2383,7 +2380,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldCloseConnection(final State state) throws ClosedChannelException {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -2404,7 +2401,7 @@ class ReliableTransportHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         assertThrows(ClosedChannelException.class, () -> handler.userCallStatus());
                     }
@@ -2426,7 +2423,7 @@ class ReliableTransportHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldReturnStatus(final State state) throws ClosedChannelException {
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         assertEquals(new ConnectionHandshakeStatus(state, tcb), handler.userCallStatus());
                     }
@@ -2447,7 +2444,7 @@ class ReliableTransportHandlerTest {
                 void shouldDiscardRst() {
                     when(seg.isRst()).thenReturn(true);
 
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -2462,7 +2459,7 @@ class ReliableTransportHandlerTest {
                     when(seg.isAck()).thenReturn(false);
                     when(seg.len()).thenReturn(100);
 
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -2483,7 +2480,7 @@ class ReliableTransportHandlerTest {
                     when(seg.isAck()).thenReturn(true);
                     when(seg.ack()).thenReturn(123L);
 
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -2508,7 +2505,7 @@ class ReliableTransportHandlerTest {
                     void shouldDiscard() {
                         when(seg.isRst()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2525,7 +2522,7 @@ class ReliableTransportHandlerTest {
                         when(seg.ack()).thenReturn(123L);
                         when(seg.isAck()).thenReturn(true);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2561,7 +2558,7 @@ class ReliableTransportHandlerTest {
                         when(seg.options().get(MAXIMUM_SEGMENT_SIZE)).thenReturn(1235);
 
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 0L);
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.channelRead(ctx, seg);
@@ -2617,7 +2614,7 @@ class ReliableTransportHandlerTest {
                         when(seg.isRst()).thenReturn(true);
                         when(tcb.iss()).thenReturn(124L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2636,7 +2633,7 @@ class ReliableTransportHandlerTest {
                         when(seg.isRst()).thenReturn(false);
                         when(tcb.iss()).thenReturn(124L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.channelRead(ctx, seg);
@@ -2665,7 +2662,7 @@ class ReliableTransportHandlerTest {
                         when(seg.seq()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(456L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2688,7 +2685,7 @@ class ReliableTransportHandlerTest {
                         when(seg.ack()).thenReturn(38L);
                         when(tcb.sndNxt()).thenReturn(39L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2713,7 +2710,7 @@ class ReliableTransportHandlerTest {
                         when(seg.seq()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(123L);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2750,7 +2747,7 @@ class ReliableTransportHandlerTest {
                         when(tcb.sndTsOk()).thenReturn(true);
                         when(tcb.config()).thenReturn(config);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2833,7 +2830,7 @@ class ReliableTransportHandlerTest {
                         when(tcb.iss()).thenReturn(122L);
                         when(config.mmsR()).thenReturn(1432);
 
-                        final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -2921,7 +2918,7 @@ class ReliableTransportHandlerTest {
                             when(config.clock().time()).thenReturn(414L);
                             when(tcb.tsRecent()).thenReturn(99L);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2961,7 +2958,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(222L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2978,7 +2975,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2998,7 +2995,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(124L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3024,7 +3021,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(config.activeOpen()).thenReturn(false);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3047,7 +3044,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(config.activeOpen()).thenReturn(true);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3083,7 +3080,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3122,7 +3119,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3154,7 +3151,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(config.activeOpen()).thenReturn(false);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3185,7 +3182,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(tcb.sndNxt()).thenReturn(88L);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3238,7 +3235,7 @@ class ReliableTransportHandlerTest {
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3268,7 +3265,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.rcvWnd()).thenReturn(10);
                                 when(tcb.sndNxt()).thenReturn(88L);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3301,7 +3298,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3329,7 +3326,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3368,7 +3365,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.rttVar()).thenReturn(2.4);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3429,7 +3426,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.rttVar()).thenReturn(2.4);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3483,7 +3480,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3533,7 +3530,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.rttVar()).thenReturn(2.4);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3594,7 +3591,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.rttVar()).thenReturn(2.4);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3657,7 +3654,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, LAST_ACK, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LAST_ACK, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3686,7 +3683,7 @@ class ReliableTransportHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10);
 
-                                final ReliableTransportHandler handler = new ReliableTransportHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -3738,7 +3735,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3781,7 +3778,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(seg.content().readableBytes()).thenReturn(100);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3824,7 +3821,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3866,7 +3863,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3912,7 +3909,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3952,7 +3949,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -4001,7 +3998,7 @@ class ReliableTransportHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(tcb.maxSndWnd()).thenReturn(64000L);
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -4041,7 +4038,7 @@ class ReliableTransportHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ReliableTransportHandler handler = new ReliableTransportHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                            final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -4094,7 +4091,7 @@ class ReliableTransportHandlerTest {
                         "CLOSED"
                 })
                 void shouldCloseConnection(final State state) {
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                     handler.userTimeout(ctx);
 
@@ -4143,7 +4140,7 @@ class ReliableTransportHandlerTest {
                     when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
 
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                     long rto = 1234L;
                     handler.retransmissionTimeout(ctx, tcb, rto);
@@ -4197,7 +4194,7 @@ class ReliableTransportHandlerTest {
                         "CLOSED"
                 })
                 void shouldCloseConnection(final State state) {
-                    final ReliableTransportHandler handler = new ReliableTransportHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
+                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                     handler.timeWaitTimeout(ctx);
 

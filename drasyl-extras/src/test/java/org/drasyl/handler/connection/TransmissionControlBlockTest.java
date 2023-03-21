@@ -46,10 +46,7 @@ class TransmissionControlBlockTest {
     @Mock
     private OutgoingSegmentQueue outoingSegmentQueue;
     @Mock
-    private RttMeasurement rttMeasurement;
-    private final int mss = 1_000;
-    @Mock
-    private ReliableTransportConfig config;
+    private ReliableConnectionConfig config;
 
     @Nested
     class IsAcceptableAck {
