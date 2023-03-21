@@ -78,7 +78,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @SuppressWarnings("java:S125")
 public class TransmissionControlBlock {
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
-    static final int DRASYL_HDR_SIZE = 20 + 8 + 169; // FIXME: ergibt 1432: wie setzt sich der overhead zusammen?
+    static final int DRASYL_HDR_SIZE = 20 + 8 + 176;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     //
