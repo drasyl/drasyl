@@ -32,7 +32,6 @@ import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 
 @AutoValue
@@ -60,18 +59,19 @@ public abstract class ReliableTransportConfig {
                     false
             ))
             .activeOpen(true)
-            .rmem(64 * 1432)
-            // RFC 9293: Arbitrarily defined to be 2 minutes.
+            .rmem(65_535)
             // FIXME: change back to 2 minutes?
             .msl(ofSeconds(2))
             .noDelay(false)
+            .overrideTimeout(ofMillis(100))
+            .fs(1f / 2)
             .userTimeout(ofSeconds(60))
             .timestamps(true)
-            // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
-            // RFC 6298:       suggested in [JK88]).
+            .rto(ofSeconds(1))
+            .lBound(ofSeconds(1))
+            .uBound(ofSeconds(60))
             .alpha(1f / 8)
             .beta(1f / 4)
-            // RFC 6298: where K = 4
             .k(4)
             .clock(new Clock() {
                 @Override
@@ -84,21 +84,11 @@ public abstract class ReliableTransportConfig {
                     return 1.0 / 1_000;
                 }
             })
-            // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
-            // RFC 6298:       SHOULD be rounded up to 1 second.
-            .lBound(ofSeconds(1))
-            // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
-            // RFC 6298:       seconds.
-            .uBound(ofSeconds(60))
             .sack(false)
-            // RFC 9293: The override timeout should be in the range 0.1 - 1.0
-            .overrideTimeout(ofMillis(100))
-            .rto(ofSeconds(1))
             .mmsS(MTU - DRASYL_HDR_SIZE)
             .mmsR(MTU - DRASYL_HDR_SIZE)
             .newReno(true)
-            .limitedTransport(true)
-            .fs(1f / 2)
+            .limitedTransmit(true)
             .build();
 
     public static Builder newBuilder() {
@@ -115,41 +105,20 @@ public abstract class ReliableTransportConfig {
 
     public abstract BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbSupplier();
 
-    /**
-     * @param activeOpen if {@code true} a handshake will be issued on
-     *                   {@link #channelActive(ChannelHandlerContext)}. Otherwise, the remote peer
-     *                   must initiate the handshake
-     */
     public abstract boolean activeOpen();
 
     public abstract int rmem();
 
-    /**
-     * RFC 9293: Maximum Segment Lifetime, the time a TCP segment can exist in the internetwork RFC
-     * 9293: system.
-     */
     public abstract Duration msl();
 
-    /**
-     * bypass Nagle Delays by disabling Nagle's algorithm.
-     */
     public abstract Duration userTimeout();
 
     public abstract boolean noDelay();
 
-    /**
-     * see timestamp option RFC 7323
-     */
     public abstract boolean timestamps();
 
-    /**
-     * RFC 6298: smoothing factor
-     */
     public abstract float alpha();
 
-    /**
-     * RFC 6298: delay variance factor
-     */
     public abstract float beta();
 
     public abstract int k();
@@ -162,29 +131,17 @@ public abstract class ReliableTransportConfig {
 
     public abstract boolean sack();
 
-    /**
-     * RFC 9293: The override timeout should be in the range 0.1 - 1.0 seconds.
-     */
     public abstract Duration overrideTimeout();
 
     public abstract Duration rto();
 
-    /**
-     * RFC 9293: MMS_S is the maximum size for a transport-layer message that TCP may send.
-     */
     public abstract int mmsS();
 
-    /**
-     * RFC 9293: MMS_R is the maximum size for a transport-layer message that can be received (and
-     * reassembled at the IP layer) (MUST-67)
-     *
-     * @return
-     */
     public abstract int mmsR();
 
     public abstract boolean newReno();
 
-    public abstract boolean limitedTransport();
+    public abstract boolean limitedTransmit();
 
     public abstract float fs();
 
@@ -199,61 +156,241 @@ public abstract class ReliableTransportConfig {
 
     @AutoValue.Builder
     public abstract static class Builder {
+        /**
+         * Used to choose an initial send sequence number. A random number within [0,4294967296] is
+         * chosen by default.
+         */
         public abstract Builder issSupplier(final LongSupplier issSupplier);
 
+        /**
+         * Used to create the {@link SendBuffer}.
+         */
         public abstract Builder sndBufSupplier(final Function<Channel, SendBuffer> sndBufSupplier);
 
+        /**
+         * Used to create the {@link RetransmissionQueue}.
+         */
         public abstract Builder rtnsQSupplier(final Function<Channel, RetransmissionQueue> rtnsQSupplier);
 
+        /**
+         * Used to create the {@link ReceiveBuffer}.
+         */
         public abstract Builder rcfBufSupplier(final Function<Channel, ReceiveBuffer> rcfBufSupplier);
 
+        /**
+         * Used to create the {@link TransmissionControlBlock}.
+         */
         public abstract Builder tcbSupplier(final BiFunction<ReliableTransportConfig, Channel, TransmissionControlBlock> tcbProvider);
 
+        /**
+         * If enabled, a handshake will be issued on
+         * {@link io.netty.channel.ChannelInboundHandler#channelActive(ChannelHandlerContext)}.
+         * Otherwise, the remote peer must initiate the handshake.
+         */
         public abstract Builder activeOpen(final boolean activeOpen);
 
+        /**
+         * Defines the receive buffer size (rmem). Refers to the amount of memory allocated on the
+         * receiving side of a connection to temporarily store incoming data before it's processed
+         * by the application. Increasing the buffer size can improve network performance by
+         * reducing the likelihood of packet loss due to buffer overflow. However, it can also
+         * increase memory usage on the receiving side and may not always result in significant
+         * performance gains. Set to {@code 65535} bytes by default.
+         */
         public abstract Builder rmem(final int rmem);
 
+        /**
+         * The maximum segment lifetime, the time a segment can exist in the network. According to
+         * RFC 9293, arbitrarily defined to be 2 minutes by default.
+         */
         public abstract Builder msl(final Duration msl);
 
+        /**
+         * If enabled, small data packets are sent without delay, instead of waiting for larger
+         * packets to be filled. Disabling can reduce latency and improve the responsiveness of
+         * real-time applications, but may increase the overall network traffic.
+         *
+         * @see #overrideTimeout(Duration)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7.4">RFC 9293,
+         * Section 3.7.4.</a>
+         */
         public abstract Builder noDelay(final boolean noDelay);
 
-        public abstract Builder userTimeout(final Duration userTimeout);
-
-        public abstract Builder timestamps(final boolean timestamps);
-
-        public abstract Builder alpha(final float alpha);
-
-        public abstract Builder beta(final float beta);
-
-        public abstract Builder k(final int k);
-
-        public abstract Builder clock(final Clock clock);
+        /**
+         * Defines how long small data packets are delayed at most. According to RFC 9293, the
+         * override timeout should be in the range 0.1 - 1.0 seconds. Default value is 0.1 seconds.
+         *
+         * @see #noDelay(boolean)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1">RFC 9293,
+         * Section 3.8.6.2.1.</a>
+         */
+        public abstract Builder overrideTimeout(final Duration overrideTimeout);
 
         /**
-         * RFC 793: LBOUND is a lower bound on the timeout (e.g., 1 second)
+         * A constant used by the Nagle algorithm. Recommended value is 1/2. The default is set to
+         * this recommendation
+         *
+         * @see #noDelay(boolean)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1">RFC 9293,
+         * Section 3.8.6.2.1.</a>
+         */
+        public abstract Builder fs(final float fs);
+
+        /**
+         * Defines the duration how long a connection waits for sent data to be acknowledged before
+         * the connection is closed.
+         */
+        public abstract Builder userTimeout(final Duration userTimeout);
+
+        /**
+         * Enables the Timestamps option which is used for round-trip time measurements. Used to
+         * arrive a reasonable value for the retransmission timeout. If disabled, the timeout
+         * specified by {@link #rto(Duration)} is used. Enabled by default.
+         *
+         * @see #rto(Duration)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc7323.html#section-3">RFC 7323,
+         * Section 3.</a>
+         */
+        public abstract Builder timestamps(final boolean timestamps);
+
+        /**
+         * The retransmission timeout (RTO) is the amount of time that a connection waits before
+         * retransmitting a packet that has not been acknowledged.
+         *
+         * @see #timestamps(boolean)
+         * @see #lBound(Duration)
+         * @see #uBound(Duration)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc7323.html#section-3">RFC 7323,
+         * Section 3.</a>
+         */
+        public abstract Builder rto(final Duration rto);
+
+        /**
+         * The minimum value allowed for the retransmission timeout. This is 1 second by default. If
+         * {@link #timestamps(boolean)} is disabled, this value is used as static retransmission
+         * timeout.
+         *
+         * @see #timestamps(boolean)
+         * @see #rto(Duration)
+         * @see #uBound(Duration)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc793#section-3.7">RFC 793,
+         * Section 3.7.</a>
          */
         public abstract Builder lBound(final Duration lBound);
 
         /**
-         * RFC 793: UBOUND is an upper bound on the timeout (e.g., 1 minute)
+         * The maximum value allowed for the retransmission timeout. This is 1 minute by default.
+         *
+         * @see #timestamps(boolean)
+         * @see #rto(Duration)
+         * @see #lBound(Duration)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc793#section-3.7">RFC 793,
+         * Section 3.7.</a>
          */
         public abstract Builder uBound(final Duration uBound);
 
-        public abstract Builder sack(final boolean sack);
+        /**
+         * The ALPHA smoothing factor used for congestion control algorithm to calculate the current
+         * congestion window size. It determines the weight given to new data when estimating the
+         * network's bandwidth.
+         * <p>
+         * A higher value for the ALPHA parameter leads to more aggressive growth of the congestion
+         * window and can result in higher throughput but may also cause more congestion in the
+         * network. A lower value for the ALPHA parameter can help to reduce congestion but may also
+         * lead to lower throughput.
+         * <p>
+         * According to RFC 6298, a value of 1/8 is suggested. The default is set to this
+         * suggestion.
+         *
+         * @see #beta(float)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc6298.html#section-2">RFC 6298,
+         * Section 2.</a>
+         */
+        public abstract Builder alpha(final float alpha);
 
-        public abstract Builder overrideTimeout(final Duration overrideTimeout);
+        /**
+         * The BETA delay variance factor is used in congestion control algorithm. It's used to
+         * adjust the rate at which the congestion window size is decreased when packets are lost or
+         * delayed.
+         * <p>
+         * A higher value for the BETA parameter can cause the connection to be more aggressive in
+         * reducing the congestion window, which can help to prevent congestion but may also lead to
+         * reduced throughput. A lower value for the BETA parameter can result in less aggressive
+         * reduction of the congestion window, which can lead to higher throughput but may also
+         * cause more congestion in the network.
+         * <p>
+         * According to RFC 6298, a value of 1/4 is suggested. The default is set to this
+         * suggestion.
+         *
+         * @see #alpha(float)
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc6298.html#section-2">RFC 6298,
+         * Section 2.</a>
+         */
+        public abstract Builder beta(final float beta);
 
-        public abstract Builder rto(final Duration rto);
+        /**
+         * The K constant is used to scale the RTT variance to calculate the retransmission
+         * timeout.
+         * <p>
+         * According to RFC 6298, a value of 4 is suggested. The default is set to this suggestion.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc6298.html#section-2">RFC 6298,
+         * Section 2.</a>
+         */
+        public abstract Builder k(final int k);
 
+        /**
+         * Defines the clock used as time source.
+         */
+        public abstract Builder clock(final Clock clock);
+
+        /**
+         * Enables the Selective Acknowledgment options that improves the performance when multiple
+         * packets are lost from one window of data.
+         * <p>
+         * Currently not fully implemented. Can not be enabled
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018</a>
+         */
+        public Builder sack(final boolean sack) {
+            if (sack) {
+                throw new UnsupportedOperationException();
+            }
+
+            return this;
+        }
+
+        /**
+         * The maximum segment size for a drasyl-layer message that a connection may send.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7.1">RFC 9293,
+         * Section 3.7.1.</a>
+         */
         public abstract Builder mmsS(final int mmsS);
 
+        /**
+         * The maximum size for a drasyl-layer message that can be received.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7.1">RFC 9293,
+         * Section 3.7.1.</a>
+         */
         public abstract Builder mmsR(final int mmsR);
 
+        /**
+         * NewReno is an improvement of the fast recovery algorithm. Enabled by default.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582</a>
+         */
         public abstract Builder newReno(final boolean newReno);
 
-        public abstract Builder limitedTransport(final boolean limitedTransport);
-
-        public abstract Builder fs(final float fs);
+        /**
+         * Enables limited transmit which allows more effectively recovery lost segments when a
+         * connection's congestion window is small, or when a large number of segments are lost in a
+         * single transmission window. Enabled by default.
+         *
+         * @see <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042</a>
+         */
+        public abstract Builder limitedTransmit(final boolean limitedTransmit);
 
         abstract ReliableTransportConfig autoBuild();
 

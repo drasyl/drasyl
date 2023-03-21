@@ -2062,7 +2062,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
             LOG.trace("{}[{}] Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), state, seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
 
             if (tcb.duplicateAcks() < 3) {
-                if (config.limitedTransport()) {
+                if (config.limitedTransmit()) {
                     // RFC 5681: 1.  On the first and second duplicate ACKs received at a sender, a
                     // RFC 5681:     TCP SHOULD send a segment of previously unsent data per [RFC3042]
                     // RFC 5681:     provided that the receiver's advertised window allows, the total
