@@ -67,7 +67,7 @@ import static java.util.Objects.requireNonNull;
         header = "A collection of utilities for drasyl.%n",
         commandListHeading = "%n",
         footerHeading = "%n",
-        footer = "The environment variable JAVA_OPTS can be used to pass options to the JVM."
+        footer = "The environment variable JAVA_OPTS can be used to pass options to the JVM (does not work with native image)."
 )
 public class Cli {
     private final Function<Cli, CommandLine> commandLineSupplier;
