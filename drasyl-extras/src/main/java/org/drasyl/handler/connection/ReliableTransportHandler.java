@@ -2124,7 +2124,10 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                     if (greaterThan(seg.ack(), tcb.recover())) {
                         // RFC 6582:     If so, the value of recover is incremented to the value of
                         // RFC 6582:     the highest sequence number transmitted by the TCP so far.
-                        tcb.bla_recover(sub(tcb.sndNxt(), 1));
+                        final long highestSequenceNumberTransmitted = sub(tcb.sndNxt(), 1);
+                        if (greaterThan(highestSequenceNumberTransmitted, tcb.recover())) {
+                            tcb.bla_recover(highestSequenceNumberTransmitted);
+                        }
 
                         // RFC 6582:     The TCP then enters fast retransmit (step 2 of Section 3.2
                         // RFC 6582:     of [RFC5681]).
@@ -2574,6 +2577,19 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
         if (tcb.cwnd() != fullSizedSegment) {
             LOG.trace("{}[{}] Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), state, tcb.cwnd(), fullSizedSegment);
             tcb.bla_cwnd(fullSizedSegment);
+        }
+
+        if (config.newReno()) {
+            // RFC 6582: 4)  Retransmit timeouts:
+            // RFC 6582:     After a retransmit timeout, record the highest sequence number
+            // RFC 6582:     transmitted in the variable recover,
+            final long highestSequenceNumberTransmitted = sub(tcb.sndNxt(), 1);
+            if (greaterThan(highestSequenceNumberTransmitted, tcb.recover())) {
+                tcb.bla_recover(highestSequenceNumberTransmitted);
+            }
+
+            // FIXME:
+            //  RFC 6582:     and exit the fast recovery procedure if applicable.
         }
     }
 
