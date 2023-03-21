@@ -2238,7 +2238,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         }
 
                         // RFC 6582:     Exit the fast recovery procedure.
-                        LOG.error("{}[{}] Congestion Control: Got full ACKnowledgment. Exit Fast Recovery.", ctx.channel(), state);
+                        LOG.trace("{}[{}] Congestion Control: Got full ACKnowledgment. Exit Fast Recovery.", ctx.channel(), state);
                         tcb.duplicateAcks(0);
                     }
                     else {
@@ -2247,7 +2247,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         // RFC 6582:     including recover, then this is a partial ACK. In this case,
                         // RFC 6582:     retransmit the first unacknowledged segment.
                         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
-                        LOG.error("{}[{}] Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
+                        LOG.trace("{}[{}] Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
                         ctx.writeAndFlush(retransmission);
 
                         // RFC 6582:     Deflate the congestion window by the amount of new data
