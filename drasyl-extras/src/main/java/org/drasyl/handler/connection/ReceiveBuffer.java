@@ -266,9 +266,9 @@ public class ReceiveBuffer {
                         final long seq;
                         final int index;
                         final int length;
-                        // überschneidung von SEG mit current?
+                        // does SEG overlap with current?
                         if (lessThan(current.lastSeq(), seg.seq())) {
-                            // keine Überschneidung
+                            // not overlapping
                             seq = seg.seq();
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
@@ -281,7 +281,7 @@ public class ReceiveBuffer {
 //                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
                             block.next = current.next;
                             LOG.error(
-                                    "{} 1 Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                                    "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
                                     seg.seq(),
@@ -302,7 +302,7 @@ public class ReceiveBuffer {
                             bytes += length;
                         }
                         else {
-                            // Überschneidung
+                            // overlapping
                             seq = add(current.lastSeq(), 1);
                             index = (int) sub(seq, seg.seq());
                             if (current.next != null) {
@@ -315,7 +315,7 @@ public class ReceiveBuffer {
                             assert current.next == null || lessThan(block.seq(), current.next.seq());
                             block.next = current.next;
                             LOG.error(
-                                    "{} 2 Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                                    "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed directly after current fragment [{},{}] and before next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
                                     seg.seq(),
@@ -342,7 +342,7 @@ public class ReceiveBuffer {
                 current = current.next;
             }
 
-            // aggregieren?
+            // check if we can cumulate received segments
             LOG.trace("head = {}; RCV.NXT = {}", head, tcb.rcvNxt());
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
@@ -385,7 +385,7 @@ public class ReceiveBuffer {
         }
     }
 
-    public boolean fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+    public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         if (headBuf != null) {
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
@@ -395,10 +395,8 @@ public class ReceiveBuffer {
                 tcb.incrementRcvWnd(ctx);
                 LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx.channel(), readableBytes, bytes, tcb.rcvWnd());
                 ctx.fireChannelRead(headBuf1);
-                return true;
             }
         }
-        return false;
     }
 
     public int readableBytes() {
