@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,6 @@ package org.drasyl.cli.node;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
@@ -40,6 +38,8 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.ArgGroup;
@@ -148,7 +148,7 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 }
                 final ServerBootstrap rcBootstrap = new ServerBootstrap()
                         .group(DrasylNodeSharedEventLoopGroupHolder.getParentGroup(), DrasylNodeSharedEventLoopGroupHolder.getChildGroup())
-                        .channel(NioServerSocketChannel.class)
+                        .channel(EventLoopGroupUtil.getServerSocketChannel())
                         .childHandler(channelInitializer);
                 rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());
