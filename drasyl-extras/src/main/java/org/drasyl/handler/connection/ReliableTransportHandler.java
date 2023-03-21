@@ -1343,6 +1343,7 @@ public class ReliableTransportHandler extends ChannelDuplexHandler {
                         else if (segTsVal >= tcb.tsRecent() && seg.seq() <= tcb.lastAckSent()) {
                             // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
                             // RFC 7323: then save SEG.TSval in variable TS.Recent.
+                            LOG.trace("{}[{}] Set TS.Recent from {} to {}.", ctx.channel(), state, tcb.tsRecent(), segTsVal);
                             tcb.bla_tsRecent(segTsVal);
                         }
                     }
