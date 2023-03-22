@@ -147,14 +147,14 @@ class ReliableConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_432)
+                        .mmsS(1266)
                         .rmem(5_000)
                         .build();
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), window(5_000), mss(1_235)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), window(5_000), mss(1_225)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -237,8 +237,8 @@ class ReliableConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_432)
-                        .mmsR(1_432)
+                        .mmsS(1266)
+                        .mmsR(1266)
                         .rmem(5_000)
                         .build();
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
@@ -411,8 +411,8 @@ class ReliableConnectionHandlerTest {
                     final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> iss)
-                            .mmsS(1_432)
-                            .mmsR(1_432)
+                            .mmsS(1266)
+                            .mmsR(1266)
                             .build();
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -463,8 +463,8 @@ class ReliableConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .activeOpen(false)
-                        .mmsS(1_432)
-                        .mmsR(1_432)
+                        .mmsS(1266)
+                        .mmsR(1266)
                         .msl(ofMillis(100))
                         .build();
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -508,8 +508,8 @@ class ReliableConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerB() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                        .mmsS(1_432)
-                        .mmsR(1_432)
+                        .mmsS(1266)
+                        .mmsR(1266)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -570,8 +570,8 @@ class ReliableConnectionHandlerTest {
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .issSupplier(() -> 100L)
                         .activeOpen(false)
-                        .mmsS(1_432)
-                        .mmsR(1_432)
+                        .mmsS(1266)
+                        .mmsR(1266)
                         .msl(ofMillis(100))
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -624,8 +624,8 @@ class ReliableConnectionHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                        .mmsS(1_432)
-                        .mmsR(1_432)
+                        .mmsS(1266)
+                        .mmsR(1266)
                         .activeOpen(false)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -657,7 +657,7 @@ class ReliableConnectionHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -688,7 +688,7 @@ class ReliableConnectionHandlerTest {
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> 100L);
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 300L, 0, 100L, 100L);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -711,7 +711,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 0, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -735,7 +735,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .rmem(1000)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
@@ -763,7 +763,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .rmem(60)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
@@ -787,7 +787,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -816,7 +816,7 @@ class ReliableConnectionHandlerTest {
                 void senderShouldAvoidTheSillyWindowSyndrome() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .noDelay(false)
                             .lBound(ofMinutes(99))
                             .overrideTimeout(ofMillis(100))
@@ -856,7 +856,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     channel.config().setAutoRead(false);
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .rmem(1600)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1600, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -910,7 +910,7 @@ class ReliableConnectionHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(1000).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).rmem(1000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -931,7 +931,7 @@ class ReliableConnectionHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).rmem(2000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -994,7 +994,7 @@ class ReliableConnectionHandlerTest {
 
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(2000).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).rmem(2000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -1029,7 +1029,7 @@ class ReliableConnectionHandlerTest {
             void slowStartAndCongestionAvoidance() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).rmem(4 * 1000).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).rmem(4 * 1000).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -1085,7 +1085,7 @@ class ReliableConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -1109,7 +1109,7 @@ class ReliableConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue(queueQueue);
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -1152,7 +1152,7 @@ class ReliableConnectionHandlerTest {
             void shouldCreateRetransmissionTimerIfAcknowledgeableSegmentIsSent() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                         .lBound(ofMillis(100))
                         .rto(ofMillis(100))
                         .build();
@@ -1182,7 +1182,7 @@ class ReliableConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final RetransmissionQueue queue = new RetransmissionQueue();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432).build();
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266).build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
@@ -1217,7 +1217,7 @@ class ReliableConnectionHandlerTest {
             void fastRetransmit() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                         .rmem(4 * 1000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
@@ -1271,7 +1271,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
@@ -1305,7 +1305,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 8300L, 2000, 100L, 100L, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 401, 0, true);
@@ -1337,7 +1337,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 201, true);
@@ -1386,7 +1386,7 @@ class ReliableConnectionHandlerTest {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final RetransmissionQueue queue = new RetransmissionQueue();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
@@ -1505,7 +1505,7 @@ class ReliableConnectionHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 123L, 0, true);
@@ -1534,7 +1534,7 @@ class ReliableConnectionHandlerTest {
                     final long iss = Segment.randomSeq();
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -1572,7 +1572,7 @@ class ReliableConnectionHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -1612,7 +1612,7 @@ class ReliableConnectionHandlerTest {
 
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .clock(clock)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, true);
@@ -1679,6 +1679,11 @@ class ReliableConnectionHandlerTest {
             // https://www.rfc-editor.org/rfc/rfc9293.html#name-open-call
             @Nested
             class UserCallOpen {
+                @BeforeEach
+                void setUp() {
+                    when(ctx.executor().inEventLoop()).thenReturn(true);
+                }
+
                 @Nested
                 class OnClosedState {
                     @Test
@@ -1708,7 +1713,7 @@ class ReliableConnectionHandlerTest {
                         ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                                 .clock(clock)
                                 .build();
 
@@ -1752,7 +1757,7 @@ class ReliableConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 456L);
@@ -1815,7 +1820,7 @@ class ReliableConnectionHandlerTest {
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                    ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -1851,7 +1856,7 @@ class ReliableConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
@@ -1913,12 +1918,11 @@ class ReliableConnectionHandlerTest {
                     })
                     void shouldSegmentizeData(final State state) {
                         final long iss = 123L;
-                        final int mss = 1234;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
                         ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_432).mmsR(1_432)
+                        final ReliableConnectionConfig config = builder.mmsS(1266).mmsR(1266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
@@ -2547,8 +2551,8 @@ class ReliableConnectionHandlerTest {
                         when(config.timestamps()).thenReturn(true);
                         when(config.issSupplier().getAsLong()).thenReturn(39L);
                         when(config.rmem()).thenReturn(64000);
-                        when(config.mmsS()).thenReturn(1432);
-                        when(config.mmsR()).thenReturn(1432);
+                        when(config.mmsS()).thenReturn(1266);
+                        when(config.mmsR()).thenReturn(1266);
                         when(config.rto()).thenReturn(ofMillis(1000));
                         when(config.clock().time()).thenReturn(3614L);
                         when(seg.seq()).thenReturn(123L);
@@ -2828,7 +2832,7 @@ class ReliableConnectionHandlerTest {
                         when(tcb.sndTsOk()).thenReturn(true);
                         when(tcb.config()).thenReturn(config);
                         when(tcb.iss()).thenReturn(122L);
-                        when(config.mmsR()).thenReturn(1432);
+                        when(config.mmsR()).thenReturn(1266);
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3729,11 +3733,6 @@ class ReliableConnectionHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10);
                             when(seg.content().readableBytes()).thenReturn(100);
                             when(seg.isPsh()).thenReturn(true);
-                            when(ctx.executor()).thenReturn(executor);
-                            doAnswer(invocation -> {
-                                invocation.getArgument(0, Runnable.class).run();
-                                return null;
-                            }).when(executor).execute(any());
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 

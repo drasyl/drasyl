@@ -202,7 +202,7 @@ public class SegmentMatchers {
 
         @Override
         public void describeTo(Description description) {
-            description.appendText("<MSS=" + mss + ">");
+            description.appendText("<MAXIMUM_SEGMENT_SIZE=" + mss + ">");
         }
     }
 }

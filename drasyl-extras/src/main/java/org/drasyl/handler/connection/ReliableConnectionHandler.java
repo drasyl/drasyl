@@ -103,6 +103,7 @@ import static org.drasyl.util.NumberUtil.min;
  */
 @SuppressWarnings({
         "java:S125",
+        "java:S131",
         "java:S138",
         "java:S1066",
         "java:S1142",
@@ -856,14 +857,14 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         switch (newState) {
             case SYN_SENT:
             case SYN_RECEIVED:
-                // FIXME: am ende ohne scheduling ausführen?
+                // do not inform user immediately, ensure that current execution is completed first
                 ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
-                // FIXME: am ende ohne scheduling ausführen?
+                // do not inform user immediately, ensure that current execution is completed first
                 ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt())));
                 break;
 
@@ -1783,168 +1784,174 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: Sixth, check the URG bit:
         // (URG not supported! It is only kept by TCP for legacy reasons, see SHLD-13)
 
-        // RFC 9293: Seventh, process the segment text:
-        if (seg.content().readableBytes() > 0) {
-            switch (state) {
-                case ESTABLISHED:
-                case FIN_WAIT_1:
-                case FIN_WAIT_2:
-                    // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
-                    // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
-                    // RFC 9293: buffers until either the buffer is full or the segment is empty.
-                    final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
-                    tcb.receiveBuffer().receive(ctx, tcb, seg);
+        boolean doFireRead = false;
+        try {
+            // RFC 9293: Seventh, process the segment text:
+            if (seg.content().readableBytes() > 0) {
+                switch (state) {
+                    case ESTABLISHED:
+                    case FIN_WAIT_1:
+                    case FIN_WAIT_2:
+                        // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
+                        // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
+                        // RFC 9293: buffers until either the buffer is full or the segment is empty.
+                        final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
+                        tcb.receiveBuffer().receive(ctx, tcb, seg);
 
-                    // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
-                    // RFC 9293: informed, when the buffer is returned, that a PUSH has been
-                    // RFC 9293: received.
-                    if (seg.isPsh()) {
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), state, seg);
-                        // FIXME: am ende ohne scheduling ausführen?
-                        ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
-                    }
-                    else if (readPending) {
-                        readPending = false;
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because a RECEIVE call has been queued.", ctx.channel(), state, seg);
-                        // FIXME: am ende ohne scheduling ausführen?
-                        ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
-                    }
-                    else {
-                        LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
-                    }
+                        // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
+                        // RFC 9293: informed, when the buffer is returned, that a PUSH has been
+                        // RFC 9293: received.
+                        if (seg.isPsh()) {
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), state, seg);
+                            doFireRead = true;
+                        }
+                        else if (readPending) {
+                            readPending = false;
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and trigger channelRead because a RECEIVE call has been queued.", ctx.channel(), state, seg);
+                            doFireRead = true;
+                        }
+                        else {
+                            LOG.trace("{}[{}] Got `{}`. Add to RCV.BUF and wait for more segment.", ctx.channel(), state, seg);
+                        }
 
-                    // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
-                    // RFC 9293: to the user, it must also acknowledge the receipt of the data.
+                        // RFC 9293: When the TCP endpoint takes responsibility for delivering the data
+                        // RFC 9293: to the user, it must also acknowledge the receipt of the data.
 
-                    // RFC 9293: Once the TCP endpoint takes responsibility for the data, it
-                    // RFC 9293: advances RCV.NXT over the data accepted, and adjusts RCV.WND as
-                    // RFC 9293: appropriate to the current buffer availability. The total of
-                    // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
-                    // (is done by ReceiveBuffer#receive)
+                        // RFC 9293: Once the TCP endpoint takes responsibility for the data, it
+                        // RFC 9293: advances RCV.NXT over the data accepted, and adjusts RCV.WND as
+                        // RFC 9293: appropriate to the current buffer availability. The total of
+                        // RFC 9293: RCV.NXT and RCV.WND should not be reduced.
+                        // (is done by ReceiveBuffer#receive)
 
-                    // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
-                    // RFC 9293: when a valid segment arrives that is in the window but not at the
-                    // RFC 9293: left window edge (MAY-13).
+                        // RFC 9293: A TCP implementation MAY send an ACK segment acknowledging RCV.NXT
+                        // RFC 9293: when a valid segment arrives that is in the window but not at the
+                        // RFC 9293: left window edge (MAY-13).
 
-                    // RFC 9293: Please note the window management suggestions in Section 3.8.
+                        // RFC 9293: Please note the window management suggestions in Section 3.8.
 
-                    // RFC 9293: Send an acknowledgment of the form:
-                    // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
-                    final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+                        // RFC 9293: Send an acknowledgment of the form:
+                        // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
+                        final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
 
-                    // RFC 9293: This acknowledgment should be piggybacked on a segment being
-                    // RFC 9293: transmitted if possible without incurring undue delay.
-                    // (this is done by TCB/OutgoingSegmentQueue)
+                        // RFC 9293: This acknowledgment should be piggybacked on a segment being
+                        // RFC 9293: transmitted if possible without incurring undue delay.
+                        // (this is done by TCB/OutgoingSegmentQueue)
 
-                    LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
-                    tcb.send(ctx, response);
-                    if (outOfOrder) {
-                        // send immediate ACK for out-of-order segments
-                        tcb.flush(ctx);
-                    }
-                    else {
-                        // otherwise, flush is automatically performed on channelReadComplete
-                        // TODO:
-                        //  RFC 9293: an ACK should not be excessively delayed; in particular, the
-                        //  RFC 9293: delay MUST be less than 0.5 seconds (MUST-40)
-                    }
+                        LOG.trace("{}[{}] ACKnowledge receival of `{}` by sending `{}`.", ctx.channel(), state, seg, response);
+                        tcb.send(ctx, response);
+                        if (outOfOrder) {
+                            // send immediate ACK for out-of-order segments
+                            tcb.flush(ctx);
+                        }
+                        else {
+                            // otherwise, flush is automatically performed on channelReadComplete
+                            // TODO:
+                            //  RFC 9293: an ACK should not be excessively delayed; in particular, the
+                            //  RFC 9293: delay MUST be less than 0.5 seconds (MUST-40)
+                        }
 
-                    break;
+                        break;
 
-                case CLOSE_WAIT:
-                case CLOSING:
-                case LAST_ACK:
-                case TIME_WAIT:
-                    // RFC 9293: This should not occur since a FIN has been received from the remote
-                    // RFC 9293: side. Ignore the segment text.
-                    LOG.trace("{}[{}] Got `{}`. This should not occur. Ignore the segment text.", ctx.channel(), state, seg);
+                    case CLOSE_WAIT:
+                    case CLOSING:
+                    case LAST_ACK:
+                    case TIME_WAIT:
+                        // RFC 9293: This should not occur since a FIN has been received from the remote
+                        // RFC 9293: side. Ignore the segment text.
+                        LOG.trace("{}[{}] Got `{}`. This should not occur. Ignore the segment text.", ctx.channel(), state, seg);
+                }
             }
-        }
 
-        // RFC 9293: Eighth, check the FIN bit:
-        if (seg.isFin()) {
-            // RFC 9293: Do not process the FIN if the state is CLOSED, LISTEN, or SYN-SENT
-            // RFC 9293: since the SEG.SEQ cannot be validated; drop the segment and return.
-            // RFC 9293: we cannot validate SEG.SEQ.
-            // RFC 9293: drop the segment
-            // (can not be reached with our implementation)
+            // RFC 9293: Eighth, check the FIN bit:
+            if (seg.isFin()) {
+                // RFC 9293: Do not process the FIN if the state is CLOSED, LISTEN, or SYN-SENT
+                // RFC 9293: since the SEG.SEQ cannot be validated; drop the segment and return.
+                // RFC 9293: we cannot validate SEG.SEQ.
+                // RFC 9293: drop the segment
+                // (can not be reached with our implementation)
 
-            // RFC 9293: If the FIN bit is set, signal the user "connection closing"
-            // FIXME: am ende ohne scheduling ausführen?
-            ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state)));
+                // RFC 9293: If the FIN bit is set, signal the user "connection closing"
+                // do not inform user immediately, ensure that current execution is completed first
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state)));
 
-            // RFC 9293: and return any pending RECEIVEs with same message,
-            // (not applicable to us)
+                // RFC 9293: and return any pending RECEIVEs with same message,
+                // (not applicable to us)
 
-            // RFC 9293: advance RCV.NXT over the FIN,
-            tcb.receiveBuffer().receive(ctx, tcb, seg);
+                // RFC 9293: advance RCV.NXT over the FIN,
+                tcb.receiveBuffer().receive(ctx, tcb, seg);
 
-            // RFC 9293: and send an acknowledgment for the FIN.
-            final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-            LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
-            tcb.sendAndFlush(ctx, response);
+                // RFC 9293: and send an acknowledgment for the FIN.
+                final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+                LOG.trace("{}[{}] Got CLOSE request `{}` from remote peer. ACKnowledge receival with `{}`.", ctx.channel(), state, seg, response);
+                tcb.sendAndFlush(ctx, response);
 
-            // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
-            // FIXME: am ende ohne scheduling ausführen?
-            ctx.executor().execute(() -> tcb.receiveBuffer().fireRead(ctx, tcb));
+                // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
+                doFireRead = true;
 
-            switch (state) {
-                case SYN_RECEIVED:
-                case ESTABLISHED:
-                    // RFC 9293: Enter the CLOSE-WAIT state.
-                    changeState(ctx, CLOSE_WAIT);
-                    break;
+                switch (state) {
+                    case SYN_RECEIVED:
+                    case ESTABLISHED:
+                        // RFC 9293: Enter the CLOSE-WAIT state.
+                        changeState(ctx, CLOSE_WAIT);
+                        break;
 
-                case FIN_WAIT_1:
-                    if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-                        // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
-                        LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
+                    case FIN_WAIT_1:
+                        if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
+                            // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
+                            LOG.trace("{}[{}] Our FIN has been ACKnowledged. Close channel.", ctx.channel(), state, seg);
 
-                        // RFC 9293: then enter TIME-WAIT,
+                            // RFC 9293: then enter TIME-WAIT,
+                            changeState(ctx, TIME_WAIT);
+
+                            // RFC 9293: start the time-wait timer,
+                            startTimeWaitTimer(ctx);
+
+                            // RFC 9293: turn off the other timers;
+                            cancelUserTimer(ctx);
+                            cancelRetransmissionTimer(ctx);
+                        }
+                        else {
+                            // RFC 9293: otherwise, enter the CLOSING state.
+                            changeState(ctx, CLOSING);
+                        }
+                        break;
+
+                    case FIN_WAIT_2:
+                        // RFC 9293: Enter the TIME-WAIT state.
                         changeState(ctx, TIME_WAIT);
 
-                        // RFC 9293: start the time-wait timer,
+                        // RFC 9293: Start the time-wait timer,
                         startTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers;
                         cancelUserTimer(ctx);
                         cancelRetransmissionTimer(ctx);
-                    }
-                    else {
-                        // RFC 9293: otherwise, enter the CLOSING state.
-                        changeState(ctx, CLOSING);
-                    }
-                    break;
+                        break;
 
-                case FIN_WAIT_2:
-                    // RFC 9293: Enter the TIME-WAIT state.
-                    changeState(ctx, TIME_WAIT);
+                    case CLOSE_WAIT:
+                        // RFC 9293: Remain in the CLOSE-WAIT state.
+                        break;
 
-                    // RFC 9293: Start the time-wait timer,
-                    startTimeWaitTimer(ctx);
+                    case CLOSING:
+                        // RFC 9293: Remain in the CLOSING state.
+                        break;
 
-                    // RFC 9293: turn off the other timers;
-                    cancelUserTimer(ctx);
-                    cancelRetransmissionTimer(ctx);
-                    break;
+                    case LAST_ACK:
+                        // RFC 9293: Remain in the LAST-ACK state.
+                        break;
 
-                case CLOSE_WAIT:
-                    // RFC 9293: Remain in the CLOSE-WAIT state.
-                    break;
-
-                case CLOSING:
-                    // RFC 9293: Remain in the CLOSING state.
-                    break;
-
-                case LAST_ACK:
-                    // RFC 9293: Remain in the LAST-ACK state.
-                    break;
-
-                case TIME_WAIT:
-                    // RFC 9293: Remain in the TIME-WAIT state.
-                    // RFC 9293: Restart the 2 MSL time-wait timeout.
-                    startTimeWaitTimer(ctx);
-                    break;
+                    case TIME_WAIT:
+                        // RFC 9293: Remain in the TIME-WAIT state.
+                        // RFC 9293: Restart the 2 MSL time-wait timeout.
+                        startTimeWaitTimer(ctx);
+                        break;
+                }
+            }
+        }
+        finally {
+            // read at the end to ensure that current execution is already completed
+            if (doFireRead) {
+                tcb.receiveBuffer().fireRead(ctx, tcb);
             }
         }
 
