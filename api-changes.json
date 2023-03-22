@@ -305,6 +305,30 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.PeersRttHandler",
           "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.HelloMessage",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.UniteMessage",
+          "justification": "Internal element that was never intended to be used outside drasyl"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "interface io.netty.channel.socket.ServerSocketChannel",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "interface io.netty.channel.socket.ServerSocketChannelConfig",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

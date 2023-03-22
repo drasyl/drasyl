@@ -34,6 +34,7 @@ import org.drasyl.util.ArrayUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
@@ -59,6 +60,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage> {

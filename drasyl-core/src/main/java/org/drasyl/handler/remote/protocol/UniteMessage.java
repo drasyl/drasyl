@@ -27,6 +27,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
@@ -47,6 +48,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage> {
