@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,11 +53,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.node.Null.NULL;
+import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
 /**
@@ -445,5 +448,21 @@ public abstract class DrasylNode {
     @NonNull
     public Identity identity() {
         return identity;
+    }
+
+    /**
+     * Returns the {@link PeersList} of this node.
+     *
+     * @return the {@link PeersList} of this node
+     */
+    @Nullable
+    public PeersList peers() {
+        if (channelFuture != null) {
+            final Supplier<PeersList> supplier = channelFuture.channel().attr(PEERS_LIST_SUPPLIER_KEY).get();
+            if (supplier != null) {
+                return supplier.get();
+            }
+        }
+        return null;
     }
 }

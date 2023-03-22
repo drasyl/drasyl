@@ -19,45 +19,42 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.example.rtt;
+package org.drasyl.example.peers;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.handler.PeersRttHandler;
-import org.drasyl.handler.PeersRttHandler.PeersRttReport;
+import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.handler.PeersManagerHandler;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 /**
- * This example starts a node that collects and prints RTT information for all peers.
+ * This example starts a node that prints peer information periodically.
  */
-public class RttNode extends DrasylNode {
-    protected RttNode() throws DrasylException {
+public class PeersNode extends DrasylNode {
+    protected PeersNode() throws DrasylException {
     }
 
     public static void main(String[] args) throws DrasylException, InterruptedException {
-        final RttNode node = new RttNode();
+        final PeersNode node = new PeersNode();
         node.start().toCompletableFuture().whenComplete((result, e) -> {
             // successfully started?
             if (e == null) {
                 final String name = node.pipeline().context(PeersManagerHandler.class).name();
 
-                // generate every 5 seconds RTT report
-                node.pipeline().addBefore(name, null, new PeersRttHandler(5_000L));
+                final PeersHandler peersHandler = new PeersHandler();
+                node.pipeline().addBefore(name, null, peersHandler);
 
-                // print RTT reports to System.out
+                // print peers reports to System.out every 5 seconds
                 node.pipeline().addBefore(name, null, new ChannelInboundHandlerAdapter() {
                     @Override
-                    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                   final Object evt) {
-                        if (evt instanceof PeersRttReport) {
-                            final PeersRttReport rttReport = (PeersRttReport) evt;
-                            System.out.println(rttReport);
-                        }
-
-                        ctx.fireUserEventTriggered(evt);
+                    public void handlerAdded(ChannelHandlerContext ctx) {
+                        ctx.executor().scheduleAtFixedRate(() -> {
+                            System.out.println(peersHandler.getPeers());
+                        }, 0, 5_000L, MILLISECONDS);
                     }
                 });
             }
@@ -70,6 +67,6 @@ public class RttNode extends DrasylNode {
 
     @Override
     public void onEvent(final Event event) {
-        System.out.println("RttNode.onEvent " + event);
+        System.out.println("PeersNode.onEvent " + event);
     }
 }

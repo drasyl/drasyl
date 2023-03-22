@@ -257,7 +257,7 @@
           "code": "java.class.removed",
           "old": "interface org.drasyl.handler.remote.protocol.FullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>",
           "justification": "Internal element that was never intended to be used outside drasyl"
-        },     
+        },
         {
           "ignore": true,
           "code": "java.class.removed",
@@ -328,6 +328,24 @@
           "ignore": true,
           "code": "java.class.externalClassExposedInAPI",
           "new": "interface io.netty.channel.socket.ServerSocketChannelConfig",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "class org.drasyl.handler.peers.Peer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "class org.drasyl.handler.peers.PeersList",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.example.rtt.RttNode",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]

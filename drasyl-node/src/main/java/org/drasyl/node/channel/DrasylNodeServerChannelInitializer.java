@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,12 +27,14 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.EncoderException;
+import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.handler.PeersRttHandler;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
+import org.drasyl.handler.peers.PeersHandler;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
@@ -80,6 +82,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -93,13 +96,13 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 @UnstableApi
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
+    public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup());
     private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
     private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
     private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
     private static final int TELEMETRY_INTERVAL_SECONDS = SystemPropertyUtil.getInt("org.drasyl.telemetry.interval", 60);
-    private static final boolean RTT_REPORT_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.rtt.enabled", false);
     private static final URI TELEMETRY_URI;
 
     static {
@@ -140,16 +143,18 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
         discoveryStage(ch);
 
-        if (RTT_REPORT_ENABLED) {
-            ch.pipeline().addLast(new PeersRttHandler());
-        }
+        final PeersHandler peersHandler = new PeersHandler();
+        ch.attr(PEERS_LIST_SUPPLIER_KEY).set(peersHandler::getPeers);
+        ch.pipeline().addLast(peersHandler);
+
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginsHandler(config, identity));
-        ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
 
         if (TELEMETRY_ENABLED) {
             ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));
         }
+
+        ch.pipeline().addLast(new NodeLifecycleTailHandler(node));
     }
 
     /**
