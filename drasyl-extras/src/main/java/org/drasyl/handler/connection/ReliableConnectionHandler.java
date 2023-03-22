@@ -2349,7 +2349,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
         if (greaterThan(seg.ack(), tcb.sndNxt())) {
             // RFC 9293: If the ACK acks something not yet sent (SEG.ACK > SND.NXT),
-            LOG.error("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
+            LOG.trace("{}[{}] something not yet sent has been ACKed: SND.NXT={}; SEG={}", ctx.channel(), state, tcb.sndNxt(), seg);
 
             // RFC 9293: then send an ACK,
             final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
@@ -2496,7 +2496,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
-        LOG.error("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
+        LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
         final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
         tcb.sendBuffer().fail(cause);
@@ -2549,7 +2549,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298:       TCP receiver.
         final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
         assert retransmission != null;
-        LOG.error("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
+        LOG.trace("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
 
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
