@@ -158,7 +158,7 @@ public class ReceiveBuffer {
                     final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                     length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
                     final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
-                    LOG.error(
+                    LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
                             channel,
                             seg,
@@ -230,7 +230,7 @@ public class ReceiveBuffer {
                         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
-                        LOG.error(
+                        LOG.trace(
                                 "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
                                 channel,
                                 seg,
@@ -280,7 +280,7 @@ public class ReceiveBuffer {
                             final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
 //                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
                             block.next = current.next;
-                            LOG.error(
+                            LOG.trace(
                                     "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
@@ -314,7 +314,7 @@ public class ReceiveBuffer {
                             final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice(content.readerIndex() + index, length));
                             assert current.next == null || lessThan(block.seq(), current.next.seq());
                             block.next = current.next;
-                            LOG.error(
+                            LOG.trace(
                                     "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed directly after current fragment [{},{}] and before next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
                                     channel,
                                     seg,
