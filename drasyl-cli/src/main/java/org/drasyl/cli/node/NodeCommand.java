@@ -100,6 +100,13 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
             defaultValue = "1000"
     )
     protected int rcEventsBufferSize;
+    @Option(
+            names = { "--rc-start-node" },
+            description = {
+                    "Starts the node automatically."
+            }
+    )
+    protected boolean rcStartNode;
 
     @SuppressWarnings({ "java:S138", "java:S1188", "java:S3776" })
     @Override
@@ -153,7 +160,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 rcChannel = rcBootstrap.bind(rcBindAddress).syncUninterruptibly().channel();
                 LOG.info("Started remote control server listening on tcp:/{}", rcChannel.localAddress());
             }
-            else {
+
+            if (rc == null || rcStartNode) {
                 node.start().toCompletableFuture().exceptionally(e -> {
                     running.completeExceptionally(e);
                     return null;
@@ -233,8 +241,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 names = "--rc-jsonrpc-tcp",
                 description = {
                         "Starts a JSON-RPC 2.0 over TCP server listening on remote requests.",
-                        "If this option is set, the node needs to be started manually.",
-                        "Available methods: start, shutdown, send, identity, events"
+                        "If this option is set, the node needs to be started manually or option --rc-start-node must be set.",
+                        "Available methods: start, shutdown, send, identity, events, topology"
                 }
         )
         boolean rcTcpJsonRpc;
@@ -242,8 +250,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 names = "--rc-jsonrpc-http",
                 description = {
                         "Starts a JSON-RPC 2.0 over HTTP server listening on remote requests.",
-                        "If this option is set, the node needs to be started manually.",
-                        "Available methods: start, shutdown, send, identity, events"
+                        "If this option is set, the node needs to be started manually or option --rc-start-node must be set.",
+                        "Available methods: start, shutdown, send, identity, events, topology"
                 }
         )
         boolean rcTcpJsonHttp;
