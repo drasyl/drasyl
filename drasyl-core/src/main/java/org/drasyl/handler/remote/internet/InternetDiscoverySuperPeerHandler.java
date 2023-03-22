@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -278,8 +278,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                         final InetSocketAddress inetAddress) {
         LOG.trace("Got Discovery from `{}`.", msg.getSender());
 
-        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getPrivateInetAddresses()));
-        childrenPeer.helloReceived(inetAddress, msg.getPrivateInetAddresses());
+        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getEndpoints()));
+        childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
         final AddPathAndChildrenEvent event = AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH);
         if (pathEventFilter.add(event)) {
             ctx.fireUserEventTriggered(event);

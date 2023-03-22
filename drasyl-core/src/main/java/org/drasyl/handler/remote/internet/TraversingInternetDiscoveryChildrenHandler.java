@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -186,12 +186,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
         final DrasylAddress address = msg.getAddress();
-        final Set<InetSocketAddress> inetAddresses = msg.getInetAddresses();
-        LOG.trace("Got Unite for peer `{}` with addresses `{}`. Try to reach peer.", address, inetAddresses);
+        final Set<InetSocketAddress> endpoints = msg.getEndpoints();
+        LOG.trace("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             // send Hello
-            final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddresses));
+            final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints));
             traversingPeer.applicationTrafficSentOrReceived();
             traversingPeer.helloSent();
             for (final InetSocketAddress inetAddress : traversingPeer.inetAddressCandidates()) {
@@ -200,7 +200,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             ctx.flush();
         }
         else {
-            LOG.trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, inetAddresses, inetAddresses);
+            LOG.trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, endpoints, endpoints);
         }
     }
 
