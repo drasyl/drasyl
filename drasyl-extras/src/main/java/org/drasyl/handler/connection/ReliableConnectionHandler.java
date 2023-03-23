@@ -191,7 +191,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         cancelRetransmissionTimer(ctx);
         cancelTimeWaitTimer(ctx);
         establishedPromise.tryFailure(CONNECTION_CLOSING_ERROR);
-        ctx.channel().closeFuture().addListener(new PromiseNotifier<>(closedPromise));
+        ctx.channel().closeFuture().addListener(new PromiseNotifier<>(false, closedPromise));
     }
 
     /*
