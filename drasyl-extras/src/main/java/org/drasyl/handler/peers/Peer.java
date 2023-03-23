@@ -53,12 +53,12 @@ public class Peer {
                 final double stDev) {
         this.role = requireNonNull(role);
         this.inetAddress = requireNonNull(inetAddress);
-        this.average = requireNonNegative(average);
+        this.average = average;
         this.records = null;
         this.sent = requirePositive(sent);
-        this.last = requireNonNegative(last);
-        this.best = requireNonNegative(best);
-        this.worst = requireNonNegative(worst);
+        this.last = last;
+        this.best = best;
+        this.worst = worst;
         this.stDev = requireNonNegative(stDev);
     }
 
