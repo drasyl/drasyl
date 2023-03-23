@@ -77,6 +77,11 @@ public class Peer {
         this.stDev = null;
     }
 
+    public Peer(final Role role,
+                final InetSocketAddress inetAddress) {
+        this(role, inetAddress, -1);
+    }
+
     public Role role() {
         return role;
     }

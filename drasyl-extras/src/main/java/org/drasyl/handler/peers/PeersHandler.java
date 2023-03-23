@@ -23,10 +23,12 @@ package org.drasyl.handler.peers;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
+import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
@@ -65,6 +67,13 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
             final Peer peer = new Peer(Role.SUPER, inetAddress, rtt);
             peers.put(address, peer);
         }
+        else if (evt instanceof AddPathAndChildrenEvent) {
+            final DrasylAddress address = ((AddPathAndChildrenEvent) evt).getAddress();
+            final InetSocketAddress inetAddress = ((AddPathAndChildrenEvent) evt).getInetAddress();
+
+            final Peer peer = new Peer(Role.CHILDREN, inetAddress);
+            peers.put(address, peer);
+        }
         else if (evt instanceof AddPathEvent) {
             final DrasylAddress address = ((AddPathEvent) evt).getAddress();
             final InetSocketAddress inetAddress = ((AddPathEvent) evt).getInetAddress();
@@ -82,7 +91,7 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
                 peer.last(rtt);
             }
         }
-        else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemovePathEvent) {
+        else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemoveChildrenAndPathEvent || evt instanceof RemovePathEvent) {
             peers.remove(((PathEvent) evt).getAddress());
         }
 
