@@ -21,15 +21,20 @@
  */
 package org.drasyl.handler.peers;
 
-import org.drasyl.identity.DrasylAddress;
+import static java.util.Objects.requireNonNull;
 
-import java.util.Comparator;
-import java.util.Map.Entry;
+public enum Role {
+    SUPER("S"),
+    CHILDREN("C"),
+    DEFAULT("");
+    private final String label;
 
-class PeerComparator implements Comparator<Entry<DrasylAddress, Peer>> {
+    Role(final String label) {
+        this.label = requireNonNull(label);
+    }
+
     @Override
-    public int compare(final Entry<DrasylAddress, Peer> o1,
-                       final Entry<DrasylAddress, Peer> o2) {
-        return o1.getKey().toString().compareTo(o2.getKey().toString());
+    public String toString() {
+        return label;
     }
 }

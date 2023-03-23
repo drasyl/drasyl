@@ -28,28 +28,53 @@ import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NumberUtil.sampleStandardDeviation;
+import static org.drasyl.util.Preconditions.requireNonNegative;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class Peer {
     public static final int RTTS_COUNT = 200;
     private final Role role;
     private final InetSocketAddress inetAddress;
+    private final Long average;
+    private final Double stDev;
     private final Queue<Long> records;
     private long sent;
     private long last;
     private long best;
     private long worst;
 
-    Peer(final Role role,
-         final InetSocketAddress inetAddress,
-         final long rtt) {
+    public Peer(final Role role,
+                final InetSocketAddress inetAddress,
+                final long sent,
+                final long last,
+                final long average,
+                final long best,
+                final long worst,
+                final double stDev) {
+        this.role = requireNonNull(role);
+        this.inetAddress = requireNonNull(inetAddress);
+        this.average = requireNonNegative(average);
+        this.records = null;
+        this.sent = requirePositive(sent);
+        this.last = requireNonNegative(last);
+        this.best = requireNonNegative(best);
+        this.worst = requireNonNegative(worst);
+        this.stDev = requireNonNegative(stDev);
+    }
+
+    public Peer(final Role role,
+                final InetSocketAddress inetAddress,
+                final long rtt) {
         this.role = requireNonNull(role);
         this.inetAddress = inetAddress;
+        this.average = null;
         this.records = new EvictingQueue<>(RTTS_COUNT);
         records.add(rtt);
         this.sent = 1;
         this.last = rtt;
         this.best = rtt;
         this.worst = rtt;
+        this.stDev = null;
     }
 
     public Role role() {
@@ -89,9 +114,14 @@ public class Peer {
     /**
      * @return average RTT
      */
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @SuppressWarnings({ "OptionalGetWithoutIsPresent", "ReplaceNullCheck" })
     public double average() {
-        return records.stream().mapToLong(l -> l).average().getAsDouble();
+        if (average != null) {
+            return average;
+        }
+        else {
+            return records.stream().mapToLong(l -> l).average().getAsDouble();
+        }
     }
 
     /**
@@ -111,23 +141,13 @@ public class Peer {
     /**
      * @return RTT standard deviation
      */
+    @SuppressWarnings("ReplaceNullCheck")
     public double stDev() {
-        return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
-    }
-
-    public enum Role {
-        SUPER("S"),
-        CHILDREN("C"),
-        DEFAULT("");
-        private final String label;
-
-        Role(final String label) {
-            this.label = requireNonNull(label);
+        if (stDev != null) {
+            return stDev;
         }
-
-        @Override
-        public String toString() {
-            return label;
+        else {
+            return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
         }
     }
 }

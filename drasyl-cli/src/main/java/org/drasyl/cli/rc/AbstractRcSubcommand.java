@@ -79,13 +79,11 @@ public abstract class AbstractRcSubcommand extends GlobalOptions implements Call
         try {
             if (response.isSuccess()) {
                 final Object result = response.getResult();
-                if (!(result instanceof String && ((String) result).isEmpty())) {
-                    System.out.println(jsonWriter.writeValueAsString(result));
-                }
+                printResult(result);
                 return 0;
             }
             else {
-                System.out.println(jsonWriter.writeValueAsString(response.getError()));
+                printError(response);
                 return response.getError().getCode();
             }
         }
@@ -93,5 +91,15 @@ public abstract class AbstractRcSubcommand extends GlobalOptions implements Call
             System.err.println(e.getMessage());
             return 1;
         }
+    }
+
+    protected void printResult(final Object result) throws JsonProcessingException {
+        if (!(result instanceof String && ((String) result).isEmpty())) {
+            System.out.println(jsonWriter.writeValueAsString(result));
+        }
+    }
+
+    protected void printError(final JsonRpc2Response response) throws JsonProcessingException {
+        System.out.println(jsonWriter.writeValueAsString(response.getError()));
     }
 }

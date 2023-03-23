@@ -19,17 +19,11 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.peers;
+package org.drasyl.cli.util;
 
-import org.drasyl.identity.DrasylAddress;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-import java.util.Comparator;
-import java.util.Map.Entry;
-
-class PeerComparator implements Comparator<Entry<DrasylAddress, Peer>> {
-    @Override
-    public int compare(final Entry<DrasylAddress, Peer> o1,
-                       final Entry<DrasylAddress, Peer> o2) {
-        return o1.getKey().toString().compareTo(o2.getKey().toString());
-    }
+public interface RoleMixin {
+    @JsonValue
+    String toString();
 }

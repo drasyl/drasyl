@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,24 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node;
+package org.drasyl.cli.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import org.drasyl.handler.peers.Peer;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 
-public interface IdentityPublicKeyMixin {
-    @JsonValue
-    String toString();
+import java.util.Map;
 
+public abstract class PeersListMixin extends PeersList {
     @JsonCreator
-    static DrasylAddress of(final String bytes) {
-        // won't be called
-        return null;
+    public PeersListMixin(@JsonDeserialize(keyAs = IdentityPublicKey.class) final Map<DrasylAddress, Peer> peers) {
+        super(peers);
     }
+
+    @JsonValue
+    public abstract Map<DrasylAddress, Peer> peers();
 }

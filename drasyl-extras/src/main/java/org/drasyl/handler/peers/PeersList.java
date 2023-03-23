@@ -23,28 +23,18 @@ package org.drasyl.handler.peers;
 
 import org.drasyl.identity.DrasylAddress;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import static java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 public class PeersList {
-    private final long time;
     private final Map<DrasylAddress, Peer> peers;
 
-    PeersList(final long time, final Map<DrasylAddress, Peer> peers) {
-        this.time = requirePositive(time);
-        this.peers = requireNonNull(peers);
-    }
-
     public PeersList(final Map<DrasylAddress, Peer> peers) {
-        this(System.currentTimeMillis(), peers);
+        this.peers = requireNonNull(peers);
     }
 
     public Map<DrasylAddress, Peer> peers() {
@@ -56,12 +46,10 @@ public class PeersList {
         final StringBuilder builder = new StringBuilder();
 
         // table header
-        final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), Clock.systemDefaultZone().getZone());
-        builder.append(String.format("Time: %-35s%98s%n", RFC_1123_DATE_TIME.format(zonedDateTime), "RTTs"));
         builder.append(String.format("%-64s  %4s  %-45s  %4s  %4s  %4s  %4s  %4s  %5s%n", "Peer", "Role", "Inet Address", "Snt", "Last", " Avg", "Best", "Wrst", "StDev"));
 
         // table body
-        for (final Map.Entry<DrasylAddress, Peer> entry : peers.entrySet().stream().sorted(new PeerComparator()).collect(Collectors.toList())) {
+        for (final Entry<DrasylAddress, Peer> entry : peers.entrySet().stream().sorted(new PeerComparator()).collect(Collectors.toList())) {
             final DrasylAddress address = entry.getKey();
             final Peer peer = entry.getValue();
 

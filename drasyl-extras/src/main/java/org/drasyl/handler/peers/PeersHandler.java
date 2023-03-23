@@ -29,7 +29,6 @@ import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
-import org.drasyl.handler.peers.Peer.Role;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 

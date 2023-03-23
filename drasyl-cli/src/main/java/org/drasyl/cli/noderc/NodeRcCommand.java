@@ -39,6 +39,7 @@ import picocli.CommandLine.HelpCommand;
                 NodeRcSendCommand.class,
                 NodeRcShutdownCommand.class,
                 NodeRcStartCommand.class,
+                NodeRcPeersCommand.class,
         }
 )
 public class NodeRcCommand {

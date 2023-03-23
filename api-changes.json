@@ -347,6 +347,12 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.example.rtt.RttNode",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "enum org.drasyl.handler.peers.Role",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

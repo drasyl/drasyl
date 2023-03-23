@@ -10,8 +10,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - CLI: Option `--rc-start-node` to sub-command `node` added.
--
--
+- CLI: Sub-command `node-rc peers` added.
+- 
 
 ### Changed
 

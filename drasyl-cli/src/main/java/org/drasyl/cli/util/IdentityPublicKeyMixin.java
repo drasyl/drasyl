@@ -19,17 +19,19 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.peers;
+package org.drasyl.cli.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.DrasylAddress;
 
-import java.util.Comparator;
-import java.util.Map.Entry;
+public interface IdentityPublicKeyMixin {
+    @JsonValue
+    String toString();
 
-class PeerComparator implements Comparator<Entry<DrasylAddress, Peer>> {
-    @Override
-    public int compare(final Entry<DrasylAddress, Peer> o1,
-                       final Entry<DrasylAddress, Peer> o2) {
-        return o1.getKey().toString().compareTo(o2.getKey().toString());
+    @JsonCreator
+    static DrasylAddress of(final String bytes) {
+        // won't be called
+        return null;
     }
 }
