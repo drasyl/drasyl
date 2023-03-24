@@ -4135,7 +4135,7 @@ class ReliableConnectionHandlerTest {
                     when(tcb.rto()).thenReturn(1234L);
                     when(tcb.flightSize()).thenReturn(64_000L);
                     when(tcb.smss()).thenReturn(1000);
-                    when(tcb.retransmissionQueue().retransmissionSegment(ctx, tcb)).thenReturn(seg);
+                    when(tcb.retransmissionQueue().retransmissionSegment(ctx)).thenReturn(seg);
                     when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
 

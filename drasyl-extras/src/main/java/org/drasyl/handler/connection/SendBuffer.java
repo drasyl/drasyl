@@ -22,8 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,13 +30,10 @@ import io.netty.channel.CoalescingBufferQueue;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.netty.util.ReferenceCountUtil.safeRelease;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ReliableConnectionHandler.CONNECTION_CLOSING_ERROR;
-import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Holds data enqueued by the application to be written to the network. This FIFO queue also updates
@@ -142,5 +137,4 @@ public class SendBuffer {
     public void fail(final ConnectionHandshakeException e) {
         queue.releaseAndFailAll(e);
     }
-
 }

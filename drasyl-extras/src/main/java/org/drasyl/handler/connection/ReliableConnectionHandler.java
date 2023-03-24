@@ -2117,7 +2117,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     }
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
-                    final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+                    final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
                     LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                     ctx.writeAndFlush(retransmission);
 
@@ -2160,7 +2160,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         }
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
-                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
                         LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                         ctx.writeAndFlush(retransmission);
 
@@ -2260,7 +2260,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     If this ACK does *not* acknowledge all of the data up to and
                         // RFC 6582:     including recover, then this is a partial ACK. In this case,
                         // RFC 6582:     retransmit the first unacknowledged segment.
-                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
                         LOG.trace("{}[{}] Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
                         ctx.writeAndFlush(retransmission);
 
@@ -2555,7 +2555,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
         // RFC 6298:       TCP receiver.
-        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx, tcb);
+        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
         assert retransmission != null;
         LOG.trace("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);

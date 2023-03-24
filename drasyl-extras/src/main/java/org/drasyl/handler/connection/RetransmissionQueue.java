@@ -93,20 +93,17 @@ public class RetransmissionQueue {
 
     public void removeAcknowledged(final ChannelHandlerContext ctx,
                                    final TransmissionControlBlock tcb) {
-        int ackedBytes = 0;
         boolean somethingWasAcked = false;
         Segment seg;
         while ((seg = queue.peek()) != null) {
             if (greaterThan(tcb.sndUna(), seg.lastSeq())) {
                 // fully ACKed
                 somethingWasAcked = true;
-                ackedBytes += seg.content().readableBytes();
                 seg.release();
                 queue.remove();
             }
             else if (greaterThan(tcb.sndUna(), seg.seq())) {
                 // partially ACKed
-                System.out.println();
                 somethingWasAcked = true;
                 break;
             }
@@ -135,8 +132,7 @@ public class RetransmissionQueue {
         }
     }
 
-    Segment retransmissionSegment(ChannelHandlerContext ctx,
-                                  final TransmissionControlBlock tcb) {
+    Segment retransmissionSegment(ChannelHandlerContext ctx) {
         final Segment seg = queue.peek();
         if (seg != null) {
             final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
