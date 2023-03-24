@@ -228,7 +228,6 @@ public class SendBuffer {
                     // we need to skip start of buf
                     index += offset;
                     length -= offset;
-                    ;
                 }
             }
 
