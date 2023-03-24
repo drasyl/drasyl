@@ -47,6 +47,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
+import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.SYN;
@@ -2669,9 +2670,15 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 zeroWindowProber = null;
 
                 LOG.trace("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
-                final ByteBuf data = tcb.sendBuffer().read(1, new AtomicBoolean());
-                final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK, data);
-                tcb.sendAndFlush(ctx, segment);
+                final AtomicBoolean doPush = new AtomicBoolean();
+                final ChannelPromise promise = ctx.newPromise();
+                final ByteBuf data = tcb.sendBuffer().read(1, doPush, promise);
+                byte ctl = ACK;
+                if (doPush.get()) {
+                    ctl |= PSH;
+                }
+                final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ctl, data);
+                tcb.sendAndFlush(ctx, segment, promise);
             }, rto, MILLISECONDS);
         }
     }

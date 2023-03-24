@@ -62,6 +62,7 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -193,8 +194,10 @@ class ReliableConnectionHandlerIT {
             final long endTime = System.nanoTime();
             LOG.debug(ansi().cyan().swap().format("# %-140s #", "Transmitted " + bytes + " bytes within " + (endTime - startTime) / 1_000_000 + "ms."));
 
-            assertTrue(future.isSuccess());
-            assertEquals(sentBuf, receivedBuf);
+            await().untilAsserted(() -> {
+                assertTrue(future.isSuccess());
+                assertEquals(sentBuf, receivedBuf);
+            });
 
             sentBuf.release();
             receivedBuf.release();

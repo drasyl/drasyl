@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -34,9 +35,9 @@ import static java.util.Objects.requireNonNull;
  */
 public class OutgoingSegmentQueue {
     private static final Logger LOG = LoggerFactory.getLogger(OutgoingSegmentQueue.class);
-    private final ArrayDeque<Segment> queue;
+    private final ArrayDeque<Object> queue;
 
-    OutgoingSegmentQueue(final ArrayDeque<Segment> queue) {
+    OutgoingSegmentQueue(final ArrayDeque<Object> queue) {
         this.queue = requireNonNull(queue);
     }
 
@@ -44,9 +45,14 @@ public class OutgoingSegmentQueue {
         this(new ArrayDeque<>());
     }
 
-    void place(final ChannelHandlerContext ctx, final Segment seg) {
+    void place(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
         LOG.trace("{} Place SEG `{}` on the outgoing segment queue.", ctx.channel(), seg);
         queue.add(seg);
+        queue.add(promise);
+    }
+
+    void place(final ChannelHandlerContext ctx, final Segment seg) {
+        place(ctx, seg, ctx.newPromise());
     }
 
     public void flush(final ChannelHandlerContext ctx,
@@ -54,7 +60,7 @@ public class OutgoingSegmentQueue {
         LOG.trace("{} Flush outgoing segment queue ({} elements).", ctx.channel(), queue.size());
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
-        while ((seg = queue.poll()) != null) {
+        while ((seg = (Segment) queue.poll()) != null) {
             LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
             if (seg.mustBeAcked()) {
@@ -63,7 +69,7 @@ public class OutgoingSegmentQueue {
             }
 
             // write SEQ to network
-            ctx.write(seg);
+            ctx.write(seg, (ChannelPromise) queue.poll());
         }
 
         if (doFlush) {
@@ -72,7 +78,7 @@ public class OutgoingSegmentQueue {
     }
 
     public int size() {
-        return queue.size();
+        return queue.size() / 2;
     }
 
     @Override

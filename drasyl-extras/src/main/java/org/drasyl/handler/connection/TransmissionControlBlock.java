@@ -346,11 +346,15 @@ public class TransmissionControlBlock {
     /**
      * Advances SND.NXT and places the {@code seg} on the outgoing segment queue.
      */
-    void send(final ChannelHandlerContext ctx, final Segment seg) {
+    void send(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
         if (sndNxt == seg.seq() && seg.len() > 0) {
             sndNxt = add(seg.lastSeq(), 1);
         }
-        outgoingSegmentQueue.place(ctx, seg);
+        outgoingSegmentQueue.place(ctx, seg, promise);
+    }
+
+    void send(final ChannelHandlerContext ctx, final Segment seg) {
+        send(ctx, seg, ctx.newPromise());
     }
 
     /**
@@ -365,9 +369,15 @@ public class TransmissionControlBlock {
      * network.
      */
     void sendAndFlush(final ChannelHandlerContext ctx,
-                      final Segment seg) {
-        send(ctx, seg);
+                      final Segment seg,
+                      final ChannelPromise promise) {
+        send(ctx, seg, promise);
         flush(ctx);
+    }
+
+    void sendAndFlush(final ChannelHandlerContext ctx,
+                      final Segment seg) {
+        sendAndFlush(ctx, seg, ctx.newPromise());
     }
 
     /**
@@ -489,13 +499,14 @@ public class TransmissionControlBlock {
                     final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
 
                     final AtomicBoolean doPush = new AtomicBoolean();
-                    final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush);
-                    byte ack = ACK;
+                    final ChannelPromise promise = ctx.newPromise();
+                    final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush, promise);
+                    byte ctl = ACK;
                     if (doPush.get()) {
-                        ack |= PSH;
+                        ctl |= PSH;
                     }
-                    final Segment segment = handler.formSegment(ctx, sndNxt, rcvNxt, ack, data);
-                    send(ctx, segment);
+                    final Segment segment = handler.formSegment(ctx, sndNxt, rcvNxt, ctl, data);
+                    send(ctx, segment, promise);
 
                     readableBytes -= remainingBytes;
                 }
