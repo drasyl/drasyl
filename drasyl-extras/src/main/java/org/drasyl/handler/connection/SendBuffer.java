@@ -191,78 +191,6 @@ public class SendBuffer {
         return read(channel.alloc(), bytes, doPush);
     }
 
-    public ByteBuf unacknowledged(final ByteBufAllocator alloc, int offset, int bytes) {
-        // ensure that only as many bytes are requested as are available
-        bytes = NumberUtil.min(bytes, acknowledgeableBytes);
-
-        ByteBuf toReturn = null;
-        SendBufferEntry currentEntry = head;
-        while (bytes > 0 && currentEntry != null) {
-            int index;
-            int length;
-            if (currentEntry == head) {
-                // do not return bytes that have already been ACKed
-                index = acknowledgementIndex;
-            }
-            else {
-                // nothing ACKed in currentEntry, start from beginning
-                index = 0;
-            }
-
-            if (readMark != null && readMark.content() == currentEntry.content()) {
-                // do not return bytes that have not been read yet
-                length = readMark.content().readableBytes() - readMark.remainingBytes() - index;
-            }
-            else {
-                // whole buf has been read, return all bytes
-                length = currentEntry.content().readableBytes() - index;
-            }
-
-            if (offset > 0) {
-                if (offset >= length) {
-                    // offset longer then current buf, skip hole buf
-                    offset -= length;
-                    continue;
-                }
-                else {
-                    // we need to skip start of buf
-                    index += offset;
-                    length -= offset;
-                }
-            }
-
-            // do not return more bytes than requested
-            if (length > bytes) {
-                length = bytes;
-            }
-
-            final ByteBuf buf = currentEntry.content().retainedSlice(index, length);
-
-            bytes -= length;
-
-            // compose buf
-            toReturn = toReturn == null ? buf : compose(alloc, toReturn, buf);
-
-            // go to next entry
-            currentEntry = currentEntry.next;
-        }
-
-        // if nothing unacknowledged is present, return empty buf
-        if (toReturn == null) {
-            toReturn = Unpooled.EMPTY_BUFFER;
-        }
-
-        return toReturn;
-    }
-
-    public ByteBuf unacknowledged(final int offset, final int bytes) {
-        return unacknowledged(channel.alloc(), offset, bytes);
-    }
-
-    public ByteBuf unacknowledged(final int bytes) {
-        return unacknowledged(0, bytes);
-    }
-
     public void acknowledge(int bytes) {
         LOG.trace("ACKnowledgement of {} bytes requested ({} ACKnowledgable bytes available}.", bytes, acknowledgeableBytes);
         bytes = NumberUtil.min(bytes, acknowledgeableBytes);
@@ -362,10 +290,6 @@ public class SendBuffer {
         return bytes - acknowledgeableBytes;
     }
 
-    public long acknowledgeableBytes() {
-        return acknowledgeableBytes;
-    }
-
     public boolean hasOutstandingData() {
         return acknowledgeableBytes > 0;
     }
@@ -386,7 +310,7 @@ public class SendBuffer {
 
     @Override
     public String toString() {
-        return "SND.BUF(rd: " + readableBytes() + ", ack: " + acknowledgeableBytes() + ", len: " + bytes() + ")";
+        return "SND.BUF(len: " + bytes() + ")";
     }
 
     private void incrementPendingOutboundBytes(final ByteBuf buf) {

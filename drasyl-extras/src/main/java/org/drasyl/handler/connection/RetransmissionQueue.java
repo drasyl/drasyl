@@ -115,8 +115,6 @@ public class RetransmissionQueue {
             }
         }
 
-        tcb.sendBuffer().acknowledge(ackedBytes);
-
         if (somethingWasAcked) {
             final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
             if (!tcb.sendBuffer().hasOutstandingData()) {
