@@ -69,6 +69,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeBytes(seg.content());
 
         // calculate checksum
+        System.out.println(">> " + seg);
         final int cks = calculateChecksum(buf, buf.readableBytes());
         buf.setShort(CKS_INDEX, (short) cks);
 
@@ -99,7 +100,9 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
             final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
 
             // verify checksum
+            System.out.println("<< " + seg);
             if (calculateChecksum(in, in.writerIndex()) != 0) {
+                System.err.println("INVALID CKS!");
                 // wrong checksum, drop segment
                 return;
             }
@@ -115,14 +118,17 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         int sum = 0;
         int remainingBytes = length;
         while (remainingBytes > 1) {
+            System.out.println("cks " + (length - remainingBytes) + " " + buf.getUnsignedShort(length - remainingBytes));
             sum += buf.getUnsignedShort(length - remainingBytes);
             remainingBytes -= 2;
         }
         if (remainingBytes > 0) {
             // add padding
+            System.out.println("cks " + (length - remainingBytes) + " " + buf.getUnsignedByte(length - remainingBytes));
             final short padding = buf.getUnsignedByte(length - remainingBytes);
             sum += padding;
         }
+        System.out.println("-");
         return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
     }
 }
