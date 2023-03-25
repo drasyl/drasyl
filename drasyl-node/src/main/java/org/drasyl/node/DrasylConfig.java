@@ -79,7 +79,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_ENABLED = "drasyl.remote.enabled";
     public static final String REMOTE_BIND_HOST = "drasyl.remote.bind-host";
     public static final String REMOTE_BIND_PORT = "drasyl.remote.bind-port";
-    public static final String REMOTE_ENDPOINTS = "drasyl.remote.endpoints";
     public static final String REMOTE_EXPOSE_ENABLED = "drasyl.remote.expose.enabled";
     public static final String REMOTE_PING_INTERVAL = "drasyl.remote.ping.interval";
     public static final String REMOTE_PING_TIMEOUT = "drasyl.remote.ping.timeout";
@@ -153,7 +152,6 @@ public abstract class DrasylConfig {
             builder.remoteEnabled(config.getBoolean(REMOTE_ENABLED));
             builder.remoteBindHost(getInetAddress(config, REMOTE_BIND_HOST));
             builder.remoteBindPort(config.getInt(REMOTE_BIND_PORT));
-            builder.remoteEndpoints(Set.copyOf(getEndpointSet(config, REMOTE_ENDPOINTS)));
             builder.remoteExposeEnabled(config.getBoolean(REMOTE_EXPOSE_ENABLED));
             builder.remotePingInterval(config.getDuration(REMOTE_PING_INTERVAL));
             builder.remotePingTimeout(config.getDuration(REMOTE_PING_TIMEOUT));
@@ -710,8 +708,6 @@ public abstract class DrasylConfig {
 
     public abstract int getRemoteBindPort();
 
-    public abstract Set<PeerEndpoint> getRemoteEndpoints();
-
     public abstract boolean isRemoteExposeEnabled();
 
     public abstract Duration getRemotePingInterval();
@@ -832,8 +828,6 @@ public abstract class DrasylConfig {
         public abstract Builder remoteUniteMinInterval(final Duration remoteUniteMinInterval);
 
         public abstract Builder remotePingMaxPeers(final int remotePingMaxPeers);
-
-        public abstract Builder remoteEndpoints(final Set<PeerEndpoint> remoteEndpoints);
 
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
