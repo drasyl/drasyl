@@ -50,13 +50,14 @@ public class Segment extends DefaultByteBufHolder {
     // ACK: 4 bytes
     // CTL: 1 byte
     // Window: 4 bytes
+    // Checksum: 2 bytes
     // Options: 18 bytes
     //   MAXIMUM_SEGMENT_SIZE: ignored, as only used for SYN
     //   SACK: ignored, as only used for empty(?) ACKs
     //   TIMESTAMPS: 17 bytes
     //   END_OF_OPTION_LIST: 1 byte
     // data: arbitrary number of bytes
-    public static final int SEG_HDR_SIZE = 31;
+    public static final int SEG_HDR_SIZE = 33;
     static final int SEQ_NO_SPACE = 32;
     static final byte ACK = 1 << 4;
     static final byte PSH = 1 << 3;
@@ -68,12 +69,14 @@ public class Segment extends DefaultByteBufHolder {
     private final long ack;
     private final byte ctl;
     private final long wnd;
+    private final short cks;
     private final Map<SegmentOption, Object> options;
 
     public Segment(final long seq,
                    final long ack,
                    final byte ctl,
                    final long wnd,
+                   final short cks,
                    final Map<SegmentOption, Object> options,
                    final ByteBuf data) {
         super(data);
@@ -81,7 +84,17 @@ public class Segment extends DefaultByteBufHolder {
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
         this.wnd = requireNonNegative(wnd);
+        this.cks = cks;
         this.options = requireNonNull(options);
+    }
+
+    public Segment(final long seq,
+                   final long ack,
+                   final byte ctl,
+                   final long wnd,
+                   final Map<SegmentOption, Object> options,
+                   final ByteBuf data) {
+        this(seq, ack, ctl, wnd, (short) 0, options, data);
     }
 
     public Segment(final long seq,
@@ -220,6 +233,10 @@ public class Segment extends DefaultByteBufHolder {
         return wnd;
     }
 
+    public short cks() {
+        return cks;
+    }
+
     public boolean isAck() {
         return (ctl & ACK) != 0;
     }
@@ -315,7 +332,7 @@ public class Segment extends DefaultByteBufHolder {
 
     @Override
     public Segment copy() {
-        return new Segment(seq, ack, ctl, wnd, new EnumMap<>(options), content().copy());
+        return new Segment(seq, ack, ctl, wnd, cks, new EnumMap<>(options), content().copy());
     }
 
     public long lastSeq() {
@@ -345,7 +362,7 @@ public class Segment extends DefaultByteBufHolder {
             }
 
             // attach ACK
-            return new Segment(seq, other.ack(), (byte) (ctl | other.ctl()), wnd, options, content());
+            return new Segment(seq, other.ack(), (byte) (ctl | other.ctl()), wnd, cks, options, content());
         }
         finally {
             other.release();

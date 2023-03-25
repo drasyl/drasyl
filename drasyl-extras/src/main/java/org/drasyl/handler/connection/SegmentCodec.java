@@ -51,6 +51,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeInt((int) seg.ack());
         buf.writeByte(seg.ctl());
         buf.writeInt((int) seg.wnd());
+        buf.writeShort(seg.cks());
 
         // options
         for (final Entry<SegmentOption, Object> entry : seg.options().entrySet()) {
@@ -76,7 +77,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 final long seq = in.readUnsignedInt();
                 final long ack = in.readUnsignedInt();
                 final byte ctl = in.readByte();
-                final long window = in.readUnsignedInt();
+                final long wnd = in.readUnsignedInt();
+                final short cks = in.readShort();
 
                 // options
                 final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
@@ -88,7 +90,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                     options.put(option, value);
                 }
 
-                final Segment seg = new Segment(seq, ack, ctl, window, options, in.retain());
+                final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
                 out.add(seg);
             }
             else {

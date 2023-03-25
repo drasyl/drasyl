@@ -37,7 +37,7 @@ enum SegmentOption {
     END_OF_OPTION_LIST((byte) 0), // 1 byte
     MAXIMUM_SEGMENT_SIZE((byte) 2), // 3 bytes
     SACK((byte) 5), // at least 2 bytes
-    TIMESTAMPS((byte) 8); // 17 bytes
+    TIMESTAMPS((byte) 8); // 17 bytes // FIXME: sind das bei TCP auch 8 bytes pro timestamp?
     private static final Map<Byte, SegmentOption> OPTIONS;
 
     static {
