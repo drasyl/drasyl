@@ -51,7 +51,7 @@ public class Segment extends DefaultByteBufHolder {
     // Checksum: 2 bytes
     // CTL: 1 byte
     // Window: 4 bytes
-    // Options: 18 bytes
+    // Options: 10 bytes
     //   MAXIMUM_SEGMENT_SIZE: ignored, as only used for SYN
     //   SACK: ignored, as only used in empty(?) ACKs
     //   TIMESTAMPS: 9 bytes
