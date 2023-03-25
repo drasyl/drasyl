@@ -67,7 +67,7 @@ public class SendBuffer {
      * @param promise to complete when all the bytes have been consumed and written, can be void.
      */
     public void enqueue(final ByteBuf buf, final ChannelPromise promise) {
-        queue.add(buf.retainedSlice(), promise);
+        queue.add(buf, promise);
     }
 
     public void enqueue(final ByteBuf buf) {

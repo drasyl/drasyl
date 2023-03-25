@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -501,6 +502,7 @@ public class TransmissionControlBlock {
                     final AtomicBoolean doPush = new AtomicBoolean();
                     final ChannelPromise promise = ctx.newPromise();
                     final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush, promise);
+                    ReferenceCountUtil.touch(data, "segmentizeData");
                     byte ctl = ACK;
                     if (doPush.get()) {
                         ctl |= PSH;

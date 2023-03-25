@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -136,7 +137,9 @@ public class RetransmissionQueue {
         final Segment seg = queue.peek();
         if (seg != null) {
             final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
-            return handler.formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), seg.content().copy());
+            final ByteBuf copy = seg.content().copy();
+            ReferenceCountUtil.touch(copy, "retransmissionSegment");
+            return handler.formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
         }
         return null;
     }

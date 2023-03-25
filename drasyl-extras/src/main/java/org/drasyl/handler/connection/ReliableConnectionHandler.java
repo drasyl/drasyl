@@ -2673,6 +2673,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 final AtomicBoolean doPush = new AtomicBoolean();
                 final ChannelPromise promise = ctx.newPromise();
                 final ByteBuf data = tcb.sendBuffer().read(1, doPush, promise);
+                ReferenceCountUtil.touch(data, "startZeroWindowProbing");
                 byte ctl = ACK;
                 if (doPush.get()) {
                     ctl |= PSH;
