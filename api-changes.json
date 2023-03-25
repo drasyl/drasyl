@@ -353,6 +353,23 @@
           "code": "java.class.externalClassExposedInAPI",
           "new": "enum org.drasyl.handler.peers.Role",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteEndpoints(java.util.Set<org.drasyl.node.PeerEndpoint>)",
+          "justification": "was never used"        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_ENDPOINTS",
+          "justification": "was never used"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Set<org.drasyl.node.PeerEndpoint> org.drasyl.node.DrasylConfig::getRemoteEndpoints()",
+          "justification": "was never used"
         }
       ]
     }
