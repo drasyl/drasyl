@@ -1227,7 +1227,7 @@ class ReliableConnectionHandlerTest {
                 // we need outstanding data first
                 final ByteBuf outstandingData = unpooledRandomBuffer(100);
                 tcb.sendBuffer().enqueue(outstandingData);
-                tcb.sendBuffer().read(100, new AtomicBoolean(), null); // FIXME
+                tcb.sendBuffer().read(100, new AtomicBoolean(), channel.newPromise().setSuccess());
                 assertTrue(tcb.sendBuffer().hasOutstandingData());
 
                 // three duplicate ACKs in a row

@@ -78,9 +78,6 @@ public class SendBuffer {
         pushMark = readableBytes();
     }
 
-    /**
-     * FIXME: doPush parameter ist sehr hässlich gelöst
-     */
     public final ByteBuf read(int bytes, final AtomicBoolean doPush, final ChannelPromise promise) {
         final ByteBuf toReturn = queue.remove(bytes, promise);
 
