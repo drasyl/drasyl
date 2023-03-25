@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -79,7 +79,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
         when(uniteMsg.getSender()).thenReturn(superPeerPublicKey);
-        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
+        when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
@@ -102,7 +102,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                 @Mock final InetSocketAddress otherPeerInetAddress,
                                                 @Mock final InetSocketAddress superPeerInetAddress) {
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
-        when(uniteMsg.getInetAddresses()).thenReturn(Set.of(otherPeerInetAddress));
+        when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);

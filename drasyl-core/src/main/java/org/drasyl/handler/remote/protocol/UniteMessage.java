@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
@@ -42,12 +43,12 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.UNITE
  * for a peer we want to directly communicate. The message's body is structured as follows:
  * <ul>
  * <li><b>Address</b>: The {@link DrasylAddress} to which this message contains routing information (32 bytes).</li>
- * <li><b>Port</b>: The UDP port through which the node can be reached (2 bytes).</li>
- * <li><b>InetAddress</b>: The IP address which the node can be reached. IPv4 addresses will be mapped to IPv6 addresses (16 bytes).</li>
+ * <li><b>Endpoints</b>: UDP-port-IP-address-combinations were the peer can be reached. IPv4 addresses will be mapped to IPv6 addresses (2 + 16 bytes per endpoint)</li>
  * </ul>
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage> {
@@ -66,7 +67,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
      * @param sender        the public key of the sender
      * @param proofOfWork   the proof of work of {@code sender}
      * @param address       the public key of the peer
-     * @param inetAddresses the internet addresses of the peer
+     * @param endpoints     the UDP-port-IP-address-combinations were the peer can be reached
      * @throws NullPointerException     if {@code nonce},  {@code sender}, {@code proofOfWork},
      *                                  {@code recipient}, {@code hopCount}, {@code address}, or
      *                                  {@code inetAddress} is {@code null}
@@ -81,7 +82,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                                   final DrasylAddress sender,
                                   final ProofOfWork proofOfWork,
                                   final DrasylAddress address,
-                                  final Set<InetSocketAddress> inetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         return new AutoValue_UniteMessage(
                 nonce,
                 networkId,
@@ -91,19 +92,19 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                 isArmed,
                 recipient,
                 address,
-                inetAddresses
+                endpoints
         );
     }
 
     /**
      * Creates new unit message with random {@link Nonce}, and minimal {@link HopCount} value.
      *
-     * @param networkId     the network id
-     * @param recipient     the public key of the recipient
-     * @param sender        the public key of the sender
-     * @param proofOfWork   the proof of work of {@code sender}
-     * @param address       the public key of the peer
-     * @param inetAddresses the ip inetAddress and port of the peer
+     * @param networkId   the network id
+     * @param recipient   the public key of the recipient
+     * @param sender      the public key of the sender
+     * @param proofOfWork the proof of work of {@code sender}
+     * @param address     the public key of the peer
+     * @param endpoints   the UDP-port-IP-address-combinations were the peer can be reached.
      * @throws NullPointerException     if {@code sender}, {@code proofOfWork}, {@code recipient},
      *                                  {@code address}, or {@code inetAddress.getAddress()} is
      *                                  {@code null}
@@ -114,14 +115,14 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                                   final IdentityPublicKey sender,
                                   final ProofOfWork proofOfWork,
                                   final DrasylAddress address,
-                                  final Set<InetSocketAddress> inetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         return of(
                 HopCount.of(), false, networkId, Nonce.randomNonce(),
                 recipient,
                 sender,
                 proofOfWork,
                 address,
-                inetAddresses
+                endpoints
         );
     }
 
@@ -153,15 +154,15 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
         final byte[] pubkeyBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
         body.readBytes(pubkeyBuffer);
 
-        final Set<InetSocketAddress> inetAddresses = new HashSet<>();
+        final Set<InetSocketAddress> endpoints = new HashSet<>();
         try {
             while (body.readableBytes() >= ADDRESS_LENGTH) {
                 final int port = body.readUnsignedShort();
                 final byte[] addressBuffer = new byte[IPV6_LENGTH];
                 body.readBytes(addressBuffer);
                 final InetAddress address = InetAddress.getByAddress(addressBuffer);
-                final InetSocketAddress socketAddress = new InetSocketAddress(address, port);
-                inetAddresses.add(socketAddress);
+                final InetSocketAddress endpoint = new InetSocketAddress(address, port);
+                endpoints.add(endpoint);
             }
         }
         catch (final UnknownHostException e) {
@@ -173,7 +174,7 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
                 recipient, sender,
                 proofOfWork,
                 IdentityPublicKey.of(pubkeyBuffer),
-                inetAddresses
+                endpoints
         );
     }
 
@@ -185,28 +186,28 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
     public abstract DrasylAddress getAddress();
 
     /**
-     * Returns the ip address of the peer.
+     * Returns the UDP-port-IP-address-combinations were the peer can be reached.
      *
-     * @return the ip address of the peer.
+     * @return the UDP-port-IP-address-combinations were the peer can be reached.
      */
-    public abstract Set<InetSocketAddress> getInetAddresses();
+    public abstract Set<InetSocketAddress> getEndpoints();
 
     @Override
     public UniteMessage incrementHopCount() {
-        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getAddress(), getInetAddresses());
+        return UniteMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getAddress(), getEndpoints());
     }
 
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
         int length = MIN_LENGTH;
-        length += getInetAddresses().size() * ADDRESS_LENGTH;
+        length += getEndpoints().size() * ADDRESS_LENGTH;
         PrivateHeader.of(UNITE, UnsignedShort.of(length)).writeTo(out);
     }
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
         out.writeBytes(getAddress().toByteArray());
-        for (final InetSocketAddress address : getInetAddresses()) {
+        for (final InetSocketAddress address : getEndpoints()) {
             out.writeShort(address.getPort());
             out.writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(address.getAddress()));
         }
@@ -214,6 +215,6 @@ public abstract class UniteMessage extends AbstractFullReadMessage<UniteMessage>
 
     @Override
     public int getLength() {
-        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + IdentityPublicKey.KEY_LENGTH_AS_BYTES + ADDRESS_LENGTH * getInetAddresses().size();
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + IdentityPublicKey.KEY_LENGTH_AS_BYTES + ADDRESS_LENGTH * getEndpoints().size();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +60,7 @@ public class UniteMessageTest {
         void shouldReturnCorrectAddress() {
             final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, Set.of(new InetSocketAddress(22527)));
 
-            assertEquals(Set.of(new InetSocketAddress(22527)), unite.getInetAddresses());
+            assertEquals(Set.of(new InetSocketAddress(22527)), unite.getEndpoints());
         }
     }
 

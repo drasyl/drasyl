@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,11 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.node;
+package org.drasyl.cli.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.identity.DrasylAddress;
 
-public interface IdentityPublicKeyMixin {
+public interface KeyAgreementPublicKeyMixin {
     @JsonValue
     String toString();
-
-    @JsonCreator
-    static DrasylAddress of(final String bytes) {
-        // won't be called
-        return null;
-    }
 }

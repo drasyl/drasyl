@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import org.drasyl.util.ArrayUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
 import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetAddress;
@@ -54,10 +55,12 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.HELLO
  * <li><b>Time</b>: The sender's current time in milliseconds stored in 8 bytes.</li>
  * <li><b>ChildrenTime</b>: Specifies how many seconds (8 bytes) the sender wants to join the receiving super peer. If the value is 0, the message is an announcement and not a join.</li>
  * <li><b>Signature</b>: 64 byte signature. Only present if ChildrenTime is > 0.</li>
+ * <li><b>Endpoints</b>: UDP-port-IP-address-combinations were this node can be reached. IPv4 addresses will be mapped to IPv6 addresses (2 + 16 bytes per endpoint)</li>
  * </ul>
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage> {
@@ -79,7 +82,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
      * @param time                 the local time of the sender
      * @param childrenTime         the join time
      * @param signature            the signature
-     * @param privateInetAddresses list of private ip addresses of the sender
+     * @param endpoints            the UDP-port-IP-address-combinations were this node can be reached
      * @throws NullPointerException if {@code nonce},  {@code sender}, {@code proofOfWork}, {@code
      *                              recipient}, or {@code hopCount} is {@code null}
      */
@@ -94,7 +97,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final long time,
                                   final long childrenTime,
                                   final ImmutableByteArray signature,
-                                  final Set<InetSocketAddress> privateInetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         return new AutoValue_HelloMessage(
                 nonce,
                 networkId,
@@ -106,7 +109,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 time,
                 childrenTime,
                 signature,
-                privateInetAddresses
+                endpoints
         );
     }
 
@@ -136,7 +139,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final long time,
                                   final long childrenTime,
                                   final IdentitySecretKey secretKey,
-                                  final Set<InetSocketAddress> privateInetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         try {
             final byte[] signature;
             if (childrenTime > 0) {
@@ -159,7 +162,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                     time,
                     childrenTime,
                     ImmutableByteArray.of(signature),
-                    privateInetAddresses
+                    endpoints
             );
         }
         catch (final CryptoException e) {
@@ -170,14 +173,14 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     /**
      * Creates a new {@link HelloMessage}.
      *
-     * @param networkId            the network of the joining node
-     * @param recipient            the public key of the node to join
-     * @param sender               the public key of the joining node
-     * @param proofOfWork          the proof of work
-     * @param time                 time in millis when this message was sent
-     * @param childrenTime         if {@code 0} greater then 0, node will join a children.
-     * @param secretKey            the secret key used to sign this message
-     * @param privateInetAddresses list of private ip addresses of the sender
+     * @param networkId    the network of the joining node
+     * @param recipient    the public key of the node to join
+     * @param sender       the public key of the joining node
+     * @param proofOfWork  the proof of work
+     * @param time         time in millis when this message was sent
+     * @param childrenTime if {@code 0} greater then 0, node will join a children.
+     * @param secretKey    the secret key used to sign this message
+     * @param endpoints    the UDP-port-IP-address-combinations were this node can be reached
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
@@ -189,7 +192,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final long time,
                                   final long childrenTime,
                                   final IdentitySecretKey secretKey,
-                                  final Set<InetSocketAddress> privateInetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         return of(
                 HopCount.of(), false, networkId, randomNonce(),
                 recipient, sender,
@@ -197,20 +200,20 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 time,
                 childrenTime,
                 secretKey,
-                privateInetAddresses
+                endpoints
         );
     }
 
     /**
      * Creates a new {@link HelloMessage}.
      *
-     * @param networkId            the network of the joining node
-     * @param recipient            the public key of the node to join
-     * @param sender               the public key of the joining node
-     * @param proofOfWork          the proof of work
-     * @param childrenTime         if {@code 0} greater then 0, node will join a children.
-     * @param secretKey            the secret key used to sign this message
-     * @param privateInetAddresses list of private ip addresses of the sender
+     * @param networkId    the network of the joining node
+     * @param recipient    the public key of the node to join
+     * @param sender       the public key of the joining node
+     * @param proofOfWork  the proof of work
+     * @param childrenTime if {@code 0} greater then 0, node will join a children.
+     * @param secretKey    the secret key used to sign this message
+     * @param endpoints    the UDP-port-IP-address-combinations were this node can be reached
      * @throws NullPointerException if {@code sender}, {@code proofOfWork}, or {@code recipient} is
      *                              {@code null}
      */
@@ -220,7 +223,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                                   final ProofOfWork proofOfWork,
                                   final long childrenTime,
                                   final IdentitySecretKey secretKey,
-                                  final Set<InetSocketAddress> privateInetAddresses) {
+                                  final Set<InetSocketAddress> endpoints) {
         return of(
                 networkId,
                 recipient,
@@ -229,7 +232,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 System.currentTimeMillis(),
                 childrenTime,
                 secretKey,
-                privateInetAddresses
+                endpoints
         );
     }
 
@@ -317,7 +320,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
         else {
             signature = new byte[0];
         }
-        final Set<InetSocketAddress> privateInetAddresses = new HashSet<>();
+        final Set<InetSocketAddress> endpoints = new HashSet<>();
         try {
             while (body.readableBytes() >= ADDRESS_LENGTH) {
                 final int port = body.readUnsignedShort();
@@ -325,7 +328,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 body.readBytes(addressBuffer);
                 final InetAddress address = InetAddress.getByAddress(addressBuffer);
                 final InetSocketAddress socketAddress = new InetSocketAddress(address, port);
-                privateInetAddresses.add(socketAddress);
+                endpoints.add(socketAddress);
             }
         }
         catch (final UnknownHostException e) {
@@ -339,7 +342,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
                 time,
                 childrenTime,
                 ImmutableByteArray.of(signature),
-                privateInetAddresses);
+                endpoints);
     }
 
     /**
@@ -363,11 +366,11 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
 
     public abstract ImmutableByteArray getSignature();
 
-    public abstract Set<InetSocketAddress> getPrivateInetAddresses();
+    public abstract Set<InetSocketAddress> getEndpoints();
 
     @Override
     public HelloMessage incrementHopCount() {
-        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime(), getSignature(), getPrivateInetAddresses());
+        return HelloMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getChildrenTime(), getSignature(), getEndpoints());
     }
 
     /**
@@ -394,7 +397,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
         int length = getChildrenTime() > 0 ? MIN_SIGNED_LENGTH : MIN_UNSIGNED_LENGTH;
-        length += getPrivateInetAddresses().size() * ADDRESS_LENGTH;
+        length += getEndpoints().size() * ADDRESS_LENGTH;
         PrivateHeader.of(HELLO, UnsignedShort.of(length)).writeTo(out);
     }
 
@@ -403,7 +406,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
         out.writeLong(getTime());
         out.writeLong(getChildrenTime());
         out.writeBytes(getSignature().getArray());
-        for (final InetSocketAddress address : getPrivateInetAddresses()) {
+        for (final InetSocketAddress address : getEndpoints()) {
             out.writeShort(address.getPort());
             out.writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(address.getAddress()));
         }
@@ -411,7 +414,7 @@ public abstract class HelloMessage extends AbstractFullReadMessage<HelloMessage>
 
     @Override
     public int getLength() {
-        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + MIN_SIGNED_LENGTH + ADDRESS_LENGTH * getPrivateInetAddresses().size();
+        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + MIN_SIGNED_LENGTH + ADDRESS_LENGTH * getEndpoints().size();
     }
 
     private static byte[] signedAttributes(final DrasylAddress recipient,

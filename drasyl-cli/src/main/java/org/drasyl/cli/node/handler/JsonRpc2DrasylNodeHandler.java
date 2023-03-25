@@ -26,6 +26,7 @@ import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
 import org.drasyl.cli.rc.handler.JsonRpc2RequestHandler;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
@@ -80,6 +81,9 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
                 break;
             case "events":
                 events(ctx, request);
+                break;
+            case "peers":
+                peers(ctx, request);
                 break;
             default:
                 requestMethodNotFound(ctx, request, request.getMethod());
@@ -246,6 +250,22 @@ public class JsonRpc2DrasylNodeHandler extends JsonRpc2RequestHandler {
         }
         else {
             LOG.trace("Drop event request as it was sent as notification.");
+        }
+    }
+
+    private void peers(final ChannelHandlerContext ctx, final JsonRpc2Request request) {
+        LOG.trace("Got topology request.");
+
+        final Object requestId = request.getId();
+        if (requestId != null) {
+            final PeersList peers = node.peers();
+            final Map<String, Object> result = peersMap(peers);
+            final JsonRpc2Response response = new JsonRpc2Response(result, requestId);
+            LOG.trace("Send response `{}`.", response);
+            ctx.writeAndFlush(response).addListener(FIRE_EXCEPTION_ON_FAILURE);
+        }
+        else {
+            LOG.trace("Drop topology request as it was sent as notification.");
         }
     }
 }

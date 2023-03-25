@@ -29,14 +29,10 @@
     <version>0.11.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Parent Package</name>
     <description>
-        drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
-
-        By using drasyl developers can fully concentrate on creating distributed applications.
-        With drasyl, boundaries between IP-based networks will be eliminated and secure communication channels between any peers will be provided.
-        Zero-configuration is required to use drasyl.
-        Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
+        drasyl enables quick and easy development of high-performance distributed applications.
+        Driven by a secure and low-latency overlay network protocol, drasyl provides any-to-any connectivity between all Internet-enabled devices.
     </description>
     <url>https://drasyl.org/</url>
 
@@ -126,19 +122,19 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.4.5</logback.version>
+        <logback.version>1.4.6</logback.version>
         <junit.version>5.9.2</junit.version>
         <mockito.version>4.11.0</mockito.version>
         <jackson.version>2.14.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.89.Final</netty.version>
+        <netty.version>4.1.90.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>2.0.6</slf4j.version>
+        <slf4j.version>2.0.7</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.36.1</json-unit-assertj.version>
-        <protobuf.version>3.22.0</protobuf.version>
+        <protobuf.version>3.22.2</protobuf.version>
         <auto-value.version>1.10.1</auto-value.version>
         <jna.version>5.13.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -299,7 +295,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.155</version>
+                <version>4.8.157</version>
             </dependency>
 
             <!-- Crypto -->
@@ -352,7 +348,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>2.22.2</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -392,7 +388,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.3.1</version>
+                    <version>4.7.3.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -402,7 +398,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M9</version>
+                    <version>3.0.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -447,7 +443,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.3.1</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -582,7 +578,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.8.0</version>
+                        <version>10.9.2</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -604,7 +600,7 @@
                     <dependency>
                         <groupId>org.revapi</groupId>
                         <artifactId>revapi-java</artifactId>
-                        <version>0.28.0</version>
+                        <version>0.28.1</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -631,7 +627,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.3.1</version>
+                <version>4.7.3.2</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>

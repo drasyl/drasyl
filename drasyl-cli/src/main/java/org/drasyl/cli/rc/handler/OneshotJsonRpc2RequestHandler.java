@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -57,6 +57,10 @@ public class OneshotJsonRpc2RequestHandler extends SimpleChannelInboundHandler<J
                                 final JsonRpc2Response response) throws Exception {
         LOG.trace("Got response `{}`.", response);
         if (request.getId().equals(response.getId())) {
+            responseConsumer.accept(response);
+            ctx.channel().close();
+        }
+        else if (response.isError()) {
             responseConsumer.accept(response);
             ctx.channel().close();
         }

@@ -26,12 +26,30 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
+import org.drasyl.cli.util.IdentityMixin;
+import org.drasyl.cli.util.IdentityPublicKeyMixin;
+import org.drasyl.cli.util.IdentitySecretKeyMixin;
+import org.drasyl.cli.util.KeyAgreementPublicKeyMixin;
+import org.drasyl.cli.util.KeyAgreementSecretKeyMixin;
+import org.drasyl.cli.util.PeerMixin;
+import org.drasyl.cli.util.PeersListMixin;
+import org.drasyl.cli.util.ProofOfWorkMixin;
+import org.drasyl.cli.util.RoleMixin;
+import org.drasyl.handler.peers.Peer;
+import org.drasyl.handler.peers.PeersList;
+import org.drasyl.handler.peers.Role;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.IdentitySecretKey;
+import org.drasyl.identity.KeyAgreementPublicKey;
+import org.drasyl.identity.KeyAgreementSecretKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.Map;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static org.drasyl.cli.node.message.JsonRpc2Error.METHOD_NOT_FOUND;
+import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
 
 public abstract class JsonRpc2RequestHandler extends SimpleChannelInboundHandler<JsonRpc2Request> {
     protected void requestMethodNotFound(final ChannelHandlerContext ctx,
@@ -44,16 +62,22 @@ public abstract class JsonRpc2RequestHandler extends SimpleChannelInboundHandler
     }
 
     protected Map<String, Object> identityMap(final Identity identity) {
-        return Map.of(
-                "proofOfWork", identity.getProofOfWork().intValue(),
-                "identityKeyPair", Map.of(
-                        "publicKey", identity.getIdentityPublicKey().toString(),
-                        "secretKey", identity.getIdentitySecretKey().toUnmaskedString()
-                ),
-                "agreementKeyPair", Map.of(
-                        "publicKey", identity.getKeyAgreementPublicKey().toString(),
-                        "secretKey", identity.getKeyAgreementSecretKey().toUnmaskedString()
-                )
-        );
+        JACKSON_MAPPER.addMixIn(Identity.class, IdentityMixin.class);
+        JACKSON_MAPPER.addMixIn(ProofOfWork.class, ProofOfWorkMixin.class);
+        JACKSON_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        JACKSON_MAPPER.addMixIn(IdentitySecretKey.class, IdentitySecretKeyMixin.class);
+        JACKSON_MAPPER.addMixIn(KeyAgreementPublicKey.class, KeyAgreementPublicKeyMixin.class);
+        JACKSON_MAPPER.addMixIn(KeyAgreementSecretKey.class, KeyAgreementSecretKeyMixin.class);
+
+        return JACKSON_MAPPER.convertValue(identity, Map.class);
+    }
+
+    protected Map<String, Object> peersMap(final PeersList peers) {
+        JACKSON_MAPPER.addMixIn(PeersList.class, PeersListMixin.class);
+        JACKSON_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        JACKSON_MAPPER.addMixIn(Peer.class, PeerMixin.class);
+        JACKSON_MAPPER.addMixIn(Role.class, RoleMixin.class);
+
+        return JACKSON_MAPPER.convertValue(peers, Map.class);
     }
 }

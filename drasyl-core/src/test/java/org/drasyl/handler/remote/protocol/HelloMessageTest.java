@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -71,7 +71,7 @@ public class HelloMessageTest {
             assertEquals(1337L, hello.getChildrenTime());
             assertTrue(hello.isSigned());
             assertTrue(hello.verifySignature());
-            assertEquals(privateInetAddresses, hello.getPrivateInetAddresses());
+            assertEquals(privateInetAddresses, hello.getEndpoints());
         }
 
         @Test
@@ -83,7 +83,7 @@ public class HelloMessageTest {
             assertEquals(0, hello.getChildrenTime());
             assertFalse(hello.isSigned());
             assertFalse(hello.verifySignature());
-            assertEquals(privateInetAddresses, hello.getPrivateInetAddresses());
+            assertEquals(privateInetAddresses, hello.getEndpoints());
         }
     }
 

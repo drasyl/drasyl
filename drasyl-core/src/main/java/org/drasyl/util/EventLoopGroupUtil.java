@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,13 +25,17 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.InternetProtocolFamily;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.concurrent.ThreadFactory;
 
@@ -80,6 +84,18 @@ public final class EventLoopGroupUtil {
         }
         else {
             return new NioDatagramChannel(family);
+        }
+    }
+
+    public static Class<? extends ServerSocketChannel> getServerSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollServerSocketChannel.class;
+        }
+        else if (KQueue.isAvailable()) {
+            return KQueueServerSocketChannel.class;
+        }
+        else {
+            return NioServerSocketChannel.class;
         }
     }
 }

@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-cli</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - CLI Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - CLI Package</name>
     <description>
-        This package contains a pre-packed drasyl Node. It can be run via the command line interface. This allows you to easily create new (root) super peers.
+        A collection of utilities for drasyl.
     </description>
     <url>https://drasyl.org/</url>
 

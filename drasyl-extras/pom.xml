@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-extras</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Extras Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Extras Package</name>
     <description>
-        This packages contains the optional components for drasyl.
+        This module provides optional classes for drasyl.
     </description>
 
     <dependencies>
