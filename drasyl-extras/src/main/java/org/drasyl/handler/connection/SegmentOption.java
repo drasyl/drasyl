@@ -37,7 +37,7 @@ enum SegmentOption {
     END_OF_OPTION_LIST((byte) 0), // 1 byte
     MAXIMUM_SEGMENT_SIZE((byte) 2), // 3 bytes
     SACK((byte) 5), // at least 2 bytes
-    TIMESTAMPS((byte) 8); // 17 bytes // FIXME: sind das bei TCP auch 8 bytes pro timestamp?
+    TIMESTAMPS((byte) 8); // 9 bytes
     private static final Map<Byte, SegmentOption> OPTIONS;
 
     static {
@@ -67,13 +67,13 @@ enum SegmentOption {
                 out.writeShort((Integer) value);
                 return;
             case TIMESTAMPS:
-                out.writeLong(((TimestampsOption) value).tsVal);
-                out.writeLong(((TimestampsOption) value).tsEcr);
+                out.writeInt((int) ((TimestampsOption) value).tsVal);
+                out.writeInt((int) ((TimestampsOption) value).tsEcr);
                 return;
             case SACK:
-                out.writeByte(((SackOption)value).edges.size());
-                for (final long edge : ((SackOption)value).edges) {
-                   out.writeInt((int) edge);
+                out.writeByte(((SackOption) value).edges.size());
+                for (final long edge : ((SackOption) value).edges) {
+                    out.writeInt((int) edge);
                 }
                 return;
             default:
@@ -86,7 +86,7 @@ enum SegmentOption {
             case MAXIMUM_SEGMENT_SIZE:
                 return in.readUnsignedShort();
             case TIMESTAMPS:
-                return new TimestampsOption(in.readLong(), in.readLong());
+                return new TimestampsOption(in.readUnsignedInt(), in.readUnsignedInt());
             case SACK:
                 final int size = in.readUnsignedByte();
                 final List<Long> edges = new ArrayList<>(size);

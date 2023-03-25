@@ -74,14 +74,22 @@ public abstract class ReliableConnectionConfig {
             .beta(1f / 4)
             .k(4)
             .clock(new Clock() {
+                private long offset = 0;
+
                 @Override
                 public long time() {
-                    return System.nanoTime() / 1_000_000; // convert to ms
+                    final long time = System.nanoTime() / 100_000; // convert to 10ms granularity
+                    if (offset == 0) {
+                        // clocks does not require to be synchronized between sender and receiver.
+                        // to reduce time till  overflow, start at 0
+                        offset = time;
+                    }
+                    return time - offset;
                 }
 
                 @Override
                 public double g() {
-                    return 1.0 / 1_000;
+                    return 1.0 / 100; // 10ms granularity
                 }
             })
             .sack(false)
