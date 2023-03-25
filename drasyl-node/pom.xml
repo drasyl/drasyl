@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-node</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Node Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Node Package</name>
     <description>
-        This package contains the easy-to-use zero configuration node interface for embedding the overlay network.
+        This module provides the easy-to-use zero-configuration DrasylNode interface.
     </description>
     <url>https://drasyl.org/</url>
 

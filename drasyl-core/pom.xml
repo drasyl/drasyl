@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-core</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Core Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Core Package</name>
     <description>
-        This packages contains the building blocks required to create the drasyl overlay network.
+        This module provides mandatory classes for drasyl.
     </description>
 
     <dependencies>

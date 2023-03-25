@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-performance-tests</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Performance Tests Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Performance Tests Package</name>
     <description>
-        This package contains performance tests for drasyl.
+        This module provides performance tests for drasyl.
     </description>
     <url>https://drasyl.org/</url>
 

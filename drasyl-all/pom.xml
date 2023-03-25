@@ -31,7 +31,7 @@
 
     <artifactId>drasyl-all</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - All-in-One Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - All-in-One Package</name>
 
     <dependencies>
         <dependency>

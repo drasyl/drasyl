@@ -29,14 +29,10 @@
     <version>0.11.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Parent Package</name>
     <description>
-        drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
-
-        By using drasyl developers can fully concentrate on creating distributed applications.
-        With drasyl, boundaries between IP-based networks will be eliminated and secure communication channels between any peers will be provided.
-        Zero-configuration is required to use drasyl.
-        Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
+        drasyl enables quick and easy development of high-performance distributed applications.
+        Driven by a secure and low-latency overlay network protocol, drasyl provides any-to-any connectivity between all Internet-enabled devices.
     </description>
     <url>https://drasyl.org/</url>
 
