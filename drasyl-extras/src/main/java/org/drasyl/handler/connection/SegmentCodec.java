@@ -40,6 +40,8 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
  */
 @Sharable
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
+    public static final int CKS_INDEX = 8;
+
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
@@ -49,9 +51,9 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         ReferenceCountUtil.touch(buf, "encode");
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
+        buf.writeShort(0); // placeholder
         buf.writeByte(seg.ctl());
         buf.writeInt((int) seg.wnd());
-        buf.writeShort(seg.cks());
 
         // options
         for (final Entry<SegmentOption, Object> entry : seg.options().entrySet()) {
@@ -65,6 +67,11 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeByte(END_OF_OPTION_LIST.kind());
 
         buf.writeBytes(seg.content());
+
+        // calculate checksum
+        final int cks = calculateChecksum(buf, buf.readableBytes());
+        buf.setShort(CKS_INDEX, (short) cks);
+
         out.add(buf);
     }
 
@@ -72,34 +79,50 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        try {
-            if (in.readableBytes() >= SEG_HDR_SIZE) {
-                final long seq = in.readUnsignedInt();
-                final long ack = in.readUnsignedInt();
-                final byte ctl = in.readByte();
-                final long wnd = in.readUnsignedInt();
-                final short cks = in.readShort();
+        if (in.readableBytes() >= SEG_HDR_SIZE) {
+            final long seq = in.readUnsignedInt();
+            final long ack = in.readUnsignedInt();
+            final int cks = in.readUnsignedShort();
+            final byte ctl = in.readByte();
+            final long wnd = in.readUnsignedInt();
 
-                // options
-                final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-                byte kind;
-                while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
-                    final SegmentOption option = SegmentOption.ofKind(kind);
-                    final Object value = option.readValueFrom(in);
+            // options
+            final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
+            byte kind;
+            while ((kind = in.readByte()) != END_OF_OPTION_LIST.kind()) {
+                final SegmentOption option = SegmentOption.ofKind(kind);
+                final Object value = option.readValueFrom(in);
 
-                    options.put(option, value);
-                }
-
-                final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
-                out.add(seg);
+                options.put(option, value);
             }
-            else {
-                // wrong length -> pass through message
-                out.add(in.retain());
+
+            final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
+
+            // verify checksum
+            if (calculateChecksum(in, in.writerIndex()) != 0) {
+                // wrong checksum, drop segment
+                return;
             }
+            out.add(seg);
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        else {
+            // wrong length -> pass through message
+            out.add(in.retain());
         }
+    }
+
+    private int calculateChecksum(final ByteBuf buf, final int length) {
+        int sum = 0;
+        int remainingBytes = length;
+        while (remainingBytes > 1) {
+            sum += buf.getUnsignedShort(length - remainingBytes);
+            remainingBytes -= 2;
+        }
+        if (remainingBytes > 0) {
+            // add padding
+            final short padding = buf.getUnsignedByte(length - remainingBytes);
+            sum += padding;
+        }
+        return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
     }
 }

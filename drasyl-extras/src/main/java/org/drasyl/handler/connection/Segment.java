@@ -69,14 +69,14 @@ public class Segment extends DefaultByteBufHolder {
     private final long ack;
     private final byte ctl;
     private final long wnd;
-    private final short cks;
+    private final int cks;
     private final Map<SegmentOption, Object> options;
 
     public Segment(final long seq,
                    final long ack,
                    final byte ctl,
                    final long wnd,
-                   final short cks,
+                   final int cks,
                    final Map<SegmentOption, Object> options,
                    final ByteBuf data) {
         super(data);
@@ -233,7 +233,7 @@ public class Segment extends DefaultByteBufHolder {
         return wnd;
     }
 
-    public short cks() {
+    public int cks() {
         return cks;
     }
 
