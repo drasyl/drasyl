@@ -105,6 +105,7 @@ public class RetransmissionQueue {
             }
             else if (greaterThan(tcb.sndUna(), seg.seq())) {
                 // partially ACKed
+                // TODO: remove ACKed part from segment?
                 somethingWasAcked = true;
                 break;
             }

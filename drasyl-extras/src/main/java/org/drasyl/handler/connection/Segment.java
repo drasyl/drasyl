@@ -42,6 +42,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
  * Message used by {@link ReliableConnectionHandler} to provide reliable and ordered delivery of
  * bytes between hosts.
  */
+// FIXME: Implement checksum?
 @SuppressWarnings({ "java:S1845", "java:S3052" })
 public class Segment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;

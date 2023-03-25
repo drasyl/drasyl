@@ -460,7 +460,7 @@ public class TransmissionControlBlock {
                         cancelOverrideTimer();
                     }
                     else {
-                        LOG.trace("{}[{}] Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, readableBytes);
+                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
                         return;
                     }
                 }
@@ -575,7 +575,7 @@ public class TransmissionControlBlock {
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
         rcvNxt = advanceSeq(rcvNxt, advancement);
-        LOG.trace("{}[{}] Advance RCV.NXT to {}.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, rcvNxt);
+        LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
     }
 
     public void decrementRcvWnd(final int decrement) {
@@ -671,7 +671,7 @@ public class TransmissionControlBlock {
 
     public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
         this.sndUna = sndUna;
-        LOG.trace("{}[{}] Advance SND.UNA to {}.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, sndUna);
+        LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
     }
 
     public void bla_tsRecent(final long tsRecent) {

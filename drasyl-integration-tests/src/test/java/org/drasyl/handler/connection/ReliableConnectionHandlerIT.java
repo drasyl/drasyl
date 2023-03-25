@@ -89,7 +89,7 @@ class ReliableConnectionHandlerIT {
      * Clients sends data to server. Correct receival is tested.
      */
     @ParameterizedTest
-    @ValueSource(floats = { 0.0f })
+    @ValueSource(floats = { 0.0f, 0.2f })
     @Timeout(value = 5_000, unit = MILLISECONDS)
     void transmission(final float lossRate) throws Exception {
         final EventLoopGroup group = new DefaultEventLoopGroup();
@@ -99,7 +99,7 @@ class ReliableConnectionHandlerIT {
         final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
         final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                 .activeOpen(false)
-                .rmem(32_000)
+                .rmem(3_000)
                 .issSupplier(() -> 1_000_000L)
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
@@ -148,7 +148,7 @@ class ReliableConnectionHandlerIT {
         // Peer A
         final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
                 .activeOpen(true)
-                .rmem(32_000)
+                .rmem(3_000)
                 .issSupplier(() -> 3_000_000L)
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
@@ -183,16 +183,13 @@ class ReliableConnectionHandlerIT {
                 .connect(peerBAddress).sync().channel();
 
         try {
-            final int bytes = 5_000;
+            final int bytes = 10_000;
             final ByteBuf sentBuf = peerAChannel.alloc().buffer(bytes);
             sentBuf.writeBytes(randomBytes(bytes));
 
-            final long startTime = System.nanoTime();
             LOG.debug(ansi().cyan().swap().format("# %-140s #", "Start transmission"));
             final ChannelFuture future = peerAChannel.writeAndFlush(sentBuf.copy()).addListener(CLOSE).syncUninterruptibly();
             LOG.debug(ansi().cyan().swap().format("# %-140s #", "Transmission done"));
-            final long endTime = System.nanoTime();
-            LOG.debug(ansi().cyan().swap().format("# %-140s #", "Transmitted " + bytes + " bytes within " + (endTime - startTime) / 1_000_000 + "ms."));
 
             await().untilAsserted(() -> {
                 assertTrue(future.isSuccess());
