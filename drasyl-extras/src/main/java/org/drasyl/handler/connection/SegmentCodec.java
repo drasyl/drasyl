@@ -69,8 +69,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeBytes(seg.content());
 
         // calculate checksum
-        System.out.println(">> " + seg);
-        final int cks = calculateChecksum(buf, buf.readableBytes());
+        final int cks = calculateChecksum(buf, 0);
         buf.setShort(CKS_INDEX, (short) cks);
 
         out.add(buf);
@@ -81,6 +80,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                           final ByteBuf in,
                           final List<Object> out) {
         if (in.readableBytes() >= SEG_HDR_SIZE) {
+            final int readerIndex = in.readerIndex();
+
             final long seq = in.readUnsignedInt();
             final long ack = in.readUnsignedInt();
             final int cks = in.readUnsignedShort();
@@ -100,9 +101,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
             final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
 
             // verify checksum
-            System.out.println("<< " + seg);
-            if (calculateChecksum(in, in.writerIndex()) != 0) {
-                System.err.println("INVALID CKS!");
+            if (calculateChecksum(in, readerIndex) != 0) {
                 // wrong checksum, drop segment
                 return;
             }
@@ -114,21 +113,24 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         }
     }
 
-    private int calculateChecksum(final ByteBuf buf, final int length) {
-        int sum = 0;
-        int remainingBytes = length;
-        while (remainingBytes > 1) {
-            System.out.println("cks " + (length - remainingBytes) + " " + buf.getUnsignedShort(length - remainingBytes));
-            sum += buf.getUnsignedShort(length - remainingBytes);
-            remainingBytes -= 2;
+    private int calculateChecksum(final ByteBuf buf, final int index) {
+        try {
+            buf.markReaderIndex();
+
+            buf.readerIndex(index);
+            int sum = 0;
+            while (buf.readableBytes() > 1) {
+                sum += buf.readUnsignedShort();
+            }
+            if (buf.readableBytes() > 0) {
+                // add padding
+                sum += buf.readUnsignedByte();
+            }
+
+            return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
         }
-        if (remainingBytes > 0) {
-            // add padding
-            System.out.println("cks " + (length - remainingBytes) + " " + buf.getUnsignedByte(length - remainingBytes));
-            final short padding = buf.getUnsignedByte(length - remainingBytes);
-            sum += padding;
+        finally {
+            buf.resetReaderIndex();
         }
-        System.out.println("-");
-        return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
     }
 }
