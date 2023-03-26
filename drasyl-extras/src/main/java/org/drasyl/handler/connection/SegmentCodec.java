@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -80,7 +79,6 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        System.out.println(ByteBufUtil.hexDump(in));
         if (in.readableBytes() >= SEG_HDR_SIZE) {
             final int readerIndex = in.readerIndex();
 
