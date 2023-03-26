@@ -1,6 +1,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
@@ -27,8 +28,12 @@ class SegmentCodecTest {
     private final ByteBuf encodedSeq = Unpooled.buffer(Integer.BYTES).writeInt((int) seq);
     private final long ack = 987_654_321;
     private final ByteBuf encodedAck = Unpooled.buffer(Integer.BYTES).writeInt((int) ack);
+    private final short cks = 11_174;
+    private final ByteBuf encodedCks = Unpooled.buffer(Short.BYTES).writeShort(cks);
     private final byte ctl = ACK;
     private final ByteBuf encodedCtl = Unpooled.buffer(1).writeByte(ctl);
+    private final long wnd = 64_000;
+    private final ByteBuf encodedWnd = Unpooled.buffer(Integer.BYTES).writeInt((int) wnd);
     private final Map<SegmentOption, Object> options = Map.of(
             MAXIMUM_SEGMENT_SIZE, 1300
     );
@@ -44,10 +49,12 @@ class SegmentCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
             final ByteBuf data = content.retain();
-            channel.writeOutbound(new Segment(seq, ack, ACK, options, data));
+            channel.writeOutbound(new Segment(seq, ack, ctl, wnd, cks, options, data));
 
             final ByteBuf actual = channel.readOutbound();
-            final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content.resetReaderIndex());
+            System.out.println(ByteBufUtil.hexDump(actual));
+            final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content.resetReaderIndex());
+            System.out.println(ByteBufUtil.hexDump(expected));
             assertEquals(expected, actual);
 
             expected.release();
@@ -65,10 +72,10 @@ class SegmentCodecTest {
     @Nested
     class Decode {
         @Test
-        void shouldDecodeSegment(@Mock final DrasylAddress sender) {
+        void shouldDecodeSegment() {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            channel.writeInbound(Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCtl, encodedOptions, content));
+            channel.writeInbound(Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
 
             final Segment actual = channel.readInbound();
             final ByteBuf data = content.retain();
