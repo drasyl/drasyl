@@ -32,16 +32,16 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.COMPLETED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.ERRORED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.TRANSFERRING;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 
 public class WormholeFileSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeFileSender.class);
-    public static final int IDLE_TIMEOUT = 10;
     public static final int PROGRESS_BAR_INTERVAL = 250;
-    public static final DecimalFormat PROGRESS_BAR_SPEED_FORMAT = new DecimalFormat("0.00");
     private final File file;
 
     public WormholeFileSender(final PrintStream out,
@@ -56,7 +56,6 @@ public class WormholeFileSender extends AbstractWormholeSender {
     protected void transferPayload(final ChannelHandlerContext ctx) {
         out.println("Sending file (" + numberToHumanData(file.length()) + "): " + file.getName());
 
-//        ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
 
@@ -66,19 +65,21 @@ public class WormholeFileSender extends AbstractWormholeSender {
 
                 ctx.writeAndFlush(chunkedFile).addListener((ChannelFutureListener) f2 -> {
                     if (f2.isSuccess()) {
+                        state = COMPLETED;
                         out.println("file sent");
                         f2.channel().close();
                     }
-                    else {
+                    else if (state == TRANSFERRING) {
+                        state = ERRORED;
                         f2.channel().pipeline().fireExceptionCaught(f2.cause());
                     }
                 });
             }
-            else {
+            else if (state == TRANSFERRING) {
+                state = ERRORED;
                 f.channel().pipeline().fireExceptionCaught(f.cause());
             }
         });
-        ctx.pipeline().remove(ctx.name());
     }
 
     @Override
