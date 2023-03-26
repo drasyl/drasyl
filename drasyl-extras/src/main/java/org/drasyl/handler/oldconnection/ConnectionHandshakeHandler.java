@@ -218,7 +218,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
         switch (state) {
             case CLOSED:
                 data.release();
-                promise.setFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("Connection does not exist"));
+                promise.setFailure(new ConnectionHandshakeException("Connection does not exist"));
                 break;
 
             case LISTEN:
@@ -243,7 +243,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 data.release();
-                promise.setFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("Handshake in progress"));
+                promise.setFailure(new ConnectionHandshakeException("Handshake in progress"));
                 break;
 
             case ESTABLISHED:
@@ -332,7 +332,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
             userTimeoutFuture = ctx.executor().schedule(() -> {
                 LOG.trace("{}[{}] User timeout for {} user call expired after {}ms. Close channel.", ctx.channel(), state, userCall, userTimeout);
                 switchToNewState(ctx, CLOSED);
-                promise.tryFailure(new org.drasyl.handler.oldconnection.ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
+                promise.tryFailure(new ConnectionHandshakeException("User timeout for " + userCall + " user call after " + userTimeout + "ms. Close channel."));
                 ctx.channel().close();
             }, userTimeout.toMillis(), MILLISECONDS);
         }
