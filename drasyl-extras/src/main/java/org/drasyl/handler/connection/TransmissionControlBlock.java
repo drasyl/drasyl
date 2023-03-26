@@ -25,20 +25,16 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
-import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.advanceSeq;
@@ -499,18 +495,11 @@ public class TransmissionControlBlock {
                     LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
 
-                    final AtomicBoolean doPush = new AtomicBoolean();
                     final ChannelPromise promise = ctx.newPromise();
-                    final ByteBuf data = sendBuffer.read((int) remainingBytes, doPush, promise);
-                    ReferenceCountUtil.touch(data, "segmentizeData");
-                    byte ctl = ACK;
-                    if (doPush.get()) {
-                        ctl |= PSH;
-                    }
-                    final Segment segment = handler.formSegment(ctx, sndNxt, rcvNxt, ctl, data);
+                    final Segment segment = handler.segmentizeData(ctx, (int) remainingBytes, promise);
                     send(ctx, segment, promise);
 
-                    readableBytes -= remainingBytes;
+                    readableBytes -= segment.content().readableBytes();
                 }
                 else {
                     return;

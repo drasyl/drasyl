@@ -664,7 +664,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
-                        LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
+                        LOG.error("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                         tcb.sendAndFlush(ctx, seg);
 
                         // RFC 9293: In any case, enter FIN-WAIT-1 state.
@@ -2485,6 +2485,19 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         return formSegment(ctx, seq, 0, ctl);
     }
 
+    Segment segmentizeData(final ChannelHandlerContext ctx,
+                           int remainingBytes,
+                           final ChannelPromise promise) {
+        final AtomicBoolean doPush = new AtomicBoolean();
+        final ByteBuf data = tcb.sendBuffer().read(remainingBytes, doPush, promise);
+        ReferenceCountUtil.touch(data, "segmentizeData");
+        byte ctl = ACK;
+        if (doPush.get()) {
+            ctl |= PSH;
+        }
+        return formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ctl, data);
+    }
+
     /*
      * Timeouts
      */
@@ -2670,15 +2683,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 zeroWindowProber = null;
 
                 LOG.trace("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
-                final AtomicBoolean doPush = new AtomicBoolean();
                 final ChannelPromise promise = ctx.newPromise();
-                final ByteBuf data = tcb.sendBuffer().read(1, doPush, promise);
-                ReferenceCountUtil.touch(data, "startZeroWindowProbing");
-                byte ctl = ACK;
-                if (doPush.get()) {
-                    ctl |= PSH;
-                }
-                final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ctl, data);
+                final Segment segment = segmentizeData(ctx, 1, promise);
                 tcb.sendAndFlush(ctx, segment, promise);
             }, rto, MILLISECONDS);
         }
