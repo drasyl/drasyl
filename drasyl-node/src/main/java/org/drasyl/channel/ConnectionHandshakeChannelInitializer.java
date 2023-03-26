@@ -67,7 +67,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                 .build();
         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
         p.addLast(handler);
-        final CsvLogger logger = new CsvLogger("/Users/heiko/Development/drasyl/" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
+        final CsvLogger logger = new CsvLogger("./" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
         new DefaultEventLoop().scheduleAtFixedRate(() -> {
             try {
                 ConnectionHandshakeStatus status = handler.userCallStatus();
