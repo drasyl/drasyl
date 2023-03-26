@@ -666,11 +666,11 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
                         LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                         tcb.sendAndFlush(ctx, seg);
+
+                        // RFC 9293: In any case, enter FIN-WAIT-1 state.
+                        changeState(ctx, FIN_WAIT_1);
                     }
                 });
-
-                // RFC 9293: In any case, enter FIN-WAIT-1 state.
-                changeState(ctx, FIN_WAIT_1);
 
                 closedPromise.addListener(new PromiseNotifier<>(promise));
                 break;
