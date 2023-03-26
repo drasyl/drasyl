@@ -83,8 +83,6 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                                            final Object evt) throws Exception {
                 if (evt instanceof ConnectionHandshakeCompleted) {
                     handshakeCompleted((DrasylChannel) ctx.channel());
-
-                    ctx.pipeline().remove(this);
                 }
                 else if (evt instanceof ConnectionClosing) {
                     // confirm close request
