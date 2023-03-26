@@ -495,11 +495,7 @@ public class TransmissionControlBlock {
                     LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
 
-                    final ChannelPromise promise = ctx.newPromise();
-                    final Segment segment = handler.segmentizeData(ctx, (int) remainingBytes, promise);
-                    send(ctx, segment, promise);
-
-                    readableBytes -= segment.content().readableBytes();
+                    readableBytes -= handler.segmentizeAndSendData(ctx, (int) remainingBytes);
                 }
                 else {
                     return;

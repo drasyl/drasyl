@@ -138,6 +138,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
     private ChannelPromise closedPromise;
     private boolean readPending;
     private ChannelHandlerContext ctx;
+    private ChannelPromise segmentizedFuture;
+    private long segmentizedRemainingBytes;
 
     @SuppressWarnings("java:S107")
     ReliableConnectionHandler(final ReliableConnectionConfig config,
@@ -660,7 +662,16 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
             case ESTABLISHED:
                 // RFC 9293: Queue this until all preceding SENDs have been segmentized,
-                tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
+                assert segmentizedFuture == null;
+                segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
+                if (segmentizedRemainingBytes > 0) {
+                    segmentizedFuture = ctx.newPromise();
+                }
+                else {
+                    segmentizedFuture = ctx.newPromise().setSuccess();
+                }
+
+                segmentizedFuture.addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -685,7 +696,16 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
             case CLOSE_WAIT:
                 // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
-                tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
+                assert segmentizedFuture == null;
+                segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
+                if (segmentizedRemainingBytes > 0) {
+                    segmentizedFuture = ctx.newPromise();
+                }
+                else {
+                    segmentizedFuture = ctx.newPromise().setSuccess();
+                }
+
+                segmentizedFuture.addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -2485,17 +2505,29 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         return formSegment(ctx, seq, 0, ctl);
     }
 
-    Segment segmentizeData(final ChannelHandlerContext ctx,
-                           int remainingBytes,
-                           final ChannelPromise promise) {
+    int segmentizeAndSendData(final ChannelHandlerContext ctx, int bytes) {
+        if (segmentizedFuture != null && segmentizedRemainingBytes < bytes) {
+            bytes = (int) segmentizedRemainingBytes;
+        }
+
         final AtomicBoolean doPush = new AtomicBoolean();
-        final ByteBuf data = tcb.sendBuffer().read(remainingBytes, doPush, promise);
+        final ChannelPromise promise = ctx.newPromise();
+        final ByteBuf data = tcb.sendBuffer().read(bytes, doPush, promise);
         ReferenceCountUtil.touch(data, "segmentizeData");
         byte ctl = ACK;
         if (doPush.get()) {
             ctl |= PSH;
         }
-        return formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ctl, data);
+        final Segment segment = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ctl, data);
+        tcb.send(ctx, segment, promise);
+        if (segmentizedFuture != null) {
+            segmentizedRemainingBytes -= bytes;
+            if (segmentizedRemainingBytes == 0) {
+                segmentizedFuture.trySuccess();
+                segmentizedFuture = null;
+            }
+        }
+        return bytes;
     }
 
     /*
@@ -2683,9 +2715,9 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 zeroWindowProber = null;
 
                 LOG.trace("{}[{}] Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), state, rto);
-                final ChannelPromise promise = ctx.newPromise();
-                final Segment segment = segmentizeData(ctx, 1, promise);
-                tcb.sendAndFlush(ctx, segment, promise);
+                if (segmentizeAndSendData(ctx, 1) > 0) {
+                    tcb.flush(ctx);
+                }
             }, rto, MILLISECONDS);
         }
     }
