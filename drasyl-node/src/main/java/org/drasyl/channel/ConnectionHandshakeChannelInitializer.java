@@ -87,7 +87,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                 }
                 else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).state() == State.CLOSE_WAIT) { // FIXME: helper methode die sagt, ob wir oder der andere CLOSE initiert haben?
                     // confirm close request
-                    ctx.close();
+                    ctx.pipeline().close();
                 }
                 else {
                     ctx.fireUserEventTriggered(evt);
