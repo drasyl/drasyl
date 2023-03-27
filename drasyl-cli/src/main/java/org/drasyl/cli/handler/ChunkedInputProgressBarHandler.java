@@ -65,13 +65,13 @@ public class ChunkedInputProgressBarHandler extends ChannelDuplexHandler {
     }
 
     @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) {
+        abort();
+    }
+
+    @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        if (refreshTask != null) {
-            refreshTask.cancel(false);
-        }
-        if (progressBar != null) {
-            progressBar.close();
-        }
+        abort();
         ctx.fireChannelInactive();
     }
 
@@ -98,11 +98,27 @@ public class ChunkedInputProgressBarHandler extends ChannelDuplexHandler {
 
             // stop task and complete progress bar
             promise.addListener((ChannelFutureListener) future -> {
-                refreshTask.cancel(false);
-                progressBar.stepTo(chunkedInput.progress());
-                progressBar.close();
-                progressBar = null;
+                if (refreshTask != null) {
+                    refreshTask.cancel(false);
+                    refreshTask = null;
+                }
+                if (progressBar != null) {
+                    progressBar.stepTo(chunkedInput.progress());
+                    progressBar.close();
+                    progressBar = null;
+                }
             });
+        }
+    }
+
+    private void abort() {
+        if (refreshTask != null) {
+            refreshTask.cancel(false);
+            refreshTask = null;
+        }
+        if (progressBar != null) {
+            progressBar.close();
+            progressBar = null;
         }
     }
 }

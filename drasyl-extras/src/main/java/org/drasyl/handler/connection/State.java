@@ -24,7 +24,7 @@ package org.drasyl.handler.connection;
 /**
  * States of the handshake progress
  */
-enum State {
+public enum State {
     // RFC 9293: represents waiting for a connection request from any remote TCP peer and port.
     LISTEN,
     // RFC 9293: represents waiting for a matching connection request after having sent a connection

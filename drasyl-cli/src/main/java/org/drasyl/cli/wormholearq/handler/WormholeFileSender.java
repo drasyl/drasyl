@@ -33,7 +33,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
@@ -42,7 +41,6 @@ public class WormholeFileSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeFileSender.class);
     public static final int IDLE_TIMEOUT = 10;
     public static final int PROGRESS_BAR_INTERVAL = 250;
-    public static final DecimalFormat PROGRESS_BAR_SPEED_FORMAT = new DecimalFormat("0.00");
     // mtu: 1432
     // protocol overhead: 186 bytes
     private static final int CHUNK_SIZE = 1432 - 186;

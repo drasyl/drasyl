@@ -63,7 +63,7 @@ abstract class AbstractWormholeSender extends ChannelDuplexHandler {
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
         if (state != COMPLETED) {
             state = ABORTED;
-            out.println("abort");
+            abortTransfer(ctx);
         }
         ctx.close(promise);
     }
@@ -91,6 +91,10 @@ abstract class AbstractWormholeSender extends ChannelDuplexHandler {
     }
 
     protected abstract void transferPayload(ChannelHandlerContext ctx);
+
+    protected void abortTransfer(final ChannelHandlerContext ctx) {
+        out.println("abort");
+    }
 
     protected abstract Logger log();
 

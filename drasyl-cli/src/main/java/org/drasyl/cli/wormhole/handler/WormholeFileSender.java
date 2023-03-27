@@ -83,6 +83,13 @@ public class WormholeFileSender extends AbstractWormholeSender {
     }
 
     @Override
+    protected void abortTransfer(ChannelHandlerContext ctx) {
+        ctx.pipeline().remove(ChunkedInputProgressBarHandler.class);
+
+        super.abortTransfer(ctx);
+    }
+
+    @Override
     protected Logger log() {
         return LOG;
     }

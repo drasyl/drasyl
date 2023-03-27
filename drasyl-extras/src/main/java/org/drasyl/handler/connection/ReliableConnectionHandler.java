@@ -675,7 +675,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
-                        LOG.error("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
+                        LOG.trace("{}[{}] Initiate CLOSE sequence by sending `{}`.", ctx.channel(), state, seg);
                         tcb.sendAndFlush(ctx, seg);
 
                         // RFC 9293: In any case, enter FIN-WAIT-1 state.

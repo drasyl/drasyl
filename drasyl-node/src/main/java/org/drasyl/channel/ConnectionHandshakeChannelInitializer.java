@@ -34,6 +34,7 @@ import org.drasyl.handler.connection.ConnectionHandshakeStatus;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
+import org.drasyl.handler.connection.State;
 import org.drasyl.util.CsvLogger;
 
 import java.nio.channels.ClosedChannelException;
@@ -84,7 +85,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                 if (evt instanceof ConnectionHandshakeCompleted) {
                     handshakeCompleted((DrasylChannel) ctx.channel());
                 }
-                else if (evt instanceof ConnectionClosing) {
+                else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).state() == State.CLOSE_WAIT) { // FIXME: helper methode die sagt, ob wir oder der andere CLOSE initiert haben?
                     // confirm close request
                     ctx.close();
                 }
