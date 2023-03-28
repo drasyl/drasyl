@@ -23,8 +23,6 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
 import org.drasyl.util.logging.Logger;
@@ -46,8 +44,6 @@ public class SendBuffer {
     // only used for controlling the channel writability according to the bytes contained in this buffer
     private final CoalescingBufferQueue queue;
     private long pushMark;
-    private long segmentizedRemainingBytes;
-    private ChannelPromise segmentizedFuture;
 
     SendBuffer(final Channel channel,
                final CoalescingBufferQueue queue) {
@@ -115,18 +111,6 @@ public class SendBuffer {
     @Override
     public String toString() {
         return "SND.BUF(len: " + readableBytes() + ")";
-    }
-
-    public ChannelFuture allPrecedingDataHaveBeenSegmentized(final ChannelHandlerContext ctx) {
-        assert segmentizedFuture == null;
-        segmentizedRemainingBytes = readableBytes();
-        if (segmentizedRemainingBytes > 0) {
-            segmentizedFuture = ctx.newPromise();
-            return segmentizedFuture;
-        }
-        else {
-            return ctx.newSucceededFuture();
-        }
     }
 
     public void fail(final ConnectionHandshakeException e) {

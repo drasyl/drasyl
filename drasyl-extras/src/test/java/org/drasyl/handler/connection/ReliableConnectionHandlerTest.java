@@ -2157,10 +2157,11 @@ class ReliableConnectionHandlerTest {
                     }
 
                     @Test
-                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding(
-                            @Mock final ChannelPromise promise) {
+                    void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding() {
                         when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true).thenReturn(false);
+                        when(ctx.newPromise()).thenReturn(promise);
                         when(promise.isSuccess()).thenReturn(true);
+                        when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
@@ -2185,18 +2186,19 @@ class ReliableConnectionHandlerTest {
                 @Nested
                 class OnEstablishedState {
                     @Test
-                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized(@Mock final ChannelFuture future) {
+                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
                         when(tcb.sndNxt()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(88L);
-                        when(future.isSuccess()).thenReturn(true);
-                        when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
+                        when(ctx.newPromise()).thenReturn(promise);
+                        when(promise.isSuccess()).thenReturn(true);
+                        when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         handler.close(ctx, promise);
 
                         // RFC 9293: Queue this until all preceding SENDs have been segmentized,
-                        verify(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx)).addListener(any());
+                        // (implictly tested by assertions below)
 
                         // RFC 9293: In any case, enter FIN-WAIT-1 state.
                         assertEquals(FIN_WAIT_1, handler.state);
@@ -2230,18 +2232,19 @@ class ReliableConnectionHandlerTest {
                 @Nested
                 class OnCloseWaitState {
                     @Test
-                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized(@Mock final ChannelFuture future) {
+                    void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
                         when(tcb.sndNxt()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(88L);
-                        when(future.isSuccess()).thenReturn(true);
-                        when(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(any()).addListener(any())).then(new ChannelFutureAnswer(future));
+                        when(ctx.newPromise()).thenReturn(promise);
+                        when(promise.isSuccess()).thenReturn(true);
+                        when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
-                        handler.close(ctx, promise);
+                        handler.close(ctx, UserCallClose.this.promise);
 
                         // RFC 9293: Queue this until all preceding SENDs have been segmentized,
-                        verify(tcb.sendBuffer().allPrecedingDataHaveBeenSegmentized(ctx)).addListener(any());
+                        // (implictly tested by assertions below)
 
                         // RFC 9293: then send a FIN segment,
                         verify(tcb).sendAndFlush(eq(ctx), segmentCaptor.capture());

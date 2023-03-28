@@ -662,16 +662,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
             case ESTABLISHED:
                 // RFC 9293: Queue this until all preceding SENDs have been segmentized,
-                assert segmentizedFuture == null;
-                segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
-                if (segmentizedRemainingBytes > 0) {
-                    segmentizedFuture = ctx.newPromise();
-                }
-                else {
-                    segmentizedFuture = ctx.newPromise().setSuccess();
-                }
-
-                segmentizedFuture.addListener((ChannelFutureListener) future -> {
+                precedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then form a FIN segment and send it.
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -696,16 +687,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
             case CLOSE_WAIT:
                 // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
-                assert segmentizedFuture == null;
-                segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
-                if (segmentizedRemainingBytes > 0) {
-                    segmentizedFuture = ctx.newPromise();
-                }
-                else {
-                    segmentizedFuture = ctx.newPromise().setSuccess();
-                }
-
-                segmentizedFuture.addListener((ChannelFutureListener) future -> {
+                precedingSendsHaveBeenSegmentized(ctx).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         // RFC 9293: then send a FIN segment,
                         final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -727,9 +709,26 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         }
     }
 
+    private ChannelPromise precedingSendsHaveBeenSegmentized(final ChannelHandlerContext ctx) {
+        assert segmentizedFuture == null;
+        segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
+        final ChannelPromise toReturn = ctx.newPromise();
+        segmentizedFuture = toReturn;
+        if (segmentizedRemainingBytes == 0) {
+            // no preceding SENDs, complete future immedialy
+            segmentizedFuture.setSuccess();
+        }
+        segmentizedFuture.addListener((ChannelFutureListener) future -> {
+            segmentizedFuture = null;
+            segmentizedRemainingBytes = 0;
+        });
+        return toReturn;
+    }
+
     /**
-     * ABORT call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC
-     * 9293, Section 3.10.5</a>.
+     * ABORT call as described in <a
+     * href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.5">RFC 9293, Section
+     * 3.10.5</a>.
      */
     @SuppressWarnings("java:S128")
     public void userCallAbort() throws ClosedChannelException {
@@ -2524,7 +2523,6 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
             segmentizedRemainingBytes -= bytes;
             if (segmentizedRemainingBytes == 0) {
                 segmentizedFuture.trySuccess();
-                segmentizedFuture = null;
             }
         }
         return bytes;
