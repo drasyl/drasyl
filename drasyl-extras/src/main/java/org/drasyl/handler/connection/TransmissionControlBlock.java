@@ -538,7 +538,7 @@ public class TransmissionControlBlock {
     }
 
     // FIXME: remove all bla methods
-    void bla_sendMss(final int sendMss) {
+    void sendMss(final int sendMss) {
         this.sendMss = sendMss;
     }
 
@@ -675,7 +675,7 @@ public class TransmissionControlBlock {
         LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
     }
 
-    public void bla_tsRecent(final long tsRecent) {
+    public void tsRecent(final long tsRecent) {
         this.tsRecent = tsRecent;
     }
 
@@ -683,11 +683,11 @@ public class TransmissionControlBlock {
         sndTsOk = true;
     }
 
-    public void bla_sRtt(final int sRtt) {
+    public void sRtt(final int sRtt) {
         this.sRtt = sRtt;
     }
 
-    public void bla_rttVar(final double rttVar) {
+    public void rttVar(final double rttVar) {
         this.rttVar = rttVar;
     }
 
@@ -703,11 +703,11 @@ public class TransmissionControlBlock {
         return rttVar;
     }
 
-    public void bla_rcvNxt(final long rcvNxt) {
+    public void rcvNxt(final long rcvNxt) {
         this.rcvNxt = rcvNxt;
     }
 
-    public void bla_irs(final long irs) {
+    public void irs(final long irs) {
         this.irs = irs;
     }
 
@@ -723,11 +723,11 @@ public class TransmissionControlBlock {
         return rto;
     }
 
-    public void bla_ssthresh(final long ssthresh) {
+    public void ssthresh(final long ssthresh) {
         this.ssthresh = ssthresh;
     }
 
-    public void bla_cwnd(final long cwnd) {
+    public void cwnd(final long cwnd) {
         this.cwnd = cwnd;
     }
 
@@ -735,20 +735,20 @@ public class TransmissionControlBlock {
         return sendMss;
     }
 
-    public void bla_sndWnd(final long sndWnd) {
+    public void sndWnd(final long sndWnd) {
         this.sndWnd = sndWnd;
         maxSndWnd = max(maxSndWnd, sndWnd);
     }
 
-    public void bla_sndWl1(final long sndWl1) {
+    public void sndWl1(final long sndWl1) {
         this.sndWl1 = sndWl1;
     }
 
-    public void bla_sndWl2(final long sndWl2) {
+    public void sndWl2(final long sndWl2) {
         this.sndWl2 = sndWl2;
     }
 
-    public void bla_recover(final long recover) {
+    public void recover(final long recover) {
         this.recover = recover;
     }
 

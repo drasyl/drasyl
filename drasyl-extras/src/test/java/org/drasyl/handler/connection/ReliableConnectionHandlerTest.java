@@ -46,6 +46,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
@@ -101,9 +102,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
 @SuppressWarnings("NewClassNamingConvention")
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 class ReliableConnectionHandlerTest {
     private static ByteBuf unpooledRandomBuffer(final int bytes) {
         return Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
@@ -2758,8 +2761,8 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
                         // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
-                        verify(tcb).bla_rcvNxt(815L);
-                        verify(tcb).bla_irs(814L);
+                        verify(tcb).rcvNxt(815L);
+                        verify(tcb).irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
                         verify(tcb).sndUna(ctx, 123L);
@@ -2770,7 +2773,7 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).bla_tsRecent(214L);
+                        verify(tcb).tsRecent(214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -2779,10 +2782,10 @@ class ReliableConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).bla_sRtt(21);
+                        verify(tcb).sRtt(21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).bla_rttVar(10.5);
+                        verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(21);
@@ -2792,7 +2795,7 @@ class ReliableConnectionHandlerTest {
                         assertEquals(ESTABLISHED, handler.state);
 
                         // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
-                        verify(tcb).bla_sendMss(1235);
+                        verify(tcb).sendMss(1235);
 
                         // RFC 9293: form an ACK segment
                         // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
@@ -2841,8 +2844,8 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
                         // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
-                        verify(tcb).bla_rcvNxt(815L);
-                        verify(tcb).bla_irs(814L);
+                        verify(tcb).rcvNxt(815L);
+                        verify(tcb).irs(814L);
 
                         // RFC 9293: SND.UNA should be advanced to equal SEG.ACK (if there is an ACK),
                         verify(tcb).sndUna(ctx, 123L);
@@ -2853,7 +2856,7 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).bla_tsRecent(214L);
+                        verify(tcb).tsRecent(214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -2862,10 +2865,10 @@ class ReliableConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).bla_sRtt(21);
+                        verify(tcb).sRtt(21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).bla_rttVar(10.5);
+                        verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(21);
@@ -2882,11 +2885,11 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 9293: Set the variables:
                         // RFC 9293: SND.WND <- SEG.WND
-                        verify(tcb).bla_sndWnd(seg.wnd());
+                        verify(tcb).sndWnd(seg.wnd());
                         // RFC 9293: SND.WL1 <- SEG.SEQ
-                        verify(tcb).bla_sndWl1(seg.seq());
+                        verify(tcb).sndWl1(seg.seq());
                         // RFC 9293: SND.WL2 <- SEG.ACK
-                        verify(tcb).bla_sndWl2(seg.ack());
+                        verify(tcb).sndWl2(seg.ack());
 
                         verify(seg).release();
                     }
@@ -3312,11 +3315,11 @@ class ReliableConnectionHandlerTest {
 
                                 // RFC 9293: and continue processing with the variables below set to:
                                 // RFC 9293: SND.WND <- SEG.WND
-                                verify(tcb, times(2)).bla_sndWnd(seg.wnd());
+                                verify(tcb, times(2)).sndWnd(seg.wnd());
                                 // RFC 9293: SND.WL1 <- SEG.SEQ
-                                verify(tcb, times(2)).bla_sndWl1(seg.seq());
+                                verify(tcb, times(2)).sndWl1(seg.seq());
                                 // RFC 9293: SND.WL2 <- SEG.ACK
-                                verify(tcb, times(2)).bla_sndWl2(seg.ack());
+                                verify(tcb, times(2)).sndWl2(seg.ack());
 
                                 verify(seg).release();
                             }
@@ -3391,18 +3394,18 @@ class ReliableConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).bla_rttVar(2.4671875d);
-                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rttVar(2.4671875d);
+                                verify(tcb).sRtt(20);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).bla_sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
-                                verify(tcb).bla_sndWl1(seg.seq());
+                                verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
-                                verify(tcb).bla_sndWl2(seg.ack());
+                                verify(tcb).sndWl2(seg.ack());
 
                                 verify(seg).release();
                             }
@@ -3452,18 +3455,18 @@ class ReliableConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).bla_rttVar(2.4671875d);
-                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rttVar(2.4671875d);
+                                verify(tcb).sRtt(20);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).bla_sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
-                                verify(tcb).bla_sndWl1(seg.seq());
+                                verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
-                                verify(tcb).bla_sndWl2(seg.ack());
+                                verify(tcb).sndWl2(seg.ack());
 
                                 // RFC 9293: if the FIN segment is now acknowledged, then enter FIN-WAIT-2
                                 // RFC 9293: and continue processing in that state.
@@ -3502,11 +3505,11 @@ class ReliableConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).bla_sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
-                                verify(tcb).bla_sndWl1(seg.seq());
+                                verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
-                                verify(tcb).bla_sndWl2(seg.ack());
+                                verify(tcb).sndWl2(seg.ack());
 
                                 verify(seg).release();
                             }
@@ -3556,18 +3559,18 @@ class ReliableConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).bla_rttVar(2.4671875d);
-                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rttVar(2.4671875d);
+                                verify(tcb).sRtt(20);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).bla_sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
-                                verify(tcb).bla_sndWl1(seg.seq());
+                                verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
-                                verify(tcb).bla_sndWl2(seg.ack());
+                                verify(tcb).sndWl2(seg.ack());
 
                                 verify(seg).release();
                             }
@@ -3617,18 +3620,18 @@ class ReliableConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).bla_rttVar(2.4671875d);
-                                verify(tcb).bla_sRtt(20);
+                                verify(tcb).rttVar(2.4671875d);
+                                verify(tcb).sRtt(20);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).bla_sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
-                                verify(tcb).bla_sndWl1(seg.seq());
+                                verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
-                                verify(tcb).bla_sndWl2(seg.ack());
+                                verify(tcb).sndWl2(seg.ack());
 
                                 // RFC 9293: if the ACK acknowledges our FIN, then enter the TIME-WAIT
                                 // RFC 9293: state;
@@ -4164,7 +4167,7 @@ class ReliableConnectionHandlerTest {
                     // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
                     // RFC 5681: equation (4):
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
-                    verify(tcb).bla_ssthresh(32_000);
+                    verify(tcb).ssthresh(32_000);
 
                     // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
                     // RFC 5681: no more than the loss window, LW, which equals 1 full-sized segment
@@ -4172,7 +4175,7 @@ class ReliableConnectionHandlerTest {
                     // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
                     // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
                     // RFC 5681: point congestion avoidance again takes over.
-                    verify(tcb).bla_cwnd(1401L);
+                    verify(tcb).cwnd(1401L);
                 }
             }
 
