@@ -95,9 +95,9 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldHandleDiscoveryMessageWithChildrenTime(@Mock final IdentityPublicKey publicKey,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
-                                                      @Mock final InetSocketAddress inetAddress) {
+    void shouldHandleHelloMessageWithChildrenTime(@Mock final IdentityPublicKey publicKey,
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
+                                                  @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(11L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(helloMsg.getTime()).thenReturn(10L);
@@ -119,9 +119,9 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldDropTooOldDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
-                                           @Mock final InetSocketAddress inetAddress) {
+    void shouldDropTooOldHelloMessages(@Mock final IdentityPublicKey publicKey,
+                                       @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
+                                       @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(1_000_000L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(helloMsg.getTime()).thenReturn(10L);
@@ -140,9 +140,9 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldDropTooNewDiscoveryMessages(@Mock final IdentityPublicKey publicKey,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
-                                           @Mock final InetSocketAddress inetAddress) {
+    void shouldDropTooNewHelloMessages(@Mock final IdentityPublicKey publicKey,
+                                       @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
+                                       @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(10L);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
         when(helloMsg.getTime()).thenReturn(1_000_000L);

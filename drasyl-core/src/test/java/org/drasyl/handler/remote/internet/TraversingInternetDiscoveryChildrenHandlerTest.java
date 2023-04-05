@@ -117,10 +117,10 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldHandleDiscoveryMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
-                                                        @Mock final InetSocketAddress inetAddress,
-                                                        @Mock final IdentityPublicKey traversingPeerPublicKey,
-                                                        @Mock final TraversingPeer traversingPeer) {
+    void shouldHandleHelloMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
+                                                    @Mock final InetSocketAddress inetAddress,
+                                                    @Mock final IdentityPublicKey traversingPeerPublicKey,
+                                                    @Mock final TraversingPeer traversingPeer) {
         when(helloMsg.getRecipient()).thenReturn(myPublicKey);
         when(helloMsg.getSender()).thenReturn(traversingPeerPublicKey);
         when(helloMsg.getTime()).thenReturn(40L);

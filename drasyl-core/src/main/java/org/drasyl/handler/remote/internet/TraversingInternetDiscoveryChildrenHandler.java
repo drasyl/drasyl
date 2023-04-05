@@ -139,9 +139,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final InetAddressedMessage<UniteMessage> addressedMsg = (InetAddressedMessage<UniteMessage>) msg;
             handleUniteMessage(ctx, addressedMsg.content());
         }
-        else if (isDiscoveryMessageFromTraversingPeer(msg)) {
+        else if (isHelloMessageFromTraversingPeer(msg)) {
             final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
-            handleDiscoveryMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
+            handleHelloMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isAcknowledgementMessageFromTraversingPeer(msg)) {
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
@@ -205,7 +205,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     }
 
     @SuppressWarnings("java:S1067")
-    private boolean isDiscoveryMessageFromTraversingPeer(final Object msg) {
+    private boolean isHelloMessageFromTraversingPeer(final Object msg) {
         return msg instanceof InetAddressedMessage &&
                 ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
                 myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
@@ -214,10 +214,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                 ((InetAddressedMessage<HelloMessage>) msg).content().getChildrenTime() == 0;
     }
 
-    private void handleDiscoveryMessageFromTraversingPeer(final ChannelHandlerContext ctx,
-                                                          final HelloMessage msg,
-                                                          final InetSocketAddress inetAddress) {
-        LOG.trace("Got Discovery from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
+    private void handleHelloMessageFromTraversingPeer(final ChannelHandlerContext ctx,
+                                                      final HelloMessage msg,
+                                                      final InetSocketAddress inetAddress) {
+        LOG.trace("Got Hello from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
 
