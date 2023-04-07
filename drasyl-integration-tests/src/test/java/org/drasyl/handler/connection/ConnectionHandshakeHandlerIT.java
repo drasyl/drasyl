@@ -36,7 +36,8 @@ import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
 import org.junit.jupiter.api.Test;
-import test.DropRandomOutboundMessagesHandler;
+import test.DropMessagesHandler;
+import test.DropMessagesHandler.DropRandomMessages;
 
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
@@ -66,7 +67,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), false));
                     }
                 })
@@ -81,7 +82,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -122,7 +123,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -147,7 +148,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new DropRandomOutboundMessagesHandler(LOSS_RATE, MAX_DROP));
+                        p.addLast(new DropMessagesHandler(new DropRandomMessages(LOSS_RATE, MAX_DROP), msg -> false));
                         p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(1), true));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
