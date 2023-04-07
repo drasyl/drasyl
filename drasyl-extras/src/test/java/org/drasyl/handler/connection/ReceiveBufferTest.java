@@ -28,22 +28,6 @@ class ReceiveBufferTest {
 
     @Nested
     class Receive {
-        @Test
-        void test(@Mock final Channel channel,
-                  @Mock final ChannelHandlerContext ctx,
-                  @Mock final SendBuffer sendBuffer) {
-            final ByteBuf data = Unpooled.buffer(100_000).writeBytes(randomBytes(100_000));
-
-            ReceiveBufferBlock head = new ReceiveBufferBlock(100, Unpooled.buffer(10).writeBytes(randomBytes(10)));
-            head.next = new ReceiveBufferBlock(150, Unpooled.buffer(100).writeBytes(randomBytes(100)));
-            final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
-            final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 0, 0, 100, 918402327, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
-
-            final ByteBuf data1 = data.slice(0, 100);
-            Segment seg2 = new Segment(110, 1751431617, (byte) (Segment.PSH | Segment.ACK), data1);
-            buffer.receive(ctx, tcb, seg2);
-        }
-
         @Nested
         class InOrderWithNoOverlappingSegments {
             @Test
@@ -196,11 +180,6 @@ class ReceiveBufferTest {
         }
 
         @Nested
-        class OutOfOrderWithNoOverlappingSegments {
-            // FIXME
-        }
-
-        @Nested
         class OutOfOrderWithOverlappingSegments {
             @Test
             void receiveOverlappingSegmentsOutOfOrder(@Mock final Channel channel,
@@ -310,7 +289,10 @@ class ReceiveBufferTest {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(300).writeBytes(randomBytes(300));
 
@@ -390,7 +372,10 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -438,7 +423,10 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -474,85 +462,5 @@ class ReceiveBufferTest {
                 assertNull(buffer.head);
             }
         }
-    }
-
-    //    @Nested
-//    class Add {
-//        @Test
-//        void shouldAddGivenBytesToTheEndOfTheBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-//            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-//            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-//            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
-//            final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
-//            final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
-//
-//            buffer.add(buf1);
-//            buffer.add(buf2);
-//
-//            final ByteBuf removed = queue.remove(15, channel.newPromise());
-//            assertEquals(15, removed.readableBytes());
-//            final CompositeByteBuf expectedBuf = Unpooled.compositeBuffer(2).addComponents(true, buf1, buf2);
-//            assertEquals(expectedBuf, removed);
-//
-//            expectedBuf.release();
-//        }
-//    }
-
-    @Nested
-    class IsEmpty {
-//        @Test
-//        void shouldReturnTrueIfBufferContainsNoBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-//            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-//            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
-//
-//            assertTrue(buffer.isEmpty());
-//        }
-
-//        @Test
-//        void shouldReturnFalseIfBufferContainsBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-//            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-//            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
-//            final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
-//            buffer.add(buf);
-//
-//            assertFalse(buffer.isEmpty());
-//
-//            buf.release();
-//        }
-    }
-
-    @Nested
-    class Release {
-//        @Test
-//        void shouldReleaseAllBytes(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-//            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-//            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-//            final ReceiveBuffer buffer = new ReceiveBuffer(channel, queue);
-//            final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
-//            buffer.add(buf);
-//
-//            buffer.release();
-//
-//            assertEquals(0, buf.refCnt());
-//        }
-    }
-
-    @Nested
-    class ReadableBytes {
-//        @Test
-//        void shouldReturnTheNumberOfBytesInBuffer(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-//            when(channel.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-//            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-//            final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-//            final ByteBuf buf1 = Unpooled.buffer(10).writeBytes(randomBytes(10));
-//            final ByteBuf buf2 = Unpooled.buffer(5).writeBytes(randomBytes(5));
-//            queue.add(buf1);
-//            queue.add(buf2);
-//
-//            assertEquals(15, buffer.bytes());
-//
-//            buf1.release();
-//            buf2.release();
-//        }
     }
 }
