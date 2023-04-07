@@ -140,9 +140,9 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (isDiscoveryMessageWithChildrenTime(msg)) {
+        if (isHelloMessageWithChildrenTime(msg)) {
             final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
-            handleDiscoveryMessage(ctx, addressedMsg.content(), addressedMsg.sender());
+            handleHelloMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isApplicationMessageForMe(msg)) {
             final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
@@ -265,7 +265,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     }
 
     @SuppressWarnings("java:S1067")
-    private boolean isDiscoveryMessageWithChildrenTime(final Object msg) {
+    private boolean isHelloMessageWithChildrenTime(final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
                 myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
@@ -273,10 +273,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
     }
 
-    private void handleDiscoveryMessage(final ChannelHandlerContext ctx,
-                                        final HelloMessage msg,
-                                        final InetSocketAddress inetAddress) {
-        LOG.trace("Got Discovery from `{}`.", msg.getSender());
+    private void handleHelloMessage(final ChannelHandlerContext ctx,
+                                    final HelloMessage msg,
+                                    final InetSocketAddress inetAddress) {
+        LOG.trace("Got Hello from `{}`.", msg.getSender());
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
