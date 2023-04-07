@@ -30,7 +30,6 @@ import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;
 import org.drasyl.cli.tunrc.TunRcCommand;
 import org.drasyl.cli.wormhole.WormholeCommand;
-import org.drasyl.cli.wormholearq.WormholearqCommand;
 import org.drasyl.identity.IdentityPublicKey;
 import picocli.AutoComplete.GenerateCompletion;
 import picocli.CommandLine;
@@ -62,8 +61,7 @@ import static java.util.Objects.requireNonNull;
                 TunRcCommand.class,
                 TunnelCommand.class,
                 VersionCommand.class,
-                WormholeCommand.class,
-                WormholearqCommand.class
+                WormholeCommand.class
         },
         headerHeading = "drasyl Command Line Interface: ",
         header = "A collection of utilities for drasyl.%n",
