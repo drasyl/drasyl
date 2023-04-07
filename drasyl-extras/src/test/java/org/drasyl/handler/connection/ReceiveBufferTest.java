@@ -36,7 +36,10 @@ class ReceiveBufferTest {
                                         @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
@@ -158,7 +161,10 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(60, data.slice(60, 100));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 100);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [0,60), got [0,100)
                 final ByteBuf data1 = data.slice(0, 100);
@@ -263,7 +269,10 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(70, data.slice(60, 60));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(ReliableConnectionConfig.newBuilder().build(), 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        .rmem(64_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [10,70) and [130,210), got [10,210)
                 Segment seg1 = new Segment(10, 100, Segment.ACK, data);

@@ -91,28 +91,24 @@ class SendBufferTest {
 
             // read 5 bytes (part of first buf)
             assertEquals(buf.slice(0, 5), buffer.read(5, new AtomicBoolean(), channelPromise));
-            assertEquals(buffer.readableBytes(), 15);
             assertEquals(10, buffer.readableBytes());
             assertFalse(promise1.isDone());
             assertFalse(promise2.isDone());
 
             // read 6 bytes (remainder of first buf and start of second buf)
             assertEquals(buf.slice(5, 6), buffer.read(6, new AtomicBoolean(), channelPromise));
-            assertEquals(buffer.readableBytes(), 15);
             assertEquals(4, buffer.readableBytes());
             assertTrue(promise1.isDone());
             assertFalse(promise2.isDone());
 
             // read 10 bytes (remainder of second buf; only 4 bytes)
             assertEquals(buf.slice(11, 4), buffer.read(10, new AtomicBoolean(), channelPromise));
-            assertEquals(buffer.readableBytes(), 15);
             assertEquals(0, buffer.readableBytes());
             assertTrue(promise1.isDone());
             assertTrue(promise2.isDone());
 
             // read 99 bytes (nothing remain)
             assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99, new AtomicBoolean(), channelPromise));
-            assertEquals(buffer.readableBytes(), 15);
             assertEquals(0, buffer.readableBytes());
         }
     }

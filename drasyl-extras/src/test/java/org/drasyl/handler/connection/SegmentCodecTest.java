@@ -93,7 +93,7 @@ class SegmentCodecTest {
 
             final ByteBuf actual = channel.readInbound();
 
-            assertEquals(actual, msg);
+            assertEquals(msg, actual);
 
             actual.release();
         }
@@ -107,7 +107,7 @@ class SegmentCodecTest {
 
             final ByteBuf actual = channel.readInbound();
 
-            assertEquals(actual, msg);
+            assertEquals(msg, actual);
 
             actual.release();
         }
