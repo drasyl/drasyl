@@ -103,6 +103,6 @@ abstract class AbstractWormholeSender extends ChannelDuplexHandler {
         TRANSFERRING,
         ERRORED,
         COMPLETED,
-        ABORTED;
+        ABORTED
     }
 }
