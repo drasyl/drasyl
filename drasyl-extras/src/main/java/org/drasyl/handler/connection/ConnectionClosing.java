@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.State.CLOSE_WAIT;
 
 /**
  * Signals that the connection is closing.
@@ -29,18 +30,18 @@ import static java.util.Objects.requireNonNull;
 public class ConnectionClosing implements ConnectionHandshakeEvent {
     private final State state;
 
-    public ConnectionClosing(final State state) {
+    ConnectionClosing(final State state) {
         this.state = requireNonNull(state);
     }
 
-    public State state() {
-        return state;
+    public boolean initatedByRemotePeer() {
+        return state == CLOSE_WAIT;
     }
 
     @Override
     public String toString() {
         return "ConnectionClosing{" +
-                "state=" + state +
+                "initatedByRemotePeer=" + initatedByRemotePeer() +
                 '}';
     }
 }
