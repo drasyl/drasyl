@@ -69,6 +69,7 @@ public class DropMessagesHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class DropRandomMessages implements Predicate<Object> {
         private final float lossRate;
         private long maxDrops;
@@ -90,6 +91,7 @@ public class DropMessagesHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class DropEveryNthMessage implements Predicate<Object> {
         private final long n;
         private long i;
@@ -104,6 +106,7 @@ public class DropMessagesHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class DropNthMessage implements Predicate<Object> {
         private final long n;
         private long i;
@@ -118,6 +121,7 @@ public class DropMessagesHandler extends ChannelDuplexHandler {
         }
     }
 
+    @SuppressWarnings("unused")
     public static class DropMessageRange implements Predicate<Object> {
         private final long from;
         private final long to;
