@@ -102,7 +102,7 @@ class SegmentCodecTest {
         void shouldPassThroughOnWrongMagicNumber() {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            final ByteBuf msg = Unpooled.buffer(SEG_HDR_SIZE).writerIndex(SEG_HDR_SIZE);
+            final ByteBuf msg = Unpooled.buffer(SEG_HDR_SIZE - 1).writerIndex(SEG_HDR_SIZE - 1);
             channel.writeInbound(msg);
 
             final ByteBuf actual = channel.readInbound();
