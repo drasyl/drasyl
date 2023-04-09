@@ -25,7 +25,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConnectionHandshakeStatus implements ConnectionHandshakeEvent {
+public class ConnectionHandshakeStatus implements ConnectionEvent {
     private final State state;
     private final TransmissionControlBlock tcb;
 

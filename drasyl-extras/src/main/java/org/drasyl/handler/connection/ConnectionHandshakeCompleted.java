@@ -24,38 +24,9 @@ package org.drasyl.handler.connection;
 /**
  * Signals that the handshake was completed successfully.
  */
-public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
-    private final long sndNxt;
-    private final long rcvNxt;
-
-    public ConnectionHandshakeCompleted(final long sndNxt, final long rcvNxt) {
-        this.sndNxt = sndNxt;
-        this.rcvNxt = rcvNxt;
-    }
-
-    /**
-     * Returns the state that has been shared with the remote peer.
-     *
-     * @return state that has been shared with the remote peer
-     */
-    public long sndNxt() {
-        return sndNxt;
-    }
-
-    /**
-     * Returns the state that has been received from the remote peer.
-     *
-     * @return state that has been received from the remote peer
-     */
-    public long rcvNxt() {
-        return rcvNxt;
-    }
-
+public class ConnectionHandshakeCompleted implements ConnectionEvent {
     @Override
     public String toString() {
-        return "ConnectionHandshakeCompleted{" +
-                "sndNxt=" + sndNxt +
-                ", rcvNxt=" + rcvNxt +
-                '}';
+        return "ConnectionHandshakeCompleted{}";
     }
 }

@@ -49,7 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.stubbing.Answer;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.EnumMap;
 import java.util.Map;
@@ -357,7 +356,7 @@ class ReliableConnectionHandlerTest {
 
                     // as we sent an ACK for an unexpected seq, peer will reset us
                     final Segment msg = new Segment(100, RST);
-                    assertThrows(ConnectionHandshakeException.class, () -> channel.writeInbound(msg));
+                    assertThrows(ConnectionResetException.class, () -> channel.writeInbound(msg));
                     assertEquals(CLOSED, handler.state);
                     assertNull(handler.tcb);
                 }
@@ -1803,7 +1802,7 @@ class ReliableConnectionHandlerTest {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
-                        assertThrows(ConnectionHandshakeException.class, () -> handler.userCallOpen(ctx));
+                        assertThrows(ConnectionAlreadyExistsException.class, () -> handler.userCallOpen(ctx));
                     }
                 }
             }
@@ -1842,7 +1841,7 @@ class ReliableConnectionHandlerTest {
                         handler.write(ctx, data, promise);
 
                         // RFC 9293: Otherwise, return "error: connection does not exist".
-                        verify(promise).tryFailure(any(ClosedChannelException.class));
+                        verify(promise).tryFailure(any(ConnectionDoesNotExistException.class));
                         verify(data).release();
                     }
                 }
@@ -1961,7 +1960,7 @@ class ReliableConnectionHandlerTest {
                         handler.write(ctx, data, promise);
 
                         // RFC 9293: Return "error: connection closing" and do not service request.
-                        verify(promise).tryFailure(any(ConnectionHandshakeException.class));
+                        verify(promise).tryFailure(any(ConnectionClosingException.class));
                         verify(data).release();
                     }
                 }
@@ -2122,7 +2121,7 @@ class ReliableConnectionHandlerTest {
                         handler.close(ctx, promise);
 
                         // RFC 9293: Any outstanding RECEIVEs are returned with "error: closing" responses.
-                        verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+                        verify(tcb.sendBuffer()).fail(any(ConnectionClosingException.class));
 
                         // RFC 9293: Delete TCB,
                         verify(tcb).delete();
@@ -2228,7 +2227,7 @@ class ReliableConnectionHandlerTest {
                         // RFC 9293: "error: connection closing" response.
                         // RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
                         // RFC 9293: not emitted (the first FIN may be retransmitted, though).
-                        verify(promise).tryFailure(any(ConnectionHandshakeException.class));
+                        verify(promise).tryFailure(any(ConnectionClosingException.class));
                     }
                 }
 
@@ -2280,7 +2279,7 @@ class ReliableConnectionHandlerTest {
                         // RFC 9293: "error: connection closing" response.
                         // RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
                         // RFC 9293: not emitted (the first FIN may be retransmitted, though).
-                        verify(promise).tryFailure(any(ConnectionHandshakeException.class));
+                        verify(promise).tryFailure(any(ConnectionClosingException.class));
                     }
                 }
             }
@@ -2300,14 +2299,14 @@ class ReliableConnectionHandlerTest {
                     void shouldThrowException() {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
-                        assertThrows(ClosedChannelException.class, () -> handler.userCallAbort());
+                        assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallAbort());
                     }
                 }
 
                 @Nested
                 class OnListenState {
                     @Test
-                    void shouldCloseConnection() throws ClosedChannelException {
+                    void shouldCloseConnection() {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
@@ -2323,14 +2322,14 @@ class ReliableConnectionHandlerTest {
                 @Nested
                 class OnSynSentState {
                     @Test
-                    void shouldCloseConnection() throws ClosedChannelException {
+                    void shouldCloseConnection() {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
 
                         // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
                         // RFC 9293: reset" responses.
-                        verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+                        verify(tcb.sendBuffer()).fail(any(ConnectionResetException.class));
 
                         // RFC 9293: Delete TCB,
                         verify(tcb).delete();
@@ -2350,7 +2349,7 @@ class ReliableConnectionHandlerTest {
                             "FIN_WAIT_2",
                             "CLOSE_WAIT"
                     })
-                    void shouldCloseConnection(final State state) throws ClosedChannelException {
+                    void shouldCloseConnection(final State state) {
                         when(tcb.sndNxt()).thenReturn(123L);
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
@@ -2386,7 +2385,7 @@ class ReliableConnectionHandlerTest {
                             "LAST_ACK",
                             "TIME_WAIT"
                     })
-                    void shouldCloseConnection(final State state) throws ClosedChannelException {
+                    void shouldCloseConnection(final State state) {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
                         handler.userCallAbort();
@@ -2410,7 +2409,7 @@ class ReliableConnectionHandlerTest {
                     void shouldThrowException() {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
-                        assertThrows(ClosedChannelException.class, () -> handler.userCallStatus());
+                        assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallStatus());
                     }
                 }
 
@@ -2429,7 +2428,7 @@ class ReliableConnectionHandlerTest {
                             "LAST_ACK",
                             "TIME_WAIT"
                     })
-                    void shouldReturnStatus(final State state) throws ClosedChannelException {
+                    void shouldReturnStatus(final State state) {
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
                         assertEquals(new ConnectionHandshakeStatus(state, tcb), handler.userCallStatus());
@@ -2699,7 +2698,7 @@ class ReliableConnectionHandlerTest {
 
                         // RFC 9293: If the ACK was acceptable,
                         // RFC 9293: then signal to the user "error: connection reset",
-                        verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+                        verify(ctx).fireExceptionCaught(any(ConnectionResetException.class));
 
                         // RFC 9293: drop the segment,
                         verify(seg).release();
@@ -3059,7 +3058,7 @@ class ReliableConnectionHandlerTest {
                             // RFC 9293: If this connection was initiated with an active OPEN (i.e.,
                             // RFC 9293: came from SYN-SENT state), then the connection was refused;
                             // RFC 9293: signal the user "connection refused".
-                            verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+                            verify(ctx).fireExceptionCaught(any(ConnectionRefusedException.class));
 
                             // RFC 9293: In either case, the retransmission queue should be flushed.
                             verify(tcb.retransmissionQueue()).release();
@@ -3094,14 +3093,14 @@ class ReliableConnectionHandlerTest {
 
                             // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs and SEND
                             // RFC 9293: should receive "reset" responses.
-                            verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+                            verify(tcb.sendBuffer()).fail(any(ConnectionResetException.class));
 
                             // RFC 9293: All segment queues should be flushed.
                             verify(tcb.retransmissionQueue()).release();
 
                             // RFC 9293: Users should also receive an unsolicited general
                             // RFC 9293: "connection reset" signal.
-                            verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+                            verify(ctx).fireExceptionCaught(any(ConnectionResetException.class));
 
                             // RFC 9293: Enter the CLOSED state, delete the TCB
                             assertEquals(CLOSED, handler.state);
@@ -4100,13 +4099,13 @@ class ReliableConnectionHandlerTest {
                     // RFC 9293: For any state if the user timeout expires,
 
                     // RFC 9293: flush all queues,
-                    verify(tcb.sendBuffer()).fail(any(ConnectionHandshakeException.class));
+                    verify(tcb.sendBuffer()).fail(any(ConnectionClosingException.class));
                     verify(tcb.retransmissionQueue()).release();
                     verify(tcb.receiveBuffer()).release();
 
                     // RFC 9293: signal the user "error: connection aborted due to user timeout" in
                     // RFC 9293: general and for any outstanding calls,
-                    verify(ctx).fireExceptionCaught(any(ConnectionHandshakeException.class));
+                    verify(ctx).fireExceptionCaught(any(ConnectionAbortedDueToUserTimeoutException.class));
 
                     // RFC 9293: delete the TCB,
                     verify(tcb).delete();

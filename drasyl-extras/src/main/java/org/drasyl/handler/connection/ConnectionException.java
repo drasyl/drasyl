@@ -22,7 +22,13 @@
 package org.drasyl.handler.connection;
 
 /**
- * Signals handshake states.
+ * Exceptions thrown by {@link ReliableConnectionHandler}.
  */
-public interface ConnectionHandshakeEvent {
+public abstract class ConnectionException extends RuntimeException {
+    protected ConnectionException() {
+    }
+
+    protected ConnectionException(final String message) {
+        super(message);
+    }
 }

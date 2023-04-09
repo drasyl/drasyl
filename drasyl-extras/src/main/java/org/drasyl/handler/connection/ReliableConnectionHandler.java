@@ -97,10 +97,6 @@ import static org.drasyl.util.NumberUtil.min;
  * Acknowledgment Options</a> is used in conjunction with <a href=""></a>.
  * <p>
  * The handler can be configured to perform an active or passive OPEN process.
- * <p>
- * If the handler is configured for active OPEN, a {@link ConnectionHandshakeIssued} will be emitted
- * once the handshake has been issued. The handshake process will result either in a {@link
- * ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
 @SuppressWarnings({
         "java:S125",
@@ -121,12 +117,17 @@ import static org.drasyl.util.NumberUtil.min;
         , "ConstantValue"
 })
 public class ReliableConnectionHandler extends ChannelDuplexHandler {
-    static final ConnectionHandshakeException CONNECTION_CLOSING_ERROR = new ConnectionHandshakeException("Connection closing");
     private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandler.class);
-    private static final ConnectionHandshakeException CONNECTION_REFUSED_EXCEPTION = new ConnectionHandshakeException("Connection refused");
-    private static final ClosedChannelException CONNECTION_NOT_EXIST_ERROR = new ClosedChannelException();
-    private static final ConnectionHandshakeException CONNECTION_RESET_EXCEPTION = new ConnectionHandshakeException("Connection reset");
-    private static final ConnectionHandshakeException CONNECTION_EXISTS_EXCEPTION = new ConnectionHandshakeException("Connection already exists");
+    // events
+    static final ConnectionHandshakeCompleted CONNECTION_HANDSHAKE_COMPLETED = new ConnectionHandshakeCompleted();
+    static final ConnectionHandshakeIssued CONNECTION_HANDSHAKE_ISSUED = new ConnectionHandshakeIssued();
+    // errors
+    static final ConnectionDoesNotExistException CONNECTION_NOT_EXIST_ERROR = new ConnectionDoesNotExistException();
+    static final ConnectionClosingException CONNECTION_CLOSING_ERROR = new ConnectionClosingException();
+    static final ConnectionRefusedException CONNECTION_REFUSED_EXCEPTION = new ConnectionRefusedException();
+    static final ConnectionResetException CONNECTION_RESET_EXCEPTION = new ConnectionResetException();
+    static final ConnectionAlreadyExistsException CONNECTION_EXISTS_EXCEPTION = new ConnectionAlreadyExistsException();
+    static final ConnectionAbortedDueToUserTimeoutException CONNECTION_USER_TIMEOUT_EXCEPTION = new ConnectionAbortedDueToUserTimeoutException();
     private final ReliableConnectionConfig config;
     State state;
     TransmissionControlBlock tcb;
@@ -731,7 +732,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
      * 3.10.5</a>.
      */
     @SuppressWarnings("java:S128")
-    public void userCallAbort() throws ClosedChannelException {
+    public void userCallAbort() {
         assert ctx == null || ctx.executor().inEventLoop();
         LOG.trace("{}[{}] ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
@@ -820,7 +821,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
      * STATUS call as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.6">RFC
      * 9293, Section 3.10.6</a>.
      */
-    public ConnectionHandshakeStatus userCallStatus() throws ClosedChannelException {
+    public ConnectionHandshakeStatus userCallStatus() {
         LOG.trace("{}[{}] STATUS call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
 
         switch (state) {
@@ -878,14 +879,14 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_ISSUED));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted(tcb.sndNxt(), tcb.rcvNxt())));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_COMPLETED));
                 break;
 
             case CLOSE_WAIT:
@@ -2549,14 +2550,13 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: For any state if the user timeout expires,
         LOG.trace("{}[{}] USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), state, config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
-        final ConnectionHandshakeException cause = new ConnectionHandshakeException("USER TIMEOUT expired after " + config.userTimeout().toMillis() + "ms. Close channel.");
-        tcb.sendBuffer().fail(cause);
+        tcb.sendBuffer().fail(CONNECTION_USER_TIMEOUT_EXCEPTION);
         tcb.retransmissionQueue().release();
         tcb.receiveBuffer().release();
 
         // RFC 9293: signal the user "error: connection aborted due to user timeout" in
         // RFC 9293: general and for any outstanding calls,
-        ctx.fireExceptionCaught(cause);
+        ctx.fireExceptionCaught(CONNECTION_USER_TIMEOUT_EXCEPTION);
 
         // RFC 9293: delete the TCB,
         deleteTcb();

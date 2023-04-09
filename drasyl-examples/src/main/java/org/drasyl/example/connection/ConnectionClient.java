@@ -33,7 +33,7 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
+import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
@@ -136,7 +136,7 @@ public class ConnectionClient {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
                                                         final Throwable cause) {
-                                if (cause instanceof ConnectionHandshakeException) {
+                                if (cause instanceof ConnectionException) {
                                     // handshake failed
                                     cause.printStackTrace();
                                 }

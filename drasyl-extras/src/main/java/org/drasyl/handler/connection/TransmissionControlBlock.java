@@ -483,11 +483,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        //LOG.error("{}[{}] Path capped.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state);
+                        LOG.trace("{}[{}] Path capped.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state);
                     }
                     else {
                         // receiver capped
-                        //LOG.error("{}[{}] Receiver capped.", ctx.channel(), ((ReliableTransportHandler) ctx.handler()).state);
+                        LOG.trace("{}[{}] Receiver capped.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state);
                     }
                 }
 

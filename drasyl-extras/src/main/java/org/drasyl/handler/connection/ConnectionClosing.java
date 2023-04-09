@@ -21,13 +21,17 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
+
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.State.CLOSE_WAIT;
 
 /**
- * Signals that the connection is closing.
+ * Signals that the connection is closing. The closing have been either initiated locally (by a
+ * preceding {@link Channel#close()} call) or by the remote peer. In the latter case, the close
+ * request must be "confirmed" by calling {@link Channel#close()}.
  */
-public class ConnectionClosing implements ConnectionHandshakeEvent {
+public class ConnectionClosing implements ConnectionEvent {
     private final State state;
 
     ConnectionClosing(final State state) {

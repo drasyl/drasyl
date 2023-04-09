@@ -22,9 +22,10 @@
 package org.drasyl.handler.connection;
 
 /**
- * Signals that the handshake was started but the remote peer dis not response yet to the request.
+ * Signals that the handshake has been issued but the remote peer did not response yet to the
+ * request.
  */
-public class ConnectionHandshakeIssued implements ConnectionHandshakeEvent {
+public class ConnectionHandshakeIssued implements ConnectionEvent {
     @Override
     public String toString() {
         return "ConnectionHandshakeIssued{}";

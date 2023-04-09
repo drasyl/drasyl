@@ -113,7 +113,7 @@ public class SendBuffer {
         return "SND.BUF(len: " + readableBytes() + ")";
     }
 
-    public void fail(final ConnectionHandshakeException e) {
+    public void fail(final ConnectionException e) {
         queue.releaseAndFailAll(e);
     }
 }

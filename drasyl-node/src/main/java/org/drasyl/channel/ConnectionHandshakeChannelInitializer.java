@@ -29,12 +29,11 @@ import io.netty.channel.DefaultEventLoop;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
+import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandshakeStatus;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.handler.connection.State;
 import org.drasyl.util.CsvLogger;
 
 import java.nio.channels.ClosedChannelException;
@@ -70,13 +69,8 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         p.addLast(handler);
         final CsvLogger logger = new CsvLogger("./" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
         new DefaultEventLoop().scheduleAtFixedRate(() -> {
-            try {
-                ConnectionHandshakeStatus status = handler.userCallStatus();
-                logger.log(status.tcb());
-            }
-            catch (final ClosedChannelException e) {
-                e.printStackTrace();
-            }
+            ConnectionHandshakeStatus status = handler.userCallStatus();
+            logger.log(status.tcb());
         }, 100, 100, MILLISECONDS);
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
@@ -97,7 +91,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
             @Override
             public void exceptionCaught(final ChannelHandlerContext ctx,
                                         final Throwable cause) {
-                if (cause instanceof ConnectionHandshakeException) {
+                if (cause instanceof ConnectionException) {
                     handshakeFailed(ctx, cause);
                 }
                 else {
