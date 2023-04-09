@@ -483,16 +483,16 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{}[{}] Path capped.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state);
+                        LOG.trace("{}Path capped.", ctx.channel());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{}[{}] Receiver capped.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state);
+                        LOG.trace("{} Receiver capped.", ctx.channel());
                     }
                 }
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{}[{}] {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
+                    LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
 
                     readableBytes -= handler.segmentizeAndSendData(ctx, (int) remainingBytes);
@@ -520,7 +520,7 @@ public class TransmissionControlBlock {
         if (overrideTimer == null) {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{}[{}] Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, config.overrideTimeout().toMillis());
+                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
                 segmentizeData(ctx, true);
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
@@ -596,7 +596,7 @@ public class TransmissionControlBlock {
 
         if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
-            LOG.trace("{}[{}] Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), ((ReliableConnectionHandler) ctx.handler()).state, rcvWnd, newRcvWind, newRcvWind - rcvWnd);
+            LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
             rcvWnd = newRcvWind;
             assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
