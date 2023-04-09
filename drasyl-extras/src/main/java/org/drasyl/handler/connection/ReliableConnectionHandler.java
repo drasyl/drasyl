@@ -36,7 +36,6 @@ import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -1193,7 +1192,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
                     // RFC 9293: and any segments on the retransmission queue that are thereby
                     // RFC 9293: acknowledged should be removed.
-                    tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
+                    removeAcknowledgedSegmentsFromRetransmissionQueue(ctx);
                 }
             }
 
@@ -1323,6 +1322,28 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // (this is handled by handler's auto release of all arrived segments)
 
         // RFC 9293: and return.
+    }
+
+    private void removeAcknowledgedSegmentsFromRetransmissionQueue(ChannelHandlerContext ctx) {
+        final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
+
+        if (somethingWasAcked) {
+            if (!tcb.sendBuffer().hasOutstandingData()) {
+                cancelUserTimer(ctx);
+                // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
+                // RFC 6298:       retransmission timer.
+                cancelRetransmissionTimer(ctx);
+            }
+            else {
+                cancelUserTimer(ctx);
+                startUserTimer(ctx);
+                // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
+                // RFC 6298:       retransmission timer so that it will expire after RTO seconds
+                // RFC 6298:       (for the current value of RTO).
+                cancelRetransmissionTimer(ctx);
+                startRetransmissionTimer(ctx, tcb);
+            }
+        }
     }
 
     @SuppressWarnings("java:S3776")
@@ -2085,7 +2106,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
         // RFC 9293: Any segments on the retransmission queue that are thereby entirely
         // RFC 9293: acknowledged are removed.
-        tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
+        removeAcknowledgedSegmentsFromRetransmissionQueue(ctx);
+
         // RFC 9293: Users should receive positive acknowledgments for buffers that have been SENT
         // RFC 9293: and fully acknowledged (i.e., SEND buffer should be returned with "ok"
         // RFC 9293: response).
@@ -2137,7 +2159,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     }
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
-                    final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
+                    final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
                     LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                     ctx.writeAndFlush(retransmission);
 
@@ -2180,7 +2202,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         }
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
-                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
+                        final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
                         LOG.trace("{}[{}] Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), state, retransmission);
                         ctx.writeAndFlush(retransmission);
 
@@ -2280,7 +2302,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     If this ACK does *not* acknowledge all of the data up to and
                         // RFC 6582:     including recover, then this is a partial ACK. In this case,
                         // RFC 6582:     retransmit the first unacknowledged segment.
-                        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
+                        final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
                         LOG.trace("{}[{}] Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, seg, retransmission, tcb.flightSize());
                         ctx.writeAndFlush(retransmission);
 
@@ -2598,7 +2620,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
         // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
         // RFC 6298:       TCP receiver.
-        final Segment retransmission = tcb.retransmissionQueue().retransmissionSegment(ctx);
+        final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
         assert retransmission != null;
         LOG.trace("{}[{}] Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), state, rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
@@ -2650,6 +2672,17 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
             // TODO:
             //  RFC 6582:     and exit the fast recovery procedure if applicable.
         }
+    }
+
+    private Segment nextSegmentOnRetransmissionQueue(final ChannelHandlerContext ctx,
+                                                     final TransmissionControlBlock tcb) {
+        final Segment seg = tcb.retransmissionQueue().nextSegment();
+        if (seg != null) {
+            final ByteBuf copy = seg.content().copy();
+            ReferenceCountUtil.touch(copy, "retransmissionSegment");
+            return formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
+        }
+        return null;
     }
 
     void cancelRetransmissionTimer(final ChannelHandlerContext ctx) {

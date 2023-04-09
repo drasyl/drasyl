@@ -92,8 +92,8 @@ public class RetransmissionQueue {
         return "RTNS.Q(SIZE=" + queue.size() + ")";
     }
 
-    public void removeAcknowledged(final ChannelHandlerContext ctx,
-                                   final TransmissionControlBlock tcb) {
+    public boolean removeAcknowledged(final ChannelHandlerContext ctx,
+                                      final TransmissionControlBlock tcb) {
         boolean somethingWasAcked = false;
         Segment seg;
         while ((seg = queue.peek()) != null) {
@@ -114,35 +114,11 @@ public class RetransmissionQueue {
             }
         }
 
-        if (somethingWasAcked) {
-            final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
-            if (!tcb.sendBuffer().hasOutstandingData()) {
-                handler.cancelUserTimer(ctx);
-                // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
-                // RFC 6298:       retransmission timer.
-                handler.cancelRetransmissionTimer(ctx);
-            }
-            else {
-                handler.cancelUserTimer(ctx);
-                handler.startUserTimer(ctx);
-                // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
-                // RFC 6298:       retransmission timer so that it will expire after RTO seconds
-                // RFC 6298:       (for the current value of RTO).
-                handler.cancelRetransmissionTimer(ctx);
-                handler.startRetransmissionTimer(ctx, tcb);
-            }
-        }
+        return somethingWasAcked;
     }
 
-    Segment retransmissionSegment(ChannelHandlerContext ctx) {
-        final Segment seg = queue.peek();
-        if (seg != null) {
-            final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
-            final ByteBuf copy = seg.content().copy();
-            ReferenceCountUtil.touch(copy, "retransmissionSegment");
-            return handler.formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
-        }
-        return null;
+    Segment nextSegment() {
+       return queue.peek();
     }
 
     public void release() {
