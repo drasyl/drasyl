@@ -42,10 +42,9 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 /**
  * Represents the receive buffer that holds incoming data received over a connection.
  * <p>
- * This class manages the buffer that holds incoming data received from the remote sender over a
- * connection. The receive buffer is used by the receiver to hold incoming data that has been
- * successfully received from the sender. The buffer allows the receiver to temporarily store the
- * received data until it can be processed by the receiving application.
+ * The receive buffer is used by the receiver to hold incoming data that has been successfully
+ * received from the sender. The buffer allows the receiver to temporarily store the received data
+ * until it can be processed by the receiving application.
  */
 public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);

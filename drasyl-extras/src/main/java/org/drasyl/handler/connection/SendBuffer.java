@@ -25,8 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.CoalescingBufferQueue;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -34,11 +32,15 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.ReliableConnectionHandler.CONNECTION_CLOSING_ERROR;
 
 /**
- * Holds data enqueued by the application to be written to the network. This FIFO queue also updates
- * the {@link io.netty.channel.Channel} writability for the bytes it holds.
+ * Represents the send buffer that holds outgoing segments waiting to be sent over a connection.
+ * <p>
+ * The send buffer is responsible for managing the buffer of outgoing segments that are waiting to
+ * be sent over the network. The send buffer is distinct from the outgoing segment queue, which is a
+ * separate data structure that holds segments that have been scheduled for transmission, but not
+ * yet sent. The send buffer, on the other hand, stores segments that are waiting to be scheduled
+ * for transmission.
  */
 public class SendBuffer {
-    private static final Logger LOG = LoggerFactory.getLogger(SendBuffer.class);
     // used to get ByteBufAllocator
     private final Channel channel;
     // only used for controlling the channel writability according to the bytes contained in this buffer
@@ -71,19 +73,24 @@ public class SendBuffer {
     }
 
     public void push() {
-        pushMark = readableBytes();
+        pushMark = length();
     }
 
     public final ByteBuf read(int bytes, final AtomicBoolean doPush, final ChannelPromise promise) {
+        if (pushMark > 0 && bytes > pushMark) {
+            // only read til push mark
+            bytes = (int) pushMark;
+        }
+
         final ByteBuf toReturn = queue.remove(bytes, promise);
 
         if (pushMark > 0) {
-            if (pushMark - toReturn.readableBytes() <= 0) {
+            // update push mark
+            pushMark -= toReturn.readableBytes();
+
+            if (pushMark == 0) {
+                // push mark reached, PSH flag must be set on SEG
                 doPush.set(true);
-                pushMark = 0;
-            }
-            else {
-                pushMark -= toReturn.readableBytes();
             }
         }
 
@@ -93,12 +100,12 @@ public class SendBuffer {
     /**
      * The number of readable bytes.
      */
-    public long readableBytes() {
+    public long length() {
         return queue.readableBytes();
     }
 
-    public boolean hasOutstandingData() {
-        return !queue.isEmpty();
+    public boolean isEmpty(){
+        return queue.isEmpty();
     }
 
     /**
@@ -108,12 +115,12 @@ public class SendBuffer {
         fail(CONNECTION_CLOSING_ERROR);
     }
 
-    @Override
-    public String toString() {
-        return "SND.BUF(len: " + readableBytes() + ")";
-    }
-
     public void fail(final ConnectionException e) {
         queue.releaseAndFailAll(e);
+    }
+
+    @Override
+    public String toString() {
+        return "SND.BUF(len: " + length() + ")";
     }
 }

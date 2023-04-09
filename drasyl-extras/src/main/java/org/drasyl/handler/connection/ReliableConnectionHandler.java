@@ -74,6 +74,7 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
 
+// FIXME: was ist mit den casts int/long/etc.?
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
  * heavily inspired by the Transmission Control Protocol (TCP), but neither implement all features
@@ -638,7 +639,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 break;
 
             case SYN_RECEIVED:
-                if (!tcb.sendBuffer().hasOutstandingData()) {
+                SendBuffer sendBuffer = tcb.sendBuffer();
+                if (sendBuffer.isEmpty()) {
                     // RFC 9293: If no SENDs have been issued and there is no pending data to send,
                     // RFC 9293: then form a FIN segment and send it,
                     final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -711,7 +713,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
 
     private ChannelPromise precedingSendsHaveBeenSegmentized(final ChannelHandlerContext ctx) {
         assert segmentizedFuture == null;
-        segmentizedRemainingBytes = tcb.sendBuffer().readableBytes();
+        segmentizedRemainingBytes = tcb.sendBuffer().length();
         final ChannelPromise toReturn = ctx.newPromise();
         segmentizedFuture = toReturn;
         if (segmentizedRemainingBytes == 0) {
@@ -1328,7 +1330,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
-            if (!tcb.sendBuffer().hasOutstandingData()) {
+            SendBuffer sendBuffer = tcb.sendBuffer();
+            if (sendBuffer.isEmpty()) {
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
@@ -2021,7 +2024,8 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: acknowledgment number is equal to the greatest acknowledgment received on the
         // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
         // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
-        final boolean isRfc5681Duplicate = tcb.sendBuffer().hasOutstandingData() &&
+        SendBuffer sendBuffer1 = tcb.sendBuffer();
+        final boolean isRfc5681Duplicate = !sendBuffer1.isEmpty() &&
                 seg.len() == 0 &&
                 !seg.isSyn() &&
                 !seg.isFin() &&
@@ -2124,11 +2128,12 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     provided that the receiver's advertised window allows, the total
                     // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
                     // RFC 5681:     and that new data is available for transmission.
+                    SendBuffer sendBuffer = tcb.sendBuffer();
                     final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
                             (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
-                            tcb.sendBuffer().hasOutstandingData();
+                            !sendBuffer.isEmpty();
                     if (doLimitedTransmit) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().readableBytes());
+                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
                         tcb.writeEnqueuedData(ctx);
                         // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
                         // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
@@ -2735,7 +2740,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
     }
 
     private void startZeroWindowProbing(final ChannelHandlerContext ctx) {
-        if (zeroWindowProber == null && tcb.sendBuffer().readableBytes() > 0) {
+        if (zeroWindowProber == null && tcb.sendBuffer().length() > 0) {
             // RFC 9293: The transmitting host SHOULD send the first zero-window probe when a zero
             // RFC 9293: window has existed for the retransmission timeout period (SHLD-29)
             // RFC 9293: (Section 3.8.1), and SHOULD increase exponentially the interval between

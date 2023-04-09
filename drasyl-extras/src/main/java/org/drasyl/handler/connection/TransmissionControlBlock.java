@@ -396,7 +396,7 @@ public class TransmissionControlBlock {
     private void segmentizeData(final ChannelHandlerContext ctx,
                                 final boolean overrideTimeoutOccurred) {
         try {
-            long readableBytes = sendBuffer.readableBytes();
+            long readableBytes = sendBuffer.length();
 
             while (readableBytes > 0) {
                 if (!config().noDelay()) {

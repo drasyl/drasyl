@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.connection;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
@@ -33,14 +32,12 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.Segment.greaterThan;
 
 /**
- * Holds all segments that has been written to the network (called in-flight) but have not been
- * acknowledged yet. This FIFO queue also updates the {@link io.netty.channel.Channel} writability
- * for the bytes it holds.
+ * Represents the retransmission queue that holds segments that need to be retransmitted due to
+ * timeout or loss in a connection.
  * <p>
- * This queue mainly implements <a href="https://www.rfc-editor.org/rfc/rfc7323">RFC 7323 TCP
- * Extensions for High Performance</a>, <a href="https://www.rfc-editor.org/rfc/rfc7323#section-3">Section
- * 3 TCP Timestamps Option</a> and
- * <a href="https://www.rfc-editor.org/rfc/rfc7323#section-4">Section 4 The RTTM Mechanism</a>.
+ * The retransmission queue is used by the sender to keep track of segments that have been sent but
+ * not yet acknowledged, and need to be retransmitted after a certain period of time due to timeout
+ * or loss in the network.
  */
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
@@ -110,6 +107,7 @@ public class RetransmissionQueue {
                 break;
             }
             else {
+                // nothing ACKed
                 break;
             }
         }
@@ -118,7 +116,7 @@ public class RetransmissionQueue {
     }
 
     Segment nextSegment() {
-       return queue.peek();
+        return queue.peek();
     }
 
     public void release() {

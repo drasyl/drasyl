@@ -1104,7 +1104,7 @@ class ReliableConnectionHandlerTest {
                                                                     @Mock final ScheduledFuture timer,
                                                                     @Mock final ArrayDeque queueQueue,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
-                when(buffer.hasOutstandingData()).thenReturn(false);
+                when(!buffer.isEmpty()).thenReturn(false);
                 when(queueQueue.peek()).thenReturn(seg).thenReturn(null);
                 when(seg.lastSeq()).thenReturn(300L);
 
@@ -1130,7 +1130,7 @@ class ReliableConnectionHandlerTest {
                                                                     @Mock final ScheduledFuture timer,
                                                                     @Mock final ArrayDeque queueQueue,
                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
-                when(buffer.hasOutstandingData()).thenReturn(true);
+                when(!buffer.isEmpty()).thenReturn(true);
                 when(queueQueue.peek()).thenReturn(seg).thenReturn(null);
                 when(seg.lastSeq()).thenReturn(300L);
 
@@ -1230,7 +1230,8 @@ class ReliableConnectionHandlerTest {
                 final ByteBuf outstandingData = unpooledRandomBuffer(100);
                 tcb.sendBuffer().enqueue(outstandingData);
                 tcb.sendBuffer().read(100, new AtomicBoolean(), channel.newPromise().setSuccess());
-                assertTrue(tcb.sendBuffer().hasOutstandingData());
+                SendBuffer sendBuffer = tcb.sendBuffer();
+                assertFalse(sendBuffer.isEmpty());
 
                 // three duplicate ACKs in a row
                 channel.writeInbound(new Segment(205, 300, ACK));
@@ -2138,7 +2139,8 @@ class ReliableConnectionHandlerTest {
                 class OnSynReceivedState {
                     @Test
                     void shouldCloseConnectionIfNoDataIsOutstanding() {
-                        when(tcb.sendBuffer().hasOutstandingData()).thenReturn(false);
+                        SendBuffer sendBuffer = tcb.sendBuffer();
+                        when(sendBuffer.isEmpty()).thenReturn(true);
                         when(tcb.sndNxt()).thenReturn(123L);
 
                         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -2160,7 +2162,8 @@ class ReliableConnectionHandlerTest {
 
                     @Test
                     void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding() {
-                        when(tcb.sendBuffer().hasOutstandingData()).thenReturn(true).thenReturn(false);
+                        SendBuffer sendBuffer = tcb.sendBuffer();
+                        when(sendBuffer.isEmpty()).thenReturn(false).thenReturn(true);
                         when(ctx.newPromise()).thenReturn(promise);
                         when(promise.isSuccess()).thenReturn(true);
                         when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
@@ -4099,7 +4102,7 @@ class ReliableConnectionHandlerTest {
                     // RFC 9293: For any state if the user timeout expires,
 
                     // RFC 9293: flush all queues,
-                    verify(tcb.sendBuffer()).fail(any(ConnectionClosingException.class));
+                    verify(tcb.sendBuffer()).fail(any(ConnectionAbortedDueToUserTimeoutException .class));
                     verify(tcb.retransmissionQueue()).release();
                     verify(tcb.receiveBuffer()).release();
 
@@ -4133,13 +4136,14 @@ class ReliableConnectionHandlerTest {
                         "TIME_WAIT",
                         "CLOSED"
                 })
-                void shouldRetransmitEarliestSegment(final State state, @Mock final Segment seg) {
+                void shouldRetransmitEarliestSegment(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
                     when(tcb.rto()).thenReturn(1234L);
                     when(tcb.flightSize()).thenReturn(64_000L);
                     when(tcb.smss()).thenReturn(1000);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
                     when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
+                    when(seg.content()).thenReturn(Unpooled.buffer());
 
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -4148,7 +4152,7 @@ class ReliableConnectionHandlerTest {
 
                     // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the
                     // RFC 6298:       TCP receiver.
-                    verify(ctx).writeAndFlush(seg);
+                    verify(ctx).writeAndFlush(any(Segment.class));
 
                     // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
                     // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
