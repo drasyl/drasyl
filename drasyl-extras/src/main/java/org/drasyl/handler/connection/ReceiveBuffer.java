@@ -189,7 +189,7 @@ public class ReceiveBuffer {
                 }
             }
             else {
-                // buffer contains already segments. Check if SEG contains data that are before existing segments
+                // receive buffer contains already segments. Check if SEG contains data that are before existing segments
                 if (lessThan(seg.seq(), head.seq())) {
                     final long seq;
                     final long index;

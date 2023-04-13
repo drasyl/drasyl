@@ -281,7 +281,7 @@ class ReceiveBufferTest {
                 // expected [10,70) and [130,210), got [10,210)
                 Segment seg1 = new Segment(10, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
-                assertEquals(63_800, tcb.rcvWnd());
+                assertEquals(64_000 - 60 - 80, tcb.rcvWnd());
                 assertEquals(210, tcb.rcvNxt());
                 assertEquals(200, buffer.bytes());
                 assertEquals(200, buffer.readableBytes());
