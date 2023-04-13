@@ -75,6 +75,7 @@ import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
 
 // FIXME: was ist mit den casts int/long/etc.?
+// FIXME: \((long|int|float|double)\)
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
  * heavily inspired by the Transmission Control Protocol (TCP), but neither implement all features
@@ -1219,7 +1220,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     if (seg.isAck()) {
                         final long segTsEcr = tsOpt.tsEcr;
 
-                        final int r = (int) (config.clock().time() - segTsEcr);
+                        final long r = config.clock().time() - segTsEcr;
                         LOG.trace("{} RTT R = {}", ctx.channel(), r);
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
@@ -2045,18 +2046,18 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         if (config.timestamps()) {
             final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
             if (tsOpt != null) {
-                final int rDash;
+                final long rDash;
                 if (tcb.sndTsOk()) {
                     // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
                     final long segTsEcr = tsOpt.tsEcr;
 
                     // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
-                    rDash = (int) (config.clock().time() - segTsEcr);
+                    rDash = config.clock().time() - segTsEcr;
                 }
                 else {
                     // RFC 7323: otherwise, use the elapsed time since the first segment in the
                     // RFC 7323: retransmission queue was sent.
-                    rDash = (int) (config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime());
+                    rDash = config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime();
                 }
                 LOG.trace("{} RTT R' = {}", ctx.channel(), rDash);
 
@@ -2082,7 +2083,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: how many samples are taken per window:
 
                 // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
-                final int expectedSamples = max((int) Math.ceil((float) tcb.flightSize() / (tcb.smss() * 2)), 1);
+                final long expectedSamples = max((long) Math.ceil((double) tcb.flightSize() / (tcb.smss() * 2)), 1L);
                 // RFC 7323: alpha' = alpha / ExpectedSamples
                 final double alphaDash = config.alpha() / expectedSamples;
                 // RFC 7323: beta' = beta / ExpectedSamples
@@ -2094,7 +2095,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
                 tcb.rttVar((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash));
                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                tcb.sRtt((int) ((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash));
+                tcb.sRtt((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash);
                 // RFC 7323: (for each sample R')
 
                 // RFC 6298:       After the computation, a host MUST update
@@ -2389,7 +2390,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: implementations, the formula given in equation (3) can fail to increase
                 // RFC 5681: cwnd when the congestion window is larger than SMSS*SMSS. If the above
                 // RFC 5681: formula yields 0, the result SHOULD be rounded up to 1 byte.
-                final long increment = (long) Math.ceil(((long) tcb.smss() * tcb.smss()) / (float) tcb.cwnd());
+                final long increment = (long) Math.ceil(((double) tcb.smss() * tcb.smss()) / tcb.cwnd());
                 LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
                 tcb.cwnd(tcb.cwnd() + increment);
             }
@@ -2532,9 +2533,9 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         return formSegment(ctx, seq, 0, ctl);
     }
 
-    int segmentizeAndSendData(final ChannelHandlerContext ctx, int bytes) {
+    long segmentizeAndSendData(final ChannelHandlerContext ctx, long bytes) {
         if (segmentizedFuture != null && segmentizedRemainingBytes < bytes) {
-            bytes = (int) segmentizedRemainingBytes;
+            bytes = segmentizedRemainingBytes;
         }
 
         final AtomicBoolean doPush = new AtomicBoolean();
@@ -2659,7 +2660,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
         // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
         // RFC 5681: point congestion avoidance again takes over.
-        final int fullSizedSegment = tcb.effSndMss();
+        final long fullSizedSegment = tcb.effSndMss();
         if (tcb.cwnd() != fullSizedSegment) {
             LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), fullSizedSegment);
             tcb.cwnd(fullSizedSegment);

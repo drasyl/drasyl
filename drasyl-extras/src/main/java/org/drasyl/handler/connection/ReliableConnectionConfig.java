@@ -64,14 +64,14 @@ public abstract class ReliableConnectionConfig {
             .msl(ofSeconds(2))
             .noDelay(false)
             .overrideTimeout(ofMillis(100))
-            .fs(1f / 2)
+            .fs(1d / 2)
             .userTimeout(ofSeconds(60))
             .timestamps(true)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
             .uBound(ofSeconds(60))
-            .alpha(1f / 8)
-            .beta(1f / 4)
+            .alpha(1d / 8)
+            .beta(1d / 4)
             .k(4)
             .clock(new Clock() {
                 private long offset = 0;
@@ -125,9 +125,9 @@ public abstract class ReliableConnectionConfig {
 
     public abstract boolean timestamps();
 
-    public abstract float alpha();
+    public abstract double alpha();
 
-    public abstract float beta();
+    public abstract double beta();
 
     public abstract int k();
 
@@ -153,7 +153,7 @@ public abstract class ReliableConnectionConfig {
 
     public abstract boolean limitedTransmit();
 
-    public abstract float fs();
+    public abstract double fs();
 
     abstract Builder toBuilder();
 
@@ -244,7 +244,7 @@ public abstract class ReliableConnectionConfig {
          * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.1">RFC 9293,
          * Section 3.8.6.2.1.</a>
          */
-        public abstract Builder fs(final float fs);
+        public abstract Builder fs(final double fs);
 
         /**
          * Defines the duration how long a connection waits for sent data to be acknowledged before
@@ -312,11 +312,11 @@ public abstract class ReliableConnectionConfig {
          * According to RFC 6298, a value of 1/8 is suggested. The default is set to this
          * suggestion.
          *
-         * @see #beta(float)
+         * @see #beta(double)
          * @see <a href="https://www.rfc-editor.org/rfc/rfc6298.html#section-2">RFC 6298,
          * Section 2.</a>
          */
-        public abstract Builder alpha(final float alpha);
+        public abstract Builder alpha(final double alpha);
 
         /**
          * The BETA delay variance factor is used in congestion control algorithm. It's used to
@@ -332,11 +332,11 @@ public abstract class ReliableConnectionConfig {
          * According to RFC 6298, a value of 1/4 is suggested. The default is set to this
          * suggestion.
          *
-         * @see #alpha(float)
+         * @see #alpha(double)
          * @see <a href="https://www.rfc-editor.org/rfc/rfc6298.html#section-2">RFC 6298,
          * Section 2.</a>
          */
-        public abstract Builder beta(final float beta);
+        public abstract Builder beta(final double beta);
 
         /**
          * The K constant is used to scale the RTT variance to calculate the retransmission

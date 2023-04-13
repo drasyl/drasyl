@@ -38,6 +38,7 @@ class ReceiveBufferTest {
 
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
@@ -163,6 +164,7 @@ class ReceiveBufferTest {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 100);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
@@ -170,7 +172,7 @@ class ReceiveBufferTest {
                 final ByteBuf data1 = data.slice(0, 100);
                 Segment seg1 = new Segment(0, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg1);
-                assertEquals(63_840, tcb.rcvWnd());
+                assertEquals(63_940, tcb.rcvWnd());
                 assertEquals(160, tcb.rcvNxt());
                 assertEquals(160, buffer.bytes());
                 assertEquals(160, buffer.readableBytes());
@@ -196,6 +198,7 @@ class ReceiveBufferTest {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
@@ -260,9 +263,9 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentWithCenterBeingDuplicate(@Mock final Channel channel,
-                                                        @Mock final ChannelHandlerContext ctx,
-                                                        @Mock final SendBuffer sendBuffer) {
+            void receiveSegmentWithMiddlePartBeingDuplicate(@Mock final Channel channel,
+                                                            @Mock final ChannelHandlerContext ctx,
+                                                            @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ByteBuf data = Unpooled.buffer(200).writeBytes(randomBytes(200));
@@ -271,6 +274,7 @@ class ReceiveBufferTest {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 0, 60);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
@@ -300,6 +304,7 @@ class ReceiveBufferTest {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
@@ -383,6 +388,7 @@ class ReceiveBufferTest {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
                         .rmem(64_000)
+                        .mmsS(40)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
@@ -433,7 +439,7 @@ class ReceiveBufferTest {
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
                 final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                        .rmem(64_000)
+                        .rmem(50)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 

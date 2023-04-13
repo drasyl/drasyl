@@ -112,14 +112,14 @@ public class TransmissionControlBlock {
     // RFC 9293: lower edge of the receive window
     private long rcvNxt;
     // RFC 9293: receive window
-    private int rcvWnd;
+    private long rcvWnd;
     // RFC 9293: IRS = initial receive sequence number
     private long irs;
 
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     // The size does not include the TCP/IP headers and options.
-    private int sendMss = DEFAULT_SEND_MSS;
+    private long sendMss = DEFAULT_SEND_MSS;
     // RFC 9293: Silly Window Syndrome Avoidance
     // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
     // RFC 9293: as an estimate of RCV.BUFF
@@ -261,7 +261,7 @@ public class TransmissionControlBlock {
     // RFC 1122, Section 4.2.2.6
     // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
     // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-    static int effSndMss(final int sendMss, final int mmsS) {
+    static long effSndMss(final long sendMss, final long mmsS) {
         return min(sendMss + SEG_HDR_SIZE, mmsS) - SEG_HDR_SIZE;
     }
 
@@ -285,7 +285,7 @@ public class TransmissionControlBlock {
         return rcvNxt;
     }
 
-    public int rcvWnd() {
+    public long rcvWnd() {
         return rcvWnd;
     }
 
@@ -440,7 +440,7 @@ public class TransmissionControlBlock {
                         // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
                         sendData = true;
                     }
-                    else if (sndNxt == sndUna && min(d, u) >= (double) config.fs() * maxSndWnd()) {
+                    else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
                         // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
                         // RFC 9293:     sent, i.e., if:
                         // RFC 9293:     [SND.NXT = SND.UNA and]
@@ -465,7 +465,7 @@ public class TransmissionControlBlock {
                     }
                 }
 
-                final int usableMss = sendMss() - SEG_HDR_SIZE;
+                final long usableMss = sendMss() - SEG_HDR_SIZE;
                 final long window = min(sndWnd(), cwnd());
                 final long usableWindow = max(0, window - flightSize());
                 final long remainingBytes;
@@ -483,7 +483,7 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{}Path capped.", ctx.channel());
+                        LOG.trace("{} Path capped.", ctx.channel());
                     }
                     else {
                         // receiver capped
@@ -537,7 +537,6 @@ public class TransmissionControlBlock {
         return sub(sndNxt, sndUna);
     }
 
-    // FIXME: remove all bla methods
     void sendMss(final int sendMss) {
         this.sendMss = sendMss;
     }
@@ -579,7 +578,7 @@ public class TransmissionControlBlock {
         LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
     }
 
-    public void decrementRcvWnd(final int decrement) {
+    public void decrementRcvWnd(final long decrement) {
         rcvWnd -= decrement;
         assert rcvWnd >= 0 : "RCV.WND must be non-negative";
     }
@@ -617,7 +616,7 @@ public class TransmissionControlBlock {
     /**
      * The maximum size of a segment that TCP really sends, the "effective send MSS,"
      */
-    public int effSndMss() {
+    public long effSndMss() {
         return effSndMss(sendMss, config.mmsS());
     }
 
@@ -627,7 +626,7 @@ public class TransmissionControlBlock {
      * RFC 5681: discovery [RFC1191, RFC4821] algorithm, RMSS (see next item), or other factors. The
      * RFC 5681: size does not include the TCP/IP headers and options.
      */
-    public int smss() {
+    public long smss() {
         return sendMss;
     }
 
@@ -683,7 +682,7 @@ public class TransmissionControlBlock {
         sndTsOk = true;
     }
 
-    public void sRtt(final int sRtt) {
+    public void sRtt(final double sRtt) {
         this.sRtt = sRtt;
     }
 
@@ -731,7 +730,7 @@ public class TransmissionControlBlock {
         this.cwnd = cwnd;
     }
 
-    public int sendMss() {
+    public long sendMss() {
         return sendMss;
     }
 

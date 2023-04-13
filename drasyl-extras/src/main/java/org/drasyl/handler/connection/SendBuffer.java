@@ -76,13 +76,13 @@ public class SendBuffer {
         pushMark = length();
     }
 
-    public final ByteBuf read(int bytes, final AtomicBoolean doPush, final ChannelPromise promise) {
+    public final ByteBuf read(long bytes, final AtomicBoolean doPush, final ChannelPromise promise) {
         if (pushMark > 0 && bytes > pushMark) {
             // only read til push mark
-            bytes = (int) pushMark;
+            bytes = pushMark;
         }
 
-        final ByteBuf toReturn = queue.remove(bytes, promise);
+        final ByteBuf toReturn = queue.remove((int) bytes, promise);
 
         if (pushMark > 0) {
             // update push mark

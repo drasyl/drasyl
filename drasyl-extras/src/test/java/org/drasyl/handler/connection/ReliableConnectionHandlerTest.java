@@ -614,1042 +614,6 @@ class ReliableConnectionHandlerTest {
         }
     }
 
-    @Disabled
-    @Nested
-    class Transmission {
-        @Nested
-        class Mss {
-            @Test
-            void shouldSegmentizeDataIntoSegmentsNoLargerThanMss() {
-                final int bytes = 300;
-                final int effSndMss = 100;
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                        .mmsS(1_266)
-                        .mmsR(1_266)
-                        .activeOpen(false)
-                        .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
-                final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeOutbound(data);
-
-                for (int i = 0; i < bytes - effSndMss; i += effSndMss) {
-                    assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(100 + i), ack(300), data(data.slice(i, effSndMss))));
-                }
-
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(100 + (bytes - effSndMss)), ack(300), data(data.slice(bytes - effSndMss, effSndMss))));
-
-                channel.close();
-            }
-        }
-
-        @Nested
-        class Window {
-            @Nested
-            class SendWindow {
-                @Test
-                @Disabled("Nagle Algorithm macht diesen Test überflüssig?")
-                void senderShouldRespectSndWndWhenWritingToNetwork() {
-                    final int bytes = 600;
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf data = Unpooled.buffer(3 * bytes).writeBytes(randomBytes(3 * bytes));
-
-                    // SND.WND = 1000, everything should be written to network
-                    channel.writeOutbound(data.slice(0, bytes));
-                    assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(100), ack(300), data(data.slice(0, bytes))));
-
-                    // SND.WND = 400, just 400 bytes allowed
-                    channel.writeInbound(new Segment(300, 700, ACK, 400));
-                    channel.writeOutbound(data.slice(600, bytes));
-                    assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(700), ack(300), data(data.slice(600, 400))));
-
-                    // send ack for the first segment. The remaining 200 bytes should then be sent
-                    channel.writeInbound(new Segment(300, 700, ACK, 600));
-                    assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(1100), ack(300), data(data.slice(1000, 200))));
-
-                    channel.close();
-                }
-
-                @Disabled("erstmal deaktiviert")
-                @Test
-                void zeroWindowProbing() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
-                            .activeOpen(false)
-                            .issSupplier(() -> 100L);
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 300L, 0, 100L, 100L);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf data = unpooledRandomBuffer(100);
-                    channel.writeOutbound(data);
-
-                    // SND.WND is 0, we have to perform Zero-Window Probing
-                    assertThat(channel.readOutbound(), allOf(ctl(PSH, ACK), seq(300), ack(100), data(data.slice(0, 1))));
-
-                    channel.close();
-                }
-
-                // FIXME: Die ganzen Connection Failures MUSTS aus Appendix B aus rfc9293 fehlen noch
-                // https://datatracker.ietf.org/doc/html/rfc9293#name-tcp-requirement-summary
-
-                @Test
-                void senderShouldHandleSentSegmentsToBeAcknowledgedJustPartially() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 0, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    // 300 bytes in flight, only first 100 are ACKed
-                    channel.writeInbound(new Segment(100, 400, ACK));
-
-                    assertEquals(400, tcb.sndUna());
-                    assertEquals(600, tcb.sndNxt());
-
-                    channel.close();
-                }
-            }
-
-            @Nested
-            class ReceiveWindow {
-                @Test
-                void receiverShouldUpdateRcvWnd() {
-                    final int bytes = 600;
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .rmem(1000)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    // initial value
-                    assertEquals(1000, tcb.rcvWnd());
-
-                    // 600 bytes added to RCV.BUF
-                    final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeInbound(new Segment(100, 600, ACK, data));
-
-                    assertEquals(400, tcb.rcvWnd());
-
-                    // RCV.BUF flushed
-                    channel.read();
-                    assertEquals(1000, tcb.rcvWnd());
-
-                    channel.close();
-                }
-
-                @Test
-                void shouldOnlyAcceptAsManyBytesAsSpaceAvailableInReceiveBuffer() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .rmem(60)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    // we got more than we are willing to accept
-                    final ByteBuf data = unpooledRandomBuffer(100);
-                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data));
-
-                    // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), new Segment(301, 160, ACK));
-
-                    channel.close();
-                }
-
-                // FIXME: Wir erhalten ACK welcher nur ein Teil eines SEG in unserer RetransmissionQueue bestätigt. RetransmissionQueue muss bestätigten Teil entfernen und rest neu packen
-                @Disabled
-                @Test
-                void receiverShouldAbleToAckSegmentWhichContainsOnlyPartiallyNewSegments() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 301L, 1000, 100L, 100L);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    // we got more than we are willing to accept
-                    final ByteBuf data = unpooledRandomBuffer(100);
-                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data));
-
-                    // we ACK just the part we have accepted
-                    assertEquals(channel.readOutbound(), new Segment(301, 160, ACK));
-
-                    // SEG not fully ACKed, we send again
-                    final ByteBuf data2 = unpooledRandomBuffer(100);
-                    channel.writeInbound(new Segment(100, 301L, ACK, 1000, data2));
-
-                    channel.close();
-                }
-            }
-
-            @Nested
-            class SillyWindowSyndrome {
-                // RFC 9293, Section 3.8.6.2.1 Sender's Algorithm -- When to Send Data
-                // https://www.rfc-editor.org/rfc/rfc9293.html#SWSsender
-                // RFC 9293, Section 3.7.4 Nagle algorithm
-                @Test
-                void senderShouldAvoidTheSillyWindowSyndrome() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .noDelay(false)
-                            .lBound(ofMinutes(99))
-                            .overrideTimeout(ofMillis(100))
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1000, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
-
-                    // as there is no unacknowledged data (i.e., SND.NXT > SND.UNA), data should be send immediately
-                    channel.write(buf.slice(0, 50));
-                    assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(600), ack(100), data(buf.slice(0, 50))));
-
-                    // unacknowledged data, data should be delayed
-                    channel.write(buf.slice(50, 50));
-                    assertNull(channel.readOutbound());
-
-                    // unacknowledged data, but we can send a maximum-sized segment
-                    channel.write(buf.slice(100, 60));
-                    assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(650), ack(100), data(buf.slice(50, 100))));
-                    // but do not send the remainder in a second small segment...
-                    assertNull(channel.readOutbound());
-                    // ...until override timeout occurs
-                    await().atMost(config.overrideTimeout().multipliedBy(2)).untilAsserted(() -> {
-                        channel.runScheduledPendingTasks();
-                        assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(750), ack(100), data(buf.slice(150, 10))));
-                    });
-
-                    channel.close();
-                }
-
-                // RFC 9293, Section 3.8.6.2.2 Receiver's Algorithm -- When to Send a Window Update
-                // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
-                @Test
-                void receiverShouldAvoidTheSillyWindowSyndrome() {
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    channel.config().setAutoRead(false);
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .rmem(1600)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 600L, 600L, 1600, 100L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf buf = Unpooled.buffer(1_000).writeBytes(randomBytes(1_000));
-
-                    // we received a maximum-sized segment, therefore RCV.USER contains 20 bytes
-                    final ByteBuf data1 = buf.slice(0, 20);
-                    channel.writeInbound(new Segment(100, 600, ACK, data1));
-                    assertEquals(1600, tcb.rcvBuff());
-                    assertEquals(20, tcb.rcvUser());
-                    assertEquals(1580, tcb.rcvWnd());
-
-                    ChannelHandlerContext ctx;
-
-                    // we now read RCV.USER
-                    ctx = channel.pipeline().context(handler);
-                    tcb.receiveBuffer().fireRead(ctx, tcb);
-                    assertEquals(1600, tcb.rcvBuff());
-                    assertEquals(0, tcb.rcvUser());
-                    assertEquals(1580, tcb.rcvWnd());
-
-                    // we received a maximum-sized segment, therefore RCV.USER contains 80 bytes
-                    final ByteBuf data = buf.slice(20, 80);
-                    channel.writeInbound(new Segment(120, 600, ACK, data));
-                    assertEquals(1600, tcb.rcvBuff());
-                    assertEquals(80, tcb.rcvUser());
-                    assertEquals(1500, tcb.rcvWnd());
-
-                    // we now read RCV.USER
-                    ctx = channel.pipeline().context(handler);
-                    tcb.receiveBuffer().fireRead(ctx, tcb);
-                    assertEquals(1600, tcb.rcvBuff());
-                    assertEquals(0, tcb.rcvUser());
-                    assertEquals(1600, tcb.rcvWnd());
-
-                    channel.close();
-                }
-            }
-        }
-
-        @Nested
-        class CongestionControl {
-            // FIXME: lost seg (single/multiple?)
-            // can be caused by a lost SEG
-            @Test
-            void receiverShouldRespondWithExpectedSegToUnexpectedSeg() {
-                final int bytes = 600;
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).rmem(1000).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // SEG 100 is expected, but we send next SEG 400
-                final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(400, 600, ACK, data));
-
-                // we get ACK with expected SEG 100 number
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(600), ack(100)));
-
-                channel.close();
-            }
-
-            @Test
-            void receiverShouldBufferReceivedOutOfOrderSegments() {
-                final int bytes = 300;
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).rmem(2000).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // SEG 100 is expected, but we send next SEG 700
-                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(700, 600, ACK, data1));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(1700, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                // SEG 100 is expected, but we send next SEG 400
-                final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(400, 600, ACK, data2));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(1400, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                // SEG 100 is expected, but we send next SEG 1300
-                final ByteBuf data3 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(1300, 600, ACK, data3));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(1100, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                // SEG 100 is expected, but we send next SEG 1000
-                final ByteBuf data4 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(1000, 600, ACK, data4));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(800, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                // now send expected SEG 100 (should close the gap)
-                final ByteBuf data5 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(100, 600, ACK, data5));
-
-                assertEquals(1600, tcb.rcvNxt());
-                // we should get ACK for everything
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(600), ack(1600)));
-                channel.read();
-
-                ByteBuf passedToApplication = channel.readInbound();
-                assertEquals(2000, tcb.rcvWnd());
-                assertEquals(1500, passedToApplication.readableBytes());
-
-                channel.close();
-            }
-
-            @Test
-            void receiverShouldNotBufferReceivedDuplicateSegments() {
-                final int bytes = 300;
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).rmem(2000).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 600L, 100L, 100L);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // SEG 100 is expected, but we send next SEG 700
-                final ByteBuf data1 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(700, 600, ACK, data1));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(1700, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                // SEG 100 is expected, but we send next SEG 700 again!
-                final ByteBuf data2 = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                channel.writeInbound(new Segment(700, 600, ACK, data2));
-
-                assertEquals(100, tcb.rcvNxt());
-                assertEquals(1700, tcb.rcvWnd());
-                // ignore ACK, not checked in this test
-                assertNotNull(channel.readOutbound());
-
-                channel.close();
-            }
-        }
-
-        @Nested
-        class Retransmission {
-            // RFC 5681, Section 3.1
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            @Test
-            void slowStartAndCongestionAvoidance() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).rmem(4 * 1000).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // initial cwnd is 3 segments
-                assertEquals(3 * 1000, tcb.cwnd());
-                // The initial value of ssthresh SHOULD be set arbitrarily high (e.g.,
-                //   to the size of the largest possible advertised window)
-                assertEquals(4 * 1000, tcb.ssthresh());
-
-                //
-                // do slow start
-                //
-                assertTrue(tcb.doSlowStart());
-
-                // During slow start, a TCP increments cwnd by at most SMSS bytes for
-                //   each ACK received that cumulatively acknowledges new data.
-
-                // old data
-                channel.writeInbound(new Segment(200, 300, ACK));
-                assertEquals(3000, tcb.cwnd());
-
-                // new data
-                channel.writeInbound(new Segment(200, 310, ACK));
-                assertEquals(3010, tcb.cwnd());
-
-                // limit to SMSS
-                channel.writeInbound(new Segment(200, 2000, ACK));
-                assertEquals(4010, tcb.cwnd());
-
-                //
-                // do congestion avoidance
-                //
-                assertFalse(tcb.doSlowStart());
-
-                channel.writeInbound(new Segment(200, 3000, ACK));
-                assertEquals(4010 + 250, tcb.cwnd());
-
-                channel.writeInbound(new Segment(200, 4000, ACK));
-                assertEquals(4260 + 235, tcb.cwnd());
-
-                channel.writeInbound(new Segment(200, 4100, ACK));
-                assertEquals(4495 + 223, tcb.cwnd());
-
-                channel.writeInbound(new Segment(200, 4105, ACK));
-                assertEquals(4718 + 212, tcb.cwnd());
-            }
-
-            // RFC 5681, Section 3.1, Rule 5.1
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            @Test
-            void timerShouldBeStartedWhenSegmentWithDataIsSent() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
-
-                assertNotNull(handler.retransmissionTimer);
-            }
-
-            // RFC 5681, Section 3.1, Rule 5.2
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            @Test
-            void timerShouldBeCancelledWhenAllSegmentsHaveBeenAcked(@Mock final SendBuffer buffer,
-                                                                    @Mock final ScheduledFuture timer,
-                                                                    @Mock final ArrayDeque queueQueue,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
-                when(!buffer.isEmpty()).thenReturn(false);
-                when(queueQueue.peek()).thenReturn(seg).thenReturn(null);
-                when(seg.lastSeq()).thenReturn(300L);
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(queueQueue);
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-                handler.retransmissionTimer = timer;
-
-                channel.writeInbound(new Segment(200, 301, ACK));
-
-                verify(timer).cancel(false);
-                assertNull(handler.retransmissionTimer);
-            }
-
-            // RFC 5681, Section 3.1, Rule 5.3
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            @Test
-            void timerShouldBeRestartedWhenNewSegmentsHaveBeenAcked(@Mock final SendBuffer buffer,
-                                                                    @Mock final ScheduledFuture timer,
-                                                                    @Mock final ArrayDeque queueQueue,
-                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
-                when(!buffer.isEmpty()).thenReturn(true);
-                when(queueQueue.peek()).thenReturn(seg).thenReturn(null);
-                when(seg.lastSeq()).thenReturn(300L);
-
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue(queueQueue);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, buffer, queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-                handler.retransmissionTimer = timer;
-
-                channel.writeInbound(new Segment(200, 301, ACK));
-
-                verify(timer).cancel(false);
-                assertNotNull(handler.retransmissionTimer);
-            }
-
-            // RFC 5681, Section 3.1
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            @Test
-            void shouldCreateRetransmissionTimerIfAcknowledgeableSegmentIsSent() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                        .lBound(ofMillis(100))
-                        .rto(ofMillis(100))
-                        .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, config.rmem(), 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                final ByteBuf data = unpooledRandomBuffer(100);
-                channel.writeOutbound(data);
-
-                final Matcher<Segment> matcher = allOf(ctl(PSH, ACK), seq(100), ack(300), data(data));
-                assertThat(channel.readOutbound(), matcher);
-
-                // retransmission timer should send segment again
-                await().untilAsserted(() -> {
-                    channel.runScheduledPendingTasks();
-                    assertThat(channel.readOutbound(), matcher);
-                });
-
-                channel.close();
-            }
-
-            // RFC 5681, Section 5, Rule 5.4 - 5.6
-            // https://www.rfc-editor.org/rfc/rfc6298#section-5
-            @Test
-            void onTimeout() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                final RetransmissionQueue queue = new RetransmissionQueue();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266).build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 300L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, false);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                channel.writeOutbound(Unpooled.buffer(10).writeBytes(randomBytes(10)));
-                final Segment seg = channel.readOutbound();
-                final ScheduledFuture<?> timer = handler.retransmissionTimer;
-
-                // wait for timeout
-                await().untilAsserted(() -> {
-                    channel.runScheduledPendingTasks();
-
-                    // retransmit
-                    assertEquals(seg, channel.readOutbound());
-
-                    // back off timer
-                    assertEquals(2_000, tcb.rto());
-
-                    // start timer
-                    assertNotSame(timer, handler.retransmissionTimer);
-                });
-            }
-
-            // RFC 5681, Section 3.1, Rule 5.1
-            // https://www.rfc-editor.org/rfc/rfc5681#section-3.1
-            // algorithm known as "Reno"
-
-            // RFC 6582
-            // https://www.rfc-editor.org/rfc/rfc6582
-            // algorithm "NewReno"
-            @Test
-            void fastRetransmit() {
-                final EmbeddedChannel channel = new EmbeddedChannel();
-                ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                        .rmem(4 * 1000)
-                        .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L, 6001L, 100L, 200L);
-                final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                channel.pipeline().addLast(handler);
-
-                // we need outstanding data first
-                final ByteBuf outstandingData = unpooledRandomBuffer(100);
-                tcb.sendBuffer().enqueue(outstandingData);
-                tcb.sendBuffer().read(100, new AtomicBoolean(), channel.newPromise().setSuccess());
-                SendBuffer sendBuffer = tcb.sendBuffer();
-                assertFalse(sendBuffer.isEmpty());
-
-                // three duplicate ACKs in a row
-                channel.writeInbound(new Segment(205, 300, ACK));
-                assertEquals(3000, tcb.cwnd());
-                assertEquals(4000, tcb.ssthresh());
-                channel.writeInbound(new Segment(205, 300, ACK));
-                assertEquals(3000, tcb.cwnd());
-                assertEquals(4000, tcb.ssthresh());
-                channel.writeInbound(new Segment(205, 300, ACK));
-
-                // dup ACKs should trigger immediate retransmission
-                assertEquals(5943, tcb.cwnd());
-                assertEquals(2850, tcb.ssthresh());
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(200)));
-
-                // fourth duplicate ACK
-                channel.writeInbound(new Segment(205, 300, ACK));
-                assertEquals(6943, tcb.cwnd());
-                assertEquals(2850, tcb.ssthresh());
-                assertNull(channel.readOutbound());
-
-                // cumulative ACK
-                channel.writeInbound(new Segment(205, 400, ACK));
-                assertEquals(6844, tcb.cwnd());
-                assertEquals(2850, tcb.ssthresh());
-
-                // with Reno, no message is sent. But NewReno sends new data
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(400), ack(200)));
-            }
-
-            @Nested
-            class TimestampsOptionTest {
-                // RFC 6298, Section 2, Rule 2.2
-                // https://www.rfc-editor.org/rfc/rfc6298#section-2
-                @Test
-                void shouldCalculateRtoProperlyForFirstRttMeasurement(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-                    when(clock.g()).thenReturn(0.001);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 600L, 2000, 100L, 100L, 100L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final Segment seg = new Segment(0, 301, ACK, data);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
-                    channel.writeInbound(seg);
-
-                    // (2.2) When the first RTT measurement R is made, the host MUST set
-                    // R <- 2816 - 808 = 2008
-                    // SRTT <- R
-                    assertEquals(251, tcb.sRtt());
-                    // RTTVAR <- R/2
-                    assertEquals(502, tcb.rttVar());
-                    // RTO <- SRTT + max (G, K*RTTVAR)
-                    // where K = 4
-                    assertEquals(2259, tcb.rto());
-                }
-
-                // RFC 6298, Section 2, Rule 2.3
-                // https://www.rfc-editor.org/rfc/rfc6298#section-2
-                @Test
-                void shouldCalculateRtoProperlyForSubsequentRttMeasurements(@Mock final Clock clock,
-                                                                            @Mock final SendBuffer sendBuffer) {
-                    when(clock.time()).thenReturn(2846L);
-                    when(clock.g()).thenReturn(0.001);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 8300L, 2000, 100L, 100L, 100L, sendBuffer, queue, new ReceiveBuffer(channel), 401, 0, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-                    final Segment seg = new Segment(0, 301, ACK, data);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(401, 808));
-                    channel.writeInbound(seg);
-
-                    // (2.3) When a subsequent RTT measurement R' is made, a host MUST set
-                    // R' <- 2846 - 808 = 2038
-                    // RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
-                    assertEquals(127.375, tcb.rttVar());
-                    // SRTT <- (1 - alpha) * SRTT + alpha * R'
-                    assertEquals(63.6875, tcb.sRtt());
-                    // RTO <- SRTT + max (G, K*RTTVAR)
-                    assertEquals(1000, tcb.rto());
-                }
-
-                // RFC 7323, Section 4.3, Situation A: Delayed ACKs
-                // https://www.rfc-editor.org/rfc/rfc7323#section-4.3
-                @Test
-                void timestampFromOldestUnacknowledgedSegmentIsEchoed(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(1L);
-                    when(clock.g()).thenReturn(0.001);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 201, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    Segment seg;
-                    final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-
-                    // <A, TSval=1> ------------------->
-                    final ByteBuf data3 = data.copy();
-                    seg = new Segment(201, 310, ACK, data3);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
-                    channel.pipeline().fireChannelRead(seg);
-                    assertEquals(1, tcb.tsRecent());
-
-                    // <B, TSval=2> ------------------->
-                    final ByteBuf data2 = data.copy();
-                    seg = new Segment(202, 310, ACK, data2);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
-                    channel.pipeline().fireChannelRead(seg);
-                    assertEquals(1, tcb.tsRecent());
-
-                    // <C, TSval=3> ------------------->
-                    final ByteBuf data1 = data.copy();
-                    seg = new Segment(203, 310, ACK, data1);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
-                    channel.pipeline().fireChannelRead(seg);
-                    assertEquals(1, tcb.tsRecent());
-
-                    channel.pipeline().fireChannelReadComplete();
-
-                    // <---- <ACK(C), TSecr=1>
-                    final Segment response = channel.readOutbound();
-                    final TimestampsOption tsOpt = (TimestampsOption) response.options().get(TIMESTAMPS);
-                    assertEquals(1, tsOpt.tsEcr);
-                }
-
-                // RFC 7323, Section 4.3, Situation B: holes in sequence space and filling these holes later
-                // https://www.rfc-editor.org/rfc/rfc7323#section-4.3
-                @Test
-                void timestampFromTheLastSegmentThatAdvancesLeftWindowEdgeIsEchoed(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(1L);
-                    when(clock.g()).thenReturn(0.001);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final RetransmissionQueue queue = new RetransmissionQueue();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 300L, 6001L, 4 * 1000, 100L, 201L, 200L, new SendBuffer(channel), queue, new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    Segment seg;
-                    final ByteBuf data = Unpooled.buffer(1).writeBytes(randomBytes(1));
-
-                    // <A, TSval=1> ------------------->
-                    final ByteBuf data5 = data.copy();
-                    seg = new Segment(201, 310, ACK, data5);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(1, 0));
-                    channel.writeInbound(seg);
-                    assertEquals(1, tcb.tsRecent());
-
-                    // <---- <ACK(A), TSecr=1>
-                    assertThat(channel.readOutbound(), tsOpt(0, 1));
-
-                    // <A, TSval=3> ------------------->
-                    final ByteBuf data4 = data.copy();
-                    seg = new Segment(203, 310, ACK, data4);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(3, 0));
-                    channel.writeInbound(seg);
-                    assertEquals(1, tcb.tsRecent());
-
-                    // <---- <ACK(A), TSecr=1>
-                    assertThat(channel.readOutbound(), tsOpt(0, 1));
-
-                    // <A, TSval=2> ------------------->
-                    final ByteBuf data3 = data.copy();
-                    seg = new Segment(202, 310, ACK, data3);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(2, 0));
-                    channel.writeInbound(seg);
-                    assertEquals(2, tcb.tsRecent());
-
-                    // <---- <ACK(A), TSecr=2>
-                    assertThat(channel.readOutbound(), tsOpt(0, 2));
-
-                    // <A, TSval=5> ------------------->
-                    final ByteBuf data2 = data.copy();
-                    seg = new Segment(205, 310, ACK, data2);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(5, 0));
-                    channel.writeInbound(seg);
-                    assertEquals(2, tcb.tsRecent());
-
-                    // <---- <ACK(A), TSecr=2>
-                    assertThat(channel.readOutbound(), tsOpt(0, 1));
-
-                    // <A, TSval=4> ------------------->
-                    final ByteBuf data1 = data.copy();
-                    seg = new Segment(204, 310, ACK, data1);
-                    seg.options().put(TIMESTAMPS, new TimestampsOption(4, 0));
-                    channel.writeInbound(seg);
-                    assertEquals(4, tcb.tsRecent());
-
-                    // <---- <ACK(A), TSecr=4>
-                    assertThat(channel.readOutbound(), tsOpt(0, 4));
-                }
-
-                // RFC 7323, Appendix D, OPEN call
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void openCallSynShouldContainCorrectTsOption(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                            .rtnsQSupplier(ch -> new RetransmissionQueue())
-                            .clock(clock)
-                            .build();
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
-                    final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-                    // RFC 7323
-                    // on a OPEN call, the SYN must TSVal set to Snd.TSclock.
-                    assertThat(channel.readOutbound(), tsOpt(2816L));
-                    assertFalse(handler.tcb.sndTsOk());
-                    assertEquals(0, handler.tcb.lastAckSent());
-
-                    channel.close();
-                }
-
-                // RFC 7323, Appendix D, SEND call in LISTEN state
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void sendCallInListenStateSynShouldContainCorrectTsOption(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                            .rtnsQSupplier(ch -> new RetransmissionQueue())
-                            .clock(clock)
-                            .build();
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
-                    channel.pipeline().addLast(handler);
-
-                    // write perform an active OPEN handshake
-                    final ByteBuf data = Unpooled.buffer(3).writeBytes(randomBytes(3));
-                    channel.writeOutbound(data);
-
-                    assertThat(channel.readOutbound(), tsOpt(2816L));
-                    assertFalse(handler.tcb.sndTsOk());
-                    assertEquals(0, handler.tcb.lastAckSent());
-
-                    channel.close();
-                }
-
-                // RFC 7323, Appendix D, SEND call in ESTABLISHED state
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void sendCallInEstablishedStateSynShouldContainCorrectTsOption(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final int bytes = 300;
-                    final int effSndMss = 100;
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1000, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 123L, 0, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    // as effSndMss is set to 100, the buf will be segmetized into 100 byte long segments. The last has the PSH flag set.
-                    final ByteBuf data = Unpooled.buffer(bytes).writeBytes(randomBytes(bytes));
-                    channel.writeOutbound(data);
-
-                    for (int i = 0; i < bytes - effSndMss; i += effSndMss) {
-                        assertThat(channel.readOutbound(), tsOpt(2816L, 123L));
-                    }
-
-                    assertThat(channel.readOutbound(), tsOpt(2816L, 123L));
-
-                    channel.close();
-                }
-
-                // RFC 7323, Appendix D, SEGMENT ARRIVES on LISTEN state
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void segmentWithTimestampsArrivesOnListenState(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final long iss = Segment.randomSeq();
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LISTEN, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    TimestampsOption tsOpt;
-
-                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-                    tsOpt = new TimestampsOption(1, 2);
-                    options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = new Segment(100, SYN, options);
-                    channel.writeInbound(seg);
-
-                    // Check for a TSopt option; if one is found, save SEG.TSval in the variable
-                    // TS.Recent and turn on the Snd.TS.OK bit.
-                    assertEquals(tsOpt.tsVal, handler.tcb.tsRecent());
-                    assertTrue(handler.tcb.sndTsOk());
-
-                    // If the Snd.TS.OK bit is on, include a
-                    // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
-                    // set to RCV.NXT.
-                    assertThat(channel.readOutbound(), tsOpt(2816L));
-                    assertEquals(handler.tcb.tsRecent(), tsOpt.tsEcr);
-                    assertEquals(handler.tcb.rcvNxt(), handler.tcb.lastAckSent());
-
-                    channel.close();
-                }
-
-                // RFC 7323, Appendix D, SEGMENT ARRIVES on SYN-SENT state
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void segmentWithTimestampsArrivesOnSynSentState(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_SENT, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    TimestampsOption tsOpt;
-
-                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-                    tsOpt = new TimestampsOption(1, 2);
-                    options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = new Segment(999, 101, (byte) (SYN | ACK), options);
-                    channel.writeInbound(seg);
-
-                    // Check for a TSopt option; if one is found, save SEG.TSval in the variable
-                    // TS.Recent and turn on the Snd.TS.OK bit.
-                    assertEquals(tsOpt.tsVal, handler.tcb.tsRecent());
-                    assertTrue(handler.tcb.sndTsOk());
-                    // If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial RTT estimate.
-                    assertEquals(8442, handler.tcb.rto());
-
-                    // If the Snd.TS.OK bit is on, include a
-                    // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
-                    // set to RCV.NXT.
-                    assertThat(channel.readOutbound(), tsOpt(2816L, 1L));
-                    assertEquals(handler.tcb.tsRecent(), tsOpt.tsEcr);
-                    assertEquals(handler.tcb.rcvNxt(), handler.tcb.lastAckSent());
-
-                    channel.close();
-                }
-
-                // RFC 7323, Appendix D, SEGMENT ARRIVES on other state
-                // https://www.rfc-editor.org/rfc/rfc7323#appendix-D
-                @Test
-                void segmentWithTimestampsArrivesOnOtherState(@Mock final Clock clock) {
-                    when(clock.time()).thenReturn(2816L);
-
-                    final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
-                            .clock(clock)
-                            .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 101L, 0, 100L, 0L, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, true);
-                    final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
-                    channel.pipeline().addLast(handler);
-
-                    TimestampsOption tsOpt;
-
-                    final Map<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-                    tsOpt = new TimestampsOption(1, 2);
-                    options.put(TIMESTAMPS, tsOpt);
-                    final Segment seg = new Segment(0, 102, ACK, options);
-                    channel.writeInbound(seg);
-
-                    // Check for a TSopt option; if one is found, save SEG.TSval in the variable
-                    // TS.Recent
-                    assertEquals(tsOpt.tsVal, handler.tcb.tsRecent());
-                    assertTrue(handler.tcb.sndTsOk());
-                    // If the ACK bit is set, use Snd.TSclock - SEG.TSecr as the initial RTT estimate.
-                    assertEquals(3165, handler.tcb.rto());
-
-                    // If the Snd.TS.OK bit is on, include a
-                    // TSopt <TSval=Snd.TSclock, TSecr=TS.Recent> in this segment. Last.ACK.sent is
-                    // set to RCV.NXT.
-                    assertThat(channel.readOutbound(), tsOpt(2816L));
-                    assertEquals(handler.tcb.tsRecent(), tsOpt.tsEcr);
-                    assertEquals(handler.tcb.rcvNxt(), handler.tcb.lastAckSent());
-
-                    channel.close();
-                }
-            }
-        }
-    }
-
     // RFC 9293: 3.10. Event Processing
     // https://www.rfc-editor.org/rfc/rfc9293.html#name-event-processing
     @Nested
@@ -2965,7 +1929,7 @@ class ReliableConnectionHandlerTest {
                         void shouldDiscardIfSeqIsOutsideReceiveWindow() {
                             when(tcb.rcvNxt()).thenReturn(122L);
                             when(seg.seq()).thenReturn(222L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -2982,7 +1946,7 @@ class ReliableConnectionHandlerTest {
                         void shouldPassIfSeqMatchesExpectedNumber() {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
@@ -3002,7 +1966,7 @@ class ReliableConnectionHandlerTest {
                             when(tcb.sndNxt()).thenReturn(88L);
                             when(tcb.rcvNxt()).thenReturn(122L);
                             when(seg.seq()).thenReturn(124L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3027,7 +1991,7 @@ class ReliableConnectionHandlerTest {
                         void shouldChangeBackToListenStateIfPassiveOpenIsUsed() {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(false);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -3050,7 +2014,7 @@ class ReliableConnectionHandlerTest {
                         void shouldCloseConnectionIfActiveOpenIsUsed() {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(true);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
@@ -3087,7 +2051,7 @@ class ReliableConnectionHandlerTest {
                         void shouldCloseConnection(final State state) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
@@ -3126,7 +2090,7 @@ class ReliableConnectionHandlerTest {
                         void shouldCloseConnection(final State state) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
@@ -3157,7 +2121,7 @@ class ReliableConnectionHandlerTest {
                         void shouldChangeToListenState() {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(false);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -3188,7 +2152,7 @@ class ReliableConnectionHandlerTest {
                         void shouldSendChallengeAck(final State state) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(tcb.sndNxt()).thenReturn(88L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -3242,7 +2206,7 @@ class ReliableConnectionHandlerTest {
                         void shouldDiscardSegment(final State state) {
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3271,7 +2235,7 @@ class ReliableConnectionHandlerTest {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
                                 when(tcb.sndNxt()).thenReturn(88L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -3305,7 +2269,7 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(88L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3333,7 +2297,7 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(88L);
                                 when(tcb.sndNxt()).thenReturn(88L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3355,19 +2319,19 @@ class ReliableConnectionHandlerTest {
                         @Nested
                         class OnEstablishedState {
                             @Test
-                            void shouldXXX() {
+                            void shouldAcknowledgeSeg() {
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
                                 when(config.timestamps()).thenReturn(true);
                                 when(config.clock().time()).thenReturn(3614L);
-                                when(config.alpha()).thenReturn(1f / 8);
-                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.alpha()).thenReturn(1d / 8);
+                                when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21d);
@@ -3397,7 +2361,7 @@ class ReliableConnectionHandlerTest {
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20);
+                                verify(tcb).sRtt(20.95703125d);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -3422,13 +2386,13 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
                                 when(config.timestamps()).thenReturn(true);
                                 when(config.clock().time()).thenReturn(3614L);
-                                when(config.alpha()).thenReturn(1f / 8);
-                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.alpha()).thenReturn(1d / 8);
+                                when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21d);
@@ -3458,7 +2422,7 @@ class ReliableConnectionHandlerTest {
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20);
+                                verify(tcb).sRtt(20.95703125d);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -3487,7 +2451,7 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3526,13 +2490,13 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
                                 when(config.timestamps()).thenReturn(true);
                                 when(config.clock().time()).thenReturn(3614L);
-                                when(config.alpha()).thenReturn(1f / 8);
-                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.alpha()).thenReturn(1d / 8);
+                                when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21d);
@@ -3562,7 +2526,7 @@ class ReliableConnectionHandlerTest {
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20);
+                                verify(tcb).sRtt(20.95703125d);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -3587,13 +2551,13 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(89L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
                                 when(config.timestamps()).thenReturn(true);
                                 when(config.clock().time()).thenReturn(3614L);
-                                when(config.alpha()).thenReturn(1f / 8);
-                                when(config.beta()).thenReturn(1f / 4);
+                                when(config.alpha()).thenReturn(1d / 8);
+                                when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000);
+                                when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21d);
@@ -3623,7 +2587,7 @@ class ReliableConnectionHandlerTest {
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20);
+                                verify(tcb).sRtt(20.95703125d);
                                 verify(tcb).rto(31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -3661,7 +2625,7 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(88L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, LAST_ACK, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, ctx);
 
@@ -3690,7 +2654,7 @@ class ReliableConnectionHandlerTest {
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(88L);
-                                when(tcb.rcvWnd()).thenReturn(10);
+                                when(tcb.rcvWnd()).thenReturn(10L);
 
                                 final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -3735,7 +2699,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(seg.content().readableBytes()).thenReturn(100);
                             when(seg.isPsh()).thenReturn(true);
 
@@ -3779,7 +2743,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(seg.content().readableBytes()).thenReturn(100);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -3818,7 +2782,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(ctx.executor()).thenReturn(executor);
                             doAnswer(invocation -> {
                                 invocation.getArgument(0, Runnable.class).run();
@@ -3860,7 +2824,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(ctx.executor()).thenReturn(executor);
                             doAnswer(invocation -> {
                                 invocation.getArgument(0, Runnable.class).run();
@@ -3906,7 +2870,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(88L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(ctx.executor()).thenReturn(executor);
                             doAnswer(invocation -> {
                                 invocation.getArgument(0, Runnable.class).run();
@@ -3946,7 +2910,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(ctx.executor()).thenReturn(executor);
                             doAnswer(invocation -> {
                                 invocation.getArgument(0, Runnable.class).run();
@@ -3985,7 +2949,7 @@ class ReliableConnectionHandlerTest {
                     }
 
                     @Nested
-                    @Disabled("unreachable with our implementation?")
+                    @Disabled("unreachable with our implementation")
                     class OnCloseWaitAndClosingAndLastAckState {
                         @ParameterizedTest
                         @EnumSource(value = State.class, names = {
@@ -3999,7 +2963,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(88L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(tcb.maxSndWnd()).thenReturn(64000L);
 
                             final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -4035,7 +2999,7 @@ class ReliableConnectionHandlerTest {
                             when(seg.ack()).thenReturn(88L);
                             when(tcb.sndUna()).thenReturn(87L);
                             when(tcb.sndNxt()).thenReturn(88L);
-                            when(tcb.rcvWnd()).thenReturn(10);
+                            when(tcb.rcvWnd()).thenReturn(10L);
                             when(ctx.executor()).thenReturn(executor);
                             doAnswer(invocation -> {
                                 invocation.getArgument(0, Runnable.class).run();
@@ -4139,9 +3103,9 @@ class ReliableConnectionHandlerTest {
                 void shouldRetransmitEarliestSegment(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
                     when(tcb.rto()).thenReturn(1234L);
                     when(tcb.flightSize()).thenReturn(64_000L);
-                    when(tcb.smss()).thenReturn(1000);
+                    when(tcb.smss()).thenReturn(1000L);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
-                    when(tcb.effSndMss()).thenReturn(1401);
+                    when(tcb.effSndMss()).thenReturn(1401L);
                     when(tcb.cwnd()).thenReturn(500L);
                     when(seg.content()).thenReturn(Unpooled.buffer());
 
