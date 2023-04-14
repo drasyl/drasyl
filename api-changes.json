@@ -370,6 +370,89 @@
           "code": "java.method.removed",
           "old": "method java.util.Set<org.drasyl.node.PeerEndpoint> org.drasyl.node.DrasylConfig::getRemoteEndpoints()",
           "justification": "was never used"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeClosing",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.handler.connection.ConnectionHandshakeCompleted::<init>(long, long)",
+          "new": "method void org.drasyl.handler.connection.ConnectionHandshakeCompleted::<init>()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method long org.drasyl.handler.connection.ConnectionHandshakeCompleted::rcvNxt()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method long org.drasyl.handler.connection.ConnectionHandshakeCompleted::sndNxt()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
+          "new": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
+          "interface": "org.drasyl.handler.connection.ConnectionHandshakeEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.connection.ConnectionHandshakeEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeException",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.noLongerImplementsInterface",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
+          "new": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
+          "interface": "org.drasyl.handler.connection.ConnectionHandshakeEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeSegment",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.nonPublicPartOfAPI",
+          "new": "enum org.drasyl.handler.connection.SegmentOption",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

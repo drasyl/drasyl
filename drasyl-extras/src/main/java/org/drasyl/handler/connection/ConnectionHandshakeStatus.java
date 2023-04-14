@@ -58,7 +58,7 @@ public class ConnectionHandshakeStatus implements ConnectionEvent {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ConnectionHandshakeStatus that = (ConnectionHandshakeStatus) o;
+        final ConnectionHandshakeStatus that = (ConnectionHandshakeStatus) o;
         return state == that.state && Objects.equals(tcb, that.tcb);
     }
 

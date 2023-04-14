@@ -26,9 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.CoalescingBufferQueue;
 import io.netty.channel.DefaultChannelPromise;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,10 +36,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SendBufferTest {
@@ -115,24 +115,6 @@ class SendBufferTest {
             final ChannelPromise readPromise4 = new DefaultChannelPromise(channel).setSuccess();
             assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99, new AtomicBoolean(), readPromise4));
             assertEquals(0, buffer.length());
-        }
-    }
-
-    @Nested
-    class ReleaseAndFailAll {
-        @Test
-        @Disabled
-        void shouldReleaseAllSegmentsAndFailAllFutures(@Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
-            final CoalescingBufferQueue queue = new CoalescingBufferQueue(channel, 4, false);
-            final SendBuffer buffer = null;//new SendBuffer(channel, queue, bufAndListenerPairs);
-            final ByteBuf buf = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final ChannelPromise promise = mock(ChannelPromise.class);
-            buffer.enqueue(buf, promise);
-
-            buffer.release();
-
-            assertEquals(0, buf.refCnt());
-            verify(promise).tryFailure(any());
         }
     }
 }

@@ -373,14 +373,14 @@ public class ReceiveBuffer {
         }
     }
 
-    private void addToHeadBuf(ChannelHandlerContext ctx, ByteBuf next) {
+    private void addToHeadBuf(final ChannelHandlerContext ctx, final ByteBuf next) {
         if (headBuf == null) {
             // create new cumulation
             headBuf = next;
         }
         else if (headBuf instanceof CompositeByteBuf) {
             // add component
-            CompositeByteBuf composite = (CompositeByteBuf) headBuf;
+            final CompositeByteBuf composite = (CompositeByteBuf) headBuf;
             composite.addComponent(true, next);
         }
         else {

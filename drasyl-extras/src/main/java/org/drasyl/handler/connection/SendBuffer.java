@@ -104,7 +104,7 @@ public class SendBuffer {
         return queue.readableBytes();
     }
 
-    public boolean isEmpty(){
+    public boolean isEmpty() {
         return queue.isEmpty();
     }
 

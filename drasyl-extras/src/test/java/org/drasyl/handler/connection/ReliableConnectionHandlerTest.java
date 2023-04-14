@@ -33,7 +33,6 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.ReliableConnectionConfig.Clock;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -49,13 +48,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.stubbing.Answer;
 
-import java.util.ArrayDeque;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofMinutes;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.handler.connection.Segment.ACK;
@@ -65,7 +58,6 @@ import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.SegmentMatchers.ack;
 import static org.drasyl.handler.connection.SegmentMatchers.ctl;
-import static org.drasyl.handler.connection.SegmentMatchers.data;
 import static org.drasyl.handler.connection.SegmentMatchers.mss;
 import static org.drasyl.handler.connection.SegmentMatchers.seq;
 import static org.drasyl.handler.connection.SegmentMatchers.tsOpt;
@@ -420,8 +412,8 @@ class ReliableConnectionHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     // old duplicate ACK arrives at us
-                    long x = 200;
-                    long z = 100;
+                    final long x = 200;
+                    final long z = 100;
                     channel.writeInbound(new Segment(z, SYN));
                     assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(x), ack(z + 1)));
 
@@ -676,7 +668,7 @@ class ReliableConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
                         final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
@@ -720,7 +712,7 @@ class ReliableConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
                         final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
@@ -784,8 +776,8 @@ class ReliableConnectionHandlerTest {
                 @Test
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                    final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
+                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -818,7 +810,7 @@ class ReliableConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
                         final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
@@ -884,7 +876,7 @@ class ReliableConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
                         final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
@@ -1103,7 +1095,7 @@ class ReliableConnectionHandlerTest {
                 class OnSynReceivedState {
                     @Test
                     void shouldCloseConnectionIfNoDataIsOutstanding() {
-                        SendBuffer sendBuffer = tcb.sendBuffer();
+                        final SendBuffer sendBuffer = tcb.sendBuffer();
                         when(sendBuffer.isEmpty()).thenReturn(true);
                         when(tcb.sndNxt()).thenReturn(123L);
 
@@ -1126,7 +1118,7 @@ class ReliableConnectionHandlerTest {
 
                     @Test
                     void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding() {
-                        SendBuffer sendBuffer = tcb.sendBuffer();
+                        final SendBuffer sendBuffer = tcb.sendBuffer();
                         when(sendBuffer.isEmpty()).thenReturn(false).thenReturn(true);
                         when(ctx.newPromise()).thenReturn(promise);
                         when(promise.isSuccess()).thenReturn(true);
@@ -2755,7 +2747,6 @@ class ReliableConnectionHandlerTest {
                             // RFC 9293: side. Ignore the segment text.
                             verify(tcb.receiveBuffer(), never()).receive(any(), any(), any());
 
-
                             verify(seg).release();
                         }
                     }
@@ -3111,7 +3102,7 @@ class ReliableConnectionHandlerTest {
 
                     final ReliableConnectionHandler handler = new ReliableConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
-                    long rto = 1234L;
+                    final long rto = 1234L;
                     handler.retransmissionTimeout(ctx, tcb, rto);
 
                     // RFC 6298: (5.4) Retransmit the earliest segment that has not been acknowledged by the

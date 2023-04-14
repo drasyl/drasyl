@@ -301,7 +301,7 @@ public class TransmissionControlBlock {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TransmissionControlBlock that = (TransmissionControlBlock) o;
+        final TransmissionControlBlock that = (TransmissionControlBlock) o;
         return sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs;
     }
 
@@ -590,7 +590,7 @@ public class TransmissionControlBlock {
 
         // total receive buffer space is RCV.BUFF
         // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-        int rcvUser = receiveBuffer.readableBytes();
+        final int rcvUser = receiveBuffer.readableBytes();
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
         if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {

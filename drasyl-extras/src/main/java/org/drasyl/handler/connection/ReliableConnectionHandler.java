@@ -110,12 +110,12 @@ import static org.drasyl.util.NumberUtil.min;
         "java:S1541",
         "java:S1845",
         "java:S3626",
-        "java:S3776"
-        , "UnnecessaryReturnStatement"
-        , "IfStatementWithIdenticalBranches"
-        , "DuplicateBranchesInSwitch"
-        , "StatementWithEmptyBody"
-        , "ConstantValue"
+        "java:S3776",
+        "UnnecessaryReturnStatement",
+        "IfStatementWithIdenticalBranches",
+        "DuplicateBranchesInSwitch",
+        "StatementWithEmptyBody",
+        "ConstantValue"
 })
 public class ReliableConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandler.class);
@@ -640,8 +640,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 break;
 
             case SYN_RECEIVED:
-                SendBuffer sendBuffer = tcb.sendBuffer();
-                if (sendBuffer.isEmpty()) {
+                if (tcb.sendBuffer().isEmpty()) {
                     // RFC 9293: If no SENDs have been issued and there is no pending data to send,
                     // RFC 9293: then form a FIN segment and send it,
                     final Segment seg = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), (byte) (FIN | ACK));
@@ -1331,8 +1330,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
-            SendBuffer sendBuffer = tcb.sendBuffer();
-            if (sendBuffer.isEmpty()) {
+            if (tcb.sendBuffer().isEmpty()) {
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
@@ -2025,8 +2023,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: acknowledgment number is equal to the greatest acknowledgment received on the
         // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
         // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
-        SendBuffer sendBuffer1 = tcb.sendBuffer();
-        final boolean isRfc5681Duplicate = !sendBuffer1.isEmpty() &&
+        final boolean isRfc5681Duplicate = !tcb.sendBuffer().isEmpty() &&
                 seg.len() == 0 &&
                 !seg.isSyn() &&
                 !seg.isFin() &&
@@ -2129,10 +2126,9 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     provided that the receiver's advertised window allows, the total
                     // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
                     // RFC 5681:     and that new data is available for transmission.
-                    SendBuffer sendBuffer = tcb.sendBuffer();
                     final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
                             (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
-                            !sendBuffer.isEmpty();
+                            !tcb.sendBuffer().isEmpty();
                     if (doLimitedTransmit) {
                         LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
                         tcb.writeEnqueuedData(ctx);
@@ -2173,7 +2169,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:    "inflates" the congestion window by the number of segments
                     // RFC 5681:    (three) that have left the network and which the receiver has
                     // RFC 5681:    buffered.
-                    long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
+                    final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                     if (newCwnd != tcb.cwnd()) {
                         LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
                         tcb.cwnd(newCwnd);
@@ -2216,7 +2212,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         // RFC 5681:    "inflates" the congestion window by the number of segments
                         // RFC 5681:    (three) that have left the network and which the receiver has
                         // RFC 5681:    buffered.
-                        long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
+                        final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                         if (newCwnd != tcb.cwnd()) {
                             LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
                             tcb.cwnd(newCwnd);
@@ -2233,7 +2229,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
                 // RFC 5681:    congestion window in order to reflect the additional segment that
                 // RFC 5681:    has left the network.
-                long newCwnd = tcb.cwnd() + tcb.smss();
+                final long newCwnd = tcb.cwnd() + tcb.smss();
                 if (newCwnd != tcb.cwnd()) {
                     LOG.trace("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
                     tcb.cwnd(newCwnd);
@@ -2259,7 +2255,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
                     // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
-                    long newCwnd = tcb.ssthresh();
+                    final long newCwnd = tcb.ssthresh();
                     if (newCwnd != tcb.cwnd()) {
                         LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
                         tcb.cwnd(newCwnd);
@@ -2293,7 +2289,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
                         // RFC 6582:     number of data packets that can be sent in response to a single
                         // RFC 6582:     acknowledgment.
-                        long newCwnd = tcb.ssthresh();
+                        final long newCwnd = tcb.ssthresh();
                         if (newCwnd != tcb.cwnd()) {
                             LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
                             tcb.cwnd(newCwnd);

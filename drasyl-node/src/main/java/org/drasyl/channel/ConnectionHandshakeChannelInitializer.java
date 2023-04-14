@@ -25,21 +25,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultEventLoop;
-import io.netty.util.internal.StringUtil;
 import org.drasyl.handler.connection.ConnectionClosing;
-import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionException;
-import org.drasyl.handler.connection.ConnectionHandshakeStatus;
+import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.util.CsvLogger;
 
-import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
@@ -67,11 +60,6 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                 .build();
         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
         p.addLast(handler);
-        final CsvLogger logger = new CsvLogger("./" + StringUtil.simpleClassName(this) + "-" + CsvLogger.PID + ".csv");
-        new DefaultEventLoop().scheduleAtFixedRate(() -> {
-            ConnectionHandshakeStatus status = handler.userCallStatus();
-            logger.log(status.tcb());
-        }, 100, 100, MILLISECONDS);
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,

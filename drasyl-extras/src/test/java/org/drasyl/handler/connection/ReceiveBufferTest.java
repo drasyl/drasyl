@@ -1,3 +1,24 @@
+/*
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
@@ -170,7 +191,7 @@ class ReceiveBufferTest {
 
                 // expected [0,60), got [0,100)
                 final ByteBuf data1 = data.slice(0, 100);
-                Segment seg1 = new Segment(0, 100, Segment.ACK, data1);
+                final Segment seg1 = new Segment(0, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(63_940, tcb.rcvWnd());
                 assertEquals(160, tcb.rcvNxt());
@@ -246,7 +267,7 @@ class ReceiveBufferTest {
 
                 // expected 200, got [200,300)
                 final ByteBuf data1 = data.slice(200, 100);
-                Segment seg3 = new Segment(200, 100, Segment.ACK, data1);
+                final Segment seg3 = new Segment(200, 100, Segment.ACK, data1);
                 buffer.receive(ctx, tcb, seg3);
                 assertEquals(63_500, tcb.rcvWnd());
                 assertEquals(500, tcb.rcvNxt());
@@ -279,7 +300,7 @@ class ReceiveBufferTest {
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [10,70) and [130,210), got [10,210)
-                Segment seg1 = new Segment(10, 100, Segment.ACK, data);
+                final Segment seg1 = new Segment(10, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(64_000 - 60 - 80, tcb.rcvWnd());
                 assertEquals(210, tcb.rcvNxt());
@@ -424,7 +445,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(90).writeBytes(randomBytes(90));
 
                 // expected [100,64100), got [10,100)
-                Segment seg1 = new Segment(10, 100, Segment.ACK, data);
+                final Segment seg1 = new Segment(10, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(64000, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());
@@ -446,7 +467,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
                 // expected [100,150), got [100,200)
-                Segment seg1 = new Segment(100, 100, Segment.ACK, data);
+                final Segment seg1 = new Segment(100, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(0, tcb.rcvWnd());
                 assertEquals(150, tcb.rcvNxt());
@@ -468,7 +489,7 @@ class ReceiveBufferTest {
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
                 // expected [100,64100), got [64100,64200)
-                Segment seg1 = new Segment(64100, 100, Segment.ACK, data);
+                final Segment seg1 = new Segment(64100, 100, Segment.ACK, data);
                 buffer.receive(ctx, tcb, seg1);
                 assertEquals(64000, tcb.rcvWnd());
                 assertEquals(100, tcb.rcvNxt());

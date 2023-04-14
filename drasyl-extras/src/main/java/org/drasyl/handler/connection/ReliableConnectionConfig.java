@@ -74,7 +74,7 @@ public abstract class ReliableConnectionConfig {
             .beta(1d / 4)
             .k(4)
             .clock(new Clock() {
-                private long offset = 0;
+                private long offset;
 
                 @Override
                 public long time() {
