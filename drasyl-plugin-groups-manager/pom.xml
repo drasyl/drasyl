@@ -31,9 +31,9 @@
 
     <artifactId>drasyl-plugin-groups-manager</artifactId>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Groups Membership Manager Plugin Package</name>
+    <name>drasyl: High-Performance Framework for Rapid Development of Distributed Applications - Groups Membership Manager Plugin Package</name>
     <description>
-        This package contains the groups membership management manager plugin for drasyl.
+        Groups membership management manager plugin for DrasylNode.
     </description>
     <url>https://drasyl.org/</url>
 
