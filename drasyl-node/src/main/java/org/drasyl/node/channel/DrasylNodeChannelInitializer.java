@@ -90,7 +90,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         super.initChannel(ch);
 
         firstStage(ch);
-        arqStage(ch);
         chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);

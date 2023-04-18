@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
@@ -60,6 +62,10 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
                 .build();
         final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
         p.addLast(handler);
+
+        p.addLast(new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
+        p.addLast(new LengthFieldPrepender(4));
+
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,

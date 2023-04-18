@@ -55,7 +55,6 @@ import static java.util.Objects.requireNonNull;
 public class TunnelExposeCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunnelExposeCommand.class);
     public static final int PASSWORD_LENGTH = 16;
-    public static final int WRITE_TIMEOUT_SECONDS = 15;
     @Option(
             names = { "--password" },
             description = "Password required by the consumer. If no password is specified, a random password will be generated.",

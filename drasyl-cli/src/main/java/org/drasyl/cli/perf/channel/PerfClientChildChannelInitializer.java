@@ -23,17 +23,13 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -41,10 +37,8 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer.ARQ_RETRY_TIMEOUT;
 
 public class PerfClientChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(PerfClientChildChannelInitializer.class);
@@ -91,12 +85,6 @@ public class PerfClientChildChannelInitializer extends ConnectionHandshakeChanne
 
         // fast (de)serializer for Probe messages
         p.addLast(new ProbeCodec());
-
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));

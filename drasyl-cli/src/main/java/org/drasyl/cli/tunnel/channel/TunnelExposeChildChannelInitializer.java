@@ -24,7 +24,6 @@ package org.drasyl.cli.tunnel.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
@@ -32,10 +31,6 @@ import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
 import org.drasyl.cli.tunnel.handler.ExposeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -47,9 +42,7 @@ import java.io.PrintStream;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 
 public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
@@ -85,13 +78,6 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
     @Override
     protected void handshakeCompleted(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
-
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(50)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
-        p.addLast(new WriteTimeoutHandler(WRITE_TIMEOUT_SECONDS));
 
         // (de)serializers for TunnelMessages
         p.addLast(new TunnelWriteCodec());

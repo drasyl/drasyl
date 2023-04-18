@@ -29,15 +29,10 @@ import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 
@@ -62,12 +57,6 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
 
         // fast (de)serializer for Probe messages
         p.addLast(new ProbeCodec());
-
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
