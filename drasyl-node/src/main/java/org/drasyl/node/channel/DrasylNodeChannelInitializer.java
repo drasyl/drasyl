@@ -80,7 +80,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     public DrasylNodeChannelInitializer(final DrasylConfig config,
                                         final DrasylNode node) {
-        super(config.getRemoteHandshakeTimeout(), true);
+        super(config.getRemoteHandshakeTimeout(), config);
         this.config = requireNonNull(config);
         this.node = requireNonNull(node);
     }

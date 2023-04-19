@@ -36,19 +36,21 @@ import org.drasyl.handler.connection.SegmentCodec;
 
 import java.time.Duration;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
-    protected final Duration handshakeTimeout;
-    protected final boolean initiateHandshake;
+    protected final ReliableConnectionConfig config;
 
-    protected ConnectionHandshakeChannelInitializer(final Duration handshakeTimeout,
-                                                    final boolean initiateHandshake) {
-        this.handshakeTimeout = handshakeTimeout;
-        this.initiateHandshake = initiateHandshake;
+    protected ConnectionHandshakeChannelInitializer(final ReliableConnectionConfig config) {
+        this.config = requireNonNull(config);
     }
 
     protected ConnectionHandshakeChannelInitializer(final boolean initiateHandshake) {
-        this(DEFAULT_HANDSHAKE_TIMEOUT, initiateHandshake);
+        this(ReliableConnectionConfig.newBuilder()
+                .userTimeout(DEFAULT_HANDSHAKE_TIMEOUT)
+                .activeOpen(initiateHandshake)
+                .build());
     }
 
     @SuppressWarnings("java:S1188")
@@ -57,11 +59,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
-        final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
-                .activeOpen(initiateHandshake)
-                .build();
-        final ReliableConnectionHandler handler = new ReliableConnectionHandler(config);
-        p.addLast(handler);
+        p.addLast(new ReliableConnectionHandler(config));
 
         p.addLast(new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));

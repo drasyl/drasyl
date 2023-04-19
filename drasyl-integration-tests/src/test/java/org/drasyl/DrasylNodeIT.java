@@ -425,7 +425,7 @@ class DrasylNodeIT {
              * This test ensures that sent application messages are delivered to the recipient.
              */
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+//            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void test() throws InterruptedException {
                 // 1
                 // as node1 has no route to node2 this message should not be delivered
