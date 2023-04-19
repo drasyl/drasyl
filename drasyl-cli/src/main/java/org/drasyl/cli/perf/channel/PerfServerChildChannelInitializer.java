@@ -45,7 +45,6 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
     public PerfServerChildChannelInitializer(final PrintStream out,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode) {
-        super(false);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -69,7 +68,7 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + handshakeTimeout.toMillis() + "ms.");
+        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
         ctx.close();
     }
 }

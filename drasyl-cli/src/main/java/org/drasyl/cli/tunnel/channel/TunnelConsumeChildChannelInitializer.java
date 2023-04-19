@@ -63,7 +63,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionHandshakeCha
                                                 final IdentityPublicKey exposer,
                                                 final String password,
                                                 final int port) {
-        super(true);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

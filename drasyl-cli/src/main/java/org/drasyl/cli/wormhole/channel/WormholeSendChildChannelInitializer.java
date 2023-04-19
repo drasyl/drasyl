@@ -54,8 +54,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
     private final Identity identity;
     private final String password;
     private final Payload payload;
-    private final int windowSize;
-    private final Duration windowTimeout;
 
     @SuppressWarnings("java:S107")
     public WormholeSendChildChannelInitializer(final PrintStream out,
@@ -63,18 +61,13 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
                                                final Worm<Integer> exitCode,
                                                final Identity identity,
                                                final String password,
-                                               final Payload payload,
-                                               final int windowSize,
-                                               final long windowTimeout) {
-        super(false);
+                                               final Payload payload) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
-        this.windowSize = requirePositive(windowSize);
-        this.windowTimeout = Duration.ofMillis(requirePositive(windowTimeout));
     }
 
     @Override

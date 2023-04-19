@@ -34,23 +34,17 @@ import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 
-import java.time.Duration;
-
 import static java.util.Objects.requireNonNull;
 
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
     protected final ReliableConnectionConfig config;
 
     protected ConnectionHandshakeChannelInitializer(final ReliableConnectionConfig config) {
         this.config = requireNonNull(config);
     }
 
-    protected ConnectionHandshakeChannelInitializer(final boolean initiateHandshake) {
-        this(ReliableConnectionConfig.newBuilder()
-                .userTimeout(DEFAULT_HANDSHAKE_TIMEOUT)
-                .activeOpen(initiateHandshake)
-                .build());
+    protected ConnectionHandshakeChannelInitializer() {
+        this(ReliableConnectionConfig.newBuilder().build());
     }
 
     @SuppressWarnings("java:S1188")

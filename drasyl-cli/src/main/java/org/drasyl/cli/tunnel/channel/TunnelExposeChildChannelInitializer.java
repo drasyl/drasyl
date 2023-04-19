@@ -58,7 +58,6 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
                                                final Identity identity,
                                                final String password,
                                                final Service service) {
-        super(false);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
@@ -90,7 +89,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The exposing node did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The exposing node did not respond within " + config.userTimeout().toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }

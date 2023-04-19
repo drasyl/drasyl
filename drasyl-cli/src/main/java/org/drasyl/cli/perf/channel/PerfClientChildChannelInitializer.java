@@ -56,7 +56,6 @@ public class PerfClientChildChannelInitializer extends ConnectionHandshakeChanne
                                              final IdentityPublicKey server,
                                              final boolean waitForDirectConnection,
                                              final SessionRequest sessionRequest) {
-        super(true);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

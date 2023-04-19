@@ -53,23 +53,19 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
     private final Identity identity;
     private final IdentityPublicKey sender;
     private final String password;
-    private final Duration ackInterval;
 
     public WormholeReceiveChildChannelInitializer(final PrintStream out,
                                                   final PrintStream err,
                                                   final Worm<Integer> exitCode,
                                                   final Identity identity,
                                                   final IdentityPublicKey sender,
-                                                  final String password,
-                                                  final long ackInterval) {
-        super(true);
+                                                  final String password) {
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.sender = requireNonNull(sender);
         this.password = requireNonNull(password);
-        this.ackInterval = Duration.ofMillis(requirePositive(ackInterval));
     }
 
     @Override
@@ -104,7 +100,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The sender did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The sender did not respond within " + config.userTimeout().toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }

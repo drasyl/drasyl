@@ -25,16 +25,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.WriteTimeoutException;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
+import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.stream.ChunkedMessageAggregator;
 import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
 import org.drasyl.handler.stream.MessageChunkDecoder;
@@ -55,8 +50,6 @@ import org.drasyl.node.handler.timeout.IdleChannelCloser;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.Null.NULL;
 
@@ -75,13 +68,16 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
     private static final ReassembledMessageDecoder REASSEMBLED_MESSAGE_DECODER = new ReassembledMessageDecoder();
     private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeChannelInitializer.class);
-    private final DrasylConfig config;
+    private final DrasylConfig nodeConfig;
     private final DrasylNode node;
 
-    public DrasylNodeChannelInitializer(final DrasylConfig config,
+    public DrasylNodeChannelInitializer(final DrasylConfig nodeConfig,
                                         final DrasylNode node) {
-        super(config.getRemoteHandshakeTimeout(), config);
-        this.config = requireNonNull(config);
+        super(ReliableConnectionConfig.newBuilder()
+                .userTimeout(nodeConfig.getRemoteMessageArqDeadPeerTimeout())
+                .activeOpen(true)
+                .build());
+        this.nodeConfig = requireNonNull(nodeConfig);
         this.node = requireNonNull(node);
     }
 
@@ -101,29 +97,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         // noop
     }
 
-    protected void arqStage(final DrasylChannel ch) {
-        if (config.isRemoteMessageArqEnabled()) {
-            ch.pipeline().addLast(new WriteTimeoutHandler(config.getRemoteMessageArqDeadPeerTimeout().toMillis(), TimeUnit.MILLISECONDS));
-            ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void exceptionCaught(final ChannelHandlerContext ctx,
-                                            final Throwable cause) {
-                    if (cause instanceof WriteTimeoutException) {
-                        LOG.debug("Message to {} was not acknowledged. Maybe recipient is offline/unreachable?", ctx.channel()::remoteAddress);
-                        ctx.close();
-                    }
-                    else {
-                        ctx.fireExceptionCaught(cause);
-                    }
-                }
-            });
-            ch.pipeline().addLast(new GoBackNArqCodec());
-            ch.pipeline().addLast(new GoBackNArqSenderHandler(config.getRemoteMessageArqWindowSize(), config.getRemoteMessageArqRetryTimeout()));
-            ch.pipeline().addLast(new GoBackNArqReceiverHandler(config.getRemoteMessageArqClock()));
-            ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
-        }
-    }
-
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
         LOG.debug("Handshake failed: ", cause);
@@ -131,7 +104,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
     }
 
     protected void firstStage(final DrasylChannel ch) {
-        final int inactivityTimeout = (int) config.getChannelInactivityTimeout().getSeconds();
+        final int inactivityTimeout = (int) nodeConfig.getChannelInactivityTimeout().getSeconds();
         if (inactivityTimeout > 0) {
             ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
         }
@@ -146,10 +119,10 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         ch.pipeline().addLast(
                 MESSAGE_CHUNK_ENCODER,
                 new ChunkedWriteHandler(),
-                new LargeByteBufToChunkedMessageEncoder(config.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, config.getRemoteMessageMaxContentLength()),
+                new LargeByteBufToChunkedMessageEncoder(nodeConfig.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, nodeConfig.getRemoteMessageMaxContentLength()),
                 MESSAGE_CHUNK_DECODER,
-                new MessageChunksBuffer(config.getRemoteMessageMaxContentLength(), (int) config.getRemoteMessageComposedMessageTransferTimeout().toMillis(), MAX_CHUNKS),
-                new ChunkedMessageAggregator(config.getRemoteMessageMaxContentLength()),
+                new MessageChunksBuffer(nodeConfig.getRemoteMessageMaxContentLength(), (int) nodeConfig.getRemoteMessageComposedMessageTransferTimeout().toMillis(), MAX_CHUNKS),
+                new ChunkedMessageAggregator(nodeConfig.getRemoteMessageMaxContentLength()),
                 REASSEMBLED_MESSAGE_DECODER
         );
     }
@@ -159,15 +132,15 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
      */
     protected void armStage(final DrasylChannel ch) throws CryptoException {
         // arm outbound and disarm inbound messages
-        if (config.isRemoteMessageArmApplicationEnabled()) {
+        if (nodeConfig.isRemoteMessageArmApplicationEnabled()) {
             ch.pipeline().addLast(ARM_HEADER_CODEC);
             // PFS is enabled
-            if (config.getRemoteMessageArmApplicationAgreementMaxCount() > 0) {
+            if (nodeConfig.getRemoteMessageArmApplicationAgreementMaxCount() > 0) {
                 ch.pipeline().addLast(new PFSArmHandler(
                         Crypto.INSTANCE,
-                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
-                        config.getRemoteMessageArmApplicationAgreementRetryInterval(),
-                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
+                        nodeConfig.getRemoteMessageArmApplicationAgreementExpireAfter(),
+                        nodeConfig.getRemoteMessageArmApplicationAgreementRetryInterval(),
+                        nodeConfig.getRemoteMessageArmApplicationAgreementMaxCount(),
                         node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()
                 ));
@@ -175,8 +148,8 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
             else {
                 ch.pipeline().addLast(new LongTimeArmHandler(
                         Crypto.INSTANCE,
-                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
-                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
+                        nodeConfig.getRemoteMessageArmApplicationAgreementExpireAfter(),
+                        nodeConfig.getRemoteMessageArmApplicationAgreementMaxCount(),
                         node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()
                 ));
@@ -189,7 +162,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
      * versa.
      */
     protected void serializationStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new MessageSerializer(config));
+        ch.pipeline().addLast(new MessageSerializer(nodeConfig));
     }
 
     /**
