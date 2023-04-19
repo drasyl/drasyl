@@ -78,6 +78,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
             public void exceptionCaught(final ChannelHandlerContext ctx,
                                         final Throwable cause) {
                 if (cause instanceof ConnectionException) {
+                    // FIXME: das gibt es gar nicht mehr
                     handshakeFailed(ctx, cause);
                 }
                 else {

@@ -25,9 +25,6 @@ package org.drasyl.handler.connection;
  * Exceptions thrown by {@link ReliableConnectionHandler}.
  */
 public abstract class ConnectionException extends RuntimeException {
-    protected ConnectionException() {
-    }
-
     protected ConnectionException(final String message) {
         super(message);
     }
