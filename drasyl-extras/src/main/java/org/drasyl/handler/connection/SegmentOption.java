@@ -24,6 +24,7 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.CodecException;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.Map;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
+@UnstableApi
 enum SegmentOption {
     END_OF_OPTION_LIST((byte) 0), // 1 byte
     MAXIMUM_SEGMENT_SIZE((byte) 2), // 3 bytes

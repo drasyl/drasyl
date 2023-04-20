@@ -33,9 +33,11 @@ import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.ReliableConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
+import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
+@UnstableApi
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     protected final ReliableConnectionConfig config;
 
