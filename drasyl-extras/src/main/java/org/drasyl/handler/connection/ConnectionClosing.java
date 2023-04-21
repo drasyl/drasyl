@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.Channel;
+import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.State.CLOSE_WAIT;
@@ -31,6 +32,7 @@ import static org.drasyl.handler.connection.State.CLOSE_WAIT;
  * preceding {@link Channel#close()} call) or by the remote peer. In the latter case, the close
  * request must be "confirmed" by calling {@link Channel#close()}.
  */
+@UnstableApi
 public class ConnectionClosing implements ConnectionEvent {
     private final State state;
 

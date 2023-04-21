@@ -21,6 +21,9 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
+@UnstableApi
 public class ConnectionAbortedDueToUserTimeoutException extends ConnectionException {
     public ConnectionAbortedDueToUserTimeoutException() {
         super("connection aborted due to user timeout");

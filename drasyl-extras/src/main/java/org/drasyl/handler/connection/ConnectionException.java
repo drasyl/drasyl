@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,12 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
 /**
  * Exceptions thrown by {@link ReliableConnectionHandler}.
  */
+@UnstableApi
 public abstract class ConnectionException extends RuntimeException {
     protected ConnectionException(final String message) {
         super(message);

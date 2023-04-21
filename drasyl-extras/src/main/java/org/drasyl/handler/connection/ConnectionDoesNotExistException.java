@@ -21,6 +21,9 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
+@UnstableApi
 public class ConnectionDoesNotExistException extends ConnectionException {
     public ConnectionDoesNotExistException() {
         super("connection does not exist");

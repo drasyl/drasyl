@@ -21,6 +21,9 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
+@UnstableApi
 public class ConnectionClosingException extends ConnectionException {
     public ConnectionClosingException() {
         super("connection closing");

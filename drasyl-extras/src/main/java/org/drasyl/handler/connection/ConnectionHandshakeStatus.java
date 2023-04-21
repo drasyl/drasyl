@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,13 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+@UnstableApi
 public class ConnectionHandshakeStatus implements ConnectionEvent {
     private final State state;
     private final TransmissionControlBlock tcb;
@@ -38,6 +41,7 @@ public class ConnectionHandshakeStatus implements ConnectionEvent {
         return state;
     }
 
+    @SuppressWarnings("unused")
     public TransmissionControlBlock tcb() {
         return tcb;
     }
