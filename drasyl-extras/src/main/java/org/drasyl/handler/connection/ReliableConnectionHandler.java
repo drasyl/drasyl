@@ -1840,7 +1840,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
                         // RFC 9293: buffers until either the buffer is full or the segment is empty.
                         final boolean outOfOrder = seg.seq() != tcb.rcvNxt();
-                        tcb.receiveBuffer().receive(ctx, tcb, seg);
+                        tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
 
                         // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
                         // RFC 9293: informed, when the buffer is returned, that a PUSH has been
@@ -1922,7 +1922,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: advance RCV.NXT over the FIN,
-                tcb.receiveBuffer().receive(ctx, tcb, seg);
+                tcb.receiveBuffer().receive(ctx, tcb, seg.retain());
 
                 // RFC 9293: and send an acknowledgment for the FIN.
                 final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);

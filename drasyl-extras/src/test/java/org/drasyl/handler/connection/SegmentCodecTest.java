@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.EncoderException;
@@ -72,9 +71,7 @@ class SegmentCodecTest {
             channel.writeOutbound(new Segment(seq, ack, ctl, wnd, cks, options, data));
 
             final ByteBuf actual = channel.readOutbound();
-            System.out.println(ByteBufUtil.hexDump(actual));
             final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content.resetReaderIndex());
-            System.out.println(ByteBufUtil.hexDump(expected));
             assertEquals(expected, actual);
 
             expected.release();

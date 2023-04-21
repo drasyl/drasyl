@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@ package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -84,7 +85,7 @@ public class ReceiveBuffer {
         }
 
         while (head != null) {
-            head.buf().release();
+            head.release();
             head = head.next;
         }
 
@@ -138,7 +139,7 @@ public class ReceiveBuffer {
                     index = sub(tcb.rcvNxt(), seg.seq());
                     // ensure that we do not exceed RCV.WND
                     length = NumberUtil.min(tcb.rcvWnd(), seg.len()) - index;
-                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
                     LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
                             channel,
@@ -164,7 +165,7 @@ public class ReceiveBuffer {
                     // ensure that we do not exceed RCV.WND
                     final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                     length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
-                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
                     LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
                             channel,
@@ -203,7 +204,7 @@ public class ReceiveBuffer {
                         // ensure that we do not exceed RCV.WND or read data already contained in head
                         final long offsetSegToHead = sub(head.seq(), seg.seq());
                         length = NumberUtil.min(tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
-                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
                         LOG.trace(
@@ -234,7 +235,7 @@ public class ReceiveBuffer {
                         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                         final long offsetSeqHead = sub(head.seq(), seg.seq());
                         length = NumberUtil.min(tcb.rcvWnd() - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
-                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
                         LOG.trace(
@@ -284,7 +285,7 @@ public class ReceiveBuffer {
                             else {
                                 length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
-                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
 //                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
                             block.next = current.next;
                             LOG.trace(
@@ -318,7 +319,7 @@ public class ReceiveBuffer {
                             else {
                                 length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
-                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
+                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
                             assert current.next == null || lessThan(block.seq(), current.next.seq());
                             block.next = current.next;
                             LOG.trace(
@@ -362,9 +363,10 @@ public class ReceiveBuffer {
                         head.len(),
                         head.next
                 );
-                addToHeadBuf(ctx, head.buf());
+                addToHeadBuf(ctx, head.content());
                 tcb.advanceRcvNxt(ctx, head.len());
                 head = head.next;
+                size -= 1;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq()) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
         }
@@ -414,14 +416,13 @@ public class ReceiveBuffer {
         return readableBytes() > 0;
     }
 
-    static class ReceiveBufferBlock {
+    static class ReceiveBufferBlock extends DefaultByteBufHolder {
         private final long seq;
-        private final ByteBuf buf;
         ReceiveBufferBlock next;
 
-        public ReceiveBufferBlock(long seq, ByteBuf buf) {
+        public ReceiveBufferBlock(final long seq, final ByteBuf buf) {
+            super(buf);
             this.seq = seq;
-            this.buf = requireNonNull(buf);
         }
 
         @Override
@@ -438,12 +439,8 @@ public class ReceiveBuffer {
             return seq;
         }
 
-        public ByteBuf buf() {
-            return buf;
-        }
-
         public int len() {
-            return buf.readableBytes();
+            return content().readableBytes();
         }
 
         public long lastSeq() {
