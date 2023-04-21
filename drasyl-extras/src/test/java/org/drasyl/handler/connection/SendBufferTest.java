@@ -56,19 +56,24 @@ class SendBufferTest {
             // enqueue 10 bytes
             final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise promise1 = mock(ChannelPromise.class);
-            buffer.enqueue(buf.slice(0, 10), promise1);
+            buffer.enqueue(buf.copy(0, 10), promise1);
             assertEquals(buffer.length(), 10);
             assertEquals(10, buffer.length());
 
             // enqueue another 5 bytes
             final ChannelPromise promise2 = mock(ChannelPromise.class);
-            buffer.enqueue(buf.slice(10, 5), promise2);
+            buffer.enqueue(buf.copy(10, 5), promise2);
             assertEquals(buffer.length(), 15);
             assertEquals(15, buffer.length());
 
             // read everything
-            assertEquals(buf, buffer.read(999, new AtomicBoolean(), channelPromise));
+            final ByteBuf read = buffer.read(999, new AtomicBoolean(), channelPromise);
+            assertEquals(buf, read);
             assertEquals(0, buffer.length());
+
+            buffer.release();
+            buf.release();
+            read.release();
         }
     }
 
@@ -84,29 +89,32 @@ class SendBufferTest {
             // preparation: fill buffer (10 and 5 bytes)
             final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise enqueuePromise1 = new DefaultChannelPromise(channel);
-            buffer.enqueue(buf.slice(0, 10), enqueuePromise1);
+            buffer.enqueue(buf.copy(0, 10), enqueuePromise1);
             final ChannelPromise enqueuePromise2 = new DefaultChannelPromise(channel);
-            buffer.enqueue(buf.slice(10, 5), enqueuePromise2);
+            buffer.enqueue(buf.copy(10, 5), enqueuePromise2);
             assertFalse(enqueuePromise1.isDone());
             assertFalse(enqueuePromise2.isDone());
 
             // read 5 bytes (part of first buf)
             final ChannelPromise readPromise1 = new DefaultChannelPromise(channel).setSuccess();
-            assertEquals(buf.slice(0, 5), buffer.read(5, new AtomicBoolean(), readPromise1));
+            final ByteBuf read1 = buffer.read(5, new AtomicBoolean(), readPromise1);
+            assertEquals(buf.copy(0, 5), read1);
             assertEquals(10, buffer.length());
             assertFalse(enqueuePromise1.isDone());
             assertFalse(enqueuePromise2.isDone());
 
             // read 6 bytes (remainder of first buf and start of second buf)
             final ChannelPromise readPromise2 = new DefaultChannelPromise(channel).setSuccess();
-            assertEquals(buf.slice(5, 6), buffer.read(6, new AtomicBoolean(), readPromise2));
+            final ByteBuf read2 = buffer.read(6, new AtomicBoolean(), readPromise2);
+            assertEquals(buf.copy(5, 6), read2);
             assertEquals(4, buffer.length());
             assertTrue(enqueuePromise1.isDone());
             assertFalse(enqueuePromise2.isDone());
 
             // read 10 bytes (remainder of second buf; only 4 bytes)
             final ChannelPromise readPromise3 = new DefaultChannelPromise(channel).setSuccess();
-            assertEquals(buf.slice(11, 4), buffer.read(10, new AtomicBoolean(), readPromise3));
+            final ByteBuf read3 = buffer.read(10, new AtomicBoolean(), readPromise3);
+            assertEquals(buf.copy(11, 4), read3);
             assertEquals(0, buffer.length());
             assertTrue(enqueuePromise1.isDone());
             assertTrue(enqueuePromise2.isDone());
@@ -115,6 +123,12 @@ class SendBufferTest {
             final ChannelPromise readPromise4 = new DefaultChannelPromise(channel).setSuccess();
             assertEquals(Unpooled.EMPTY_BUFFER, buffer.read(99, new AtomicBoolean(), readPromise4));
             assertEquals(0, buffer.length());
+
+            buffer.release();
+            buf.release();
+            read1.release();
+            read2.release();
+            read3.release();
         }
     }
 }

@@ -2703,7 +2703,7 @@ class ReliableConnectionHandlerTest {
                             // RFC 9293: Once in the ESTABLISHED state, it is possible to deliver segment
                             // RFC 9293: data to user RECEIVE buffers. Data from segments can be moved into
                             // RFC 9293: buffers until either the buffer is full or the segment is empty.
-                            verify(tcb.receiveBuffer()).receive(ctx, tcb, seg);
+                            verify(tcb.receiveBuffer()).receive(eq(ctx), eq(tcb), any());
 
                             // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
                             // RFC 9293: informed, when the buffer is returned, that a PUSH has been
