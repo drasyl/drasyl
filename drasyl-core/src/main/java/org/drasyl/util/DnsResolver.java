@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,31 +38,18 @@ import java.util.List;
 
 import static io.netty.resolver.ResolvedAddressTypes.IPV4_ONLY;
 import static io.netty.resolver.ResolvedAddressTypes.IPV4_PREFERRED;
+import static io.netty.resolver.ResolvedAddressTypes.IPV6_ONLY;
 import static io.netty.resolver.ResolvedAddressTypes.IPV6_PREFERRED;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Helper class for resolving hostnames to IP addresses.
  */
 public final class DnsResolver {
-    private static final Logger LOG = LoggerFactory.getLogger(DnsResolver.class);
-    static final ResolvedAddressTypes DEFAULT_RESOLVE_ADDRESS_TYPES;
+    private static final DnsResolverImpl impl = new DnsResolverImpl();
 
     private DnsResolver() {
         // util class
-    }
-
-    static {
-        if (NetUtil.isIpV4StackPreferred() || !anyInterfaceSupportsIpV6()) {
-            DEFAULT_RESOLVE_ADDRESS_TYPES = IPV4_ONLY;
-        }
-        else {
-            if (NetUtil.isIpV6AddressesPreferred()) {
-                DEFAULT_RESOLVE_ADDRESS_TYPES = IPV6_PREFERRED;
-            }
-            else {
-                DEFAULT_RESOLVE_ADDRESS_TYPES = IPV4_PREFERRED;
-            }
-        }
     }
 
     /**
@@ -93,51 +80,7 @@ public final class DnsResolver {
      */
     @SuppressWarnings("java:S3776")
     public static InetAddress[] resolveAll(final String host) throws UnknownHostException {
-        // use JDK-based resolution to get all candidates
-        final InetAddress[] addresses = InetAddress.getAllByName(host);
-
-        // now group candidates by IP family
-        final List<Inet4Address> addresses4 = new ArrayList<>(addresses.length);
-        final List<Inet6Address> addresses6 = new ArrayList<>(addresses.length);
-        for (final InetAddress address : addresses) {
-            if (address instanceof Inet4Address) {
-                addresses4.add((Inet4Address) address);
-            }
-            else if (DEFAULT_RESOLVE_ADDRESS_TYPES != IPV4_ONLY) {
-                addresses6.add((Inet6Address) address);
-            }
-        }
-
-        final int size4 = addresses4.size();
-        final int size6 = addresses6.size();
-
-        if (size4 == 0 && size6 == 0) {
-            throw new UnknownHostException("");
-        }
-
-        final InetAddress[] result = new InetAddress[size4 + size6];
-        if (DEFAULT_RESOLVE_ADDRESS_TYPES != IPV6_PREFERRED) {
-            // add ip4 at head
-            for (int i = 0; i < size4; i++) {
-                result[i] = addresses4.get(i);
-            }
-            // add ip6 at tail
-            for (int i = 0; i < size6; i++) {
-                result[size4 + i] = addresses6.get(i);
-            }
-        }
-        else {
-            // add ip6 at head
-            for (int i = 0; i < size6; i++) {
-                result[i] = addresses6.get(i);
-            }
-            // add ip4 at tail
-            for (int i = 0; i < size4; i++) {
-                result[size6 + i] = addresses4.get(i);
-            }
-        }
-
-        return result;
+        return impl.resolveAll(host);
     }
 
     /**
@@ -152,28 +95,111 @@ public final class DnsResolver {
         return resolveAll(host)[0];
     }
 
-    /**
-     * Returns {@code true} if any {@link NetworkInterface} supports {@code IPv6}, {@code false}
-     * otherwise.
-     */
-    private static boolean anyInterfaceSupportsIpV6() {
-        try {
-            final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-            while (interfaces.hasMoreElements()) {
-                final NetworkInterface iface = interfaces.nextElement();
-                final Enumeration<InetAddress> addresses = iface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    final InetAddress inetAddress = addresses.nextElement();
-                    if (inetAddress instanceof Inet6Address && !inetAddress.isAnyLocalAddress() &&
-                            !inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
-                        return true;
+    static class DnsResolverImpl {
+        private static final Logger LOG = LoggerFactory.getLogger(DnsResolver.class);
+        private final ResolvedAddressTypes defaultResolveAddressTypes;
+        private final ThrowingFunction<String, InetAddress[], UnknownHostException> allByNameProvider;
+
+        DnsResolverImpl(final ResolvedAddressTypes defaultResolveAddressTypes,
+                        final ThrowingFunction<String, InetAddress[], UnknownHostException> allByNameProvider) {
+            this.defaultResolveAddressTypes = requireNonNull(defaultResolveAddressTypes);
+            this.allByNameProvider = requireNonNull(allByNameProvider);
+        }
+
+        public DnsResolverImpl() {
+            this(defaultResolveAddressTypes(), InetAddress::getAllByName);
+        }
+
+        /**
+         * Returns {@code true} if any {@link NetworkInterface} supports {@code IPv6}, {@code false}
+         * otherwise.
+         */
+        private static boolean anyInterfaceSupportsIpV6() {
+            try {
+                final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    final NetworkInterface iface = interfaces.nextElement();
+                    final Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        final InetAddress inetAddress = addresses.nextElement();
+                        if (inetAddress instanceof Inet6Address && !inetAddress.isAnyLocalAddress() &&
+                                !inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
+                            return true;
+                        }
                     }
                 }
             }
+            catch (final SocketException e) {
+                LOG.debug("Unable to detect if any interface supports IPv6, assuming IPv4-only", e);
+            }
+            return false;
         }
-        catch (final SocketException e) {
-            LOG.debug("Unable to detect if any interface supports IPv6, assuming IPv4-only", e);
+
+        private static ResolvedAddressTypes defaultResolveAddressTypes() {
+            if (NetUtil.isIpV4StackPreferred() || !anyInterfaceSupportsIpV6()) {
+                return IPV4_ONLY;
+            }
+            else {
+                if (NetUtil.isIpV6AddressesPreferred()) {
+                    return IPV6_PREFERRED;
+                }
+                else {
+                    return IPV4_PREFERRED;
+                }
+            }
         }
-        return false;
+
+        @SuppressWarnings("java:S3776")
+        public InetAddress[] resolveAll(final String host) throws UnknownHostException {
+            // use JDK-based resolution to get all candidates
+            final InetAddress[] addresses = allByNameProvider.apply(host);
+
+            // now group candidates by IP family
+            final List<Inet4Address> addresses4 = new ArrayList<>(addresses.length);
+            final List<Inet6Address> addresses6 = new ArrayList<>(addresses.length);
+            for (final InetAddress address : addresses) {
+                if (address instanceof Inet4Address) {
+                    if (defaultResolveAddressTypes != IPV6_ONLY) {
+                        addresses4.add((Inet4Address) address);
+                    }
+                }
+                else if (address instanceof Inet6Address) {
+                    if (defaultResolveAddressTypes != IPV4_ONLY) {
+                        addresses6.add((Inet6Address) address);
+                    }
+                }
+            }
+
+            final int size4 = addresses4.size();
+            final int size6 = addresses6.size();
+
+            if (size4 == 0 && size6 == 0) {
+                throw new UnknownHostException("");
+            }
+
+            final InetAddress[] result = new InetAddress[size4 + size6];
+            if (defaultResolveAddressTypes != IPV6_PREFERRED) {
+                // add ip4 at head
+                for (int i = 0; i < size4; i++) {
+                    result[i] = addresses4.get(i);
+                }
+                // add ip6 at tail
+                for (int i = 0; i < size6; i++) {
+                    result[size4 + i] = addresses6.get(i);
+                }
+            }
+            else {
+                // add ip6 at head
+                for (int i = 0; i < size6; i++) {
+                    result[i] = addresses6.get(i);
+                }
+                // add ip4 at tail
+                for (int i = 0; i < size4; i++) {
+                    result[size6 + i] = addresses4.get(i);
+                }
+            }
+
+            return result;
+        }
     }
 }
