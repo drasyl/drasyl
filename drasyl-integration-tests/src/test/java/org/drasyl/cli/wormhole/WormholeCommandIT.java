@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.wormhole;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.EmbeddedNode;
@@ -130,7 +129,7 @@ class WormholeCommandIT {
                 senderGroup,
                 senderGroup,
                 udpServerGroup,
-                Level.WARN,
+                null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
@@ -164,7 +163,7 @@ class WormholeCommandIT {
                 receiverGroup,
                 receiverGroup,
                 udpServerGroup,
-                Level.WARN,
+                null,
                 receiverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
@@ -200,7 +199,7 @@ class WormholeCommandIT {
                 senderGroup,
                 senderGroup,
                 udpServerGroup,
-                Level.WARN,
+                null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
@@ -236,7 +235,7 @@ class WormholeCommandIT {
                     receiverParentGroup,
                     receiverChildGroup,
                     udpServerGroup,
-                    Level.WARN,
+                    null,
                     receiverPath.toFile(),
                     new InetSocketAddress("127.0.0.1", 0),
                     10_000,
