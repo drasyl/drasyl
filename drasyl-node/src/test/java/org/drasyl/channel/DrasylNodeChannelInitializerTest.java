@@ -32,7 +32,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static java.time.Duration.ofSeconds;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -51,9 +50,6 @@ class DrasylNodeChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
             when(node.identity()).thenReturn(ID_1);
-            when(config.getRemoteMessageMtu()).thenReturn(1_000);
-            when(config.getRemoteMessageMaxContentLength()).thenReturn(2_000);
-            when(config.getRemoteMessageComposedMessageTransferTimeout()).thenReturn(ofSeconds(10));
             when(config.isRemoteMessageArmApplicationEnabled()).thenReturn(true);
             when(config.getRemoteMessageArmApplicationAgreementMaxCount()).thenReturn(100);
             when(ctx.channel()).thenReturn(channel);
@@ -63,7 +59,7 @@ class DrasylNodeChannelInitializerTest {
             final ChannelInitializer<DrasylChannel> handler = new DrasylNodeChannelInitializer(config, node);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(10)).addLast(any());
+            verify(channel.pipeline(), times(9)).addLast(any());
         }
     }
 }
