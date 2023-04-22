@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -63,17 +63,14 @@ public class ArmedProtocolMessageTest {
             armedMessage = fullReadMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
         }
 
-        @AfterEach
-        void tearDown() {
-            ReferenceCountUtil.safeRelease(armedMessage);
-        }
-
         @Test
         void shouldIncrementHopCount() {
             final ArmedProtocolMessage newArmedMessage = armedMessage.incrementHopCount();
 
             assertEquals(armedMessage.getNonce(), newArmedMessage.getNonce());
             assertEquals(armedMessage.getHopCount().increment(), newArmedMessage.getHopCount());
+
+            armedMessage.release();
         }
 
         @Test
