@@ -177,14 +177,12 @@
           "code": "java.annotation.added",
           "annotation": "@com.google.auto.value.AutoValue$Builder",
           "justification": "False positive due to auto-generated sources"
-
         },
         {
           "ignore": true,
           "code": "java.annotation.added",
           "annotation": "@com.google.auto.value.AutoValue.Builder",
           "justification": "False positive due to auto-generated sources"
-
         },
         {
           "ignore": true,
@@ -358,7 +356,8 @@
           "ignore": true,
           "code": "java.method.removed",
           "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteEndpoints(java.util.Set<org.drasyl.node.PeerEndpoint>)",
-          "justification": "was never used"        },
+          "justification": "was never used"
+        },
         {
           "ignore": true,
           "code": "java.field.removedWithConstant",
