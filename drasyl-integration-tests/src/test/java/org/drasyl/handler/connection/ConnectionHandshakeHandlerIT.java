@@ -247,7 +247,7 @@ class ConnectionHandshakeHandlerIT {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new SimpleChannelInboundHandler<ConnectionHandshakeSegment>() {
+                        p.addLast(new SimpleChannelInboundHandler<ConnectionHandshakeSegment>(false) {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
                                                         final ConnectionHandshakeSegment msg) {
