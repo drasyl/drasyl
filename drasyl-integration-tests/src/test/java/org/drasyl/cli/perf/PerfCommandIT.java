@@ -115,7 +115,7 @@ class PerfCommandIT {
     @Disabled(value = "Test does stuck sometimes after \"Connected to...\"")
     @Test
     @Timeout(value = 30_000, unit = MILLISECONDS)
-    void shouldTransferText(@TempDir final Path path) throws IOException {
+    void shouldTransferText(@TempDir final Path path) throws IOException, InterruptedException {
         // create server
         final Path serverPath = path.resolve("server.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_2);
@@ -180,5 +180,8 @@ class PerfCommandIT {
             assertThat(clientOut.toString(), containsString("Sender:"));
             assertThat(clientOut.toString(), containsString("Receiver:"));
         });
+
+        serverThread.join();
+        clientThread.join();
     }
 }
