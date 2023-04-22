@@ -192,14 +192,13 @@ class WormholeCommandIT {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
-        final EventLoopGroup senderParentGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup senderChildGroup = senderParentGroup;
+        final EventLoopGroup senderGroup = new DefaultEventLoopGroup(1);
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
-                senderParentGroup,
-                senderChildGroup,
+                senderGroup,
+                senderGroup,
                 udpServerGroup,
                 Level.WARN,
                 senderPath.toFile(),
