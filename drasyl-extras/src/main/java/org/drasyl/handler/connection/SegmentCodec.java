@@ -98,14 +98,14 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 options.put(option, value);
             }
 
-            final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in.retain());
+            final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in);
 
             // verify checksum
             if (calculateChecksum(in, readerIndex) != 0) {
                 // wrong checksum, drop segment
                 return;
             }
-            out.add(seg);
+            out.add(seg.retain());
         }
         else {
             // wrong length -> pass through message

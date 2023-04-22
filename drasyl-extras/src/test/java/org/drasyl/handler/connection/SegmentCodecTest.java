@@ -39,6 +39,7 @@ import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
@@ -127,6 +128,15 @@ class SegmentCodecTest {
             assertEquals(msg, actual);
 
             actual.release();
+        }
+
+        @Test
+        void shouldDropSegWithInvalidChecksum() {
+            final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
+
+            channel.writeInbound(Unpooled.wrappedBuffer(Unpooled.buffer(Integer.BYTES).writeInt((int) seq - 1), encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
+
+            assertNull(channel.readInbound());
         }
     }
 }
