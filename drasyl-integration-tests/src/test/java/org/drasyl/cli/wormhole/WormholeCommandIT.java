@@ -117,7 +117,7 @@ class WormholeCommandIT {
 
     @Test
     @Timeout(value = 30_000, unit = MILLISECONDS)
-    void shouldTransferText(@TempDir final Path path) throws IOException {
+    void shouldTransferText(@TempDir final Path path) throws IOException, InterruptedException {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
@@ -176,11 +176,14 @@ class WormholeCommandIT {
 
         // receive text
         await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
+
+        senderThread.join();
+        receiverThread.join();
     }
 
     @Test
     @Timeout(value = 30_000, unit = MILLISECONDS)
-    void shouldTransferFile(@TempDir final Path path) throws IOException {
+    void shouldTransferFile(@TempDir final Path path) throws IOException, InterruptedException {
         // create file
         final File file = path.resolve("WormholeCommandIT-" + randomString(5) + ".bin").toFile();
 
@@ -247,6 +250,9 @@ class WormholeCommandIT {
 
             // receive text
             await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
+
+            senderThread.join();
+            receiverThread.join();
         }
         finally {
             Files.deleteIfExists(Path.of(file.getName()));
