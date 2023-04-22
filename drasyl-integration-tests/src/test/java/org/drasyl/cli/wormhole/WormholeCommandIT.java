@@ -227,13 +227,12 @@ class WormholeCommandIT {
             // create receiving node
             final Path receiverPath = path.resolve("receiver.identity");
             IdentityManager.writeIdentityFile(receiverPath, ID_3);
-            final EventLoopGroup receiverParentGroup = new DefaultEventLoopGroup(1);
-            final EventLoopGroup receiverChildGroup = receiverParentGroup;
+            final EventLoopGroup receiverGroup = new DefaultEventLoopGroup(1);
             receiverThread = new Thread(() -> new WormholeReceiveCommand(
                     new PrintStream(receiverOut, true),
                     System.err,
-                    receiverParentGroup,
-                    receiverChildGroup,
+                    receiverGroup,
+                    receiverGroup,
                     udpServerGroup,
                     null,
                     receiverPath.toFile(),
