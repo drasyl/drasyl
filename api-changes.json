@@ -416,38 +416,38 @@
           "ignore": true,
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler",
-            "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
-          {
-              "ignore": true,
-              "code": "java.class.removed",
-              "old": "class org.drasyl.handler.connection.ConnectionHandshakeSegment",
-              "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-          },
-          {
-              "ignore": true,
-              "code": "java.class.removed",
-              "old": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
-              "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-          },
-          {
-              "ignore": true,
-              "code": "java.class.removed",
-              "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
-              "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-          },
-          {
-              "ignore": true,
-              "code": "java.class.removed",
-              "old": "class org.drasyl.channel.ConnectionHandshakeChannelInitializer",
-              "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-          },
-          {
-              "ignore": true,
-              "code": "java.class.removed",
-              "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
-              "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-          }
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeSegment",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.ConnectionHandshakeChannelInitializer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        }
       ]
     }
   }
