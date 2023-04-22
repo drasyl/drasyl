@@ -80,11 +80,13 @@ public class ReceiveBuffer {
      */
     public void release() {
         if (headBuf != null) {
+            ReferenceCountUtil.touch(headBuf, "ReceiveBuffer release headBuf " + headBuf);
             headBuf.release();
             headBuf = null;
         }
 
         while (head != null) {
+            ReferenceCountUtil.touch(headBuf, "ReceiveBuffer release head " + head);
             head.release();
             head = head.next;
         }
@@ -139,7 +141,7 @@ public class ReceiveBuffer {
                     index = sub(tcb.rcvNxt(), seg.seq());
                     // ensure that we do not exceed RCV.WND
                     length = NumberUtil.min(tcb.rcvWnd(), seg.len()) - index;
-                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
                     LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
                             channel,
@@ -165,7 +167,7 @@ public class ReceiveBuffer {
                     // ensure that we do not exceed RCV.WND
                     final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                     length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
-                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                    final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
                     LOG.trace(
                             "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
                             channel,
@@ -204,7 +206,7 @@ public class ReceiveBuffer {
                         // ensure that we do not exceed RCV.WND or read data already contained in head
                         final long offsetSegToHead = sub(head.seq(), seg.seq());
                         length = NumberUtil.min(tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
-                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
                         LOG.trace(
@@ -235,7 +237,7 @@ public class ReceiveBuffer {
                         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
                         final long offsetSeqHead = sub(head.seq(), seg.seq());
                         length = NumberUtil.min(tcb.rcvWnd() - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
-                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                        final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
                         assert lessThan(block.seq(), head.seq());
                         block.next = head;
                         LOG.trace(
@@ -285,7 +287,7 @@ public class ReceiveBuffer {
                             else {
                                 length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
-                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
 //                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
                             block.next = current.next;
                             LOG.trace(
@@ -319,7 +321,7 @@ public class ReceiveBuffer {
                             else {
                                 length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
-                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.slice((int) (content.readerIndex() + index), (int) length));
+                            final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
                             assert current.next == null || lessThan(block.seq(), current.next.seq());
                             block.next = current.next;
                             LOG.trace(
