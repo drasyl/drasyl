@@ -24,18 +24,11 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.EncoderException;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
-import org.drasyl.handler.stream.ChunkedMessageAggregator;
-import org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder;
-import org.drasyl.handler.stream.MessageChunkDecoder;
-import org.drasyl.handler.stream.MessageChunkEncoder;
-import org.drasyl.handler.stream.MessageChunksBuffer;
-import org.drasyl.handler.stream.ReassembledMessageDecoder;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -63,11 +56,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
     // PublicHeader: 98 bytes + 4 bytes MagicNumber
     // PrivateHeader: 3 byte + 16 bytes MAC
     public static final int PROTOCOL_OVERHEAD = 127;
-    private static final int CHUNK_NO_LENGTH = 2;
-    private static final int MAX_CHUNKS = (int) Math.pow(256, CHUNK_NO_LENGTH) - 1;
-    private static final MessageChunkEncoder MESSAGE_CHUNK_ENCODER = new MessageChunkEncoder(CHUNK_NO_LENGTH);
-    private static final MessageChunkDecoder MESSAGE_CHUNK_DECODER = new MessageChunkDecoder(CHUNK_NO_LENGTH);
-    private static final ReassembledMessageDecoder REASSEMBLED_MESSAGE_DECODER = new ReassembledMessageDecoder();
     private static final ArmHeaderCodec ARM_HEADER_CODEC = new ArmHeaderCodec();
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeChannelInitializer.class);
     private final DrasylConfig nodeConfig;
@@ -88,7 +76,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         super.initChannel(ch);
 
         firstStage(ch);
-        chunkingStage(ch);
         armStage(ch);
         serializationStage(ch);
         lastStage(ch);
@@ -110,23 +97,6 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         if (inactivityTimeout > 0) {
             ch.pipeline().addLast(new IdleChannelCloser(inactivityTimeout));
         }
-    }
-
-    /**
-     * This stage splits {@link io.netty.buffer.ByteBuf}s that are too big for a single udp
-     * datagram.
-     */
-    protected void chunkingStage(final DrasylChannel ch) {
-        // split ByteBufs that are too big for a single udp datagram
-        ch.pipeline().addLast(
-                MESSAGE_CHUNK_ENCODER,
-                new ChunkedWriteHandler(),
-                new LargeByteBufToChunkedMessageEncoder(nodeConfig.getRemoteMessageMtu() - PROTOCOL_OVERHEAD, nodeConfig.getRemoteMessageMaxContentLength()),
-                MESSAGE_CHUNK_DECODER,
-                new MessageChunksBuffer(nodeConfig.getRemoteMessageMaxContentLength(), (int) nodeConfig.getRemoteMessageComposedMessageTransferTimeout().toMillis(), MAX_CHUNKS),
-                new ChunkedMessageAggregator(nodeConfig.getRemoteMessageMaxContentLength()),
-                REASSEMBLED_MESSAGE_DECODER
-        );
     }
 
     /**
