@@ -182,7 +182,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             // ...then pass close event further through the pipeline
             aggregatePromise.addListener(future -> {
                 if (future.isSuccess()) {
-                    // all child channels has been sucesfully closed
+                    // all child channels has been successfully closed
                     ctx.close(promise);
                 }
                 else {
