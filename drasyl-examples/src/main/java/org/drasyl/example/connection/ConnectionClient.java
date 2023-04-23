@@ -124,7 +124,7 @@ public class ConnectionClient {
                                                            final Object evt) {
                                 if (evt instanceof ConnectionHandshakeCompleted) {
                                     // handshake succeeded
-                                    System.out.println("Handshake with " + ctx.channel().remoteAddress() + " succeeded.");
+                                    System.out.println("Handshake with " + ctx.channel().remoteAddress() + " succeeded. Connection established.");
 
                                     // add your connection-related handler here
                                 }
