@@ -178,7 +178,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
         public void exceptionCaught(final ChannelHandlerContext ctx,
                                     final Throwable e) {
             if (e instanceof EncoderException) {
-                // exception has been propably caused by an outbound message
+                // exception has been probably caused by an outbound message
                 LOG.error(e);
             }
             else {
