@@ -72,9 +72,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *         3 - future sequence numbers which are not yet allowed
  * </pre>
  */
-@SuppressWarnings("java:S125")
+@SuppressWarnings({ "java:S125", "java:S6541" })
 public class TransmissionControlBlock {
-    private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     static final int DRASYL_HDR_SIZE = 20 + 8 + 176;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
@@ -86,8 +85,9 @@ public class TransmissionControlBlock {
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
     // (DRASYL_HDR_SIZE) and our TCP header (31)
     public static final int DEFAULT_SEND_MSS = 1460 - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
+    private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
+    private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
-    final RetransmissionQueue retransmissionQueue;
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
@@ -493,7 +493,7 @@ public class TransmissionControlBlock {
 
                 if (remainingBytes > 0) {
                     LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
-                    final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
+                    final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
                     readableBytes -= handler.segmentizeAndSendData(ctx, (int) remainingBytes);
                 }

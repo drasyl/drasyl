@@ -74,8 +74,6 @@ import static org.drasyl.handler.connection.State.TIME_WAIT;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
 
-// FIXME: was ist mit den casts int/long/etc.?
-// FIXME: \((long|int|float|double)\)
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
  * heavily inspired by the Transmission Control Protocol (TCP), but neither implement all features
@@ -101,6 +99,7 @@ import static org.drasyl.util.NumberUtil.min;
  */
 @SuppressWarnings({
         "java:S125",
+        "java:S128",
         "java:S131",
         "java:S138",
         "java:S1066",
@@ -109,16 +108,18 @@ import static org.drasyl.util.NumberUtil.min;
         "java:S1192",
         "java:S1541",
         "java:S1845",
+        "java:S1871",
         "java:S3626",
         "java:S3776",
+        "java:S6541",
         "UnnecessaryReturnStatement",
         "IfStatementWithIdenticalBranches",
         "DuplicateBranchesInSwitch",
         "StatementWithEmptyBody",
         "ConstantValue"
 })
-public class ReliableConnectionHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandler.class);
+public class ConnectionHandler extends ChannelDuplexHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
     // events
     static final ConnectionHandshakeCompleted CONNECTION_HANDSHAKE_COMPLETED = new ConnectionHandshakeCompleted();
     static final ConnectionHandshakeIssued CONNECTION_HANDSHAKE_ISSUED = new ConnectionHandshakeIssued();
@@ -144,15 +145,15 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
     private long segmentizedRemainingBytes;
 
     @SuppressWarnings("java:S107")
-    ReliableConnectionHandler(final ReliableConnectionConfig config,
-                              final State state,
-                              final TransmissionControlBlock tcb,
-                              final ScheduledFuture<?> userTimer,
-                              final ScheduledFuture<?> retransmissionTimer,
-                              final ScheduledFuture<?> timeWaitTimer,
-                              final ChannelPromise establishedPromise,
-                              final ChannelPromise closedPromise,
-                              final ChannelHandlerContext ctx) {
+    ConnectionHandler(final ReliableConnectionConfig config,
+                      final State state,
+                      final TransmissionControlBlock tcb,
+                      final ScheduledFuture<?> userTimer,
+                      final ScheduledFuture<?> retransmissionTimer,
+                      final ScheduledFuture<?> timeWaitTimer,
+                      final ChannelPromise establishedPromise,
+                      final ChannelPromise closedPromise,
+                      final ChannelHandlerContext ctx) {
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -164,7 +165,7 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
         this.ctx = ctx;
     }
 
-    public ReliableConnectionHandler(final ReliableConnectionConfig config) {
+    public ConnectionHandler(final ReliableConnectionConfig config) {
         this(config, null, null, null, null, null, null, null, null);
     }
 
@@ -859,7 +860,6 @@ public class ReliableConnectionHandler extends ChannelDuplexHandler {
     private void createTcb(final ChannelHandlerContext ctx) {
         assert tcb == null;
         tcb = config.tcbSupplier().apply(config, ctx.channel());
-        tcb.config = config;
         LOG.trace("{} TCB created: {}", ctx.channel(), tcb);
     }
 

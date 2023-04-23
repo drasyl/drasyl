@@ -24,7 +24,7 @@ package org.drasyl.handler.connection;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Events emitted by {@link ReliableConnectionHandler}.
+ * Events emitted by {@link ConnectionHandler}.
  */
 @UnstableApi
 public interface ConnectionEvent {

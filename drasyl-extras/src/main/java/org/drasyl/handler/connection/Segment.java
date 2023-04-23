@@ -39,7 +39,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
- * Message used by {@link ReliableConnectionHandler} to provide reliable and ordered delivery of
+ * Message used by {@link ConnectionHandler} to provide reliable and ordered delivery of
  * bytes between hosts.
  */
 @SuppressWarnings({ "java:S1845", "java:S3052" })

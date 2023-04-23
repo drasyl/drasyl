@@ -122,6 +122,7 @@ public class ReceiveBuffer {
         return "RCV.BUF(len: " + bytes() + ", frg: " + blocks + ")";
     }
 
+    @SuppressWarnings({ "java:S1066", "java:S3776", "java:S6541" })
     public void receive(final ChannelHandlerContext ctx,
                         final TransmissionControlBlock tcb,
                         final Segment seg) {
@@ -288,7 +289,6 @@ public class ReceiveBuffer {
                                 length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
                             }
                             final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
-//                            assert current.next == null || lessThan(block.seq(), current.next.seq(), SEQ_NO_SPACE);
                             block.next = current.next;
                             LOG.trace(
                                     "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",

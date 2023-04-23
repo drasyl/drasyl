@@ -68,8 +68,8 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ReliableConnectionHandlerIT {
-    private static final Logger LOG = LoggerFactory.getLogger(ReliableConnectionHandlerIT.class);
+class ConnectionHandlerIT {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandlerIT.class);
     private static final int MAX_DROP = 3;
     public static final Duration USER_TIMEOUT = ofSeconds(1);
 
@@ -96,7 +96,7 @@ class ReliableConnectionHandlerIT {
         final ByteBuf receivedBuf = Unpooled.buffer();
 
         // Peer B
-        final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+        final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
         final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                 .activeOpen(false)
                 .rmem(3_000)
@@ -105,7 +105,7 @@ class ReliableConnectionHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
+        final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
         final Channel peerBServerChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
@@ -154,7 +154,7 @@ class ReliableConnectionHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
+        final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
         final Channel peerAChannel = new Bootstrap()
                 .channel(LocalChannel.class)
                 .group(group)
@@ -229,7 +229,7 @@ class ReliableConnectionHandlerIT {
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
@@ -237,7 +237,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -261,7 +261,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -311,7 +311,7 @@ class ReliableConnectionHandlerIT {
             final EventLoopGroup group = new DefaultEventLoopGroup();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(true)
@@ -319,7 +319,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -343,7 +343,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -400,7 +400,7 @@ class ReliableConnectionHandlerIT {
             final AtomicReference<Channel> peerBChannel = new AtomicReference<>();
 
             // TCP Peer B
-            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ReliableConnectionHandlerIT.class));
+            final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
@@ -408,7 +408,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerBHandler = new ReliableConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -434,7 +434,7 @@ class ReliableConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ReliableConnectionHandler peerAHandler = new ReliableConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)

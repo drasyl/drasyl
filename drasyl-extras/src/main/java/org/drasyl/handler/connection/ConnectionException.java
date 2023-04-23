@@ -24,7 +24,7 @@ package org.drasyl.handler.connection;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Exceptions thrown by {@link ReliableConnectionHandler}.
+ * Exceptions thrown by {@link ConnectionHandler}.
  */
 @UnstableApi
 public abstract class ConnectionException extends RuntimeException {

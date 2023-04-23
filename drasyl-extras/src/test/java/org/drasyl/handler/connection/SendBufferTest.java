@@ -57,13 +57,11 @@ class SendBufferTest {
             final ByteBuf buf = Unpooled.buffer(15).writeBytes(randomBytes(15));
             final ChannelPromise promise1 = mock(ChannelPromise.class);
             buffer.enqueue(buf.copy(0, 10), promise1);
-            assertEquals(buffer.length(), 10);
             assertEquals(10, buffer.length());
 
             // enqueue another 5 bytes
             final ChannelPromise promise2 = mock(ChannelPromise.class);
             buffer.enqueue(buf.copy(10, 5), promise2);
-            assertEquals(buffer.length(), 15);
             assertEquals(15, buffer.length());
 
             // read everything

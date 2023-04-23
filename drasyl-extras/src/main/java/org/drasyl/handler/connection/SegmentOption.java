@@ -19,7 +19,6 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
@@ -74,8 +73,8 @@ enum SegmentOption {
                 return;
             case SACK:
                 out.writeByte(((SackOption) value).edges.size());
-                for (final long edge : ((SackOption) value).edges) {
-                    out.writeInt((int) edge);
+                for (final Long edge : ((SackOption) value).edges) {
+                    out.writeInt(edge.intValue());
                 }
                 return;
             default:

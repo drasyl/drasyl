@@ -31,7 +31,7 @@ import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
-import org.drasyl.handler.connection.ReliableConnectionHandler;
+import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -55,7 +55,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
-        p.addLast(new ReliableConnectionHandler(config));
+        p.addLast(new ConnectionHandler(config));
 
         p.addLast(new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
@@ -80,7 +80,6 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
             public void exceptionCaught(final ChannelHandlerContext ctx,
                                         final Throwable cause) {
                 if (cause instanceof ConnectionException) {
-                    // FIXME: das gibt es gar nicht mehr
                     handshakeFailed(ctx, cause);
                 }
                 else {

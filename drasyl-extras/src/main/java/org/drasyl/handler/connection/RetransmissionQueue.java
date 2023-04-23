@@ -66,7 +66,7 @@ public class RetransmissionQueue {
 
         // RFC 9293: If a timeout is specified, the current user timeout for this connection is
         // RFC 9293: changed to the new one.
-        final ReliableConnectionHandler handler = (ReliableConnectionHandler) ctx.handler();
+        final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
         if (tcb.config().userTimeout().toMillis() > 0) {
             handler.cancelUserTimer(ctx);
             handler.startUserTimer(ctx);
@@ -89,6 +89,7 @@ public class RetransmissionQueue {
         return "RTNS.Q(SIZE=" + queue.size() + ")";
     }
 
+    @SuppressWarnings("java:S135")
     public boolean removeAcknowledged(final ChannelHandlerContext ctx,
                                       final TransmissionControlBlock tcb) {
         boolean somethingWasAcked = false;

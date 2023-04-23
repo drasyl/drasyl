@@ -78,7 +78,6 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
         }
 
         ctx.pipeline().addBefore(ctx.name(), null, new InboundByteBufsProgressBarHandler(length, PROGRESS_BAR_INTERVAL));
-//        ctx.pipeline().addBefore(ctx.name(), null, new ReadTimeoutHandler(IDLE_TIMEOUT));
     }
 
     @Override
