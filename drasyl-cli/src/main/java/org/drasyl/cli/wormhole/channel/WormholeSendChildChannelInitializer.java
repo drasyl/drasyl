@@ -31,6 +31,7 @@ import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
@@ -59,6 +60,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
                                                final Identity identity,
                                                final String password,
                                                final Payload payload) {
+        super(ReliableConnectionConfig.newBuilder().activeOpen(false).build());
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
