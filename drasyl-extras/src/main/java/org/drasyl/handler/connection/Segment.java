@@ -51,13 +51,10 @@ public class Segment extends DefaultByteBufHolder {
     // Checksum: 2 bytes
     // CTL: 1 byte
     // Window: 4 bytes
-    // Options: 10 bytes
-    //   MAXIMUM_SEGMENT_SIZE: ignored, as only used for SYN
-    //   SACK: ignored, as only used in empty(?) ACKs
-    //   TIMESTAMPS: 9 bytes
+    // Options: 1 bytes
     //   END_OF_OPTION_LIST: 1 byte
     // data: arbitrary number of bytes
-    public static final int SEG_HDR_SIZE = 25;
+    public static final int SEG_HDR_SIZE = 16;
     static final int SEQ_NO_SPACE = 32;
     static final byte ACK = 1 << 4;
     static final byte PSH = 1 << 3;
