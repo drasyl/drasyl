@@ -365,8 +365,8 @@ public class ReceiveBuffer {
                         head.len(),
                         head.next
                 );
-                addToHeadBuf(ctx, head.content());
                 tcb.advanceRcvNxt(ctx, head.len());
+                addToHeadBuf(ctx, head.content());
                 head = head.next;
                 size -= 1;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq()) : tcb.rcvNxt() + " must be less than or equal to " + head;
