@@ -379,9 +379,7 @@ public class TransmissionControlBlock {
     /**
      * Enqueues data for transmission once connection has been ESTABLISHED.
      */
-    void enqueueData(final ChannelHandlerContext ctx,
-                     final ByteBuf data,
-                     final ChannelPromise promise) {
+    void enqueueData(final ByteBuf data, final ChannelPromise promise) {
         sendBuffer.enqueue(data, promise);
     }
 
