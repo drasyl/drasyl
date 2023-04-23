@@ -358,7 +358,7 @@ public abstract class ReliableConnectionConfig {
          * Enables the Selective Acknowledgment options that improves the performance when multiple
          * packets are lost from one window of data.
          * <p>
-         * Currently not fully implemented. Can not be enabled
+         * Currently not fully implemented. Can not be enabled.
          *
          * @see <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018</a>
          */

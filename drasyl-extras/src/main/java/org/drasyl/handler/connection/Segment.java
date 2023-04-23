@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -265,10 +265,6 @@ public class Segment extends DefaultByteBufHolder {
         return (ctl & FIN) != 0;
     }
 
-    public boolean isOnlyFin() {
-        return ctl == FIN;
-    }
-
     public Map<SegmentOption, Object> options() {
         return options;
     }
@@ -344,29 +340,6 @@ public class Segment extends DefaultByteBufHolder {
 
     public boolean mustBeAcked() {
         return (!isOnlyAck() && !isRst()) || len() != 0;
-    }
-
-    public boolean canPiggybackAck(final Segment other) {
-        return (other.isOnlyAck() || other.isOnlyFin()) && seq() == other.seq();
-    }
-
-    public Segment piggybackAck(final Segment other) {
-        if (!canPiggybackAck(other)) {
-            return null;
-        }
-
-        try {
-            if (isAck() && other.isOnlyAck()) {
-                // fully replace other ACK
-                return this;
-            }
-
-            // attach ACK
-            return new Segment(seq, other.ack(), (byte) (ctl | other.ctl()), wnd, cks, options, content());
-        }
-        finally {
-            other.release();
-        }
     }
 
     @Override

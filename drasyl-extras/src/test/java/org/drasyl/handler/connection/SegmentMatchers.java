@@ -84,12 +84,12 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             return seg.seq() == seq;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("SEQ=" + seq);
         }
     }
@@ -102,12 +102,12 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             return seg.ack() == ack;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("ACK=" + ack);
         }
     }
@@ -117,19 +117,19 @@ public class SegmentMatchers {
 
         public HasCtl(final byte... flags) {
             byte ctl = 0;
-            for (int i = 0; i < flags.length; i++) {
-                ctl |= flags[i];
+            for (byte flag : flags) {
+                ctl |= flag;
             }
             this.ctl = ctl;
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             return seg.ctl() == ctl;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             final List<String> controlBitLabels = new ArrayList<>();
             if ((ctl & PSH) != 0) {
                 controlBitLabels.add("PSH");
@@ -159,12 +159,12 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             return seg.wnd() == window;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("WIN=" + window);
         }
     }
@@ -177,12 +177,12 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             return data.equals(seg.content());
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("segment text is " + data);
         }
     }
@@ -197,13 +197,13 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
             return tsOpt != null && tsOpt.tsVal == tsVal && tsOpt.tsEcr == tsEcr;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("<TSval=" + tsVal + ",TSecr=" + tsEcr + ">");
         }
     }
@@ -216,13 +216,13 @@ public class SegmentMatchers {
         }
 
         @Override
-        protected boolean matchesSafely(Segment seg) {
+        protected boolean matchesSafely(final Segment seg) {
             final Integer mss = (Integer) seg.options().get(MAXIMUM_SEGMENT_SIZE);
             return mss != null && this.mss == mss;
         }
 
         @Override
-        public void describeTo(Description description) {
+        public void describeTo(final Description description) {
             description.appendText("<MAXIMUM_SEGMENT_SIZE=" + mss + ">");
         }
     }

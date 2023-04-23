@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,9 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionException;
+import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ReliableConnectionConfig;
-import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -57,7 +57,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
         p.addLast(new SegmentCodec());
         p.addLast(new ConnectionHandler(config));
 
-        p.addLast(new LengthFieldBasedFrameDecoder(1048576, 0, 4, 0, 4));
+        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
 
         p.addLast(new ChannelInboundHandlerAdapter() {

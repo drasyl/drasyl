@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class SegmentTest {
@@ -93,63 +90,6 @@ class SegmentTest {
             assertEquals(100, seg.lastSeq());
 
             seg.release();
-        }
-    }
-
-    @Nested
-    class CanPiggybackAck {
-        @Test
-        void shouldReturnTrueIfOtherSegmentIsHigherAck() {
-            final Segment current = new Segment(10, 1, Segment.ACK);
-            final Segment next = new Segment(10, 2, Segment.ACK);
-
-            assertTrue(next.canPiggybackAck(current));
-        }
-
-        @Test
-        void shouldReturnTrueIfOtherSegmentCanPiggybackAck() {
-            final Segment current = new Segment(10, 1, Segment.ACK);
-            final Segment next = new Segment(10, Segment.FIN);
-
-            assertTrue(next.canPiggybackAck(current));
-        }
-
-        @Test
-        void shouldReturnTrueIfOtherSegmentContainsHigherAck() {
-            final Segment current = new Segment(10, 1, Segment.ACK);
-            final ByteBuf data = Unpooled.buffer(10).writerIndex(10);
-            final Segment next = new Segment(10, 1, (byte) (Segment.PSH | Segment.ACK), data);
-
-            assertTrue(next.canPiggybackAck(current));
-
-            next.release();
-        }
-
-        @Test
-        void shouldReturnFalseIfCurrentSegmentIsNotOnlyAck() {
-            final Segment current = new Segment(10, 1, (byte) (Segment.PSH | Segment.ACK), Unpooled.EMPTY_BUFFER);
-            final Segment next = new Segment(20, 1, (byte) (Segment.PSH | Segment.ACK), Unpooled.EMPTY_BUFFER);
-
-            assertFalse(next.canPiggybackAck(current));
-        }
-    }
-
-    @Nested
-    class PiggybackAck {
-        @Test
-        void shouldReplaceCurrentAckIfOtherSegmentIsHigherAck() {
-            final Segment current = new Segment(10, 1, Segment.ACK);
-            final Segment next = new Segment(10, 2, Segment.ACK);
-
-            assertSame(next, next.piggybackAck(current));
-        }
-
-        @Test
-        void shouldPiggybackAckToOtherSegment() {
-            final Segment current = new Segment(10, 1, Segment.ACK);
-            final Segment next = new Segment(10, Segment.FIN);
-
-            assertEquals(new Segment(10, 1, (byte) (Segment.FIN | Segment.ACK)), next.piggybackAck(current));
         }
     }
 

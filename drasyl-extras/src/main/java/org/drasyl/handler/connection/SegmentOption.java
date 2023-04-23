@@ -100,6 +100,11 @@ enum SegmentOption {
         }
     }
 
+    /**
+     * Timestamps option which is used for round-trip time measurements.
+     *
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc7323.html#section-3">RFC 7323, Section 3.</a>
+     */
     static class TimestampsOption {
         // TS Value (TSval): 8 bytes
         final long tsVal;
@@ -121,6 +126,13 @@ enum SegmentOption {
         }
     }
 
+    /**
+     * Selective Acknowledgment option that improves the performance when multiple packets are lost
+     * from one window of data.
+     *
+     * @see <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018</a>
+     */
+    @SuppressWarnings("unused")
     static class SackOption {
         final List<Long> edges;
 
@@ -132,6 +144,7 @@ enum SegmentOption {
             this(new ArrayList<>());
         }
 
+        @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
         @Override
         public String toString() {
             final StringBuilder blocks = new StringBuilder();

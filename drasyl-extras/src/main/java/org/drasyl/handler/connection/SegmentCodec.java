@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import io.netty.util.ReferenceCountUtil;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -46,12 +45,10 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
                           final List<Object> out) throws Exception {
-        ReferenceCountUtil.touch(seg, "ConnectionHandshakeCodec encode " + seg.toString());
         final ByteBuf buf = ctx.alloc().buffer(SEG_HDR_SIZE + seg.content().readableBytes());
-        ReferenceCountUtil.touch(buf, "encode");
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
-        buf.writeShort(0); // placeholder
+        buf.writeShort(0); // checksum placeholder
         buf.writeByte(seg.ctl());
         buf.writeInt((int) seg.wnd());
 
@@ -66,6 +63,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         // end of list option
         buf.writeByte(END_OF_OPTION_LIST.kind());
 
+        // content
         buf.writeBytes(seg.content());
 
         // calculate checksum
@@ -105,6 +103,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 // wrong checksum, drop segment
                 return;
             }
+
             out.add(seg.retain());
         }
         else {

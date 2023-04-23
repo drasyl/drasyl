@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -425,7 +425,7 @@ class DrasylNodeIT {
              * This test ensures that sent application messages are delivered to the recipient.
              */
             @Test
-//            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void test() throws InterruptedException {
                 // 1
                 // as node1 has no route to node2 this message should not be delivered
