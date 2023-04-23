@@ -23,6 +23,10 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown when a connection is closing. All outstanding data will be transmitted.
+ * No more data can be written to the connection.
+ */
 @UnstableApi
 public class ConnectionClosingException extends ConnectionException {
     public ConnectionClosingException() {

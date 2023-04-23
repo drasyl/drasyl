@@ -23,6 +23,9 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown, when the remote peer refuses to establish a connection with us.
+ */
 @UnstableApi
 public class ConnectionRefusedException extends ConnectionException {
     public ConnectionRefusedException() {

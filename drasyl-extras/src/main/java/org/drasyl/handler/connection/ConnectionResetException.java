@@ -23,6 +23,9 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown when a connection is aborted. Any outstanding data is discarded.
+ */
 @UnstableApi
 public class ConnectionResetException extends ConnectionException {
     public ConnectionResetException() {

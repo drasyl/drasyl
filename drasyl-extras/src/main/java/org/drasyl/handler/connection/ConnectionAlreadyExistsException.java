@@ -23,6 +23,11 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown when a USER TIMEOUT occured. A USER TIMEOUT occurs when the remote peer
+ * failed to acknowledge the arrival of a segment within a certain time period. As a consequence of
+ * this exception, the connection is aborted.
+ */
 @UnstableApi
 public class ConnectionAlreadyExistsException extends ConnectionException {
     public ConnectionAlreadyExistsException() {

@@ -21,8 +21,19 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown when a
+ * {@link io.netty.channel.ChannelOutboundHandler#write(ChannelHandlerContext, Object,
+ * ChannelPromise)} call,
+ * {@link io.netty.channel.ChannelOutboundHandler#read(ChannelHandlerContext)} call,
+ * {@link ConnectionHandler#userCallStatus()} call,
+ * {@link io.netty.channel.ChannelOutboundHandler#close(ChannelHandlerContext, ChannelPromise)} call
+ * is performed on a closed connection.
+ */
 @UnstableApi
 public class ConnectionDoesNotExistException extends ConnectionException {
     public ConnectionDoesNotExistException() {

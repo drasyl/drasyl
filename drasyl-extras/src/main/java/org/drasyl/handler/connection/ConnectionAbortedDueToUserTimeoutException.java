@@ -23,6 +23,10 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
+/**
+ * This exception is thrown when a SEND CALL is performed on an already opened connection. Should
+ * never be thrown on our implementation.
+ */
 @UnstableApi
 public class ConnectionAbortedDueToUserTimeoutException extends ConnectionException {
     public ConnectionAbortedDueToUserTimeoutException() {
