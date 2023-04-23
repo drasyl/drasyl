@@ -442,7 +442,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
                 // RFC 9293: transmission after entering ESTABLISHED state.
-                tcb.enqueueData(ctx, data, promise);
+                tcb.enqueueData(data, promise);
 
                 tcb.flush(ctx);
 
@@ -460,7 +460,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_RECEIVED:
                 // RFC 9293: Queue the data for transmission after entering ESTABLISHED state.
                 LOG.trace("{} Queue data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), data);
-                tcb.enqueueData(ctx, data, promise);
+                tcb.enqueueData(data, promise);
 
                 // RFC 9293: If no space to queue, respond with "error: insufficient resources".
                 // (not applicable to us)
@@ -474,7 +474,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                 // (timestamps option is automatically added by formSegment)
                 LOG.trace("{} Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), data);
-                tcb.enqueueData(ctx, data, promise);
+                tcb.enqueueData(data, promise);
                 tcb.writeEnqueuedData(ctx);
 
                 // RFC 9293: If there is insufficient space to remember this buffer, simply return

@@ -72,7 +72,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *         3 - future sequence numbers which are not yet allowed
  * </pre>
  */
-@SuppressWarnings({ "java:S125", "java:S6541" })
+@SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
     static final int DRASYL_HDR_SIZE = 20 + 8 + 176;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
@@ -91,8 +91,7 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
-    public ReliableConnectionConfig config;
-
+    private final ReliableConnectionConfig config;
     // RFC 9293: Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     private long sndUna;
