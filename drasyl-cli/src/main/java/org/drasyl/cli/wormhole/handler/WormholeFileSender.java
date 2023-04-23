@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,16 +33,17 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.COMPLETED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.ERRORED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.TRANSFERRING;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
 
 public class WormholeFileSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeFileSender.class);
     public static final int IDLE_TIMEOUT = 10;
     public static final int PROGRESS_BAR_INTERVAL = 250;
-    public static final DecimalFormat PROGRESS_BAR_SPEED_FORMAT = new DecimalFormat("0.00");
     // mtu: 1432
     // protocol overhead: 185 bytes
     private static final int CHUNK_SIZE = 1432 - 185;
@@ -70,19 +71,28 @@ public class WormholeFileSender extends AbstractWormholeSender {
 
                 ctx.writeAndFlush(chunkedFile).addListener((ChannelFutureListener) f2 -> {
                     if (f2.isSuccess()) {
+                        state = COMPLETED;
                         out.println("file sent");
                         f2.channel().close();
                     }
-                    else {
+                    else if (state == TRANSFERRING) {
+                        state = ERRORED;
                         f2.channel().pipeline().fireExceptionCaught(f2.cause());
                     }
                 });
             }
-            else {
+            else if (state == TRANSFERRING) {
+                state = ERRORED;
                 f.channel().pipeline().fireExceptionCaught(f.cause());
             }
         });
-        ctx.pipeline().remove(ctx.name());
+    }
+
+    @Override
+    protected void abortTransfer(final ChannelHandlerContext ctx) {
+        ctx.pipeline().remove(ChunkedInputProgressBarHandler.class);
+
+        super.abortTransfer(ctx);
     }
 
     @Override

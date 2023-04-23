@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,9 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.COMPLETED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.ERRORED;
+import static org.drasyl.cli.wormhole.handler.AbstractWormholeSender.State.TRANSFERRING;
 
 public class WormholeTextSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeTextSender.class);
@@ -45,13 +48,14 @@ public class WormholeTextSender extends AbstractWormholeSender {
     @SuppressWarnings("java:S1905")
     @Override
     protected void transferPayload(final ChannelHandlerContext ctx) {
-        ctx.pipeline().remove(ctx.name());
         ctx.writeAndFlush(new TextMessage(text)).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
+                state = COMPLETED;
                 out.println("text message sent");
                 ctx.close();
             }
-            else {
+            else if (state == TRANSFERRING) {
+                state = ERRORED;
                 f.channel().pipeline().fireExceptionCaught(f.cause());
             }
         });
