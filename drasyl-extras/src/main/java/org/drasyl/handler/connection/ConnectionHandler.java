@@ -1109,7 +1109,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             if (lessThanOrEqualTo(seg.ack(), tcb.iss()) || greaterThan(seg.ack(), tcb.sndNxt())) {
                 // RFC 9293: If SEG.ACK =< ISS or SEG.ACK > SND.NXT, send a reset (unless the RST
                 // RFC 9293: bit is set, if so drop the segment and return)
-                LOG.trace("{} Get got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), seg);
+                LOG.trace("{} We got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), seg);
                 if (seg.isRst()) {
                     LOG.trace("{} As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
                 }
