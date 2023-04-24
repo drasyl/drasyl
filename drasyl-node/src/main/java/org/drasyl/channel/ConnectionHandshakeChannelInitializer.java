@@ -27,11 +27,12 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import org.drasyl.handler.connection.ConnectionAnalyzeHandler;
 import org.drasyl.handler.connection.ConnectionClosing;
+import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ReliableConnectionConfig;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -39,14 +40,14 @@ import static java.util.Objects.requireNonNull;
 
 @UnstableApi
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    protected final ReliableConnectionConfig config;
+    protected final ConnectionConfig config;
 
-    protected ConnectionHandshakeChannelInitializer(final ReliableConnectionConfig config) {
+    protected ConnectionHandshakeChannelInitializer(final ConnectionConfig config) {
         this.config = requireNonNull(config);
     }
 
     protected ConnectionHandshakeChannelInitializer() {
-        this(ReliableConnectionConfig.newBuilder().build());
+        this(ConnectionConfig.newBuilder().build());
     }
 
     @SuppressWarnings("java:S1188")
@@ -56,6 +57,7 @@ public abstract class ConnectionHandshakeChannelInitializer extends ChannelIniti
 
         p.addLast(new SegmentCodec());
         p.addLast(new ConnectionHandler(config));
+        p.addLast(new ConnectionAnalyzeHandler());
 
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));

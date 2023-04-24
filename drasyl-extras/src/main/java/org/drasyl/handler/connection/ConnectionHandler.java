@@ -130,7 +130,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     static final ConnectionResetException CONNECTION_RESET_EXCEPTION = new ConnectionResetException();
     static final ConnectionAlreadyExistsException CONNECTION_EXISTS_EXCEPTION = new ConnectionAlreadyExistsException();
     static final ConnectionAbortedDueToUserTimeoutException CONNECTION_USER_TIMEOUT_EXCEPTION = new ConnectionAbortedDueToUserTimeoutException();
-    private final ReliableConnectionConfig config;
+    private final ConnectionConfig config;
     State state;
     TransmissionControlBlock tcb;
     ScheduledFuture<?> userTimer;
@@ -145,7 +145,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     private long segmentizedRemainingBytes;
 
     @SuppressWarnings("java:S107")
-    ConnectionHandler(final ReliableConnectionConfig config,
+    ConnectionHandler(final ConnectionConfig config,
                       final State state,
                       final TransmissionControlBlock tcb,
                       final ScheduledFuture<?> userTimer,
@@ -165,12 +165,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this.ctx = ctx;
     }
 
-    public ConnectionHandler(final ReliableConnectionConfig config) {
+    public ConnectionHandler(final ConnectionConfig config) {
         this(config, null, null, null, null, null, null, null, null);
     }
 
     public ConnectionHandler() {
-        this(ReliableConnectionConfig.DEFAULT);
+        this(ConnectionConfig.DEFAULT);
     }
 
     @Override

@@ -91,7 +91,7 @@ public class TransmissionControlBlock {
     private final OutgoingSegmentQueue outgoingSegmentQueue;
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
-    private final ReliableConnectionConfig config;
+    private final ConnectionConfig config;
     // RFC 9293: Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     private long sndUna;
@@ -167,7 +167,7 @@ public class TransmissionControlBlock {
     private long recover;
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final ReliableConnectionConfig config,
+    TransmissionControlBlock(final ConnectionConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -216,7 +216,7 @@ public class TransmissionControlBlock {
     }
 
     @SuppressWarnings("java:S107")
-    TransmissionControlBlock(final ReliableConnectionConfig config,
+    TransmissionControlBlock(final ConnectionConfig config,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -232,7 +232,7 @@ public class TransmissionControlBlock {
         this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.mmsS() * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
-    TransmissionControlBlock(final ReliableConnectionConfig config,
+    TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
@@ -242,7 +242,7 @@ public class TransmissionControlBlock {
         this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
-    TransmissionControlBlock(final ReliableConnectionConfig config,
+    TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
@@ -251,7 +251,7 @@ public class TransmissionControlBlock {
         this(config, channel, sndUna, sndNxt, config.rmem(), iss, irs);
     }
 
-    TransmissionControlBlock(final ReliableConnectionConfig config,
+    TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
                              final long irs) {
         this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -509,7 +509,7 @@ public class TransmissionControlBlock {
         segmentizeData(ctx, false);
     }
 
-    ReliableConnectionConfig config() {
+    ConnectionConfig config() {
         return config;
     }
 

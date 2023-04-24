@@ -28,7 +28,7 @@ import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.connection.ReliableConnectionConfig;
+import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
@@ -63,7 +63,7 @@ public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInit
 
     public DrasylNodeChannelInitializer(final DrasylConfig nodeConfig,
                                         final DrasylNode node) {
-        super(ReliableConnectionConfig.newBuilder()
+        super(ConnectionConfig.newBuilder()
                 .userTimeout(nodeConfig.getRemoteMessageArqDeadPeerTimeout())
                 .activeOpen(true)
                 .build());

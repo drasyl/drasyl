@@ -97,7 +97,7 @@ class ConnectionHandlerIT {
 
         // Peer B
         final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
-        final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
+        final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
                 .activeOpen(false)
                 .rmem(3_000)
                 .issSupplier(() -> 1_000_000L)
@@ -146,7 +146,7 @@ class ConnectionHandlerIT {
                 .bind(peerBAddress).sync().channel();
 
         // Peer A
-        final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
+        final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
                 .activeOpen(true)
                 .rmem(3_000)
                 .issSupplier(() -> 3_000_000L)
@@ -230,7 +230,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
-            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
@@ -254,7 +254,7 @@ class ConnectionHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -312,7 +312,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
-            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -336,7 +336,7 @@ class ConnectionHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -401,7 +401,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
-            final ReliableConnectionConfig peerBConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
@@ -426,7 +426,7 @@ class ConnectionHandlerIT {
                     .bind(peerBAddress).sync().channel();
 
             // TCP Peer A
-            final ReliableConnectionConfig peerAConfig = ReliableConnectionConfig.newBuilder()
+            final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .msl(ofMillis(100))

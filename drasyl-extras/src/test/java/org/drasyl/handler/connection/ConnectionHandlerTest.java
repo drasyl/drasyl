@@ -31,7 +31,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.handler.connection.ReliableConnectionConfig.Clock;
+import org.drasyl.handler.connection.ConnectionConfig.Clock;
 import org.drasyl.handler.connection.SegmentOption.TimestampsOption;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -139,7 +139,7 @@ class ConnectionHandlerTest {
             // TCP Peer A
             @Test
             void shouldConformWithBehaviorOfPeerA() {
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
                         .mmsS(1_266)
                         .rmem(5_000)
@@ -171,7 +171,7 @@ class ConnectionHandlerTest {
             // TCP Peer A
             @Test
             void shouldConformWithBehaviorOfPeerB() {
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 300)
                         .activeOpen(false)
                         .build();
@@ -229,7 +229,7 @@ class ConnectionHandlerTest {
             // TCP Peer A (and also same-behaving TCP Peer B)
             @Test
             void shouldConformWithBehaviorOfPeerA() {
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
                         .mmsS(1_266)
                         .mmsR(1_266)
@@ -294,7 +294,7 @@ class ConnectionHandlerTest {
                 // TCP Peer A
                 @Test
                 void shouldConformWithBehaviorOfPeerA() {
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                    final ConnectionConfig config = ConnectionConfig.newBuilder()
                             .issSupplier(() -> 400)
                             .build();
                     final ConnectionHandler handler = new ConnectionHandler(config);
@@ -325,7 +325,7 @@ class ConnectionHandlerTest {
                 @Test
                 void shouldConformWithBehaviorOfPeerB() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
+                    final ConnectionConfig config = ConnectionConfig.DEFAULT;
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(
                             config,
                             channel,
@@ -368,7 +368,7 @@ class ConnectionHandlerTest {
                 // TCP Peer A
                 @Test
                 void shouldConformWithBehaviorOfPeerA() {
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.DEFAULT;
+                    final ConnectionConfig config = ConnectionConfig.DEFAULT;
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ConnectionHandler handler = new ConnectionHandler(config, LISTEN, null, null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -402,7 +402,7 @@ class ConnectionHandlerTest {
                 void shouldConformWithBehaviorOfPeerB() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final long iss = 200;
-                    final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                    final ConnectionConfig config = ConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> iss)
                             .mmsS(1_266)
@@ -455,7 +455,7 @@ class ConnectionHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerA() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .activeOpen(false)
                         .mmsS(1_266)
                         .mmsR(1_266)
@@ -501,7 +501,7 @@ class ConnectionHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerB() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .mmsS(1_266)
                         .mmsR(1_266)
                         .build();
@@ -561,7 +561,7 @@ class ConnectionHandlerTest {
             @Test
             void shouldConformWithBehaviorOfPeerA() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100L)
                         .activeOpen(false)
                         .mmsS(1_266)
@@ -613,7 +613,7 @@ class ConnectionHandlerTest {
         @Mock(answer = RETURNS_DEEP_STUBS)
         ChannelHandlerContext ctx;
         @Mock(answer = RETURNS_DEEP_STUBS)
-        ReliableConnectionConfig config;
+        ConnectionConfig config;
         @Mock(answer = RETURNS_DEEP_STUBS)
         TransmissionControlBlock tcb;
         @Mock(answer = RETURNS_DEEP_STUBS)
@@ -647,7 +647,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void withPassiveOpen() {
-                        final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                        final ConnectionConfig config = ConnectionConfig.newBuilder()
                                 .activeOpen(false)
                                 .build();
 
@@ -668,10 +668,10 @@ class ConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
                                 .build();
 
@@ -712,9 +712,9 @@ class ConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 456L);
@@ -776,8 +776,8 @@ class ConnectionHandlerTest {
                 @Test
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder();
-                    final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                    final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder();
+                    final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -810,9 +810,9 @@ class ConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
@@ -852,7 +852,7 @@ class ConnectionHandlerTest {
                             "SYN_RECEIVED"
                     })
                     void shouldQueueData(final State state, @Mock final SendBuffer sendBuffer) {
-                        final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder().build();
+                        final ConnectionConfig config = ConnectionConfig.newBuilder().build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
@@ -876,9 +876,9 @@ class ConnectionHandlerTest {
                         final long iss = 123L;
                         final long currentTime = 39L;
                         when(clock.time()).thenReturn(currentTime);
-                        final ReliableConnectionConfig.Builder builder = ReliableConnectionConfig.newBuilder()
+                        final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ReliableConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);

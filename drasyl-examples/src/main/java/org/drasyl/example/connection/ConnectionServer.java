@@ -34,7 +34,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionException;
-import org.drasyl.handler.connection.ReliableConnectionConfig;
+import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.Identity;
@@ -80,7 +80,7 @@ public class ConnectionServer {
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new SegmentCodec());
-                        p.addLast(new ConnectionHandler(ReliableConnectionConfig.newBuilder().activeOpen(false).build()));
+                        p.addLast(new ConnectionHandler(ConnectionConfig.newBuilder().activeOpen(false).build()));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelInactive(final ChannelHandlerContext ctx) {

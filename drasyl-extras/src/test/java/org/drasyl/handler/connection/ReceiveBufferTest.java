@@ -59,7 +59,7 @@ class ReceiveBufferTest {
                                         @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -114,7 +114,7 @@ class ReceiveBufferTest {
             void receiveSegmentsInOrdnerWithGaps(@Mock final Channel channel,
                                                  @Mock final ChannelHandlerContext ctx,
                                                  @Mock final SendBuffer sendBuffer) {
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -153,7 +153,7 @@ class ReceiveBufferTest {
             void receiveOverlappingSegmentsInOrdner(@Mock final Channel channel,
                                                     @Mock final ChannelHandlerContext ctx,
                                                     @Mock final SendBuffer sendBuffer) {
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -195,7 +195,7 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(60, data.copy(60, 100));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 1, 100);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -233,7 +233,7 @@ class ReceiveBufferTest {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -318,7 +318,7 @@ class ReceiveBufferTest {
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(70, data.copy(60, 60));
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 1, 60);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -354,7 +354,7 @@ class ReceiveBufferTest {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -442,7 +442,7 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
@@ -475,7 +475,7 @@ class ReceiveBufferTest {
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
@@ -500,7 +500,7 @@ class ReceiveBufferTest {
                                                                      @Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(50)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
@@ -525,7 +525,7 @@ class ReceiveBufferTest {
                                                                  @Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
-                final ReliableConnectionConfig config = ReliableConnectionConfig.newBuilder()
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
