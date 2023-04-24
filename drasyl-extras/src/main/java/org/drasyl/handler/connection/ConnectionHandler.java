@@ -169,9 +169,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this(config, null, null, null, null, null, null, null, null);
     }
 
+    public ConnectionHandler() {
+        this(ReliableConnectionConfig.DEFAULT);
+    }
+
     @Override
     public String toString() {
-        return "ReliableTransportHandler{" +
+        return "ConnectionHandler{" +
                 "state=" + state +
                 ", tcb=" + tcb +
                 '}';
