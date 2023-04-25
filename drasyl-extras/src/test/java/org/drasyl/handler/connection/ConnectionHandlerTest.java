@@ -58,10 +58,11 @@ import static org.drasyl.handler.connection.Segment.RST;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.SegmentMatchers.ack;
 import static org.drasyl.handler.connection.SegmentMatchers.ctl;
+import static org.drasyl.handler.connection.SegmentMatchers.len;
 import static org.drasyl.handler.connection.SegmentMatchers.mss;
 import static org.drasyl.handler.connection.SegmentMatchers.seq;
 import static org.drasyl.handler.connection.SegmentMatchers.tsOpt;
-import static org.drasyl.handler.connection.SegmentMatchers.window;
+import static org.drasyl.handler.connection.SegmentMatchers.win;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 import static org.drasyl.handler.connection.State.CLOSED;
@@ -148,7 +149,7 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), window(5_000), mss(1_231)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_231)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -157,7 +158,7 @@ class ConnectionHandlerTest {
 
                 // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
                 channel.writeInbound(new Segment(300, 101, (byte) (SYN | ACK), 64_000));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301), window(5_000)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301), win(5_000)));
                 assertEquals(ESTABLISHED, handler.state);
 
                 assertEquals(101, handler.tcb.sndUna());
@@ -239,7 +240,7 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), window(5_000), mss(1_241)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_241)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -249,7 +250,7 @@ class ConnectionHandlerTest {
                 // peer SYNchronizes his SEG before our SYN has been received
                 channel.writeInbound(new Segment(300, SYN, 64_000));
                 assertEquals(SYN_RECEIVED, handler.state);
-                assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(100), ack(301), window(5_000)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(100), ack(301), win(5_000)));
 
                 assertEquals(100, handler.tcb.sndUna());
                 assertEquals(101, handler.tcb.sndNxt());
@@ -3178,19 +3179,41 @@ class ConnectionHandlerTest {
             @Test
             void name() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
+                final int mms = 1_224;
+                final long iss = 100L;
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
-                        .issSupplier(() -> 100L)
+                        .issSupplier(() -> iss)
                         .activeOpen(false)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(mms)
                         .msl(ofMillis(100))
+                        .noDelay(true)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf byteBuf = Unpooled.buffer(10_000).writerIndex(10_000);
+
+                // inital cwnd is 3*MMS=3672
+                // 3 in-flight messages are allowed
+                assertEquals(3672, tcb.cwnd());
                 channel.writeOutbound(byteBuf);
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 1)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 2)));
+                assertNull(channel.readOutbound());
+
+                // ACK 1st SEG -> increase cwnd by 1224
+                // 4 in-flight messages are allowed now
+                channel.writeInbound(new Segment(300L, iss + mms + 1, ACK, 64_000));
+                assertEquals(3672 + mms * 1, tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 3)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 4)));
+
+                // ACK 3rd SEG
+                // 5 in-flight messages are allowed now
+                channel.writeInbound(new Segment(300L, iss + 3 * mms + 1, ACK, 64_000));
+                assertEquals(3672 + mms * 2, tcb.cwnd());
             }
         }
     }

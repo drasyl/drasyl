@@ -56,8 +56,12 @@ public class SegmentMatchers {
         return new HasCtl(flags);
     }
 
-    public static Matcher<Segment> window(final long window) {
-        return new HasWindow(window);
+    public static Matcher<Segment> win(final long win) {
+        return new HasWin(win);
+    }
+
+    public static Matcher<Segment> len(final int len) {
+        return new HasLen(len);
     }
 
     public static Matcher<Segment> data(final ByteBuf data) {
@@ -151,21 +155,21 @@ public class SegmentMatchers {
         }
     }
 
-    private static class HasWindow extends TypeSafeMatcher<Segment> {
-        private final long window;
+    private static class HasWin extends TypeSafeMatcher<Segment> {
+        private final long win;
 
-        public HasWindow(final long window) {
-            this.window = window;
+        public HasWin(final long win) {
+            this.win = win;
         }
 
         @Override
         protected boolean matchesSafely(final Segment seg) {
-            return seg.wnd() == window;
+            return seg.wnd() == win;
         }
 
         @Override
         public void describeTo(final Description description) {
-            description.appendText("WIN=" + window);
+            description.appendText("WIN=" + win);
         }
     }
 
@@ -184,6 +188,24 @@ public class SegmentMatchers {
         @Override
         public void describeTo(final Description description) {
             description.appendText("segment text is " + data);
+        }
+    }
+
+    private static class HasLen extends TypeSafeMatcher<Segment> {
+        private final int len;
+
+        public HasLen(final int len) {
+            this.len = len;
+        }
+
+        @Override
+        protected boolean matchesSafely(final Segment seg) {
+            return seg.len() == len;
+        }
+
+        @Override
+        public void describeTo(final Description description) {
+            description.appendText("LEN=" + len);
         }
     }
 
