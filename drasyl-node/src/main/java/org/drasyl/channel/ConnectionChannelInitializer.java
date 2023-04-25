@@ -39,14 +39,14 @@ import org.drasyl.util.internal.UnstableApi;
 import static java.util.Objects.requireNonNull;
 
 @UnstableApi
-public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
+public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
     protected final ConnectionConfig config;
 
-    protected ConnectionHandshakeChannelInitializer(final ConnectionConfig config) {
+    protected ConnectionChannelInitializer(final ConnectionConfig config) {
         this.config = requireNonNull(config);
     }
 
-    protected ConnectionHandshakeChannelInitializer() {
+    protected ConnectionChannelInitializer() {
         this(ConnectionConfig.newBuilder().build());
     }
 

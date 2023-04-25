@@ -23,7 +23,7 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
@@ -43,7 +43,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARM_SESSION_TIME;
 
-public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class WormholeReceiveChildChannelInitializer extends ConnectionChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;

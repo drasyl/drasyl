@@ -24,7 +24,7 @@ package org.drasyl.cli.tunnel.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
@@ -46,7 +46,7 @@ import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.MAX_PEE
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
-public class TunnelConsumeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class TunnelConsumeChildChannelInitializer extends ConnectionChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(TunnelConsumeChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;

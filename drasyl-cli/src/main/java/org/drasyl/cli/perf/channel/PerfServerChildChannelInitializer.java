@@ -23,7 +23,7 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
@@ -36,7 +36,7 @@ import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 
-public class PerfServerChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class PerfServerChildChannelInitializer extends ConnectionChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
     private final PrintStream out;
     private final PrintStream err;

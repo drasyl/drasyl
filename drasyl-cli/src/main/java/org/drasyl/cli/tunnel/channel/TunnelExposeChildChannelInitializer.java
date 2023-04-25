@@ -24,7 +24,7 @@ package org.drasyl.cli.tunnel.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
@@ -44,7 +44,7 @@ import java.time.Duration;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
 
-public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;

@@ -24,7 +24,7 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.EncoderException;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -51,7 +51,7 @@ import static org.drasyl.node.Null.NULL;
  * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
  */
 @UnstableApi
-public class DrasylNodeChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
     // SortedChunk: 6 bytes
     // PublicHeader: 98 bytes + 4 bytes MagicNumber
     // PrivateHeader: 3 byte + 16 bytes MAC
