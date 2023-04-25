@@ -65,6 +65,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
 
         if (file.exists()) {
             ctx.fireExceptionCaught(new FileExistException(file.getName()));
+            ctx.pipeline().remove(this);
             return;
         }
 
@@ -74,6 +75,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
         }
         catch (final IOException e) {
             ctx.fireExceptionCaught(e);
+            ctx.pipeline().remove(this);
             return;
         }
 
@@ -95,7 +97,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             final long currentFileLength = file.length();
             final int readableBytes = ((ByteBuf) msg).readableBytes();
