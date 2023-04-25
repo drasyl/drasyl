@@ -3170,4 +3170,28 @@ class ConnectionHandlerTest {
             }
         }
     }
+
+    @Nested
+    class CongestionControl {
+        @Nested
+        class SlowStart {
+            @Test
+            void name() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
+                        .issSupplier(() -> 100L)
+                        .activeOpen(false)
+                        .mmsS(1_266)
+                        .mmsR(1_266)
+                        .msl(ofMillis(100))
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                channel.pipeline().addLast(handler);
+
+                final ByteBuf byteBuf = Unpooled.buffer(10_000).writerIndex(10_000);
+                channel.writeOutbound(byteBuf);
+            }
+        }
+    }
 }
