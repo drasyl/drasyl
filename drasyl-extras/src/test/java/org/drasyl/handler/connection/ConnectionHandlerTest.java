@@ -3192,7 +3192,7 @@ class ConnectionHandlerTest {
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
-                final ByteBuf byteBuf = Unpooled.buffer(10_000).writerIndex(10_000);
+                final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
 
                 // inital cwnd is 3*MMS=3672
                 // 3 in-flight messages are allowed
@@ -3205,6 +3205,7 @@ class ConnectionHandlerTest {
 
                 // ACK 1st SEG -> increase cwnd by 1224
                 // 4 in-flight messages are allowed now
+                // 1 message legt the network, 2 new messages are allowed
                 channel.writeInbound(new Segment(300L, iss + mms + 1, ACK, 64_000));
                 assertEquals(3672 + mms * 1, tcb.cwnd());
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 3)));
@@ -3212,8 +3213,12 @@ class ConnectionHandlerTest {
 
                 // ACK 3rd SEG
                 // 5 in-flight messages are allowed now
+                // 2 message legt the network, 3 new messages are allowed
                 channel.writeInbound(new Segment(300L, iss + 3 * mms + 1, ACK, 64_000));
                 assertEquals(3672 + mms * 2, tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 5)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 6)));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 7)));
             }
         }
     }
