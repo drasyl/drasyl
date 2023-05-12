@@ -23,10 +23,37 @@ package org.drasyl.handler.sntp;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class SNTPHandler extends SimpleChannelInboundHandler<SNTPMessage> {
-    @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final SNTPMessage msg) throws Exception {
+    private static final Logger LOG = LoggerFactory.getLogger(SNTPHandler.class);
+    private final CompletableFuture<Long> result;
+    private long requestTime;
+    private final AtomicLong responseTime;
 
+    public SNTPHandler(final CompletableFuture<Long> result, final AtomicLong responseTime) {
+        this.result = result;
+        this.responseTime = responseTime;
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        // Send NTP request to the first server in list
+        requestTime = System.currentTimeMillis();
+
+        ctx.writeAndFlush(SNTPMessage.of(requestTime));
+    }
+
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final SNTPMessage msg) throws Exception {
+        final long clockOffset = ((requestTime - SNTPMessage.toJavaTime(msg.getOriginateTimestamp())) + (SNTPMessage.toJavaTime(msg.getTransmitTimestamp()) - responseTime.get())) / 2;
+
+        this.result.complete(clockOffset);
+        ctx.channel().close();
     }
 }

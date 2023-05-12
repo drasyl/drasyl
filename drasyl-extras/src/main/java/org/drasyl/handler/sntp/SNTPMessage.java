@@ -23,41 +23,51 @@ package org.drasyl.handler.sntp;
 
 import com.google.auto.value.AutoValue;
 
-/**
- * SNTP message: 1                   2                   3 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
- * 1 2 3 4 5 6 7 8 9 0 1 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ |LI | VN
- * |Mode |    Stratum    |     Poll      |   Precision   |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ |                          Root
- * Delay                           |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ |                       Root
- * Dispersion                         |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ |                     Reference
- * Identifier                      |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | | | Reference Timestamp (64)
- * | |                                                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | | | Originate Timestamp (64)
- * | |                                                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | | | Receive Timestamp (64) |
- * |                                                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | | | Transmit Timestamp (64) |
- * |                                                               |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ |                 Key
- * Identifier (optional) (32)                |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ | | | | | Message Digest
- * (optional) (128)               | | | | |
- * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- */
 @AutoValue
 public abstract class SNTPMessage {
     public static final int SIZE = 48;
+    public static final int VERSION_NUMBER = 4;
     public static final int CLIENT_MODE = 3;
     public static final int SERVER_MODE = 4;
-    /*
-     * NTP server is not synchronized. Typically,
-     * we do not want to use this kind of servers.
+    /**
+     * NTP server is not synchronized. Typically, we do not want to use this kind of servers.
      */
     public static final int LI_NOT_SYNC = 3;
     public static final int TRANSMIT_TIMESTAMP_OFFSET = 40;
+    /**
+     * Reference NTP time if msb equals 0 is 7-Feb-2036 @ 06:28:16 UTC
+     */
+    private static final long msb0ReferenceTime = 2085978496000L;
+    /**
+     * Reference NTP time if msb equals 1 is 1-Jan-1900 @ 01:00:00 UTC
+     */
+    private static final long msb1ReferenceTime = -2208988800000L;
+
+    public static SNTPMessage of(final int leapIndicator,
+                                 final int versionNumber,
+                                 final int mode,
+                                 final int stratum,
+                                 final int poll,
+                                 final int precision,
+                                 final float rootDelay,
+                                 final float rootDispersion,
+                                 final int referenceIdentifier,
+                                 final long referenceTimestamp,
+                                 final long originateTimestamp,
+                                 final long receiveTimestamp,
+                                 final long transmitTimestamp) {
+        return new AutoValue_SNTPMessage(leapIndicator, versionNumber, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp);
+    }
+
+    /**
+     * Creates a client {@link SNTPMessage}.
+     *
+     * @param transmitTimestamp the current timestamp in java format.
+     * @return a client {@link SNTPMessage}.
+     */
+    public static SNTPMessage of(final long transmitTimestamp) {
+        return of(0, VERSION_NUMBER, CLIENT_MODE, 0, 0, 0, 0.0f, 0.0f, 0, 0, 0, 0, transmitTimestamp);
+    }
 
     public abstract int getLeapIndicator();
 
@@ -73,7 +83,9 @@ public abstract class SNTPMessage {
 
     public abstract float getRootDelay();
 
-    public abstract String getReferenceIdentifier();
+    public abstract float getRootDispersion();
+
+    public abstract int getReferenceIdentifier();
 
     public abstract long getReferenceTimestamp();
 
@@ -90,10 +102,24 @@ public abstract class SNTPMessage {
      * @return time in NTP format as defined in RFC-1305
      */
     public static long toNTPTime(final long javaTime) {
+        final boolean base1 = javaTime < msb0ReferenceTime;
+        final long baseTime; // time in ms
 
-        // TODO: Implement me!
+        if (base1) { // <= Feb-2036
+            baseTime = javaTime - msb1ReferenceTime;
+        }
+        else { // >= Feb-2036
+            baseTime = javaTime - msb0ReferenceTime;
+        }
 
-        return 0L;
+        long seconds = baseTime / 1000L;
+        final long fraction = ((baseTime % 1000L) * 0x100000000L) / 1000L;
+
+        if (base1) {
+            seconds |= 0x80000000L;
+        }
+
+        return seconds << 32 | fraction;
     }
 
     /**
@@ -103,9 +129,16 @@ public abstract class SNTPMessage {
      * @return time in java format
      */
     public static long toJavaTime(final long ntpTime) {
+        final long seconds = (ntpTime >>> 32) & 0xFFFFFFFFL;
+        long fraction = ntpTime & 0xFFFFFFFFL;
 
-        // TODO: Implement me!
+        fraction = Math.round((1000.0 * fraction) / 0x100000000L);
 
-        return 0L;
+        if ((seconds & 0x80000000L) == 0) { // check msb
+            return msb0ReferenceTime + (seconds * 1000L) + fraction;
+        }
+        else {
+            return msb1ReferenceTime + (seconds * 1000L) + fraction;
+        }
     }
 }

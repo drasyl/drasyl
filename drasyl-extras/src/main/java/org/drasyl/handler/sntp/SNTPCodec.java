@@ -22,40 +22,60 @@
 package org.drasyl.handler.sntp;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.DefaultAddressedEnvelope;
+import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.SocketAddress;
 import java.util.List;
 
-public class SNTPCodec extends MessageToMessageCodec<AddressedEnvelope<ByteBuf, SocketAddress>, AddressedEnvelope<SNTPMessage, SocketAddress>> {
+public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(SNTPCodec.class);
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final AddressedEnvelope<SNTPMessage, SocketAddress> msg,
+                          final SNTPMessage msg,
                           final List<Object> out) throws Exception {
         final ByteBuf buf = ctx.alloc().buffer(SNTPMessage.SIZE, SNTPMessage.SIZE);
-        final SNTPMessage sntpMessage = msg.content();
 
-        buf.writeByte(sntpMessage.getMode() | (sntpMessage.getVersionNumber() << 3));
+        buf.writeByte(msg.getMode() | (msg.getVersionNumber() << 3));
         buf.writerIndex(SNTPMessage.TRANSMIT_TIMESTAMP_OFFSET);
-        buf.writeLong(SNTPMessage.toNTPTime(sntpMessage.getTransmitTimestamp()));
+        buf.writeLong(SNTPMessage.toNTPTime(msg.getTransmitTimestamp()));
 
-        out.add(new DefaultAddressedEnvelope<>(buf, msg.sender()));
+        out.add(buf);
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final AddressedEnvelope<ByteBuf, SocketAddress> msg,
+                          final DatagramPacket msg,
                           final List<Object> out) throws Exception {
-        if (msg.content().readableBytes() >= SNTPMessage.TRANSMIT_TIMESTAMP_OFFSET) {
+        final ByteBuf buf = msg.content();
 
-            LOG.debug("{}", msg.content()); // TODO: Remove me!
+        if (buf.readableBytes() >= SNTPMessage.SIZE) {
+            // read first byte with LE, VN and mode
+            final byte fByte = buf.readByte();
+            final int li = (fByte >> 3) & 0x3;
+            final int vn = (fByte >> 3) & 0x7;
+            final int mode = (fByte) & 0x7;
+
+            // We do not want this kind of NTP servers
+            if (li == SNTPMessage.LI_NOT_SYNC) {
+                return;
+            }
+
+            final int stratum = buf.readByte();
+            final int poll = buf.readByte();
+            final int precision = buf.readByte();
+            final float rootDelay = buf.readFloat();
+            final float rootDispersion = buf.readFloat();
+            final int referenceIdentifier = buf.readInt();
+            final long referenceTimestamp = buf.readLong();
+            final long originateTimestamp = buf.readLong();
+            final long receiveTimestamp = buf.readLong();
+            final long transmitTimestamp = buf.readLong();
+
+            out.add(SNTPMessage.of(li, vn, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp));
         }
     }
 }
