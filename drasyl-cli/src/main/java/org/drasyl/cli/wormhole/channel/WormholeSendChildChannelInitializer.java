@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,15 +23,18 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
 import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
+import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
+import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
+import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
+import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
@@ -43,8 +46,11 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
+import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeSendChildChannelInitializer extends ConnectionChannelInitializer {
+public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+    public static final int ARQ_RETRY_TIMEOUT = 150;
+    public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream out;
     private final PrintStream err;
@@ -52,6 +58,8 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     private final Identity identity;
     private final String password;
     private final Payload payload;
+    private final int windowSize;
+    private final Duration windowTimeout;
 
     @SuppressWarnings("java:S107")
     public WormholeSendChildChannelInitializer(final PrintStream out,
@@ -59,14 +67,18 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
                                                final Worm<Integer> exitCode,
                                                final Identity identity,
                                                final String password,
-                                               final Payload payload) {
-        super(ConnectionConfig.newBuilder().activeOpen(false).build());
+                                               final Payload payload,
+                                               final int windowSize,
+                                               final long windowTimeout) {
+        super(false);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
+        this.windowSize = requirePositive(windowSize);
+        this.windowTimeout = Duration.ofMillis(requirePositive(windowTimeout));
     }
 
     @Override
@@ -84,6 +96,12 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     @Override
     protected void handshakeCompleted(final DrasylChannel ch) {
         final ChannelPipeline p = ch.pipeline();
+
+        // add ARQ to make sure messages arrive
+        ch.pipeline().addLast(new GoBackNArqCodec());
+        ch.pipeline().addLast(new GoBackNArqSenderHandler(windowSize, windowTimeout));
+        ch.pipeline().addLast(new GoBackNArqReceiverHandler(windowTimeout.dividedBy(5)));
+        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
 
         // (de)serializer for WormholeMessages
         ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));

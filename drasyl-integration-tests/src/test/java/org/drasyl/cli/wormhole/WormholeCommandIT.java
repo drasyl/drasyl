@@ -251,7 +251,6 @@ class WormholeCommandIT {
             // receive text
             await().atMost(ofSeconds(25)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
 
-
             senderThread.join(5_000);
             receiverThread.join(5_000);
         }

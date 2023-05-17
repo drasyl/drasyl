@@ -28,6 +28,14 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionHandshakeCompleted implements ConnectionEvent {
+    public ConnectionHandshakeCompleted() {
+    }
+
+    @Deprecated
+    public ConnectionHandshakeCompleted(final long sndNxt, final long rcvNxt) {
+        // do nothing
+    }
+
     @Override
     public String toString() {
         return "ConnectionHandshakeCompleted{}";

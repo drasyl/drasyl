@@ -122,7 +122,7 @@ public class WormholeSendCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload);
+        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload, windowSize, windowTimeout);
     }
 
     @Override
