@@ -125,7 +125,7 @@
         <logback.version>1.4.7</logback.version>
         <junit.version>5.9.3</junit.version>
         <mockito.version>4.11.0</mockito.version>
-        <jackson.version>2.15.0</jackson.version>
+        <jackson.version>2.15.1</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
         <netty.version>4.1.92.Final</netty.version>
@@ -348,7 +348,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>3.0.0</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -363,7 +363,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>io.github.git-commit-id</groupId>
@@ -578,7 +578,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.10.0</version>
+                        <version>10.11.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
