@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.drasyl.util.Preconditions.requirePositive;
 
+@Deprecated
 public class SimpleWindow implements Window {
     private final int capacity;
     private final List<Frame> queue;

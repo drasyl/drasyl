@@ -30,6 +30,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class does model a sliding window in the Go-Back-N ARQ protocol.
  */
+@Deprecated
 public interface Window {
     /**
      * Adds the given msg to the window, if there is enough capacity.

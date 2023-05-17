@@ -22,19 +22,47 @@
 package org.drasyl.handler.connection;
 
 /**
- * States of the handshake progress
+ * Connection states.
  */
-enum State {
-    // connection does not exist
-    CLOSED, // represents no connection state at all.
-    // connection non-synchronized
-    LISTEN, // represents waiting for a connection request from remote peer.
-    SYN_SENT, // represents waiting for a matching connection request after having sent a connection request.
-    SYN_RECEIVED, // represents waiting for a confirming connection request acknowledgment after having both received and sent a connection request.
-    // connection synchronized
-    ESTABLISHED, // represents an open connection, data received can be delivered to the user. The normal state for the data transfer phase of the connection.
-    FIN_WAIT_1, // represents waiting for a connection termination request from the remote peer, or an acknowledgment of the connection termination request previously sent.
-    FIN_WAIT_2, // represents waiting for a connection termination request from the remote peer.
-    CLOSING, // represents waiting for a connection termination request acknowledgment from the remote peer.
-    LAST_ACK // represents waiting for an acknowledgment of the connection termination request previously sent to the remote peer (which includes an acknowledgment of its connection termination request).
+public enum State {
+    // RFC 9293: represents waiting for a connection request from any remote TCP peer and port.
+    LISTEN,
+    // RFC 9293: represents waiting for a matching connection request after having sent a connection
+    // RFC 9293: request.
+    SYN_SENT,
+    // RFC 9293: represents waiting for a confirming connection request acknowledgment after having
+    // RFC 9293: both received and sent a connection request.
+    SYN_RECEIVED,
+    // RFC 9293: represents an open connection, data received can be delivered to the user. The
+    // RFC 9293: normal state for the data transfer phase of the connection.
+    ESTABLISHED,
+    // RFC 9293: represents waiting for a connection termination request from the remote TCP peer,
+    // RFC 9293: or an acknowledgment of the connection termination request previously sent.
+    FIN_WAIT_1,
+    // RFC 9293: represents waiting for a connection termination request from the remote TCP peer.
+    FIN_WAIT_2,
+    // RFC 9293: represents waiting for a connection termination request from the local user.
+    CLOSE_WAIT,
+    // RFC 9293: represents waiting for a connection termination request acknowledgment from the
+    // RFC 9293: remote TCP peer.
+    CLOSING,
+    // RFC 9293: represents waiting for an acknowledgment of the connection termination request
+    // RFC 9293: previously sent to the remote TCP peer (this termination request sent to the remote
+    // RFC 9293: TCP peer already included an acknowledgment of the termination request sent from
+    // RFC 9293: the remote TCP peer).
+    LAST_ACK,
+    // RFC 9293: represents waiting for enough time to pass to be sure the remote TCP peer received
+    // RFC 9293: the acknowledgment of its connection termination request and to avoid new
+    // RFC 9293: connections being impacted by delayed segments from previous connections.
+    TIME_WAIT,
+    // RFC 9293: represents no connection state at all.
+    CLOSED;
+
+    /**
+     * Is connection in a synchronized state?
+     */
+    boolean synchronizedConnection() {
+        return this == ESTABLISHED || this == FIN_WAIT_1 || this == FIN_WAIT_2 ||
+                this == CLOSE_WAIT || this == CLOSING || this == LAST_ACK || this == TIME_WAIT;
+    }
 }

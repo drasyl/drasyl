@@ -114,3 +114,7 @@ AutoValue_*
 /drasyl-shared-library/pypi/src/drasyl.egg-info
 /drasyl-shared-library/pypi/src/drasyl/libdrasyl
 /drasyl-shared-library/pypi/VERSION
+
+# Jupyter Notebook
+.ipynb_checkpoints
+ConnectionAnalyzeHandler_*.csv

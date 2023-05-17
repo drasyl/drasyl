@@ -51,6 +51,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *  </pre>
  * </blockquote>
  */
+@Deprecated
 public class GoBackNArqReceiverHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqReceiverHandler.class);
     private UnsignedInteger nextSequenceNo;

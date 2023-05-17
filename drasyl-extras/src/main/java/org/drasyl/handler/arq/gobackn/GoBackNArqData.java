@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Data message of the Go-Back-N ARQ protocol.
  */
+@Deprecated
 public class GoBackNArqData extends DefaultByteBufHolder implements GoBackNArqMessage {
     private UnsignedInteger sequenceNo;
 

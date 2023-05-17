@@ -26,6 +26,7 @@ package org.drasyl.handler.arq.stopandwait;
  *
  * @see StopAndWaitArqData
  */
+@Deprecated
 public final class StopAndWaitArqAck implements StopAndWaitArqMessage {
     public static final StopAndWaitArqAck STOP_AND_WAIT_ACK_0 = new StopAndWaitArqAck(false);
     public static final StopAndWaitArqAck STOP_AND_WAIT_ACK_1 = new StopAndWaitArqAck(true);

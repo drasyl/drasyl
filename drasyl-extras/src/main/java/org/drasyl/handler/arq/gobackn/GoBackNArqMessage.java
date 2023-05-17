@@ -26,6 +26,7 @@ import org.drasyl.util.UnsignedInteger;
 /**
  * Message of the Go-Back-N ARQ protocol.
  */
+@Deprecated
 public interface GoBackNArqMessage {
     /**
      * @return message's sequence number

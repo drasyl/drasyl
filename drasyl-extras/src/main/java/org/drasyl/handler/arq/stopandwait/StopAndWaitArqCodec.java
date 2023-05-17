@@ -32,6 +32,7 @@ import java.util.List;
 /**
  * Encodes {@link StopAndWaitArqMessage}s to {@link ByteBuf}s and vice versa.
  */
+@Deprecated
 public final class StopAndWaitArqCodec extends MessageToMessageCodec<ByteBuf, StopAndWaitArqMessage> {
     public static final int MAGIC_NUMBER_DATA = 523_370_708;
     public static final int MAGIC_NUMBER_ACK = 523_370_709;

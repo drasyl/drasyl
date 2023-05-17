@@ -33,6 +33,7 @@ import java.util.List;
 /**
  * Encodes {@link GoBackNArqMessage}s to {@link ByteBuf}s and vice versa.
  */
+@Deprecated
 public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMessage> {
     public static final int MAGIC_NUMBER_DATA = 360_023_952;
     public static final int MAGIC_NUMBER_ACK = 360_023_955;

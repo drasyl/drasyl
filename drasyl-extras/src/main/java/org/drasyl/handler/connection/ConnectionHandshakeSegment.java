@@ -37,6 +37,7 @@ import static org.drasyl.util.Preconditions.requireInRange;
  * The synchronization process has been heavily inspired by the three-way handshake of TCP (<a
  * href="https://datatracker.ietf.org/doc/html/rfc793#section-3.4">RFC 793</a>).
  */
+@Deprecated
 @SuppressWarnings({ "java:S1845", "java:S3052" })
 public class ConnectionHandshakeSegment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;

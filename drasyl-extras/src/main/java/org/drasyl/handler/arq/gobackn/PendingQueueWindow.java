@@ -35,6 +35,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * <p>
  * Every message that is currently unacknowledged influences the channel's writability.
  */
+@Deprecated
 class PendingQueueWindow implements Window {
     private final PendingWriteQueue pendingWriteQueue; //required, because all the backpressure APIs of netty are not accessible for us
     private final List<Frame> queue;

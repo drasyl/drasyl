@@ -71,6 +71,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *  </pre>
  * </blockquote>
  */
+@Deprecated
 public class StopAndWaitArqHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StopAndWaitArqHandler.class);
     private PendingWriteQueue pendingWrites;

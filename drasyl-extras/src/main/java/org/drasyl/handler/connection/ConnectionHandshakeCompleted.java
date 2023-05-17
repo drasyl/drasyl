@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,41 +21,23 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
 /**
  * Signals that the handshake was completed successfully.
  */
-public class ConnectionHandshakeCompleted implements ConnectionHandshakeEvent {
-    private final long sndNxt;
-    private final long rcvNxt;
+@UnstableApi
+public class ConnectionHandshakeCompleted implements ConnectionEvent {
+    public ConnectionHandshakeCompleted() {
+    }
 
+    @Deprecated
     public ConnectionHandshakeCompleted(final long sndNxt, final long rcvNxt) {
-        this.sndNxt = sndNxt;
-        this.rcvNxt = rcvNxt;
-    }
-
-    /**
-     * Returns the state that has been shared with the remote peer.
-     *
-     * @return state that has been shared with the remote peer
-     */
-    public long sndNxt() {
-        return sndNxt;
-    }
-
-    /**
-     * Returns the state that has been received from the remote peer.
-     *
-     * @return state that has been received from the remote peer
-     */
-    public long rcvNxt() {
-        return rcvNxt;
+        // do nothing
     }
 
     @Override
     public String toString() {
-        return "ConnectionHandshakeCompleted{" +
-                "sndNxt=" + sndNxt +
-                ", rcvNxt=" + rcvNxt +
-                '}';
+        return "ConnectionHandshakeCompleted{}";
     }
 }
