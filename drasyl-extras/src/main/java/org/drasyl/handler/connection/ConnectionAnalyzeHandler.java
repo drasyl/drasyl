@@ -111,7 +111,7 @@ public class ConnectionAnalyzeHandler extends ChannelInboundHandlerAdapter {
                 logger = loggerSupplier.apply(ctx);
 
                 task = executor.scheduleAtFixedRate(() -> {
-                    ConnectionHandshakeStatus status = handler.userCallStatus();
+                    final ConnectionHandshakeStatus status = handler.userCallStatus();
                     logger.log(status.tcb());
                 }, interval, interval, MILLISECONDS);
             }
