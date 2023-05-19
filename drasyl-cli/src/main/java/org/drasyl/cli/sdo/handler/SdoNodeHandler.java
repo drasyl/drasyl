@@ -34,8 +34,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.UnknownHostException;
-
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.CONNECTING;
@@ -64,7 +62,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) throws UnknownHostException {
+                                   final Object evt) {
         if (state == CONNECTING && evt instanceof ControllerHandshakeFailed) {
             final Throwable cause = ((ControllerHandshakeFailed) evt).cause();
             LOG.error("Controller handshake failed: ", cause);

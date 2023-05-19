@@ -65,7 +65,7 @@ public class SdoControllerCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new SdoControllerChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+        return new SdoControllerChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, config);
     }
 
     @Override

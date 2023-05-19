@@ -28,6 +28,8 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
+import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.handler.SdoControllerHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -44,6 +46,7 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
+    private final NetworkConfig config;
 
     @SuppressWarnings("java:S107")
     public SdoControllerChannelInitializer(final Identity identity,
@@ -55,11 +58,13 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
                                            final PrintStream out,
                                            final PrintStream err,
                                            final Worm<Integer> exitCode,
-                                           final boolean protocolArmEnabled) {
+                                           final boolean protocolArmEnabled,
+                                           final NetworkConfig config) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
+        this.config = requireNonNull(config);
     }
 
     @Override
@@ -68,6 +73,7 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
 
         final ChannelPipeline p = ch.pipeline();
 
+        p.addLast(new SdoControllerHandler(config));
         p.addLast(new NoopDiscardHandler());
 
         p.addLast(new ChannelInboundHandlerAdapter() {

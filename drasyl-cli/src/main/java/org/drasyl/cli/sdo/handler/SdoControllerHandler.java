@@ -21,10 +21,38 @@
  */
 package org.drasyl.cli.sdo.handler;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.cli.sdo.NetworkConfig;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import static java.util.Objects.requireNonNull;
+
 public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdoControllerHandler.class);
+    private final NetworkConfig config;
+    private boolean added;
+
+    public SdoControllerHandler(final NetworkConfig config) {
+        this.config = requireNonNull(config);
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (!added && ctx.channel().isActive()) {
+            added = true;
+            ctx.pipeline().addLast(new NetworkConfigurationHandler(config));
+        }
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        if (!added) {
+            added = true;
+            ctx.pipeline().addLast(new NetworkConfigurationHandler(config));
+        }
+
+        ctx.fireChannelActive();
+    }
 }
