@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
@@ -45,6 +46,7 @@ import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
@@ -82,6 +84,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -131,6 +134,24 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         this.udpServerGroup = requireNonNull(udpServerGroup);
     }
 
+    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
+        if (remoteBindPort == -1) {
+            /*
+             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+             own identity. this is done because we also expose this port via
+             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+             in the local network try to expose the same local port.
+             a completely random port would have the disadvantage that every time the node is
+             started it would use a new port and this would make discovery more difficult
+            */
+            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
+            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+        }
+        else {
+            return remoteBindPort;
+        }
+    }
+
     @SuppressWarnings("java:S1188")
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
@@ -162,12 +183,23 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private void ipStage(final DrasylServerChannel ch) {
         // udp server
-        ch.pipeline().addLast(new UdpServer(udpServerGroup, config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())));
-
-        // port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
+        final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
         if (config.isRemoteExposeEnabled()) {
-            ch.pipeline().addLast(new PortMapper());
+            // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
+            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx) {
+                @Override
+                protected void initChannel(final DatagramChannel ch) throws Exception {
+                    super.initChannel(ch);
+
+                    ch.pipeline().addFirst(new PortMapper());
+                }
+            };
         }
+        else {
+            // use default datagram channel
+            channelInitializerSupplier = UdpServerChannelInitializer::new;
+        }
+        ch.pipeline().addLast(new UdpServer(udpServerGroup, config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress()), channelInitializerSupplier));
 
         // tcp fallback
         if (config.isRemoteTcpFallbackEnabled()) {
@@ -294,24 +326,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
             ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId()));
-        }
-    }
-
-    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
-        if (remoteBindPort == -1) {
-            /*
-             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
-             own identity. this is done because we also expose this port via
-             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
-             in the local network try to expose the same local port.
-             a completely random port would have the disadvantage that every time the node is
-             started it would use a new port and this would make discovery more difficult
-            */
-            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
-            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
-        }
-        else {
-            return remoteBindPort;
         }
     }
 
