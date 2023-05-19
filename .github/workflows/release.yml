@@ -68,11 +68,11 @@ jobs:
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
         uses: ilammy/msvc-dev-cmd@v1.12.1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
         uses: microsoft/setup-msbuild@v1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       # set up GraalVM
       - name: Set up GraalVM environment
@@ -99,7 +99,7 @@ jobs:
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'ubuntu-latest'
+        if: success() && startsWith(matrix.os, 'ubuntu-')
 
       - name: Build Package on *nix ARM
         run: |
@@ -120,7 +120,7 @@ jobs:
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do shasum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'macOS-latest'
+        if: success() && startsWith(matrix.os, 'macOS-')
 
       - name: Build Package on Windows
         run: |
@@ -134,7 +134,7 @@ jobs:
           Copy-Item "./LICENSE" -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./libdrasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip
           CertUtil -hashfile "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
       # upload package
       - name: Upload Package
@@ -210,7 +210,7 @@ jobs:
           Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl\
           Get-ChildItem -Path .\drasyl-shared-library\pypi\src\drasyl\
           $VERSION > .\drasyl-shared-library\pypi\VERSION
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
       - uses: actions/setup-python@v4.6.0
         with:
@@ -302,11 +302,11 @@ jobs:
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
         uses: ilammy/msvc-dev-cmd@v1.12.1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
         uses: microsoft/setup-msbuild@v1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       # set up GraalVM
       - name: Set up GraalVM environment
@@ -333,7 +333,7 @@ jobs:
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'ubuntu-latest'
+        if: success() && startsWith(matrix.os, 'ubuntu-')
 
       - name: Build Package on *nix ARM
         run: |
@@ -354,7 +354,7 @@ jobs:
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'macOS-latest'
+        if: success() && startsWith(matrix.os, 'macOS-')
 
       - name: Build Package on Windows
         run: |
@@ -364,7 +364,7 @@ jobs:
           Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
           CertUtil -hashfile "./drasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
       # upload package
       - name: Upload Package
