@@ -30,6 +30,10 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Helper class to visualize the {@link io.netty.channel.ChannelHandler} order of a given
+ * {@link ChannelPipeline}.
+ */
 public class VisualPipeline {
     public static void print(final ChannelPipeline pipeline) {
         try {

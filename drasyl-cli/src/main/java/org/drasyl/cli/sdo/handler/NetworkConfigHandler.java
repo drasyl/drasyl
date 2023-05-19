@@ -26,19 +26,24 @@ import com.sun.jna.Pointer;
 import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun;
 import org.drasyl.cli.sdo.NetworkConfig;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
+import org.drasyl.crypto.HexUtil;
 import org.drasyl.handler.path.DirectPathHandler;
 import org.drasyl.handler.path.NoDirectPathHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
@@ -54,7 +59,6 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,13 +68,13 @@ import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.util.Preconditions.requirePositive;
 
-public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkConfigurationHandler.class);
+public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkConfigHandler.class);
     private final NetworkConfig config;
     private boolean applied;
     private Channel tunChannel;
 
-    public NetworkConfigurationHandler(final NetworkConfig config) {
+    public NetworkConfigHandler(final NetworkConfig config) {
         this.config = requireNonNull(config);
     }
 
@@ -92,7 +96,7 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelActive();
     }
 
-    private void applyConfiguration(ChannelHandlerContext ctx) throws UnknownHostException {
+    private void applyConfiguration(final ChannelHandlerContext ctx) throws UnknownHostException {
         // try to establish a direct path to all nodes we have a connection to
         // prevent direct paths to all other nodes of our network
         final Set<SocketAddress> consideredPeers = new HashSet<>();
@@ -104,20 +108,21 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
             final IdentityPublicKey fromKey = IdentityPublicKey.of(fromAddress);
             final String toAddress = (String) attributes.get("to");
             final IdentityPublicKey toKey = IdentityPublicKey.of(toAddress);
+            final Boolean directPath = (boolean) attributes.getOrDefault("direct-path", null);
 
-            if (ctx.channel().localAddress().equals(fromKey)) {
+            if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(fromKey)) {
                 // direct path
                 if (consideredPeers.add(toKey)) {
                     ctx.pipeline().addAfter(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new DirectPathHandler(toKey));
                 }
             }
-            else if (ctx.channel().localAddress().equals(toKey)) {
+            else if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(toKey)) {
                 // direct path
                 if (consideredPeers.add(fromKey)) {
                     ctx.pipeline().addAfter(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new DirectPathHandler(fromKey));
                 }
             }
-            else {
+            else if (Boolean.FALSE.equals(directPath)) {
                 // no direct path
                 if (consideredPeers.add(fromKey)) {
                     ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(fromKey));
@@ -146,30 +151,41 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
                         protected void initChannel(final Channel ch) {
                             final ChannelPipeline p = ch.pipeline();
 
-                            p.addLast(new TunHandler((IdentityPublicKey) ctx.channel().localAddress(), subnet, inetAddress, 1225));
+                            p.addLast(new TunInetAddressHandler(subnet, inetAddress, 1225));
                         }
                     });
             tunChannel = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
 
             // create IP routing
-            final Map<InetAddress, DrasylAddress> routes = new HashMap<>();
-            final List<Map<String, Object>> connections = config.getConnectionsFor((DrasylAddress) ctx.channel().localAddress());
-            for (final Map<String, Object> connection : connections) {
-                final String fromAddress = (String) connection.get("from");
-                final IdentityPublicKey fromKey = IdentityPublicKey.of(fromAddress);
-                final String toAddress = (String) connection.get("to");
-                final IdentityPublicKey toKey = IdentityPublicKey.of(toAddress);
-                final IdentityPublicKey peerKey;
-                if (ctx.channel().localAddress().equals(fromKey)) {
-                    peerKey = toKey;
-                }
-                else {
-                    peerKey = fromKey;
-                }
+            final Map<InetAddress, DrasylAddress> inetRoutes = new HashMap<>();
+            for (ConfigValue value : list) {
+                final Map<String, Object> attributes = (Map<String, Object>) value.unwrapped();
+                final boolean tunRoute = (boolean) ((Map<String, Object>) attributes.get("tun")).get("route");
+                if (tunRoute) {
+                    final String fromAddress = (String) attributes.get("from");
+                    final IdentityPublicKey fromKey = IdentityPublicKey.of(fromAddress);
+                    final String toAddress = (String) attributes.get("to");
+                    final IdentityPublicKey toKey = IdentityPublicKey.of(toAddress);
 
-                final Map<String, Object> peer = config.getNode(peerKey);
-                final InetAddress peerInetAddress = InetAddress.getByName((String) ((Map<String, Object>) peer.get("tun")).get("address"));
-                routes.put(peerInetAddress, peerKey);
+                    final IdentityPublicKey peerKey;
+                    if (ctx.channel().localAddress().equals(fromKey)) {
+                        peerKey = toKey;
+                    }
+                    else if (ctx.channel().localAddress().equals(toKey)) {
+                        peerKey = fromKey;
+                    }
+                    else {
+                        continue;
+                    }
+
+                    final Map<String, Object> peer = config.getNode(toKey);
+                    final InetAddress peerInetAddress = InetAddress.getByName((String) ((Map<String, Object>) peer.get("tun")).get("address"));
+                    inetRoutes.put(peerInetAddress, peerKey);
+                }
+            }
+
+            if (!inetRoutes.isEmpty()) {
+                tunChannel.pipeline().addLast(new TunInetRoutesHandler(ctx, inetRoutes));
             }
         }
     }
@@ -177,17 +193,14 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
     /**
      * Assign IP address and subnet to the tun device.
      */
-    public class TunHandler extends ChannelInboundHandlerAdapter {
-        private final IdentityPublicKey address;
+    public class TunInetAddressHandler extends ChannelInboundHandlerAdapter {
         private final InetAddress inetAddress;
         private final Subnet subnet;
         private final int mtu;
 
-        public TunHandler(final IdentityPublicKey address,
-                          final Subnet subnet,
-                          final InetAddress inetAddress,
-                          final int mtu) {
-            this.address = requireNonNull(address);
+        public TunInetAddressHandler(final Subnet subnet,
+                                     final InetAddress inetAddress,
+                                     final int mtu) {
             this.subnet = requireNonNull(subnet);
             this.inetAddress = requireNonNull(inetAddress);
             this.mtu = requirePositive(mtu);
@@ -197,13 +210,11 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
         public void channelActive(final ChannelHandlerContext ctx) throws IOException {
             ctx.fireChannelActive();
 
-            // configure network device
-            System.out.print("Created network device '" + ctx.channel().localAddress() + "'. Now assign address " + inetAddress.getHostAddress() + " with netmask " + subnet.netmaskLength() + " to it...");
-            configurateTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
-            System.out.println("done!");
+            LOG.debug("Created network device `{}`", ctx.channel().localAddress());
 
-            System.out.println("Network device is ready!");
-            System.out.println();
+            // configure network device
+            configurateTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
+            LOG.debug("Assigned address `{}` with netmask `{}` to network device.", inetAddress.getHostAddress(), subnet.netmaskLength());
 
             ctx.pipeline().remove(ctx.name());
         }
@@ -244,6 +255,32 @@ public class NetworkConfigurationHandler extends ChannelInboundHandlerAdapter {
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
+            }
+        }
+    }
+    public class TunInetRoutesHandler extends SimpleChannelInboundHandler<Tun4Packet> {
+        private final ChannelHandlerContext drasylServerChannelCtx;
+        private final Map<InetAddress, DrasylAddress> routes;
+
+        public TunInetRoutesHandler(final ChannelHandlerContext drasylServerChannelCtx, final Map<InetAddress, DrasylAddress> routes) {
+            this.drasylServerChannelCtx = requireNonNull(drasylServerChannelCtx);
+            this.routes = requireNonNull(routes);
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet msg) throws Exception {
+            final InetAddress dst = msg.destinationAddress();
+            LOG.trace("Got packet `{}`", () -> msg);
+            LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
+
+            final DrasylAddress publicKey = routes.get(dst);
+            if (routes.containsKey(dst)) {
+                LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
+                new OverlayAddressedMessage<>();
+            }
+            else {
+                LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
+                // TODO: reply with ICMP host unreachable message?
             }
         }
     }

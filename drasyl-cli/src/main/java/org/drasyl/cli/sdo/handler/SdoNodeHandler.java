@@ -77,7 +77,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
             LOG.debug("Got configuration. Network join succeeded.");
             state = JOINED;
             config = ((ConfigurationReceived) evt).config();
-            ctx.pipeline().addLast(new NetworkConfigurationHandler(config));
+            ctx.pipeline().addLast(new NetworkConfigHandler(config));
         }
         else {
             ctx.fireUserEventTriggered(evt);

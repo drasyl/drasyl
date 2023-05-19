@@ -42,7 +42,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (!added && ctx.channel().isActive()) {
             added = true;
-            ctx.pipeline().addLast(new NetworkConfigurationHandler(config));
+            ctx.pipeline().addLast(new NetworkConfigHandler(config));
         }
     }
 
@@ -50,7 +50,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     public void channelActive(final ChannelHandlerContext ctx) {
         if (!added) {
             added = true;
-            ctx.pipeline().addLast(new NetworkConfigurationHandler(config));
+            ctx.pipeline().addLast(new NetworkConfigHandler(config));
         }
 
         ctx.fireChannelActive();

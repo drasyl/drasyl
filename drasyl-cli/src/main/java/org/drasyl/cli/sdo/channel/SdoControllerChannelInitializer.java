@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.VisualPipeline;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.NetworkConfig;
@@ -86,5 +87,7 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
             }
         });
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+
+        VisualPipeline.print(ch.pipeline());
     }
 }
