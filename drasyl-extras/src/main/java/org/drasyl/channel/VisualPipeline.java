@@ -35,6 +35,10 @@ import java.util.List;
  * {@link ChannelPipeline}.
  */
 public class VisualPipeline {
+    private VisualPipeline() {
+        // util class
+    }
+
     public static void print(final ChannelPipeline pipeline) {
         try {
             // make private fields accessible through reflection
@@ -71,10 +75,12 @@ public class VisualPipeline {
             }
         }
         catch (final ReflectiveOperationException e) {
+            // FIXME:
             throw new RuntimeException(e);
         }
     }
 
+    @SuppressWarnings({ "java:S106", "java:S3457" })
     private static void printCenter(final String s, final int width) {
         int padding = (width - s.length()) / 2;
         if (padding > 0) {
