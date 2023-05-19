@@ -45,6 +45,7 @@ import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
+import org.drasyl.handler.remote.UdpMulticastServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
@@ -100,7 +101,7 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final short MIN_DERIVED_PORT = 22528;
     public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
-    private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup());
+    private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup(), UdpMulticastServerChannelInitializer::new);
     private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
     private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);

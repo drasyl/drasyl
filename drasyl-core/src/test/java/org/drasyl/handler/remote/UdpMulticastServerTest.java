@@ -22,35 +22,31 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.DatagramPacket;
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,6 +61,12 @@ class UdpMulticastServerTest {
     private DatagramChannel channel;
     @Mock
     private Set<ChannelHandlerContext> nodes;
+    private Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
+
+    @BeforeEach
+    void setUp() {
+        channelInitializerSupplier = UdpMulticastServerChannelInitializer::new;
+    }
 
     @Nested
     class StartServer {
@@ -87,7 +89,7 @@ class UdpMulticastServerTest {
             });
 
             final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, channelInitializerSupplier);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
@@ -113,7 +115,7 @@ class UdpMulticastServerTest {
             });
 
             final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, channel);
+            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, channelInitializerSupplier, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -123,40 +125,6 @@ class UdpMulticastServerTest {
                 verify(UdpMulticastServerTest.this.channel).close();
             }
             finally {
-                channel.close();
-                multicastServerGroup.shutdownGracefully();
-            }
-        }
-    }
-
-    @Nested
-    class MessagePassing {
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldPassIngoingMessagesToAllPipelines(@Mock final ChannelHandlerContext channelCtx,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                     @Mock final EventExecutor eventExecutor) {
-            when(bootstrapSupplier.get()).thenReturn(bootstrap);
-            when(bootstrap.group(any()).channelFactory(any()).handler(any())).then((Answer<Bootstrap>) invocation -> {
-                final SimpleChannelInboundHandler<DatagramPacket> handler = invocation.getArgument(0, SimpleChannelInboundHandler.class);
-                handler.channelRead(channelCtx, new DatagramPacket(Unpooled.EMPTY_BUFFER, new InetSocketAddress(22527), new InetSocketAddress(25421)));
-                return bootstrap;
-            });
-            when(ctx.executor()).thenReturn(eventExecutor);
-            doAnswer((Answer<Object>) invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            }).when(eventExecutor).execute(any());
-
-            final Set<ChannelHandlerContext> nodes = new HashSet<>(Set.of(ctx));
-            final NioEventLoopGroup multicastServerGroup = new NioEventLoopGroup(1);
-            final UdpMulticastServer handler = new UdpMulticastServer(nodes, bootstrapSupplier, multicastServerGroup, null);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                verify(ctx).fireChannelRead(any());
-            }
-            finally {
-                channel.releaseInbound();
                 channel.close();
                 multicastServerGroup.shutdownGracefully();
             }
