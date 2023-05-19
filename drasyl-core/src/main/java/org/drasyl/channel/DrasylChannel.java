@@ -205,7 +205,7 @@ public class DrasylChannel extends AbstractChannel {
      * @return {@code true} if remote peer is reachable via a direct path.
      */
     public boolean isDirectPathPresent() {
-        return ((DrasylServerChannel) parent()).paths.get(remoteAddress) != null;
+        return ((DrasylServerChannel) parent()).isDirectPathPresent(remoteAddress);
     }
 
     private class DrasylChannelUnsafe extends AbstractUnsafe {

@@ -106,7 +106,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      *                                       before discarding them
      * @param superPeerAddresses             inet addresses and public keys of super peers
      * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
-     *                                       discarded without application traffic
+     *                                       discarded without application traffic. If set to
+     *                                       {@code 0}, idle connections will never be discarded
      * @param maxPeers                       maximum number of peers to which a traversed connection
      *                                       should be maintained at the same time
      */
@@ -421,7 +422,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * within the last {@link #pingCommunicationTimeoutMillis}.
          */
         public boolean hasApplicationTraffic() {
-            return lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
+            return pingCommunicationTimeoutMillis == 0 || lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
         }
 
         /**

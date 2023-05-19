@@ -38,7 +38,7 @@ import java.util.Map;
  */
 @UnstableApi
 public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylServerChannelInitializer {
-    public static final int PING_COMMUNICATION_TIMEOUT_MILLIS = 60_000;
+    public static final int PING_COMMUNICATION_TIMEOUT_MILLIS = 0;
     private final int pingCommunicationTimeoutMillis;
 
     /**

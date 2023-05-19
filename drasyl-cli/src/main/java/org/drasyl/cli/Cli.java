@@ -26,6 +26,7 @@ import org.drasyl.cli.converter.InetSocketAddressConverter;
 import org.drasyl.cli.node.NodeCommand;
 import org.drasyl.cli.noderc.NodeRcCommand;
 import org.drasyl.cli.perf.PerfCommand;
+import org.drasyl.cli.sdo.SdoCommand;
 import org.drasyl.cli.tun.TunCommand;
 import org.drasyl.cli.tunnel.TunnelCommand;
 import org.drasyl.cli.tunrc.TunRcCommand;
@@ -57,6 +58,7 @@ import static java.util.Objects.requireNonNull;
                 NodeRcCommand.class,
                 PerfCommand.class,
                 PublicKeyCommand.class,
+                SdoCommand.class,
                 TunCommand.class,
                 TunRcCommand.class,
                 TunnelCommand.class,

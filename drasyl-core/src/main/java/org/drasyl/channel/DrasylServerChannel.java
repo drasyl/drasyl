@@ -156,6 +156,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
+    public boolean isDirectPathPresent(final SocketAddress remoteAddress) {
+        return !paths.get(remoteAddress).isEmpty();
+    }
+
     /**
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.

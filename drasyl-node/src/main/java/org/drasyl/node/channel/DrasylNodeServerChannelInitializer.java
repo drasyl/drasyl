@@ -33,6 +33,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
+import org.drasyl.handler.path.NoDirectPathHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -149,6 +150,8 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         ch.pipeline().addLast(new PeersManagerHandler(identity));
         ch.pipeline().addLast(new PluginsHandler(config, identity));
+
+        ch.pipeline().addBefore(ch.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(IdentityPublicKey.of("1027d3ff7c495d0ecf6c3e907dfc125281b7e2f107b04db8404619c05a99003a")));
 
         if (TELEMETRY_ENABLED) {
             ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));

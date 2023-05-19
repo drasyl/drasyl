@@ -36,6 +36,15 @@
     <logger name="io.netty" level="WARN">
     </logger>
 
+<!--    <logger name="org.drasyl.handler.connection" level="TRACE">-->
+<!--    </logger>-->
+
+    <logger name="org.drasyl.handler.path" level="TRACE">
+    </logger>
+
+    <logger name="org.drasyl.cli.sdo" level="TRACE">
+    </logger>
+
     <root level="warn">
         <appender-ref ref="Console"/>
     </root>

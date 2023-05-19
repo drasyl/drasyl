@@ -57,7 +57,9 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
 
         p.addLast(new SegmentCodec());
         p.addLast(new ConnectionHandler(config));
-        p.addLast(new ConnectionAnalyzeHandler());
+        if (false) {
+            p.addLast(new ConnectionAnalyzeHandler());
+        }
 
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
@@ -67,7 +69,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
             public void userEventTriggered(final ChannelHandlerContext ctx,
                                            final Object evt) throws Exception {
                 if (evt instanceof ConnectionHandshakeCompleted) {
-                    handshakeCompleted((DrasylChannel) ctx.channel());
+                    handshakeCompleted(ctx);
                 }
                 else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).initatedByRemotePeer()) {
                     // confirm close request
@@ -92,7 +94,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
     }
 
     @SuppressWarnings("java:S112")
-    protected abstract void handshakeCompleted(final DrasylChannel ch) throws Exception;
+    protected abstract void handshakeCompleted(final ChannelHandlerContext ctx) throws Exception;
 
     protected abstract void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause);
 }
