@@ -27,17 +27,18 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCounted;
-import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.channel.InetAddressedMessage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -45,13 +46,12 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
-import static java.net.InetSocketAddress.createUnresolved;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,6 +72,12 @@ public class TcpClientTest {
     private final Duration timeout = Duration.ofSeconds(1);
     @Mock
     private InetSocketAddress address;
+    private Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+
+    @BeforeEach
+    void setUp() {
+        channelInitializerSupplier = TcpClientChannelInitializer::new;
+    }
 
     @Nested
     class StopServer {
@@ -80,7 +86,7 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -100,7 +106,7 @@ public class TcpClientTest {
         void shouldPassTroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -125,7 +131,7 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -148,7 +154,7 @@ public class TcpClientTest {
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -173,12 +179,12 @@ public class TcpClientTest {
             when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
 
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, superPeerChannel);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, superPeerChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(superPeerChannel.channel()).write(msg);
+                verify(superPeerChannel.channel()).write(any());
                 assertNull(channel.readOutbound());
             }
             finally {
@@ -203,7 +209,7 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, null);
+            final TcpClient handler = new TcpClient(superPeerAddresses, bootstrap, clientGroup, noResponseFromSuperPeerSince, timeout, address, channelInitializerSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -216,28 +222,6 @@ public class TcpClientTest {
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
-        }
-    }
-
-    @Nested
-    class TcpClientHandlerTest {
-        @Mock
-        private ChannelHandlerContext ctx;
-
-        @Test
-        void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor eventExecutor) {
-            when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
-            when(ctx.executor()).thenReturn(eventExecutor);
-            doAnswer((Answer<Object>) invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            }).when(eventExecutor).execute(any());
-
-            new TcpClient.TcpClientHandler(ctx).channelRead0(nettyCtx, msg);
-
-            verify(ctx).fireChannelRead(any());
         }
     }
 }

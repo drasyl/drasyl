@@ -28,13 +28,15 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -43,6 +45,7 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
@@ -61,6 +64,7 @@ import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
  * <p>
  * This client is only used if the node does not act as a super peer itself.
  */
+@UnstableApi
 @SuppressWarnings({ "java:S110" })
 public class TcpClient extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClient.class);
@@ -71,11 +75,14 @@ public class TcpClient extends ChannelDuplexHandler {
     private final AtomicLong noResponseFromSuperPeerSince;
     private final Duration timeout;
     private final InetSocketAddress address;
+    private final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     private ChannelFuture superPeerChannel;
     private long lastSuperPeersResolveTime;
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     * @param group                      the {@link NioEventLoopGroup} the underlying tcp client
+     *                                   should run on
+     * @param channelInitializerSupplier
      */
     @SuppressWarnings("java:S107")
     TcpClient(final Set<InetSocketAddress> superPeerAddresses,
@@ -84,6 +91,7 @@ public class TcpClient extends ChannelDuplexHandler {
               final AtomicLong noResponseFromSuperPeerSince,
               final Duration timeout,
               final InetSocketAddress address,
+              final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
               final ChannelFuture superPeerChannel) {
         this.superPeerAddresses = requireNonNull(superPeerAddresses);
         this.bootstrap = requireNonNull(bootstrap);
@@ -91,6 +99,7 @@ public class TcpClient extends ChannelDuplexHandler {
         this.noResponseFromSuperPeerSince = requireNonNull(noResponseFromSuperPeerSince);
         this.timeout = requireNonNull(timeout);
         this.address = requireNonNull(address);
+        this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.superPeerChannel = superPeerChannel;
     }
 
@@ -108,6 +117,7 @@ public class TcpClient extends ChannelDuplexHandler {
                 new AtomicLong(),
                 timeout,
                 address,
+                TcpClientChannelInitializer::new,
                 null
         );
     }
@@ -155,13 +165,11 @@ public class TcpClient extends ChannelDuplexHandler {
         if (msg instanceof InetAddressedMessage &&
                 superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress(socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
-            final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
-
             // check if we can route the message via a tcp connection
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
-                LOG.trace("Send message `{}` for `{}` via TCP connection.", () -> byteBufMsg, ((InetAddressedMessage<ByteBuf>) msg)::recipient);
-                PromiseNotifier.cascade(mySuperPeerChannel.channel().write(byteBufMsg), promise);
+                LOG.trace("Send message `{}` via TCP connection.", () -> msg);
+                PromiseNotifier.cascade(mySuperPeerChannel.channel().write(msg), promise);
             }
             else {
                 // pass through message
@@ -177,13 +185,13 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     @Override
-    public void flush(final ChannelHandlerContext ctx) throws Exception {
+    public void flush(final ChannelHandlerContext ctx) {
         final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
         if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {
             mySuperPeerChannel.channel().flush();
         }
 
-        super.flush(ctx);
+        ctx.flush();
     }
 
     private void resolveSuperPeers() {
@@ -234,7 +242,7 @@ public class TcpClient extends ChannelDuplexHandler {
 
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new TcpClientHandler(ctx));
+                .handler(channelInitializerSupplier.apply(ctx));
     }
 
     @Override
@@ -243,36 +251,6 @@ public class TcpClient extends ChannelDuplexHandler {
 
         // stop client
         stopClient();
-    }
-
-    /**
-     * This handler passes all receiving messages to the pipeline.
-     */
-    @Sharable
-    static class TcpClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
-        private final ChannelHandlerContext drasylCtx;
-
-        TcpClientHandler(final ChannelHandlerContext drasylCtx) {
-            super(false);
-            this.drasylCtx = requireNonNull(drasylCtx);
-        }
-
-        @Override
-        protected void channelRead0(final ChannelHandlerContext nettyCtx,
-                                    final ByteBuf msg) {
-            LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, nettyCtx.channel()::remoteAddress);
-            final InetSocketAddress sender = (InetSocketAddress) nettyCtx.channel().remoteAddress();
-            drasylCtx.executor().execute(() -> {
-                drasylCtx.fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
-                drasylCtx.fireChannelReadComplete();
-            });
-        }
-
-        @Override
-        public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-            LOG.debug("Close TCP connection to `{}` due to an exception: ", ctx.channel()::remoteAddress, () -> cause);
-            ctx.close();
-        }
     }
 
     private class TcpClientFutureListener implements ChannelFutureListener {
