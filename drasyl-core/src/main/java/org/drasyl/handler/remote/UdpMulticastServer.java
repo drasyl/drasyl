@@ -28,10 +28,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
@@ -49,6 +48,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.netty.channel.socket.InternetProtocolFamily.IPv4;
@@ -75,6 +75,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
     private final EventLoopGroup group;
+    private final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private DatagramChannel channel;
 
     static {
@@ -106,37 +107,47 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
     }
 
     /**
-     * @param group the {@link EventLoopGroup} the underlying udp server should run on
+     * @param group                      the {@link EventLoopGroup} the underlying udp server should
+     *                                   run on
+     * @param channelInitializerSupplier
      */
     @SuppressWarnings("java:S2384")
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
                        final EventLoopGroup group,
+                       final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
         this.group = requireNonNull(group);
+        this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.channel = channel;
     }
 
     /**
-     * @param group the {@link EventLoopGroup} the underlying udp server should run on
+     * @param group                      the {@link EventLoopGroup} the underlying udp server should
+     *                                   run on
+     * @param channelInitializerSupplier
      */
     UdpMulticastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
-                       final EventLoopGroup group) {
-        this(nodes, bootstrapSupplier, group, null);
+                       final EventLoopGroup group,
+                       final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
+        this(nodes, bootstrapSupplier, group, channelInitializerSupplier, null);
     }
 
     /**
-     * @param group the {@link EventLoopGroup} the underlying udp server should run on
+     * @param group                      the {@link EventLoopGroup} the underlying udp server should
+     *                                   run on
+     * @param channelInitializerSupplier
      */
-    public UdpMulticastServer(final EventLoopGroup group) {
+    public UdpMulticastServer(final EventLoopGroup group,
+                              final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
-                group
-        );
+                group,
+                channelInitializerSupplier);
     }
 
     @SuppressWarnings("java:S1905")
@@ -154,7 +165,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 bootstrapSupplier.get()
                         .group(group)
                         .channelFactory(() -> EventLoopGroupUtil.getBestDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
-                        .handler(new UdpMulticastServerHandler())
+                        .handler(new UdpMulticastServerChannelInitializer(ctx))
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())
                         .addListener(new UdpMulticastServerFutureListener(ctx));
             }
@@ -185,26 +196,16 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private class UdpMulticastServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        UdpMulticastServerHandler() {
-            super(false);
-        }
+    void multicastRead(final InetAddressedMessage<ByteBuf> msg) {
+        nodes.forEach(nodeCtx -> {
+            LOG.trace("Datagram received {} and passed to {}", () -> msg, nodeCtx.channel()::localAddress);
+            nodeCtx.fireChannelRead(new InetAddressedMessage<>(msg.content().asReadOnly().retain(), msg.recipient(), msg.sender()));
+        });
+        msg.release();
+    }
 
-        @Override
-        protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                    final DatagramPacket packet) {
-            final InetSocketAddress sender = packet.sender();
-            final ByteBuf content = packet.content().asReadOnly();
-            nodes.forEach(nodeCtx -> {
-                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
-                final ByteBuf byteBuf = content.retainedDuplicate();
-                nodeCtx.executor().execute(() -> {
-                    nodeCtx.fireChannelRead(new InetAddressedMessage<>(byteBuf, null, sender));
-                    nodeCtx.fireChannelReadComplete();
-                });
-            });
-            content.release();
-        }
+    void multicastReadComplete() {
+        nodes.forEach(ChannelHandlerContext::fireChannelReadComplete);
     }
 
     private class UdpMulticastServerFutureListener implements ChannelFutureListener {
