@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,22 +22,23 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.DatagramPacket;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.EventLoopGroupUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -45,6 +46,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -52,41 +54,63 @@ import static java.util.Objects.requireNonNull;
  * Binds to an udp port, sends outgoing messages via udp, and sends received udp packets to the
  * {@link Channel}.
  */
+@UnstableApi
 public class UdpServer extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
-    private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
     /*
      * On MacOS -Djava.net.preferIPv4Stack=true must be set to work.
      */
     public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
+    private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
+    private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
     private final Bootstrap bootstrap;
     private final EventLoopGroup group;
     private final InetSocketAddress bindAddress;
+    private final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private PendingWriteQueue pendingWrites;
     private Channel channel;
 
     UdpServer(final Bootstrap bootstrap,
               final EventLoopGroup group,
               final InetSocketAddress bindAddress,
+              final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
               final PendingWriteQueue pendingWrites,
               final Channel channel) {
         this.bootstrap = requireNonNull(bootstrap);
         this.group = requireNonNull(group);
         this.bindAddress = requireNonNull(bindAddress);
+        this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
     public UdpServer(final Bootstrap bootstrap,
                      final EventLoopGroup group,
-                     final InetSocketAddress bindAddress) {
+                     final InetSocketAddress bindAddress,
+                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
         this(
                 bootstrap,
                 group,
                 bindAddress,
+                channelInitializerSupplier,
                 null,
                 null
         );
+    }
+
+    public UdpServer(final Bootstrap bootstrap,
+                     final EventLoopGroup group,
+                     final InetSocketAddress bindAddress) {
+        this(bootstrap, group, bindAddress, UdpServerChannelInitializer::new);
+    }
+
+    /**
+     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindAddress the address the UDP server will bind to
+     */
+    public UdpServer(final EventLoopGroup group,
+                     final InetSocketAddress bindAddress,
+                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress, channelInitializerSupplier);
     }
 
     /**
@@ -96,6 +120,18 @@ public class UdpServer extends ChannelDuplexHandler {
     public UdpServer(final EventLoopGroup group,
                      final InetSocketAddress bindAddress) {
         this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress);
+    }
+
+    /**
+     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindHost the host the UDP server will bind to
+     * @param bindPort the port the UDP server will bind to
+     */
+    public UdpServer(final EventLoopGroup group,
+                     final InetAddress bindHost,
+                     final int bindPort,
+                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
+        this(group, new InetSocketAddress(bindHost, bindPort), channelInitializerSupplier);
     }
 
     /**
@@ -143,7 +179,7 @@ public class UdpServer extends ChannelDuplexHandler {
         bootstrap
                 .group(group)
                 .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                .handler(new UdpServerHandler(ctx))
+                .handler(channelInitializerSupplier.apply(ctx))
                 .bind(bindAddress)
                 .addListener(new UdpServerBindListener(ctx));
     }
@@ -167,16 +203,12 @@ public class UdpServer extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
-            final ByteBuf byteBufMsg = ((InetAddressedMessage<ByteBuf>) msg).content();
-            final InetSocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
-            final DatagramPacket packet = new DatagramPacket(byteBufMsg, recipient);
-
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             if (channel.isWritable()) {
-                channel.write(packet).addListener(new PromiseNotifier<>(promise));
+                channel.write(msg).addListener(new PromiseNotifier<>(promise));
             }
             else {
-                pendingWrites.add(packet, promise);
+                pendingWrites.add(msg, promise);
             }
         }
         else {
@@ -193,7 +225,13 @@ public class UdpServer extends ChannelDuplexHandler {
     /**
      * ensure this method is called by same ctx (thread) from which PendingWrites was created.
      */
-    private void writePendingWrites() {
+    void writePendingWrites(final ChannelHandlerContext ctx) {
+        if (!ctx.executor().inEventLoop()) {
+            // make sure this method is always called from the channel's thread.
+            ctx.executor().execute(() -> writePendingWrites(ctx));
+            return;
+        }
+
         // pass all pending writes to the UDP channel while it writable
         while (channel != null && channel.isWritable()) {
             final Object currentWrite = pendingWrites.current();
@@ -208,70 +246,6 @@ public class UdpServer extends ChannelDuplexHandler {
 
             LOG.trace("Write Datagram {}", currentWrite);
             channel.writeAndFlush(currentWrite).addListener(new PromiseNotifier<>(promise));
-        }
-    }
-
-    private class UdpServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        private final ChannelHandlerContext drasylServerChannelCtx;
-
-        UdpServerHandler(final ChannelHandlerContext drasylServerChannelCtx) {
-            super(false);
-            this.drasylServerChannelCtx = drasylServerChannelCtx;
-        }
-
-        @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-            ctx.fireChannelWritabilityChanged();
-
-            if (ctx.channel().isWritable()) {
-                // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                drasylServerChannelCtx.executor().execute(() -> writePendingWrites());
-            }
-        }
-
-        @Override
-        protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final DatagramPacket packet) {
-            LOG.trace("Datagram received {}", packet);
-
-            final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(packet.content(), null, packet.sender());
-            drasylServerChannelCtx.fireChannelRead(msg);
-        }
-
-        @Override
-        public void channelReadComplete(final ChannelHandlerContext ctx) {
-            drasylServerChannelCtx.fireChannelReadComplete();
-            ctx.fireChannelReadComplete();
-        }
-    }
-
-    /**
-     * Listener that gets called once the channel is bound.
-     */
-    private class UdpServerBindListener implements ChannelFutureListener {
-        private final ChannelHandlerContext ctx;
-
-        UdpServerBindListener(final ChannelHandlerContext ctx) {
-            this.ctx = ctx;
-        }
-
-        @Override
-        public void operationComplete(final ChannelFuture future) {
-            if (future.isSuccess()) {
-                // server successfully started
-                final Channel myChannel = future.channel();
-                myChannel.closeFuture().addListener(new UdpServerCloseListener());
-                final InetSocketAddress socketAddress = (InetSocketAddress) myChannel.localAddress();
-                LOG.info("Server started and listening at udp:/{}.", socketAddress);
-
-                UdpServer.this.channel = myChannel;
-                ctx.fireUserEventTriggered(new UdpServerBound(socketAddress));
-                ctx.fireChannelActive();
-            }
-            else {
-                // server start failed
-                ctx.fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
-            }
         }
     }
 
@@ -307,6 +281,36 @@ public class UdpServer extends ChannelDuplexHandler {
     public static class UdpServerBindFailedException extends Exception {
         public UdpServerBindFailedException(final String message, final Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    /**
+     * Listener that gets called once the channel is bound.
+     */
+    private class UdpServerBindListener implements ChannelFutureListener {
+        private final ChannelHandlerContext ctx;
+
+        UdpServerBindListener(final ChannelHandlerContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            if (future.isSuccess()) {
+                // server successfully started
+                final Channel myChannel = future.channel();
+                myChannel.closeFuture().addListener(new UdpServerCloseListener());
+                final InetSocketAddress socketAddress = (InetSocketAddress) myChannel.localAddress();
+                LOG.info("Server started and listening at udp:/{}.", socketAddress);
+
+                UdpServer.this.channel = myChannel;
+                ctx.fireUserEventTriggered(new UdpServerBound(socketAddress));
+                ctx.fireChannelActive();
+            }
+            else {
+                // server start failed
+                ctx.fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
+            }
         }
     }
 }

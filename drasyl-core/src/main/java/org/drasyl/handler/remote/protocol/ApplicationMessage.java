@@ -37,8 +37,6 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLI
  * <ul>
  * <li><b>Payload</b>: The payload sent by the application (any number of bytes).</li>
  * </ul>
- * <p>
- * This is an immutable object.
  */
 @AutoValue
 @SuppressWarnings("java:S118")

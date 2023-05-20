@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
@@ -156,6 +157,27 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 mySecretKey,
                 myProofOfWork,
                 System::currentTimeMillis,
+                initialPingDelayMillis,
+                pingIntervalMillis,
+                pingTimeoutMillis,
+                maxTimeOffsetMillis,
+                superPeerAddresses
+        );
+    }
+
+    @SuppressWarnings("java:S107")
+    public InternetDiscoveryChildrenHandler(final int myNetworkId,
+                                            final Identity myIdentity,
+                                            final long initialPingDelayMillis,
+                                            final long pingIntervalMillis,
+                                            final long pingTimeoutMillis,
+                                            final long maxTimeOffsetMillis,
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+        this(
+                myNetworkId,
+                myIdentity.getIdentityPublicKey(),
+                myIdentity.getIdentitySecretKey(),
+                myIdentity.getProofOfWork(),
                 initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
