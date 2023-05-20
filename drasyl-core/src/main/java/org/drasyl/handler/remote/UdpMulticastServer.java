@@ -165,7 +165,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                 bootstrapSupplier.get()
                         .group(group)
                         .channelFactory(() -> EventLoopGroupUtil.getBestDatagramChannel(MULTICAST_ADDRESS.getAddress() instanceof Inet4Address ? IPv4 : IPv6))
-                        .handler(new UdpMulticastServerChannelInitializer(ctx))
+                        .handler(channelInitializerSupplier.apply(ctx))
                         .bind(MULTICAST_BIND_HOST, MULTICAST_ADDRESS.getPort())
                         .addListener(new UdpMulticastServerFutureListener(ctx));
             }
