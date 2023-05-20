@@ -61,7 +61,7 @@ class WormholeSendChannelInitializerTest {
             final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(11)).addLast(any());
+            verify(channel.pipeline(), times(8)).addLast(any());
         }
     }
 }

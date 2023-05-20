@@ -61,8 +61,9 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int PING_TIMEOUT_MILLIS = 30_000;
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
+    protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
+    protected static final LoopbackHandler LOOPBACK_HANDLER = new LoopbackHandler();
     protected final Identity identity;
-    private final EventLoopGroup udpServerGroup;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -71,6 +72,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     protected final int pingTimeoutMillis;
     protected final int maxTimeOffsetMillis;
     protected final int maxPeers;
+    private final EventLoopGroup udpServerGroup;
 
     /**
      * @param identity            own identity
@@ -221,7 +223,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                     ch.pipeline().addLast(new ProtocolArmHandler(identity, maxPeers));
                 }
                 else {
-                    ch.pipeline().addLast(new UnarmedMessageDecoder());
+                    ch.pipeline().addLast(UNARMED_MESSAGE_DECODER);
                 }
 
                 super.lastStage(ch);
@@ -229,8 +231,8 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
         }));
 
         p.addLast(new UnconfirmedAddressResolveHandler());
-        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
-        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
-        p.addLast(new LoopbackHandler());
+        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
+        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity));
+        p.addLast(LOOPBACK_HANDLER);
     }
 }
