@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -48,6 +49,8 @@ class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(new IdleStateHandler(tcpServer.pingTimeout().toMillis(), 0, 0, MILLISECONDS));
         p.addLast(new ByteBufCodec());
         p.addLast(new TcpCloseIdleClientsHandler());
+        p.addLast(new TcpDrasylMessageHandler());
+        p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new TcpServerHandler(tcpServer.clientChannels(), ctx));
     }
 }

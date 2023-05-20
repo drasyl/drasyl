@@ -55,6 +55,7 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
                 ctx.fireChannelWritabilityChanged();
             }
         });
+        p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new UdpServerToDrasylHandler(drasylCtx));
     }
 }

@@ -22,7 +22,6 @@
 package org.drasyl.handler.remote.tcp;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -36,6 +35,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -164,7 +164,7 @@ public class TcpClient extends ChannelDuplexHandler {
 
         if (msg instanceof InetAddressedMessage &&
                 superPeerAddresses.stream().anyMatch(socketAddress -> equalSocketAddress(socketAddress, ((InetAddressedMessage<?>) msg).recipient())) &&
-                ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+                ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             // check if we can route the message via a tcp connection
             final ChannelFuture mySuperPeerChannel = this.superPeerChannel;
             if (mySuperPeerChannel != null && mySuperPeerChannel.isSuccess()) {

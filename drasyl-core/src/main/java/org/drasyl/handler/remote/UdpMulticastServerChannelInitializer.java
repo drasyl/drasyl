@@ -21,13 +21,13 @@
  */
 package org.drasyl.handler.remote;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -49,7 +49,7 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
                 final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
-                multicastServer.multicastRead((InetAddressedMessage<ByteBuf>) msg);
+                multicastServer.multicastRead((InetAddressedMessage<UnarmedProtocolMessage>) msg);
             }
 
             @Override

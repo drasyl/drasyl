@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -42,6 +43,7 @@ public class TcpClientChannelInitializer extends ChannelInitializer<SocketChanne
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new ByteBufCodec());
+        p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new TcpClientToDrasylHandler(drasylCtx));
     }
 }

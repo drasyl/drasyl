@@ -21,12 +21,9 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -41,14 +38,13 @@ import static java.util.Objects.requireNonNull;
  * new/closed connections.
  */
 @UnstableApi
-class TcpServerHandler extends SimpleChannelInboundHandler<InetAddressedMessage<ByteBuf>> {
+class TcpServerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServerHandler.class);
     private final Map<SocketAddress, Channel> clients;
     private final ChannelHandlerContext drasylCtx;
 
     TcpServerHandler(final Map<SocketAddress, Channel> clients,
                      final ChannelHandlerContext drasylCtx) {
-        super(false);
         this.clients = requireNonNull(clients);
         this.drasylCtx = requireNonNull(drasylCtx);
     }
@@ -70,48 +66,16 @@ class TcpServerHandler extends SimpleChannelInboundHandler<InetAddressedMessage<
     }
 
     @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf;
+    public void channelRead(final ChannelHandlerContext ctx,
+                            final Object msg) {
+        LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, ctx.channel()::remoteAddress);
+        drasylCtx.fireChannelRead(msg);
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final InetAddressedMessage<ByteBuf> msg) {
-        LOG.trace("Packet `{}` received via TCP from `{}`", () -> msg, ctx.channel()::remoteAddress);
-
-        // drasyl message?
-        if (msg.content().readableBytes() >= Integer.BYTES) {
-            msg.content().markReaderIndex();
-            final int magicNumber = msg.content().readInt();
-
-            if (RemoteMessage.MAGIC_NUMBER == magicNumber) {
-                msg.content().resetReaderIndex();
-                drasylCtx.executor().execute(() -> {
-                    drasylCtx.fireChannelRead(msg);
-                    drasylCtx.fireChannelReadComplete();
-                });
-            }
-            else {
-                LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (wrong magic number).", ctx.channel()::remoteAddress);
-                msg.release();
-                if (TcpServer.STATUS_ENABLED) {
-                    ctx.writeAndFlush(drasylCtx.alloc().buffer(TcpServer.HTTP_OK.length).writeBytes(TcpServer.HTTP_OK)).addListener(l -> ctx.close());
-                }
-                else {
-                    ctx.close();
-                }
-            }
-        }
-        else {
-            LOG.debug("Close TCP connection to `{}` because peer send non-drasyl message (too short).", ctx.channel()::remoteAddress);
-            msg.release();
-            if (TcpServer.STATUS_ENABLED) {
-                ctx.writeAndFlush(drasylCtx.alloc().buffer(TcpServer.HTTP_OK.length).writeBytes(TcpServer.HTTP_OK)).addListener(l -> ctx.close());
-            }
-            else {
-                ctx.close();
-            }
-        }
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        drasylCtx.fireChannelReadComplete();
+        ctx.fireChannelReadComplete();
     }
 
     @Override

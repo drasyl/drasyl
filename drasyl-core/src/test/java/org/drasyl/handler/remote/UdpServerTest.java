@@ -22,7 +22,6 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -33,6 +32,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -117,7 +117,7 @@ class UdpServerTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             when(channel.isWritable()).thenReturn(true);
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);

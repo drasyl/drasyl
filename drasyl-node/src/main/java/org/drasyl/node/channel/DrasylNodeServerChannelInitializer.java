@@ -37,7 +37,6 @@ import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
@@ -56,7 +55,6 @@ import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHa
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.remote.protocol.HopCount;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.tcp.TcpClient;
 import org.drasyl.handler.remote.tcp.TcpServer;
 import org.drasyl.identity.DrasylAddress;
@@ -102,7 +100,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     public static final short MIN_DERIVED_PORT = 22528;
     public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup(), UdpMulticastServerChannelInitializer::new);
-    private static final ByteToRemoteMessageCodec BYTE_TO_REMOTE_MESSAGE_CODEC = new ByteToRemoteMessageCodec();
     private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
     private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
@@ -160,7 +157,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         if (config.isRemoteEnabled()) {
             ipStage(ch);
-            serializationStage(ch);
             gatekeeperStage(ch);
         }
         discoveryStage(ch);
@@ -224,15 +220,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
             ch.pipeline().addLast(UDP_MULTICAST_SERVER);
         }
-    }
-
-    /**
-     * This stage serializes {@link RemoteMessage} to {@link io.netty.buffer.ByteBuf} and vice
-     * versa.
-     */
-    @SuppressWarnings("java:S2325")
-    private void serializationStage(final DrasylServerChannel ch) {
-        ch.pipeline().addLast(BYTE_TO_REMOTE_MESSAGE_CODEC);
     }
 
     /**

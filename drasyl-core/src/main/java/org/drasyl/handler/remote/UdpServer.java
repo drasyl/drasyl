@@ -22,7 +22,6 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -37,6 +36,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -203,7 +203,7 @@ public class UdpServer extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             if (channel.isWritable()) {
                 channel.write(msg).addListener(new PromiseNotifier<>(promise));
             }

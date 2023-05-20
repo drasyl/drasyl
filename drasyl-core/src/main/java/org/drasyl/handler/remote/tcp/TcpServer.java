@@ -22,7 +22,6 @@
 package org.drasyl.handler.remote.tcp;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
@@ -39,6 +38,7 @@ import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -122,8 +122,8 @@ public class TcpServer extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf) {
-            final SocketAddress recipient = ((InetAddressedMessage<ByteBuf>) msg).recipient();
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+            final SocketAddress recipient = ((InetAddressedMessage<RemoteMessage>) msg).recipient();
 
             // check if we can route the message via a tcp connection
             final Channel client = clientChannels.get(recipient);

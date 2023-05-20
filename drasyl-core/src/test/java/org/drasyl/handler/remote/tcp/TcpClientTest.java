@@ -33,6 +33,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -172,7 +173,7 @@ public class TcpClientTest {
 
         @Test
         void shouldPassOutboundMessagesToTcpConnectionWhenPresent(@Mock final InetSocketAddress recipient,
-                                                                  @Mock final ByteBuf msg,
+                                                                  @Mock final RemoteMessage msg,
                                                                   @Mock final ChannelFuture channelFuture) {
             when(superPeerChannel.isSuccess()).thenReturn(true);
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
@@ -196,7 +197,7 @@ public class TcpClientTest {
         @SuppressWarnings("SuspiciousMethodCalls")
         @Test
         void shouldStartClientOnOutboundMessageToSuperPeer(@Mock final InetSocketAddress recipient,
-                                                           @Mock final ByteBuf msg,
+                                                           @Mock final RemoteMessage msg,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(superPeerAddresses.stream().anyMatch(any())).thenReturn(true);
             when(bootstrap.connect(any(InetSocketAddress.class))).thenReturn(superPeerChannel);

@@ -48,7 +48,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -66,7 +65,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -141,7 +139,7 @@ class TcpServerTest {
         @Test
         void shouldPassOutgoingMessageToTcpClient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
@@ -162,7 +160,7 @@ class TcpServerTest {
         @Test
         void shouldRejectMessageIfClientChannelIsNotWritable(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                              @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
+                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
             when(clientChannels.get(any())).thenReturn(client);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
@@ -244,34 +242,28 @@ class TcpServerTest {
         }
 
         @Test
-        void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
+        void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor eventExecutor,
                                                 @Mock InetSocketAddress recipient) {
             when(msg.readableBytes()).thenReturn(Integer.BYTES);
             when(msg.readInt()).thenReturn(RemoteMessage.MAGIC_NUMBER);
-            when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
+            when(ctx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
             when(ctx.executor()).thenReturn(eventExecutor);
-            doAnswer((Answer<Object>) invocation -> {
-                invocation.getArgument(0, Runnable.class).run();
-                return null;
-            }).when(eventExecutor).execute(any());
 
-            new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, new InetAddressedMessage<>(msg, recipient));
+            new TcpDrasylMessageHandler().channelRead0(ctx, new InetAddressedMessage<>(msg, recipient));
 
             verify(ctx).fireChannelRead(any());
         }
 
         @Test
-        void shouldRespondWithHttpAndCloseWhenInboundMessageIsInvalid(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx,
-                                                                      @Mock InetSocketAddress recipient) {
-            when(nettyCtx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
+        void shouldRespondWithHttpAndCloseWhenInboundMessageIsInvalid(@Mock InetSocketAddress recipient) {
+            when(ctx.channel().remoteAddress()).thenReturn(createUnresolved("127.0.0.1", 12345));
             when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
             final ByteBuf msg = Unpooled.copiedBuffer("Hallo Welt", UTF_8);
-            new TcpServerHandler(clients, ctx).channelRead0(nettyCtx, new InetAddressedMessage<>(msg, recipient));
+            new TcpDrasylMessageHandler().channelRead0(ctx, new InetAddressedMessage<>(msg, recipient));
 
-            verify(nettyCtx).writeAndFlush(outboundMsg.capture());
+            verify(ctx).writeAndFlush(outboundMsg.capture());
             final ByteBuf httpOk = Unpooled.buffer().writeBytes(HTTP_OK);
             assertEquals(outboundMsg.getValue(), httpOk);
 
