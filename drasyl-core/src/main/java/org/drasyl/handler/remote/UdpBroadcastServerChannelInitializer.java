@@ -41,11 +41,16 @@ public class UdpBroadcastServerChannelInitializer extends ChannelInitializer<Dat
     }
 
     @Override
-    protected void initChannel(final DatagramChannel ch) throws Exception {
+    protected void initChannel(final DatagramChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new DatagramCodec());
-        p.addLast(new ChannelInboundHandlerAdapter() {
+        p.addLast(new InvalidProofOfWorkFilter());
+        lastStage(ch);
+    }
+
+    protected void lastStage(final DatagramChannel ch) {
+        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
                 final UdpBroadcastServer multicastServer = (UdpBroadcastServer) drasylCtx.handler();

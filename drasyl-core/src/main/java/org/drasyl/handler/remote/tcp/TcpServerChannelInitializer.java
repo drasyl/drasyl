@@ -27,16 +27,17 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
+import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @UnstableApi
-class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
     private final ChannelHandlerContext ctx;
 
-    TcpServerChannelInitializer(final ChannelHandlerContext ctx) {
+    public TcpServerChannelInitializer(final ChannelHandlerContext ctx) {
         this.ctx = requireNonNull(ctx);
     }
 
@@ -51,6 +52,13 @@ class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(new TcpCloseIdleClientsHandler());
         p.addLast(new TcpDrasylMessageHandler());
         p.addLast(new ByteToRemoteMessageCodec());
-        p.addLast(new TcpServerHandler(tcpServer.clientChannels(), ctx));
+        p.addLast(new InvalidProofOfWorkFilter());
+        lastStage(ch);
+    }
+
+    protected void lastStage(final SocketChannel ch) {
+        final TcpServer tcpServer = (TcpServer) ctx.handler();
+
+        ch.pipeline().addLast(new TcpServerHandler(tcpServer.clientChannels(), ctx));
     }
 }

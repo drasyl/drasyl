@@ -37,7 +37,6 @@ import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
@@ -185,10 +184,10 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
             channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx) {
                 @Override
-                protected void initChannel(final DatagramChannel ch) throws Exception {
-                    super.initChannel(ch);
+                protected void initChannel(final DatagramChannel ch) {
+                    ch.pipeline().addLast(new PortMapper());
 
-                    ch.pipeline().addFirst(new PortMapper());
+                    super.initChannel(ch);
                 }
             };
         }
@@ -224,12 +223,11 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
     /**
      * This stage adds some security services (encryption, sign/verify, throttle, detect message
-     * loops, foreight network filter, proof of work checker, etc...).
+     * loops, foreign network filter, proof of work checker, etc...).
      */
     private void gatekeeperStage(final DrasylServerChannel ch) {
-        // filter out inbound messages with invalid proof of work or other network id
+        // filter out inbound messages with other network id
         ch.pipeline().addLast(new OtherNetworkFilter(config.getNetworkId()));
-        ch.pipeline().addLast(new InvalidProofOfWorkFilter());
 
         // arm outbound and disarm inbound messages
         if (config.isRemoteMessageArmProtocolEnabled()) {

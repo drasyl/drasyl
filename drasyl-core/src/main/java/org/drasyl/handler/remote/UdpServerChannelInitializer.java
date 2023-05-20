@@ -39,7 +39,7 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
     }
 
     @Override
-    protected void initChannel(final DatagramChannel ch) throws Exception {
+    protected void initChannel(final DatagramChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new DatagramCodec());
@@ -56,6 +56,11 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
             }
         });
         p.addLast(new ByteToRemoteMessageCodec());
-        p.addLast(new UdpServerToDrasylHandler(drasylCtx));
+        p.addLast(new InvalidProofOfWorkFilter());
+        lastStage(ch);
+    }
+
+    protected void lastStage(final DatagramChannel ch) {
+        ch.pipeline().addLast(new UdpServerToDrasylHandler(drasylCtx));
     }
 }

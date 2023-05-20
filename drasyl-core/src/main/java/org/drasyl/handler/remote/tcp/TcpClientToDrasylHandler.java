@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * {@link org.drasyl.channel.DrasylServerChannel}'s context.
  */
 @UnstableApi
-class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
+public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClientToDrasylHandler.class);
     private final ChannelHandlerContext drasylCtx;
 

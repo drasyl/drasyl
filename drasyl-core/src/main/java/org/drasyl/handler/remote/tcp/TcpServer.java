@@ -99,12 +99,15 @@ public class TcpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * @param group the {@link NioEventLoopGroup} the underlying tcp server should run on
+     * @param group                      the {@link NioEventLoopGroup} the underlying tcp server
+     *                                   should run on
+     * @param channelInitializerSupplier
      */
     public TcpServer(final NioEventLoopGroup group,
                      final InetAddress bindHost,
                      final int bindPort,
-                     final Duration pingTimeout) {
+                     final Duration pingTimeout,
+                     final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 new ServerBootstrap(),
                 group,
@@ -112,9 +115,20 @@ public class TcpServer extends ChannelDuplexHandler {
                 bindHost,
                 bindPort,
                 pingTimeout,
-                TcpServerChannelInitializer::new,
+                channelInitializerSupplier,
                 null
         );
+    }
+
+    /**
+     * @param group                      the {@link NioEventLoopGroup} the underlying tcp server
+     *                                   should run on
+     */
+    public TcpServer(final NioEventLoopGroup group,
+                     final InetAddress bindHost,
+                     final int bindPort,
+                     final Duration pingTimeout) {
+        this(group, bindHost, bindPort, pingTimeout, TcpServerChannelInitializer::new);
     }
 
     @SuppressWarnings("unchecked")

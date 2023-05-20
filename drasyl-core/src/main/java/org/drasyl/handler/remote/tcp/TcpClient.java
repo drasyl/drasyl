@@ -109,7 +109,8 @@ public class TcpClient extends ChannelDuplexHandler {
     public TcpClient(final NioEventLoopGroup group,
                      final Set<InetSocketAddress> superPeerAddresses,
                      final Duration timeout,
-                     final InetSocketAddress address) {
+                     final InetSocketAddress address,
+                     final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 superPeerAddresses,
                 new Bootstrap(),
@@ -117,9 +118,19 @@ public class TcpClient extends ChannelDuplexHandler {
                 new AtomicLong(),
                 timeout,
                 address,
-                TcpClientChannelInitializer::new,
+                channelInitializerSupplier,
                 null
         );
+    }
+
+    /**
+     * @param group the {@link NioEventLoopGroup} the underlying tcp client should run on
+     */
+    public TcpClient(final NioEventLoopGroup group,
+                     final Set<InetSocketAddress> superPeerAddresses,
+                     final Duration timeout,
+                     final InetSocketAddress address) {
+        this(group, superPeerAddresses, timeout, address, TcpClientChannelInitializer::new);
     }
 
     private void stopClient() {

@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
  * new/closed connections.
  */
 @UnstableApi
+public
 class TcpServerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServerHandler.class);
     private final Map<SocketAddress, Channel> clients;

@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.FullReadMessage;
 import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 
 import java.util.List;

@@ -24,7 +24,6 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
@@ -41,11 +40,14 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
     }
 
     @Override
-    protected void initChannel(final DatagramChannel ch) throws Exception {
-        final ChannelPipeline p = ch.pipeline();
+    protected void initChannel(final DatagramChannel ch) {
+        ch.pipeline().addLast(new DatagramCodec());
+        ch.pipeline().addLast(new InvalidProofOfWorkFilter());
+        lastStage(ch);
+    }
 
-        p.addLast(new DatagramCodec());
-        p.addLast(new ChannelInboundHandlerAdapter() {
+    protected void lastStage(final DatagramChannel ch) {
+        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
                 final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
