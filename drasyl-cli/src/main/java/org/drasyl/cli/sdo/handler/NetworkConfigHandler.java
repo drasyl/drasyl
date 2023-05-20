@@ -35,7 +35,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
@@ -276,7 +275,6 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             final DrasylAddress publicKey = routes.get(dst);
             if (routes.containsKey(dst)) {
                 LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
-                new OverlayAddressedMessage<>();
             }
             else {
                 LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
