@@ -21,11 +21,13 @@
  */
 package org.drasyl.handler.remote;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.handler.ChannelReadListener;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -43,12 +45,20 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new DatagramCodec());
-        p.addLast(new ChannelReadListener(msg -> {
-            final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
-            multicastServer.multicastRead(msg);
-        }, () -> {
-            final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
-            multicastServer.multicastReadComplete();
-        }));
+        p.addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
+                multicastServer.multicastRead((InetAddressedMessage<ByteBuf>) msg);
+            }
+
+            @Override
+            public void channelReadComplete(final ChannelHandlerContext ctx) {
+                final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
+                multicastServer.multicastReadComplete();
+
+                ctx.fireChannelReadComplete();
+            }
+        });
     }
 }

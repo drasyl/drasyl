@@ -22,10 +22,10 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.handler.ChannelWritableListener;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -43,11 +43,18 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new DatagramCodec());
-        p.addLast(new ChannelWritableListener(() -> {
-            // UDP channel is writable again. Make sure (any existing) pending writes will be written
-            final UdpServer udpServer = (UdpServer) drasylCtx.handler();
-            udpServer.writePendingWrites(drasylCtx);
-        }));
+        p.addLast(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+                if (ctx.channel().isWritable()) {
+                    // UDP channel is writable again. Make sure (any existing) pending writes will be written
+                    final UdpServer udpServer = (UdpServer) drasylCtx.handler();
+                    udpServer.writePendingWrites(drasylCtx);
+                }
+
+                ctx.fireChannelWritabilityChanged();
+            }
+        });
         p.addLast(new UdpServerToDrasylHandler(drasylCtx));
     }
 }
