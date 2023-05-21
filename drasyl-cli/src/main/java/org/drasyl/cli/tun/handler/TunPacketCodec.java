@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,8 +38,7 @@ public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
     protected void encode(final ChannelHandlerContext ctx,
                           final TunPacket packet,
                           final List<Object> out) throws Exception {
-        out.add(ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER));
-        out.add(packet.content().retain());
+        out.add(ctx.alloc().compositeBuffer(2).addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER)).addComponent(true, packet.content().retain()));
     }
 
     @Override

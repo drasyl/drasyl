@@ -115,7 +115,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             final IdentityPublicKey fromKey = IdentityPublicKey.of(fromAddress);
             final String toAddress = (String) attributes.get("to");
             final IdentityPublicKey toKey = IdentityPublicKey.of(toAddress);
-            final Boolean directPath = (boolean) attributes.getOrDefault("direct-path", null);
+            final Boolean directPath = (Boolean) attributes.getOrDefault("direct-path", null);
 
             if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(fromKey)) {
                 // direct path
@@ -185,7 +185,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
                         continue;
                     }
 
-                    final Map<String, Object> peer = config.getNode(toKey);
+                    final Map<String, Object> peer = config.getNode(peerKey);
                     final InetAddress peerInetAddress = InetAddress.getByName((String) ((Map<String, Object>) peer.get("tun")).get("address"));
                     inetRoutes.put(peerInetAddress, peerKey);
                 }
@@ -279,7 +279,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
         public void handlerAdded(final ChannelHandlerContext tunCtx) throws Exception {
             drasylServerChannel.attr(TUN_CHANNEL_KEY).set((TunChannel) tunCtx.channel());
             for (final DrasylAddress peer : routes.values()) {
-                drasylServerChannel.serve(peer);
+                //drasylServerChannel.serve(peer);
             }
         }
 
@@ -298,7 +298,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
                         channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
                             @Override
                             public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                                System.out.printf("");
+                                System.out.print("");
                             }
                         });
                     }
