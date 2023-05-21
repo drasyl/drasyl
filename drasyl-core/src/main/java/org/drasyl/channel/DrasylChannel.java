@@ -51,6 +51,7 @@ import java.nio.channels.NotYetConnectedException;
  *
  * @see DrasylServerChannel
  */
+@UnstableApi
 public class DrasylChannel extends AbstractChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
@@ -76,7 +77,7 @@ public class DrasylChannel extends AbstractChannel {
         this.remoteAddress = remoteAddress;
     }
 
-    public DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
+    DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
         this(parent, null, parent.localAddress0(), remoteAddress);
     }
 
