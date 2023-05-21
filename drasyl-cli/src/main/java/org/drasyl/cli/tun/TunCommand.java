@@ -35,6 +35,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -74,6 +76,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelOption.AUTO_READ;
@@ -90,7 +93,7 @@ import static picocli.CommandLine.Command;
 )
 public class TunCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(TunCommand.class);
-    private final Map<IdentityPublicKey, Channel> channels = new HashMap<>();
+    private final Set<Channel> channelsToFlush = new HashSet<>();
     @Option(
             names = { "--rc-bind" },
             description = "Binds remote control server to given IP and port. If no port is specified, a random free port will be used.",
@@ -355,7 +358,7 @@ public class TunCommand extends ChannelOptions {
     private class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
         private final Identity identity;
         private final Worm<Integer> exitCode;
-        private Channel channel;
+        private DrasylServerChannel channel;
         private final Map<InetAddress, DrasylAddress> routes;
 
         public TunToDrasylHandler(final Identity identity,
@@ -367,19 +370,19 @@ public class TunCommand extends ChannelOptions {
         }
 
         @Override
-        public void channelActive(final ChannelHandlerContext ctx) throws IOException {
+        public void channelActive(final ChannelHandlerContext ctx) {
             ctx.fireChannelActive();
 
             // create drasyl channel
             final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, channels, !applicationArmDisabled);
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
                     .channel(DrasylServerChannel.class)
                     .handler(handler)
                     .childHandler(childHandler);
-            channel = b.bind(identity.getAddress()).channel();
+            channel = (DrasylServerChannel) b.bind(identity.getAddress()).channel();
         }
 
         @Override
@@ -403,10 +406,16 @@ public class TunCommand extends ChannelOptions {
             }
             else {
                 final DrasylAddress publicKey = routes.get(dst);
-                if (routes.containsKey(dst) && channels.containsKey(publicKey)) {
+                if (routes.containsKey(dst)) {
                     LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
-                    final Channel peerChannel = channels.get(publicKey);
-                    peerChannel.write(msg.retain());
+                    channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                        if (future.isSuccess()) {
+                            final Channel peerChannel = future.getNow();
+                            channelsToFlush.add(peerChannel);
+                            peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
+                            peerChannel.write(msg.retain());
+                        }
+                    });
                 }
                 else {
                     LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
@@ -418,10 +427,10 @@ public class TunCommand extends ChannelOptions {
         @Override
         public void channelReadComplete(final ChannelHandlerContext ctx) {
             ctx.flush();
-            for (Channel peerChannel : channels.values()) {
+            for (Channel peerChannel : channelsToFlush) {
                 peerChannel.flush();
             }
-            // TODO: just flush channels we have written to?
+            channelsToFlush.clear();
 
             ctx.fireChannelReadComplete();
         }
@@ -429,14 +438,15 @@ public class TunCommand extends ChannelOptions {
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
             if (evt instanceof AddRoute) {
-                final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) channel, ((AddRoute) evt).publicKey);
-                channel.pipeline().fireChannelRead(childChannel);
+                // ensure channel exists
+                channel.serve(((AddRoute) evt).publicKey);
             }
             else if (evt instanceof RemoveRoute) {
-                final Channel childChannel = channels.get(((RemoveRoute) evt).publicKey);
-                if (childChannel != null) {
-                    childChannel.close();
-                }
+                channel.serve(((RemoveRoute) evt).publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                    if (future.isSuccess()) {
+                        future.getNow().close();
+                    }
+                });
             }
             else {
                 ctx.fireUserEventTriggered(evt);
