@@ -49,6 +49,7 @@ public class SdoControllerChildHandler extends SimpleChannelInboundHandler<SdoMe
         if (msg instanceof JoinNetwork) {
             // verify sender is network node
             if (config.isNode((DrasylAddress) ctx.channel().remoteAddress())) {
+                LOG.debug("`{}` joined our network.", ctx.channel().remoteAddress());
                 ctx.writeAndFlush(new PushConfig(config.toString())).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {

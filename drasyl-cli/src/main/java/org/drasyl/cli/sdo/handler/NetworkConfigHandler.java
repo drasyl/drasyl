@@ -141,7 +141,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
         }
 
         final Map<String, Object> node = config.getNode((DrasylAddress) ctx.channel().localAddress());
-        if (node.containsKey("tun")) {
+        if (node.containsKey("tun") && (boolean) ((Map<String, Object>) node.get("tun")).get("enabled")) {
             // create tun device
             final String name = (String) ((Map<String, Object>) node.get("tun")).get("name");
             final Subnet subnet = new Subnet((String) ((Map<String, Object>) node.get("tun")).get("subnet"));
@@ -265,11 +265,13 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             }
         }
     }
+
     public static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
         private final DrasylServerChannel drasylServerChannel;
         private final Map<InetAddress, DrasylAddress> routes;
 
-        public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel, final Map<InetAddress, DrasylAddress> routes) {
+        public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel,
+                                  final Map<InetAddress, DrasylAddress> routes) {
             super(false);
             this.drasylServerChannel = requireNonNull(drasylServerChannel);
             this.routes = requireNonNull(routes);
@@ -284,7 +286,8 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext tunCtx, final Tun4Packet msg) throws Exception {
+        protected void channelRead0(final ChannelHandlerContext tunCtx,
+                                    final Tun4Packet msg) throws Exception {
             final InetAddress dst = msg.destinationAddress();
             LOG.trace("Got packet `{}`", () -> msg);
             LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
