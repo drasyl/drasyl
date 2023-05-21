@@ -23,6 +23,8 @@ package org.drasyl.cli.sdo.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.NetworkConfig;
@@ -56,8 +58,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelActive();
 
         LOG.debug("Connect to controller `{}`", controller);
-        controllerChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), controller);
-        ctx.fireChannelRead(controllerChannel);
+        ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> controllerChannel = future.getNow());
     }
 
     @Override

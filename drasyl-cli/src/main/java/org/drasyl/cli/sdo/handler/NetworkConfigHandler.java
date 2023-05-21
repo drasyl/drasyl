@@ -28,13 +28,20 @@ import com.typesafe.config.ConfigValue;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
@@ -68,6 +75,7 @@ import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
+    public static final AttributeKey<TunChannel> TUN_CHANNEL_KEY = AttributeKey.valueOf("TUN_CHANNEL_KEY");
     private static final Logger LOG = LoggerFactory.getLogger(NetworkConfigHandler.class);
     private final NetworkConfig config;
     private boolean applied;
@@ -184,7 +192,7 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             }
 
             if (!inetRoutes.isEmpty()) {
-                tunChannel.pipeline().addLast(new TunInetRoutesHandler(ctx, inetRoutes));
+                tunChannel.pipeline().addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), inetRoutes));
             }
         }
     }
@@ -257,17 +265,26 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             }
         }
     }
-    public class TunInetRoutesHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        private final ChannelHandlerContext drasylServerChannelCtx;
+    public static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
+        private final DrasylServerChannel drasylServerChannel;
         private final Map<InetAddress, DrasylAddress> routes;
 
-        public TunInetRoutesHandler(final ChannelHandlerContext drasylServerChannelCtx, final Map<InetAddress, DrasylAddress> routes) {
-            this.drasylServerChannelCtx = requireNonNull(drasylServerChannelCtx);
+        public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel, final Map<InetAddress, DrasylAddress> routes) {
+            super(false);
+            this.drasylServerChannel = requireNonNull(drasylServerChannel);
             this.routes = requireNonNull(routes);
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet msg) throws Exception {
+        public void handlerAdded(final ChannelHandlerContext tunCtx) throws Exception {
+            drasylServerChannel.attr(TUN_CHANNEL_KEY).set((TunChannel) tunCtx.channel());
+            for (final DrasylAddress peer : routes.values()) {
+                drasylServerChannel.serve(peer);
+            }
+        }
+
+        @Override
+        protected void channelRead0(final ChannelHandlerContext tunCtx, final Tun4Packet msg) throws Exception {
             final InetAddress dst = msg.destinationAddress();
             LOG.trace("Got packet `{}`", () -> msg);
             LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
@@ -275,6 +292,17 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             final DrasylAddress publicKey = routes.get(dst);
             if (routes.containsKey(dst)) {
                 LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
+                drasylServerChannel.serve(routes.get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                    if (future.isSuccess()) {
+                        final DrasylChannel channel = future.getNow();
+                        channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                                System.out.printf("");
+                            }
+                        });
+                    }
+                });
             }
             else {
                 LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);

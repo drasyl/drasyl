@@ -55,6 +55,8 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
 
+        //p.addLast(new MagicNumberBasedFrameDecoder(1, 123));
+        //p.addLast(new MagicNumberPrepender(1, 123));
         p.addLast(new SegmentCodec());
         p.addLast(new ConnectionHandler(config));
         if (false) {

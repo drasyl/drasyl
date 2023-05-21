@@ -22,10 +22,14 @@
 package org.drasyl.cli.sdo.channel;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
 import org.drasyl.cli.sdo.handler.SdoControllerChildHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
+import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.util.Worm;
 
@@ -51,13 +55,25 @@ public class SdoControllerChildChannelInitializer extends ConnectionChannelIniti
 
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
-        ctx.pipeline().addLast(new JacksonCodec<>(SdoMessage.class));
-        ctx.pipeline().addLast(new SdoControllerChildHandler(networkConfig));
+        final ChannelPipeline p = ctx.pipeline();
+
+        p.addLast(new JacksonCodec<>(SdoMessage.class));
+        p.addLast(new SdoControllerChildHandler(networkConfig));
     }
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
         out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
         ctx.close();
+    }
+
+    @Override
+    protected void initChannel(final DrasylChannel ch) throws Exception {
+        final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new TunPacketCodec());
+        p.addLast(new DrasylToTunHandler());
+
+        super.initChannel(ch);
     }
 }

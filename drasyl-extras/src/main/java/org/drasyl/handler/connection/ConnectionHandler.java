@@ -27,7 +27,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -224,10 +223,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (!(msg instanceof ByteBuf)) {
-            // reject all non-ByteBuf messages
-            final UnsupportedMessageTypeException exception = new UnsupportedMessageTypeException(msg, ByteBuf.class);
-            promise.tryFailure(exception);
-            ReferenceCountUtil.safeRelease(msg);
+            ctx.write(msg, promise);
         }
         else {
             // interpret as SEND call
@@ -271,7 +267,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             segmentArrives(ctx, (Segment) msg);
         }
         else {
-            ReferenceCountUtil.safeRelease(msg);
+            ctx.fireChannelRead(msg);
         }
     }
 

@@ -33,10 +33,12 @@ import java.util.List;
  * This codec converts {@link TunPacket}s to {@link ByteBuf}s and vice versa.
  */
 public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
+    public static final int MAGIC_NUMBER = 899_812_335;
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final TunPacket packet,
                           final List<Object> out) throws Exception {
+        out.add(ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER));
         out.add(packet.content().retain());
     }
 
@@ -44,6 +46,18 @@ public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf byteBuf,
                           final List<Object> out) throws Exception {
-        out.add(new Tun4Packet(byteBuf).retain());
+        if (byteBuf.readableBytes() >= Integer.BYTES) {
+            byteBuf.markReaderIndex();
+            if (byteBuf.readInt() != MAGIC_NUMBER) {
+                byteBuf.resetReaderIndex();
+                ctx.fireChannelRead(byteBuf.retain());
+                return;
+            }
+
+            out.add(new Tun4Packet(byteBuf).retain());
+        }
+        else {
+            out.add(byteBuf.retain());
+        }
     }
 }

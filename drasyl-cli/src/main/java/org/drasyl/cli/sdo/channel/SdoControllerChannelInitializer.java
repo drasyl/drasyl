@@ -87,7 +87,5 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
             }
         });
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
-
-        VisualPipeline.print(ch.pipeline());
     }
 }

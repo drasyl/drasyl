@@ -22,12 +22,15 @@
 package org.drasyl.cli.sdo.channel;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdo.event.ControllerHandshakeCompleted;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
+import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
 import org.drasyl.cli.sdo.handler.SdoNodeToControllerChildHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
+import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -61,6 +64,9 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
 
             ctx.channel().parent().pipeline().fireUserEventTriggered(new ControllerHandshakeCompleted());
         }
+        else {
+            // handshake with other node completed
+        }
     }
 
     @Override
@@ -78,6 +84,11 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
+        final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new TunPacketCodec());
+        p.addLast(new DrasylToTunHandler());
+
         super.initChannel(ch);
     }
 }
