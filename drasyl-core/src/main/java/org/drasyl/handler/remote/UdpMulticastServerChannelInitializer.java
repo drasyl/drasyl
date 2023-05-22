@@ -42,6 +42,7 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
     @Override
     protected void initChannel(final DatagramChannel ch) {
         ch.pipeline().addLast(new DatagramCodec());
+        ch.pipeline().addLast(new ByteToRemoteMessageCodec());
         ch.pipeline().addLast(new InvalidProofOfWorkFilter());
         lastStage(ch);
     }
