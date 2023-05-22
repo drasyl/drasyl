@@ -76,7 +76,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
 
 public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
     public static final AttributeKey<TunChannel> TUN_CHANNEL_KEY = AttributeKey.valueOf("TUN_CHANNEL_KEY");
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkConfigHandler.class);
+    public static final Logger LOG = LoggerFactory.getLogger(NetworkConfigHandler.class);
     private final NetworkConfig config;
     private boolean applied;
     private Channel tunChannel;
@@ -120,22 +120,26 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(fromKey)) {
                 // direct path
                 if (consideredPeers.add(toKey)) {
+                    LOG.debug("Try to establish direct path to `{}`.", toKey);
                     ctx.pipeline().addAfter(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new DirectPathHandler(toKey));
                 }
             }
             else if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(toKey)) {
                 // direct path
                 if (consideredPeers.add(fromKey)) {
+                    LOG.debug("Try to establish direct path to `{}`.", fromKey);
                     ctx.pipeline().addAfter(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new DirectPathHandler(fromKey));
                 }
             }
             else if (Boolean.FALSE.equals(directPath)) {
                 // no direct path
-                if (consideredPeers.add(fromKey)) {
-                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(fromKey));
-                }
                 if (consideredPeers.add(toKey)) {
+                    LOG.debug("Prevent any direct path establishment to `{}`.", toKey);
                     ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(toKey));
+                }
+                if (consideredPeers.add(fromKey)) {
+                    LOG.debug("Prevent any direct path establishment to `{}`.", fromKey);
+                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(fromKey));
                 }
             }
         }

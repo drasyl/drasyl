@@ -27,6 +27,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.cli.sdo.handler.NetworkConfigHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.DrasylAddress;
@@ -47,6 +48,7 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(DirectPathHandler.class);
     private final IdentityPublicKey peer;
     private ScheduledFuture<?> retryTask;
+    private boolean directPathEstablished = false;
 
     public DirectPathHandler(final IdentityPublicKey peer) {
         this.peer = requireNonNull(peer);
@@ -55,6 +57,7 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
+            directPathEstablished = ((DrasylServerChannel) ctx.channel()).isDirectPathPresent(peer);
             triggerDirectPathEstablishment(ctx);
         }
     }
@@ -69,6 +72,7 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelActive();
 
         if (retryTask == null) {
+            directPathEstablished = ((DrasylServerChannel) ctx.channel()).isDirectPathPresent(peer);
             triggerDirectPathEstablishment(ctx);
         }
     }
@@ -82,7 +86,19 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
 
     private void triggerDirectPathEstablishment(ChannelHandlerContext ctx) {
         // TODO: es wäre besser, wenn wir ein Path-Event bekommen würden und dann reaktiv reagieren könnten
-        if (!((DrasylServerChannel) ctx.channel()).isDirectPathPresent(peer)) {
+        final boolean directPathPresentNow = ((DrasylServerChannel) ctx.channel()).isDirectPathPresent(peer);
+
+        if (directPathPresentNow != directPathEstablished) {
+            if (directPathPresentNow) {
+                NetworkConfigHandler.LOG.debug("Direct path to `{}` established.", peer);
+            }
+            else {
+                NetworkConfigHandler.LOG.debug("Direct path to `{}` lost. Try to establish it again.", peer);
+            }
+            directPathEstablished = directPathPresentNow;
+        }
+
+        if (!directPathPresentNow) {
             LOG.debug("No direct path to `{}` present. Send NOOP message to trigger direct path establishment.", peer);
 
             final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NoopDiscardHandler.NOOP_MAGIC_NUMBER);

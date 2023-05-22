@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,7 +77,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             names = { "--network-id" },
             description = "The network this server belongs to.",
             paramLabel = "<id>",
-            defaultValue = "1"
+            defaultValue = "3"
     )
     protected int networkId;
     @Option(
@@ -95,11 +95,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             split = ","
     )
     protected Map<IdentityPublicKey, InetSocketAddress> superPeers;
-    @Option(
-            names = { "--no-protocol-arming" },
-            description = "Disables arming (authenticating/encrypting) of all protocol messages. Ensure other nodes have arming disabled as well."
-    )
-    protected boolean protocolArmDisabled;
+    protected boolean protocolArmDisabled = true;
 
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,
