@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Set;
@@ -50,6 +49,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,12 +58,14 @@ class RateLimiterTest {
     private Identity sender;
     private Identity ownIdentity;
     private Identity recipient;
+    private InetSocketAddress endpoint;
 
     @BeforeEach
     void setUp() {
-        sender = IdentityTestUtil.ID_1;
-        ownIdentity = IdentityTestUtil.ID_2;
+        sender = ID_1;
+        ownIdentity = ID_2;
         recipient = ID_3;
+        endpoint = new InetSocketAddress("127.0.0.1", 22527);
     }
 
     @Test
@@ -73,7 +76,7 @@ class RateLimiterTest {
         when(timeProvider.get()).thenReturn(1_000L).thenReturn(1_050L).thenReturn(2_050L).thenReturn(2_150L);
 
         final ConcurrentMap<Pair<? extends Class<? extends FullReadMessage<?>>, DrasylAddress>, Long> cache = new ConcurrentHashMap<>();
-        final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), System.currentTimeMillis());
+        final AcknowledgementMessage msg = AcknowledgementMessage.of(0, ownIdentity.getIdentityPublicKey(), sender.getIdentityPublicKey(), sender.getProofOfWork(), System.currentTimeMillis(), endpoint);
         final RateLimiter rateLimiter = new RateLimiter(timeProvider, cache);
 
         rateLimiter.channelRead0(ctx, new InetAddressedMessage<>(msg, null, msgSender));

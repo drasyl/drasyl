@@ -136,7 +136,7 @@ public class ArmedProtocolMessageTest {
 
         @Test
         void shouldBeAbleToDisarmToAcknowledgementMessage() throws CryptoException, InvalidMessageFormatException {
-            final FullReadMessage<?> message = AcknowledgementMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), System.currentTimeMillis());
+            final FullReadMessage<?> message = AcknowledgementMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), System.currentTimeMillis(), new InetSocketAddress("127.0.0.1", 22527));
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final FullReadMessage<?> disarmedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())).disarmAndRelease(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, sessionPair);
 

@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetSocketAddress;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
@@ -41,6 +43,7 @@ public class AcknowledgementMessageTest {
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipient;
     private long time;
+    private InetSocketAddress endpoint;
 
     @BeforeEach
     void setUp() {
@@ -48,13 +51,14 @@ public class AcknowledgementMessageTest {
         proofOfWork = ID_1.getProofOfWork();
         recipient = ID_2.getIdentityPublicKey();
         time = System.currentTimeMillis();
+        endpoint = new InetSocketAddress("127.0.0.1", 22527);
     }
 
     @Nested
     class Of {
         @Test
         void shouldCreateAcknowledgementMessage() {
-            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time);
+            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time, endpoint);
 
             assertEquals(1, acknowledgement.getNetworkId());
             assertEquals(time, acknowledgement.getTime());
@@ -65,7 +69,7 @@ public class AcknowledgementMessageTest {
     class GetLength {
         @Test
         void shouldReturnCorrectLength() {
-            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time);
+            final AcknowledgementMessage acknowledgement = AcknowledgementMessage.of(1, recipient, sender, proofOfWork, time, endpoint);
             final int length = acknowledgement.getLength();
 
             final ByteBuf byteBuf = Unpooled.buffer();

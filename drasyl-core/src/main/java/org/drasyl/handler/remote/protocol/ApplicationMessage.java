@@ -28,6 +28,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.UnstableApi;
 
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLICATION;
 
@@ -38,6 +39,7 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLI
  * <li><b>Payload</b>: The payload sent by the application (any number of bytes).</li>
  * </ul>
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> implements ReferenceCounted, AutoCloseable {

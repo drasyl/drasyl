@@ -32,6 +32,7 @@ import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.handler.NatMappingPolicyDetector;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
@@ -70,6 +71,7 @@ import org.drasyl.node.event.NodeDownEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.handler.PeerReportedInetAddressHandlerEmitter;
 import org.drasyl.node.handler.PeersManagerHandler;
 import org.drasyl.node.handler.plugin.PluginsHandler;
 import org.drasyl.util.Murmur3;
@@ -249,6 +251,8 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         if (config.isRemoteEnabled()) {
             ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
+            ch.pipeline().addLast(new PeerReportedInetAddressHandlerEmitter());
+            ch.pipeline().addLast(new NatMappingPolicyDetector());
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
                 final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));

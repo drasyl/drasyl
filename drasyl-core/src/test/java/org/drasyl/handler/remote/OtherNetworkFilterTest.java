@@ -45,11 +45,13 @@ import static org.mockito.Mockito.when;
 class OtherNetworkFilterTest {
     private IdentityPublicKey senderPublicKey;
     private IdentityPublicKey recipientPublicKey;
+    private InetSocketAddress endpoint;
 
     @BeforeEach
     void setUp() {
         senderPublicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
         recipientPublicKey = IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b");
+        endpoint = new InetSocketAddress("127.0.0.1", 22527);
     }
 
     @Test
@@ -71,7 +73,7 @@ class OtherNetworkFilterTest {
     @Test
     void shouldPassMessagesFromSameNetwork(@Mock final InetSocketAddress sender) {
         final ChannelHandler handler = new OtherNetworkFilter(123);
-        final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(123, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis(), endpoint);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelRead(new InetAddressedMessage<>(message, null, sender));

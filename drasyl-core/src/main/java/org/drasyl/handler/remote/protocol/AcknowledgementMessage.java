@@ -27,6 +27,13 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
+import org.drasyl.util.network.NetworkUtil;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNOWLEDGEMENT;
@@ -35,20 +42,23 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.ACKNO
  * Acknowledges a {@link HelloMessage}. The message's body is structured as follows:
  * <ul>
  * <li><b>Time</b>: The received {@link HelloMessage#getTime()} value this message is refers (8 bytes).</li>
+ * <li><b>Endpoint</b>: UDP-port-IP-address-combination were the peer has received the corresponding {@link HelloMessage} from. IPv4 addresses will be mapped to IPv6 addresses (2 + 16 bytes)</li>
  * </ul>
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class AcknowledgementMessage extends AbstractFullReadMessage<AcknowledgementMessage> {
-    public static final int LENGTH = 8;
+    public static final int MIN_LENGTH = 8;
+    private static final int IPV6_LENGTH = 16;
 
     /**
      * Creates new acknowledgement message.
      *
      * @param hopCount    the hop count
-     * @param isArmed
+     * @param isArmed     if the message is armed or not
      * @param networkId   the network id
      * @param nonce       the nonce
      * @param recipient   the public key of the recipient
@@ -66,7 +76,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                             final DrasylAddress recipient,
                                             final DrasylAddress sender,
                                             final ProofOfWork proofOfWork,
-                                            final long time) {
+                                            final long time,
+                                            final InetSocketAddress endpoint) {
         return new AutoValue_AcknowledgementMessage(
                 nonce,
                 networkId,
@@ -75,7 +86,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                 hopCount,
                 isArmed,
                 recipient,
-                time
+                time,
+                endpoint
         );
     }
 
@@ -93,7 +105,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                             final DrasylAddress recipient,
                                             final IdentityPublicKey sender,
                                             final ProofOfWork proofOfWork,
-                                            final long time) {
+                                            final long time,
+                                            final InetSocketAddress endpoint) {
         return of(
                 HopCount.of(),
                 false,
@@ -102,7 +115,8 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                 recipient,
                 sender,
                 proofOfWork,
-                time
+                time,
+                endpoint
         );
     }
 
@@ -127,15 +141,38 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
                                      final DrasylAddress sender,
                                      final ProofOfWork proofOfWork,
                                      final ByteBuf body) throws InvalidMessageFormatException {
-        if (body.readableBytes() < LENGTH) {
-            throw new InvalidMessageFormatException("AcknowledgementMessage requires " + LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
+        if (body.readableBytes() < MIN_LENGTH) {
+            throw new InvalidMessageFormatException("AcknowledgementMessage requires " + MIN_LENGTH + " readable bytes. Only " + body.readableBytes() + " left.");
         }
 
-        return of(
-                hopCount, false, networkId, nonce,
-                recipient, sender,
+        final long time = body.readLong();
+        final InetSocketAddress endpoint;
+        if (body.readableBytes() >= 18) {
+            try {
+                final int port = body.readUnsignedShort();
+                final byte[] addressBuffer = new byte[IPV6_LENGTH];
+                body.readBytes(addressBuffer);
+                final InetAddress address = InetAddress.getByAddress(addressBuffer);
+                endpoint = new InetSocketAddress(address, port);
+            }
+            catch (final UnknownHostException e) {
+                throw new InvalidMessageFormatException("Invalid private IP address.", e);
+            }
+        }
+        else {
+            endpoint = null;
+        }
+
+        return of(hopCount,
+                false,
+                networkId,
+                nonce,
+                recipient,
+                sender,
                 proofOfWork,
-                body.readLong());
+                time,
+                endpoint
+        );
     }
 
     /**
@@ -143,23 +180,39 @@ public abstract class AcknowledgementMessage extends AbstractFullReadMessage<Ack
      */
     public abstract long getTime();
 
+    /**
+     * Returns the {@link InetSocketAddress} were the peer has received the corresponding {@link HelloMessage} from.
+     */
+    @Nullable
+    public abstract InetSocketAddress getEndpoint();
+
     @Override
     public AcknowledgementMessage incrementHopCount() {
-        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime());
+        return AcknowledgementMessage.of(getHopCount().increment(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getTime(), getEndpoint());
     }
 
     @Override
     protected void writePrivateHeaderTo(final ByteBuf out) {
-        PrivateHeader.of(ACKNOWLEDGEMENT, UnsignedShort.of(LENGTH)).writeTo(out);
+        PrivateHeader.of(ACKNOWLEDGEMENT, UnsignedShort.of(MIN_LENGTH)).writeTo(out);
     }
 
     @Override
     protected void writeBodyTo(final ByteBuf out) {
         out.writeLong(getTime());
+        // endpoint parameter has be introduced with 0.11
+        if (getEndpoint() != null) {
+            out.writeShort(getEndpoint().getPort());
+            out.writeBytes(NetworkUtil.getIpv4MappedIPv6AddressBytes(getEndpoint().getAddress()));
+        }
     }
 
     @Override
     public int getLength() {
-        return MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + LENGTH;
+        int length = MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.LENGTH + MIN_LENGTH;
+        // endpoint parameter has be introduced with 0.11
+        if (getEndpoint() != null) {
+            length += 2 + IPV6_LENGTH;
+        }
+        return length;
     }
 }

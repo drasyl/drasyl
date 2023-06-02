@@ -53,19 +53,21 @@ class ByteToRemoteMessageCodecTest {
     private IdentityPublicKey senderPublicKey;
     private ProofOfWork proofOfWork;
     private IdentityPublicKey recipientPublicKey;
+    private InetSocketAddress endpoint;
 
     @BeforeEach
     void setUp() {
         senderPublicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
         recipientPublicKey = IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b");
         proofOfWork = ProofOfWork.of(1);
+        endpoint = new InetSocketAddress("127.0.0.1", 22527);
     }
 
     @Nested
     class Decode {
         @Test
         void shouldConvertByteBufToEnvelope(@Mock final InetSocketAddress sender) {
-            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
+            final RemoteMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis(), endpoint);
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {

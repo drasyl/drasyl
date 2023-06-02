@@ -49,17 +49,19 @@ class InvalidProofOfWorkFilterTest {
     private IdentityPublicKey senderPublicKey;
     private InetSocketAddress senderAddress;
     private IdentityPublicKey recipientPublicKey;
+    private InetSocketAddress endpoint;
 
     @BeforeEach
     void setUp() {
         senderPublicKey = ID_1.getIdentityPublicKey();
         senderAddress = new InetSocketAddress(12345);
         recipientPublicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+        endpoint = new InetSocketAddress("127.0.0.1", 22527);
     }
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ProofOfWork.of(1), System.currentTimeMillis(), endpoint);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -74,7 +76,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWorkAddressedToMe() {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ID_1.getProofOfWork(), System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, ID_1.getProofOfWork(), System.currentTimeMillis(), endpoint);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(recipientPublicKey, handler);
         try {
@@ -92,7 +94,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldNotValidateProofOfWorkForMessagesNotAddressedToMe(@Mock final ProofOfWork proofOfWork) {
-        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis());
+        final AcknowledgementMessage message = AcknowledgementMessage.of(1337, recipientPublicKey, senderPublicKey, proofOfWork, System.currentTimeMillis(), endpoint);
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
