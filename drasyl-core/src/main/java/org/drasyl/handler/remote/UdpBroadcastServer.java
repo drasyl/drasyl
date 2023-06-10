@@ -22,19 +22,18 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.NetUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -45,6 +44,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -66,6 +66,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     private final Set<ChannelHandlerContext> nodes;
     private final Supplier<Bootstrap> bootstrapSupplier;
     private final EventLoopGroup group;
+    private final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private DatagramChannel channel;
 
     static {
@@ -88,10 +89,12 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
     UdpBroadcastServer(final Set<ChannelHandlerContext> nodes,
                        final Supplier<Bootstrap> bootstrapSupplier,
                        final EventLoopGroup group,
+                       final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
                        final DatagramChannel channel) {
         this.nodes = requireNonNull(nodes);
         this.bootstrapSupplier = requireNonNull(bootstrapSupplier);
         this.group = requireNonNull(group);
+        this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.channel = channel;
     }
 
@@ -99,11 +102,13 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
      * @param group the {@link EventLoopGroup} the underlying udp server should run on
      */
     @SuppressWarnings("unused")
-    public UdpBroadcastServer(final EventLoopGroup group) {
+    public UdpBroadcastServer(final EventLoopGroup group,
+                              final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
         this(
                 new HashSet<>(),
                 Bootstrap::new,
                 group,
+                channelInitializerSupplier,
                 null
         );
     }
@@ -124,7 +129,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
             bootstrapSupplier.get()
                     .group(group)
                     .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                    .handler(new UdpBroadcastServerHandler())
+                    .handler(channelInitializerSupplier.apply(ctx))
                     .bind(BROADCAST_BIND_HOST, BROADCAST_ADDRESS.getPort())
                     .addListener(new UdpBroadcastServerFutureListener(ctx));
         }
@@ -151,26 +156,16 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private class UdpBroadcastServerHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-        UdpBroadcastServerHandler() {
-            super(false);
-        }
+    void broadcastRead(final InetAddressedMessage<UnarmedProtocolMessage> msg) {
+        nodes.forEach(nodeCtx -> {
+            LOG.trace("Datagram received {} and passed to {}", () -> msg, nodeCtx.channel()::localAddress);
+            nodeCtx.fireChannelRead(new InetAddressedMessage<>(msg.content().asReadOnly().retain(), msg.recipient(), msg.sender()));
+        });
+        msg.release();
+    }
 
-        @Override
-        protected void channelRead0(final ChannelHandlerContext channelCtx,
-                                    final DatagramPacket packet) {
-            final InetSocketAddress sender = packet.sender();
-            final ByteBuf content = packet.content().asReadOnly();
-            nodes.forEach(nodeCtx -> {
-                LOG.trace("Datagram received {} and passed to {}", () -> packet, nodeCtx.channel()::localAddress);
-                final ByteBuf byteBuf = content.retainedDuplicate();
-                nodeCtx.executor().execute(() -> {
-                    nodeCtx.fireChannelRead(new InetAddressedMessage<>(byteBuf, null, sender));
-                    nodeCtx.fireChannelReadComplete();
-                });
-            });
-            content.release();
-        }
+    void broadcastReadComplete() {
+        nodes.forEach(ChannelHandlerContext::fireChannelReadComplete);
     }
 
     private class UdpBroadcastServerFutureListener implements ChannelFutureListener {

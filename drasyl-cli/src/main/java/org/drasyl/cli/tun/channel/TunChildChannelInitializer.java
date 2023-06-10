@@ -52,20 +52,17 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
     private final Identity identity;
     private final Channel tun;
     private final Map<InetAddress, DrasylAddress> routes;
-    private final Map<IdentityPublicKey, Channel> channels;
     private final boolean applicationArmEnabled;
 
     public TunChildChannelInitializer(final PrintStream err,
                                       final Identity identity,
                                       final Channel tun,
                                       final Map<InetAddress, DrasylAddress> routes,
-                                      final Map<IdentityPublicKey, Channel> channels,
                                       final boolean applicationArmEnabled) {
         this.err = requireNonNull(err);
         this.identity = requireNonNull(identity);
         this.tun = requireNonNull(tun);
         this.routes = requireNonNull(routes);
-        this.channels = requireNonNull(channels);
         this.applicationArmEnabled = applicationArmEnabled;
     }
 
@@ -77,8 +74,6 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
             ch.close();
             return;
         }
-        channels.put((IdentityPublicKey) ch.remoteAddress(), ch);
-        ch.closeFuture().addListener(future -> channels.remove(ch.remoteAddress()));
 
         final ChannelPipeline p = ch.pipeline();
 

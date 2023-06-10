@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
@@ -48,6 +49,11 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
         this.networkId = networkId;
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
+    }
+
+    public ApplicationMessageToPayloadCodec(final int networkId,
+                                            final Identity myIdentity) {
+        this(networkId, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
     }
 
     @Override

@@ -43,8 +43,6 @@ import java.io.IOException;
  * <p>
  * Only the message recipient can decrypt and authenticate the message by calling
  * {@link #disarm(ByteBufAllocator, Crypto, SessionPair)}.
- * <p>
- * This is an immutable object.
  */
 @AutoValue
 @SuppressWarnings("java:S118")

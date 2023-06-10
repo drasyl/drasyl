@@ -32,6 +32,9 @@ import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
@@ -46,6 +49,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -65,6 +69,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see DrasylChannel
  */
+@UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel {
     enum State {OPEN, ACTIVE, CLOSED}
 
@@ -156,6 +161,37 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return state == State.ACTIVE;
     }
 
+    protected DrasylChannel newDrasylChannel(final DrasylAddress peer) {
+        return new DrasylChannel(this, peer);
+    }
+
+    public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
+        if (eventLoop().inEventLoop()) {
+            serve0(peer, promise);
+        }
+        else {
+            eventLoop().execute(() -> serve0(peer, promise));
+        }
+
+        return promise;
+    }
+
+    private void serve0(DrasylAddress peer, Promise<DrasylChannel> promise) {
+        if (!promise.isCancelled()) {
+            DrasylChannel channel = channels.get(peer);
+            if (channel == null) {
+                channel = newDrasylChannel(peer);
+                pipeline().fireChannelRead(channel);
+                pipeline().fireChannelReadComplete();
+            }
+            promise.trySuccess(channel);
+        }
+    }
+
+    public Promise<DrasylChannel> serve(final DrasylAddress peer) {
+        return serve(peer, new DefaultPromise<>(eventLoop()));
+    }
+
     /**
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.
@@ -216,22 +252,26 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                                  final Object o,
                                                  final IdentityPublicKey peer,
                                                  final boolean recreateClosedChannel) {
-            final Channel channel = getOrCreateChildChannel(ctx, peer);
+            ((DrasylServerChannel) ctx.channel()).serve(peer).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                if (future.isSuccess()) {
+                    final DrasylChannel channel = future.getNow();
 
-            // pass message to channel
-            channel.eventLoop().execute(() -> {
-                if (channel.isActive()) {
-                    channel.pipeline().fireChannelRead(o);
-                    channel.pipeline().fireChannelReadComplete();
-                }
-                else if (ctx.channel().isOpen() && recreateClosedChannel) {
-                    // channel to which the message is to be passed to has been closed in the
-                    // meantime. give message chance to be consumed by recreate a new channel once
-                    ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
-                }
-                else {
-                    // drop message
-                    ReferenceCountUtil.release(o);
+                    // pass message to channel
+                    channel.eventLoop().execute(() -> {
+                        if (channel.isActive()) {
+                            channel.pipeline().fireChannelRead(o);
+                            channel.pipeline().fireChannelReadComplete();
+                        }
+                        else if (ctx.channel().isOpen() && recreateClosedChannel) {
+                            // channel to which the message is to be passed to has been closed in the
+                            // meantime. give message chance to be consumed by recreate a new channel once
+                            ctx.executor().execute(() -> passMessageToChannel(ctx, o, peer, false));
+                        }
+                        else {
+                            // drop message
+                            ReferenceCountUtil.release(o);
+                        }
+                    });
                 }
             });
         }
@@ -288,19 +328,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                                final DrasylAddress remoteAddress) {
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
             return parent.channels.get(remoteAddress);
-        }
-
-        private static Channel getOrCreateChildChannel(final ChannelHandlerContext ctx,
-                                                       final DrasylAddress remoteAddress) {
-            final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
-
-            Channel channel = getChildChannel(ctx, remoteAddress);
-            if (channel == null) {
-                channel = new DrasylChannel(parent, remoteAddress);
-                ctx.fireChannelRead(channel);
-            }
-
-            return channel;
         }
     }
 

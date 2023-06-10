@@ -63,8 +63,7 @@ public class SpawnChildChannelToPeer extends ChannelInboundHandlerAdapter {
     private void spawnChannels(final ChannelHandlerContext ctx) {
         if (ctx.channel().isOpen()) {
             for (final DrasylAddress remoteAddress : remoteAddresses) {
-                final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), remoteAddress);
-                ctx.fireChannelRead(childChannel);
+                ((DrasylServerChannel) ctx.channel()).serve(remoteAddress);
             }
         }
         ctx.pipeline().remove(this);

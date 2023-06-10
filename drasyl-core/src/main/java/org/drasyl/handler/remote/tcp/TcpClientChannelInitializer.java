@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.remote.crypto;
+package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.FullReadMessage;
-import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.SocketChannel;
+import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
+import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.util.internal.UnstableApi;
 
-import java.util.List;
+import static java.util.Objects.requireNonNull;
 
-/**
- * Decodes {@link UnarmedProtocolMessage}s to {@link FullReadMessage}s.
- */
-@Sharable
-public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
-    @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage;
+@UnstableApi
+public class TcpClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+    private final ChannelHandlerContext drasylCtx;
+
+    public TcpClientChannelInitializer(final ChannelHandlerContext drasylCtx) {
+        this.drasylCtx = requireNonNull(drasylCtx);
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final InetAddressedMessage<UnarmedProtocolMessage> msg,
-                          final List<Object> out) throws Exception {
-        out.add(msg.replace(msg.content().retain().read()));
+    protected void initChannel(final SocketChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new ByteBufCodec());
+        p.addLast(new ByteToRemoteMessageCodec());
+        p.addLast(new InvalidProofOfWorkFilter());
+        lastStage(ch);
+    }
+
+    protected void lastStage(final SocketChannel ch) {
+        ch.pipeline().addLast(new TcpClientToDrasylHandler(drasylCtx));
     }
 }

@@ -29,6 +29,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -311,20 +312,18 @@ public abstract class DrasylNode {
     @NonNull
     public CompletionStage<Channel> resolve(@NonNull final DrasylAddress address) {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
+            final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) channelFuture.channel();
             final CompletableFuture<Channel> future = new CompletableFuture<>();
-            // synchronize resolve by placing it in the ServerChannels's EventLoop
-            channelFuture.channel().eventLoop().execute(() -> {
-                Channel channel = ((DrasylServerChannel) channelFuture.channel()).channels.get(address);
-                if (channel == null) {
-                    channel = new DrasylChannel((DrasylServerChannel) channelFuture.channel(), address);
-                    channelFuture.channel().pipeline().fireChannelRead(channel);
+            drasylServerChannel.serve(address).addListener((GenericFutureListener<Future<DrasylChannel>>) future2 -> {
+                if (future2.isSuccess()) {
+                    final DrasylChannel channel = future2.getNow();
+                    // delay future completion to make sure Channel's childHandler is done
+                    channel.eventLoop().execute(() -> future.complete(channel));
                 }
-
-                // delay future completion to make sure Channel's childHandler is done
-                final Channel finalChannel = channel;
-                channel.eventLoop().execute(() -> future.complete(finalChannel));
+                else {
+                    future.completeExceptionally(new Exception());
+                }
             });
-
             return future;
         }
         else {

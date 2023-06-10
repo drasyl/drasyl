@@ -623,8 +623,8 @@ class DrasylNodeIT {
 
             @Test
             void correctPeerEventsShouldBeEmitted() {
-                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
     }

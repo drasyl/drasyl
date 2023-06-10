@@ -40,8 +40,6 @@ import java.io.IOException;
  * Describes an unencrypted protocol message whose only public header has been read so far.
  * <p>
  * {@link #read()} can be used to read the message's remainder.
- * <p>
- * This is an immutable object.
  */
 @AutoValue
 @SuppressWarnings("java:S118")
@@ -256,6 +254,20 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
 
     private byte[] buildAuthTag(final ByteBufAllocator alloc) {
         return buildPublicHeader().buildAuthTag(alloc);
+    }
+
+    /**
+     * Returns {@code true} if and only if this message is read-only.
+     */
+    public boolean isReadOnly() {
+        return getBytes().isReadOnly();
+    }
+
+    /**
+     * Returns a read-only version of this message.
+     */
+    public UnarmedProtocolMessage asReadOnly() {
+        return UnarmedProtocolMessage.of(getHopCount(), getArmed(), getNetworkId(), getNonce(), getRecipient(), getSender(), getProofOfWork(), getBytes().asReadOnly());
     }
 
     /**

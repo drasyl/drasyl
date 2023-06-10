@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,26 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.remote.crypto;
+package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.FullReadMessage;
-import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateEvent;
+import org.drasyl.util.internal.UnstableApi;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.List;
-
-/**
- * Decodes {@link UnarmedProtocolMessage}s to {@link FullReadMessage}s.
- */
-@Sharable
-public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
-    @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage;
-    }
+@UnstableApi
+public class TcpCloseIdleClientsHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(TcpCloseIdleClientsHandler.class);
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final InetAddressedMessage<UnarmedProtocolMessage> msg,
-                          final List<Object> out) throws Exception {
-        out.add(msg.replace(msg.content().retain().read()));
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+        ctx.fireUserEventTriggered(evt);
+
+        if (evt instanceof IdleStateEvent) {
+            LOG.debug("Close TCP connection to `{}` due to inactivity.", ctx.channel()::remoteAddress);
+            ctx.close();
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -72,7 +72,9 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
                 out.println("----------------------------------------------------------------------------------------------");
                 out.println("Server listening on address " + ch.localAddress());
                 out.println("----------------------------------------------------------------------------------------------");
+
                 ctx.fireChannelActive();
+                ctx.pipeline().remove(this);
             }
         });
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
