@@ -47,7 +47,7 @@ public class SNTPClient {
     public static void main(final String[] args) {
         SNTPClient.getOffset()
                 .completeOnTimeout(null, 3, TimeUnit.SECONDS)
-                .whenComplete((v, e) -> System.out.println(v.longValue() + " ms"));
+                .whenComplete((v, e) -> System.out.println(v + " ms"));
     }
 
     public static CompletableFuture<Long> getOffset() {
@@ -77,7 +77,7 @@ public class SNTPClient {
                         channel.pipeline().addLast(new SNTPHandler(result, responseTime));
                     }
                 });
-        
+
         final Channel channel = b.connect(server).channel();
 
         result.whenComplete((value, error) -> {
