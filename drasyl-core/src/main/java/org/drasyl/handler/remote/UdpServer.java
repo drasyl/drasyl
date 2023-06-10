@@ -212,6 +212,7 @@ public class UdpServer extends ChannelDuplexHandler {
             }
         }
         else {
+            LOG.error("Pass further to channel {}", msg);
             ctx.write(msg, promise);
         }
     }

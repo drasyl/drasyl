@@ -27,6 +27,7 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdo.channel.SdoControllerChannelInitializer;
 import org.drasyl.cli.sdo.channel.SdoControllerChildChannelInitializer;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;

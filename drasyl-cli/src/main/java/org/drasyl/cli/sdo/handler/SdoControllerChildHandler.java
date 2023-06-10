@@ -23,7 +23,7 @@ package org.drasyl.cli.sdo.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.message.JoinNetwork;
 import org.drasyl.cli.sdo.message.NetworkJoinDenied;
 import org.drasyl.cli.sdo.message.PushConfig;

@@ -27,17 +27,19 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.event.ConfigurationReceived;
 import org.drasyl.cli.sdo.event.ControllerHandshakeCompleted;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdo.message.JoinNetwork;
+import org.drasyl.cli.sdo.message.NetworkJoinDenied;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.CLOSING;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.CONNECTING;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.JOINED;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.JOINING;
@@ -80,6 +82,11 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
             config = ((ConfigurationReceived) evt).config();
             ctx.pipeline().addLast(new NetworkConfigHandler(config));
         }
+        else if (state == JOINING && evt instanceof NetworkJoinDenied) {
+            LOG.debug("Controller declined our join request. Shutdown.");
+            state = CLOSING;
+            ctx.channel().parent().close();
+        }
         else {
             ctx.fireUserEventTriggered(evt);
         }
@@ -88,6 +95,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
     enum State {
         CONNECTING,
         JOINING,
-        JOINED
+        JOINED,
+        CLOSING
     }
 }

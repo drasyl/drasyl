@@ -52,7 +52,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int BIND_PORT = 22527;
     public static final int NETWORK_ID = 1;
     public static final Map<IdentityPublicKey, InetSocketAddress> SUPER_PEERS = Map.of(
-            IdentityPublicKey.of("01c1ca94d60c6dcbebe62f9466180746fb80bbd0007658dc3b95a39baf4d3c8e"), new InetSocketAddress("159.69.117.180", 22527)
+            IdentityPublicKey.of("6419710a9a687126015c07e151c01f9093bcdfaacf9d33c0c1ac2d386b8348b4"), new InetSocketAddress("10.10.1.1", 22527)
     );
     public static final int PING_INTERVAL_MILLIS = 5_000;
     public static final int PING_TIMEOUT_MILLIS = 30_000;

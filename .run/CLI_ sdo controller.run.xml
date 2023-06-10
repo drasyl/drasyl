@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="CLI: sdo controller (star)" type="Application" factoryName="Application">
+  <configuration default="false" name="CLI: sdo controller" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
     <module name="drasyl-cli" />
-    <option name="PROGRAM_PARAMETERS" value="sdo controller --identity sdo-controller.identity --config ./network-star.conf" />
+    <option name="PROGRAM_PARAMETERS" value="sdo controller --super-peers 01c1ca94d60c6dcbebe62f9466180746fb80bbd0007658dc3b95a39baf4d3c8e=159.69.117.180:22527 --identity ./identities/drasyl-2.identity --config ./network.lua" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.*" />

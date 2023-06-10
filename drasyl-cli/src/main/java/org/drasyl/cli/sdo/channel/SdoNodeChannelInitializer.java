@@ -30,6 +30,7 @@ import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.handler.SdoNodeHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
+import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -39,6 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SuppressWarnings("java:S110")
 public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
@@ -71,6 +73,10 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
+
+        final PeersHandler peersHandler = new PeersHandler();
+        ch.pipeline().addLast(peersHandler);
+        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
 
         p.addLast(new SdoNodeHandler(controller));
         p.addLast(new NoopDiscardHandler());

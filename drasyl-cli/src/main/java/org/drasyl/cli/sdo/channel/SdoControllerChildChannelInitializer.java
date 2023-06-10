@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
 import org.drasyl.cli.sdo.handler.SdoControllerChildHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;

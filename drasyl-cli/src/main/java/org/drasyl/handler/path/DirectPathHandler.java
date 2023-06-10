@@ -22,6 +22,8 @@
 package org.drasyl.handler.path;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -29,6 +31,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.cli.sdo.handler.NetworkConfigHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
+import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -37,10 +40,12 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.cli.sdo.handler.NetworkConfigHandler.LOG;
+import static org.drasyl.handler.noop.NoopDiscardHandler.NOOP_MAGIC_NUMBER;
 
 /**
  * This handler tries to maintain a direct path to the given peer. Must be placed behind
- * {@link TraversingInternetDiscoveryChildrenHandler} in the
+ * {@link ApplicationMessageToPayloadCodec} in the
  * {@link io.netty.channel.ChannelPipeline}, as this handler will send some NOOP traffic to trigger
  * direct link establishments.
  */
@@ -101,9 +106,13 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
         if (!directPathPresentNow) {
             LOG.debug("No direct path to `{}` present. Send NOOP message to trigger direct path establishment.", peer);
 
-            final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NoopDiscardHandler.NOOP_MAGIC_NUMBER);
+            final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NOOP_MAGIC_NUMBER);
             final OverlayAddressedMessage<ByteBuf> msg = new OverlayAddressedMessage<>(byteBuf, peer, (DrasylAddress) ctx.channel().localAddress());
-            ctx.writeAndFlush(msg);
+            ctx.writeAndFlush(msg).addListener((ChannelFutureListener) channelFuture -> {
+                if (channelFuture.cause() != null) {
+                    LOG.warn("Error sending NOOP: ", channelFuture.cause());
+                }
+            });
         }
         else {
             LOG.debug("Direct path to `{}` present. Nothing to do.", peer);

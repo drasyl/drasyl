@@ -23,7 +23,7 @@ package org.drasyl.cli.sdo.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 

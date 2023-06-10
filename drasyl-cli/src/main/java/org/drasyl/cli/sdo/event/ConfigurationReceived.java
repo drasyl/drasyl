@@ -21,7 +21,7 @@
  */
 package org.drasyl.cli.sdo.event;
 
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 
 import static java.util.Objects.requireNonNull;
 

@@ -26,24 +26,28 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.VisualPipeline;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
-import org.drasyl.cli.sdo.NetworkConfig;
+import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.handler.SdoControllerHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
+import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SuppressWarnings("java:S110")
 public class SdoControllerChannelInitializer extends AbstractChannelInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(SdoControllerChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -73,6 +77,10 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
+
+        final PeersHandler peersHandler = new PeersHandler();
+        ch.pipeline().addLast(peersHandler);
+        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
 
         p.addLast(new SdoControllerHandler(config));
         p.addLast(new NoopDiscardHandler());
