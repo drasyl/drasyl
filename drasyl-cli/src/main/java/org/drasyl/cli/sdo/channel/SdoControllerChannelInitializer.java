@@ -21,8 +21,6 @@
  */
 package org.drasyl.cli.sdo.channel;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
@@ -31,7 +29,6 @@ import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.handler.SdoControllerHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
-import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -43,7 +40,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SuppressWarnings("java:S110")
 public class SdoControllerChannelInitializer extends AbstractChannelInitializer {
@@ -78,22 +74,12 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
 
         final ChannelPipeline p = ch.pipeline();
 
-        final PeersHandler peersHandler = new PeersHandler();
-        ch.pipeline().addLast(peersHandler);
-        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
+//        final PeersHandler peersHandler = new PeersHandler();
+//        ch.pipeline().addLast(peersHandler);
+//        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
 
         p.addLast(new SdoControllerHandler(config));
         p.addLast(new NoopDiscardHandler());
-
-        p.addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelActive(final ChannelHandlerContext ctx) {
-                out.println("----------------------------------------------------------------------------------------------");
-                out.println("Controller listening on address " + ch.localAddress());
-                out.println("----------------------------------------------------------------------------------------------");
-                ctx.fireChannelActive();
-            }
-        });
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

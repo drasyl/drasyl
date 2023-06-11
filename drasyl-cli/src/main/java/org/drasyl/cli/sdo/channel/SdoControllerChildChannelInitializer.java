@@ -26,10 +26,8 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdo.config.NetworkConfig;
-import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
-import org.drasyl.cli.sdo.handler.SdoControllerChildHandler;
+import org.drasyl.cli.sdo.handler.SdoMessageChildHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
-import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.util.Worm;
 
@@ -57,8 +55,8 @@ public class SdoControllerChildChannelInitializer extends ConnectionChannelIniti
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
         final ChannelPipeline p = ctx.pipeline();
 
-        p.addLast(new JacksonCodec<>(SdoMessage.class));
-        p.addLast(new SdoControllerChildHandler(networkConfig));
+//        p.addLast(new JacksonCodec<>(SdoMessage.class));
+//        p.addLast(new SdoMessageChildHandler());
     }
 
     @Override
@@ -71,9 +69,12 @@ public class SdoControllerChildChannelInitializer extends ConnectionChannelIniti
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new TunPacketCodec());
-        p.addLast(new DrasylToTunHandler());
+//        p.addLast(new TunPacketCodec());
+//        p.addLast(new DrasylToTunHandler());
 
         super.initChannel(ch);
+
+        p.addLast(new JacksonCodec<>(SdoMessage.class));
+        p.addLast(new SdoMessageChildHandler());
     }
 }

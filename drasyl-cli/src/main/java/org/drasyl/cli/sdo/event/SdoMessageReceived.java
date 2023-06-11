@@ -19,18 +19,35 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.message;
+package org.drasyl.cli.sdo.event;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import org.drasyl.cli.sdo.message.SdoMessage;
+import org.drasyl.identity.DrasylAddress;
 
-@JsonTypeInfo(use = Id.NAME)
-@JsonSubTypes({
-        @Type(value = ControllerHello.class),
-        @Type(value = NodeHello.class),
-        @Type(value = AccessDenied.class),
-})
-public interface SdoMessage {
+import static java.util.Objects.requireNonNull;
+
+public class SdoMessageReceived {
+    private final DrasylAddress node;
+    private final SdoMessage msg;
+
+    public SdoMessageReceived(final DrasylAddress node, final SdoMessage msg) {
+        this.node = requireNonNull(node);
+        this.msg = requireNonNull(msg);
+    }
+
+    @Override
+    public String toString() {
+        return "SdoMessageReceived{" +
+                "node=" + node +
+                ", msg=" + msg +
+                '}';
+    }
+
+    public DrasylAddress node() {
+        return node;
+    }
+
+    public SdoMessage msg() {
+        return msg;
+    }
 }

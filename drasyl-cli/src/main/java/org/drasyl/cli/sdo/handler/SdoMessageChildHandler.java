@@ -21,41 +21,35 @@
  */
 package org.drasyl.cli.sdo.handler;
 
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.cli.sdo.config.NetworkConfig;
-import org.drasyl.cli.sdo.message.JoinNetwork;
-import org.drasyl.cli.sdo.message.NetworkJoinDenied;
-import org.drasyl.cli.sdo.message.PushConfig;
+import org.drasyl.cli.sdo.event.SdoMessageReceived;
 import org.drasyl.cli.sdo.message.SdoMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
-import static java.util.Objects.requireNonNull;
-
-public class SdoControllerChildHandler extends SimpleChannelInboundHandler<SdoMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(SdoControllerHandler.class);
-    private final NetworkConfig config;
-
-    public SdoControllerChildHandler(NetworkConfig config) {
-        this.config = requireNonNull(config);
-    }
+@Sharable
+public class SdoMessageChildHandler extends SimpleChannelInboundHandler<SdoMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(SdoMessageChildHandler.class);
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final SdoMessage msg) throws Exception {
-        if (msg instanceof JoinNetwork) {
-            // verify sender is network node
-            if (config.isNode((DrasylAddress) ctx.channel().remoteAddress())) {
-                LOG.debug("`{}` joined our network.", ctx.channel().remoteAddress());
-                ctx.writeAndFlush(new PushConfig(config.toString())).addListener(FIRE_EXCEPTION_ON_FAILURE);
-            }
-            else {
-                LOG.error("Got JoinNetwork from non-network node `{}`.", ctx.channel().remoteAddress());
-                ctx.writeAndFlush(new NetworkJoinDenied()).addListener(FIRE_EXCEPTION_ON_FAILURE);
-            }
-        }
+                                final SdoMessage msg) {
+        final SdoMessageReceived evt = new SdoMessageReceived((DrasylAddress) ctx.channel().remoteAddress(), msg);
+        ctx.channel().parent().pipeline().fireUserEventTriggered(evt);
+
+//        if (msg instanceof JoinNetwork) {
+//            // verify sender is network node
+//            if (config.isNode((DrasylAddress) ctx.channel().remoteAddress())) {
+//                LOG.debug("`{}` joined our network.", ctx.channel().remoteAddress());
+//                ctx.writeAndFlush(new PushConfig(config.toString())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+//            }
+//            else {
+//                LOG.error("Got JoinNetwork from non-network node `{}`.", ctx.channel().remoteAddress());
+//                ctx.writeAndFlush(new NetworkJoinDenied()).addListener(FIRE_EXCEPTION_ON_FAILURE);
+//            }
+//        }
     }
 }

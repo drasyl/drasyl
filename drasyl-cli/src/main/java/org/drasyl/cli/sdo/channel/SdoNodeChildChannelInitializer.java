@@ -25,12 +25,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.sdo.event.ControllerHandshakeCompleted;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
-import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
-import org.drasyl.cli.sdo.handler.SdoNodeToControllerChildHandler;
+import org.drasyl.cli.sdo.handler.SdoMessageChildHandler;
+import org.drasyl.cli.sdo.handler.SdoPoliciesHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
-import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -57,16 +55,10 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
 
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
-        if (controller.equals(ctx.channel().remoteAddress())) {
-            // handshake with controller completed
-            ctx.pipeline().addLast(new JacksonCodec<>(SdoMessage.class));
-            ctx.pipeline().addLast(new SdoNodeToControllerChildHandler());
+        final ChannelPipeline p = ctx.pipeline();
 
-            ctx.channel().parent().pipeline().fireUserEventTriggered(new ControllerHandshakeCompleted());
-        }
-        else {
-            // handshake with other node completed
-        }
+//        p.addLast(new JacksonCodec<>(SdoMessage.class));
+//        p.addLast(new SdoMessageChildHandler());
     }
 
     @Override
@@ -86,9 +78,12 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new TunPacketCodec());
-        p.addLast(new DrasylToTunHandler());
+//        p.addLast(new TunPacketCodec());
+//        p.addLast(new DrasylToTunHandler());
 
         super.initChannel(ch);
+
+        p.addLast(new JacksonCodec<>(SdoMessage.class));
+        p.addLast(new SdoMessageChildHandler());
     }
 }

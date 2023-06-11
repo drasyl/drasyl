@@ -23,16 +23,12 @@ package org.drasyl.cli.sdo.handler;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
@@ -40,41 +36,24 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.VisualPipeline;
 import org.drasyl.channel.tun.Tun4Packet;
-import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun;
 import org.drasyl.cli.sdo.config.NetworkConfig;
-import org.drasyl.cli.sdo.config.ChannelConfig;
-import org.drasyl.cli.sdo.config.NodeConfig;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.handler.path.DirectPathHandler;
-import org.drasyl.handler.path.NoDirectPathHandler;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
-import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -110,95 +89,93 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
     private void applyConfiguration(final ChannelHandlerContext ctx) throws UnknownHostException {
         // try to establish a direct path to all nodes we have a connection to
         // prevent direct paths to all other nodes of our network
-        final Set<SocketAddress> consideredPeers = new HashSet<>();
-        consideredPeers.add(ctx.channel().localAddress());
-        final Map<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> list = config.getChannels();
-        for (Entry<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> value : list.entrySet()) {
-            final IdentityPublicKey fromKey = (IdentityPublicKey) value.getKey().first();
-            final IdentityPublicKey toKey = (IdentityPublicKey) value.getKey().second();
-            final Boolean directPath = value.getValue().isDirectPath();
-
-            if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(fromKey)) {
-                // direct path
-                if (consideredPeers.add(toKey)) {
-                    LOG.debug("Try to establish direct path to `{}`.", toKey);
-                    ctx.pipeline().addAfter(ctx.pipeline().context(ApplicationMessageToPayloadCodec.class).name(), null, new DirectPathHandler(toKey));
-                }
-            }
-            else if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(toKey)) {
-                // direct path
-                if (consideredPeers.add(fromKey)) {
-                    LOG.debug("Try to establish direct path to `{}`.", fromKey);
-                    ctx.pipeline().addAfter(ctx.pipeline().context(ApplicationMessageToPayloadCodec.class).name(), null, new DirectPathHandler(fromKey));
-                }
-            }
-            else if (Boolean.FALSE.equals(directPath)) {
-                // no direct path
-                if (consideredPeers.add(toKey)) {
-                    LOG.debug("Prevent any direct path establishment to `{}`.", toKey);
-                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(toKey));
-                }
-                if (consideredPeers.add(fromKey)) {
-                    LOG.debug("Prevent any direct path establishment to `{}`.", fromKey);
-                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(fromKey));
-                }
-            }
-        }
-
-        VisualPipeline.print(ctx.pipeline());
-
-        final NodeConfig nodeConfig = config.getNode((DrasylAddress) ctx.channel().localAddress());
-        if (nodeConfig != null && nodeConfig.isTunEnabled()) {
-            // create tun device
-            final String name = nodeConfig.getTunName();
-            final Subnet subnet = nodeConfig.getTunSubnet();
-            final InetAddress inetAddress = nodeConfig.getTunAddress();
-            final int mtu = nodeConfig.getTunMtu();
-
-            final Bootstrap b = new Bootstrap()
-                    .channel(TunChannel.class)
-                    .option(AUTO_READ, true)
-                    .option(TUN_MTU, mtu)
-                    .group(new DefaultEventLoopGroup(1))
-                    .handler(new ChannelInitializer<>() {
-                        @Override
-                        protected void initChannel(final Channel ch) {
-                            final ChannelPipeline p = ch.pipeline();
-
-                            p.addLast(new TunInetAddressHandler(subnet, inetAddress, 1225));
-                        }
-                    });
-            tunChannel = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
-
-            // create IP routing
-            final Map<InetAddress, DrasylAddress> inetRoutes = new HashMap<>();
-            for (Entry<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> value : list.entrySet()) {
-                final boolean tunRoute = value.getValue().isTunRoute();
-                if (tunRoute) {
-                    final IdentityPublicKey fromKey = (IdentityPublicKey) value.getKey().first();
-                    final IdentityPublicKey toKey = (IdentityPublicKey) value.getKey().second();
-
-                    final IdentityPublicKey peerKey;
-                    if (ctx.channel().localAddress().equals(fromKey)) {
-                        peerKey = toKey;
-                    }
-                    else if (ctx.channel().localAddress().equals(toKey)) {
-                        peerKey = fromKey;
-                    }
-                    else {
-                        continue;
-                    }
-
-                    final NodeConfig peerConfig = config.getNode(peerKey);
-                    final InetAddress peerInetAddress = peerConfig.getTunAddress();
-                    inetRoutes.put(peerInetAddress, peerKey);
-                }
-            }
-
-            if (!inetRoutes.isEmpty()) {
-                tunChannel.pipeline().addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), inetRoutes));
-            }
-        }
+//        final Set<SocketAddress> consideredPeers = new HashSet<>();
+//        consideredPeers.add(ctx.channel().localAddress());
+//        final Map<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> list = config.getChannels();
+//        for (Entry<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> value : list.entrySet()) {
+//            final IdentityPublicKey fromKey = (IdentityPublicKey) value.getKey().first();
+//            final IdentityPublicKey toKey = (IdentityPublicKey) value.getKey().second();
+//            final Boolean directPath = value.getValue().isDirectPath();
+//
+//            if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(fromKey)) {
+//                // direct path
+//                if (consideredPeers.add(toKey)) {
+//                    LOG.debug("Try to establish direct path to `{}`.", toKey);
+//                    ctx.pipeline().addAfter(ctx.pipeline().context(ApplicationMessageToPayloadCodec.class).name(), null, new DirectPathHandler(toKey));
+//                }
+//            }
+//            else if (Boolean.TRUE.equals(directPath) && ctx.channel().localAddress().equals(toKey)) {
+//                // direct path
+//                if (consideredPeers.add(fromKey)) {
+//                    LOG.debug("Try to establish direct path to `{}`.", fromKey);
+//                    ctx.pipeline().addAfter(ctx.pipeline().context(ApplicationMessageToPayloadCodec.class).name(), null, new DirectPathHandler(fromKey));
+//                }
+//            }
+//            else if (Boolean.FALSE.equals(directPath)) {
+//                // no direct path
+//                if (consideredPeers.add(toKey)) {
+//                    LOG.debug("Prevent any direct path establishment to `{}`.", toKey);
+//                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(toKey));
+//                }
+//                if (consideredPeers.add(fromKey)) {
+//                    LOG.debug("Prevent any direct path establishment to `{}`.", fromKey);
+//                    ctx.pipeline().addBefore(ctx.pipeline().context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new NoDirectPathHandler(fromKey));
+//                }
+//            }
+//        }
+//
+//        final NodeConfig nodeConfig = config.getNode((DrasylAddress) ctx.channel().localAddress());
+//        if (nodeConfig != null && nodeConfig.isTunEnabled()) {
+//            // create tun device
+//            final String name = nodeConfig.getTunName();
+//            final Subnet subnet = nodeConfig.getTunSubnet();
+//            final InetAddress inetAddress = nodeConfig.getTunAddress();
+//            final int mtu = nodeConfig.getTunMtu();
+//
+//            final Bootstrap b = new Bootstrap()
+//                    .channel(TunChannel.class)
+//                    .option(AUTO_READ, true)
+//                    .option(TUN_MTU, mtu)
+//                    .group(new DefaultEventLoopGroup(1))
+//                    .handler(new ChannelInitializer<>() {
+//                        @Override
+//                        protected void initChannel(final Channel ch) {
+//                            final ChannelPipeline p = ch.pipeline();
+//
+//                            p.addLast(new TunInetAddressHandler(subnet, inetAddress, 1225));
+//                        }
+//                    });
+//            tunChannel = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
+//
+//            // create IP routing
+//            final Map<InetAddress, DrasylAddress> inetRoutes = new HashMap<>();
+//            for (Entry<Pair<DrasylAddress, DrasylAddress>, ChannelConfig> value : list.entrySet()) {
+//                final boolean tunRoute = value.getValue().isTunRoute();
+//                if (tunRoute) {
+//                    final IdentityPublicKey fromKey = (IdentityPublicKey) value.getKey().first();
+//                    final IdentityPublicKey toKey = (IdentityPublicKey) value.getKey().second();
+//
+//                    final IdentityPublicKey peerKey;
+//                    if (ctx.channel().localAddress().equals(fromKey)) {
+//                        peerKey = toKey;
+//                    }
+//                    else if (ctx.channel().localAddress().equals(toKey)) {
+//                        peerKey = fromKey;
+//                    }
+//                    else {
+//                        continue;
+//                    }
+//
+//                    final NodeConfig peerConfig = config.getNode(peerKey);
+//                    final InetAddress peerInetAddress = peerConfig.getTunAddress();
+//                    inetRoutes.put(peerInetAddress, peerKey);
+//                }
+//            }
+//
+//            if (!inetRoutes.isEmpty()) {
+//                tunChannel.pipeline().addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), inetRoutes));
+//            }
+//        }
     }
 
     /**

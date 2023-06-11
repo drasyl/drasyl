@@ -42,13 +42,13 @@
 <!--    <logger name="org.drasyl.handler.path" level="TRACE">-->
 <!--    </logger>-->
 
-    <logger name="org.drasyl.cli.sdo" level="TRACE">
+    <logger name="org.drasyl.cli.sdo" level="DEBUG">
     </logger>
 
-    <logger name="org.drasyl" level="TRACE">
-    </logger>
+<!--    <logger name="org.drasyl" level="TRACE">-->
+<!--    </logger>-->
 
-    <root level="TRACE">
+    <root level="WARN">
         <appender-ref ref="Console"/>
     </root>
 </configuration>

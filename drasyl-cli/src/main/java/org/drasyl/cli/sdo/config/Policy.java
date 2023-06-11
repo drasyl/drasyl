@@ -19,18 +19,42 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.message;
+package org.drasyl.cli.sdo.config;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import io.netty.channel.ChannelPipeline;
 
-@JsonTypeInfo(use = Id.NAME)
+import static java.util.Objects.requireNonNull;
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
-        @Type(value = ControllerHello.class),
-        @Type(value = NodeHello.class),
-        @Type(value = AccessDenied.class),
+        @JsonSubTypes.Type(value = DefaultRoutePolicy.class),
+        @JsonSubTypes.Type(value = LinkPolicy.class),
 })
-public interface SdoMessage {
+public abstract class Policy {
+    public PolicyState currentState = PolicyState.ABSENT;
+    public PolicyState desiredState = PolicyState.PRESENT;
+
+    public void setCurrentState(final PolicyState state) {
+        this.currentState = requireNonNull(state);
+    }
+
+    public abstract void addPolicy(final ChannelPipeline pipeline);
+
+    public abstract void removePolicy(final ChannelPipeline pipeline);
+
+    public PolicyState currentState() {
+        return currentState;
+    }
+
+    public PolicyState desiredState() {
+        return desiredState;
+    }
+
+    public enum PolicyState {
+        ABSENT,
+        READY,
+        PRESENT,
+    }
 }

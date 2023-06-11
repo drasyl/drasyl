@@ -19,7 +19,43 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.message;
+package org.drasyl.cli.sdo.config;
 
-public class NetworkJoinDenied implements SdoMessage {
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
+
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
+
+public class LuaNodeStateTable extends LuaTable {
+    private Set<Policy> policies;
+
+    public LuaNodeStateTable() {
+        set("online", LuaValue.FALSE);
+    }
+
+    public void setOnline() {
+        set("online", TRUE);
+    }
+
+    public void setOffline() {
+        set("online", LuaValue.FALSE);
+    }
+
+    public Set<Policy> policies() {
+        return policies;
+    }
+
+    public void setPolicies(final Set<Policy> policies) {
+        this.policies = requireNonNull(policies);
+    }
+
+    public boolean isOnline() {
+        return get("online") == TRUE;
+    }
+
+    public boolean isOffline() {
+        return get("online") == FALSE;
+    }
 }

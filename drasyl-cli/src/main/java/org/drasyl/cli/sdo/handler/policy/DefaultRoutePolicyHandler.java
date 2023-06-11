@@ -19,32 +19,37 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.handler;
+package org.drasyl.cli.sdo.handler.policy;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.cli.sdo.message.ControllerHello;
-import org.drasyl.cli.sdo.message.SdoMessage;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.cli.sdo.config.DefaultRoutePolicy;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-public class SdoNodeToControllerChildHandler extends SimpleChannelInboundHandler<SdoMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(SdoNodeToControllerChildHandler.class);
+import static java.util.Objects.requireNonNull;
+
+public class DefaultRoutePolicyHandler extends ChannelOutboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultRoutePolicyHandler.class);
+    private final DefaultRoutePolicy policy;
+
+    public DefaultRoutePolicyHandler(final DefaultRoutePolicy policy) {
+        this.policy = requireNonNull(policy);
+    }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx,
-                                final SdoMessage msg) throws Exception {
-        if (msg instanceof ControllerHello) {
-//            final String configString = ((PushConfig) msg).getConfig();
-//            final NetworkConfig config = NetworkConfig.parseString(configString);
-//            // verify that we are network node
-//            if (config.isNode((DrasylAddress) ctx.channel().localAddress())) {
-//                ctx.channel().parent().pipeline().fireUserEventTriggered(new ConfigurationReceived(config));
-//            }
-//            else {
-//                LOG.error("Got NetworkConfiguration without us as network node. Stop");
-//                ctx.channel().parent().close();
-//            }
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof OverlayAddressedMessage<?> && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf && ((ByteBuf) ((OverlayAddressedMessage<?>) msg).content()).getInt(0) == 1337) {
+            // FIXME
+            throw new RuntimeException("route message according to SDN config");
+        }
+        else {
+            ctx.write(msg, promise);
         }
     }
 }

@@ -36,6 +36,7 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.File;
+import java.io.IOException;
 
 @Command(
         name = "controller",
@@ -59,7 +60,12 @@ public class SdoControllerCommand extends ChannelOptions {
 
     @Override
     public Integer call() {
-        config = NetworkConfig.parseFile(configFile);
+        try {
+            config = NetworkConfig.parseFile(configFile);
+        }
+        catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
         return super.call();
     }
 

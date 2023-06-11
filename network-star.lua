@@ -8,23 +8,23 @@ members = {
     'eaedea1e0255a92343c86008bbf8bf9108982421042d48549a201056747df54a', -- drasyl-8.identity -- h8
 }
 
--- eigentlich müssten wir unterscheiden zwischen
--- aktuell aktiver topology und angestrebter. erst wenn angestrebte "funktioniert", sollte wirklich migriert werden
--- policy status "xxx, ready oder applied"?
-
 local center = nil
-function network_changed(net)
-    --- elected center node still online?
-    if center ~= nil then-- and not net.nodes[center].online() then
+network_listener = function(net)
+    --- currently elected center node still valid?
+    if center ~= nil and not net.get(center).state.online then
         -- remove offline center node
+        print("currently elected center node " .. center .. " went offline. Deselect it.")
         center = nil
     end
 
-    -- elect new center node
+    -- do we have to elect a center node?
     if center == nil then
-        for node in net.nodes() do
-            -- select first online node
-            if true then--node.state.online() then
+        nodes = net.nodes()
+        for i = 1, #nodes do
+            node = nodes[i]
+            -- elect first online node
+            if node.state.online then
+                print("elect new center node: " .. node.name)
                 center = node.name
                 break
             end
@@ -33,24 +33,26 @@ function network_changed(net)
 
     -- connect center node with all other nodes
     net.clear_links()
-    if center == nil then
-        for node in net.nodes() do
+    if center ~= nil then
+        nodes = net.nodes()
+        for i = 1, #nodes do
+            node = nodes[i]
             if center ~= node.name then
                 net.add_link(center, node.name)
             end
         end
-    end
 
-    -- use center node as default route
-    for node in net.nodes() do
-        node.default_route = center
+        -- use center node as default route
+        nodes = net.nodes()
+        for i = 1, #nodes do
+            node = nodes[i]
+            node.default_route = center
+        end
     end
 end
 
 net = Network({
---     node_joined = function(node)
---          print('node_joined')
---      end,
+    network_listener = network_listener
 })
 
 -- nodes
@@ -60,7 +62,5 @@ net.add_node(members[3])
 net.add_node(members[4])
 net.add_node(members[5])
 net.add_node(members[6])
-
-network_changed(net)
 
 register_network(net)

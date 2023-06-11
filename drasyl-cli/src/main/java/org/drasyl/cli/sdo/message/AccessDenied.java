@@ -21,5 +21,9 @@
  */
 package org.drasyl.cli.sdo.message;
 
-public class JoinNetwork implements SdoMessage {
+public class AccessDenied implements SdoMessage {
+    @Override
+    public String toString() {
+        return "AccessDenied{}";
+    }
 }

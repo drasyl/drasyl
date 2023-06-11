@@ -21,16 +21,30 @@
  */
 package org.drasyl.cli.sdo.message;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.*;
+import org.drasyl.cli.sdo.config.Policy;
 
-@JsonTypeInfo(use = Id.NAME)
-@JsonSubTypes({
-        @Type(value = ControllerHello.class),
-        @Type(value = NodeHello.class),
-        @Type(value = AccessDenied.class),
-})
-public interface SdoMessage {
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
+
+public class NodeHello implements SdoMessage {
+    private final Set<Policy> policies;
+
+    @JsonCreator
+    public NodeHello(@JsonProperty("policies") final Set<Policy> policies) {
+        this.policies = requireNonNull(policies);
+    }
+
+    @JsonGetter
+    public Set<Policy> policies() {
+        return policies;
+    }
+
+    @Override
+    public String toString() {
+        return "NodeHello{" +
+                "policies='" + policies + '\'' +
+                '}';
+    }
 }

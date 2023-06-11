@@ -19,22 +19,42 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.message;
+package org.drasyl.cli.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.luaj.vm2.LuaBoolean;
+import org.luaj.vm2.LuaInteger;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 
-import static java.util.Objects.requireNonNull;
+import java.util.Objects;
 
-public class PushConfig implements SdoMessage {
-    private final String config;
-
-    @JsonCreator
-    public PushConfig(@JsonProperty("config") final String config) {
-        this.config = requireNonNull(config);
+public class LuaHashCodes {
+    private LuaHashCodes() {
+        // util class
     }
 
-    public String getConfig() {
-        return config;
+    public static int hash(final LuaValue value) {
+        if (value instanceof LuaTable) {
+            final LuaTable table = (LuaTable) value;
+            int result = 1;
+            for (final LuaValue key : table.keys()) {
+                result = 31 * result + hash(key);
+                result = 31 * result + hash(table.get(key));
+            }
+            return result;
+        }
+        else if (value instanceof LuaBoolean) {
+            return Objects.hash(value.toboolean());
+        }
+        else if (value instanceof LuaString) {
+            return Objects.hash(value.tojstring());
+        }
+        else if (value instanceof LuaInteger) {
+            return Objects.hash(value.toint());
+        }
+        else {
+            throw new RuntimeException("not implemented");
+        }
     }
 }

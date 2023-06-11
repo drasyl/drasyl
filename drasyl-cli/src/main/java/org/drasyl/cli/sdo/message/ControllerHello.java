@@ -19,20 +19,34 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdo.event;
+package org.drasyl.cli.sdo.message;
 
-import org.drasyl.cli.sdo.config.NetworkConfig;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.cli.sdo.config.Policy;
+
+import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConfigurationReceived {
-    private final NetworkConfig config;
+public class ControllerHello implements SdoMessage {
+    private final Set<Policy> policies;
 
-    public ConfigurationReceived(final NetworkConfig config) {
-        this.config = requireNonNull(config);
+    @JsonCreator
+    public ControllerHello(@JsonProperty("policies") final Set<Policy> policies) {
+        this.policies = requireNonNull(policies);
     }
 
-    public NetworkConfig config() {
-        return config;
+    @JsonGetter
+    public Set<Policy> policies() {
+        return policies;
+    }
+
+    @Override
+    public String toString() {
+        return "ControllerHello{" +
+                "policies='" + policies + '\'' +
+                '}';
     }
 }

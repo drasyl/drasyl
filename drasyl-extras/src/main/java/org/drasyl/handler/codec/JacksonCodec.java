@@ -26,10 +26,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageCodec;
+import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.handler.dht.chord.LocalChordNode;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingBiFunction;
 import org.drasyl.util.internal.UnstableApi;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +57,14 @@ import static java.util.Objects.requireNonNull;
  * </pre>
  * </blockquote>
  */
-public class JacksonCodec<T> extends ByteToMessageCodec<T> {
+public class JacksonCodec<T> extends MessageToMessageCodec<ByteBuf, T> {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    static {
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, LocalChordNode.DrasylAddressMixin.class);
+    }
+    private static final Logger LOG = LoggerFactory.getLogger(JacksonCodec.class);
+    public static final int MAGIC_NUMBER = 202_107;
     private final ThrowingBiConsumer<OutputStream, Object, IOException> jacksonWriter;
     private final ThrowingBiFunction<InputStream, Class<T>, T, IOException> jacksonReader;
     private final Class<T> clazz;
@@ -60,7 +72,7 @@ public class JacksonCodec<T> extends ByteToMessageCodec<T> {
     JacksonCodec(final ThrowingBiConsumer<OutputStream, Object, IOException> jacksonWriter,
                  final ThrowingBiFunction<InputStream, Class<T>, T, IOException> jacksonReader,
                  final Class<T> clazz) {
-        super(clazz);
+        super(ByteBuf.class, clazz);
         this.jacksonWriter = requireNonNull(jacksonWriter);
         this.jacksonReader = requireNonNull(jacksonReader);
         this.clazz = requireNonNull(clazz);
@@ -72,24 +84,40 @@ public class JacksonCodec<T> extends ByteToMessageCodec<T> {
     }
 
     public JacksonCodec(final Class<T> clazz) {
-        this(new ObjectMapper(), clazz);
+        this(OBJECT_MAPPER, clazz);
     }
 
     @Override
-    protected void encode(final ChannelHandlerContext ctx,
-                          final T msg,
-                          final ByteBuf out) throws IOException {
-        try (final OutputStream outputStream = new ByteBufOutputStream(out)) {
+    protected void encode(final ChannelHandlerContext ctx, final T msg, final List<Object> out) throws Exception {
+        LOG.trace("Send to `{}`: {}", ctx.channel().remoteAddress(), msg);
+        final ByteBuf byteBuf = ctx.alloc().buffer();
+        byteBuf.writeInt(MAGIC_NUMBER);
+        try (final OutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             jacksonWriter.accept(outputStream, msg);
         }
+        out.add(byteBuf);
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) throws IOException {
-        try (final InputStream inputStream = new ByteBufInputStream(in)) {
-            out.add(jacksonReader.apply(inputStream, clazz));
+        if (in.readableBytes() >= Integer.BYTES) {
+            in.markReaderIndex();
+            if (in.readInt() != MAGIC_NUMBER) {
+                in.resetReaderIndex();
+                out.add(in.retain());
+                return;
+            }
+
+            try (final InputStream inputStream = new ByteBufInputStream(in)) {
+                T msg = jacksonReader.apply(inputStream, clazz);
+                LOG.trace("Received from `{}`: {}", ctx.channel().remoteAddress(), msg);
+                out.add(msg);
+            }
+        }
+        else {
+            out.add(in.retain());
         }
     }
 }

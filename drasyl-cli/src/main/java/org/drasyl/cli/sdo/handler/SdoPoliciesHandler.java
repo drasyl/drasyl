@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+package org.drasyl.cli.sdo.handler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.cli.sdo.config.Policy;
+import org.drasyl.cli.sdo.message.NodeHello;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
+    public static final Logger LOG = LoggerFactory.getLogger(SdoPoliciesHandler.class);
+    private final IdentityPublicKey controller;
+    private ChannelHandlerContext ctx;
+    private final Set<Policy> policies = new HashSet<>();
+
+    public SdoPoliciesHandler(final IdentityPublicKey controller) {
+        this.controller = requireNonNull(controller);
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
+
+        ctx.executor().scheduleAtFixedRate(() -> {
+            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
+            final NodeHello nodeHello = new NodeHello(policies);
+            channel.writeAndFlush(nodeHello);
+            LOG.trace("Send feedback to controller: {}", nodeHello);
+        }, 1000, 1000, MILLISECONDS);
+    }
+
+    public void newPolicies(final Set<Policy> newPolicies) {
+        LOG.trace("Got new policies: {}", newPolicies);
+
+        // policies that have to be removed
+        final Set<Policy> policiesToBeRemoved = new HashSet<>(policies);
+        policiesToBeRemoved.removeAll(newPolicies);
+        for (final Policy policy : policiesToBeRemoved) {
+            LOG.debug("Remove policy: {}", policy);
+            policy.removePolicy(ctx.pipeline());
+            policies.remove(policy);
+        }
+
+        // policies that have to be added
+        final Set<Policy> policiesToBeAdded = new HashSet<>(newPolicies);
+        policiesToBeAdded.removeAll(policies);
+        for (final Policy policy : policiesToBeAdded) {
+            LOG.debug("Add policy: {}", policy);
+            policy.addPolicy(ctx.pipeline());
+            policies.add(policy);
+        }
+    }
+}
