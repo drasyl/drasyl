@@ -40,12 +40,8 @@ network_listener = function(net)
             if center ~= node.name then
                 net.add_link(center, node.name)
             end
-        end
 
-        -- use center node as default route
-        nodes = net.nodes()
-        for i = 1, #nodes do
-            node = nodes[i]
+            -- use center node as default route
             node.default_route = center
         end
     end

@@ -10,7 +10,7 @@ members = {
 
 net = Network({
     'node_defaults': {
-        'via_RICHTIGEN_NAME': members[1]
+        'default_gateway': members[1]
     },
 })
 

@@ -97,7 +97,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         });
 
                         networkNode.state().setOnline();
-                        LOG.info("`{}` joined network.`", sender);
+                        LOG.info("`{}` joined network.", sender);
 
                         networkNode.state().setPolicies(((NodeHello) msg).policies());
                         if (!network.notifyListener(ctx)) {

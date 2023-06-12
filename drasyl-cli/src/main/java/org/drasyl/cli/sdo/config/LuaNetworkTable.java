@@ -25,12 +25,14 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.message.ControllerHello;
+import org.drasyl.cli.tun.TunRoute;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.drasyl.util.network.Subnet;
 import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaString;
@@ -61,13 +63,11 @@ public class LuaNetworkTable extends LuaTable {
     public LuaNetworkTable(final LuaTable params) {
         nodeDefaults.set("default_route", NIL);
 
-        nodeDefaults.set("tun_enabled", LuaValue.valueOf(false));
+        nodeDefaults.set("tun_enabled", LuaValue.valueOf(true));
         nodeDefaults.set("tun_name", LuaValue.valueOf("utun0"));
         nodeDefaults.set("tun_subnet", LuaValue.valueOf("10.10.2.0/24"));
         nodeDefaults.set("tun_mtu", LuaValue.valueOf(1225));
-
-        linkDefaults.set("holePunching_enabled", NIL);
-        linkDefaults.set("tun_route", LuaValue.valueOf(false));
+        // FIXME: add tun_address default
 
         for (final LuaValue key : params.keys()) {
             switch (key.checkstring().tojstring()) {

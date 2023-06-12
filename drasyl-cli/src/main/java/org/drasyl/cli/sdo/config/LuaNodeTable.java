@@ -24,11 +24,16 @@ package org.drasyl.cli.sdo.config;
 import org.drasyl.cli.util.LuaHashCodes;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class LuaNodeTable extends LuaTable {
@@ -77,6 +82,35 @@ public class LuaNodeTable extends LuaTable {
         }
     }
 
+    public boolean isTunEnabled() {
+        return get("tun_enabled") == LuaBoolean.TRUE;
+    }
+
+    public String tunName() {
+        return get("tun_name").checkstring().tojstring();
+    }
+
+    public String tunSubnet() {
+        return get("tun_subnet").checkstring().tojstring();
+    }
+
+    public int tunMtu() {
+        return get("tun_mtu").checkint();
+    }
+
+    public InetAddress tunAddress() {
+        if (get("tun_address") != NIL) {
+            try {
+                return InetAddress.getByName(get("tun_address").checkstring().tojstring());
+            } catch (final UnknownHostException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        else {
+            return null;
+        }
+    }
+
     public Set<Policy> policies() {
         final Set<Policy> policies = new HashSet<>();
 
@@ -85,8 +119,20 @@ public class LuaNodeTable extends LuaTable {
             policies.add(new DefaultRoutePolicy(defaultRoute));
         }
 
-        // link policies
         final Set<LuaLinkTable> links = network.nodeLinks.get(name());
+        if (isTunEnabled()) {
+            final Map<InetAddress, DrasylAddress> routes = new HashMap<>();
+            for (final LuaLinkTable link : links) {
+                final DrasylAddress otherName = link.other(name());
+                final LuaNodeTable other = network.getNode(otherName);
+                if (other.tunAddress() != null) {
+                    routes.put(other.tunAddress(), otherName);
+                }
+            }
+            policies.add(new TunPolicy(tunName(), tunSubnet(), tunMtu(), tunAddress(), routes));
+        }
+
+        // link policies
         for (final LuaLinkTable link : links) {
             policies.add(new LinkPolicy(link.other(name())));
         }

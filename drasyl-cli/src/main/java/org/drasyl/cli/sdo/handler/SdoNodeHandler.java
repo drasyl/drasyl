@@ -79,7 +79,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
             System.out.println("Node listening on address " + ctx.channel().localAddress());
             System.out.println("----------------------------------------------------------------------------------------------");
 
-            LOG.info("Connecting to controller `{}`", ctx.channel().localAddress());
+            LOG.info("Connecting to controller `{}`", ctx.channel().remoteAddress());
             ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 controllerChannel = future.getNow();
 

@@ -40,11 +40,11 @@ net = Network({
 })
 
 -- nodes
-net.add_node(members[1])
-net.add_node(members[2])
-net.add_node(members[3])
-net.add_node(members[4])
-net.add_node(members[5])
-net.add_node(members[6])
+net.add_node(members[1], { tun_address = '10.10.2.3' })
+net.add_node(members[2], { tun_address = '10.10.2.4' })
+net.add_node(members[3], { tun_address = '10.10.2.5' })
+net.add_node(members[4], { tun_address = '10.10.2.6' })
+net.add_node(members[5], { tun_address = '10.10.2.7' })
+net.add_node(members[6], { tun_address = '10.10.2.8' })
 
 register_network(net)

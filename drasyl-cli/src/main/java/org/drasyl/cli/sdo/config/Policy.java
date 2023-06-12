@@ -22,6 +22,7 @@
 package org.drasyl.cli.sdo.config;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.netty.channel.ChannelPipeline;
 
@@ -29,8 +30,9 @@ import static java.util.Objects.requireNonNull;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = DefaultRoutePolicy.class),
-        @JsonSubTypes.Type(value = LinkPolicy.class),
+        @Type(value = DefaultRoutePolicy.class),
+        @Type(value = LinkPolicy.class),
+        @Type(value = TunPolicy.class),
 })
 public abstract class Policy {
     public PolicyState currentState = PolicyState.ABSENT;
