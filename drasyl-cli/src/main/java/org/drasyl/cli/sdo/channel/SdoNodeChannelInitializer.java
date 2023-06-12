@@ -67,9 +67,10 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        super.initChannel(ch);
-
         final ChannelPipeline p = ch.pipeline();
+        p.addLast(new NoopDiscardHandler());
+
+        super.initChannel(ch);
 
 //        final PeersHandler peersHandler = new PeersHandler();
 //        ch.pipeline().addLast(peersHandler);
@@ -77,7 +78,6 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
 
         p.addLast(new SdoNodeHandler(controller));
         p.addLast(new SdoPoliciesHandler(controller));
-        p.addLast(new NoopDiscardHandler());
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

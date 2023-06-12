@@ -4,8 +4,14 @@ import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.*;
-import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
@@ -15,10 +21,8 @@ import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
-import org.drasyl.channel.tun.jna.windows.Wintun;
 import org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import org.drasyl.cli.sdo.config.TunPolicy;
-import org.drasyl.cli.sdo.handler.DrasylToTunHandler;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
@@ -143,10 +147,6 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     }
 
     public static class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        public DrasylToTunHandler() {
-            super(false);
-        }
-
         @SuppressWarnings("java:S1905")
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
@@ -158,7 +158,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                 LOG.error("Got `{}` from drasyl `{}`", packet, ctx.channel().remoteAddress());
                 final TunPolicyHandler tunPolicyHandler = (TunPolicyHandler) tunPolicyHandlerCtx.handler();
                 if (tunPolicyHandler.tunChannel != null) {
-                    tunPolicyHandler.tunChannel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    tunPolicyHandler.tunChannel.writeAndFlush(packet.retain()).addListener(FIRE_EXCEPTION_ON_FAILURE);
                 }
             }
         }

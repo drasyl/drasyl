@@ -39,17 +39,5 @@ public class SdoMessageChildHandler extends SimpleChannelInboundHandler<SdoMessa
                                 final SdoMessage msg) {
         final SdoMessageReceived evt = new SdoMessageReceived((DrasylAddress) ctx.channel().remoteAddress(), msg);
         ctx.channel().parent().pipeline().fireUserEventTriggered(evt);
-
-//        if (msg instanceof JoinNetwork) {
-//            // verify sender is network node
-//            if (config.isNode((DrasylAddress) ctx.channel().remoteAddress())) {
-//                LOG.debug("`{}` joined our network.", ctx.channel().remoteAddress());
-//                ctx.writeAndFlush(new PushConfig(config.toString())).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//            }
-//            else {
-//                LOG.error("Got JoinNetwork from non-network node `{}`.", ctx.channel().remoteAddress());
-//                ctx.writeAndFlush(new NetworkJoinDenied()).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//            }
-//        }
     }
 }

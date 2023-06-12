@@ -21,7 +21,6 @@
  */
 package org.drasyl.channel;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -63,24 +62,6 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         if (false) {
             p.addLast(new ConnectionAnalyzeHandler());
         }
-
-        p.addLast(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-                if (msg instanceof ByteBuf){
-                    System.out.println("remoteAddress = " + ctx.channel().remoteAddress());
-                    System.out.println("msg.readableBytes = " + ((ByteBuf) msg).readableBytes());
-                    if (((ByteBuf) msg).readableBytes() >= 4) {
-                        System.out.println("msg.getInt() = " + ((ByteBuf) msg).getInt(0));
-                        System.out.println("msg.getUnsignedInt() = " + ((ByteBuf) msg).getUnsignedInt(0));
-                    }
-                    if (((ByteBuf) msg).readableBytes() >= 8) {
-                        System.out.println("msg.getLong() = " + ((ByteBuf) msg).getLong(0));
-                    }
-                }
-                super.channelRead(ctx, msg);
-            }
-        });
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
 
