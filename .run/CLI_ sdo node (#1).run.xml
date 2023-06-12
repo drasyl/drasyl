@@ -2,7 +2,7 @@
   <configuration default="false" name="CLI: sdo node (#1)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
     <module name="drasyl-cli" />
-    <option name="PROGRAM_PARAMETERS" value="sdo node --super-peers 01c1ca94d60c6dcbebe62f9466180746fb80bbd0007658dc3b95a39baf4d3c8e=159.69.117.180:22527 --identity sdo-node1.identity --controller CPU E5-2660 v4" />
+    <option name="PROGRAM_PARAMETERS" value="sdo node --super-peers 01c1ca94d60c6dcbebe62f9466180746fb80bbd0007658dc3b95a39baf4d3c8e=159.69.117.180:22527 --identity sdo-node1.identity --controller 9ef956443613164ceb03f3a150bb55b59283bcfe472d6855d30a496ddb328bde" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.*" />

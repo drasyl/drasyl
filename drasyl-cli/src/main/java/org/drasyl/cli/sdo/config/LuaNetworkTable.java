@@ -25,14 +25,12 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.message.ControllerHello;
-import org.drasyl.cli.tun.TunRoute;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.drasyl.util.network.Subnet;
 import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaString;
@@ -49,6 +47,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 
 @SuppressWarnings("java:S110")
 public class LuaNetworkTable extends LuaTable {
@@ -146,7 +146,7 @@ public class LuaNetworkTable extends LuaTable {
                 for (final LuaNodeTable node : nodes.values()) {
                     final DrasylChannel channel = channels.get(node.name());
                     if (node.state().isOnline()) {
-                        channel.writeAndFlush(new ControllerHello(node.policies()));
+                        channel.writeAndFlush(new ControllerHello(node.policies())).addListener(FIRE_EXCEPTION_ON_FAILURE);;
                     }
                 }
             }

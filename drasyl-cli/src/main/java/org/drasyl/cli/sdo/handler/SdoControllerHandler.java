@@ -39,6 +39,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.sdo.handler.SdoControllerHandler.State.INITIALIZED;
 
@@ -92,7 +93,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                     if (networkNode.state().isOffline()) {
                         channel.closeFuture().addListener((ChannelFutureListener) future -> {
                             networkNode.state().setOffline();
-                            LOG.info("`{}` left network.`", sender);
+                            LOG.info("`{}` left network.", sender);
                             network.notifyListener(ctx);
                         });
 
@@ -101,7 +102,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
 
                         networkNode.state().setPolicies(((NodeHello) msg).policies());
                         if (!network.notifyListener(ctx)) {
-                            channel.writeAndFlush(new ControllerHello(networkNode.policies()));
+                            channel.writeAndFlush(new ControllerHello(networkNode.policies())).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
                     }
                     else {

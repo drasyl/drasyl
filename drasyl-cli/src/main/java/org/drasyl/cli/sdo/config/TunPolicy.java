@@ -3,9 +3,11 @@ package org.drasyl.cli.sdo.config;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.cli.sdo.handler.policy.TunPolicyHandler;
+import org.drasyl.cli.util.InetAddressDeserializer;
 import org.drasyl.identity.DrasylAddress;
 
 import java.net.InetAddress;
@@ -54,7 +56,8 @@ public class TunPolicy extends Policy {
         return address;
     }
 
-    @JsonGetter("address")
+    @JsonDeserialize(keyUsing = InetAddressDeserializer.class)
+    @JsonGetter("routes")
     public Map<InetAddress, DrasylAddress> routes() {
         return routes;
     }

@@ -41,6 +41,7 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Set;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.CLOSING;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.INITIALIZED;
@@ -87,7 +88,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("Connected to controller. Try to join network.");
                     state = JOINING;
                     controllerChannel.eventLoop().execute(() -> {
-                        controllerChannel.writeAndFlush(new NodeHello(Set.of()));
+                        controllerChannel.writeAndFlush(new NodeHello(Set.of())).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     });
                 }
             });
