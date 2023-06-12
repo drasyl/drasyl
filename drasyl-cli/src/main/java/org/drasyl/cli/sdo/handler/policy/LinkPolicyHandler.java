@@ -31,6 +31,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.cli.sdo.config.LinkPolicy;
 import org.drasyl.cli.sdo.handler.NetworkConfigHandler;
+import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -127,7 +128,7 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage<?> && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf && ((ByteBuf) ((OverlayAddressedMessage<?>) msg).content()).getInt(0) == 1337) {
+        if (msg instanceof OverlayAddressedMessage<?> && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf && ((ByteBuf) ((OverlayAddressedMessage<?>) msg).content()).getInt(0) == TunPacketCodec.MAGIC_NUMBER) {
             // FIXME
             throw new RuntimeException("route message according to SDN config");
         }

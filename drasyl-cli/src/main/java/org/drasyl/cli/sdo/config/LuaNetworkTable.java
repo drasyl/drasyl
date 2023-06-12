@@ -63,7 +63,7 @@ public class LuaNetworkTable extends LuaTable {
     public LuaNetworkTable(final LuaTable params) {
         nodeDefaults.set("default_route", NIL);
 
-        nodeDefaults.set("tun_enabled", LuaValue.valueOf(true));
+        nodeDefaults.set("tun_enabled", LuaValue.valueOf(false));
         nodeDefaults.set("tun_name", LuaValue.valueOf("utun0"));
         nodeDefaults.set("tun_subnet", LuaValue.valueOf("10.10.2.0/24"));
         nodeDefaults.set("tun_mtu", LuaValue.valueOf(1225));

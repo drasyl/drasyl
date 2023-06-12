@@ -80,7 +80,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
             System.out.println("Node listening on address " + ctx.channel().localAddress());
             System.out.println("----------------------------------------------------------------------------------------------");
 
-            LOG.info("Connecting to controller `{}`", ctx.channel().remoteAddress());
+            LOG.info("Connecting to controller `{}`", controller);
             ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 controllerChannel = future.getNow();
 
@@ -101,7 +101,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
         if (evt instanceof SdoMessageReceived) {
             final DrasylAddress sender = ((SdoMessageReceived) evt).node();
             final SdoMessage msg = ((SdoMessageReceived) evt).msg();
-            LOG.debug("Received from `{}`: {}`", sender, msg);
+            LOG.debug("Received from `{}`: {}", sender, msg);
 
             if (sender.equals(controller) && msg instanceof ControllerHello) {
                 if (state != JOINED) {
@@ -116,7 +116,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
             else if (sender.equals(controller) && msg instanceof AccessDenied) {
                 LOG.error("Controller declined our join request. Shutdown.");
                 state = CLOSING;
-                ctx.channel().parent().close();
+                ctx.channel().close();
             }
         }
         else {

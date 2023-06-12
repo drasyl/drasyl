@@ -18,6 +18,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class TunPolicy extends Policy {
+    public static final String HANDLER_NAME = StringUtil.simpleClassName(TunPolicy.class);
     private final String name;
     private final String subnet;
     private final int mtu;
@@ -70,8 +71,7 @@ public class TunPolicy extends Policy {
 
     @Override
     public void removePolicy(final ChannelPipeline pipeline) {
-        final String handlerName = StringUtil.simpleClassName(this);
-        pipeline.remove(handlerName);
+        pipeline.remove(HANDLER_NAME);
     }
 
     @Override
