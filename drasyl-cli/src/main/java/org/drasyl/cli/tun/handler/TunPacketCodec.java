@@ -37,14 +37,14 @@ public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final TunPacket packet,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         out.add(ctx.alloc().compositeBuffer(2).addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER)).addComponent(true, packet.content().retain()));
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf byteBuf,
-                          final List<Object> out) throws Exception {
+                          final List<Object> out) {
         if (byteBuf.readableBytes() >= Integer.BYTES) {
             byteBuf.markReaderIndex();
             if (byteBuf.readInt() != MAGIC_NUMBER) {
@@ -53,7 +53,7 @@ public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
                 return;
             }
 
-            out.add(new Tun4Packet(byteBuf).retain());
+            out.add(new Tun4Packet(byteBuf.retainedSlice()));
         }
         else {
             out.add(byteBuf.retain());

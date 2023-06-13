@@ -24,19 +24,23 @@ public class TunPolicy extends Policy {
     private final int mtu;
     private final InetAddress address;
     private final Map<InetAddress, DrasylAddress> routes;
+    private final DrasylAddress defaultRoute;
 
     @JsonCreator
     public TunPolicy(@JsonProperty("name") final String name,
                      @JsonProperty("subnet") final String subnet,
                      @JsonProperty("mtu") final int mtu,
                      @JsonProperty("address") final InetAddress address,
-                     @JsonProperty("routes") final Map<InetAddress, DrasylAddress> routes) {
+                     @JsonProperty("routes") final Map<InetAddress, DrasylAddress> routes,
+                     @JsonProperty("defaultRoute") final DrasylAddress defaultRoute) {
         this.name = requireNonNull(name);
         this.subnet = requireNonNull(subnet);
         this.mtu = requirePositive(mtu);
         this.address = requireNonNull(address);
         this.routes = requireNonNull(routes);
+        this.defaultRoute = defaultRoute;
     }
+
     @JsonGetter("name")
     public String name() {
         return name;
@@ -63,6 +67,11 @@ public class TunPolicy extends Policy {
         return routes;
     }
 
+    @JsonGetter("defaultRoute")
+    public DrasylAddress defaultRoute() {
+        return defaultRoute;
+    }
+
     public void addPolicy(final ChannelPipeline pipeline) {
         final String handlerName = StringUtil.simpleClassName(this);
 
@@ -79,12 +88,12 @@ public class TunPolicy extends Policy {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TunPolicy tunPolicy = (TunPolicy) o;
-        return mtu == tunPolicy.mtu && Objects.equals(name, tunPolicy.name) && Objects.equals(subnet, tunPolicy.subnet) && Objects.equals(address, tunPolicy.address) && Objects.equals(routes, tunPolicy.routes);
+        return mtu == tunPolicy.mtu && Objects.equals(name, tunPolicy.name) && Objects.equals(subnet, tunPolicy.subnet) && Objects.equals(address, tunPolicy.address) && Objects.equals(routes, tunPolicy.routes) && Objects.equals(defaultRoute, tunPolicy.defaultRoute);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, subnet, mtu, address, routes);
+        return Objects.hash(name, subnet, mtu, address, routes, defaultRoute);
     }
 
     @Override
@@ -95,6 +104,7 @@ public class TunPolicy extends Policy {
                 ", mtu=" + mtu +
                 ", address=" + address +
                 ", routes=" + routes +
+                ", defaultRoute=" + defaultRoute +
                 '}';
     }
 }

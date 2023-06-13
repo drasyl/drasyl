@@ -61,7 +61,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), policy.routes()));
+                        p.addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), policy));
                     }
                 });
         tunChannel = b.bind(new TunAddress(policy.name())).addListener((ChannelFutureListener) future -> {
@@ -114,33 +114,42 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
 
     private static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
         private final DrasylServerChannel drasylServerChannel;
-        private final Map<InetAddress, DrasylAddress> routes;
+        private final TunPolicy policy;
 
         public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel,
-                                  final Map<InetAddress, DrasylAddress> routes) {
+                                  final TunPolicy policy) {
             super(false);
             this.drasylServerChannel = requireNonNull(drasylServerChannel);
-            this.routes = requireNonNull(routes);
+            this.policy = requireNonNull(policy);
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet msg) {
-            final InetAddress dst = msg.destinationAddress();
-            LOG.error("Got packet `{}`", () -> msg);
-            LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
+        protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet packet) {
+            final InetAddress dst = packet.destinationAddress();
+            LOG.error("Got packet `{}`", () -> packet);
+            LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
-            final DrasylAddress publicKey = routes.get(dst);
-            if (routes.containsKey(dst)) {
-                LOG.error("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
-                drasylServerChannel.serve(routes.get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+            final DrasylAddress publicKey = policy.routes().get(dst);
+            if (policy.routes().containsKey(dst)) {
+                LOG.error("Pass packet `{}` to peer `{}`", () -> packet, () -> publicKey);
+                drasylServerChannel.serve(policy.routes().get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                     if (future.isSuccess()) {
-                        LOG.error("Pass packet `{}` to peer `{}`!!!", () -> msg, () -> publicKey);
                         final DrasylChannel channel = future.getNow();
-                        channel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                 });
-            } else {
-                LOG.error("Drop packet `{}` with unroutable destination.", () -> msg);
+            }
+            else if (policy.defaultRoute() != null) {
+                LOG.error("Pass packet `{}` to default route `{}`", () -> packet, policy::defaultRoute);
+                drasylServerChannel.serve(policy.defaultRoute()).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                    if (future.isSuccess()) {
+                        final DrasylChannel channel = future.getNow();
+                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
+                });
+            }
+            else {
+                LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
                 // TODO: reply with ICMP host unreachable message?
             }
         }
@@ -151,14 +160,20 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final Tun4Packet packet) {
-            LOG.error("channelRead0");
             final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel().parent();
             final ChannelHandlerContext tunPolicyHandlerCtx = parent.pipeline().context(TunPolicy.HANDLER_NAME);
             if (tunPolicyHandlerCtx != null) {
                 LOG.error("Got `{}` from drasyl `{}`", packet, ctx.channel().remoteAddress());
+                LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
                 final TunPolicyHandler tunPolicyHandler = (TunPolicyHandler) tunPolicyHandlerCtx.handler();
                 if (tunPolicyHandler.tunChannel != null) {
-                    tunPolicyHandler.tunChannel.writeAndFlush(packet.retain()).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    if (!tunPolicyHandler.policy.address().equals(packet.destinationAddress())) {
+                        LOG.error("Packet `{}` is not for me. Relay it.", packet);
+                        tunPolicyHandler.tunChannel.pipeline().fireChannelRead(packet.retain());
+                    }
+                    else {
+                       tunPolicyHandler.tunChannel.writeAndFlush(packet.retain()).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
                 }
             }
         }

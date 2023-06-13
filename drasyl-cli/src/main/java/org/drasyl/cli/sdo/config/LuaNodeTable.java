@@ -129,7 +129,7 @@ public class LuaNodeTable extends LuaTable {
                     routes.put(other.tunAddress(), otherName);
                 }
             }
-            policies.add(new TunPolicy(tunName(), tunSubnet(), tunMtu(), tunAddress(), routes));
+            policies.add(new TunPolicy(tunName(), tunSubnet(), tunMtu(), tunAddress(), routes, defaultRoute()));
         }
 
         // link policies

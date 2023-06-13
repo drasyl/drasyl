@@ -22,6 +22,7 @@
 package org.drasyl.cli.sdo.handler.policy;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -121,19 +122,6 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
         if (retryTask != null) {
             retryTask.cancel(false);
             retryTask = null;
-        }
-    }
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage<?> && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf && ((ByteBuf) ((OverlayAddressedMessage<?>) msg).content()).getInt(0) == TunPacketCodec.MAGIC_NUMBER) {
-            // FIXME
-            throw new RuntimeException("route message according to SDN config");
-        }
-        else {
-            ctx.write(msg, promise);
         }
     }
 }
