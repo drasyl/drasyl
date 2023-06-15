@@ -143,9 +143,6 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                         else if (event instanceof NodeUnrecoverableErrorEvent) {
                             running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
                         }
-                        else if (event instanceof NodeOnlineEvent) {
-                            resolve(IdentityPublicKey.of("20dbdb6f281dbdef528baabd56ae48e616756e90ab791c2ee246cc5916505e7a"));
-                        }
                     }
                 }
             };

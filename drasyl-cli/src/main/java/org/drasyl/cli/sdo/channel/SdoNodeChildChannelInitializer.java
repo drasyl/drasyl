@@ -27,7 +27,6 @@ import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdo.handler.SdoMessageChildHandler;
-import org.drasyl.cli.sdo.handler.policy.TunPolicyHandler;
 import org.drasyl.cli.sdo.handler.policy.TunPolicyHandler.DrasylToTunHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
 import org.drasyl.cli.tun.handler.TunPacketCodec;

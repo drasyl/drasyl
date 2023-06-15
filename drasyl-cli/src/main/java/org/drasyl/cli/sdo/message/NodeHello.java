@@ -23,6 +23,7 @@ package org.drasyl.cli.sdo.message;
 
 import com.fasterxml.jackson.annotation.*;
 import org.drasyl.cli.sdo.config.Policy;
+import org.drasyl.handler.peers.PeersList;
 
 import java.util.Set;
 
@@ -30,21 +31,30 @@ import static java.util.Objects.requireNonNull;
 
 public class NodeHello implements SdoMessage {
     private final Set<Policy> policies;
+    private final PeersList peersList;
 
     @JsonCreator
-    public NodeHello(@JsonProperty("policies") final Set<Policy> policies) {
+    public NodeHello(@JsonProperty("policies") final Set<Policy> policies,
+                     @JsonProperty("peersList") final PeersList peersList) {
         this.policies = requireNonNull(policies);
+        this.peersList = requireNonNull(peersList);
     }
 
-    @JsonGetter
+    @JsonGetter("policies")
     public Set<Policy> policies() {
         return policies;
+    }
+
+    @JsonGetter("peersList")
+    public PeersList peersList() {
+        return peersList;
     }
 
     @Override
     public String toString() {
         return "NodeHello{" +
                 "policies='" + policies + '\'' +
+                ", peersList='" + peersList + '\'' +
                 '}';
     }
 }

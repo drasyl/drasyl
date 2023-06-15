@@ -34,11 +34,13 @@ import org.drasyl.cli.sdo.message.AccessDenied;
 import org.drasyl.cli.sdo.message.ControllerHello;
 import org.drasyl.cli.sdo.message.NodeHello;
 import org.drasyl.cli.sdo.message.SdoMessage;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Map;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -51,7 +53,7 @@ import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.JOINING;
 public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdoNodeHandler.class);
     private final IdentityPublicKey controller;
-    private State state;
+    State state;
     private DrasylChannel controllerChannel;
     private NetworkConfig config;
 
@@ -88,7 +90,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("Connected to controller. Try to join network.");
                     state = JOINING;
                     controllerChannel.eventLoop().execute(() -> {
-                        controllerChannel.writeAndFlush(new NodeHello(Set.of())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        controllerChannel.writeAndFlush(new NodeHello(Set.of(), new PeersList(Map.of()))).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     });
                 }
             });

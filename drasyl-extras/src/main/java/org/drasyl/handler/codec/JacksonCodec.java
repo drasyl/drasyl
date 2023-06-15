@@ -28,6 +28,9 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.handler.dht.chord.LocalChordNode;
+import org.drasyl.handler.dht.chord.LocalChordNode.DrasylAddressMixin;
+import org.drasyl.handler.dht.chord.LocalChordNode.IdentityPublicKeyMixin;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -58,10 +61,10 @@ import static java.util.Objects.requireNonNull;
  * </blockquote>
  */
 public class JacksonCodec<T> extends MessageToMessageCodec<ByteBuf, T> {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     static {
-        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);
-        OBJECT_MAPPER.addMixIn(DrasylAddress.class, LocalChordNode.DrasylAddressMixin.class);
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
     }
     private static final Logger LOG = LoggerFactory.getLogger(JacksonCodec.class);
     public static final int MAGIC_NUMBER = 202_107;

@@ -21,18 +21,24 @@
  */
 package org.drasyl.cli.sdo.config;
 
+import org.drasyl.handler.peers.Peer;
+import org.drasyl.handler.peers.PeersList;
+import org.drasyl.identity.DrasylAddress;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public class LuaNodeStateTable extends LuaTable {
-    private Set<Policy> policies;
 
     public LuaNodeStateTable() {
         set("online", LuaValue.FALSE);
+        set("policies", tableOf());
+        set("peers", tableOf());
     }
 
     public void setOnline() {
@@ -43,12 +49,21 @@ public class LuaNodeStateTable extends LuaTable {
         set("online", LuaValue.FALSE);
     }
 
-    public Set<Policy> policies() {
-        return policies;
-    }
+    public void setState(final Set<Policy> policies, final Map<DrasylAddress, Peer> peers) {
+        // policies
+        final LuaTable policiesTable = tableOf();
+        int index = 1;
+        for (final Policy policy : policies) {
+            policiesTable.set(index++, new LuaPolicyTable(policy));
+        }
+        set("policies", policiesTable);
 
-    public void setPolicies(final Set<Policy> policies) {
-        this.policies = requireNonNull(policies);
+        // peers
+        final LuaTable peersTable = tableOf();
+        for (final Map.Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
+            peersTable.set(LuaValue.valueOf(entry.getKey().toString()), new LuaPeerTable(entry.getValue()));
+        }
+        set("peers", peersTable);
     }
 
     public boolean isOnline() {

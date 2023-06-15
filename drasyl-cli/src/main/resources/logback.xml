@@ -45,6 +45,9 @@
     <logger name="org.drasyl.cli.sdo" level="DEBUG">
     </logger>
 
+    <logger name="org.drasyl.cli.node.NodeCommand" level="TRACE">
+    </logger>
+
 <!--    <logger name="org.drasyl" level="TRACE">-->
 <!--    </logger>-->
 

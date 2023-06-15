@@ -22,6 +22,7 @@ import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
+import org.drasyl.cli.sdo.config.Policy;
 import org.drasyl.cli.sdo.config.TunPolicy;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
@@ -39,6 +40,7 @@ import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
+import static org.drasyl.cli.sdo.config.Policy.PolicyState.ABSENT;
 
 public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TunPolicyHandler.class);
@@ -88,6 +90,8 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     exec("/sbin/ip", "addr", "add", addressStr + "/" + subnet.netmaskLength(), "dev", name);
                     exec("/sbin/ip", "link", "set", "dev", name, "up");
                 }
+
+                policy.setCurrentState(policy.desiredState());
             }
         }).syncUninterruptibly().channel();
 
@@ -97,6 +101,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         if (tunChannel != null) {
             tunChannel.close();
+            policy.setCurrentState(ABSENT);
         }
     }
 
@@ -130,7 +135,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
             LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
             final DrasylAddress publicKey = policy.routes().get(dst);
-            if (policy.routes().containsKey(dst)) {
+            if (policy.routes().containsKey(dst) && drasylServerChannel.isDirectPathPresent(publicKey)) {
                 LOG.error("Pass packet `{}` to peer `{}`", () -> packet, () -> publicKey);
                 drasylServerChannel.serve(policy.routes().get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                     if (future.isSuccess()) {
@@ -139,7 +144,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     }
                 });
             }
-            else if (policy.defaultRoute() != null) {
+            else if (policy.defaultRoute() != null && drasylServerChannel.isDirectPathPresent(policy.defaultRoute())) {
                 LOG.error("Pass packet `{}` to default route `{}`", () -> packet, policy::defaultRoute);
                 drasylServerChannel.serve(policy.defaultRoute()).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                     if (future.isSuccess()) {

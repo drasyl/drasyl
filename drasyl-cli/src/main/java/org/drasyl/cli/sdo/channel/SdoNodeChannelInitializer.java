@@ -29,6 +29,7 @@ import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.handler.SdoNodeHandler;
 import org.drasyl.cli.sdo.handler.SdoPoliciesHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
+import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -72,12 +73,13 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
 
         super.initChannel(ch);
 
-//        final PeersHandler peersHandler = new PeersHandler();
-//        ch.pipeline().addLast(peersHandler);
-//        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
+        final PeersHandler peersHandler = new PeersHandler();
+        ch.pipeline().addLast(peersHandler);
+        //ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
 
-        p.addLast(new SdoNodeHandler(controller));
-        p.addLast(new SdoPoliciesHandler(controller));
+        final SdoNodeHandler nodeHandler = new SdoNodeHandler(controller);
+        p.addLast(nodeHandler);
+        p.addLast(new SdoPoliciesHandler(controller, peersHandler, nodeHandler));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

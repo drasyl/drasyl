@@ -21,12 +21,17 @@
  */
 package org.drasyl.cli.sdo.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.config.Policy;
 import org.drasyl.cli.sdo.message.NodeHello;
+import org.drasyl.handler.peers.PeersHandler;
+import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -34,17 +39,24 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.JOINED;
+import static org.drasyl.handler.codec.JacksonCodec.OBJECT_MAPPER;
 
 public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
     public static final Logger LOG = LoggerFactory.getLogger(SdoPoliciesHandler.class);
     private final IdentityPublicKey controller;
+    private final PeersHandler peersHandler;
+    private final SdoNodeHandler nodeHandler;
     private ChannelHandlerContext ctx;
     private final Set<Policy> policies = new HashSet<>();
 
-    public SdoPoliciesHandler(final IdentityPublicKey controller) {
+    public SdoPoliciesHandler(final IdentityPublicKey controller, final PeersHandler peersHandler, final SdoNodeHandler nodeHandler) {
         this.controller = requireNonNull(controller);
+        this.peersHandler = requireNonNull(peersHandler);
+        this.nodeHandler = requireNonNull(nodeHandler);
     }
 
     @Override
@@ -52,10 +64,13 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
         this.ctx = ctx;
 
         ctx.executor().scheduleAtFixedRate(() -> {
-            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
-            final NodeHello nodeHello = new NodeHello(policies);
-            channel.writeAndFlush(nodeHello);
-            LOG.trace("Send feedback to controller: {}", nodeHello);
+            if (nodeHandler.state == JOINED) {
+                final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
+                final PeersList peersList = peersHandler.getPeers();
+                final NodeHello nodeHello = new NodeHello(policies, peersList);
+                LOG.trace("Send feedback to controller: {}", peersList);
+                channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            }
         }, 1000, 1000, MILLISECONDS);
     }
 

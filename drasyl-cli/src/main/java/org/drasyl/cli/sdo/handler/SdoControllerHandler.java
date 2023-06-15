@@ -35,9 +35,14 @@ import org.drasyl.cli.sdo.message.AccessDenied;
 import org.drasyl.cli.sdo.message.ControllerHello;
 import org.drasyl.cli.sdo.message.NodeHello;
 import org.drasyl.cli.sdo.message.SdoMessage;
+import org.drasyl.handler.peers.Peer;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.util.Map;
+import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -100,14 +105,25 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         networkNode.state().setOnline();
                         LOG.info("`{}` joined network.", sender);
 
-                        networkNode.state().setPolicies(((NodeHello) msg).policies());
+                        final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
+                        for (final DrasylAddress address : Set.copyOf(peers.keySet())) {
+                            if (network.getNode(address) == null) {
+                                peers.remove(address);
+                            }
+                        }
+                        networkNode.state().setState(((NodeHello) msg).policies(), peers);
                         if (!network.notifyListener(ctx)) {
                             channel.writeAndFlush(new ControllerHello(networkNode.policies())).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
                     }
                     else {
-                        LOG.trace("`{}` save (changed) policy states.`", sender);
-                        networkNode.state().setPolicies(((NodeHello) msg).policies());
+                        final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
+                        for (final DrasylAddress address : Set.copyOf(peers.keySet())) {
+                            if (network.getNode(address) == null) {
+                                peers.remove(address);
+                            }
+                        }
+                        networkNode.state().setState(((NodeHello) msg).policies(), peers);
                         network.notifyListener(ctx);
                     }
                 }

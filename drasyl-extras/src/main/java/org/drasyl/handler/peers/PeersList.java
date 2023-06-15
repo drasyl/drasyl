@@ -21,7 +21,12 @@
  */
 package org.drasyl.handler.peers;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,10 +38,13 @@ import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
 public class PeersList {
     private final Map<DrasylAddress, Peer> peers;
 
-    public PeersList(final Map<DrasylAddress, Peer> peers) {
+    @JsonCreator
+    public PeersList(@JsonProperty("peers") final Map<DrasylAddress, Peer> peers) {
         this.peers = requireNonNull(peers);
     }
 
+    @JsonDeserialize(keyAs = IdentityPublicKey.class)
+    @JsonGetter
     public Map<DrasylAddress, Peer> peers() {
         return peers;
     }
