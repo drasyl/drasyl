@@ -21,12 +21,15 @@
  */
 package org.drasyl.cli.sdo.config;
 
+import org.drasyl.cli.util.LuaClones;
 import org.drasyl.cli.util.LuaHashCodes;
+import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
+import org.luaj.vm2.lib.ZeroArgFunction;
 
 public class LuaLinkTable extends LuaTable {
     private final LuaNetworkTable network;
@@ -37,13 +40,15 @@ public class LuaLinkTable extends LuaTable {
                         final LuaTable params) {
         this.network = network;
         for (final LuaValue key : network.linkDefaults.keys()) {
-            set(key, network.linkDefaults.get(key));
+            final LuaValue defaultValue = network.linkDefaults.get(key);
+            set(key, LuaClones.clone(defaultValue));
         }
         for (final LuaValue key : params.keys()) {
             set(key, params.get(key));
         }
         set("node1", node1);
         set("node2", node2);
+        set("tostring", new ToStringFunction());
     }
 
     public LuaLinkTable(final LuaNetworkTable network,
@@ -51,6 +56,11 @@ public class LuaLinkTable extends LuaTable {
                         final LuaString node2,
                         final LuaValue params) {
         this(network, node1, node2, params == NIL ? tableOf() : params.checktable());
+    }
+
+    @Override
+    public String toString() {
+        return "LuaLinkTable" + LuaStrings.toString(this);
     }
 
     public DrasylAddress node1() {
@@ -73,5 +83,12 @@ public class LuaLinkTable extends LuaTable {
     @Override
     public int hashCode() {
         return LuaHashCodes.hash(this);
+    }
+
+    class ToStringFunction extends ZeroArgFunction {
+        @Override
+        public LuaValue call() {
+            return LuaValue.valueOf(LuaLinkTable.this.toString());
+        }
     }
 }

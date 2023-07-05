@@ -5,6 +5,7 @@ import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -31,8 +32,11 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -100,7 +104,15 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         if (tunChannel != null) {
-            tunChannel.close();
+            final SocketAddress ifName = tunChannel.localAddress();
+            tunChannel.close().syncUninterruptibly().addListener(FIRE_EXCEPTION_ON_FAILURE);
+            // FIXME: for some reason the interface is not removed properly. Should be fixed. Here's my workaround
+            try {
+                exec("/usr/sbin/ip", "link", "delete", ifName.toString());
+            }
+            catch (final IOException e) {
+                // ignore
+            }
             policy.setCurrentState(ABSENT);
         }
     }
@@ -108,8 +120,21 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     private void exec(final String... command) throws IOException {
         try {
             LOG.trace("Execute: {}", String.join(" ", command));
-            final int exitCode = Runtime.getRuntime().exec(command).waitFor();
+            Process process = Runtime.getRuntime().exec(command);
+            final int exitCode = process.waitFor();
             if (exitCode != 0) {
+                // Get the stderr output
+                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                String line;
+                StringBuilder errorOutput = new StringBuilder();
+
+                while ((line = errorReader.readLine()) != null) {
+                    errorOutput.append(line).append("\n");
+                }
+
+                // Print or handle the stderr output
+                System.out.println("Stderr Output: " + errorOutput.toString());
+
                 throw new IOException("Executing `" + String.join(" ", command) + "` returned non-zero exit code (" + exitCode + ").");
             }
         } catch (final InterruptedException e) {
@@ -134,6 +159,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
             LOG.error("Got packet `{}`", () -> packet);
             LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
+            LOG.error("routes = {}; containsKey = {}; directPath = {}", policy.routes(), policy.routes().containsKey(dst), policy.routes().containsKey(dst) ? drasylServerChannel.isDirectPathPresent(policy.routes().get(dst)) : "null");
             final DrasylAddress publicKey = policy.routes().get(dst);
             if (policy.routes().containsKey(dst) && drasylServerChannel.isDirectPathPresent(publicKey)) {
                 LOG.error("Pass packet `{}` to peer `{}`", () -> packet, () -> publicKey);
@@ -154,7 +180,8 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                 });
             }
             else {
-                LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
+                LOG.error("Drop packet `{}` with unroutable destination. public-key = {}; direct-path = {}", () -> packet, () -> publicKey, () -> drasylServerChannel.isDirectPathPresent(publicKey));
+                packet.release();
                 // TODO: reply with ICMP host unreachable message?
             }
         }

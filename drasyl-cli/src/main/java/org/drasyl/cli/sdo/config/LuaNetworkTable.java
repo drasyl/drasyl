@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.message.ControllerHello;
+import org.drasyl.cli.util.LuaHashCodes;
+import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.HashSetMultimap;
@@ -42,11 +44,7 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
 import java.net.SocketAddress;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 
@@ -67,6 +65,7 @@ public class LuaNetworkTable extends LuaTable {
         nodeDefaults.set("tun_name", LuaValue.valueOf("utun0"));
         nodeDefaults.set("tun_subnet", LuaValue.valueOf("10.10.2.0/24"));
         nodeDefaults.set("tun_mtu", LuaValue.valueOf(1225));
+        nodeDefaults.set("tun_routes", tableOf());
         // FIXME: add tun_address default
 
         for (final LuaValue key : params.keys()) {
@@ -92,6 +91,7 @@ public class LuaNetworkTable extends LuaTable {
         }
 
         // nodes
+        set("tostring", new ToStringFunction());
         set("nodes", new NodesValue());
         set("get", new GetNodeFunction());
         set("add_node", new AddNodeFunction());
@@ -100,6 +100,7 @@ public class LuaNetworkTable extends LuaTable {
 
         // link
         set("add_link", new AddLinkFunction());
+        set("remove_link", new RemoveLinkFunction());
         set("clear_links", new ClearLinksFunction());
     }
 
@@ -109,6 +110,14 @@ public class LuaNetworkTable extends LuaTable {
 
     public LuaNodeTable getNode(final DrasylAddress name) {
         return nodes.get(name);
+    }
+
+    @Override
+    public String toString() {
+        return "LuaNetworkTable{" +
+                "nodes=" + nodes +
+                ", links=" + links +
+                '}';
     }
 
     @Override
@@ -139,14 +148,16 @@ public class LuaNetworkTable extends LuaTable {
             boolean networkChanged = before != after;
 
             if (networkChanged) {
-                LOG.info("Network has changed. Push new policies to all online nodes.");
+                LOG.trace("Network has changed. Push new policies to all online nodes.");
 
                 // push new config to all nodes
                 final Map<SocketAddress, DrasylChannel> channels = ((DrasylServerChannel) ctx.channel()).channels;
                 for (final LuaNodeTable node : nodes.values()) {
                     final DrasylChannel channel = channels.get(node.name());
                     if (node.state().isOnline()) {
-                        channel.writeAndFlush(new ControllerHello(node.policies())).addListener(FIRE_EXCEPTION_ON_FAILURE);;
+                        final ControllerHello controllerHello = new ControllerHello(node.policies());
+                        LOG.trace("Send {} to {}.", controllerHello, node.name());
+                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);;
                     }
                 }
             }
@@ -155,6 +166,13 @@ public class LuaNetworkTable extends LuaTable {
         }
 
         return false;
+    }
+
+    class ToStringFunction extends ZeroArgFunction {
+        @Override
+        public LuaValue call() {
+            return LuaValue.valueOf(LuaNetworkTable.this.toString());
+        }
     }
 
     class NodesValue extends ZeroArgFunction {
@@ -231,6 +249,37 @@ public class LuaNetworkTable extends LuaTable {
             LuaNetworkTable.this.links.add(link);
             LuaNetworkTable.this.nodeLinks.put(link.node1(), link);
             LuaNetworkTable.this.nodeLinks.put(link.node2(), link);
+
+            return NIL;
+        }
+    }
+
+    class RemoveLinkFunction extends TwoArgFunction {
+        @Override
+        public LuaValue call(final LuaValue node1Arg,
+                             final LuaValue node2Arg) {
+            final LuaString node1String = node1Arg.checkstring();
+            final LuaString node2String = node2Arg.checkstring();
+
+            if (!LuaNetworkTable.this.nodes.containsKey(IdentityPublicKey.of(node1String.tojstring()))) {
+                throw new LuaError("Node `" + node1String + "` does not exist.");
+            }
+            if (!LuaNetworkTable.this.nodes.containsKey(IdentityPublicKey.of(node2String.tojstring()))) {
+                throw new LuaError("Node `" + node2String + "` does not exist.");
+            }
+
+            Iterator<LuaLinkTable> iterator = LuaNetworkTable.this.links.iterator();
+
+            while (iterator.hasNext()) {
+                LuaLinkTable link = iterator.next();
+
+                if (
+                        (link.node1().equals(IdentityPublicKey.of(node1String.tojstring())) && link.node2().equals(IdentityPublicKey.of(node1String.tojstring()))) ||
+                        (link.node1().equals(IdentityPublicKey.of(node2String.tojstring())) && link.node2().equals(IdentityPublicKey.of(node2String.tojstring())))
+                ) {
+                    iterator.remove();
+                }
+            }
 
             return NIL;
         }

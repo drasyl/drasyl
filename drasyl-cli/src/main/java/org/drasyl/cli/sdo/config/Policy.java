@@ -21,12 +21,17 @@
  */
 package org.drasyl.cli.sdo.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.sdo.config.Policy.PolicyState.ABSENT;
+import static org.drasyl.cli.sdo.config.Policy.PolicyState.PRESENT;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
@@ -35,10 +40,24 @@ import static java.util.Objects.requireNonNull;
         @Type(value = TunPolicy.class),
 })
 public abstract class Policy {
-    public PolicyState currentState = PolicyState.ABSENT;
-    public PolicyState desiredState = PolicyState.PRESENT;
+    private static final Logger LOG = LoggerFactory.getLogger(Policy.class);
+    public PolicyState currentState;
+    public PolicyState desiredState;
 
+    protected Policy(final PolicyState currentState, final PolicyState desiredState) {
+        this.currentState = currentState;
+        this.desiredState = desiredState;
+    }
+
+    protected Policy() {
+        this(ABSENT, PRESENT);
+    }
+
+    @JsonIgnore
     public void setCurrentState(final PolicyState state) {
+        if (currentState != state) {
+            LOG.error("Policy `{}` went to state `{}`.", this, state);
+        }
         this.currentState = requireNonNull(state);
     }
 

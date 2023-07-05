@@ -36,7 +36,15 @@ public class DefaultRoutePolicy extends Policy {
     private final DrasylAddress defaultRoute;
 
     @JsonCreator
-    public DefaultRoutePolicy(@JsonProperty("defaultRoute") final DrasylAddress defaultRoute) {
+    public DefaultRoutePolicy(@JsonProperty("defaultRoute") final DrasylAddress defaultRoute,
+                              @JsonProperty("currentState") final PolicyState currentState,
+                              @JsonProperty("desiredState") final PolicyState desiredState) {
+        super(currentState, desiredState);
+        this.defaultRoute = requireNonNull(defaultRoute);
+    }
+
+    public DefaultRoutePolicy(final DrasylAddress defaultRoute) {
+        super();
         this.defaultRoute = requireNonNull(defaultRoute);
     }
 

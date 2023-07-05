@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -77,5 +78,13 @@ public class PeersList {
         }
 
         return builder.toString();
+    }
+
+    public PeersList copy() {
+        final Map<DrasylAddress, Peer> copyPeers = new HashMap<>();
+        for (final Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
+            copyPeers.put(entry.getKey(), entry.getValue().copy());
+        }
+        return new PeersList(copyPeers);
     }
 }

@@ -181,4 +181,8 @@ public class Peer {
             return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
         }
     }
+
+    public Peer copy() {
+        return new Peer(role(), inetAddress(), sent(), last(), (long) average(), best(), worst(), stDev());
+    }
 }

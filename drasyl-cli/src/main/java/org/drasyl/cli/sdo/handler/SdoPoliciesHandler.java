@@ -22,6 +22,7 @@
 package org.drasyl.cli.sdo.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -63,13 +64,20 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
     public void handlerAdded(final ChannelHandlerContext ctx) {
         this.ctx = ctx;
 
+//        LOG.error("handlerAdded");
         ctx.executor().scheduleAtFixedRate(() -> {
+//            LOG.error("scheduleAtFixedRate {}", nodeHandler.state);
             if (nodeHandler.state == JOINED) {
-                final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
-                final PeersList peersList = peersHandler.getPeers();
-                final NodeHello nodeHello = new NodeHello(policies, peersList);
-                LOG.trace("Send feedback to controller: {}", peersList);
-                channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                try {
+                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
+                    final PeersList peersList = peersHandler.getPeers().copy();
+                    final NodeHello nodeHello = new NodeHello(policies, peersList);
+                    LOG.trace("Send feedback to controller: {}", peersList);
+                    channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }, 1000, 1000, MILLISECONDS);
     }

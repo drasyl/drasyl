@@ -32,7 +32,25 @@ public class TunPolicy extends Policy {
                      @JsonProperty("mtu") final int mtu,
                      @JsonProperty("address") final InetAddress address,
                      @JsonProperty("routes") final Map<InetAddress, DrasylAddress> routes,
-                     @JsonProperty("defaultRoute") final DrasylAddress defaultRoute) {
+                     @JsonProperty("defaultRoute") final DrasylAddress defaultRoute,
+                     @JsonProperty("currentState") final PolicyState currentState,
+                     @JsonProperty("desiredState") final PolicyState desiredState) {
+        super(currentState, desiredState);
+        this.name = requireNonNull(name);
+        this.subnet = requireNonNull(subnet);
+        this.mtu = requirePositive(mtu);
+        this.address = requireNonNull(address);
+        this.routes = requireNonNull(routes);
+        this.defaultRoute = defaultRoute;
+    }
+
+    public TunPolicy(final String name,
+                     final String subnet,
+                     final int mtu,
+                     final InetAddress address,
+                     final Map<InetAddress, DrasylAddress> routes,
+                     final DrasylAddress defaultRoute) {
+        super();
         this.name = requireNonNull(name);
         this.subnet = requireNonNull(subnet);
         this.mtu = requirePositive(mtu);
@@ -73,9 +91,7 @@ public class TunPolicy extends Policy {
     }
 
     public void addPolicy(final ChannelPipeline pipeline) {
-        final String handlerName = StringUtil.simpleClassName(this);
-
-        pipeline.addLast(handlerName, new TunPolicyHandler(this));
+        pipeline.addLast(HANDLER_NAME, new TunPolicyHandler(this));
     }
 
     @Override

@@ -82,7 +82,10 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
     }
 
     private void triggerDirectPathEstablishment(final ChannelHandlerContext ctx) {
+//        LOG.error("triggerDirectPathEstablishment {}", policy.peer());
         final boolean directPathPresentNow = ((DrasylServerChannel) ctx.channel()).isDirectPathPresent(policy.peer());
+//        LOG.error("directPathPresentNow = {} {}", directPathPresentNow, policy.peer());
+//        LOG.error("policy = {} {}", policy, policy.peer());
 
         if (directPathPresentNow != directPathEstablished) {
             if (directPathPresentNow) {
@@ -97,7 +100,7 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
         }
 
         if (!directPathPresentNow) {
-            LOG.trace("No direct path to `{}` present. Send NOOP message to trigger direct path establishment.", policy.peer());
+            LOG.error("No direct path to `{}` present. Send NOOP message to trigger direct path establishment.", policy.peer());
 
             final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NOOP_MAGIC_NUMBER);
             final OverlayAddressedMessage<ByteBuf> msg = new OverlayAddressedMessage<>(byteBuf, policy.peer(), (DrasylAddress) ctx.channel().localAddress());
@@ -109,11 +112,13 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
         }
         else {
             LOG.trace("Direct path to `{}` present. Nothing to do.", policy.peer());
+            policy.setCurrentState(policy.desiredState());
         }
 
         if (retryTask != null) {
             retryTask.cancel(false);
         }
+//        LOG.error("ctx.executor().schedule {}", policy.peer());
         retryTask = ctx.executor().schedule(() -> triggerDirectPathEstablishment(ctx), 5_000, MILLISECONDS);
     }
 

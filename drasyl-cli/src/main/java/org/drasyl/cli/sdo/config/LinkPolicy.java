@@ -36,7 +36,15 @@ public class LinkPolicy extends Policy {
     private final DrasylAddress peer;
 
     @JsonCreator
-    public LinkPolicy(@JsonProperty("peer") final DrasylAddress peer) {
+    public LinkPolicy(@JsonProperty("peer") final DrasylAddress peer,
+                      @JsonProperty("currentState") final PolicyState currentState,
+                      @JsonProperty("desiredState") final PolicyState desiredState) {
+        super(currentState, desiredState);
+        this.peer = requireNonNull(peer);
+    }
+
+    public LinkPolicy(final DrasylAddress peer) {
+        super();
         this.peer = requireNonNull(peer);
     }
 

@@ -23,6 +23,7 @@ package org.drasyl.cli.util;
 
 import io.netty.util.internal.StringUtil;
 import org.luaj.vm2.*;
+import org.luaj.vm2.lib.LibFunction;
 
 import java.util.Objects;
 
@@ -53,8 +54,11 @@ public class LuaHashCodes {
         else if (value instanceof LuaDouble) {
             return Objects.hash(value.todouble());
         }
+        else if (value instanceof LibFunction) {
+            return 1;
+        }
         else {
-            throw new RuntimeException("not implemented: " + StringUtil.simpleClassName(value));
+            throw new RuntimeException("LuaHashCodes#hash not implemented for " + StringUtil.simpleClassName(value));
         }
     }
 }
