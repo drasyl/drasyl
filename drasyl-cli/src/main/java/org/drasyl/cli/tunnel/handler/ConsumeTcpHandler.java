@@ -111,7 +111,7 @@ class ConsumeTcpHandler extends ChannelDuplexHandler {
             exposerCtx.pipeline().writeAndFlush(writeMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
         }
         else {
-            ctx.fireChannelRead(ctx);
+            ctx.fireChannelRead(msg);
         }
     }
 
