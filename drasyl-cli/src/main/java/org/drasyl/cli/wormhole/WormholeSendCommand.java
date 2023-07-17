@@ -58,7 +58,7 @@ public class WormholeSendCommand extends ChannelOptions {
     @Option(
             names = { "--password" },
             description = "Password required by the binder. If no password is specified, a random password will be generated.",
-            interactive = true
+            interactive = false
     )
     private String password;
     @Option(

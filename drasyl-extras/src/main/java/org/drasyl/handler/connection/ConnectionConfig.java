@@ -59,7 +59,7 @@ public abstract class ConnectionConfig {
                     false
             ))
             .activeOpen(true)
-            .rmem(65_535 * 10)
+            .rmem(65_535 * 100)
             // FIXME: change back to 2 minutes?
             .msl(ofSeconds(2))
             .noDelay(false)

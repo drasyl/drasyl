@@ -64,8 +64,9 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
         out.println("Receiving file (" + numberToHumanData(length) + ") into: " + file.getName());
 
         if (file.exists()) {
-            ctx.fireExceptionCaught(new FileExistException(file.getName()));
-            return;
+            file.delete();
+//            ctx.fireExceptionCaught(new FileExistException(file.getName()));
+//            return;
         }
 
         try {
