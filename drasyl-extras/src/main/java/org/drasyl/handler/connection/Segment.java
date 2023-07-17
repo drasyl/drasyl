@@ -36,11 +36,11 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.RandomUtil.randomInt;
+import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
- * Message used by {@link ConnectionHandler} to provide reliable and ordered delivery of
- * bytes between hosts.
+ * Message used by {@link ConnectionHandler} to provide reliable and ordered delivery of bytes
+ * between hosts.
  */
 @SuppressWarnings({ "java:S1845", "java:S3052" })
 public class Segment extends DefaultByteBufHolder {
@@ -69,13 +69,13 @@ public class Segment extends DefaultByteBufHolder {
     private final int cks;
     private final Map<SegmentOption, Object> options;
 
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final long wnd,
-                   final int cks,
-                   final Map<SegmentOption, Object> options,
-                   final ByteBuf data) {
+    Segment(final long seq,
+            final long ack,
+            final byte ctl,
+            final long wnd,
+            final int cks,
+            final Map<SegmentOption, Object> options,
+            final ByteBuf data) {
         super(data);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -85,53 +85,40 @@ public class Segment extends DefaultByteBufHolder {
         this.options = requireNonNull(options);
     }
 
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final long wnd,
-                   final Map<SegmentOption, Object> options,
-                   final ByteBuf data) {
+    Segment(final long seq,
+            final long ack,
+            final byte ctl,
+            final long wnd,
+            final Map<SegmentOption, Object> options,
+            final ByteBuf data) {
         this(seq, ack, ctl, wnd, (short) 0, options, data);
     }
 
-    public Segment(final long seq,
-                   final byte ctl,
-                   final Map<SegmentOption, Object> options) {
-        this(seq, 0, ctl, 0, options, Unpooled.EMPTY_BUFFER);
-    }
-
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final Map<SegmentOption, Object> options,
-                   final ByteBuf data) {
+    Segment(final long seq,
+            final long ack,
+            final byte ctl,
+            final Map<SegmentOption, Object> options,
+            final ByteBuf data) {
         this(seq, ack, ctl, 0, options, data);
     }
 
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final Map<SegmentOption, Object> options) {
-        this(seq, ack, ctl, 0, options, Unpooled.EMPTY_BUFFER);
-    }
-
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final long wnd,
-                   final ByteBuf data) {
+    Segment(final long seq,
+            final long ack,
+            final byte ctl,
+            final long wnd,
+            final ByteBuf data) {
         this(seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), data);
     }
 
-    public Segment(final long seq,
-                   final long ack,
-                   final byte ctl,
-                   final ByteBuf data) {
+    Segment(final long seq,
+            final long ack,
+            final byte ctl,
+            final ByteBuf data) {
         this(seq, ack, ctl, 0, data);
     }
 
-    public Segment(final long seq,
-                   final byte ctl) {
+    Segment(final long seq,
+            final byte ctl) {
         this(seq, 0, ctl, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
@@ -154,110 +141,121 @@ public class Segment extends DefaultByteBufHolder {
         this(seq, ack, ctl, 0);
     }
 
-    public static long advanceSeq(final long seq, final long advancement) {
-        return add(seq, advancement);
-    }
-
-    public static long randomSeq() {
-        // generate random number between [0,4294967296]
-        return (long) randomInt(Integer.MAX_VALUE - 1) + randomInt(Integer.MAX_VALUE - 1) + randomInt(3);
-    }
-
     /**
-     * @param s sequence number we want increment. Must be non-negative.
-     * @param n number to add. Must be within range {@code [0, (2^(serialBits - 1) - 1)]}
-     * @return resulting sequence number of the addition
+     * Returns the number of this segment.
+     *
+     * @return the sequence number of this segment
      */
-    public static long add(final long s, final long n) {
-        return SerialNumberArithmetic.add(s, n, SEQ_NO_SPACE);
-    }
-
-    public static long sub(final long i1, final long i2) {
-        return SerialNumberArithmetic.sub(i1, i2, SEQ_NO_SPACE);
-    }
-
-    /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
-     */
-    public static boolean lessThan(final long i1, final long i2) {
-        return SerialNumberArithmetic.lessThan(i1, i2, SEQ_NO_SPACE);
-    }
-
-    /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is less than or equal to {@code i2}. Otherwise
-     * {@code false}
-     */
-    public static boolean lessThanOrEqualTo(final long i1, final long i2) {
-        return SerialNumberArithmetic.lessThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
-    }
-
-    /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
-     */
-    public static boolean greaterThan(final long i1, final long i2) {
-        return SerialNumberArithmetic.greaterThan(i1, i2, SEQ_NO_SPACE);
-    }
-
-    /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is greater than or equal to {@code i2}. Otherwise
-     * {@code false}
-     */
-    public static boolean greaterThanOrEqualTo(final long i1, final long i2) {
-        return SerialNumberArithmetic.greaterThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
-    }
-
     public long seq() {
         return seq;
     }
 
+    /**
+     * Returns the acknowledgement number (which is set to the next expected sequence number from
+     * the other party).
+     *
+     * @return the acknowledgement number (which is set to the next expected sequence number from
+     * the other party)
+     */
     public long ack() {
         return ack;
     }
 
+    /**
+     * Returns the control byte which defines which flags (such as SYN, ACK, FIN, RST, and PSH) for
+     * this segment are set.
+     *
+     * @return the control byte which defines which flags (such as SYN, ACK, FIN, RST, and PSH) for
+     * this segment are set
+     */
     public byte ctl() {
         return ctl;
     }
 
+    /**
+     * Returns the window size which indicates the amount of data, in bytes, that the sender of the
+     * segment is willing to accept from the other party, effectively controlling the flow of data
+     * and preventing buffer overflow.
+     *
+     * @return the window size which indicates the amount of data, in bytes, that the sender of the
+     * segment is willing to accept from the other party, effectively controlling the flow of data
+     * and preventing buffer overflow
+     */
     public long wnd() {
         return wnd;
     }
 
+    /**
+     * Returns the checksum which is used for error-checking of the header and data, helping to
+     * ensure that the information has not been altered in transit due to network corruption.
+     *
+     * @return the checksum which is used for error-checking of the header and data, helping to
+     * ensure that the information has not been altered in transit due to network corruption
+     */
     public int cks() {
         return cks;
     }
 
+    /**
+     * Returns {@code true}, if the ACK flag is set for this segment.
+     *
+     * @return {@code true}, if the ACK flag is set for this segment
+     */
     public boolean isAck() {
         return (ctl & ACK) != 0;
     }
 
+    /**
+     * Returns {@code true}, if only ACK flag (and no other flag) is set for this segment.
+     *
+     * @return {@code true}, if only ACK flag (and no other flag) is set for this segment
+     */
     public boolean isOnlyAck() {
         return ctl == ACK;
     }
 
+    /**
+     * Returns {@code true}, if the PSH flag is set for this segment.
+     *
+     * @return {@code true}, if the PSH flag is set for this segment
+     */
     public boolean isPsh() {
         return (ctl & PSH) != 0;
     }
 
+    /**
+     * Returns {@code true}, if the RST flag is set for this segment.
+     *
+     * @return {@code true}, if the RST flag is set for this segment
+     */
     public boolean isRst() {
         return (ctl & RST) != 0;
     }
 
+    /**
+     * Returns {@code true}, if the SYN flag is set for this segment.
+     *
+     * @return {@code true}, if the SYN flag is set for this segment
+     */
     public boolean isSyn() {
         return (ctl & SYN) != 0;
     }
 
+    /**
+     * Returns {@code true}, if only SYN flag (and no other flag) is set for this segment.
+     *
+     * @return {@code true}, if only SYN flag (and no other flag) is set for this segment
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isOnlySyn() {
         return ctl == SYN;
     }
 
+    /**
+     * Returns {@code true}, if the FIN flag is set for this segment.
+     *
+     * @return {@code true}, if the FIN flag is set for this segment
+     */
     public boolean isFin() {
         return (ctl & FIN) != 0;
     }
@@ -335,6 +333,11 @@ public class Segment extends DefaultByteBufHolder {
         return add(seq(), len() - 1L);
     }
 
+    /**
+     * Returns {@code true}, if this segment must be accepted by the receiver.
+     *
+     * @return {@code true}, if this segment must be accepted by the receiver
+     */
     public boolean mustBeAcked() {
         return (!isOnlyAck() && !isRst()) || len() != 0;
     }
@@ -342,5 +345,78 @@ public class Segment extends DefaultByteBufHolder {
     @Override
     public Segment retain() {
         return (Segment) super.retain();
+    }
+
+    /**
+     * Advances {@code seq} by {@code advancement}. The addition operation is applying the rules
+     * specified in
+     * <a href="https://www.rfc-editor.org/rfc/rfc1982">RFC 1982: Serial Number Arithmetic</a>.
+     *
+     * @param seq
+     * @param advancement
+     * @return advanced sequence number
+     */
+    public static long advanceSeq(final long seq, final long advancement) {
+        return add(seq, advancement);
+    }
+
+    /**
+     * Returns a random sequence number between [0,4294967295].
+     *
+     * @return random sequence number between [0,4294967295]
+     */
+    public static long randomSeq() {
+        return randomLong(0, MAX_SEQ_NO);
+    }
+
+    /**
+     * @param s sequence number we want increment. Must be non-negative.
+     * @param n number to add. Must be within range {@code [0, (2^(serialBits - 1) - 1)]}
+     * @return resulting sequence number of the addition
+     */
+    public static long add(final long s, final long n) {
+        return SerialNumberArithmetic.add(s, n, SEQ_NO_SPACE);
+    }
+
+    public static long sub(final long i1, final long i2) {
+        return SerialNumberArithmetic.sub(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1 first non-negative number
+     * @param i2 second non-negative number
+     * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
+     */
+    public static boolean lessThan(final long i1, final long i2) {
+        return SerialNumberArithmetic.lessThan(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1 first non-negative number
+     * @param i2 second non-negative number
+     * @return {@code true} if {@code i1} is less than or equal to {@code i2}. Otherwise
+     * {@code false}
+     */
+    public static boolean lessThanOrEqualTo(final long i1, final long i2) {
+        return SerialNumberArithmetic.lessThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1 first non-negative number
+     * @param i2 second non-negative number
+     * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
+     */
+    public static boolean greaterThan(final long i1, final long i2) {
+        return SerialNumberArithmetic.greaterThan(i1, i2, SEQ_NO_SPACE);
+    }
+
+    /**
+     * @param i1 first non-negative number
+     * @param i2 second non-negative number
+     * @return {@code true} if {@code i1} is greater than or equal to {@code i2}. Otherwise
+     * {@code false}
+     */
+    public static boolean greaterThanOrEqualTo(final long i1, final long i2) {
+        return SerialNumberArithmetic.greaterThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
     }
 }
