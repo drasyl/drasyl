@@ -33,6 +33,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
@@ -87,7 +88,7 @@ public class TransmissionControlBlock {
     // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
     // (DRASYL_HDR_SIZE) and our TCP header (31)
-    public static final int DEFAULT_SEND_MSS = 1460 - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
+    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -232,7 +233,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.mmsS() * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
+        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -669,9 +670,18 @@ public class TransmissionControlBlock {
         return tsRecent;
     }
 
-    public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
+    /**
+     * Returns the number of acked segments.
+     *
+     * @param ctx
+     * @param sndUna
+     * @return
+     */
+    public long sndUna(final ChannelHandlerContext ctx, final long sndUna) {
+        final long ackedSegments = sub(sndUna, this.sndUna);
         this.sndUna = sndUna;
         LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
+        return ackedSegments;
     }
 
     public void tsRecent(final long tsRecent) {

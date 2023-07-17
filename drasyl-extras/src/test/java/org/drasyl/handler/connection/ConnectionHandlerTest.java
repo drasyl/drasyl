@@ -3191,7 +3191,7 @@ class ConnectionHandlerTest {
         @Nested
         class SlowStart {
             @Test
-            void name() {
+            void congestionWindowShouldBeIncreasedByOneMessagePerAck() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final int mms = IP_MTU - DRASYL_HDR_SIZE;
                 final long iss = 100L;
@@ -3208,31 +3208,65 @@ class ConnectionHandlerTest {
 
                 final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
 
-                // inital cwnd is 3*MMS=3672
-                // 3 in-flight messages are allowed
-                assertEquals(3 * mms, tcb.cwnd());
+                // initially, 3 in-flight messages are allowed
+                assertTrue(tcb.doSlowStart());
+                assertEquals(3 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 channel.writeOutbound(byteBuf);
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 1)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 2)));
+                final Segment seg1 = channel.readOutbound();
+                assertThat(seg1, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 0 * (mms - SEG_HDR_SIZE))));
+                final Segment seg2 = channel.readOutbound();
+                assertThat(seg2, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 1 * (mms - SEG_HDR_SIZE))));
+                final Segment seg3 = channel.readOutbound();
+                assertThat(seg3, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 2 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
 
-                // ACK 1st SEG -> increase cwnd by 1224
+                // ACK 1st SEG -> increase cwnd by one message
                 // 4 in-flight messages are allowed now
-                // 1 message legt the network, 2 new messages are allowed
-                channel.writeInbound(new Segment(300L, iss + mms + 1, ACK, 64_000));
-                assertEquals(3672 + mms * 1, tcb.cwnd());
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 3)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 4)));
+                // 1 message left the network (2 still in-flight), 2 new messages are allowed
+                assertTrue(tcb.doSlowStart());
+                channel.writeInbound(new Segment(300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(4 * (mms - SEG_HDR_SIZE), tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 3 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 4 * (mms - SEG_HDR_SIZE))));
+                assertNull(channel.readOutbound());
+                assertTrue(tcb.doSlowStart());
 
-                // ACK 3rd SEG
+                // ACK 3rd SEG -> increase cwnd by one message
                 // 5 in-flight messages are allowed now
-                // 2 message legt the network, 3 new messages are allowed
-                channel.writeInbound(new Segment(300L, iss + 3 * mms + 1, ACK, 64_000));
-                assertEquals(3672 + mms * 2, tcb.cwnd());
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 5)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 6)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 7)));
+                // 2 messages left the network (2 still in-flight), 3 new messages are allowed
+                assertTrue(tcb.doSlowStart());
+                channel.writeInbound(new Segment(300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5 * (mms - SEG_HDR_SIZE), tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 5 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 6 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 7 * (mms - SEG_HDR_SIZE))));
+                assertNull(channel.readOutbound());
+            }
+        }
+
+        @Nested
+        class CongestionAvoidance {
+            @Test
+            void congestionWindowShouldBeIncreasedByOneMessagePerRtt() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final int mms = IP_MTU - DRASYL_HDR_SIZE;
+                final long iss = 100L;
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
+                        .issSupplier(() -> iss)
+                        .activeOpen(false)
+                        .mmsS(mms)
+                        .msl(ofMillis(100))
+                        .noDelay(true)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                // set cwnd to ssthresh to
+                tcb.cwnd(tcb.ssthresh());
+                final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                channel.pipeline().addLast(handler);
+
+                assertFalse(tcb.doSlowStart());
+
+                // FIXME
             }
         }
     }

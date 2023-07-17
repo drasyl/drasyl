@@ -2040,9 +2040,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), Segment.sub(seg.ack(), tcb.sndUna()));
-            final long lastAckedSeq = sub(seg.ack(), 1);
-            ackedBytes = sub(lastAckedSeq, tcb.sndUna());
-            tcb.sndUna(ctx, seg.ack());
+            ackedBytes = tcb.sndUna(ctx, seg.ack());
         }
 
         // RFC 7323: Also compute a new estimate of round-trip time.
