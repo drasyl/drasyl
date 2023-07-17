@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3.5.3
         with:
           fetch-depth: 0
       - name: Set up JDK
@@ -46,7 +46,7 @@ jobs:
 
         include:
           - job_name: linux-amd64
-            os: ubuntu-latest
+            os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: linux-arm64
             os: [ self-hosted, linux, ARM64 ]
@@ -63,22 +63,22 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
         uses: ilammy/msvc-dev-cmd@v1.12.1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
         uses: microsoft/setup-msbuild@v1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       # set up GraalVM
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: latest
+          version: 22.3.2
           java-version: 17
           components: native-image
           cache: 'maven'
@@ -99,7 +99,7 @@ jobs:
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'ubuntu-latest'
+        if: success() && startsWith(matrix.os, 'ubuntu-')
 
       - name: Build Package on *nix ARM
         run: |
@@ -120,7 +120,7 @@ jobs:
           cp ./LICENSE libdrasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r libdrasyl-${VERSION}-${{ matrix.job_name }}.zip ./libdrasyl-${VERSION}-${{ matrix.job_name }}
           for file in libdrasyl-*.zip; do shasum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'macOS-latest'
+        if: success() && startsWith(matrix.os, 'macOS-')
 
       - name: Build Package on Windows
         run: |
@@ -134,7 +134,7 @@ jobs:
           Copy-Item "./LICENSE" -Destination "./libdrasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./libdrasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip
           CertUtil -hashfile "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./libdrasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
       # upload package
       - name: Upload Package
@@ -182,7 +182,7 @@ jobs:
     needs: shared-library
 
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3.5.3
 
       - name: Download shared library artifact
         uses: actions/download-artifact@v3
@@ -210,9 +210,9 @@ jobs:
           Move-Item -Path .\drasyl-shared-library\pypi\src\drasyl\libdrasyl-* -Destination .\drasyl-shared-library\pypi\src\drasyl\libdrasyl\
           Get-ChildItem -Path .\drasyl-shared-library\pypi\src\drasyl\
           $VERSION > .\drasyl-shared-library\pypi\VERSION
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
-      - uses: actions/setup-python@v4.6.0
+      - uses: actions/setup-python@v4.7.0
         with:
           python-version: '3.10'
           check-latest: true
@@ -280,7 +280,7 @@ jobs:
 
         include:
           - job_name: linux-amd64
-            os: ubuntu-latest
+            os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: linux-arm64
             os: [ self-hosted, linux, ARM64 ]
@@ -297,22 +297,22 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
         uses: ilammy/msvc-dev-cmd@v1.12.1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
         uses: microsoft/setup-msbuild@v1
-        if: matrix.os == 'windows-latest'
+        if: startsWith(matrix.os, 'windows-')
 
       # set up GraalVM
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: latest
+          version: 22.3.2
           java-version: 17
           components: native-image
           cache: 'maven'
@@ -333,7 +333,7 @@ jobs:
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'ubuntu-latest'
+        if: success() && startsWith(matrix.os, 'ubuntu-')
 
       - name: Build Package on *nix ARM
         run: |
@@ -354,7 +354,7 @@ jobs:
           cp ./LICENSE drasyl-${VERSION}-${{ matrix.job_name }}/
           zip -r drasyl-${VERSION}-${{ matrix.job_name }}.zip ./drasyl-${VERSION}-${{ matrix.job_name }}
           for file in drasyl-*.zip; do shasum -a 256 "$file" | awk '{print $1}' > "$file.sha256"; done
-        if: success() && matrix.os == 'macOS-latest'
+        if: success() && startsWith(matrix.os, 'macOS-')
 
       - name: Build Package on Windows
         run: |
@@ -364,7 +364,7 @@ jobs:
           Copy-Item "./LICENSE" -Destination "./drasyl-${VERSION}-${{ matrix.job_name }}"
           Compress-Archive -Path "./drasyl-${VERSION}-${{ matrix.job_name }}" -Update -DestinationPath ./drasyl-${VERSION}-${{ matrix.job_name }}.zip
           CertUtil -hashfile "./drasyl-${VERSION}-${{ matrix.job_name }}.zip" SHA256 | Select-String -Pattern "CertUtil","SHA256" -CaseSensitive -NotMatch > "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"; (Get-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256") -join '' | Set-Content "./drasyl-${VERSION}-${{ matrix.job_name }}.zip.sha256"
-        if: success() && matrix.os == 'windows-latest'
+        if: success() && startsWith(matrix.os, 'windows-')
 
       # upload package
       - name: Upload Package
@@ -381,7 +381,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
       - name: Get actual patch version
         id: actual_patch_version
         run: echo ACTUAL_PATCH_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3) >> $GITHUB_OUTPUT
@@ -407,7 +407,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl/homebrew-tap
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/homebrew-tap
@@ -438,7 +438,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl/drasyl-choco
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/drasyl-choco

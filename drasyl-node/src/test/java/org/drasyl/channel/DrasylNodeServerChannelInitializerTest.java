@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -69,7 +69,7 @@ class DrasylNodeServerChannelInitializerTest {
             final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node, udpServerGroup);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(23)).addLast(any());
+            verify(channel.pipeline(), times(20)).addLast(any());
         }
     }
 }

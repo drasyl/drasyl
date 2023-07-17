@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,12 @@ package org.drasyl.channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.handler.LoopbackHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
-import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
@@ -61,8 +61,9 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int PING_TIMEOUT_MILLIS = 30_000;
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
+    protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
+    protected static final LoopbackHandler LOOPBACK_HANDLER = new LoopbackHandler();
     protected final Identity identity;
-    private final EventLoopGroup udpServerGroup;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
@@ -71,6 +72,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     protected final int pingTimeoutMillis;
     protected final int maxTimeOffsetMillis;
     protected final int maxPeers;
+    private final EventLoopGroup udpServerGroup;
 
     /**
      * @param identity            own identity
@@ -213,19 +215,24 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     protected void initChannel(final DrasylServerChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer(udpServerGroup, bindAddress));
-        p.addLast(new ByteToRemoteMessageCodec());
-        p.addLast(new OtherNetworkFilter(networkId));
-        p.addLast(new InvalidProofOfWorkFilter());
-        if (protocolArmEnabled) {
-            p.addLast(new ProtocolArmHandler(identity, maxPeers));
-        }
-        else {
-            p.addLast(new UnarmedMessageDecoder());
-        }
+        p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx) {
+            @Override
+            protected void lastStage(final DatagramChannel ch) {
+                ch.pipeline().addLast(new OtherNetworkFilter(networkId));
+                if (protocolArmEnabled) {
+                    ch.pipeline().addLast(new ProtocolArmHandler(identity, maxPeers));
+                }
+                else {
+                    ch.pipeline().addLast(UNARMED_MESSAGE_DECODER);
+                }
+
+                super.lastStage(ch);
+            }
+        }));
+
         p.addLast(new UnconfirmedAddressResolveHandler());
-        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
-        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity.getIdentityPublicKey(), identity.getProofOfWork()));
-        p.addLast(new LoopbackHandler());
+        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
+        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity));
+        p.addLast(LOOPBACK_HANDLER);
     }
 }

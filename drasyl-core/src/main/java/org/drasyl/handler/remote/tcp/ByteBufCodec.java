@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,43 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.remote.crypto;
+package org.drasyl.handler.remote.tcp;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.FullReadMessage;
-import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
+import org.drasyl.util.internal.UnstableApi;
 
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
- * Decodes {@link UnarmedProtocolMessage}s to {@link FullReadMessage}s.
+ * Encodes {@link ByteBuf}s to {@link InetAddressedMessage}s and vice versa.
  */
+@UnstableApi
 @Sharable
-public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
+public class ByteBufCodec extends MessageToMessageCodec<ByteBuf, InetAddressedMessage<ByteBuf>> {
     @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage;
+    public boolean acceptOutboundMessage(final Object msg) {
+        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ByteBuf;
+    }
+
+    @Override
+    protected void encode(final ChannelHandlerContext ctx,
+                          final InetAddressedMessage<ByteBuf> msg,
+                          final List<Object> out) {
+        final ByteBuf buf = msg.content();
+        out.add(buf.retain());
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final InetAddressedMessage<UnarmedProtocolMessage> msg,
-                          final List<Object> out) throws Exception {
-        out.add(msg.replace(msg.content().retain().read()));
+                          final ByteBuf buf,
+                          final List<Object> out) {
+        final InetSocketAddress sender = (InetSocketAddress) ctx.channel().remoteAddress();
+        final InetAddressedMessage<ByteBuf> msg = new InetAddressedMessage<>(buf.retain(), null, sender);
+        out.add(msg);
     }
 }

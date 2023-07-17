@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,34 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.remote.crypto;
+package org.drasyl.handler.remote;
 
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.protocol.FullReadMessage;
-import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.util.internal.UnstableApi;
 
-import java.util.List;
+import static java.util.Objects.requireNonNull;
 
 /**
- * Decodes {@link UnarmedProtocolMessage}s to {@link FullReadMessage}s.
+ * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
+ * {@link org.drasyl.channel.DrasylServerChannel}'s context.
  */
-@Sharable
-public class UnarmedMessageDecoder extends MessageToMessageDecoder<InetAddressedMessage<UnarmedProtocolMessage>> {
-    @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage;
+@UnstableApi
+public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
+    private final ChannelHandlerContext drasylCtx;
+
+    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
+        this.drasylCtx = requireNonNull(drasylCtx);
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx,
-                          final InetAddressedMessage<UnarmedProtocolMessage> msg,
-                          final List<Object> out) throws Exception {
-        out.add(msg.replace(msg.content().retain().read()));
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        drasylCtx.fireChannelRead(msg);
+    }
+
+    @Override
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        drasylCtx.fireChannelReadComplete();
+        ctx.fireChannelReadComplete();
     }
 }

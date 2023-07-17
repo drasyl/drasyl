@@ -102,8 +102,7 @@ public class ConnectionClient {
 
                                 if (evt instanceof AddPathAndSuperPeerEvent) {
                                     // create channel to server
-                                    final DrasylChannel childChannel = new DrasylChannel((DrasylServerChannel) ctx.channel(), server);
-                                    ctx.fireChannelRead(childChannel);
+                                    ((DrasylServerChannel) ctx.channel()).serve(server);
 
                                     ctx.pipeline().remove(ctx.name());
                                 }
