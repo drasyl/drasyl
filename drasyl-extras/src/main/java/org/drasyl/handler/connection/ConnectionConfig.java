@@ -37,7 +37,7 @@ import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
-    static final int MTU = 1460;
+    static final int IP_MTU = 1460;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
@@ -93,8 +93,8 @@ public abstract class ConnectionConfig {
                 }
             })
             .sack(false)
-            .mmsS(MTU - DRASYL_HDR_SIZE)
-            .mmsR(MTU - DRASYL_HDR_SIZE)
+            .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+            .mmsR(IP_MTU - DRASYL_HDR_SIZE)
             .newReno(true)
             .limitedTransmit(true)
             .build();
