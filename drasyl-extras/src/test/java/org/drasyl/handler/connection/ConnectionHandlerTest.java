@@ -3257,16 +3257,38 @@ class ConnectionHandlerTest {
                         .mmsS(mms)
                         .msl(ofMillis(100))
                         .noDelay(true)
+                        .rmem(5_000)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                // set cwnd to ssthresh to
+                // set cwnd to ssthresh to enable congestion avoidance
                 tcb.cwnd(tcb.ssthresh());
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
-                assertFalse(tcb.doSlowStart());
+                final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
 
-                // FIXME
+                assertFalse(tcb.doSlowStart());
+                channel.writeOutbound(byteBuf);
+
+                // ACK 1st SEG -> increase cwnd
+                channel.writeInbound(new Segment(300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 316, tcb.cwnd());
+
+                // ACK 2nd SEG -> increase cwnd
+                channel.writeInbound(new Segment(300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 316 + 297, tcb.cwnd());
+
+                // ACK 3rd SEG -> increase cwnd
+                channel.writeInbound(new Segment(300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 316 + 297 + 282, tcb.cwnd());
+
+                // ACK 4th SEG -> increase cwnd
+                channel.writeInbound(new Segment(300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 316 + 297 + 282 + 268, tcb.cwnd());
+
+                // ACK 5th SEG -> increase cwnd
+                channel.writeInbound(new Segment(300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 316 + 297 + 282 + 268 + 256, tcb.cwnd());
             }
         }
     }
