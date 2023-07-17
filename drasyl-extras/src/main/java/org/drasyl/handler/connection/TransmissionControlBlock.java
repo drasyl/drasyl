@@ -74,6 +74,9 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
+    // IPv4: 20 bytes
+    // UDP: 8 bytes
+    // drasyl: 176 bytes
     static final int DRASYL_HDR_SIZE = 20 + 8 + 176;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.

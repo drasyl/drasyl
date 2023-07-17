@@ -51,10 +51,12 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.SegmentMatchers.ack;
 import static org.drasyl.handler.connection.SegmentMatchers.ctl;
@@ -76,6 +78,7 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -142,14 +145,15 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .rmem(5_000)
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_231)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -232,15 +236,15 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .rmem(5_000)
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_241)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -406,8 +410,8 @@ class ConnectionHandlerTest {
                     final ConnectionConfig config = ConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> iss)
-                            .mmsS(1_266)
-                            .mmsR(1_266)
+                            .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                            .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
                     final ConnectionHandler handler = new ConnectionHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -458,8 +462,8 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .activeOpen(false)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -503,8 +507,8 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerB() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -565,8 +569,8 @@ class ConnectionHandlerTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100L)
                         .activeOpen(false)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -672,7 +676,9 @@ class ConnectionHandlerTest {
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
 
@@ -695,7 +701,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: Set SND.UNA to ISS, SND.NXT to ISS+1,
                         assertEquals(iss, handler.tcb.sndUna());
@@ -715,7 +721,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 456L);
@@ -731,7 +739,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: Send a SYN segment,
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                         assertEquals(iss, handler.tcb.sndUna());
@@ -778,7 +786,9 @@ class ConnectionHandlerTest {
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder();
-                    final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                    final ConnectionConfig config = builder
+                            .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                            .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -813,7 +823,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
@@ -830,7 +842,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: Send a SYN segment containing the options: <TSval=Snd.TSclock>.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                         assertEquals(iss, handler.tcb.sndUna());
@@ -879,7 +891,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
@@ -1513,8 +1527,8 @@ class ConnectionHandlerTest {
                         when(config.timestamps()).thenReturn(true);
                         when(config.issSupplier().getAsLong()).thenReturn(39L);
                         when(config.rmem()).thenReturn(64000);
-                        when(config.mmsS()).thenReturn(1_266);
-                        when(config.mmsR()).thenReturn(1_266);
+                        when(config.mmsS()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
+                        when(config.mmsR()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
                         when(config.rto()).thenReturn(ofMillis(1000));
                         when(config.clock().time()).thenReturn(3614L);
                         when(seg.seq()).thenReturn(123L);
@@ -1550,7 +1564,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this segment.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment response = segmentCaptor.getValue();
-                        assertThat(response, allOf(seq(39L), ack(124L), ctl(SYN, ACK), mss(1241), tsOpt(3614L, 4113L)));
+                        assertThat(response, allOf(seq(39L), ack(124L), ctl(SYN, ACK), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(3614L, 4113L)));
 
                         // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                         assertEquals(124L, tcb.lastAckSent());
@@ -1794,7 +1808,7 @@ class ConnectionHandlerTest {
                         when(tcb.sndTsOk()).thenReturn(true);
                         when(tcb.config()).thenReturn(config);
                         when(tcb.iss()).thenReturn(122L);
-                        when(config.mmsR()).thenReturn(1_266);
+                        when(config.mmsR()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -1840,7 +1854,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: and send it.
                         verify(tcb).send(eq(ctx), segmentCaptor.capture());
                         final Segment response = segmentCaptor.getValue();
-                        assertThat(response, allOf(seq(122L), ack(815L), ctl(SYN, ACK), mss(1241), tsOpt(111, 2)));
+                        assertThat(response, allOf(seq(122L), ack(815L), ctl(SYN, ACK), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(111, 2)));
 
                         // RFC 9293: Set the variables:
                         // RFC 9293: SND.WND <- SEG.WND
@@ -3179,7 +3193,7 @@ class ConnectionHandlerTest {
             @Test
             void name() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final int mms = 1_224;
+                final int mms = IP_MTU - DRASYL_HDR_SIZE;
                 final long iss = 100L;
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> iss)
@@ -3196,7 +3210,7 @@ class ConnectionHandlerTest {
 
                 // inital cwnd is 3*MMS=3672
                 // 3 in-flight messages are allowed
-                assertEquals(3672, tcb.cwnd());
+                assertEquals(3 * mms, tcb.cwnd());
                 channel.writeOutbound(byteBuf);
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss)));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 1)));

@@ -264,8 +264,15 @@ public class Segment extends DefaultByteBufHolder {
         return options;
     }
 
+    /**
+     * Returns the length (in segments) of this segment.
+     *
+     * @return the length (in segments) of this segment
+     */
     public int len() {
         if (isSyn() || isFin()) {
+            // the SYN and FIN flags each count as one segment (SYN and FIN are never set at the
+            // same time)
             return 1 + content().readableBytes();
         }
         else {
@@ -326,6 +333,11 @@ public class Segment extends DefaultByteBufHolder {
         return new Segment(seq, ack, ctl, wnd, cks, new EnumMap<>(options), content().copy());
     }
 
+    /**
+     * Returns the sequence number of the last byte in this segment.
+     *
+     * @return the sequence number of the last byte in this segment
+     */
     public long lastSeq() {
         if (len() == 0) {
             return seq();

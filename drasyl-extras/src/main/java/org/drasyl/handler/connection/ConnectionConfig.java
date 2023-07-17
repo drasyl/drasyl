@@ -371,7 +371,9 @@ public abstract class ConnectionConfig {
         }
 
         /**
-         * The maximum segment size for a drasyl-layer message that a connection may send.
+         * The maximum segment size for a drasyl-layer message that a connection may send. This
+         * value is the IP layer MTU (drasyl assumes a MTU of 1460) minus the drasyl header size. So
+         * this value specifies the segment size sent to the wire (including header).
          *
          * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7.1">RFC 9293,
          * Section 3.7.1.</a>
@@ -379,7 +381,9 @@ public abstract class ConnectionConfig {
         public abstract Builder mmsS(final int mmsS);
 
         /**
-         * The maximum size for a drasyl-layer message that can be received.
+         * The maximum size for a drasyl-layer message that can be received. This value is the IP
+         * layer MTU (drasyl assumes a MTU of 1460) minus the drasyl header size. So this value
+         * specifies the segment size sent to the wire (including header).
          *
          * @see <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.7.1">RFC 9293,
          * Section 3.7.1.</a>
