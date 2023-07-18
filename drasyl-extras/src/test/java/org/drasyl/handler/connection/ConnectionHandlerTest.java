@@ -984,7 +984,7 @@ class ConnectionHandlerTest {
                         verify(establishedPromise).addListener(any());
 
                         // this is done by the enqueued call
-                        verify(tcb.receiveBuffer()).hasReadableBytes();
+                        verify(tcb.receiveBuffer()).isReadable();
                     }
                 }
 
@@ -997,7 +997,7 @@ class ConnectionHandlerTest {
                             "FIN_WAIT_2"
                     })
                     void shouldPassReceivedDataToUser(final State state) {
-                        when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
+                        when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
@@ -1014,7 +1014,7 @@ class ConnectionHandlerTest {
                 class OnCloseWaitState {
                     @Test
                     void shouldPassReceivedDataToUser() {
-                        when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
+                        when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);

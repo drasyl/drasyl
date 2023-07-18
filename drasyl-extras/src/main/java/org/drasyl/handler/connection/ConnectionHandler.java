@@ -535,7 +535,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     // RFC 9293: If insufficient incoming segments are queued to satisfy the
                     // RFC 9293: request, queue the request.
-                    if (!tcb.receiveBuffer().hasReadableBytes()) {
+                    if (!tcb.receiveBuffer().isReadable()) {
                         readPending = true;
                         break;
                     }
@@ -568,7 +568,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: Since the remote side has already sent FIN, RECEIVEs must be
                     // RFC 9293: satisfied by data already on hand, but not yet delivered to the
                     // RFC 9293: user.
-                    if (!tcb.receiveBuffer().hasReadableBytes()) {
+                    if (!tcb.receiveBuffer().isReadable()) {
                         // RFC 9293: If no text is awaiting delivery, the RECEIVE will get an
                         // RFC 9293: "error: connection closing" response.
                         // (not applicable to us)

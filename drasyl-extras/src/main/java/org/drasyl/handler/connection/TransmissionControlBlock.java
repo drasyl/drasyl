@@ -268,30 +268,80 @@ public class TransmissionControlBlock {
         return min(sendMss + SEG_HDR_SIZE, mmsS) - SEG_HDR_SIZE;
     }
 
+    /**
+     * Returns the number of the oldest unacknowledged segment. In other words, it is the sequence
+     * number of the first byte of data that has been sent, but not yet acknowledged by the
+     * receiver.
+     *
+     * @return the number of the oldest unacknowledged segment
+     */
     public long sndUna() {
         return sndUna;
     }
 
+    /**
+     * Returns the sequence number for the next byte of data that is to be sent.
+     *
+     * @return the sequence number for the next byte of data that is to be sent
+     */
     public long sndNxt() {
         return sndNxt;
     }
 
+    /**
+     * Returns the send window. It indicates the amount of free buffer space available at the
+     * receiver's end for incoming data. This value is communicated from the receiver to the sender,
+     * which allows the sender to adjust the data transmission rate accordingly.
+     *
+     * @return the send window
+     */
     public long sndWnd() {
         return sndWnd;
     }
 
+    /**
+     * Returns the initial sequence number. At the start of a new connection, both the peers
+     * randomly generate an initial sequence number, known as the {@link #iss()}, for their
+     * respective send sequences. This sequence number is used as the starting point for the
+     * sequence numbers assigned to the data bytes that are transmitted during the connection.
+     *
+     * @return the initial sequence number
+     */
     public long iss() {
         return iss;
     }
 
+    /**
+     * Returns the sequence number of the next byte that the receiver is expecting to get from the
+     * sender. After a segment is received and its data is successfully delivered to the receiving
+     * application, {@link #rcvNxt()} is incremented by the number of bytes received.
+     *
+     * @return the sequence number of the next byte that the receiver is expecting to get from the
+     * sender
+     */
     public long rcvNxt() {
         return rcvNxt;
     }
 
+    /**
+     * Returns the receive window. It represents the amount of data that the receiver is able to
+     * accept. This variable communicates the size of the available buffer space on the receiving
+     * end back to the sender, which allows the sender to understand how much data can be sent
+     * without overwhelming the receiver. It is updated each time the receiver sends an
+     * acknowledgement back to the sender.
+     *
+     * @return the receive window
+     */
     public long rcvWnd() {
         return rcvWnd;
     }
 
+    /**
+     * Returns the initial receive sequence. This is the {@link #iss()} received from the other
+     * side.
+     *
+     * @return the initial receive sequence.
+     */
     public long irs() {
         return irs;
     }

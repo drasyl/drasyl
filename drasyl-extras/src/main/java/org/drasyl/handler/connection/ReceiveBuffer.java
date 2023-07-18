@@ -47,6 +47,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * received from the sender. The buffer allows the receiver to temporarily store the received data
  * until it can be processed by the receiving application.
  */
+@SuppressWarnings("java:S4274")
 public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
     private final Channel channel;
@@ -157,7 +158,7 @@ public class ReceiveBuffer {
                     );
                     head = block;
                     tcb.decrementRcvWnd(length);
-                    size += 1;
+                    size++;
                     bytes += length;
                 }
                 // SEG is within RCV.WND, but not at the left edge
@@ -184,7 +185,7 @@ public class ReceiveBuffer {
                     );
                     head = block;
                     tcb.decrementRcvWnd(length);
-                    size += 1;
+                    size++;
                     bytes += length;
                 }
                 else {
@@ -226,7 +227,7 @@ public class ReceiveBuffer {
                         );
                         head = block;
                         tcb.decrementRcvWnd(length);
-                        size += 1;
+                        size++;
                         bytes += length;
                     }
                     // SEG is within RCV.WND, but not at the left edge
@@ -257,7 +258,7 @@ public class ReceiveBuffer {
                         );
                         head = block;
                         tcb.decrementRcvWnd(length);
-                        size += 1;
+                        size++;
                         bytes += length;
                     }
                     else {
@@ -308,7 +309,7 @@ public class ReceiveBuffer {
                             );
                             current.next = block;
                             tcb.decrementRcvWnd(length);
-                            size += 1;
+                            size++;
                             bytes += length;
                         }
                         else {
@@ -342,7 +343,7 @@ public class ReceiveBuffer {
                             );
                             current.next = block;
                             tcb.decrementRcvWnd(length);
-                            size += 1;
+                            size++;
                             bytes += length;
                         }
                     }
@@ -368,7 +369,7 @@ public class ReceiveBuffer {
                 tcb.advanceRcvNxt(ctx, head.len());
                 addToHeadBuf(ctx, head.content());
                 head = head.next;
-                size -= 1;
+                size--;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq()) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
         }
@@ -396,7 +397,14 @@ public class ReceiveBuffer {
         }
     }
 
+    /**
+     * Passes, if any, readable bytes that this buffer contains to the receiving application.
+     *
+     * @param ctx the {@link ConnectionHandler}'s context
+     * @param tcb the transmission control block this
+     */
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
+        assert tcb.receiveBuffer() == this : "this RCV.BUF does not belong to given TCB";
         if (headBuf != null) {
             final int readableBytes = headBuf.readableBytes();
             if (readableBytes > 0) {
@@ -410,14 +418,27 @@ public class ReceiveBuffer {
         }
     }
 
+    /**
+     * Returns the amount of bytes that this buffer can pass to the receiving application.
+     *
+     * @return the amount of bytes that this buffer can pass to the receiving application
+     */
     public int readableBytes() {
         return headBuf != null ? headBuf.readableBytes() : 0;
     }
 
-    public boolean hasReadableBytes() {
-        return readableBytes() > 0;
+    /**
+     * Returns {@code true} if this buffer contains at least one byte ready to pass to the receiving
+     * application.
+     *
+     * @return {@code true} if this buffer contains at least one byte ready to pass to the receiving
+     * application
+     */
+    public boolean isReadable() {
+        return headBuf != null && headBuf.isReadable();
     }
 
+    @SuppressWarnings("java:S2160")
     static class ReceiveBufferBlock extends DefaultByteBufHolder {
         private final long seq;
         ReceiveBufferBlock next;
