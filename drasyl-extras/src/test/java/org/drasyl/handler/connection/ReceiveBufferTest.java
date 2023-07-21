@@ -63,8 +63,8 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
 
@@ -309,10 +309,6 @@ class ReceiveBufferTest {
                                                             @Mock final ChannelHandlerContext ctx,
                                                             @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
-//                doAnswer(invocation -> {
-//                    ReferenceCountUtil.safeRelease(invocation.getArgument(0));
-//                    return null;
-//                }).when(ctx).fireChannelRead(any());
 
                 final ByteBuf data = Unpooled.buffer(200).writeBytes(randomBytes(200));
 

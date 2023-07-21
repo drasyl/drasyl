@@ -38,6 +38,15 @@ import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * This {@link ChannelInitializer} create a channel providing reliable and ordered delivery of bytes
+ * between hosts. Handlers can either be added to the pipeline on channel creation time using
+ * {@link #initChannel(DrasylChannel)} or after connection with the remote peer has been established
+ * using {@link #handshakeCompleted(DrasylChannel)}.
+ * {@link #handshakeFailed(ChannelHandlerContext, Throwable)} is called, when no connection could be
+ * established (e.g., because the other party has not responded within the time limit or has
+ * rejected the handshake).
+ */
 @UnstableApi
 public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
     protected final ConnectionConfig config;
@@ -57,6 +66,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
 
         p.addLast(new SegmentCodec());
         p.addLast(new ConnectionHandler(config));
+        // FIXME: remove when debugging is done
         p.addLast(new ConnectionAnalyzeHandler());
 
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
