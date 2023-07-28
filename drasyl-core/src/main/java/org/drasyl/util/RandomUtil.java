@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
  */
 package org.drasyl.util;
 
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
@@ -30,7 +30,6 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  */
 public final class RandomUtil {
     private static final char[] ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz".toCharArray();
-    private static final Random RANDOM = new Random();
 
     private RandomUtil() {
         // util class
@@ -53,7 +52,7 @@ public final class RandomUtil {
             return min;
         }
         else {
-            return RANDOM.nextInt(max - min + 1) + min;
+            return ThreadLocalRandom.current().nextInt(min, max + 1);
         }
     }
 
@@ -84,7 +83,7 @@ public final class RandomUtil {
             return min;
         }
         else {
-            return min + (long) (RANDOM.nextDouble() * (max - min + 1));
+            return ThreadLocalRandom.current().nextLong(min, max + 1);
         }
     }
 
@@ -106,7 +105,7 @@ public final class RandomUtil {
      */
     public static byte[] randomBytes(final int count) {
         final byte[] bytes = new byte[requireNonNegative(count, "count must be greater than or equal to 0")];
-        RANDOM.nextBytes(bytes);
+        ThreadLocalRandom.current().nextBytes(bytes);
         return bytes;
     }
 
@@ -130,7 +129,7 @@ public final class RandomUtil {
         final char[] buffer = new char[requireNonNegative(length, "length must be greater than or equal to 0")];
 
         for (int i = 0; i < buffer.length; i++) {
-            buffer[i] = ALPHABET[RANDOM.nextInt(ALPHABET.length)];
+            buffer[i] = ALPHABET[ThreadLocalRandom.current().nextInt(ALPHABET.length)];
         }
 
         return new String(buffer);
