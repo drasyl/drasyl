@@ -111,6 +111,122 @@ public class JdkLogger extends AbstractLogger {
     }
 
     @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        if (logger.isLoggable(Level.FINEST)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+            log(Level.FINEST, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
     public void trace(final String format, final Object... arguments) {
         if (logger.isLoggable(Level.FINEST)) {
             final FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
@@ -149,6 +265,122 @@ public class JdkLogger extends AbstractLogger {
     public void debug(final String format, final Object arg1, final Object arg2) {
         if (logger.isLoggable(Level.FINE)) {
             final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            log(Level.FINE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        if (logger.isLoggable(Level.FINE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             log(Level.FINE, ft.getMessage(), ft.getThrowable());
         }
     }
@@ -197,6 +429,119 @@ public class JdkLogger extends AbstractLogger {
     }
 
     @Override
+    public void info(final String format, final Object arg1, final Object arg2, final Object arg3) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9,
+                     final Object arg10) {
+        if (logger.isLoggable(Level.INFO)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+            log(Level.INFO, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
     public void info(final String format, final Object... arguments) {
         if (logger.isLoggable(Level.INFO)) {
             final FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
@@ -240,6 +585,119 @@ public class JdkLogger extends AbstractLogger {
     }
 
     @Override
+    public void warn(final String format, final Object arg1, final Object arg2, final Object arg3) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9,
+                     final Object arg10) {
+        if (logger.isLoggable(Level.WARNING)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+            log(Level.WARNING, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
     public void warn(final String format, final Object... arguments) {
         if (logger.isLoggable(Level.WARNING)) {
             final FormattingTuple ft = MessageFormatter.arrayFormat(format, arguments);
@@ -278,6 +736,122 @@ public class JdkLogger extends AbstractLogger {
     public void error(final String format, final Object arg1, final Object arg2) {
         if (logger.isLoggable(Level.SEVERE)) {
             final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+            log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
+        }
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        if (logger.isLoggable(Level.SEVERE)) {
+            final FormattingTuple ft = MessageFormatter.format(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
             log(Level.SEVERE, ft.getMessage(), ft.getThrowable());
         }
     }
