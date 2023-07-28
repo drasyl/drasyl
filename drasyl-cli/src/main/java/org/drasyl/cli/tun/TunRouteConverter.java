@@ -38,7 +38,7 @@ public class TunRouteConverter implements ITypeConverter<TunRoute> {
         }
         else {
             final IdentityPublicKey overlayAddress = IdentityPublicKey.of(value.substring(0, value.indexOf('=')));
-            final InetAddress inetAddress = InetAddress.getByName(value.substring(value.indexOf('=')));
+            final InetAddress inetAddress = InetAddress.getByName(value.substring(value.indexOf('=') + 1));
             return new TunRoute(overlayAddress, inetAddress);
         }
     }

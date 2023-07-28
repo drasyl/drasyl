@@ -124,6 +124,22 @@ class RandomUtilTest {
         }
 
         @Test
+        void shouldReturnRandomNumberBetweenNonIntegers() {
+            long minResult = 2147483648L;
+            long maxResult = 4294967296L;
+            for (int i = 0; i < ITERATIONS; i++) {
+                final long result = RandomUtil.randomLong(2147483648L, 4294967296L);
+                minResult = Math.min(minResult, result);
+                maxResult = Math.max(maxResult, result);
+
+                assertThat(result, is(both(greaterThanOrEqualTo(2147483648L)).and(lessThanOrEqualTo(4294967296L))));
+            }
+
+            assertEquals(2147483648L, minResult);
+            assertEquals(4294967296L, maxResult);
+        }
+
+        @Test
         void shouldReturnMinNumberIfMinAndMaxAreEqual() {
             assertEquals(10, RandomUtil.randomLong(10, 10));
         }

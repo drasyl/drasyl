@@ -79,6 +79,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
@@ -397,28 +398,31 @@ public class TunCommand extends ChannelOptions {
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final Tun4Packet msg) {
             final InetAddress dst = msg.destinationAddress();
-            LOG.trace("Got packet `{}`", () -> msg);
-            LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
+            LOG.debug("Got packet `{}` from TUN interface.", () -> msg);
+            LOG.debug("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
 
             if (address.equals(dst)) {
                 // loopback
-                ctx.write(msg.retain());
+                ctx.writeAndFlush(msg.retain()).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst)) {
-                    LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
+                    LOG.debug("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
+		            msg.retain();
                     channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                         if (future.isSuccess()) {
                             final Channel peerChannel = future.getNow();
-                            channelsToFlush.add(peerChannel);
                             peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
-                            peerChannel.write(msg.retain());
+                            peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);;
+                        }
+                        else {
+                            msg.release();
                         }
                     });
                 }
                 else {
-                    LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
+                    LOG.debug("Drop packet `{}` from TUN interface with unroutable destination.", () -> msg);
                     // TODO: reply with ICMP host unreachable message?
                 }
             }
@@ -427,9 +431,9 @@ public class TunCommand extends ChannelOptions {
         @Override
         public void channelReadComplete(final ChannelHandlerContext ctx) {
             ctx.flush();
-            for (Channel peerChannel : channelsToFlush) {
-                peerChannel.flush();
-            }
+//            for (Channel peerChannel : channelsToFlush) {
+//                peerChannel.flush();
+//            }
             channelsToFlush.clear();
 
             ctx.fireChannelReadComplete();
