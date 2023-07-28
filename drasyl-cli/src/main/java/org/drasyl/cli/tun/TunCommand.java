@@ -398,8 +398,8 @@ public class TunCommand extends ChannelOptions {
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final Tun4Packet msg) {
             final InetAddress dst = msg.destinationAddress();
-            LOG.trace("Got packet `{}` from TUN interface.", () -> msg);
-            LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
+            LOG.debug("Got packet `{}` from TUN interface.", () -> msg);
+            LOG.debug("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
 
             if (address.equals(dst)) {
                 // loopback
@@ -408,7 +408,7 @@ public class TunCommand extends ChannelOptions {
             else {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst)) {
-                    LOG.trace("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
+                    LOG.debug("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
 		            msg.retain();
                     channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                         if (future.isSuccess()) {
@@ -422,7 +422,7 @@ public class TunCommand extends ChannelOptions {
                     });
                 }
                 else {
-                    LOG.warn("Drop packet `{}` from TUN interface with unroutable destination.", () -> msg);
+                    LOG.debug("Drop packet `{}` from TUN interface with unroutable destination.", () -> msg);
                     // TODO: reply with ICMP host unreachable message?
                 }
             }
