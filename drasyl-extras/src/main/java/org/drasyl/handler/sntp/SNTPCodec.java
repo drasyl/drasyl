@@ -53,7 +53,7 @@ public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage
         final ByteBuf buf = msg.content();
 
         if (buf.readableBytes() >= SNTPMessage.SIZE) {
-            // read first byte with LE, VN and mode
+            // read first byte with LI, VN and mode
             final byte fByte = buf.readByte();
             final int li = (fByte >> 3) & 0x3;
             final int vn = (fByte >> 3) & 0x7;
