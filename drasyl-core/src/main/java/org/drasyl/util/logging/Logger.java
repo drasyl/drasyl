@@ -65,6 +65,182 @@ public interface Logger {
     void trace(String format, Supplier<Object> supplier);
 
     /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the TRACE level.</p>
+     *
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void trace(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9,
+               Supplier<Object> supplier10);
+
+    /**
      * Log a message at the TRACE level according to the specified format and arguments.
      *
      * @param format the format string
@@ -72,6 +248,154 @@ public interface Logger {
      * @param arg2   the second argument
      */
     void trace(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void trace(String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void trace(String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void trace(String format, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void trace(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void trace(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void trace(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void trace(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9);
+
+    /**
+     * Log a message at the TRACE level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void trace(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9,
+               Object arg10);
 
     /**
      * Log a message at the TRACE level according to the specified format and argument suppliers.
@@ -152,13 +476,15 @@ public interface Logger {
     void debug(String format, Supplier<Object> supplier);
 
     /**
-     * Log a message at the DEBUG level according to the specified format and arguments.
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
      *
-     * @param format the format string
-     * @param arg1   the first argument
-     * @param arg2   the second argument
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
      */
-    void debug(String format, Object arg1, Object arg2);
+    void debug(String format, Supplier<Object> supplier1, Supplier<Object> supplier2);
 
     /**
      * Log a message at the DEBUG level according to the specified format and argument suppliers.
@@ -168,10 +494,330 @@ public interface Logger {
      * @param format    the format string
      * @param supplier1 the first argument supplier
      * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
      */
     void debug(String format,
                Supplier<Object> supplier1,
-               Supplier<Object> supplier2);
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the DEBUG level.</p>
+     *
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void debug(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9,
+               Supplier<Object> supplier10);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void debug(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void debug(String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void debug(String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void debug(String format, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void debug(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void debug(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void debug(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void debug(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9);
+
+    /**
+     * Log a message at the DEBUG level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void debug(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9,
+               Object arg10);
 
     /**
      * Log a message at the DEBUG level according to the specified format and arguments.
@@ -239,13 +885,15 @@ public interface Logger {
     void info(String format, Supplier<Object> supplier);
 
     /**
-     * Log a message at the INFO level according to the specified format and arguments.
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
      *
-     * @param format the format string
-     * @param arg1   the first argument
-     * @param arg2   the second argument
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
      */
-    void info(String format, Object arg1, Object arg2);
+    void info(String format, Supplier<Object> supplier1, Supplier<Object> supplier2);
 
     /**
      * Log a message at the INFO level according to the specified format and argument suppliers.
@@ -255,10 +903,330 @@ public interface Logger {
      * @param format    the format string
      * @param supplier1 the first argument supplier
      * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
      */
     void info(String format,
               Supplier<Object> supplier1,
-              Supplier<Object> supplier2);
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8,
+              Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the INFO level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the INFO level.</p>
+     *
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void info(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8,
+              Supplier<Object> supplier9,
+              Supplier<Object> supplier10);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void info(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void info(String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void info(String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void info(String format, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void info(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void info(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void info(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void info(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8,
+              Object arg9);
+
+    /**
+     * Log a message at the INFO level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void info(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8,
+              Object arg9,
+              Object arg10);
 
     /**
      * Log a message at the INFO level according to the specified format and arguments.
@@ -326,13 +1294,15 @@ public interface Logger {
     void warn(String format, Supplier<Object> supplier);
 
     /**
-     * Log a message at the WARN level according to the specified format and arguments.
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
      *
-     * @param format the format string
-     * @param arg1   the first argument
-     * @param arg2   the second argument
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
      */
-    void warn(String format, Object arg1, Object arg2);
+    void warn(String format, Supplier<Object> supplier1, Supplier<Object> supplier2);
 
     /**
      * Log a message at the WARN level according to the specified format and argument suppliers.
@@ -342,10 +1312,330 @@ public interface Logger {
      * @param format    the format string
      * @param supplier1 the first argument supplier
      * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
      */
     void warn(String format,
               Supplier<Object> supplier1,
-              Supplier<Object> supplier2);
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8,
+              Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the WARN level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the WARN level.</p>
+     *
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void warn(String format,
+              Supplier<Object> supplier1,
+              Supplier<Object> supplier2,
+              Supplier<Object> supplier3,
+              Supplier<Object> supplier4,
+              Supplier<Object> supplier5,
+              Supplier<Object> supplier6,
+              Supplier<Object> supplier7,
+              Supplier<Object> supplier8,
+              Supplier<Object> supplier9,
+              Supplier<Object> supplier10);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     */
+    void warn(String format, Object arg1, Object arg2);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void warn(String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void warn(String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void warn(String format, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void warn(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void warn(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void warn(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void warn(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8,
+              Object arg9);
+
+    /**
+     * Log a message at the WARN level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void warn(String format,
+              Object arg1,
+              Object arg2,
+              Object arg3,
+              Object arg4,
+              Object arg5,
+              Object arg6,
+              Object arg7,
+              Object arg8,
+              Object arg9,
+              Object arg10);
 
     /**
      * Log a message at the WARN level according to the specified format and arguments.
@@ -422,6 +1712,154 @@ public interface Logger {
     void error(String format, Object arg1, Object arg2);
 
     /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void error(String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void error(String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void error(String format, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void error(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void error(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void error(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void error(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and arguments.
+     *
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void error(String format,
+               Object arg1,
+               Object arg2,
+               Object arg3,
+               Object arg4,
+               Object arg5,
+               Object arg6,
+               Object arg7,
+               Object arg8,
+               Object arg9,
+               Object arg10);
+
+    /**
      * Log a message at the ERROR level according to the specified format and argument suppliers.
      * <p/>
      * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
@@ -433,6 +1871,182 @@ public interface Logger {
     void error(String format,
                Supplier<Object> supplier1,
                Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the ERROR level according to the specified format and argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the ERROR level.</p>
+     *
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void error(String format,
+               Supplier<Object> supplier1,
+               Supplier<Object> supplier2,
+               Supplier<Object> supplier3,
+               Supplier<Object> supplier4,
+               Supplier<Object> supplier5,
+               Supplier<Object> supplier6,
+               Supplier<Object> supplier7,
+               Supplier<Object> supplier8,
+               Supplier<Object> supplier9,
+               Supplier<Object> supplier10);
 
     /**
      * Log a message at the ERROR level according to the specified format and arguments.
@@ -520,6 +2134,181 @@ public interface Logger {
 
     /**
      * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     */
+    void log(LogLevel level, String format, Object arg1, Object arg2, Object arg3);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     */
+    void log(LogLevel level, String format, Object arg1, Object arg2, Object arg3, Object arg4);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5,
+             Object arg6);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5,
+             Object arg6,
+             Object arg7);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5,
+             Object arg6,
+             Object arg7,
+             Object arg8);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5,
+             Object arg6,
+             Object arg7,
+             Object arg8,
+             Object arg9);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * arguments.
+     *
+     * @param level  the log level
+     * @param format the format string
+     * @param arg1   the first argument
+     * @param arg2   the second argument
+     * @param arg3   the third argument
+     * @param arg4   the fourth argument
+     * @param arg5   the fifth argument
+     * @param arg6   the sixth argument
+     * @param arg7   the seventh argument
+     * @param arg8   the eighth argument
+     * @param arg9   the ninth argument
+     * @param arg10  the tenth argument
+     */
+    void log(LogLevel level,
+             String format,
+             Object arg1,
+             Object arg2,
+             Object arg3,
+             Object arg4,
+             Object arg5,
+             Object arg6,
+             Object arg7,
+             Object arg8,
+             Object arg9,
+             Object arg10);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
      * argument suppliers.
      * <p/>
      * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
@@ -533,6 +2322,214 @@ public interface Logger {
     void log(LogLevel level, String format,
              Supplier<Object> supplier1,
              Supplier<Object> supplier2);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5,
+             Supplier<Object> supplier6);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5,
+             Supplier<Object> supplier6,
+             Supplier<Object> supplier7);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5,
+             Supplier<Object> supplier6,
+             Supplier<Object> supplier7,
+             Supplier<Object> supplier8);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level     the log level
+     * @param format    the format string
+     * @param supplier1 the first argument supplier
+     * @param supplier2 the second argument supplier
+     * @param supplier3 the third argument supplier
+     * @param supplier4 the fourth argument supplier
+     * @param supplier5 the fifth argument supplier
+     * @param supplier6 the sixth argument supplier
+     * @param supplier7 the seventh argument supplier
+     * @param supplier8 the eighth argument supplier
+     * @param supplier9 the ninth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5,
+             Supplier<Object> supplier6,
+             Supplier<Object> supplier7,
+             Supplier<Object> supplier8,
+             Supplier<Object> supplier9);
+
+    /**
+     * Log a message at the specified {@code level} level according to the specified format and
+     * argument suppliers.
+     * <p/>
+     * <p>The suppliers are not called when the logger is disabled for the specified {@code level}
+     * level.</p>
+     *
+     * @param level      the log level
+     * @param format     the format string
+     * @param supplier1  the first argument supplier
+     * @param supplier2  the second argument supplier
+     * @param supplier3  the third argument supplier
+     * @param supplier4  the fourth argument supplier
+     * @param supplier5  the fifth argument supplier
+     * @param supplier6  the sixth argument supplier
+     * @param supplier7  the seventh argument supplier
+     * @param supplier8  the eighth argument supplier
+     * @param supplier9  the ninth argument supplier
+     * @param supplier10 the tenth argument supplier
+     */
+    void log(LogLevel level,
+             String format,
+             Supplier<Object> supplier1,
+             Supplier<Object> supplier2,
+             Supplier<Object> supplier3,
+             Supplier<Object> supplier4,
+             Supplier<Object> supplier5,
+             Supplier<Object> supplier6,
+             Supplier<Object> supplier7,
+             Supplier<Object> supplier8,
+             Supplier<Object> supplier9,
+             Supplier<Object> supplier10);
 
     /**
      * Log a message at the specified {@code level} level according to the specified format and
