@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3.5.3
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v3.11.0
+        uses: actions/setup-java@v3.12.0
         with:
           java-version: 11
           distribution: 'adopt'
@@ -63,7 +63,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -78,7 +78,7 @@ jobs:
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: latest
+          version: 22.3.2
           java-version: 17
           components: native-image
           cache: 'maven'
@@ -182,7 +182,7 @@ jobs:
     needs: shared-library
 
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v3.5.3
 
       - name: Download shared library artifact
         uses: actions/download-artifact@v3
@@ -190,7 +190,7 @@ jobs:
           name: shared-library-${{ matrix.job_name }}
 
       - name: Set up JDK
-        uses: actions/setup-java@v3.11.0
+        uses: actions/setup-java@v3.12.0
         with:
           java-version: 11
           distribution: 'adopt'
@@ -212,7 +212,7 @@ jobs:
           $VERSION > .\drasyl-shared-library\pypi\VERSION
         if: success() && startsWith(matrix.os, 'windows-')
 
-      - uses: actions/setup-python@v4.6.0
+      - uses: actions/setup-python@v4.7.0
         with:
           python-version: '3.10'
           check-latest: true
@@ -297,7 +297,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -312,7 +312,7 @@ jobs:
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: latest
+          version: 22.3.2
           java-version: 17
           components: native-image
           cache: 'maven'
@@ -381,7 +381,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout master
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
       - name: Get actual patch version
         id: actual_patch_version
         run: echo ACTUAL_PATCH_VERSION=$(echo ${{ github.event.release.tag_name }} | cut -d / -f 3 | sed 's/v//g' | cut -d "." -f 1,2,3) >> $GITHUB_OUTPUT
@@ -407,7 +407,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout https://github.com/drasyl/homebrew-tap
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/homebrew-tap
@@ -438,7 +438,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout https://github.com/drasyl/drasyl-choco
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/drasyl-choco

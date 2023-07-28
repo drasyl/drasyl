@@ -97,7 +97,7 @@ public class ExposeTcpHandler extends ChannelDuplexHandler {
             consumerCtx.pipeline().writeAndFlush(writeMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
         }
         else {
-            ctx.fireChannelRead(ctx);
+            ctx.fireChannelRead(msg);
         }
     }
 
@@ -131,7 +131,7 @@ public class ExposeTcpHandler extends ChannelDuplexHandler {
             ctx.close();
         }
         else {
-            ctx.fireUserEventTriggered(ctx);
+            ctx.fireUserEventTriggered(evt);
         }
     }
 
