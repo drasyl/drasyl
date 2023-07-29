@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,9 +37,10 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
-import test.util.IdentityTestUtil;
 
-import java.util.Arrays;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class EncryptionBenchmark extends AbstractBenchmark {
@@ -55,12 +56,12 @@ public class EncryptionBenchmark extends AbstractBenchmark {
     @Setup
     public void setup() {
         try {
-            alice = IdentityTestUtil.ID_1.getKeyAgreementKeyPair();
-            final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> bob = IdentityTestUtil.ID_2.getKeyAgreementKeyPair();
+            alice = ID_1.getKeyAgreementKeyPair();
+            final KeyPair<KeyAgreementPublicKey, KeyAgreementSecretKey> bob = ID_2.getKeyAgreementKeyPair();
             sessionAlice = Crypto.INSTANCE.generateSessionKeyPair(alice, bob.getPublicKey());
             sessionBob = Crypto.INSTANCE.generateSessionKeyPair(bob, alice.getPublicKey());
-            assert Arrays.equals(sessionAlice.getTx(), sessionBob.getRx()) : "Session key not valid!";
-            assert Arrays.equals(sessionAlice.getRx(), sessionBob.getTx()) : "Session key not valid!";
+            assertEquals(sessionAlice.getTx(), sessionBob.getRx(), "Session key not valid!");
+            assertEquals(sessionAlice.getRx(), sessionBob.getTx(), "Session key not valid!");
             message = RandomUtil.randomBytes(size);
             nonce = Nonce.randomNonce();
             encrypted = Crypto.INSTANCE.encrypt(message, new byte[0], nonce, sessionAlice);
