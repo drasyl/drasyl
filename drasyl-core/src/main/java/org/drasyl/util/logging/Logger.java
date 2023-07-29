@@ -21,9 +21,12 @@
  */
 package org.drasyl.util.logging;
 
+import org.drasyl.util.internal.UnstableApi;
+
 import java.util.function.Supplier;
 
 @SuppressWarnings("unchecked")
+@UnstableApi
 public interface Logger {
     /**
      * Return the name of this {@code Logger} instance.
