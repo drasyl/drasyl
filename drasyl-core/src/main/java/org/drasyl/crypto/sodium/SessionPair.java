@@ -23,8 +23,10 @@ package org.drasyl.crypto.sodium;
 
 import com.google.auto.value.AutoValue;
 import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.util.internal.UnstableApi;
 
 @AutoValue
+@UnstableApi
 public abstract class SessionPair {
     public static SessionPair of(final ImmutableByteArray rx, final ImmutableByteArray tx) {
         return new AutoValue_SessionPair(rx, tx);
