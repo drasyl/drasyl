@@ -258,7 +258,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         identity.getIdentityPublicKey(),
                         identity.getIdentitySecretKey(),
                         identity.getProofOfWork(),
-                        randomLong(config.getRemotePingInterval().toMillis()),
+                        randomLong(config.getRemotePingMaxInitialDelay().toMillis()),
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
                         config.getRemotePingTimeout().multipliedBy(2).toMillis(),
