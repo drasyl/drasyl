@@ -34,8 +34,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
-import org.drasyl.handler.path.DirectPathHandler;
-import org.drasyl.handler.path.NoDirectPathHandler;
+import org.drasyl.handler.path.EdgeRelayHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -307,15 +306,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
             }
 
+            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca"))) {
+                final IdentityPublicKey peer = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
+                final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
+                ch.pipeline().addLast(new EdgeRelayHandler(peer, relay));
+            }
+
             // convert ByteBuf <-> ApplicationMessage
             ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
-
-            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("7e0b8e72adf1701b65b1df48db474ca9bfd0047c6216e7108b6bc5535266b807"))) {
-                ch.pipeline().addLast(new DirectPathHandler(IdentityPublicKey.of("542c4bb6fb52e12f546dbb6fa2dff3fdc2c477ff93b210788cede26f3885b2e6")));
-            }
-            else {
-                ch.pipeline().addLast(new DirectPathHandler(IdentityPublicKey.of("7e0b8e72adf1701b65b1df48db474ca9bfd0047c6216e7108b6bc5535266b807")));
-            }
         }
 
         // discover nodes running within the same jvm

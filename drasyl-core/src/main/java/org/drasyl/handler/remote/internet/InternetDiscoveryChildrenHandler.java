@@ -416,12 +416,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                                final ChannelPromise promise) {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
         if (superPeer != null) {
-            LOG.trace("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
+            LOG.warn("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
             ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
         else {
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
-            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
+            LOG.warn("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }
     }

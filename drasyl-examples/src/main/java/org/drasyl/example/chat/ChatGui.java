@@ -202,6 +202,7 @@ public class ChatGui {
     public static void main(final String[] args) throws DrasylException {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of(IDENTITY))
+                .remoteLocalHostDiscoveryEnabled(false)
                 .build();
 
         final ChatGui gui = new ChatGui(config);
