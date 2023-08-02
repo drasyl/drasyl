@@ -36,7 +36,9 @@ import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -226,7 +228,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (isRoutableOutboundMessage(msg)) {
-            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
+            final OverlayAddressedMessage<RemoteMessage> addressedMsg = (OverlayAddressedMessage<RemoteMessage>) msg;
             handleRoutableOutboundMessage(ctx, addressedMsg, promise);
         }
         else {
@@ -248,7 +250,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
-        log().debug("Start Heartbeat job.");
+        log().trace("Start Heartbeat job.");
         // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
@@ -407,12 +409,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private boolean isRoutableOutboundMessage(final Object msg) {
         return bestSuperPeer != null &&
                 msg instanceof OverlayAddressedMessage &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
+                (((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage || ((OverlayAddressedMessage<?>) msg).content() instanceof ArmedProtocolMessage);
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
     private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
-                                               final OverlayAddressedMessage<ApplicationMessage> msg,
+                                               final OverlayAddressedMessage<RemoteMessage> msg,
                                                final ChannelPromise promise) {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
         if (superPeer != null) {

@@ -31,8 +31,8 @@ import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -149,22 +149,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
             handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
-        else if (isSomethingToRelay(msg)) {
-            final InetAddressedMessage<RemoteMessage> remoteMsg = (InetAddressedMessage<RemoteMessage>) msg;
-            final TraversingPeer traversingPeer = traversingPeers.get((InetAddressedMessage<RemoteMessage>) msg);
-            if (traversingPeer != null && traversingPeer.isReachable()) {
-                final InetSocketAddress inetAddress = traversingPeer.primaryAddress();
-                traversingPeer.applicationTrafficSentOrReceived();
-
-                InetAddressedMessage<RemoteMessage> relayMsg = remoteMsg.route(inetAddress);
-                log().debug("Relay message {} to {}.", remoteMsg, inetAddress);
-                ctx.writeAndFlush(relayMsg);
-            }
-            else {
-                // noop
-
-            }
-        }
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
                 final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
@@ -173,12 +157,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
             super.channelRead(ctx, msg);
         }
-    }
-
-    private boolean isSomethingToRelay(Object msg) {
-        return msg instanceof InetAddressedMessage<?> &&
-                ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage &&
-                !myPublicKey.equals((((InetAddressedMessage<RemoteMessage>) msg).content()).getRecipient());
     }
 
     @Override
@@ -211,7 +189,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
         final DrasylAddress address = msg.getAddress();
         final Set<InetSocketAddress> endpoints = msg.getEndpoints();
-        log().trace("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
+        log().debug("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             // send Hello
@@ -346,7 +324,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
     private boolean isRoutableOutboundMessageToTraversingPeer(final Object msg) {
         if (msg instanceof OverlayAddressedMessage<?> &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+                (((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage || ((OverlayAddressedMessage<?>) msg).content() instanceof ArmedProtocolMessage)) {
             final TraversingPeer traversingPeer = traversingPeers.get((((OverlayAddressedMessage<?>) msg).recipient()));
             return traversingPeer != null && traversingPeer.isReachable();
         }

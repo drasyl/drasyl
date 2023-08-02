@@ -48,7 +48,7 @@
     <logger name="org.drasyl.cli.node.NodeCommand" level="TRACE">
     </logger>
 
-    <logger name="org.drasyl.handler.remote.internet" level="TRACE">
+    <logger name="org.drasyl.handler.remote.internet" level="DEBUG">
     </logger>
 
 <!--    <logger name="org.drasyl" level="TRACE">-->

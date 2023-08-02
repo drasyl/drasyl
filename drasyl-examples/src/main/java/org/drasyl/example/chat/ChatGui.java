@@ -65,7 +65,10 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
+import static java.time.Duration.ZERO;
 import static java.time.Duration.ofSeconds;
 import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 
@@ -82,9 +85,10 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
         "java:S2096"
 })
 public class ChatGui {
-    private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     public static final int TIMEOUT_SECONDS = 5;
+    private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("'['HH:mm:ss']' ");
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");
@@ -161,6 +165,18 @@ public class ChatGui {
         recipientField.requestFocus();
     }
 
+    public static void main(final String[] args) throws DrasylException {
+        final DrasylConfig config = DrasylConfig.newBuilder()
+                .identityPath(Path.of(IDENTITY))
+                .remoteLocalHostDiscoveryEnabled(false)
+                .remoteMessageArqEnabled(false)
+                .remotePingMaxInitialDelay(ZERO)
+                .build();
+
+        final ChatGui gui = new ChatGui(config);
+        gui.run();
+    }
+
     private void run() throws DrasylException {
         frame.setTitle("Create Node...");
         node = new ChatGuiNode();
@@ -195,18 +211,37 @@ public class ChatGui {
     }
 
     private void appendTextToMessageArea(final String text) {
-        messagesArea.append(text);
+        messagesArea.append(LocalTime.now().format(TIME_FORMATTER) + text);
         messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
     }
 
-    public static void main(final String[] args) throws DrasylException {
-        final DrasylConfig config = DrasylConfig.newBuilder()
-                .identityPath(Path.of(IDENTITY))
-                .remoteLocalHostDiscoveryEnabled(false)
-                .build();
+    @SuppressWarnings({ "java:S110" })
+    public static class JTextFieldWithPlaceholder extends JTextField {
+        private final String placeholder;
 
-        final ChatGui gui = new ChatGui(config);
-        gui.run();
+        public JTextFieldWithPlaceholder(final int columns, final String placeholder) {
+            super(columns);
+            this.placeholder = placeholder;
+        }
+
+        public JTextFieldWithPlaceholder(final String placeholder) {
+            this(0, placeholder);
+        }
+
+        @Override
+        public void paintComponent(final Graphics g) {
+            super.paintComponent(g);
+
+            if (super.getText().length() > 0 || placeholder == null) {
+                return;
+            }
+
+            final Graphics2D g2 = (Graphics2D) g;
+
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(super.getDisabledTextColor());
+            g2.drawString(placeholder, getInsets().left, g.getFontMetrics().getMaxAscent() + getInsets().top);
+        }
     }
 
     @SuppressWarnings("java:S110")
@@ -345,35 +380,6 @@ public class ChatGui {
          * Signals that the node could not go online.
          */
         class OnlineTimeout implements Event {
-        }
-    }
-
-    @SuppressWarnings({ "java:S110" })
-    public static class JTextFieldWithPlaceholder extends JTextField {
-        private final String placeholder;
-
-        public JTextFieldWithPlaceholder(final int columns, final String placeholder) {
-            super(columns);
-            this.placeholder = placeholder;
-        }
-
-        public JTextFieldWithPlaceholder(final String placeholder) {
-            this(0, placeholder);
-        }
-
-        @Override
-        public void paintComponent(final Graphics g) {
-            super.paintComponent(g);
-
-            if (super.getText().length() > 0 || placeholder == null) {
-                return;
-            }
-
-            final Graphics2D g2 = (Graphics2D) g;
-
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(super.getDisabledTextColor());
-            g2.drawString(placeholder, getInsets().left, g.getFontMetrics().getMaxAscent() + getInsets().top);
         }
     }
 }

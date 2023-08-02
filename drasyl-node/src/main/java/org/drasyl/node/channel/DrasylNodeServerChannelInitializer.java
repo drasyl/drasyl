@@ -34,7 +34,8 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
-import org.drasyl.handler.path.EdgeRelayHandler;
+import org.drasyl.handler.path.EdgeRelayClientHandler;
+import org.drasyl.handler.path.EdgeRelayServerHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
@@ -250,6 +251,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         if (config.isRemoteEnabled()) {
             ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
+
+            // relay
+            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506"))) {
+                final IdentityPublicKey peerA = IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca");
+                final IdentityPublicKey peerB = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
+                ch.pipeline().addLast(new EdgeRelayServerHandler(peerA, peerB));
+            }
+
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
                 final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));
@@ -306,10 +315,18 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
             }
 
+            // sender
             if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca"))) {
                 final IdentityPublicKey peer = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
                 final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
-                ch.pipeline().addLast(new EdgeRelayHandler(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork(), peer, relay));
+                ch.pipeline().addLast(new EdgeRelayClientHandler(peer, relay));
+            }
+
+            // recipient
+            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995"))) {
+                final IdentityPublicKey peer = IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca");
+                final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
+                ch.pipeline().addLast(new EdgeRelayClientHandler(peer, relay));
             }
 
             // convert ByteBuf <-> ApplicationMessage
