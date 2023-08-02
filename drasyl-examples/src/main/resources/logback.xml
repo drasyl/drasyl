@@ -39,4 +39,10 @@
     <root level="warn">
         <appender-ref ref="Console"/>
     </root>
+
+    <logger name="org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler" level="debug">
+    </logger>
+
+    <logger name="org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler" level="debug">
+    </logger>
 </configuration>

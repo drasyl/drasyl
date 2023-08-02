@@ -165,7 +165,11 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
+            final OverlayAddressedMessage<Object> serverChannelMsg = new OverlayAddressedMessage<>(msg, remoteAddress, localAddress);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Pass outbound message `{}` ({}) as `{}` ({}) to server channel.", msg, System.identityHashCode(msg), serverChannelMsg, System.identityHashCode(serverChannelMsg));
+            }
+            parent().write(serverChannelMsg).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
                 }

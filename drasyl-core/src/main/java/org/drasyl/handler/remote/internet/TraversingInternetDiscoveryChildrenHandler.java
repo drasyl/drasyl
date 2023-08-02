@@ -32,6 +32,7 @@ import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -148,6 +149,22 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
             handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
+        else if (isSomethingToRelay(msg)) {
+            final InetAddressedMessage<RemoteMessage> remoteMsg = (InetAddressedMessage<RemoteMessage>) msg;
+            final TraversingPeer traversingPeer = traversingPeers.get((InetAddressedMessage<RemoteMessage>) msg);
+            if (traversingPeer != null && traversingPeer.isReachable()) {
+                final InetSocketAddress inetAddress = traversingPeer.primaryAddress();
+                traversingPeer.applicationTrafficSentOrReceived();
+
+                InetAddressedMessage<RemoteMessage> relayMsg = remoteMsg.route(inetAddress);
+                log().debug("Relay message {} to {}.", remoteMsg, inetAddress);
+                ctx.writeAndFlush(relayMsg);
+            }
+            else {
+                // noop
+
+            }
+        }
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
                 final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
@@ -156,6 +173,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
             super.channelRead(ctx, msg);
         }
+    }
+
+    private boolean isSomethingToRelay(Object msg) {
+        return msg instanceof InetAddressedMessage<?> &&
+                ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage &&
+                !myPublicKey.equals((((InetAddressedMessage<RemoteMessage>) msg).content()).getRecipient());
     }
 
     @Override
@@ -188,7 +211,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
         final DrasylAddress address = msg.getAddress();
         final Set<InetSocketAddress> endpoints = msg.getEndpoints();
-        LOG.trace("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
+        log().trace("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             // send Hello
@@ -201,7 +224,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             ctx.flush();
         }
         else {
-            LOG.trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, endpoints, endpoints);
+            log().trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, endpoints, endpoints);
         }
     }
 
@@ -218,13 +241,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleHelloMessageFromTraversingPeer(final ChannelHandlerContext ctx,
                                                       final HelloMessage msg,
                                                       final InetSocketAddress inetAddress) {
-        LOG.trace("Got Hello from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
+        log().trace("Got Hello from traversing peer `{}` from address `{}`.", msg.getSender(), inetAddress);
 
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
-        LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
+        log().trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
 
         if (!traversingPeer.isReachable() && traversingPeer.addInetAddressCandidate(inetAddress)) {
@@ -250,7 +273,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                                 final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
         final long rtt = currentTime.getAsLong() - msg.getTime();
-        LOG.trace("Got Acknowledgement ({}ms RTT) from traversing peer `{}`.", () -> rtt, () -> publicKey);
+        log().trace("Got Acknowledgement ({}ms RTT) from traversing peer `{}`.", () -> rtt, () -> publicKey);
 
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
@@ -279,7 +302,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final TraversingPeer traversingPeer = entry.getValue();
 
             if (traversingPeer.isStale()) {
-                LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
+                log().trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
                 final RemovePathEvent event = RemovePathEvent.of(address, PATH);
                 if (pathEventFilter.add(event)) {
@@ -324,7 +347,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private boolean isRoutableOutboundMessageToTraversingPeer(final Object msg) {
         if (msg instanceof OverlayAddressedMessage<?> &&
                 ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
-            final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
+            final TraversingPeer traversingPeer = traversingPeers.get((((OverlayAddressedMessage<?>) msg).recipient()));
             return traversingPeer != null && traversingPeer.isReachable();
         }
         else {
@@ -335,13 +358,17 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleRoutableOutboundMessageToTraversingPeer(final ChannelHandlerContext ctx,
                                                                final ChannelPromise promise,
                                                                final OverlayAddressedMessage<ApplicationMessage> addressedMsg) {
-        final DrasylAddress address = addressedMsg.content().getRecipient();
+        final DrasylAddress address = addressedMsg.recipient();
         final TraversingPeer traversingPeer = traversingPeers.get(address);
         final InetSocketAddress inetAddress = traversingPeer.primaryAddress();
         traversingPeer.applicationTrafficSentOrReceived();
 
-        LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
+        log().debug("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
+    }
+
+    protected Logger log() {
+        return LOG;
     }
 
     static class TraversingPeer {

@@ -248,7 +248,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
-        LOG.debug("Start Heartbeat job.");
+        log().debug("Start Heartbeat job.");
         // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
@@ -260,7 +260,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     void stopHeartbeat() {
         if (heartbeatDisposable != null) {
-            LOG.debug("Stop Heartbeat job.");
+            log().debug("Stop Heartbeat job.");
             heartbeatDisposable.cancel(false);
             heartbeatDisposable = null;
         }
@@ -305,11 +305,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork);
         }
 
-        LOG.trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
+        log().trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
-                LOG.warn("Unable to send Discovery for peer `{}` to address `{}`:", () -> publicKey, () -> inetAddress, future::cause);
+                log().warn("Unable to send Discovery for peer `{}` to address `{}`:", () -> publicKey, () -> inetAddress, future::cause);
             }
         });
     }
@@ -333,7 +333,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                               final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
         final long rtt = currentTime.getAsLong() - msg.getTime();
-        LOG.trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
+        log().trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
 
         final SuperPeer superPeer = superPeers.get(publicKey);
         superPeer.acknowledgementReceived(rtt);
@@ -389,12 +389,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         if (!Objects.equals(bestSuperPeer, newBestSuperPeer)) {
             final IdentityPublicKey oldBestSuperPeer = bestSuperPeer;
             bestSuperPeer = newBestSuperPeer;
-            if (LOG.isTraceEnabled()) {
+            if (log().isTraceEnabled()) {
                 if (newBestSuperPeer != null) {
-                    LOG.trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
+                    log().trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
                 }
                 else {
-                    LOG.trace("All super peers stale!");
+                    log().trace("All super peers stale!");
                 }
             }
         }
@@ -416,12 +416,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                                final ChannelPromise promise) {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
         if (superPeer != null) {
-            LOG.warn("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
+            log().debug("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
             ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
         else {
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
-            LOG.warn("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
+            log().debug("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }
     }
@@ -439,8 +439,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
-        LOG.warn("Got unexpected message `{}`. Drop it.", msg);
+        log().warn("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
+    }
+
+    protected Logger log() {
+        return LOG;
     }
 
     protected static class SuperPeer {

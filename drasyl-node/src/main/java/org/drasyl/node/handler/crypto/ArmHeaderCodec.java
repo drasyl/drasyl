@@ -27,11 +27,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.Nonce;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
 @Sharable
 public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
+    private static final Logger LOG = LoggerFactory.getLogger(ArmHeaderCodec.class);
+
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final ArmHeader msg,
@@ -39,6 +43,9 @@ public class ArmHeaderCodec extends MessageToMessageCodec<ByteBuf, ArmHeader> {
         final ByteBuf byteBuf = ctx.alloc().buffer(msg.getLength());
         msg.writeTo(byteBuf);
         out.add(byteBuf);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Encode `{}` ({}) to `{}` ({})", msg, System.identityHashCode(msg), byteBuf, System.identityHashCode(byteBuf));
+        }
     }
 
     @Override

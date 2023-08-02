@@ -309,7 +309,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca"))) {
                 final IdentityPublicKey peer = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
                 final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
-                ch.pipeline().addLast(new EdgeRelayHandler(peer, relay));
+                ch.pipeline().addLast(new EdgeRelayHandler(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork(), peer, relay));
             }
 
             // convert ByteBuf <-> ApplicationMessage

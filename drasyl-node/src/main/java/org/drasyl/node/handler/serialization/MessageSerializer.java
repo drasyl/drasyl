@@ -88,7 +88,9 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                         .writeTo(bytes);
 
                 out.add(bytes);
-                LOG.trace("Message `{}` has been serialized to `{}`", o, bytes);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Message `{}` ({}) has been serialized to `{}` ({})", o, System.identityHashCode(o), bytes, System.identityHashCode(bytes));
+                }
             }
             catch (final IOException e) {
                 bytes.release();

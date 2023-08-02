@@ -27,6 +27,8 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.util.UnsignedInteger;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -35,6 +37,7 @@ import java.util.List;
  */
 @Deprecated
 public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqCodec.class);
     public static final int MAGIC_NUMBER_DATA = 360_023_952;
     public static final int MAGIC_NUMBER_ACK = 360_023_955;
     // magic number: 4 bytes
@@ -51,12 +54,18 @@ public class GoBackNArqCodec extends MessageToMessageCodec<ByteBuf, GoBackNArqMe
             buf.writeBytes(msg.sequenceNo().toBytes());
             buf.writeBytes(((GoBackNArqData) msg).content());
             out.add(buf);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Encode `{}` ({}) to `{}` ({})", msg, System.identityHashCode(msg), buf, System.identityHashCode(buf));
+            }
         }
         else if (msg instanceof GoBackNArqAck) {
             final ByteBuf buf = ctx.alloc().buffer(MIN_MESSAGE_LENGTH);
             buf.writeInt(MAGIC_NUMBER_ACK);
             buf.writeBytes(msg.sequenceNo().toBytes());
             out.add(buf);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Encode `{}` ({}) to `{}` ({})", msg, System.identityHashCode(msg), buf, System.identityHashCode(buf));
+            }
         }
         else {
             throw new EncoderException("Unknown GoBackNArqMessage type: " + StringUtil.simpleClassName(msg));
