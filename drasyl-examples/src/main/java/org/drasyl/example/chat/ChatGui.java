@@ -88,6 +88,7 @@ public class ChatGui {
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
     public static final int TIMEOUT_SECONDS = 5;
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
+    private static final String TITLE = System.getProperty("title", "");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("'['HH:mm:ss']' ");
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
@@ -180,7 +181,11 @@ public class ChatGui {
     private void run() throws DrasylException {
         frame.setTitle("Create Node...");
         node = new ChatGuiNode();
-        frame.setTitle("Chat: " + node.identity().getIdentityPublicKey().toString());
+        String title = "Chat: " + node.identity().getIdentityPublicKey().toString();
+        if (!TITLE.isBlank()) {
+            title += " [" + TITLE + "]";
+        }
+        frame.setTitle(title);
         appendTextToMessageArea("*******************************************************************************************************\n");
         appendTextToMessageArea("This is an Example of a Chat Application running on the drasyl Overlay Network.\n");
         appendTextToMessageArea("It allows you to send Text Messages to other drasyl Nodes running this Chat Application.\n");

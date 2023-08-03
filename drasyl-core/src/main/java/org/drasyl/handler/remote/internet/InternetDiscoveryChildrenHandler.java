@@ -423,7 +423,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         }
         else {
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
-            log().debug("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
+            log().debug("No direct connection to message recipient `{}`. Use super peer as default gateway. Relay message `{}` to super peer `{}` via well-known address `{}`.", msg.recipient(), msg.content().getNonce(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }
     }

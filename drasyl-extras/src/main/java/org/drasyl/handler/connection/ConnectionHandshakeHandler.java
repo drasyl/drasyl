@@ -819,7 +819,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private class RetransmissionTimeoutApplier implements ChannelFutureListener {
         private static final long LOWER_BOUND = 100; // lower bound for retransmission (e.g., 1 second)
         private static final long UPPER_BOUND = 60_000; // upper bound for retransmission (e.g., 1 minute)
-        private static final int RTT = 20; // as we're currently not aware of the actual RTT, we use this fixed value
+        private static final int RTT = 1000; // as we're currently not aware of the actual RTT, we use this fixed value
         private static final float ALPHA = .9F; // smoothing factor (e.g., .8 to .9)
         private static final float BETA = 1.7F; // delay variance factor (e.g., 1.3 to 2.0)
         private final ChannelHandlerContext ctx;

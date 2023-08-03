@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.UnarmedProtocolMessage;
 import org.drasyl.util.internal.UnstableApi;
@@ -51,8 +52,13 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-                final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
-                multicastServer.multicastRead((InetAddressedMessage<UnarmedProtocolMessage>) msg);
+                if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage) {
+                    final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
+                    multicastServer.multicastRead((InetAddressedMessage<UnarmedProtocolMessage>) msg);
+                }
+                else {
+                    ReferenceCountUtil.release(msg);
+                }
             }
 
             @Override
