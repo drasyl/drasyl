@@ -90,8 +90,8 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 @SuppressWarnings({ "java:S107", "java:S118" })
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    protected final Identity identity;
-    protected final ServerBootstrap bootstrap;
+    protected Identity identity;
+    protected ServerBootstrap bootstrap;
     private ChannelFuture channelFuture;
 
     static {
