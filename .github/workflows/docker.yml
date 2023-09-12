@@ -27,7 +27,7 @@ jobs:
         id: actual_major_version
         run: echo ACTUAL_MAJOR_VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout | cut -d - -f 1 | sed 's/v//g' | cut -d "." -f 1) >> $GITHUB_OUTPUT
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
