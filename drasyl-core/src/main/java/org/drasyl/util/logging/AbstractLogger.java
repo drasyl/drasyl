@@ -1104,19 +1104,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier1, final Supplier<Object> supplier2) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1, supplier2);
+                if (isTraceEnabled()) {
+                    trace(format, supplier1, supplier2);
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1, supplier2);
+                if (isDebugEnabled()) {
+                    debug(format, supplier1, supplier2);
+                }
                 break;
             case INFO:
-                info(format, supplier1, supplier2);
+                if (isInfoEnabled()) {
+                    info(format, supplier1, supplier2);
+                }
                 break;
             case WARN:
-                warn(format, supplier1, supplier2);
+                if (isWarnEnabled()) {
+                    warn(format, supplier1, supplier2);
+                }
                 break;
             case ERROR:
-                error(format, supplier1, supplier2);
+                if (isErrorEnabled()) {
+                    error(format, supplier1, supplier2);
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1131,19 +1141,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier3) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1156,19 +1176,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier3, final Supplier<Object> supplier4) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1182,19 +1212,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier5) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1208,19 +1248,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier5, final Supplier<Object> supplier6) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1235,19 +1285,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier7) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1262,19 +1322,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier7, final Supplier<Object> supplier8) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1290,19 +1360,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier9) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);
@@ -1318,19 +1398,29 @@ abstract class AbstractLogger implements Logger {
                     final Supplier<Object> supplier9, final Supplier<Object> supplier10) {
         switch (level) {
             case TRACE:
-                trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                if (isTraceEnabled()) {
+                    trace(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                }
                 break;
             case DEBUG:
-                debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                if (isDebugEnabled()) {
+                    debug(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                }
                 break;
             case INFO:
-                info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                if (isInfoEnabled()) {
+                    info(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                }
                 break;
             case WARN:
-                warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                if (isWarnEnabled()) {
+                    warn(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                }
                 break;
             case ERROR:
-                error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                if (isErrorEnabled()) {
+                    error(format, supplier1.get(), supplier2.get(), supplier3.get(), supplier4.get(), supplier5.get(), supplier6.get(), supplier7.get(), supplier8.get(), supplier9.get(), supplier10.get());
+                }
                 break;
             default:
                 throw new Error("Unexpected level: " + level);

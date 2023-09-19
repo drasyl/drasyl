@@ -435,6 +435,39 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.channel.DrasylServerChannel",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.util.logging.Logger",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.logging.LoggerFactory",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.ImmutableByteArray",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method byte[] org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "new": "method org.drasyl.util.ImmutableByteArray org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.parameterTypeChanged",
+          "old": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===byte[]===)",
+          "new": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===org.drasyl.util.ImmutableByteArray===)",
+          "parameterIndex": "1",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

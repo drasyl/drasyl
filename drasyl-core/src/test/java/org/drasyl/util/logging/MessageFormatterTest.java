@@ -72,7 +72,7 @@ class MessageFormatterTest {
 
     @Test
     void nullParametersShouldBeHandledWithoutBarfing() {
-        assertEquals(new FormattingTuple("Value is null."), format("Value is {}.", null));
+        assertEquals(new FormattingTuple("Value is null."), format("Value is {}.", (Object) null));
 
         assertEquals(new FormattingTuple("Val1 is null, val2 is null."), format("Val1 is {}, val2 is {}.", null, null));
 

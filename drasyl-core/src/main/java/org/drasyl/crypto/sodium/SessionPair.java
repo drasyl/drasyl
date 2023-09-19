@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,14 +22,17 @@
 package org.drasyl.crypto.sodium;
 
 import com.google.auto.value.AutoValue;
+import org.drasyl.util.ImmutableByteArray;
+import org.drasyl.util.internal.UnstableApi;
 
 @AutoValue
+@UnstableApi
 public abstract class SessionPair {
-    public static SessionPair of(final byte[] rx, final byte[] tx) {
+    public static SessionPair of(final ImmutableByteArray rx, final ImmutableByteArray tx) {
         return new AutoValue_SessionPair(rx, tx);
     }
 
-    public abstract byte[] getRx();
+    public abstract ImmutableByteArray getRx();
 
-    public abstract byte[] getTx();
+    public abstract ImmutableByteArray getTx();
 }

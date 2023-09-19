@@ -170,6 +170,91 @@ public class LoggerBenchmark extends AbstractBenchmark {
         }
 
         @Override
+        public void trace(final String format, final Object arg1, final Object arg2, final Object arg3) {
+
+        }
+
+        @Override
+        public void trace(final String format, final Object arg1, final Object arg2, final Object arg3, final Object arg4) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9) {
+
+        }
+
+        @Override
+        public void trace(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9,
+                          final Object arg10) {
+
+        }
+
+        @Override
         public void trace(final String format, final Object... arguments) {
 
         }
@@ -196,6 +281,91 @@ public class LoggerBenchmark extends AbstractBenchmark {
 
         @Override
         public void debug(final String format, final Object arg1, final Object arg2) {
+
+        }
+
+        @Override
+        public void debug(final String format, final Object arg1, final Object arg2, final Object arg3) {
+
+        }
+
+        @Override
+        public void debug(final String format, final Object arg1, final Object arg2, final Object arg3, final Object arg4) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9) {
+
+        }
+
+        @Override
+        public void debug(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9,
+                          final Object arg10) {
 
         }
 
@@ -230,6 +400,91 @@ public class LoggerBenchmark extends AbstractBenchmark {
         }
 
         @Override
+        public void info(final String format, final Object arg1, final Object arg2, final Object arg3) {
+
+        }
+
+        @Override
+        public void info(final String format, final Object arg1, final Object arg2, final Object arg3, final Object arg4) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8,
+                         final Object arg9) {
+
+        }
+
+        @Override
+        public void info(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8,
+                         final Object arg9,
+                         final Object arg10) {
+
+        }
+
+        @Override
         public void info(final String format, final Object... arguments) {
 
         }
@@ -255,7 +510,92 @@ public class LoggerBenchmark extends AbstractBenchmark {
         }
 
         @Override
-        public void warn(final String format,final Object arg1, final Object arg2) {
+        public void warn(final String format, final Object arg1, final Object arg2) {
+
+        }
+
+        @Override
+        public void warn(final String format, final Object arg1, final Object arg2, final Object arg3) {
+
+        }
+
+        @Override
+        public void warn(final String format, final Object arg1, final Object arg2, final Object arg3, final Object arg4) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8,
+                         final Object arg9) {
+
+        }
+
+        @Override
+        public void warn(final String format,
+                         final Object arg1,
+                         final Object arg2,
+                         final Object arg3,
+                         final Object arg4,
+                         final Object arg5,
+                         final Object arg6,
+                         final Object arg7,
+                         final Object arg8,
+                         final Object arg9,
+                         final Object arg10) {
 
         }
 
@@ -286,6 +626,91 @@ public class LoggerBenchmark extends AbstractBenchmark {
 
         @Override
         public void error(final String format, final Object arg1, final Object arg2) {
+
+        }
+
+        @Override
+        public void error(final String format, final Object arg1, final Object arg2, final Object arg3) {
+
+        }
+
+        @Override
+        public void error(final String format, final Object arg1, final Object arg2, final Object arg3, final Object arg4) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9) {
+
+        }
+
+        @Override
+        public void error(final String format,
+                          final Object arg1,
+                          final Object arg2,
+                          final Object arg3,
+                          final Object arg4,
+                          final Object arg5,
+                          final Object arg6,
+                          final Object arg7,
+                          final Object arg8,
+                          final Object arg9,
+                          final Object arg10) {
 
         }
 

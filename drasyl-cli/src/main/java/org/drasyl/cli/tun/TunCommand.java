@@ -409,12 +409,12 @@ public class TunCommand extends ChannelOptions {
                 final DrasylAddress publicKey = routes.get(dst);
                 if (routes.containsKey(dst)) {
                     LOG.debug("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
-		            msg.retain();
+                    msg.retain();
                     channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                         if (future.isSuccess()) {
                             final Channel peerChannel = future.getNow();
                             peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
-                            peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);;
+                            peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
                         else {
                             msg.release();
