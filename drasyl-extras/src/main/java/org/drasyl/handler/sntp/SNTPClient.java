@@ -24,6 +24,7 @@ package org.drasyl.handler.sntp;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -31,9 +32,11 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.RandomUtil;
+import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SNTPClient {
     public static final int NTP_PORT = 123;
     public static final List<SocketAddress> NTP_SERVERS = List.of(
+            InetSocketAddress.createUnresolved(NetworkUtil.getDefaultGateway().getHostAddress(), 123),
             InetSocketAddress.createUnresolved("pool.ntp.org", NTP_PORT),
             InetSocketAddress.createUnresolved("time.apple.com", NTP_PORT),
             InetSocketAddress.createUnresolved("time.google.com", NTP_PORT),
@@ -49,13 +53,30 @@ public class SNTPClient {
     );
 
     public static void main(final String[] args) {
-        SNTPClient.getOffset()
+        SNTPClient.getOffset(NTP_SERVERS)
                 .completeOnTimeout(null, 3, TimeUnit.SECONDS)
                 .whenComplete((v, e) -> System.out.println(v + " ms"));
     }
 
     public static CompletableFuture<Long> getOffset() {
-        return getOffset(NTP_SERVERS.get(RandomUtil.randomInt(NTP_SERVERS.size() - 1)));
+        return getOffset(NTP_SERVERS);
+    }
+
+    public static CompletableFuture<Long> getOffset(final List<SocketAddress> servers) {
+        if (servers.isEmpty()) {
+            return CompletableFuture.failedFuture(new Exception("All NTP servers unreachable."));
+        }
+
+        return getOffset(servers.get(0))
+                .thenApply(v -> {
+                    if (v == null) {
+                        final List<SocketAddress> newList = new ArrayList<>(servers);
+                        newList.remove(0);
+                        return getOffset(newList).join();
+                    }
+
+                    return v;
+                });
     }
 
     public static CompletableFuture<Long> getOffset(final SocketAddress server) {
@@ -79,6 +100,12 @@ public class SNTPClient {
                         });
                         channel.pipeline().addLast(new SNTPCodec());
                         channel.pipeline().addLast(new SNTPHandler(result, responseTime));
+                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                        final Throwable cause) {
+                                result.complete(null);
+                            }
+                        });
                     }
                 });
 
