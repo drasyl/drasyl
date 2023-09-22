@@ -57,7 +57,6 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
@@ -429,7 +428,7 @@ public abstract class DrasylNode {
                 final Long offset;
                 // check system time
                 if (sntpServers.isEmpty()) {
-                    offset = SNTPClient.getOffset(SNTPClient.NTP_SERVERS.get(0)).get();
+                    offset = SNTPClient.getOffset().get();
                 }
                 else {
                     offset = SNTPClient.getOffset(sntpServers).get();
@@ -439,7 +438,7 @@ public abstract class DrasylNode {
                     LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
                 }
             }
-            catch (final ExecutionException | InterruptedException e) {
+            catch (final Exception e) {
                 LOG.warn("Can not determine time offset: {}", e);
             }
 
