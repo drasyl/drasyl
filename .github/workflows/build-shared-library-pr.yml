@@ -32,7 +32,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v4.0.0
+        uses: actions/checkout@v4.1.0
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -132,7 +132,7 @@ jobs:
     needs: native-image
 
     steps:
-      - uses: actions/checkout@v4.0.0
+      - uses: actions/checkout@v4.1.0
 
       - name: Download shared library artifact
         uses: actions/download-artifact@v3
@@ -162,7 +162,7 @@ jobs:
           $VERSION.replace('-SNAPSHOT', '.dev0') > .\drasyl-shared-library\pypi\VERSION
         if: success() && startsWith(matrix.os, 'windows-')
 
-      - uses: actions/setup-python@v4.7.0
+      - uses: actions/setup-python@v4.7.1
         with:
           python-version: '3.10'
           check-latest: true

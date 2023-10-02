@@ -128,7 +128,7 @@
         <jackson.version>2.15.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.98.Final</netty.version>
+        <netty.version>4.1.99.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>2.0.9</slf4j.version>
         <typesafe.config.version>1.4.2</typesafe.config.version>
@@ -388,7 +388,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.3.5</version>
+                    <version>4.7.3.6</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -578,7 +578,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.12.3</version>
+                        <version>10.12.4</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -627,7 +627,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.3.5</version>
+                <version>4.7.3.6</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
