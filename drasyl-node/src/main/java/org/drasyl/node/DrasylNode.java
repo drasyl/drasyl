@@ -34,7 +34,7 @@ import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.peers.PeersList;
-import org.drasyl.handler.sntp.SNTPClient;
+import org.drasyl.handler.sntp.SntpClient;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -428,10 +428,10 @@ public abstract class DrasylNode {
                 final Long offset;
                 // check system time
                 if (sntpServers.isEmpty()) {
-                    offset = SNTPClient.getOffset().get();
+                    offset = SntpClient.getOffset().get();
                 }
                 else {
-                    offset = SNTPClient.getOffset(sntpServers).get();
+                    offset = SntpClient.getOffset(sntpServers).get();
                 }
 
                 if (offset > 60_000) {

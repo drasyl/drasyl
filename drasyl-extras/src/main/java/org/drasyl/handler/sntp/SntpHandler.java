@@ -29,13 +29,13 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SNTPHandler extends SimpleChannelInboundHandler<SNTPMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(SNTPHandler.class);
+public class SntpHandler extends SimpleChannelInboundHandler<SntpMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(SntpHandler.class);
     private final CompletableFuture<Long> result;
     private long requestTime;
     private final AtomicLong responseTime;
 
-    public SNTPHandler(final CompletableFuture<Long> result, final AtomicLong responseTime) {
+    public SntpHandler(final CompletableFuture<Long> result, final AtomicLong responseTime) {
         this.result = result;
         this.responseTime = responseTime;
     }
@@ -45,13 +45,13 @@ public class SNTPHandler extends SimpleChannelInboundHandler<SNTPMessage> {
         // Send NTP request to the first server in list
         requestTime = System.currentTimeMillis();
 
-        ctx.writeAndFlush(SNTPMessage.of(requestTime));
+        ctx.writeAndFlush(SntpMessage.of(requestTime));
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final SNTPMessage msg) throws Exception {
-        final long clockOffset = ((requestTime - SNTPMessage.toJavaTime(msg.getOriginateTimestamp())) + (SNTPMessage.toJavaTime(msg.getTransmitTimestamp()) - responseTime.get())) / 2;
+                                final SntpMessage msg) throws Exception {
+        final long clockOffset = ((requestTime - SntpMessage.toJavaTime(msg.getOriginateTimestamp())) + (SntpMessage.toJavaTime(msg.getTransmitTimestamp()) - responseTime.get())) / 2;
 
         this.result.complete(clockOffset);
         ctx.channel().close();

@@ -30,18 +30,18 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
-public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(SNTPCodec.class);
+public class SntpCodec extends MessageToMessageCodec<DatagramPacket, SntpMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(SntpCodec.class);
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final SNTPMessage msg,
+                          final SntpMessage msg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buf = ctx.alloc().buffer(SNTPMessage.SIZE, SNTPMessage.SIZE);
+        final ByteBuf buf = ctx.alloc().buffer(SntpMessage.SIZE, SntpMessage.SIZE);
 
         buf.writeByte(msg.getMode() | (msg.getVersionNumber() << 3));
-        buf.writerIndex(SNTPMessage.TRANSMIT_TIMESTAMP_OFFSET);
-        buf.writeLong(SNTPMessage.toNTPTime(msg.getTransmitTimestamp()));
+        buf.writerIndex(SntpMessage.TRANSMIT_TIMESTAMP_OFFSET);
+        buf.writeLong(SntpMessage.toNTPTime(msg.getTransmitTimestamp()));
 
         out.add(buf);
     }
@@ -52,7 +52,7 @@ public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage
                           final List<Object> out) throws Exception {
         final ByteBuf buf = msg.content();
 
-        if (buf.readableBytes() >= SNTPMessage.SIZE) {
+        if (buf.readableBytes() >= SntpMessage.SIZE) {
             // read first byte with LI, VN and mode
             final byte fByte = buf.readByte();
             final int li = (fByte >> 3) & 0x3;
@@ -60,7 +60,7 @@ public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage
             final int mode = (fByte) & 0x7;
 
             // We do not want this kind of NTP servers
-            if (li == SNTPMessage.LI_NOT_SYNC) {
+            if (li == SntpMessage.LI_NOT_SYNC) {
                 return;
             }
 
@@ -75,7 +75,7 @@ public class SNTPCodec extends MessageToMessageCodec<DatagramPacket, SNTPMessage
             final long receiveTimestamp = buf.readLong();
             final long transmitTimestamp = buf.readLong();
 
-            out.add(SNTPMessage.of(li, vn, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp));
+            out.add(SntpMessage.of(li, vn, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp));
         }
     }
 }

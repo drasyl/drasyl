@@ -24,7 +24,7 @@ package org.drasyl.handler.sntp;
 import com.google.auto.value.AutoValue;
 
 @AutoValue
-public abstract class SNTPMessage {
+public abstract class SntpMessage {
     public static final int SIZE = 48;
     public static final int VERSION_NUMBER = 4;
     public static final int CLIENT_MODE = 3;
@@ -43,7 +43,7 @@ public abstract class SNTPMessage {
      */
     private static final long msb1ReferenceTime = -2208988800000L;
 
-    public static SNTPMessage of(final int leapIndicator,
+    public static SntpMessage of(final int leapIndicator,
                                  final int versionNumber,
                                  final int mode,
                                  final int stratum,
@@ -56,16 +56,16 @@ public abstract class SNTPMessage {
                                  final long originateTimestamp,
                                  final long receiveTimestamp,
                                  final long transmitTimestamp) {
-        return new AutoValue_SNTPMessage(leapIndicator, versionNumber, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp);
+        return new AutoValue_SntpMessage(leapIndicator, versionNumber, mode, stratum, poll, precision, rootDelay, rootDispersion, referenceIdentifier, referenceTimestamp, originateTimestamp, receiveTimestamp, transmitTimestamp);
     }
 
     /**
-     * Creates a client {@link SNTPMessage}.
+     * Creates a client {@link SntpMessage}.
      *
      * @param transmitTimestamp the current timestamp in java format.
-     * @return a client {@link SNTPMessage}.
+     * @return a client {@link SntpMessage}.
      */
-    public static SNTPMessage of(final long transmitTimestamp) {
+    public static SntpMessage of(final long transmitTimestamp) {
         return of(0, VERSION_NUMBER, CLIENT_MODE, 0, 0, 0, 0.0f, 0.0f, 0, 0, 0, 0, transmitTimestamp);
     }
 

@@ -31,7 +31,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.RandomUtil;
 import org.drasyl.util.network.NetworkUtil;
 
 import java.net.InetSocketAddress;
@@ -42,7 +41,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class SNTPClient {
+public class SntpClient {
     public static final int NTP_PORT = 123;
     public static final List<SocketAddress> NTP_SERVERS = List.of(
             InetSocketAddress.createUnresolved(NetworkUtil.getDefaultGateway().getHostAddress(), 123),
@@ -53,7 +52,7 @@ public class SNTPClient {
     );
 
     public static void main(final String[] args) {
-        SNTPClient.getOffset(NTP_SERVERS)
+        SntpClient.getOffset(NTP_SERVERS)
                 .completeOnTimeout(null, 3, TimeUnit.SECONDS)
                 .whenComplete((v, e) -> System.out.println(v + " ms"));
     }
@@ -98,8 +97,8 @@ public class SNTPClient {
                                 ctx.fireChannelRead(msg.retain());
                             }
                         });
-                        channel.pipeline().addLast(new SNTPCodec());
-                        channel.pipeline().addLast(new SNTPHandler(result, responseTime));
+                        channel.pipeline().addLast(new SntpCodec());
+                        channel.pipeline().addLast(new SntpHandler(result, responseTime));
                         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                             public void exceptionCaught(final ChannelHandlerContext ctx,
                                                         final Throwable cause) {
