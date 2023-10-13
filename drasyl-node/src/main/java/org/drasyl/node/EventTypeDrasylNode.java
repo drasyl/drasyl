@@ -30,6 +30,9 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.event.NodeEvent;
 import org.drasyl.node.event.PeerEvent;
 
+import java.net.SocketAddress;
+import java.util.List;
+
 /**
  * An implementation of {@link DrasylNode} that provides distinct methods for handling various
  * {@link Event} types. These include:
@@ -44,8 +47,9 @@ import org.drasyl.node.event.PeerEvent;
 public abstract class EventTypeDrasylNode extends DrasylNode {
     protected EventTypeDrasylNode(final Identity identity,
                                   final ServerBootstrap bootstrap,
-                                  final ChannelFuture channelFuture) {
-        super(identity, bootstrap, channelFuture);
+                                  final ChannelFuture channelFuture,
+                                  final List<SocketAddress> sntpServers) {
+        super(identity, bootstrap, channelFuture, sntpServers);
     }
 
     protected EventTypeDrasylNode(final DrasylConfig config) throws DrasylException {
