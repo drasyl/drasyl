@@ -468,6 +468,12 @@
           "new": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===org.drasyl.util.ImmutableByteArray===)",
           "parameterIndex": "1",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "class io.netty.channel.socket.DatagramPacket",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
