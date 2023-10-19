@@ -439,7 +439,7 @@ public abstract class DrasylNode {
                 }
             }
             catch (final Exception e) {
-                LOG.warn("Can not determine time offset: {}", e);
+                LOG.warn("Can not determine time offset:", e);
             }
 
             channelFuture = bootstrap.bind();
