@@ -80,6 +80,7 @@ public class OutgoingSegmentQueue {
         }
 
         if (doFlush) {
+            LOG.trace("{} Flush channel after at least one SEG has been written to network.", ctx.channel());
             ctx.flush();
         }
     }
