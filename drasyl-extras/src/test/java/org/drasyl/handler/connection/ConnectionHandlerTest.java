@@ -173,7 +173,7 @@ class ConnectionHandlerTest {
                 channel.close();
             }
 
-            // TCP Peer A
+            // TCP Peer B
             @Test
             void shouldConformWithBehaviorOfPeerB() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
