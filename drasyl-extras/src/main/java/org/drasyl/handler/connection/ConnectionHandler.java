@@ -1325,7 +1325,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
-            if (tcb.sendBuffer().isEmpty()) {
+            if (tcb.retransmissionQueue().nextSegment() == null) {
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
