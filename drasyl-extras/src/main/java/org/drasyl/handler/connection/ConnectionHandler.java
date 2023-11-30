@@ -1442,14 +1442,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // (timestamps option is automatically added by formSegment)
 
                         tcb.send(ctx, response);
-                    }
-                    else {
+
+                        // RFC 9293: After sending the acknowledgment, drop the unacceptable segment and
+                        // RFC 9293: return.
+                        // (this is handled by handler's auto release of all arrived segments)
+
                         return;
                     }
-
-                    // RFC 9293: After sending the acknowledgment, drop the unacceptable segment and
-                    // RFC 9293: return.
-                    // (this is handled by handler's auto release of all arrived segments)
 
                     // RFC 9293: Note that for the TIME-WAIT state, there is an improved algorithm
                     // RFC 9293: described in [40] for handling incoming SYN segments that utilizes
