@@ -722,7 +722,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final ChannelPromise toReturn = ctx.newPromise();
         segmentizedFuture = toReturn;
         if (segmentizedRemainingBytes == 0) {
-            // no preceding SENDs, complete future immedialy
+            // no preceding SENDs, complete future immediately
             segmentizedFuture.setSuccess();
         }
         segmentizedFuture.addListener((ChannelFutureListener) future -> {
