@@ -62,14 +62,14 @@ public abstract class ConnectionConfig {
             .rmem(65_535 * 10)
             // FIXME: change back to 2 minutes?
             .msl(ofSeconds(2))
-            .noDelay(false)
+            .noDelay(true)
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
-            .userTimeout(ofSeconds(20))
+            .userTimeout(ofSeconds(10))
             .timestamps(true)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
-            .uBound(ofSeconds(60))
+            .uBound(ofSeconds(2))
             .alpha(1d / 8)
             .beta(1d / 4)
             .k(4)
@@ -155,7 +155,7 @@ public abstract class ConnectionConfig {
 
     public abstract double fs();
 
-    abstract Builder toBuilder();
+    public abstract Builder toBuilder();
 
     public interface Clock {
         long time();

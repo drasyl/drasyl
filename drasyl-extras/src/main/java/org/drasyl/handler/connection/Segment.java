@@ -218,6 +218,10 @@ public class Segment extends DefaultByteBufHolder {
         return seq;
     }
 
+    /**
+     * @return  The next sequence number the sender of this segment is expecting to receive, hence acknowledging receipt of all
+     * previous sequence numbers.
+     */
     public long ack() {
         return ack;
     }

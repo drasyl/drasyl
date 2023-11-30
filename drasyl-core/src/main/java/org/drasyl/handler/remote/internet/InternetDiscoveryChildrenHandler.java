@@ -441,7 +441,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
-        log().warn("Got unexpected message `{}`. Drop it.", msg);
+        log().debug("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
     }
 

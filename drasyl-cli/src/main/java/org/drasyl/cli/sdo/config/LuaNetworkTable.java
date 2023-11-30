@@ -99,6 +99,7 @@ public class LuaNetworkTable extends LuaTable {
         set("clear_nodes", new ClearNodesFunction());
 
         // link
+        set("links", new LinksValue());
         set("add_link", new AddLinkFunction());
         set("remove_link", new RemoveLinkFunction());
         set("clear_links", new ClearLinksFunction());
@@ -156,7 +157,7 @@ public class LuaNetworkTable extends LuaTable {
                     final DrasylChannel channel = channels.get(node.name());
                     if (node.state().isOnline()) {
                         final ControllerHello controllerHello = new ControllerHello(node.policies());
-                        LOG.trace("Send {} to {}.", controllerHello, node.name());
+                        LOG.debug("Send {} to {}.", controllerHello, node.name());
                         channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);;
                     }
                 }
@@ -246,11 +247,11 @@ public class LuaNetworkTable extends LuaTable {
             }
 
             final LuaLinkTable link = new LuaLinkTable(LuaNetworkTable.this, node1String, node2String, paramsArg);
-            LuaNetworkTable.this.links.add(link);
+            final boolean newLink = LuaNetworkTable.this.links.add(link);
             LuaNetworkTable.this.nodeLinks.put(link.node1(), link);
             LuaNetworkTable.this.nodeLinks.put(link.node2(), link);
 
-            return NIL;
+            return newLink ? TRUE : FALSE;
         }
     }
 
@@ -291,6 +292,18 @@ public class LuaNetworkTable extends LuaTable {
             LuaNetworkTable.this.links.clear();
             LuaNetworkTable.this.nodeLinks.clear();
             return NIL;
+        }
+    }
+
+    class LinksValue extends ZeroArgFunction {
+        @Override
+        public LuaValue call() {
+            final LuaTable linksTable = tableOf();
+            int index = 1;
+            for (final LuaLinkTable link : LuaNetworkTable.this.links) {
+                linksTable.set(index++, link);
+            }
+            return linksTable;
         }
     }
 }

@@ -480,11 +480,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Path capped.", ctx.channel());
+                        LOG.trace("{} Path capped (sndWnd()={}, cwnd()={}).", ctx.channel(), sndWnd(), cwnd());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Receiver capped.", ctx.channel());
+                        LOG.trace("{} Receiver capped (sndWnd()={}, cwnd()={}).", ctx.channel(), sndWnd(), cwnd());
                     }
                 }
 
@@ -720,11 +720,11 @@ public class TransmissionControlBlock {
     }
 
     public void ssthresh(final long ssthresh) {
-        this.ssthresh = ssthresh;
+//        this.ssthresh = ssthresh;
     }
 
     public void cwnd(final long cwnd) {
-        this.cwnd = cwnd;
+//        this.cwnd = cwnd;
     }
 
     public long sendMss() {

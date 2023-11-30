@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
@@ -41,6 +42,7 @@ import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.Objects;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -169,11 +171,15 @@ public class DrasylChannel extends AbstractChannel {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("Pass outbound message `{}` ({}) as `{}` ({}) to server channel.", msg, System.identityHashCode(msg), serverChannelMsg, System.identityHashCode(serverChannelMsg));
             }
-            parent().write(serverChannelMsg).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
-                }
-            });
+            final ChannelFuture writeFuture = parent().write(serverChannelMsg);
+            if (LOG.isWarnEnabled()) {
+                final String msgStr = Objects.toString(msg);
+                writeFuture.addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msgStr, () -> this, future::cause);
+                    }
+                });
+            }
             in.remove();
             wroteToParent = true;
         }

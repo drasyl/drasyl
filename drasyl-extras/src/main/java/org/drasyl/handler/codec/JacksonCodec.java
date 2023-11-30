@@ -67,7 +67,7 @@ public class JacksonCodec<T> extends MessageToMessageCodec<ByteBuf, T> {
         OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
     }
     private static final Logger LOG = LoggerFactory.getLogger(JacksonCodec.class);
-    public static final int MAGIC_NUMBER = 202_107;
+    public static final int MAGIC_NUMBER = 286331153;
     private final ThrowingBiConsumer<OutputStream, Object, IOException> jacksonWriter;
     private final ThrowingBiFunction<InputStream, Class<T>, T, IOException> jacksonReader;
     private final Class<T> clazz;

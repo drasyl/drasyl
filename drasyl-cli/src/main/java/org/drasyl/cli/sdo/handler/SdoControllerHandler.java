@@ -94,7 +94,10 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                 final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(sender);
                 final LuaNetworkTable network = config.network();
                 final LuaNodeTable networkNode = network.getNode(sender);
-                if (networkNode != null) {
+                if (channel == null) {
+                    LOG.error("Got {} from node `{}`. But have no channel for it. Discard!?", StringUtil.simpleClassName(msg), sender);
+                }
+                else if (networkNode != null) {
                     if (networkNode.state().isOffline()) {
                         channel.closeFuture().addListener((ChannelFutureListener) future -> {
                             networkNode.state().setOffline();
@@ -113,7 +116,9 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         }
                         networkNode.state().setState(((NodeHello) msg).policies(), peers);
                         if (!network.notifyListener(ctx)) {
-                            channel.writeAndFlush(new ControllerHello(networkNode.policies())).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                            final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
+                            LOG.debug("Send {} to {}.", controllerHello, sender);
+                            channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
                     }
                     else {

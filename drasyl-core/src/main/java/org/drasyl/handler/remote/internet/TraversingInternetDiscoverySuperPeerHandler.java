@@ -94,12 +94,11 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
 
         final DrasylAddress senderKey = addressedMsg.content().getSender();
         final DrasylAddress recipientKey = addressedMsg.content().getRecipient();
-        final boolean x = senderKey.equals(IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506")) && recipientKey.equals(IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995"));
         if (shouldInitiateRendezvous(senderKey, recipientKey)) {
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
         else {
-            LOG.error("do not send unite for {} and {}.", senderKey, recipientKey);
+            LOG.error("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
         }
     }
 
@@ -127,14 +126,14 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
         final ChildrenPeer recipient = childrenPeers.get(recipientKey);
 
         if (sender != null && recipient != null) {
-            LOG.error("The clients `{}` and `{}` wants to communicate with each other. Initiate rendezvous so that they try to establish a direct connecting.", () -> senderKey, () -> recipientKey);
+            LOG.debug("The clients `{}` and `{}` wants to communicate with each other. Initiate rendezvous so that they try to establish a direct connecting.", () -> senderKey, () -> recipientKey);
 
             final Set<InetSocketAddress> senderAddressCandidates = sender.inetAddressCandidates();
             final Set<InetSocketAddress> recipientAddressCandidates = recipient.inetAddressCandidates();
 
             // send recipient's information to sender
             final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, recipientAddressCandidates);
-            LOG.error("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> recipientKey);
+            LOG.debug("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> recipientKey);
             ctx.write(new InetAddressedMessage<>(senderUnite, sender.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, sender::publicInetAddress, future::cause);
@@ -143,7 +142,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
 
             // send sender's information to recipient
             final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, senderAddressCandidates);
-            LOG.error("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> senderKey);
+            LOG.debug("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> senderKey);
             ctx.write(new InetAddressedMessage<>(recipientUnite, recipient.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, recipient::publicInetAddress, future::cause);

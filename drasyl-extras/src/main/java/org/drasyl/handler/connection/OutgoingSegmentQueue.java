@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.util.logging.Logger;
@@ -68,6 +70,7 @@ public class OutgoingSegmentQueue {
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
         while ((seg = (Segment) queue.poll()) != null) {
+            String string = seg.toString();
             LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
             if (seg.mustBeAcked()) {
@@ -76,10 +79,16 @@ public class OutgoingSegmentQueue {
             }
 
             // write SEQ to network
-            ctx.write(seg, (ChannelPromise) queue.poll());
+            ctx.write(seg, (ChannelPromise) queue.poll()).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    LOG.error("{} future for `{}`: {} ", ctx.channel(), string, future.isSuccess(), future.cause());
+                }
+            });
         }
 
         if (doFlush) {
+            LOG.trace("{} Flush channel after at least one SEG has been written to network.", ctx.channel());
             ctx.flush();
         }
     }

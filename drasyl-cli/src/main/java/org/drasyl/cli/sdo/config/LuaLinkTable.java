@@ -31,6 +31,8 @@ import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import java.util.Objects;
+
 public class LuaLinkTable extends LuaTable {
     private final LuaNetworkTable network;
 
@@ -82,7 +84,20 @@ public class LuaLinkTable extends LuaTable {
 
     @Override
     public int hashCode() {
-        return LuaHashCodes.hash(this);
+        if (node1().hashCode() > node2().hashCode()) {
+            return 31 * node1().hashCode() + node2().hashCode();
+        }
+        else {
+            return 31 * node2().hashCode() + node1().hashCode();
+        }
+        //return LuaHashCodes.hash(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return hashCode() == o.hashCode();
     }
 
     class ToStringFunction extends ZeroArgFunction {

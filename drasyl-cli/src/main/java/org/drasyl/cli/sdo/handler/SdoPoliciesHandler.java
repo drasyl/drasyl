@@ -70,12 +70,17 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
             if (nodeHandler.state == JOINED) {
                 try {
                     final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
-                    final PeersList peersList = peersHandler.getPeers().copy();
-                    final NodeHello nodeHello = new NodeHello(policies, peersList);
-                    LOG.trace("Send feedback to controller: {}", peersList);
-                    channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    if (channel != null) {
+                        final PeersList peersList = peersHandler.getPeers().copy();
+                        final NodeHello nodeHello = new NodeHello(policies, peersList);
+                        LOG.trace("Send feedback to controller: {}", peersList);
+                        channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
+                    else {
+                        LOG.error("Cannot send feedback to controller. No channel present!?");
+                    }
                 }
-                catch (Exception e) {
+                catch (final Exception e) {
                     e.printStackTrace();
                 }
             }
