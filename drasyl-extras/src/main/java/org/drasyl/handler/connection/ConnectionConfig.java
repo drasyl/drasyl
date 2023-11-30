@@ -155,7 +155,7 @@ public abstract class ConnectionConfig {
 
     public abstract double fs();
 
-    abstract Builder toBuilder();
+    public abstract Builder toBuilder();
 
     public interface Clock {
         long time();
