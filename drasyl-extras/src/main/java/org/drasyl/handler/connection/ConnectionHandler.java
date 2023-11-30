@@ -1332,13 +1332,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 cancelRetransmissionTimer(ctx);
             }
             else {
-                cancelUserTimer(ctx);
-                startUserTimer(ctx);
+                restartUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
                 // RFC 6298:       (for the current value of RTO).
-                cancelRetransmissionTimer(ctx);
-                startRetransmissionTimer(ctx, tcb);
+                restartRetransmissionTimer(ctx, tcb);
             }
         }
     }
@@ -2551,13 +2549,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      * Timeouts
      */
 
-    void startUserTimer(final ChannelHandlerContext ctx) {
-        assert userTimer == null;
-
-        LOG.trace("{} USER timer created: Timeout {}ms.", ctx.channel(), config.userTimeout().toMillis());
-        userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
-    }
-
     /**
      * USER TIMEOUT event as described in <a href="https://www.rfc-editor.org/rfc/rfc9293.html#section-3.10.8">RFC
      * 9293, Section 3.10.8</a>.
@@ -2566,7 +2557,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
-        LOG.trace("{} USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
+        LOG.trace("{} USER timer timeout after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
         final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(config.userTimeout());
         tcb.sendBuffer().fail(e);
@@ -2593,7 +2584,23 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (userTimer != null) {
             userTimer.cancel(false);
             userTimer = null;
-            LOG.trace("{} USER TIMEOUT timer cancelled.", ctx.channel(), state);
+            LOG.trace("{} USER timer cancelled.", ctx.channel(), state);
+        }
+    }
+
+    void restartUserTimer(final ChannelHandlerContext ctx) {
+        if (userTimer != null) {
+            userTimer.cancel(false);
+            LOG.trace("{} USER timer restarted: Timeout {}ms.", ctx.channel(), config.userTimeout().toMillis());
+        }
+        else {
+            LOG.trace("{} USER timer created: Timeout {}ms.", ctx.channel(), config.userTimeout().toMillis());
+        }
+
+        userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
+
+        if (retransmissionTimer != null) {
+            retransmissionTimer.cancel(false);
         }
     }
 
@@ -2619,7 +2626,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298:       TCP receiver.
         final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
         assert retransmission != null;
-        LOG.trace("{} Retransmission timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), rto, retransmission, tcb.flightSize());
+        LOG.trace("{} RETRANSMISSION timer timeout after {}ms! Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), rto, retransmission, tcb.flightSize());
         ctx.writeAndFlush(retransmission);
 
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
@@ -2627,7 +2634,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298:       to this doubling operation.
         final long oldRto = tcb.rto();
         tcb.rto(tcb.rto() * 2);
-        LOG.trace("{} Retransmission timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
+        LOG.trace("{} RETRANSMISSION time timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -2641,7 +2648,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
         final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
         if (tcb.ssthresh() != newSsthresh) {
-            LOG.trace("{} Congestion Control: Retransmission timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
+            LOG.trace("{} Congestion Control: RETRANSMISSION timer timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
             tcb.ssthresh(newSsthresh);
         }
 
@@ -2653,7 +2660,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: point congestion avoidance again takes over.
         final long fullSizedSegment = tcb.effSndMss();
         if (tcb.cwnd() != fullSizedSegment) {
-            LOG.trace("{} Congestion Control: Retransmission timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), fullSizedSegment);
+            LOG.trace("{} Congestion Control: RETRANSMISSION timer timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), fullSizedSegment);
             tcb.cwnd(fullSizedSegment);
         }
 
@@ -2686,8 +2693,19 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
             retransmissionTimer = null;
-            LOG.trace("{} RETRANSMISSION TIMEOUT timer cancelled.", ctx.channel(), state);
+            LOG.trace("{} RETRANSMISSION timer cancelled.", ctx.channel());
         }
+    }
+
+    void restartRetransmissionTimer(final ChannelHandlerContext ctx,
+                                    final TransmissionControlBlock tcb) {
+        if (retransmissionTimer != null) {
+            retransmissionTimer.cancel(false);
+        }
+
+        final long rto = tcb.rto();
+        LOG.trace("{} RETRANSMISSION timer restarted: Timeout {}ms.", ctx.channel(), rto);
+        retransmissionTimer = ctx.executor().schedule(() -> retransmissionTimeout(ctx, tcb, rto), rto, MILLISECONDS);
     }
 
     private void startTimeWaitTimer(final ChannelHandlerContext ctx) {
@@ -2708,7 +2726,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         timeWaitTimer = null;
 
         final long timeWaitTimeout = config.msl().multipliedBy(2).toMillis();
-        LOG.trace("{} TIME-WAIT TIMEOUT expired after {}ms. Close channel.", ctx.channel(), timeWaitTimeout);
+        LOG.trace("{} TIME-WAIT timer timeout after {}ms. Close channel.", ctx.channel(), timeWaitTimeout);
 
         // RFC 9293: If the time-wait timeout expires on a connection,
         // RFC 9293: delete the TCB,
