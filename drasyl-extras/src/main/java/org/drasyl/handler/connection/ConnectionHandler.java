@@ -120,16 +120,6 @@ import static org.drasyl.util.NumberUtil.min;
 })
 public class ConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
-    // events
-    static final ConnectionHandshakeCompleted CONNECTION_HANDSHAKE_COMPLETED = new ConnectionHandshakeCompleted();
-    static final ConnectionHandshakeIssued CONNECTION_HANDSHAKE_ISSUED = new ConnectionHandshakeIssued();
-    // errors
-    static final ConnectionDoesNotExistException CONNECTION_NOT_EXIST_ERROR = new ConnectionDoesNotExistException();
-    static final ConnectionClosingException CONNECTION_CLOSING_ERROR = new ConnectionClosingException();
-    static final ConnectionRefusedException CONNECTION_REFUSED_EXCEPTION = new ConnectionRefusedException();
-    static final ConnectionResetException CONNECTION_RESET_EXCEPTION = new ConnectionResetException();
-    static final ConnectionAlreadyExistsException CONNECTION_EXISTS_EXCEPTION = new ConnectionAlreadyExistsException();
-    static final ConnectionAbortedDueToUserTimeoutException CONNECTION_USER_TIMEOUT_EXCEPTION = new ConnectionAbortedDueToUserTimeoutException();
     private final ConnectionConfig config;
     State state;
     TransmissionControlBlock tcb;
@@ -200,7 +190,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         cancelUserTimer(ctx);
         cancelRetransmissionTimer(ctx);
         cancelTimeWaitTimer(ctx);
-        establishedPromise.tryFailure(CONNECTION_CLOSING_ERROR);
+        establishedPromise.tryFailure(new ConnectionClosingException());
         ctx.channel().closeFuture().addListener(new PromiseNotifier<>(false, closedPromise));
     }
 
@@ -257,7 +247,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         if (tcb != null) {
-            tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
+            tcb.sendBuffer().fail(new ConnectionClosingException());
             tcb.retransmissionQueue().release();
         }
         deleteTcb();
@@ -398,7 +388,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Return "error: connection already exists".
-                throw CONNECTION_EXISTS_EXCEPTION;
+                throw new ConnectionAlreadyExistsException();
         }
     }
 
@@ -419,7 +409,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
                 LOG.trace("{} Connection is already closed. Reject data `{}`.", ctx.channel(), data);
-                promise.tryFailure(CONNECTION_NOT_EXIST_ERROR);
+                promise.tryFailure(new ConnectionDoesNotExistException());
                 ReferenceCountUtil.safeRelease(data);
                 break;
 
@@ -493,7 +483,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case TIME_WAIT:
                 // RFC 9293: Return "error: connection closing" and do not service request.
                 LOG.trace("{} Connection is in process of being closed. Reject data `{}`.", ctx.channel(), data);
-                promise.tryFailure(CONNECTION_CLOSING_ERROR);
+                promise.tryFailure(new ConnectionClosingException());
                 ReferenceCountUtil.safeRelease(data);
                 break;
         }
@@ -631,7 +621,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
                 // RFC 9293: Delete the TCB
                 // RFC 9293: and return "error: closing" responses to any queued SENDs,
-                tcb.sendBuffer().fail(CONNECTION_CLOSING_ERROR);
+                tcb.sendBuffer().fail(new ConnectionClosingException());
                 tcb.retransmissionQueue().release();
                 // RFC 9293: or RECEIVEs.
                 // (not applicable to us)
@@ -690,7 +680,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: "error: connection closing" response.
                 // RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
                 // RFC 9293: not emitted (the first FIN may be retransmitted, though).
-                promise.tryFailure(CONNECTION_CLOSING_ERROR);
+                promise.tryFailure(new ConnectionClosingException());
 
             case CLOSE_WAIT:
                 // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
@@ -712,7 +702,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Respond with "error: connection closing".
-                promise.tryFailure(CONNECTION_CLOSING_ERROR);
+                promise.tryFailure(new ConnectionClosingException());
         }
     }
 
@@ -749,7 +739,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
-                throw CONNECTION_NOT_EXIST_ERROR;
+                throw new ConnectionDoesNotExistException();
 
             case LISTEN:
                 // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
@@ -767,7 +757,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                tcb.sendBuffer().fail(new ConnectionResetException());
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification.
                 // (not applicable to us)
 
@@ -790,7 +780,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
 
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                tcb.sendBuffer().fail(new ConnectionResetException());
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification;
                 // (not applicable to us)
 
@@ -837,7 +827,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
-                throw CONNECTION_NOT_EXIST_ERROR;
+                throw new ConnectionDoesNotExistException();
 
             case LISTEN:
             case SYN_SENT:
@@ -884,14 +874,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_ISSUED));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_COMPLETED));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted()));
                 break;
 
             case CLOSE_WAIT:
@@ -1150,7 +1140,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 LOG.trace("{} SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), seg);
 
                 // RFC 9293: then signal to the user "error: connection reset",
-                ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
+                ctx.fireExceptionCaught(new ConnectionResetException());
 
                 // RFC 9293: drop the segment,
                 // (this is handled by handler's auto release of all arrived segments)
@@ -1331,7 +1321,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: and return.
     }
 
-    private void removeAcknowledgedSegmentsFromRetransmissionQueue(ChannelHandlerContext ctx) {
+    private void removeAcknowledgedSegmentsFromRetransmissionQueue(final ChannelHandlerContext ctx) {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
@@ -1543,7 +1533,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: came from SYN-SENT state), then the connection was refused;
                         // RFC 9293: signal the user "connection refused".
                         LOG.trace("{} We got `{}`. Connection has been refused by remote peer.", ctx.channel(), seg);
-                        ctx.fireExceptionCaught(CONNECTION_REFUSED_EXCEPTION);
+                        ctx.fireExceptionCaught(new ConnectionRefusedException());
                     }
 
                     // RFC 9293: In either case, the retransmission queue should be flushed.
@@ -1570,7 +1560,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs
                     // (not applicable to us)
                     // RFC 9293: and SEND should receive "reset" responses.
-                    tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                    tcb.sendBuffer().fail(new ConnectionResetException());
 
                     // RFC 9293: All segment queues should be flushed.
                     tcb.retransmissionQueue().release();
@@ -1579,7 +1569,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                     // RFC 9293: Users should also receive an unsolicited general
                     // RFC 9293: "connection reset" signal.
-                    ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
+                    ctx.fireExceptionCaught(new ConnectionResetException());
 
                     // RFC 9293: Enter the CLOSED state, delete the TCB
                     changeState(ctx, CLOSED);
@@ -2578,13 +2568,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: For any state if the user timeout expires,
         LOG.trace("{} USER TIMEOUT expired after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
-        tcb.sendBuffer().fail(CONNECTION_USER_TIMEOUT_EXCEPTION);
+        final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(config.userTimeout());
+        tcb.sendBuffer().fail(e);
         tcb.retransmissionQueue().release();
         tcb.receiveBuffer().release();
 
         // RFC 9293: signal the user "error: connection aborted due to user timeout" in
         // RFC 9293: general and for any outstanding calls,
-        ctx.fireExceptionCaught(CONNECTION_USER_TIMEOUT_EXCEPTION);
+        ctx.fireExceptionCaught(e);
 
         // RFC 9293: delete the TCB,
         deleteTcb();

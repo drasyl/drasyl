@@ -29,7 +29,6 @@ import io.netty.channel.CoalescingBufferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.connection.ConnectionHandler.CONNECTION_CLOSING_ERROR;
 
 /**
  * Represents the send buffer that holds outgoing segments waiting to be sent over a connection.
@@ -130,7 +129,7 @@ public class SendBuffer {
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void release() {
-        fail(CONNECTION_CLOSING_ERROR);
+        fail(new ConnectionClosingException());
     }
 
     public void fail(final ConnectionException e) {
