@@ -1609,7 +1609,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     if (!config.activeOpen()) {
                         // RFC 9293: If the connection was initiated with a passive OPEN, then
                         // RFC 9293: return this connection to the LISTEN state and return.
-                        LOG.trace("{} We got an additional `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), seg);
+                        LOG.trace("{} We got an additional SYN `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), seg);
                         changeState(ctx, LISTEN);
                         return;
                     }
