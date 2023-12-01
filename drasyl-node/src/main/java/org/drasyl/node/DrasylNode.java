@@ -421,7 +421,7 @@ public abstract class DrasylNode {
      * operation have been started.
      */
     @NonNull
-    @SuppressWarnings("java:S1905")
+    @SuppressWarnings({ "java:S1905", "java:S2142" })
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
 
@@ -435,7 +435,7 @@ public abstract class DrasylNode {
                     offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
                 }
 
-                if (offset > 60_000) {
+                if (offset != null && offset > 60_000) {
                     LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
                 }
             }
