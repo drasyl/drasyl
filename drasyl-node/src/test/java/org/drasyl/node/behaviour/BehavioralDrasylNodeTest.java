@@ -33,6 +33,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.SocketAddress;
+import java.util.List;
+
 import static org.drasyl.node.behaviour.Behavior.SAME;
 import static org.drasyl.node.behaviour.Behavior.SHUTDOWN;
 import static org.drasyl.node.behaviour.Behavior.UNHANDLED;
@@ -53,6 +56,8 @@ class BehavioralDrasylNodeTest {
     private ChannelFuture channelFuture;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Channel channel;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private List<SocketAddress> ntpServers;
     @Mock
     private Behavior behavior;
 
@@ -62,7 +67,7 @@ class BehavioralDrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            node = spy(new BehavioralDrasylNode(identity, bootstrap, channelFuture, channel, behavior) {
+            node = spy(new BehavioralDrasylNode(identity, bootstrap, channelFuture, channel, behavior, ntpServers) {
                 @Override
                 protected Behavior created() {
                     return null;

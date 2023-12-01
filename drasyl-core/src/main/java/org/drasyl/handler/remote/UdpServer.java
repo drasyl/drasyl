@@ -205,6 +205,7 @@ public class UdpServer extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             if (channel.isWritable()) {
+                LOG.trace("Write Datagram {}", msg);
                 channel.write(msg).addListener(new PromiseNotifier<>(promise));
             }
             else {

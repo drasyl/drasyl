@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyPair;
+import org.drasyl.util.ImmutableByteArray;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -267,7 +268,7 @@ class CryptoTest {
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
             when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getTx()).thenReturn(ImmutableByteArray.of(new byte[]{ 1, 2, 3 }));
 
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
@@ -277,7 +278,7 @@ class CryptoTest {
             crypto.encrypt(message, new byte[0], nonce, sessionPair);
 
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfEncrypt(
-                    message, new byte[0], nonce.toByteArray(), sessionPair.getTx());
+                    message, new byte[0], nonce.toByteArray(), sessionPair.getTx().getArray());
         }
 
         @Test
@@ -285,7 +286,7 @@ class CryptoTest {
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
             when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getTx()).thenReturn(ImmutableByteArray.of(new byte[]{ 1, 2, 3 }));
 
             final Crypto crypto = new Crypto(sodium);
             final byte[] message = new byte[0];
@@ -303,8 +304,8 @@ class CryptoTest {
                            @Mock final Nonce nonce,
                            @Mock final SessionPair sessionPair) throws CryptoException {
             when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-            when(sessionPair.getRx()).thenReturn(new byte[]{ 1, 2, 3 });
-            when(sessionPair.getTx()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getRx()).thenReturn(ImmutableByteArray.of(new byte[]{ 1, 2, 3 }));
+            when(sessionPair.getTx()).thenReturn(ImmutableByteArray.of(new byte[]{ 1, 2, 3 }));
 
             final Crypto crypto = new Crypto(sodium);
             final byte[] cipher = new byte[16];
@@ -316,7 +317,7 @@ class CryptoTest {
             verify(sodium).cryptoAeadXChaCha20Poly1305IetfDecrypt(
                     cipher,
                     new byte[0],
-                    nonce.toByteArray(), sessionPair.getTx());
+                    nonce.toByteArray(), sessionPair.getTx().getArray());
         }
 
         @Test
@@ -324,7 +325,7 @@ class CryptoTest {
                                          @Mock final Nonce nonce,
                                          @Mock final SessionPair sessionPair) {
             when(nonce.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-            when(sessionPair.getRx()).thenReturn(new byte[]{ 1, 2, 3 });
+            when(sessionPair.getRx()).thenReturn(ImmutableByteArray.of(new byte[]{ 1, 2, 3 }));
 
             final Crypto crypto = new Crypto(sodium);
             final byte[] cipher = new byte[16];

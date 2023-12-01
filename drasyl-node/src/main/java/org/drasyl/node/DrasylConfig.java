@@ -43,6 +43,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -50,6 +51,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -118,6 +120,7 @@ public abstract class DrasylConfig {
     public static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     public static final String CHANNEL_INACTIVITY_TIMEOUT = "drasyl.channel.inactivity-timeout";
     public static final String PLUGINS = "drasyl.plugins";
+    public static final String SNTP_SERVER = "drasyl.sntp-server";
     public static final String SERIALIZATION_SERIALIZERS = "drasyl.serialization.serializers";
     public static final String SERIALIZATION_BINDINGS_INBOUND = "drasyl.serialization.bindings.inbound";
     public static final String SERIALIZATION_BINDINGS_OUTBOUND = "drasyl.serialization.bindings.outbound";
@@ -206,6 +209,9 @@ public abstract class DrasylConfig {
 
             // plugins
             builder.plugins(Set.copyOf(getPlugins(config, PLUGINS)));
+
+            // sntp server
+            builder.sntpServers(getInetSocketAddressList(config, SNTP_SERVER));
 
             // serialization
             builder.serializationSerializers(Map.copyOf(getSerializationSerializers(config, SERIALIZATION_SERIALIZERS)));
@@ -571,6 +577,28 @@ public abstract class DrasylConfig {
     /**
      * @throws DrasylConfigException if value at path is invalid
      */
+    public static List<InetSocketAddress> getInetSocketAddressList(final Config config,
+                                                                   final String path) {
+        try {
+            final List<InetSocketAddress> addresses = new ArrayList<>();
+            for (final ConfigValue value : config.getList(path)) {
+                final InetSocketAddress address = socketAddressFromString(value.atKey("address").getString("address"));
+                if (address.getPort() < 1) {
+                    throw new IllegalArgumentException("port missing");
+                }
+                addresses.add(address);
+            }
+
+            return addresses;
+        }
+        catch (final IllegalArgumentException | ConfigException e) {
+            throw new DrasylConfigException(path, e);
+        }
+    }
+
+    /**
+     * @throws DrasylConfigException if value at path is invalid
+     */
     public static Map<DrasylAddress, InetSocketAddress> getStaticRoutes(final Config config,
                                                                         final String path) {
         try {
@@ -782,6 +810,8 @@ public abstract class DrasylConfig {
 
     public abstract boolean isIntraVmDiscoveryEnabled();
 
+    public abstract List<SocketAddress> getSntpServers();
+
     public abstract Set<DrasylPlugin> getPlugins();
 
     public abstract Map<String, Serializer> getSerializationSerializers();
@@ -894,6 +924,8 @@ public abstract class DrasylConfig {
         public abstract Builder remoteTcpFallbackClientAddress(final InetSocketAddress remoteTcpFallbackClientAddress);
 
         public abstract Builder plugins(final Set<DrasylPlugin> plugins);
+
+        public abstract Builder sntpServers(final List<InetSocketAddress> sntpServers);
 
         public abstract Builder serializationSerializers(final Map<String, Serializer> serializationSerializers);
 

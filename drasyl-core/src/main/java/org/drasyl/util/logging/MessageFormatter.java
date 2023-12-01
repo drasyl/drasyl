@@ -116,8 +116,8 @@ import java.util.Set;
  * significant in the larger context of the complete logging processing chain.
  * <p/>
  * <p/>
- * See also {@link #format(String, Object)}, {@link #format(String, Object, Object)} and {@link
- * #arrayFormat(String, Object[])} methods for more details.
+ * See also {@link #format(String, Object)}, {@link #format(String, Object, Object)} and
+ * {@link #arrayFormat(String, Object[])} methods for more details.
  */
 final class MessageFormatter {
     private static final String DELIM_STR = "{}";
@@ -171,8 +171,29 @@ final class MessageFormatter {
     }
 
     /**
-     * Same principle as the {@link #format(String, Object)} and {@link #format(String, Object,
-     * Object)} methods except that any number of arguments can be passed in an array.
+     * Performs a two argument substitution for the 'messagePattern' passed as parameter.
+     * <p/>
+     * For example,
+     * <p/>
+     * <pre>
+     * MessageFormatter.format(&quot;Hi {}. My name is {}.&quot;, &quot;Alice&quot;, &quot;Bob&quot;);
+     * </pre>
+     * <p/>
+     * will return the string "Hi Alice. My name is Bob.".
+     *
+     * @param messagePattern The message pattern which will be parsed and formatted
+     * @param args           The arguments to be substituted in place of the formatting anchor
+     * @return The formatted message
+     */
+    static FormattingTuple format(final String messagePattern,
+                                  final Object... args) {
+        return arrayFormat(messagePattern, args);
+    }
+
+    /**
+     * Same principle as the {@link #format(String, Object)} and
+     * {@link #format(String, Object, Object)} methods except that any number of arguments can be
+     * passed in an array.
      *
      * @param messagePattern The message pattern which will be parsed and formatted
      * @param argArray       An array of arguments to be substituted in place of formatting anchors

@@ -62,6 +62,98 @@ public class Slf4JLogger extends AbstractLogger {
     }
 
     @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        logger.trace(format, arg1, arg2, arg3);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        logger.trace(format, arg1, arg2, arg3, arg4);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+    }
+
+    @Override
+    public void trace(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        logger.trace(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+    }
+
+    @Override
     public void trace(final String format, final Object... arguments) {
         logger.trace(format, arguments);
     }
@@ -89,6 +181,98 @@ public class Slf4JLogger extends AbstractLogger {
     @Override
     public void debug(final String format, final Object arg1, final Object arg2) {
         logger.debug(format, arg1, arg2);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        logger.debug(format, arg1, arg2, arg3);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        logger.debug(format, arg1, arg2, arg3, arg4);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+    }
+
+    @Override
+    public void debug(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        logger.debug(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
     }
 
     @Override
@@ -122,6 +306,95 @@ public class Slf4JLogger extends AbstractLogger {
     }
 
     @Override
+    public void info(final String format, final Object arg1, final Object arg2, final Object arg3) {
+        logger.info(format, arg1, arg2, arg3);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4) {
+        logger.info(format, arg1, arg2, arg3, arg4);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+    }
+
+    @Override
+    public void info(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9,
+                     final Object arg10) {
+        logger.info(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+    }
+
+    @Override
     public void info(final String format, final Object... arguments) {
         logger.info(format, arguments);
     }
@@ -152,6 +425,95 @@ public class Slf4JLogger extends AbstractLogger {
     }
 
     @Override
+    public void warn(final String format, final Object arg1, final Object arg2, final Object arg3) {
+        logger.warn(format, arg1, arg2, arg3);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4) {
+        logger.warn(format, arg1, arg2, arg3, arg4);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+    }
+
+    @Override
+    public void warn(final String format,
+                     final Object arg1,
+                     final Object arg2,
+                     final Object arg3,
+                     final Object arg4,
+                     final Object arg5,
+                     final Object arg6,
+                     final Object arg7,
+                     final Object arg8,
+                     final Object arg9,
+                     final Object arg10) {
+        logger.warn(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+    }
+
+    @Override
     public void warn(final String format, final Object... arguments) {
         logger.warn(format, arguments);
     }
@@ -179,6 +541,98 @@ public class Slf4JLogger extends AbstractLogger {
     @Override
     public void error(final String format, final Object arg1, final Object arg2) {
         logger.error(format, arg1, arg2);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3) {
+        logger.error(format, arg1, arg2, arg3);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4) {
+        logger.error(format, arg1, arg2, arg3, arg4);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5, arg6);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+    }
+
+    @Override
+    public void error(final String format,
+                      final Object arg1,
+                      final Object arg2,
+                      final Object arg3,
+                      final Object arg4,
+                      final Object arg5,
+                      final Object arg6,
+                      final Object arg7,
+                      final Object arg8,
+                      final Object arg9,
+                      final Object arg10) {
+        logger.error(format, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
     }
 
     @Override

@@ -187,7 +187,7 @@ public class UdpBroadcastServer extends ChannelInboundHandlerAdapter {
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.info("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> BROADCAST_BIND_HOST, BROADCAST_ADDRESS::getPort, future.cause()::getMessage);
+                LOG.warn("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port. Therefore, local eager detection of other drasyl nodes running in the same network is not possible. However, these nodes can still be detected using super nodes.", () -> BROADCAST_BIND_HOST, BROADCAST_ADDRESS::getPort, future.cause()::getMessage);
                 ctx.fireChannelActive();
             }
         }

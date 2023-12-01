@@ -173,7 +173,7 @@ class ConnectionHandlerTest {
                 channel.close();
             }
 
-            // TCP Peer A
+            // TCP Peer B
             @Test
             void shouldConformWithBehaviorOfPeerB() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
@@ -209,6 +209,35 @@ class ConnectionHandlerTest {
                 assertTrue(channel.isOpen());
                 channel.close();
                 data.release();
+            }
+
+            // TCP Peer B
+            @Test
+            void shouldRemainInListenStateWhenRetransmittedSynIsReceived() {
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
+                        .issSupplier(() -> 300)
+                        .activeOpen(false)
+                        .build();
+                final ConnectionHandler handler = new ConnectionHandler(config);
+                final EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+                // handlerAdded on active channel should change state to LISTEN
+                assertEquals(LISTEN, handler.state);
+
+                // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
+                channel.writeInbound(new Segment(100, SYN, 64_000));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(300), ack(101)));
+                assertEquals(SYN_RECEIVED, handler.state);
+
+                assertEquals(300, handler.tcb.sndUna());
+                assertEquals(301, handler.tcb.sndNxt());
+                assertEquals(101, handler.tcb.rcvNxt());
+
+                // peer retansmits SYN
+                channel.writeInbound(new Segment(100, SYN, 64_000));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(301), ack(101)));
+                assertEquals(SYN_RECEIVED, handler.state);
+
             }
         }
 
@@ -3272,23 +3301,23 @@ class ConnectionHandlerTest {
 
                 // ACK 1st SEG -> increase cwnd
                 channel.writeInbound(new Segment(300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 316, tcb.cwnd());
+                assertEquals(5_000 + 306, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
                 channel.writeInbound(new Segment(300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 316 + 297, tcb.cwnd());
+                assertEquals(5_000 + 306 + 288, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
                 channel.writeInbound(new Segment(300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 316 + 297 + 282, tcb.cwnd());
+                assertEquals(5_000 + 306 + 288 + 274, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
                 channel.writeInbound(new Segment(300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 316 + 297 + 282 + 268, tcb.cwnd());
+                assertEquals(5_000 + 306 + 288 + 274 + 261, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
                 channel.writeInbound(new Segment(300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 316 + 297 + 282 + 268 + 256, tcb.cwnd());
+                assertEquals(5_000 + 306 + 288 + 274 + 261 + 250, tcb.cwnd());
             }
         }
     }

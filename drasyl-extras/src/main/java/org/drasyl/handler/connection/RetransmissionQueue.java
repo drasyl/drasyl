@@ -68,8 +68,7 @@ public class RetransmissionQueue {
         // RFC 9293: changed to the new one.
         final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
         if (tcb.config().userTimeout().toMillis() > 0) {
-            handler.cancelUserTimer(ctx);
-            handler.startUserTimer(ctx);
+            handler.restartUserTimer(ctx);
         }
 
         // RFC 6298: (5.1) Every time a packet containing data is sent (including a retransmission),

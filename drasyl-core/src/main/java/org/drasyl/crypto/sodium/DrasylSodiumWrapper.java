@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@ package org.drasyl.crypto.sodium;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -117,7 +118,7 @@ public class DrasylSodiumWrapper {
             throw new CryptoException("Failed creating server session keys.");
         }
 
-        return SessionPair.of(rx, tx);
+        return SessionPair.of(ImmutableByteArray.of(rx), ImmutableByteArray.of(tx));
     }
 
     /**
@@ -139,7 +140,7 @@ public class DrasylSodiumWrapper {
             throw new CryptoException("Failed creating client session keys.");
         }
 
-        return SessionPair.of(rx, tx);
+        return SessionPair.of(ImmutableByteArray.of(rx), ImmutableByteArray.of(tx));
     }
 
     /**

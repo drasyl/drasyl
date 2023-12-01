@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.identity.Identity;
+import org.drasyl.util.ImmutableByteArray;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +64,7 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
             final ByteBuf payload = Unpooled.buffer();
-            SerializedPayload.of(String.class.getName(), "Hallo Welt".getBytes(UTF_8)).writeTo(payload);
+            SerializedPayload.of(String.class.getName(), ImmutableByteArray.of("Hallo Welt".getBytes(UTF_8))).writeTo(payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -80,7 +81,7 @@ class MessageSerializerTest {
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Serialization outboundSerialization) throws IOException {
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
             final ByteBuf payload = Unpooled.buffer();
-            SerializedPayload.of(null, new byte[]{}).writeTo(payload);
+            SerializedPayload.of(null, ImmutableByteArray.of(new byte[]{})).writeTo(payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -99,7 +100,7 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
             final ByteBuf payload = Unpooled.buffer();
-            SerializedPayload.of(String.class.getName(), "Hallo Welt".getBytes(UTF_8)).writeTo(payload);
+            SerializedPayload.of(String.class.getName(), ImmutableByteArray.of("Hallo Welt".getBytes(UTF_8))).writeTo(payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);
@@ -118,7 +119,7 @@ class MessageSerializerTest {
 
             final MessageSerializer handler = new MessageSerializer(inboundSerialization, outboundSerialization);
             final ByteBuf payload = Unpooled.buffer();
-            SerializedPayload.of(String.class.getName(), "Hallo Welt".getBytes(UTF_8)).writeTo(payload);
+            SerializedPayload.of(String.class.getName(), ImmutableByteArray.of("Hallo Welt".getBytes(UTF_8))).writeTo(payload);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(payload);

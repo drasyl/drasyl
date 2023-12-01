@@ -233,7 +233,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
                     else {
                         // join failed
                         //noinspection unchecked
-                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture::cause);
+                        LOG.warn("Unable to join multicast group `{}` at network interface `{}`. Therefore, local eager detection of other drasyl nodes running in the same network is not possible. However, these nodes can still be detected using super nodes:", () -> MULTICAST_ADDRESS, MULTICAST_INTERFACE::getName, multicastFuture::cause);
                     }
                     ctx.fireChannelActive();
                 });
@@ -241,7 +241,7 @@ public class UdpMulticastServer extends ChannelInboundHandlerAdapter {
             else {
                 // server start failed
                 //noinspection unchecked
-                LOG.info("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, future.cause()::getMessage);
+                LOG.warn("Unable to bind server to address udp://{}:{}. This can be caused by another drasyl node running in a different JVM or another application is bind to that port. Therefore, local eager detection of other drasyl nodes running in the same network is not possible. However, these nodes can still be detected using super nodes.", () -> MULTICAST_BIND_HOST, MULTICAST_ADDRESS::getPort, future.cause()::getMessage);
                 ctx.fireChannelActive();
             }
         }

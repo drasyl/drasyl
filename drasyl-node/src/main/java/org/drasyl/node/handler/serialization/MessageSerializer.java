@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.EncoderException;
 import io.netty.handler.codec.MessageToMessageCodec;
 import org.drasyl.node.DrasylConfig;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -84,7 +85,8 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
         if (serializer != null) {
             final ByteBuf bytes = ctx.alloc().buffer();
             try {
-                SerializedPayload.of(type, serializer.toByteArray(o))
+                final byte[] payload = serializer.toByteArray(o);
+                SerializedPayload.of(type, ImmutableByteArray.of(payload))
                         .writeTo(bytes);
 
                 out.add(bytes);
@@ -108,7 +110,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
             final SerializedPayload serializedPayload = SerializedPayload.of(bytes);
 
             final String type = serializedPayload.getType();
-            final byte[] payload = serializedPayload.getPayload();
+            final byte[] payload = serializedPayload.getPayload().getArray();
             final Serializer serializer = inboundSerialization.findSerializerFor(type);
 
             if (serializer != null) {

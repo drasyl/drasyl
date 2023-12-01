@@ -44,7 +44,7 @@ class CliTest {
                                                              @Mock final Consumer<Integer> exitSupplier,
                                                              @Mock final CommandLine commandLine) {
             when(commandLineSupplier.apply(any())).thenReturn(commandLine);
-            when(commandLine.execute(any())).thenReturn(123);
+            when(commandLine.execute(any(String[].class))).thenReturn(123);
 
             final Cli cli = new Cli(commandLineSupplier, exitSupplier);
 

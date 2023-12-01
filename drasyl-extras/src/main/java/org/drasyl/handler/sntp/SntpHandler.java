@@ -19,38 +19,41 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.remote;
+package org.drasyl.handler.sntp;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.util.internal.UnstableApi;
+import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
- */
-@UnstableApi
-public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
-    private final ChannelHandlerContext drasylCtx;
+public class SntpHandler extends SimpleChannelInboundHandler<SntpMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(SntpHandler.class);
+    private final CompletableFuture<Long> result;
+    private long requestTime;
+    private final AtomicLong responseTime;
 
-    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public SntpHandler(final CompletableFuture<Long> result, final AtomicLong responseTime) {
+        this.result = result;
+        this.responseTime = responseTime;
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        LOG.trace("Read Datagram {}", msg);
-        drasylCtx.fireChannelRead(msg);
+    public void channelActive(final ChannelHandlerContext ctx) {
+        // Send NTP request to the first server in list
+        requestTime = System.currentTimeMillis();
+
+        ctx.writeAndFlush(SntpMessage.of(requestTime));
     }
 
     @Override
-    public void channelReadComplete(final ChannelHandlerContext ctx) {
-        drasylCtx.fireChannelReadComplete();
-        ctx.fireChannelReadComplete();
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final SntpMessage msg) throws Exception {
+        final long clockOffset = ((requestTime - SntpMessage.toJavaTime(msg.getOriginateTimestamp())) + (SntpMessage.toJavaTime(msg.getTransmitTimestamp()) - responseTime.get())) / 2;
+
+        this.result.complete(clockOffset);
+        ctx.channel().close();
     }
 }

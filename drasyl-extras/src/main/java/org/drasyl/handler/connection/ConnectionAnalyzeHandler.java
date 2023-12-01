@@ -43,6 +43,12 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
+/**
+ * This handler is used to analyze the behavior of a connection managed by
+ * {@link ConnectionHandler}. Once added to the channel, this handler search for the
+ * {@link ConnectionHandler} in the pipeline and will then periodically write the status of the
+ * {@link TransmissionControlBlock} to a CSV file.
+ */
 public class ConnectionAnalyzeHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionAnalyzeHandler.class);
     private final long interval;

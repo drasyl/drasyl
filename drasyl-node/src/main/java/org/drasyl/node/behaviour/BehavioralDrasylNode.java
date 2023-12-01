@@ -24,15 +24,18 @@ package org.drasyl.node.behaviour;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.behaviour.Behavior.BehaviorBuilder;
 import org.drasyl.node.event.Event;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+
+import java.net.SocketAddress;
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
@@ -71,8 +74,9 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
                                    final ServerBootstrap bootstrap,
                                    final ChannelFuture channelFuture,
                                    final Channel channel,
-                                   final Behavior behavior) {
-        super(identity, bootstrap, channelFuture);
+                                   final Behavior behavior,
+                                   final List<SocketAddress> sntpServers) {
+        super(identity, bootstrap, channelFuture, sntpServers);
         logger = LoggerFactory.getLogger(getClass());
         if (behavior instanceof DeferredBehavior) {
             this.behavior = ((DeferredBehavior) behavior).apply(this);
@@ -85,8 +89,9 @@ public abstract class BehavioralDrasylNode extends DrasylNode {
     @SuppressWarnings("unused")
     protected BehavioralDrasylNode(final Identity identity,
                                    final ServerBootstrap bootstrap,
-                                   final ChannelFuture channelFuture) {
-        super(identity, bootstrap, channelFuture);
+                                   final ChannelFuture channelFuture,
+                                   final List<SocketAddress> sntpServers) {
+        super(identity, bootstrap, channelFuture, sntpServers);
         logger = LoggerFactory.getLogger(getClass());
         behavior = requireNonNull(created(), "initial behavior must not be null");
         if (behavior instanceof DeferredBehavior) {

@@ -21,12 +21,15 @@
  */
 package org.drasyl.util.logging;
 
+import org.drasyl.util.internal.UnstableApi;
+
 /**
  * Provides loggers. If available, <a href="https://www.slf4j.org/">SLF4J</a> loggers are used.
  * Otherwise, <a href="https://java.sun.com/javase/6/docs/technotes/guides/logging/index.html">java.util.logging</a>
  * loggers are used.
  */
 @SuppressWarnings("java:S118")
+@UnstableApi
 public abstract class LoggerFactory {
     private static LoggerFactory defaultFactory;
 
