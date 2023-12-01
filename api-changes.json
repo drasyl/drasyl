@@ -603,6 +603,78 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.stream.ReassembledMessageDecoder",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.util.logging.Logger",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.logging.LoggerFactory",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.ImmutableByteArray",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method byte[] org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "new": "method org.drasyl.util.ImmutableByteArray org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.parameterTypeChanged",
+          "old": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===byte[]===)",
+          "new": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===org.drasyl.util.ImmutableByteArray===)",
+          "parameterIndex": "1",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.externalClassExposedInAPI",
+          "new": "class io.netty.channel.socket.DatagramPacket",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.abstractMethodAdded",
+          "new": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::sntpServers(java.util.List<java.net.InetSocketAddress>)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.abstractMethodAdded",
+          "new": "method java.util.List<java.net.SocketAddress> org.drasyl.node.DrasylConfig::getSntpServers()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
+          "new": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
+          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior)",
+          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior, java.util.List<java.net.SocketAddress>)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

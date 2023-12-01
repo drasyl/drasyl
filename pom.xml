@@ -122,20 +122,20 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.4.8</logback.version>
+        <logback.version>1.4.13</logback.version>
         <junit.version>5.10.0</junit.version>
-        <mockito.version>4.11.0</mockito.version>
-        <jackson.version>2.15.2</jackson.version>
+        <mockito.version>5.6.0</mockito.version>
+        <jackson.version>2.15.3</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.95.Final</netty.version>
+        <netty.version>4.1.100.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>2.0.7</slf4j.version>
-        <typesafe.config.version>1.4.2</typesafe.config.version>
+        <slf4j.version>2.0.9</slf4j.version>
+        <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <json-unit-assertj.version>2.37.0</json-unit-assertj.version>
-        <protobuf.version>3.23.4</protobuf.version>
-        <auto-value.version>1.10.2</auto-value.version>
+        <json-unit-assertj.version>2.38.0</json-unit-assertj.version>
+        <protobuf.version>3.24.4</protobuf.version>
+        <auto-value.version>1.10.4</auto-value.version>
         <jna.version>5.13.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -295,7 +295,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.161</version>
+                <version>4.8.163</version>
             </dependency>
 
             <!-- Crypto -->
@@ -373,7 +373,7 @@
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
-                    <version>3.9.1.2184</version>
+                    <version>3.10.0.2594</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -388,12 +388,12 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.7.3.5</version>
+                    <version>4.7.3.6</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.10</version>
+                    <version>0.8.11</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -403,7 +403,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.5.0</version>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -578,14 +578,14 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.12.1</version>
+                        <version>10.12.4</version>
                     </dependency>
                 </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.1</version>
                 <configuration>
                     <rules>
                         <dependencyConvergence />
@@ -627,7 +627,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.7.3.5</version>
+                <version>4.7.3.6</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
