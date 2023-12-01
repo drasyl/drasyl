@@ -16,6 +16,7 @@ jobs:
 
     name: Java ${{ matrix.java }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4.1.0

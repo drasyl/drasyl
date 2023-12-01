@@ -10,6 +10,7 @@ jobs:
   maven-central:
     name: Deploy to Maven Central
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4.1.0
