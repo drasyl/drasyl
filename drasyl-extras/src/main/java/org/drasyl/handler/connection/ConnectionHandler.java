@@ -2597,10 +2597,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         }
 
         userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
-
-        if (retransmissionTimer != null) {
-            retransmissionTimer.cancel(false);
-        }
     }
 
     void startRetransmissionTimer(final ChannelHandlerContext ctx,
