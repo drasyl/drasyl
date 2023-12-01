@@ -62,6 +62,7 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -428,10 +429,10 @@ public abstract class DrasylNode {
                 final Long offset;
                 // check system time
                 if (sntpServers.isEmpty()) {
-                    offset = SntpClient.getOffset().get();
+                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
                 }
                 else {
-                    offset = SntpClient.getOffset(sntpServers).get();
+                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
                 }
 
                 if (offset > 60_000) {
