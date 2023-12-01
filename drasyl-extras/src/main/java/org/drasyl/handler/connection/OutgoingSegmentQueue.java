@@ -81,8 +81,8 @@ public class OutgoingSegmentQueue {
             // write SEQ to network
             ctx.write(seg, (ChannelPromise) queue.poll()).addListener(new ChannelFutureListener() {
                 @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                    LOG.error("{} future for `{}`: {} ", ctx.channel(), string, future.isSuccess(), future.cause());
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    LOG.trace("{} Written SEG `{}` future: {} ", ctx.channel(), string, future.isSuccess(), future.cause());
                 }
             });
         }

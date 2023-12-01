@@ -2658,10 +2658,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         }
 
         userTimer = ctx.executor().schedule(() -> userTimeout(ctx), config.userTimeout().toMillis(), MILLISECONDS);
-
-        if (retransmissionTimer != null) {
-            retransmissionTimer.cancel(false);
-        }
     }
 
     void startRetransmissionTimer(final ChannelHandlerContext ctx,
@@ -2694,7 +2690,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298:       to this doubling operation.
         final long oldRto = tcb.rto();
         tcb.rto(tcb.rto() * 2);
-        LOG.trace("{} RETRANSMISSION time timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
+        LOG.trace("{} RETRANSMISSION timer timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined

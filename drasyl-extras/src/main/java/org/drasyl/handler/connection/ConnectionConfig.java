@@ -65,7 +65,7 @@ public abstract class ConnectionConfig {
             .noDelay(true)
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
-            .userTimeout(ofSeconds(10))
+            .userTimeout(ofSeconds(60))
             .timestamps(true)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
