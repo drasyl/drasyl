@@ -41,6 +41,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,7 +84,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
+                                   final Object evt) throws IOException {
 
         if (evt instanceof SdoMessageReceived) {
             final DrasylAddress sender = ((SdoMessageReceived) evt).node();

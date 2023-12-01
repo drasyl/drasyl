@@ -33,6 +33,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionConfig.MTU;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
@@ -74,7 +75,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
-    static final int DRASYL_HDR_SIZE = 20 + 8 + 176;
+    static final int DRASYL_HDR_SIZE = 20 + 8 + 176 - 61;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     //
@@ -84,7 +85,7 @@ public class TransmissionControlBlock {
     // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
     // (DRASYL_HDR_SIZE) and our TCP header (31)
-    public static final int DEFAULT_SEND_MSS = 1460 - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
+    public static final int DEFAULT_SEND_MSS = MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;

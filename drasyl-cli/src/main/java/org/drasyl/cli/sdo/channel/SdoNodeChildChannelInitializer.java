@@ -25,12 +25,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.VisualPipeline;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdo.handler.SdoMessageChildHandler;
 import org.drasyl.cli.sdo.handler.policy.TunPolicyHandler.DrasylToTunHandler;
 import org.drasyl.cli.sdo.message.SdoMessage;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -81,7 +83,7 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
         super.initChannel(ch);
 
         p.addLast(new JacksonCodec<>(SdoMessage.class));
-        p.addLast(new TunPacketCodec());
+        p.addBefore(p.context(SegmentCodec.class).name(), null, new TunPacketCodec());
         p.addLast(new DrasylToTunHandler());
         p.addLast(new SdoMessageChildHandler());
     }

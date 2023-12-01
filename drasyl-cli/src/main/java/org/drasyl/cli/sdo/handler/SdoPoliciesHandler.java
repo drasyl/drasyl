@@ -34,6 +34,7 @@ import org.drasyl.cli.sdo.message.NodeHello;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,6 +49,7 @@ import static org.drasyl.handler.codec.JacksonCodec.OBJECT_MAPPER;
 
 public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
     public static final Logger LOG = LoggerFactory.getLogger(SdoPoliciesHandler.class);
+    public static final int NODE_HELLO_INTERVAL = 5000;
     private final IdentityPublicKey controller;
     private final PeersHandler peersHandler;
     private final SdoNodeHandler nodeHandler;
@@ -73,7 +75,7 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
                     if (channel != null) {
                         final PeersList peersList = peersHandler.getPeers().copy();
                         final NodeHello nodeHello = new NodeHello(policies, peersList);
-                        LOG.info("Send feedback to controller: {}", peersList);
+                        LOG.trace("Send feedback to controller: {}", peersList);
                         channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                     else {
@@ -84,7 +86,7 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
                     e.printStackTrace();
                 }
             }
-        }, 1000, 1000, MILLISECONDS);
+        }, RandomUtil.randomInt(0, NODE_HELLO_INTERVAL), NODE_HELLO_INTERVAL, MILLISECONDS);
     }
 
     public void newPolicies(final Set<Policy> newPolicies) {

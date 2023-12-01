@@ -29,6 +29,7 @@ import org.drasyl.cli.util.LuaHashCodes;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.CsvWriter;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
@@ -43,7 +44,13 @@ import org.luaj.vm2.lib.ThreeArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.net.SocketAddress;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -57,6 +64,15 @@ public class LuaNetworkTable extends LuaTable {
     final Set<LuaLinkTable> links = new HashSet<>();
     final SetMultimap<DrasylAddress, LuaLinkTable> nodeLinks = new HashSetMultimap<>();
     private LuaClosure networkListener;
+    final CsvWriter writer;
+
+    {
+        try {
+            writer = new CsvWriter(new File("results/relay-counters.csv"), "time", "relay", "count");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public LuaNetworkTable(final LuaTable params) {
         nodeDefaults.set("default_route", NIL);
@@ -141,7 +157,7 @@ public class LuaNetworkTable extends LuaTable {
         return Objects.hash(nodes, links);
     }
 
-    public boolean notifyListener(final ChannelHandlerContext ctx) {
+    public boolean notifyListener(final ChannelHandlerContext ctx) throws IOException {
         if (networkListener != null) {
             final int before = hashCode();
             networkListener.call(this);
@@ -163,10 +179,31 @@ public class LuaNetworkTable extends LuaTable {
                 }
             }
 
+            logRelays();
+
             return networkChanged;
         }
 
         return false;
+    }
+
+    private void logRelays() throws IOException {
+        final Map<DrasylAddress, Integer> relayCounters = new HashMap<>();
+        for (final LuaNodeTable node : nodes.values()) {
+            if (node.state().isOnline()) {
+                for (final Map.Entry<InetAddress, DrasylAddress> entry : node.tunRoutes().entrySet()) {
+                    relayCounters.putIfAbsent(entry.getValue(), 0);
+                    relayCounters.put(entry.getValue(), relayCounters.get(entry.getValue()) + 1);
+                }
+            }
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS");
+        final String format = now.format(formatter);
+        for (Map.Entry<DrasylAddress, Integer> entry : relayCounters.entrySet()) {
+            writer.write(format, entry.getKey(), entry.getValue());
+        }
     }
 
     class ToStringFunction extends ZeroArgFunction {
