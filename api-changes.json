@@ -675,6 +675,36 @@
           "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior)",
           "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior, java.util.List<java.net.SocketAddress>)",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.DrasylChannel",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.DrasylServerChannel",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.UdpServer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.tcp.TcpClient",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.tcp.TcpServer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
