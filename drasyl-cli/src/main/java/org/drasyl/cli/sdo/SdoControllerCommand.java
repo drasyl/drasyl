@@ -22,13 +22,13 @@
 package org.drasyl.cli.sdo;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdo.channel.SdoControllerChannelInitializer;
 import org.drasyl.cli.sdo.channel.SdoControllerChildChannelInitializer;
 import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -55,7 +55,7 @@ public class SdoControllerCommand extends ChannelOptions {
     private NetworkConfig config;
 
     protected SdoControllerCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
+        super(EventLoopGroupUtil.getBestEventLoopGroup(1), EventLoopGroupUtil.getBestEventLoopGroup());
     }
 
     @Override

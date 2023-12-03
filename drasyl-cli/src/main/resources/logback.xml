@@ -36,8 +36,8 @@
     <logger name="io.netty" level="WARN">
     </logger>
 
-    <logger name="org.drasyl.handler.connection" level="TRACE">
-    </logger>
+<!--    <logger name="org.drasyl.handler.connection" level="TRACE">-->
+<!--    </logger>-->
 
 <!--    <logger name="org.drasyl.channel.DrasylChannel" level="TRACE">-->
 <!--    </logger>-->
@@ -45,14 +45,14 @@
 <!--    <logger name="org.drasyl.handler.path" level="TRACE">-->
 <!--    </logger>-->
 
-    <logger name="org.drasyl.cli.sdo" level="INFO">
-    </logger>
+<!--    <logger name="org.drasyl.cli.sdo" level="INFO">-->
+<!--    </logger>-->
 
-    <logger name="org.drasyl.cli.node.NodeCommand" level="TRACE">
-    </logger>
+<!--    <logger name="org.drasyl.cli.node.NodeCommand" level="TRACE">-->
+<!--    </logger>-->
 
-    <logger name="org.drasyl.handler.remote.internet" level="INFO">
-    </logger>
+<!--    <logger name="org.drasyl.handler.remote.internet" level="TRACE">-->
+<!--    </logger>-->
 
 <!--    <logger name="org.drasyl" level="TRACE">-->
 <!--    </logger>-->

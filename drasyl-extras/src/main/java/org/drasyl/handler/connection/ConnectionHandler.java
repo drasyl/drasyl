@@ -313,11 +313,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         ctx.fireChannelReadComplete();
     }
 
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-        LOG.error("{} Exception caught: ", ctx.channel(), cause);
-        ctx.fireExceptionCaught(cause);
-    }
+//    @Override
+//    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
+//        LOG.error("{} Exception caught: ", ctx.channel(), cause);
+//        ctx.fireExceptionCaught(cause);
+//    }
 
     /*
      * User Calls
@@ -2738,7 +2738,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
             retransmissionTimer = null;
-            LOG.trace("{} RETRANSMISSION timer cancelled. tcb.sendBuffer().length() = {}; tcb.retransmissionQueue().queue.size() = {}; tcb.retransmissionQueue().nextSegment() = {}", ctx.channel(), tcb.sendBuffer().length(), tcb.retransmissionQueue().queue.size(), tcb.retransmissionQueue().nextSegment());
+            LOG.trace("{} RETRANSMISSION timer cancelled.", ctx.channel());
         }
     }
 

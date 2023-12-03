@@ -24,6 +24,7 @@ package org.drasyl.cli.sdo.handler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -37,7 +38,6 @@ import org.drasyl.cli.sdo.message.NodeHello;
 import org.drasyl.cli.sdo.message.SdoMessage;
 import org.drasyl.handler.peers.Peer;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -47,12 +47,14 @@ import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.cli.sdo.handler.SdoControllerHandler.State.INITIALIZED;
 
 public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdoControllerHandler.class);
     private final NetworkConfig config;
     private State state = null;
+    private ScheduledFuture<?> notifyListenerPromise;
 
     public SdoControllerHandler(final NetworkConfig config) {
         this.config = requireNonNull(config);
@@ -103,7 +105,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         channel.closeFuture().addListener((ChannelFutureListener) future -> {
                             networkNode.state().setOffline();
                             LOG.info("`{}` left network.", sender);
-                            network.notifyListener(ctx);
+                            scheduleNotifyListener(ctx);
                         });
 
                         networkNode.state().setOnline();
@@ -116,11 +118,11 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                             }
                         }
                         networkNode.state().setState(((NodeHello) msg).policies(), peers);
-                        if (!network.notifyListener(ctx)) {
-                            final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
-                            LOG.debug("Send {} to {}.", controllerHello, sender);
-                            channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                        }
+                        scheduleNotifyListener(ctx);
+
+                        final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
+                        LOG.debug("Send {} to {}.", controllerHello, sender);
+                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                     else {
                         final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
@@ -130,7 +132,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                             }
                         }
                         networkNode.state().setState(((NodeHello) msg).policies(), peers);
-                        network.notifyListener(ctx);
+                        scheduleNotifyListener(ctx);
                     }
                 }
                 else {
@@ -141,6 +143,27 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
         }
         else {
             ctx.fireUserEventTriggered(evt);
+        }
+    }
+
+    private void scheduleNotifyListener(final ChannelHandlerContext ctx) {
+        if (notifyListenerPromise == null) {
+            notifyListenerPromise = ctx.executor().schedule(() -> {
+                final LuaNetworkTable network = config.network();
+                final long startTime = System.currentTimeMillis();
+                try {
+//                    LOG.error("scheduleNotifyListener start");
+                    network.notifyListener(ctx);
+                }
+                catch (final IOException e) {
+                    ctx.fireExceptionCaught(e);
+                }
+                finally {
+                    final long endTime = System.currentTimeMillis();
+//                    LOG.error("scheduleNotifyListener stop: {}ms", endTime - startTime);
+                    notifyListenerPromise = null;
+                }
+            }, 1000, MILLISECONDS);
         }
     }
 

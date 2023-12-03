@@ -63,6 +63,10 @@ public final class EventLoopGroupUtil {
         return getBestEventLoopGroup(nThreads, null);
     }
 
+    public static EventLoopGroup getBestEventLoopGroup() {
+        return getBestEventLoopGroup(0);
+    }
+
     public static Class<? extends DatagramChannel> getBestDatagramChannel() {
         if (Epoll.isAvailable()) {
             return EpollDatagramChannel.class;

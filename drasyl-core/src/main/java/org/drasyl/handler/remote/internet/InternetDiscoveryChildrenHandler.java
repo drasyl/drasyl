@@ -307,11 +307,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork);
         }
 
-        log().trace("Send Discovery (children = {}) for peer `{}` to `{}`.", () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
+        log().trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`: {}", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
-                log().warn("Unable to send Discovery for peer `{}` to address `{}`:", () -> publicKey, () -> inetAddress, future::cause);
+                log().warn("Unable to send Hello `{}` for peer `{}` to address `{}`:", () -> msg, () -> publicKey, () -> inetAddress, future::cause);
             }
         });
     }
