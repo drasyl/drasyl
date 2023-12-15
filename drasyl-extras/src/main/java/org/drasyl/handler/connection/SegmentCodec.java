@@ -39,13 +39,15 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
  */
 @Sharable
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
-    public static final int CKS_INDEX = 8;
+    public static final int CKS_INDEX = 8 + 4;
+    public static final int MAGIC_NUMBER = 1_232_217_832;
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final Segment seg,
                           final List<Object> out) throws Exception {
-        final ByteBuf buf = ctx.alloc().buffer(SEG_HDR_SIZE + seg.content().readableBytes());
+        final ByteBuf buf = ctx.alloc().buffer(Integer.BYTES + SEG_HDR_SIZE + seg.content().readableBytes());
+        buf.writeInt(MAGIC_NUMBER);
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeShort(0); // checksum placeholder
@@ -67,7 +69,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeBytes(seg.content());
 
         // calculate checksum
-        final int cks = calculateChecksum(buf, 0);
+        final int cks = calculateChecksum(buf, 4);
         buf.setShort(CKS_INDEX, (short) cks);
 
         out.add(buf);
@@ -77,7 +79,14 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= SEG_HDR_SIZE) {
+        if (in.readableBytes() >= Integer.BYTES + SEG_HDR_SIZE) {
+            in.markReaderIndex();
+            if (in.readInt() != MAGIC_NUMBER) {
+                in.resetReaderIndex();
+                ctx.fireChannelRead(in.retain());
+                return;
+            }
+
             final int readerIndex = in.readerIndex();
 
             final long seq = in.readUnsignedInt();

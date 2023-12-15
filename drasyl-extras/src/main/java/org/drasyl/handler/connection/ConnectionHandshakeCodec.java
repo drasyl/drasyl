@@ -25,6 +25,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -34,6 +36,7 @@ import java.util.List;
 @Deprecated
 @Sharable
 public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, ConnectionHandshakeSegment> {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeCodec.class);
     public static final int MAGIC_NUMBER = 852_550_535;
     // Magic Number: 4 bytes
     // SEQ: 4 bytes
@@ -53,6 +56,9 @@ public class ConnectionHandshakeCodec extends MessageToMessageCodec<ByteBuf, Con
         buf.writeByte(seg.ctl());
         buf.writeBytes(seg.content());
         out.add(buf);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Encode `{}` ({}) to `{}` ({})", seg, System.identityHashCode(seg), buf, System.identityHashCode(buf));
+        }
     }
 
     @Override

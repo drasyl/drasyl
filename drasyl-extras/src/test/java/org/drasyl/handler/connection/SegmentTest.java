@@ -31,6 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class SegmentTest {
@@ -99,6 +101,18 @@ class SegmentTest {
         void shouldAdvanceSeqByGivenNumber() {
             assertEquals(6, Segment.advanceSeq(1, 5));
             assertEquals(4, Segment.advanceSeq(MAX_SEQ_NO - 5, 10));
+        }
+    }
+
+    @Nested
+    class MustBeAcked {
+        @Test
+        void name() {
+            final Segment seg = new Segment(100, 0, Segment.ACK);
+            assertFalse(seg.mustBeAcked());
+
+            final Segment seg2 = new Segment(100, 0, Segment.ACK, Unpooled.buffer(4).writeInt(1));
+            assertTrue(seg2.mustBeAcked());
         }
     }
 }

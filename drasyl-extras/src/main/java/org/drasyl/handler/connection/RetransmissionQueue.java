@@ -77,6 +77,9 @@ public class RetransmissionQueue {
         if (handler.retransmissionTimer == null) {
             handler.startRetransmissionTimer(ctx, tcb);
         }
+        else {
+            LOG.trace("{} Do not start RETRANSMISSION timer as it is already running.", ctx.channel());
+        }
 
         if (firstSegmentSentTime == 0) {
             firstSegmentSentTime = tcb.config().clock().time();

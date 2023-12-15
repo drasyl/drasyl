@@ -106,9 +106,9 @@ enum SegmentOption {
      * @see <a href="https://www.rfc-editor.org/rfc/rfc7323.html#section-3">RFC 7323, Section 3.</a>
      */
     static class TimestampsOption {
-        // TS Value (TSval): 8 bytes
+        // TS Value (TSval): 4 bytes
         final long tsVal;
-        // TS Echo Reply (TSecr): 8 bytes
+        // TS Echo Reply (TSecr): 4 bytes
         final long tsEcr;
 
         TimestampsOption(final long tsVal, final long tsEcr) {
