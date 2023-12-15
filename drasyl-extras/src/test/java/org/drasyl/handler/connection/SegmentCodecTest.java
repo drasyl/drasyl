@@ -36,6 +36,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
+import static org.drasyl.handler.connection.SegmentCodec.MAGIC_NUMBER;
 import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(MockitoExtension.class)
 class SegmentCodecTest {
     private final long seq = 1_234_567_890;
+    private final ByteBuf encodedMagicNumber = Unpooled.buffer(Integer.BYTES).writeInt(MAGIC_NUMBER);
     private final ByteBuf encodedSeq = Unpooled.buffer(Integer.BYTES).writeInt((int) seq);
     private final long ack = 987_654_321;
     private final ByteBuf encodedAck = Unpooled.buffer(Integer.BYTES).writeInt((int) ack);
@@ -72,7 +74,8 @@ class SegmentCodecTest {
             channel.writeOutbound(new Segment(seq, ack, ctl, wnd, cks, options, data));
 
             final ByteBuf actual = channel.readOutbound();
-            final ByteBuf expected = Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content.resetReaderIndex());
+            final ByteBuf expected = Unpooled.wrappedBuffer(encodedMagicNumber, encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content.resetReaderIndex());
+
             assertEquals(expected, actual);
 
             expected.release();
@@ -93,7 +96,7 @@ class SegmentCodecTest {
         void shouldDecodeSegment() {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            channel.writeInbound(Unpooled.wrappedBuffer(encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
+            channel.writeInbound(Unpooled.wrappedBuffer(encodedMagicNumber, encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
 
             final Segment actual = channel.readInbound();
             final ByteBuf data = content.retain();
@@ -134,7 +137,7 @@ class SegmentCodecTest {
         void shouldDropSegWithInvalidChecksum() {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
-            channel.writeInbound(Unpooled.wrappedBuffer(Unpooled.buffer(Integer.BYTES).writeInt((int) seq - 1), encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
+            channel.writeInbound(Unpooled.wrappedBuffer(encodedMagicNumber, Unpooled.buffer(Integer.BYTES).writeInt((int) seq - 1), encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
 
             assertNull(channel.readInbound());
         }
