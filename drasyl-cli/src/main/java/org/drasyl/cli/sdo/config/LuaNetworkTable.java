@@ -57,6 +57,20 @@ import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 
 @SuppressWarnings("java:S110")
 public class LuaNetworkTable extends LuaTable {
+    private static final Set<DrasylAddress> RELAYS;
+    static {
+        RELAYS = Set.of(
+            IdentityPublicKey.of("9269fff2b347ab343b6ca09dae8ec49f11b6d26c3116c3dfec907d252dd1ea6d"),
+            IdentityPublicKey.of("841d1fafd67fc753a1c7c7e1350a0ef1567367d41131526e295951f54f27c35d"),
+            IdentityPublicKey.of("daa21ed33a5092d7f8cd138b8ee5ef4765256efeb3b2ad644e1eebac7223e409"),
+            IdentityPublicKey.of("c3216cf1d99714935a62b3542d5baabe8de9c65d81365610b00cdad28f274de5"),
+            IdentityPublicKey.of("7d54a2ec282c4674dd3c4da66e8529f8a248a542a7b6ed1f6e65927de037815a"),
+            IdentityPublicKey.of("1f30e7f00b5bfa43001448f441bc6d196084732d5e7c2790f49f13fac9d64c53"),
+            IdentityPublicKey.of("0eed51a3c3df18a25281f1c69b187b8f1e9c63386f65599fe6d598e463f38f77"),
+            IdentityPublicKey.of("7f7519e67bf24261e6e485918dd564a5541ba25ebdff3f1013f36e67401f5070")
+        );
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(LuaNetworkTable.class);
     final LuaTable nodeDefaults = new LuaTable();
     final LuaTable linkDefaults = new LuaTable();
@@ -68,7 +82,7 @@ public class LuaNetworkTable extends LuaTable {
 
     {
         try {
-            writer = new CsvWriter(new File("results/relay-counters.csv"), "time", "relay", "count");
+            writer = new CsvWriter(new File("results/" + System.getenv("EXPERIMENT_NAME") + "_relays.csv"), "time", "relay", "count");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -174,7 +188,7 @@ public class LuaNetworkTable extends LuaTable {
                     if (node.state().isOnline()) {
                         final ControllerHello controllerHello = new ControllerHello(node.policies());
                         LOG.debug("Send {} to {}.", controllerHello, node.name());
-                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);;
+                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                 }
             }
@@ -190,7 +204,7 @@ public class LuaNetworkTable extends LuaTable {
     private void logRelays() throws IOException {
         final Map<DrasylAddress, Integer> relayCounters = new HashMap<>();
         for (final LuaNodeTable node : nodes.values()) {
-            if (node.state().isOnline()) {
+            if (node.state().isOnline() && !RELAYS.contains(node.name())) {
                 for (final Map.Entry<InetAddress, DrasylAddress> entry : node.tunRoutes().entrySet()) {
                     relayCounters.putIfAbsent(entry.getValue(), 0);
                     relayCounters.put(entry.getValue(), relayCounters.get(entry.getValue()) + 1);

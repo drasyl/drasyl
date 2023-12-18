@@ -62,7 +62,7 @@ public abstract class ConnectionConfig {
             .rmem(65_535 * 10)
             // FIXME: change back to 2 minutes?
             .msl(ofSeconds(2))
-            .noDelay(true)
+            .noDelay(false)
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
             .userTimeout(ofSeconds(60))
