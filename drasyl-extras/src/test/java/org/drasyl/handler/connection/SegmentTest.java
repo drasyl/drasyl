@@ -41,7 +41,7 @@ class SegmentTest {
         @Test
         void shouldReturnLengthOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(100, 0, Segment.ACK, data);
+            final Segment seg = new Segment(0, 0, 100, 0, Segment.ACK, data);
 
             assertEquals(10, seg.len());
 
@@ -50,14 +50,14 @@ class SegmentTest {
 
         @Test
         void shouldCountSyn() {
-            final Segment seg = new Segment(100, Segment.SYN);
+            final Segment seg = new Segment(0, 0, 100, Segment.SYN);
 
             assertEquals(1, seg.len());
         }
 
         @Test
         void shouldCountFin() {
-            final Segment seg = new Segment(100, Segment.FIN);
+            final Segment seg = new Segment(0, 0, 100, Segment.FIN);
 
             assertEquals(1, seg.len());
         }
@@ -68,7 +68,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(100, 0, Segment.ACK, data);
+            final Segment seg = new Segment(0, 0, 100, 0, Segment.ACK, data);
 
             assertEquals(109, seg.lastSeq());
 
@@ -78,7 +78,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegmentDespiteOverflow() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(MAX_SEQ_NO - 9, 0, Segment.ACK, data);
+            final Segment seg = new Segment(0, 0, MAX_SEQ_NO - 9, 0, Segment.ACK, data);
 
             assertEquals(MAX_SEQ_NO, seg.lastSeq());
 
@@ -87,7 +87,7 @@ class SegmentTest {
 
         @Test
         void shouldReturnLastSegmentOfZeroLengthSegment() {
-            final Segment seg = new Segment(100, 0, Segment.ACK);
+            final Segment seg = new Segment(0, 0, 100, 0, Segment.ACK);
 
             assertEquals(100, seg.lastSeq());
 
@@ -108,10 +108,10 @@ class SegmentTest {
     class MustBeAcked {
         @Test
         void name() {
-            final Segment seg = new Segment(100, 0, Segment.ACK);
+            final Segment seg = new Segment(0, 0, 100, 0, Segment.ACK);
             assertFalse(seg.mustBeAcked());
 
-            final Segment seg2 = new Segment(100, 0, Segment.ACK, Unpooled.buffer(4).writeInt(1));
+            final Segment seg2 = new Segment(0, 0, 100, 0, Segment.ACK, Unpooled.buffer(4).writeInt(1));
             assertTrue(seg2.mustBeAcked());
         }
     }

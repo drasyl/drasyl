@@ -2440,7 +2440,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final byte ctl,
                         final ByteBuf data) {
         final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final Segment seg = new Segment(seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
+        final Segment seg = new Segment(0, 0, seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
 
         if ((ctl & SYN) != 0) {
             // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
