@@ -118,4 +118,3 @@ AutoValue_*
 # Jupyter Notebook
 .ipynb_checkpoints
 ConnectionAnalyzeHandler_*.csv
-logs

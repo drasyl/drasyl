@@ -75,13 +75,31 @@ public class SendBuffer {
         pushMark = length();
     }
 
-    public final ByteBuf read(long bytes, final AtomicBoolean doPush, final ChannelPromise promise) {
-        if (pushMark > 0 && bytes > pushMark) {
+    /**
+     * Attempts to retrieve a maximum of {@code bytes} from this buffer. However, there are two
+     * scenarios where fewer bytes than requested may be returned:
+     * <br>
+     * (1) If the buffer doesn't contain as many bytes as requested. In this case, the entire buffer
+     * content is returned.
+     * <br>
+     * (2) If a byte read from the buffer has been marked for immediate delivery to the recipient's
+     * application. This "push" mark is set once the sender invokes {@link Channel#flush()}. This
+     * typically occurs when the sender has finished writing a complete message to the channel.
+     *
+     * @param bytes  bytes to read
+     * @param doPush this {@link AtomicBoolean} is set to {@code true} if a byte that needs to be
+     *               pushed has been read.
+     */
+    public final ByteBuf read(final long bytes,
+                              final AtomicBoolean doPush,
+                              final ChannelPromise promise) {
+        long readableBytes = bytes;
+        if (pushMark > 0 && readableBytes > pushMark) {
             // only read til push mark
-            bytes = pushMark;
+            readableBytes = pushMark;
         }
 
-        final ByteBuf toReturn = queue.remove((int) bytes, promise);
+        final ByteBuf toReturn = queue.remove((int) readableBytes, promise);
 
         if (pushMark > 0) {
             // update push mark

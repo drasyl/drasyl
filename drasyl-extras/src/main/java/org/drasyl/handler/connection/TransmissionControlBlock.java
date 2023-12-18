@@ -33,7 +33,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.handler.connection.ConnectionConfig.MTU;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
@@ -75,6 +75,9 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
+    // IPv4/IPv6: 20/40 bytes -> 40 bytes
+    // UDP: 8 bytes
+    // drasyl: 176 bytes
     static final int DRASYL_HDR_SIZE = 20 + 8 + 176 - 61;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
@@ -85,7 +88,7 @@ public class TransmissionControlBlock {
     // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
     // (DRASYL_HDR_SIZE) and our TCP header (31)
-    public static final int DEFAULT_SEND_MSS = MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
+    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -230,7 +233,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.mmsS() * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
+        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -265,30 +268,80 @@ public class TransmissionControlBlock {
         return min(sendMss + SEG_HDR_SIZE, mmsS) - SEG_HDR_SIZE;
     }
 
+    /**
+     * Returns the number of the oldest unacknowledged segment. In other words, it is the sequence
+     * number of the first byte of data that has been sent, but not yet acknowledged by the
+     * receiver.
+     *
+     * @return the number of the oldest unacknowledged segment
+     */
     public long sndUna() {
         return sndUna;
     }
 
+    /**
+     * Returns the sequence number for the next byte of data that is to be sent.
+     *
+     * @return the sequence number for the next byte of data that is to be sent
+     */
     public long sndNxt() {
         return sndNxt;
     }
 
+    /**
+     * Returns the send window. It indicates the amount of free buffer space available at the
+     * receiver's end for incoming data. This value is communicated from the receiver to the sender,
+     * which allows the sender to adjust the data transmission rate accordingly.
+     *
+     * @return the send window
+     */
     public long sndWnd() {
         return sndWnd;
     }
 
+    /**
+     * Returns the initial sequence number. At the start of a new connection, both the peers
+     * randomly generate an initial sequence number, known as the {@link #iss()}, for their
+     * respective send sequences. This sequence number is used as the starting point for the
+     * sequence numbers assigned to the data bytes that are transmitted during the connection.
+     *
+     * @return the initial sequence number
+     */
     public long iss() {
         return iss;
     }
 
+    /**
+     * Returns the sequence number of the next byte that the receiver is expecting to get from the
+     * sender. After a segment is received and its data is successfully delivered to the receiving
+     * application, {@link #rcvNxt()} is incremented by the number of bytes received.
+     *
+     * @return the sequence number of the next byte that the receiver is expecting to get from the
+     * sender
+     */
     public long rcvNxt() {
         return rcvNxt;
     }
 
+    /**
+     * Returns the receive window. It represents the amount of data that the receiver is able to
+     * accept. This variable communicates the size of the available buffer space on the receiving
+     * end back to the sender, which allows the sender to understand how much data can be sent
+     * without overwhelming the receiver. It is updated each time the receiver sends an
+     * acknowledgement back to the sender.
+     *
+     * @return the receive window
+     */
     public long rcvWnd() {
         return rcvWnd;
     }
 
+    /**
+     * Returns the initial receive sequence. This is the {@link #iss()} received from the other
+     * side.
+     *
+     * @return the initial receive sequence.
+     */
     public long irs() {
         return irs;
     }
@@ -481,11 +534,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Path capped (sndWnd()={}, cwnd()={}).", ctx.channel(), sndWnd(), cwnd());
+                        LOG.trace("{} Path capped.", ctx.channel());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Receiver capped (sndWnd()={}, cwnd()={}).", ctx.channel(), sndWnd(), cwnd());
+                        LOG.trace("{} Receiver capped.", ctx.channel());
                     }
                 }
 
@@ -667,9 +720,18 @@ public class TransmissionControlBlock {
         return tsRecent;
     }
 
-    public void sndUna(final ChannelHandlerContext ctx, final long sndUna) {
+    /**
+     * Returns the number of acked segments.
+     *
+     * @param ctx
+     * @param sndUna
+     * @return
+     */
+    public long sndUna(final ChannelHandlerContext ctx, final long sndUna) {
+        final long ackedSegments = sub(sndUna, this.sndUna);
         this.sndUna = sndUna;
         LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
+        return ackedSegments;
     }
 
     public void tsRecent(final long tsRecent) {

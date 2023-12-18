@@ -27,6 +27,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -313,12 +314,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         ctx.fireChannelReadComplete();
     }
 
-//    @Override
-//    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-//        LOG.error("{} Exception caught: ", ctx.channel(), cause);
-//        ctx.fireExceptionCaught(cause);
-//    }
-
     /*
      * User Calls
      */
@@ -427,7 +422,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Return "error: connection already exists".
-                throw CONNECTION_EXISTS_EXCEPTION;
+                throw new ConnectionAlreadyExistsException();
         }
     }
 
@@ -564,7 +559,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case FIN_WAIT_2:
                     // RFC 9293: If insufficient incoming segments are queued to satisfy the
                     // RFC 9293: request, queue the request.
-                    if (!tcb.receiveBuffer().hasReadableBytes()) {
+                    if (!tcb.receiveBuffer().isReadable()) {
                         readPending = true;
                         break;
                     }
@@ -597,7 +592,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: Since the remote side has already sent FIN, RECEIVEs must be
                     // RFC 9293: satisfied by data already on hand, but not yet delivered to the
                     // RFC 9293: user.
-                    if (!tcb.receiveBuffer().hasReadableBytes()) {
+                    if (!tcb.receiveBuffer().isReadable()) {
                         // RFC 9293: If no text is awaiting delivery, the RECEIVE will get an
                         // RFC 9293: "error: connection closing" response.
                         // (not applicable to us)
@@ -796,7 +791,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                tcb.sendBuffer().fail(new ConnectionResetException());
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification.
                 // (not applicable to us)
 
@@ -819,7 +814,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
 
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                tcb.sendBuffer().fail(new ConnectionResetException());
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification;
                 // (not applicable to us)
 
@@ -913,14 +908,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_ISSUED));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
                 break;
 
             case ESTABLISHED:
                 establishedPromise.setSuccess();
                 tcb.writeEnqueuedData(ctx);
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(CONNECTION_HANDSHAKE_COMPLETED));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted()));
                 break;
 
             case CLOSE_WAIT:
@@ -1179,7 +1174,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 LOG.trace("{} SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), seg);
 
                 // RFC 9293: then signal to the user "error: connection reset",
-                ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
+                ctx.fireExceptionCaught(new ConnectionResetException());
 
                 // RFC 9293: drop the segment,
                 // (this is handled by handler's auto release of all arrived segments)
@@ -1456,25 +1451,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         acceptableSeg = (lessThanOrEqualTo(tcb.rcvNxt(), seg.seq()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) ||
                                 (lessThanOrEqualTo(tcb.rcvNxt(), add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(tcb.rcvNxt(), tcb.rcvWnd())));
                     }
-
-                    // HEIKO QUICK FIX?
-//                    if (!acceptableSeg && state == SYN_RECEIVED && lessThan(tcb.sndNxt(), seg.ack())) {
-//                        LOG.error("HEIKO QUICK FIX");
-//                        acceptableSeg = true;
-//                        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
-//                        changeState(ctx, ESTABLISHED);
-//
-//                        // RFC 9293: and continue processing with the variables below set to:
-//                        // RFC 9293: SND.WND <- SEG.WND
-//                        tcb.sndWnd(seg.wnd());
-//                        // RFC 9293: SND.WL1 <- SEG.SEQ
-//                        tcb.sndWl1(seg.seq());
-//                        // RFC 9293: SND.WL2 <- SEG.ACK
-//                        tcb.sndWl2(seg.ack());
-//
-//                        establishedStateProcessing(ctx, seg);
-//                        return;
-//                    }
                 }
 
                 // RFC 9293: In implementing sequence number validation as described here, please
@@ -1588,7 +1564,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: came from SYN-SENT state), then the connection was refused;
                         // RFC 9293: signal the user "connection refused".
                         LOG.trace("{} We got `{}`. Connection has been refused by remote peer.", ctx.channel(), seg);
-                        ctx.fireExceptionCaught(CONNECTION_REFUSED_EXCEPTION);
+                        ctx.fireExceptionCaught(new ConnectionRefusedException());
                     }
 
                     // RFC 9293: In either case, the retransmission queue should be flushed.
@@ -1615,7 +1591,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs
                     // (not applicable to us)
                     // RFC 9293: and SEND should receive "reset" responses.
-                    tcb.sendBuffer().fail(CONNECTION_RESET_EXCEPTION);
+                    tcb.sendBuffer().fail(new ConnectionResetException());
 
                     // RFC 9293: All segment queues should be flushed.
                     tcb.retransmissionQueue().release();
@@ -1624,7 +1600,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                     // RFC 9293: Users should also receive an unsolicited general
                     // RFC 9293: "connection reset" signal.
-                    ctx.fireExceptionCaught(CONNECTION_RESET_EXCEPTION);
+                    ctx.fireExceptionCaught(new ConnectionResetException());
 
                     // RFC 9293: Enter the CLOSED state, delete the TCB
                     changeState(ctx, CLOSED);
@@ -1662,8 +1638,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             switch (state) {
                 case SYN_RECEIVED:
                     if (!config.activeOpen()) {
-                        // FIXME: check for duplicate SYN? Check if we get already the exact same SYN
-
                         // RFC 9293: If the connection was initiated with a passive OPEN, then
                         // RFC 9293: return this connection to the LISTEN state and return.
                         LOG.trace("{} We got an additional SYN `{}`. As this connection was initiated with a passive OPEN return to LISTEN state.", ctx.channel(), seg);
@@ -2064,7 +2038,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: basic TCP
         //  RFC 7323: TCP Timestamps Option and RTTM Mechanism
         //  RFC 5681: congestion control algorithms
-        ///   RFC 3042: limited transmit
+        //   RFC 3042: limited transmit
         //   RFC 6582: NewReno
 
         final boolean isRfc9293Duplicate = lessThanOrEqualTo(seg.ack(), tcb.sndUna());
@@ -2087,9 +2061,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), Segment.sub(seg.ack(), tcb.sndUna()));
-            final long lastAckedSeq = sub(seg.ack(), 1);
-            ackedBytes = sub(lastAckedSeq, tcb.sndUna());
-            tcb.sndUna(ctx, seg.ack());
+            ackedBytes = tcb.sndUna(ctx, seg.ack());
         }
 
         // RFC 7323: Also compute a new estimate of round-trip time.
@@ -2618,15 +2590,16 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         userTimer = null;
 
         // RFC 9293: For any state if the user timeout expires,
-        LOG.trace("{} USER timer timeout after {}ms. Close channel. TCB = {}; retransmissionTimer = {}; tcb.retransmissionQueue().nextSegment() = {}", ctx.channel(), config.userTimeout().toMillis(), tcb, retransmissionTimer, tcb.retransmissionQueue().nextSegment());
+        LOG.trace("{} USER timer timeout after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
-        tcb.sendBuffer().fail(new ConnectionAbortedDueToUserTimeoutException(config.userTimeout()));
+        final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(config.userTimeout());
+        tcb.sendBuffer().fail(e);
         tcb.retransmissionQueue().release();
         tcb.receiveBuffer().release();
 
         // RFC 9293: signal the user "error: connection aborted due to user timeout" in
         // RFC 9293: general and for any outstanding calls,
-        ctx.fireExceptionCaught(new ConnectionAbortedDueToUserTimeoutException(config.userTimeout()));
+        ctx.fireExceptionCaught(e);
 
         // RFC 9293: delete the TCB,
         deleteTcb();
@@ -2734,6 +2707,17 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         }
     }
 
+    private Segment nextSegmentOnRetransmissionQueue(final ChannelHandlerContext ctx,
+                                                     final TransmissionControlBlock tcb) {
+        final Segment seg = tcb.retransmissionQueue().nextSegment();
+        if (seg != null) {
+            final ByteBuf copy = seg.content().copy();
+            ReferenceCountUtil.touch(copy, "retransmissionSegment");
+            return formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
+        }
+        return null;
+    }
+
     void cancelRetransmissionTimer(final ChannelHandlerContext ctx) {
         if (retransmissionTimer != null) {
             retransmissionTimer.cancel(false);
@@ -2819,16 +2803,5 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             zeroWindowProber = null;
             LOG.trace("{} Zero-window probing timer cancelled.", ctx.channel(), state);
         }
-    }
-
-    private Segment nextSegmentOnRetransmissionQueue(final ChannelHandlerContext ctx,
-                                                     final TransmissionControlBlock tcb) {
-        final Segment seg = tcb.retransmissionQueue().nextSegment();
-        if (seg != null) {
-            final ByteBuf copy = seg.content().copy();
-            ReferenceCountUtil.touch(copy, "retransmissionSegment");
-            return formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
-        }
-        return null;
     }
 }

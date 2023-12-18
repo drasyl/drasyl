@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 
@@ -37,10 +36,18 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 /**
  * Encodes {@link ByteBuf}s to {@link Segment}s and vice versa.
  */
-@Sharable
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
-    public static final int CKS_INDEX = 8 + 4;
+    public static final int CKS_INDEX = 16;
     public static final int MAGIC_NUMBER = 1_232_217_832;
+    private final boolean checksumEnabled;
+
+    public SegmentCodec(final boolean checksumEnabled) {
+        this.checksumEnabled = checksumEnabled;
+    }
+
+    public SegmentCodec() {
+        this(true);
+    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -48,6 +55,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                           final List<Object> out) throws Exception {
         final ByteBuf buf = ctx.alloc().buffer(Integer.BYTES + SEG_HDR_SIZE + seg.content().readableBytes());
         buf.writeInt(MAGIC_NUMBER);
+        buf.writeShort((short) seg.srcPort());
+        buf.writeShort((short) seg.dstPort());
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeShort(0); // checksum placeholder
@@ -68,9 +77,11 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         // content
         buf.writeBytes(seg.content());
 
-        // calculate checksum
-        //final int cks = calculateChecksum(buf, 0);
-        //buf.setShort(CKS_INDEX, (short) cks);
+        if (checksumEnabled) {
+            // calculate checksum
+            final int cks = calculateChecksum(buf, 4);
+            buf.setShort(CKS_INDEX, (short) cks);
+        }
 
         out.add(buf);
     }
@@ -89,6 +100,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
 
             final int readerIndex = in.readerIndex();
 
+            final int srcPort = in.readUnsignedShort();
+            final int dstPort = in.readUnsignedShort();
             final long seq = in.readUnsignedInt();
             final long ack = in.readUnsignedInt();
             final int cks = in.readUnsignedShort();
@@ -105,13 +118,15 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 options.put(option, value);
             }
 
-            final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in);
+            final Segment seg = new Segment(srcPort, dstPort, seq, ack, ctl, wnd, cks, options, in);
 
-            // verify checksum
-            //if (calculateChecksum(in, readerIndex) != 0) {
-            //    // wrong checksum, drop segment
-            //    return;
-            //}
+            if (checksumEnabled) {
+                // verify checksum
+                if (calculateChecksum(in, readerIndex) != 0) {
+                    // wrong checksum, drop segment
+                    return;
+                }
+            }
 
             out.add(seg.retain());
         }

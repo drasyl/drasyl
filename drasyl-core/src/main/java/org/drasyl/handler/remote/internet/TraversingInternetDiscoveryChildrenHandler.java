@@ -458,9 +458,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            TraversingPeer that = (TraversingPeer) o;
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final TraversingPeer that = (TraversingPeer) o;
             return Objects.equals(inetAddressCandidates, that.inetAddressCandidates);
         }
 

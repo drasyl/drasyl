@@ -372,56 +372,308 @@
         },
         {
           "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeClosing",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method long org.drasyl.handler.connection.ConnectionHandshakeCompleted::rcvNxt()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method long org.drasyl.handler.connection.ConnectionHandshakeCompleted::sndNxt()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.connection.ConnectionHandshakeEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeException",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeSegment",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.ConnectionHandshakeChannelInitializer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.GoBackNArqAck",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.GoBackNArqCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.GoBackNArqData",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.arq.gobackn.GoBackNArqMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.gobackn.SimpleWindow",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.arq.gobackn.Window",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.stopandwait.StopAndWaitArqAck",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.stopandwait.StopAndWaitArqData",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.arq.stopandwait.StopAndWaitArqHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.arq.stopandwait.StopAndWaitArqMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.ChunkedMessageAggregator",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.ChunkedMessageInput",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.LastMessageChunk",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.MessageChunk",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.MessageChunkDecoder",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.MessageChunkEncoder",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.MessageChunksBuffer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.MessageChunksBufferInputList",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.ReassembledMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.stream.ReassembledMessageDecoder",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.util.logging.Logger",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.logging.LoggerFactory",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.ImmutableByteArray",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method byte[] org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "new": "method org.drasyl.util.ImmutableByteArray org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.parameterTypeChanged",
+          "old": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===byte[]===)",
+          "new": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===org.drasyl.util.ImmutableByteArray===)",
+          "parameterIndex": "1",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
           "code": "java.class.externalClassExposedInAPI",
-          "new": "class io.netty.channel.ChannelInitializer<C extends io.netty.channel.Channel>",
+          "new": "class io.netty.channel.socket.DatagramPacket",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.UdpServer",
+          "code": "java.method.abstractMethodAdded",
+          "new": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::sntpServers(java.util.List<java.net.InetSocketAddress>)",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.NatPmpPortMapping",
+          "code": "java.method.abstractMethodAdded",
+          "new": "method java.util.List<java.net.SocketAddress> org.drasyl.node.DrasylConfig::getSntpServers()",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.PcpPortMapping",
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
+          "new": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.PortMapper",
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
+          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.portmapper.PortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.UpnpIgdPortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.tcp.TcpClient",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.tcp.TcpServer",
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior)",
+          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior, java.util.List<java.net.SocketAddress>)",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
@@ -434,6 +686,24 @@
           "ignore": true,
           "code": "java.class.removed",
           "old": "class org.drasyl.channel.DrasylServerChannel",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.UdpServer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.tcp.TcpClient",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.tcp.TcpServer",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]

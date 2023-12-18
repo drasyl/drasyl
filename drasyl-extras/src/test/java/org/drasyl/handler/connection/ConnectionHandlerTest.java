@@ -51,10 +51,12 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.PSH;
 import static org.drasyl.handler.connection.Segment.RST;
+import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.handler.connection.SegmentMatchers.ack;
 import static org.drasyl.handler.connection.SegmentMatchers.ctl;
@@ -76,6 +78,7 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -142,14 +145,15 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .rmem(5_000)
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_231)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -157,7 +161,7 @@ class ConnectionHandlerTest {
                 assertEquals(0, handler.tcb.rcvNxt());
 
                 // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
-                channel.writeInbound(new Segment(300, 101, (byte) (SYN | ACK), 64_000));
+                channel.writeInbound(new Segment(0, 0, 300, 101, (byte) (SYN | ACK), 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301), win(5_000)));
                 assertEquals(ESTABLISHED, handler.state);
 
@@ -183,7 +187,7 @@ class ConnectionHandlerTest {
                 assertEquals(LISTEN, handler.state);
 
                 // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                channel.writeInbound(new Segment(100, SYN, 64_000));
+                channel.writeInbound(new Segment(0, 0, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(300), ack(101)));
                 assertEquals(SYN_RECEIVED, handler.state);
 
@@ -194,7 +198,7 @@ class ConnectionHandlerTest {
                 // peer ACKed our SYN
                 // we piggyback some data, that should also be processed by the server
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                channel.writeInbound(new Segment(101, 301, (byte) (PSH | ACK), data));
+                channel.writeInbound(new Segment(0, 0, 101, 301, (byte) (PSH | ACK), data));
                 assertEquals(ESTABLISHED, handler.state);
 
                 assertEquals(301, handler.tcb.sndUna());
@@ -207,8 +211,9 @@ class ConnectionHandlerTest {
                 data.release();
             }
 
+            // TCP Peer B
             @Test
-            void shouldConformWithBehaviorOfPeerB_retransmittedSyn() {
+            void shouldRemainInListenStateWhenRetransmittedSynIsReceived() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 300)
                         .activeOpen(false)
@@ -220,7 +225,7 @@ class ConnectionHandlerTest {
                 assertEquals(LISTEN, handler.state);
 
                 // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
-                channel.writeInbound(new Segment(100, SYN, 64_000));
+                channel.writeInbound(new Segment(0, 0, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(300), ack(101)));
                 assertEquals(SYN_RECEIVED, handler.state);
 
@@ -228,8 +233,8 @@ class ConnectionHandlerTest {
                 assertEquals(301, handler.tcb.sndNxt());
                 assertEquals(101, handler.tcb.rcvNxt());
 
-                // peer sendet selbes SYN again (retransmission, sollte B als solches erkennen)
-                channel.writeInbound(new Segment(100, SYN, 64_000));
+                // peer retansmits SYN
+                channel.writeInbound(new Segment(0, 0, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(301), ack(101)));
                 assertEquals(SYN_RECEIVED, handler.state);
 
@@ -260,15 +265,15 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerA() {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .rmem(5_000)
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config);
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
-                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(1_241)));
+                assertThat(channel.readOutbound(), allOf(ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
                 assertEquals(SYN_SENT, handler.state);
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -276,7 +281,7 @@ class ConnectionHandlerTest {
                 assertEquals(0, handler.tcb.rcvNxt());
 
                 // peer SYNchronizes his SEG before our SYN has been received
-                channel.writeInbound(new Segment(300, SYN, 64_000));
+                channel.writeInbound(new Segment(0, 0, 300, SYN, 64_000));
                 assertEquals(SYN_RECEIVED, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(100), ack(301), win(5_000)));
 
@@ -285,7 +290,7 @@ class ConnectionHandlerTest {
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 // peer respond to our SYN with ACK (and another SYN)
-                channel.writeInbound(new Segment(301, 101, (byte) (SYN | ACK), 64_000));
+                channel.writeInbound(new Segment(0, 0, 301, 101, (byte) (SYN | ACK), 64_000));
                 assertEquals(ESTABLISHED, handler.state);
 
                 assertEquals(101, handler.tcb.sndUna());
@@ -338,7 +343,7 @@ class ConnectionHandlerTest {
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     // as we got an ACK for an unexpected seq, reset the peer
-                    channel.writeInbound(new Segment(300, 100, ACK));
+                    channel.writeInbound(new Segment(0, 0, 300, 100, ACK));
                     assertThat(channel.readOutbound(), allOf(ctl(RST), seq(100)));
                     assertEquals(SYN_SENT, handler.state);
 
@@ -367,7 +372,7 @@ class ConnectionHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     // other wants to SYNchronize with us, ACK with our expected seq
-                    channel.writeInbound(new Segment(400, SYN, 64_000));
+                    channel.writeInbound(new Segment(0, 0, 400, SYN, 64_000));
                     assertEquals(ESTABLISHED, handler.state);
                     assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(100)));
 
@@ -376,7 +381,7 @@ class ConnectionHandlerTest {
                     assertEquals(100, handler.tcb.rcvNxt());
 
                     // as we sent an ACK for an unexpected seq, peer will reset us
-                    final Segment msg = new Segment(100, RST);
+                    final Segment msg = new Segment(0, 0, 100, RST);
                     assertThrows(ConnectionResetException.class, () -> channel.writeInbound(msg));
                     assertEquals(CLOSED, handler.state);
                     assertNull(handler.tcb);
@@ -403,7 +408,7 @@ class ConnectionHandlerTest {
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-                    final Segment seg = new Segment(300, 100, ACK, data);
+                    final Segment seg = new Segment(0, 0, 300, 100, ACK, data);
                     channel.writeInbound(seg);
                     assertThat(channel.readOutbound(), allOf(ctl(RST), seq(100)));
 
@@ -434,8 +439,8 @@ class ConnectionHandlerTest {
                     final ConnectionConfig config = ConnectionConfig.newBuilder()
                             .activeOpen(false)
                             .issSupplier(() -> iss)
-                            .mmsS(1_266)
-                            .mmsR(1_266)
+                            .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                            .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
                     final ConnectionHandler handler = new ConnectionHandler(config, LISTEN, new TransmissionControlBlock(config, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
@@ -443,11 +448,11 @@ class ConnectionHandlerTest {
                     // old duplicate ACK arrives at us
                     final long x = 200;
                     final long z = 100;
-                    channel.writeInbound(new Segment(z, SYN));
+                    channel.writeInbound(new Segment(0, 0, z, SYN));
                     assertThat(channel.readOutbound(), allOf(ctl(SYN, ACK), seq(x), ack(z + 1)));
 
                     // returned SYN/ACK causes a RST, we should return to LISTEN
-                    channel.writeInbound(new Segment(z + 1, RST));
+                    channel.writeInbound(new Segment(0, 0, z + 1, RST));
                     assertEquals(LISTEN, handler.state);
 
                     channel.close();
@@ -486,8 +491,8 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .activeOpen(false)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false), null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -504,7 +509,7 @@ class ConnectionHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // my close got ACKed
-                channel.writeInbound(new Segment(300, 101, ACK));
+                channel.writeInbound(new Segment(0, 0, 300, 101, ACK));
                 assertEquals(FIN_WAIT_2, handler.state);
                 assertFalse(future.isDone());
 
@@ -513,7 +518,7 @@ class ConnectionHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // peer now triggers close as well
-                channel.writeInbound(new Segment(300, 101, (byte) (FIN | ACK)));
+                channel.writeInbound(new Segment(0, 0, 300, 101, (byte) (FIN | ACK)));
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301)));
                 assertEquals(TIME_WAIT, handler.state);
                 assertFalse(future.isDone());
@@ -531,8 +536,8 @@ class ConnectionHandlerTest {
             void shouldConformWithBehaviorOfPeerB() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -540,7 +545,7 @@ class ConnectionHandlerTest {
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
 
                 // peer triggers close
-                channel.writeInbound(new Segment(100, 300, (byte) (FIN | ACK)));
+                channel.writeInbound(new Segment(0, 0, 100, 300, (byte) (FIN | ACK)));
 
                 assertEquals(CLOSE_WAIT, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(300), ack(101)));
@@ -559,7 +564,7 @@ class ConnectionHandlerTest {
                 assertEquals(101, handler.tcb.rcvNxt());
 
                 // peer ACKed our close
-                channel.writeInbound(new Segment(101, 301, ACK));
+                channel.writeInbound(new Segment(0, 0, 101, 301, ACK));
 
                 assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
@@ -593,8 +598,8 @@ class ConnectionHandlerTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> 100L)
                         .activeOpen(false)
-                        .mmsS(1_266)
-                        .mmsR(1_266)
+                        .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                        .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
@@ -612,7 +617,7 @@ class ConnectionHandlerTest {
                 assertEquals(300, handler.tcb.rcvNxt());
 
                 // got parallel close
-                channel.writeInbound(new Segment(300, 100, (byte) (FIN | ACK)));
+                channel.writeInbound(new Segment(0, 0, 300, 100, (byte) (FIN | ACK)));
                 assertEquals(CLOSING, handler.state);
                 assertThat(channel.readOutbound(), allOf(ctl(ACK), seq(101), ack(301)));
                 assertFalse(future.isDone());
@@ -621,7 +626,7 @@ class ConnectionHandlerTest {
                 assertEquals(101, handler.tcb.sndNxt());
                 assertEquals(301, handler.tcb.rcvNxt());
 
-                channel.writeInbound(new Segment(301, 101, ACK));
+                channel.writeInbound(new Segment(0, 0, 301, 101, ACK));
                 assertEquals(TIME_WAIT, handler.state);
 
                 await().untilAsserted(() -> {
@@ -700,7 +705,9 @@ class ConnectionHandlerTest {
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .activeOpen(true)
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
 
@@ -723,7 +730,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: Set SND.UNA to ISS, SND.NXT to ISS+1,
                         assertEquals(iss, handler.tcb.sndUna());
@@ -743,7 +750,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ctx.channel(), 456L);
@@ -759,7 +768,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: Send a SYN segment,
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                         assertEquals(iss, handler.tcb.sndUna());
@@ -806,7 +815,9 @@ class ConnectionHandlerTest {
                 void shouldRejectOutboundNonByteBufs() {
                     final EmbeddedChannel channel = new EmbeddedChannel();
                     final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder();
-                    final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                    final ConnectionConfig config = builder
+                            .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                            .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
                     final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
@@ -841,7 +852,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
@@ -858,7 +871,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: Send a SYN segment containing the options: <TSval=Snd.TSclock>.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(1241), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(iss), ctl(SYN), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(currentTime)));
 
                         // RFC 9293: set SND.UNA to ISS, SND.NXT to ISS+1.
                         assertEquals(iss, handler.tcb.sndUna());
@@ -907,7 +920,9 @@ class ConnectionHandlerTest {
                         when(clock.time()).thenReturn(currentTime);
                         final ConnectionConfig.Builder builder = ConnectionConfig.newBuilder()
                                 .issSupplier(() -> iss);
-                        final ConnectionConfig config = builder.mmsS(1_266).mmsR(1_266)
+                        final ConnectionConfig config = builder
+                                .mmsS(IP_MTU - DRASYL_HDR_SIZE)
+                                .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
@@ -998,7 +1013,7 @@ class ConnectionHandlerTest {
                         verify(establishedPromise).addListener(any());
 
                         // this is done by the enqueued call
-                        verify(tcb.receiveBuffer()).hasReadableBytes();
+                        verify(tcb.receiveBuffer()).isReadable();
                     }
                 }
 
@@ -1011,7 +1026,7 @@ class ConnectionHandlerTest {
                             "FIN_WAIT_2"
                     })
                     void shouldPassReceivedDataToUser(final State state) {
-                        when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
+                        when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
@@ -1028,7 +1043,7 @@ class ConnectionHandlerTest {
                 class OnCloseWaitState {
                     @Test
                     void shouldPassReceivedDataToUser() {
-                        when(tcb.receiveBuffer().hasReadableBytes()).thenReturn(true);
+                        when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
@@ -1541,8 +1556,8 @@ class ConnectionHandlerTest {
                         when(config.timestamps()).thenReturn(true);
                         when(config.issSupplier().getAsLong()).thenReturn(39L);
                         when(config.rmem()).thenReturn(64000);
-                        when(config.mmsS()).thenReturn(1_266);
-                        when(config.mmsR()).thenReturn(1_266);
+                        when(config.mmsS()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
+                        when(config.mmsR()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
                         when(config.rto()).thenReturn(ofMillis(1000));
                         when(config.clock().time()).thenReturn(3614L);
                         when(seg.seq()).thenReturn(123L);
@@ -1578,7 +1593,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this segment.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment response = segmentCaptor.getValue();
-                        assertThat(response, allOf(seq(39L), ack(124L), ctl(SYN, ACK), mss(1241), tsOpt(3614L, 4113L)));
+                        assertThat(response, allOf(seq(39L), ack(124L), ctl(SYN, ACK), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(3614L, 4113L)));
 
                         // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                         assertEquals(124L, tcb.lastAckSent());
@@ -1822,7 +1837,7 @@ class ConnectionHandlerTest {
                         when(tcb.sndTsOk()).thenReturn(true);
                         when(tcb.config()).thenReturn(config);
                         when(tcb.iss()).thenReturn(122L);
-                        when(config.mmsR()).thenReturn(1_266);
+                        when(config.mmsR()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
 
                         final ConnectionHandler handler = new ConnectionHandler(config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, closedPromise, null);
 
@@ -1868,7 +1883,7 @@ class ConnectionHandlerTest {
                         // RFC 9293: and send it.
                         verify(tcb).send(eq(ctx), segmentCaptor.capture());
                         final Segment response = segmentCaptor.getValue();
-                        assertThat(response, allOf(seq(122L), ack(815L), ctl(SYN, ACK), mss(1241), tsOpt(111, 2)));
+                        assertThat(response, allOf(seq(122L), ack(815L), ctl(SYN, ACK), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE), tsOpt(111, 2)));
 
                         // RFC 9293: Set the variables:
                         // RFC 9293: SND.WND <- SEG.WND
@@ -3205,9 +3220,9 @@ class ConnectionHandlerTest {
         @Nested
         class SlowStart {
             @Test
-            void name() {
+            void congestionWindowShouldBeIncreasedByOneMessagePerAck() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
-                final int mms = 1_224;
+                final int mms = IP_MTU - DRASYL_HDR_SIZE;
                 final long iss = 100L;
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .issSupplier(() -> iss)
@@ -3222,31 +3237,87 @@ class ConnectionHandlerTest {
 
                 final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
 
-                // inital cwnd is 3*MMS=3672
-                // 3 in-flight messages are allowed
-                assertEquals(3672, tcb.cwnd());
+                // initially, 3 in-flight messages are allowed
+                assertTrue(tcb.doSlowStart());
+                assertEquals(3 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 channel.writeOutbound(byteBuf);
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 1)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 2)));
+                final Segment seg1 = channel.readOutbound();
+                assertThat(seg1, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 0 * (mms - SEG_HDR_SIZE))));
+                final Segment seg2 = channel.readOutbound();
+                assertThat(seg2, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 1 * (mms - SEG_HDR_SIZE))));
+                final Segment seg3 = channel.readOutbound();
+                assertThat(seg3, allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 2 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
 
-                // ACK 1st SEG -> increase cwnd by 1224
+                // ACK 1st SEG -> increase cwnd by one message
                 // 4 in-flight messages are allowed now
-                // 1 message legt the network, 2 new messages are allowed
-                channel.writeInbound(new Segment(300L, iss + mms + 1, ACK, 64_000));
-                assertEquals(3672 + mms * 1, tcb.cwnd());
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 3)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 4)));
+                // 1 message left the network (2 still in-flight), 2 new messages are allowed
+                assertTrue(tcb.doSlowStart());
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(4 * (mms - SEG_HDR_SIZE), tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 3 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 4 * (mms - SEG_HDR_SIZE))));
+                assertNull(channel.readOutbound());
+                assertTrue(tcb.doSlowStart());
 
-                // ACK 3rd SEG
+                // ACK 3rd SEG -> increase cwnd by one message
                 // 5 in-flight messages are allowed now
-                // 2 message legt the network, 3 new messages are allowed
-                channel.writeInbound(new Segment(300L, iss + 3 * mms + 1, ACK, 64_000));
-                assertEquals(3672 + mms * 2, tcb.cwnd());
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 5)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 6)));
-                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms), seq(iss + mms * 7)));
+                // 2 messages left the network (2 still in-flight), 3 new messages are allowed
+                assertTrue(tcb.doSlowStart());
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5 * (mms - SEG_HDR_SIZE), tcb.cwnd());
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 5 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 6 * (mms - SEG_HDR_SIZE))));
+                assertThat(channel.readOutbound(), allOf(ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 7 * (mms - SEG_HDR_SIZE))));
+                assertNull(channel.readOutbound());
+            }
+        }
+
+        @Nested
+        class CongestionAvoidance {
+            @Test
+            void congestionWindowShouldBeIncreasedByOneMessagePerRtt() {
+                final EmbeddedChannel channel = new EmbeddedChannel();
+                final int mms = IP_MTU - DRASYL_HDR_SIZE;
+                final long iss = 100L;
+                final ConnectionConfig config = ConnectionConfig.newBuilder()
+                        .issSupplier(() -> iss)
+                        .activeOpen(false)
+                        .mmsS(mms)
+                        .msl(ofMillis(100))
+                        .noDelay(true)
+                        .rmem(5_000)
+                        .build();
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                // set cwnd to ssthresh to enable congestion avoidance
+                tcb.cwnd(tcb.ssthresh());
+                final ConnectionHandler handler = new ConnectionHandler(config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), channel.newPromise(), null);
+                channel.pipeline().addLast(handler);
+
+                final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
+
+                assertFalse(tcb.doSlowStart());
+                channel.writeOutbound(byteBuf);
+
+                // ACK 1st SEG -> increase cwnd
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 306, tcb.cwnd());
+
+                // ACK 2nd SEG -> increase cwnd
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 306 + 288, tcb.cwnd());
+
+                // ACK 3rd SEG -> increase cwnd
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 306 + 288 + 274, tcb.cwnd());
+
+                // ACK 4th SEG -> increase cwnd
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 306 + 288 + 274 + 261, tcb.cwnd());
+
+                // ACK 5th SEG -> increase cwnd
+                channel.writeInbound(new Segment(0, 0, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                assertEquals(5_000 + 306 + 288 + 274 + 261 + 250, tcb.cwnd());
             }
         }
     }

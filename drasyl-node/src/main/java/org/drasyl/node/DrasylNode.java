@@ -34,6 +34,7 @@ import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.peers.PeersList;
+import org.drasyl.handler.sntp.SntpClient;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,6 +53,8 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.SocketAddress;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
@@ -59,6 +62,7 @@ import java.util.function.Supplier;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -92,6 +96,7 @@ public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     protected Identity identity;
     protected ServerBootstrap bootstrap;
+    private final List<SocketAddress> sntpServers;
     private ChannelFuture channelFuture;
 
     static {
@@ -123,10 +128,12 @@ public abstract class DrasylNode {
     @SuppressWarnings("java:S2384")
     protected DrasylNode(final Identity identity,
                          final ServerBootstrap bootstrap,
-                         final ChannelFuture channelFuture) {
+                         final ChannelFuture channelFuture,
+                         final List<SocketAddress> sntpServers) {
         this.identity = requireNonNull(identity);
         this.bootstrap = requireNonNull(bootstrap);
         this.channelFuture = channelFuture;
+        this.sntpServers = sntpServers;
     }
 
     /**
@@ -149,6 +156,7 @@ public abstract class DrasylNode {
         final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
         final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
         bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
+        sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
     }
@@ -413,9 +421,28 @@ public abstract class DrasylNode {
      * operation have been started.
      */
     @NonNull
-    @SuppressWarnings("java:S1905")
+    @SuppressWarnings({ "java:S1905", "java:S2142" })
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
+
+            try {
+                final Long offset;
+                // check system time
+                if (sntpServers.isEmpty()) {
+                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
+                }
+                else {
+                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
+                }
+
+                if (offset != null && offset > 60_000) {
+                    LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
+                }
+            }
+            catch (final Exception e) {
+                LOG.warn("Can not determine time offset:", e);
+            }
+
             channelFuture = bootstrap.bind();
             return FutureUtil.toFuture(channelFuture);
         }

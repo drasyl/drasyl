@@ -41,7 +41,7 @@ import static org.drasyl.handler.connection.Segment.greaterThan;
  */
 public class RetransmissionQueue {
     private static final Logger LOG = LoggerFactory.getLogger(RetransmissionQueue.class);
-    final ArrayDeque<Segment> queue;
+    private final ArrayDeque<Segment> queue;
     private long firstSegmentSentTime;
 
     RetransmissionQueue(final ArrayDeque<Segment> queue) {

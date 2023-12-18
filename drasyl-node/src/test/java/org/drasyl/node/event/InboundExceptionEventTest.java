@@ -19,20 +19,30 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.crypto.sodium;
+package org.drasyl.node.event;
 
-import com.google.auto.value.AutoValue;
-import org.drasyl.util.ImmutableByteArray;
-import org.drasyl.util.internal.UnstableApi;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@AutoValue
-@UnstableApi
-public abstract class SessionPair {
-    public static SessionPair of(final ImmutableByteArray rx, final ImmutableByteArray tx) {
-        return new AutoValue_SessionPair(rx, tx);
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
+@ExtendWith(MockitoExtension.class)
+public class InboundExceptionEventTest {
+    @Nested
+    class ToString {
+        @Test
+        void shouldIncludeStacktraceOfEmbeddedException() throws Throwable {
+            final Throwable error = new RuntimeException("whoops!");
+            final InboundExceptionEvent event = InboundExceptionEvent.of(error);
+
+            // actual exception?
+            assertThat(event.toString(), containsString("java.lang.RuntimeException: whoops!"));
+
+            // stacktrace?
+            assertThat(event.toString(), containsString("at org.drasyl"));
+        }
     }
-
-    public abstract ImmutableByteArray getRx();
-
-    public abstract ImmutableByteArray getTx();
 }
