@@ -21,13 +21,10 @@
  */
 package org.drasyl.channel;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.handler.connection.ConnectionAnalyzeHandler;
@@ -38,7 +35,6 @@ import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.ByteUtil;
 import org.drasyl.util.internal.UnstableApi;
 
 import java.util.Arrays;
@@ -75,15 +71,23 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         //p.addLast(new MagicNumberPrepender(1, 123));
         p.addLast(new SegmentCodec());
 
+        final int localPort;
+        final int remotePort;
         final ConnectionConfig myConf;
         if (Integer.signum(Arrays.compareUnsigned(((DrasylAddress) ch.localAddress()).toByteArray(), ((DrasylAddress) ch.remoteAddress0()).toByteArray())) == 1) {
-            myConf =config.toBuilder().activeOpen(true).build();
+            // I'm the "client"
+            localPort = 0;
+            remotePort = 1234;
+            myConf = config.toBuilder().activeOpen(true).build();
         }
         else {
-            myConf =config.toBuilder().activeOpen(false).build();
+            // I'm the "server"
+            localPort = 1234;
+            remotePort = 0;
+            myConf = config.toBuilder().activeOpen(false).build();
         }
 
-        p.addLast(new ConnectionHandler(myConf));
+        p.addLast(new ConnectionHandler(remotePort, myConf));
         if (false) {
             p.addLast(new ConnectionAnalyzeHandler());
         }

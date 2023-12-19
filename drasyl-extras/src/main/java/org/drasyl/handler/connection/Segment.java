@@ -83,8 +83,8 @@ public class Segment extends DefaultByteBufHolder {
             final Map<SegmentOption, Object> options,
             final ByteBuf data) {
         super(data);
-        this.srcPort = requireInRange(srcPort, 0, 65_535);
-        this.dstPort = requireInRange(dstPort, 0, 65_535);
+        this.srcPort = requireInRange(srcPort, TransmissionControlBlock.MIN_PORT, TransmissionControlBlock.MAX_PORT);
+        this.dstPort = requireInRange(dstPort, TransmissionControlBlock.MIN_PORT, TransmissionControlBlock.MAX_PORT);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;

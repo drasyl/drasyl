@@ -64,7 +64,7 @@ class ReceiveBufferTest {
                         .mmsS(40)
                         .build();
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
 
@@ -117,7 +117,7 @@ class ReceiveBufferTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -156,7 +156,7 @@ class ReceiveBufferTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 final ReceiveBuffer buffer = new ReceiveBuffer(channel);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -199,7 +199,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [0,60), got [0,100)
                 final ByteBuf data1 = data.copy(0, 100);
@@ -237,7 +237,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(500).writeBytes(randomBytes(500));
 
@@ -318,7 +318,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 0, 0, 100, 10, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 // expected [10,70) and [130,210), got [10,210)
                 final Segment seg1 = new Segment(0, 0, 10, 100, ACK, data.copy());
@@ -354,7 +354,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(300).writeBytes(randomBytes(300));
 
@@ -442,7 +442,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 60, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -474,7 +474,7 @@ class ReceiveBufferTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(90).writeBytes(randomBytes(90));
 
@@ -499,7 +499,7 @@ class ReceiveBufferTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(50)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 
@@ -524,7 +524,7 @@ class ReceiveBufferTest {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 0, 0, 100, 100, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(100).writeBytes(randomBytes(100));
 

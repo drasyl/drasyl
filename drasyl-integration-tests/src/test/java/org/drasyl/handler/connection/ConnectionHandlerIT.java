@@ -105,7 +105,7 @@ class ConnectionHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+        final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
         final Channel peerBServerChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
@@ -154,7 +154,7 @@ class ConnectionHandlerIT {
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
                 .build();
-        final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+        final ConnectionHandler peerAHandler = new ConnectionHandler(0, peerAConfig);
         final Channel peerAChannel = new Bootstrap()
                 .channel(LocalChannel.class)
                 .group(group)
@@ -237,7 +237,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -261,7 +261,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(0, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -319,7 +319,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -343,7 +343,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(0, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -408,7 +408,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -434,7 +434,7 @@ class ConnectionHandlerIT {
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(0, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)

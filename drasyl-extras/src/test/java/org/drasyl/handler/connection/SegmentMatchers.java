@@ -40,6 +40,13 @@ import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.drasyl.handler.connection.SegmentOption.TIMESTAMPS;
 
 public class SegmentMatchers {
+    public static Matcher<Segment> srcPort(final int srcPort) {
+        return new HasSrcPort(srcPort);
+    }
+    public static Matcher<Segment> dstPort(final int dstPort) {
+        return new HasDstPort(dstPort);
+    }
+
     public static Matcher<Segment> seq(final long seq) {
         return new HasSeq(seq);
     }
@@ -78,6 +85,42 @@ public class SegmentMatchers {
 
     public static Matcher<Segment> mss(final int mss) {
         return new HasMssOption(mss);
+    }
+
+    private static class HasSrcPort extends TypeSafeMatcher<Segment> {
+        private final int srcPort;
+
+        public HasSrcPort(final int srcPort) {
+            this.srcPort = srcPort;
+        }
+
+        @Override
+        protected boolean matchesSafely(final Segment seg) {
+            return seg.srcPort() == srcPort;
+        }
+
+        @Override
+        public void describeTo(final Description description) {
+            description.appendText("S=" + srcPort);
+        }
+    }
+
+    private static class HasDstPort extends TypeSafeMatcher<Segment> {
+        private final int dstPort;
+
+        public HasDstPort(final int dstPort) {
+            this.dstPort = dstPort;
+        }
+
+        @Override
+        protected boolean matchesSafely(final Segment seg) {
+            return seg.dstPort() == dstPort;
+        }
+
+        @Override
+        public void describeTo(final Description description) {
+            description.appendText("D=" + dstPort);
+        }
     }
 
     private static class HasSeq extends TypeSafeMatcher<Segment> {

@@ -27,7 +27,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -73,8 +72,11 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
+import static org.drasyl.util.Preconditions.requireInRange;
+import static org.drasyl.util.RandomUtil.randomInt;
 
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
@@ -122,14 +124,10 @@ import static org.drasyl.util.NumberUtil.min;
 })
 public class ConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
-    // events
-    static final ConnectionHandshakeCompleted CONNECTION_HANDSHAKE_COMPLETED = new ConnectionHandshakeCompleted();
-    static final ConnectionHandshakeIssued CONNECTION_HANDSHAKE_ISSUED = new ConnectionHandshakeIssued();
-    static final ConnectionRefusedException CONNECTION_REFUSED_EXCEPTION = new ConnectionRefusedException();
-    static final ConnectionResetException CONNECTION_RESET_EXCEPTION = new ConnectionResetException();
-    static final ConnectionAlreadyExistsException CONNECTION_EXISTS_EXCEPTION = new ConnectionAlreadyExistsException();
+    private int localPort;
+    private int remotePort;
     private final ConnectionConfig config;
-    State state;
+    State state; // FIXME: move to tcb
     TransmissionControlBlock tcb;
     ScheduledFuture<?> userTimer;
     ScheduledFuture<?> retransmissionTimer;
@@ -143,7 +141,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     private long segmentizedRemainingBytes;
 
     @SuppressWarnings("java:S107")
-    ConnectionHandler(final ConnectionConfig config,
+    ConnectionHandler(final int localPort,
+                      final int remotePort,
+                      final ConnectionConfig config,
                       final State state,
                       final TransmissionControlBlock tcb,
                       final ScheduledFuture<?> userTimer,
@@ -152,6 +152,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                       final ChannelPromise establishedPromise,
                       final ChannelPromise closedPromise,
                       final ChannelHandlerContext ctx) {
+        this.localPort = requireInRange(localPort, 0, MAX_PORT);
+        this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -161,21 +163,21 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
         this.ctx = ctx;
-
-//        if (ctx.channel().localAddress().equals(IdentityPublicKey.of("bcd8d03b45ed15fb9531ece7fe37efc0516b197dfb6cbed800401f3652cb50ee"))) {
-//            final Slf4JLogger logger = (Slf4JLogger) LoggerFactory.getLogger("org.drasyl");
-//            final ch.qos.logback.classic.Logger delegate = (ch.qos.logback.classic.Logger) logger.delegate();
-//            delegate.setLevel(Level.TRACE);
-//            LOG.trace("TRACE ENABLED!!!!");
-//        }
     }
 
-    public ConnectionHandler(final ConnectionConfig config) {
-        this(config, null, null, null, null, null, null, null, null);
+    public ConnectionHandler(final int localPort,
+                             final int remotePort,
+                             final ConnectionConfig config) {
+        this(localPort, remotePort, config, null, null, null, null, null, null, null, null);
+    }
+
+    public ConnectionHandler(final int remotePort,
+                             final ConnectionConfig config) {
+        this(0, remotePort, config, null, null, null, null, null, null, null, null);
     }
 
     public ConnectionHandler() {
-        this(ConnectionConfig.DEFAULT);
+        this(0, ConnectionConfig.DEFAULT);
     }
 
     @Override
@@ -346,11 +348,17 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     LOG.trace("{} Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), LISTEN);
                     changeState(ctx, LISTEN);
 
+                    tcb.localPort(localPort);
+                    tcb.ensureLocalPortIsSelected();
+
                     // RFC 9293: and return.
                     return;
                 }
                 else {
                     LOG.trace("{} Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel());
+
+                    tcb.ensureLocalPortIsSelected();
+                    tcb.remotePort(remotePort);
 
                     // RFC 9293: If active and the remote socket is unspecified, return "error: remote
                     // RFC 9293: socket unspecified";
@@ -1015,6 +1023,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
         ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
+
         // RFC 9293: First, check for a RST:
         if (seg.isRst()) {
             // RFC 9293: An incoming RST segment could not be valid since it could not have been
@@ -1029,7 +1038,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             // RFC 9293: state. An acceptable reset segment should be formed for any arriving
             // RFC 9293: ACK-bearing segment. The RST should be formatted as follows:
             // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
-            final Segment response = formSegment(ctx, seg.ack(), RST);
+            final Segment response = formSegment(ctx, seg.dstPort(), seg.srcPort(), seg.ack(), RST);
             LOG.trace("{} We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), response);
             ctx.writeAndFlush(response);
 
@@ -1046,6 +1055,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             // (not applicable to us)
 
             LOG.trace("{} Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), seg);
+
+            tcb.remotePort(seg.srcPort());
 
             if (config.timestamps()) {
                 // RFC 7323: Check for a TSopt option;
@@ -2475,12 +2486,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     }
 
     Segment formSegment(final ChannelHandlerContext ctx,
+                        final int srcPort,
+                        final int dstPort,
                         final long seq,
                         final long ack,
                         final byte ctl,
                         final ByteBuf data) {
         final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final Segment seg = new Segment(seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
+        final Segment seg = new Segment(srcPort, dstPort, seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
 
         if ((ctl & SYN) != 0) {
             // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
@@ -2541,17 +2554,42 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         return seg;
     }
 
+    Segment formSegment(final ChannelHandlerContext ctx,
+                        final long seq,
+                        final long ack,
+                        final byte ctl,
+                        final ByteBuf data) {
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ack, ctl, data);
+    }
+
+    private Segment formSegment(final ChannelHandlerContext ctx,
+                                final int srcPort,
+                                final int dstPort,
+                                final long seq,
+                                final long ack,
+                                final byte ctl) {
+        return formSegment(ctx, srcPort, dstPort, seq, ack, ctl, Unpooled.EMPTY_BUFFER);
+    }
+
     private Segment formSegment(final ChannelHandlerContext ctx,
                                 final long seq,
                                 final long ack,
                                 final byte ctl) {
-        return formSegment(ctx, seq, ack, ctl, Unpooled.EMPTY_BUFFER);
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ack, ctl);
+    }
+
+    private Segment formSegment(final ChannelHandlerContext ctx,
+                                final int srcPort,
+                                final int dstPort,
+                                final long seq,
+                                final byte ctl) {
+        return formSegment(ctx, srcPort, dstPort, seq, 0, ctl);
     }
 
     private Segment formSegment(final ChannelHandlerContext ctx,
                                 final long seq,
                                 final byte ctl) {
-        return formSegment(ctx, seq, 0, ctl);
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ctl);
     }
 
     long segmentizeAndSendData(final ChannelHandlerContext ctx, long bytes) {
