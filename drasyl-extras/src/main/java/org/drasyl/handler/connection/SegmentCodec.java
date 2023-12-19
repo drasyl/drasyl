@@ -37,9 +37,17 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 /**
  * Encodes {@link ByteBuf}s to {@link Segment}s and vice versa.
  */
-@Sharable
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     public static final int CKS_INDEX = 8;
+    private final boolean checksumEnabled;
+
+    public SegmentCodec(final boolean checksumEnabled) {
+        this.checksumEnabled = checksumEnabled;
+    }
+
+    public SegmentCodec() {
+        this(true);
+    }
 
     @Override
     protected void encode(final ChannelHandlerContext ctx,
@@ -66,9 +74,11 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         // content
         buf.writeBytes(seg.content());
 
-        // calculate checksum
-        final int cks = calculateChecksum(buf, 0);
-        buf.setShort(CKS_INDEX, (short) cks);
+        if (checksumEnabled) {
+            // calculate checksum
+            final int cks = calculateChecksum(buf, 4);
+            buf.setShort(CKS_INDEX, (short) cks);
+        }
 
         out.add(buf);
     }
@@ -98,10 +108,12 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
 
             final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in);
 
-            // verify checksum
-            if (calculateChecksum(in, readerIndex) != 0) {
-                // wrong checksum, drop segment
-                return;
+            if (checksumEnabled) {
+                // verify checksum
+                if (calculateChecksum(in, readerIndex) != 0) {
+                    // wrong checksum, drop segment
+                    return;
+                }
             }
 
             out.add(seg.retain());
