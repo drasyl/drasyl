@@ -22,9 +22,10 @@
 package org.drasyl.handler.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
  * Encodes {@link ByteBuf}s to {@link Segment}s and vice versa.
  */
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
+    private static final Logger LOG = LoggerFactory.getLogger(SegmentCodec.class);
     public static final int CKS_INDEX = 12;
     public static final int MAGIC_NUMBER = 1_232_217_832;
     private final boolean checksumEnabled;
@@ -121,6 +123,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 // verify checksum
                 if (calculateChecksum(in, readerIndex) != 0) {
                     // wrong checksum, drop segment
+                    LOG.debug("{} Drop SEG `{}` because of wrong checksum.", ctx.channel(), seg);
                     return;
                 }
             }
