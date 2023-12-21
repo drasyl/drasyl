@@ -884,10 +884,15 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                establishedPromise.setSuccess();
-                tcb.writeEnqueuedData(ctx);
-                // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted()));
+                ctx.executor().execute(() -> {
+                    // do not execute any queued operations immediately, ensure that current execution is completed first
+                    establishedPromise.setSuccess();
+
+                    tcb.writeEnqueuedData(ctx);
+
+                    // do not inform user immediately, ensure that current execution is completed first
+                    ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+                });
                 break;
 
             case CLOSE_WAIT:
