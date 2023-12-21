@@ -128,6 +128,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     ScheduledFuture<?> timeWaitTimer;
     ScheduledFuture<?> zeroWindowProber;
     private ChannelPromise establishedPromise;
+    private boolean userCallReceiveAlreadyEnqueued;
+    private boolean userCallCloseAlreadyEnqueued;
     private ChannelPromise closedPromise;
     private boolean readPending;
     private ChannelHandlerContext ctx;
@@ -142,6 +144,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                       final ScheduledFuture<?> retransmissionTimer,
                       final ScheduledFuture<?> timeWaitTimer,
                       final ChannelPromise establishedPromise,
+                      final boolean userCallReceiveAlreadyEnqueued,
+                      final boolean userCallCloseAlreadyEnqueued,
                       final ChannelPromise closedPromise,
                       final ChannelHandlerContext ctx) {
         this.config = requireNonNull(config);
@@ -153,10 +157,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
         this.ctx = ctx;
+        this.userCallReceiveAlreadyEnqueued = userCallReceiveAlreadyEnqueued;
+        this.userCallCloseAlreadyEnqueued = userCallCloseAlreadyEnqueued;
     }
 
     public ConnectionHandler(final ConnectionConfig config) {
-        this(config, null, null, null, null, null, null, null, null);
+        this(config, null, null, null, null, null, null, false, false, null, null);
     }
 
     public ConnectionHandler() {
@@ -503,11 +509,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case SYN_SENT:
                 case SYN_RECEIVED:
                     // RFC 9293: Queue for processing after entering ESTABLISHED state.
-                    establishedPromise.addListener((ChannelFutureListener) future -> {
-                        if (future.isSuccess()) {
-                            userCallReceive(ctx);
-                        }
-                    });
+                    if (!userCallReceiveAlreadyEnqueued) {
+                        userCallReceiveAlreadyEnqueued = true;
+                        establishedPromise.addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
+                                userCallReceive(ctx);
+                            }
+                        });
+                    }
 
                     // RFC 9293: If there is no room to queue this request, respond with "error:
                     // RFC 9293: insufficient resources".
@@ -643,11 +652,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 }
                 else {
                     // RFC 9293: otherwise, queue for processing after entering ESTABLISHED state.
-                    establishedPromise.addListener((ChannelFutureListener) future -> {
-                        if (future.isSuccess()) {
-                            userCallClose(ctx, promise);
-                        }
-                    });
+                    if (!userCallCloseAlreadyEnqueued) {
+                        userCallCloseAlreadyEnqueued = true;
+                        establishedPromise.addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
+                                userCallClose(ctx, promise);
+                            }
+                        });
+                    }
                 }
                 break;
 
