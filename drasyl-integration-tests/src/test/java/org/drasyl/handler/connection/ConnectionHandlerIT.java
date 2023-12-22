@@ -39,6 +39,8 @@ import io.netty.channel.local.LocalAddress;
 import io.netty.channel.local.LocalChannel;
 import io.netty.channel.local.LocalServerChannel;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -113,6 +115,11 @@ class ConnectionHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
+
+                        // LocalChannel does not guarantee that a single channelRead event will only read a single message
+                        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+                        p.addLast(new LengthFieldPrepender(4));
+
                         p.addLast(new SegmentCodec());
                         p.addLast(peerBHandler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -162,6 +169,11 @@ class ConnectionHandlerIT {
                     @Override
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
+
+                        // LocalChannel does not guarantee that a single channelRead event will only read a single message
+                        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+                        p.addLast(new LengthFieldPrepender(4));
+
                         p.addLast(new SegmentCodec());
                         p.addLast(peerAHandler);
                         p.addLast(new ChannelInboundHandlerAdapter() {
