@@ -161,10 +161,12 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 sum += buf.readUnsignedShort();
             }
             if (buf.isReadable()) {
-                sum += buf.readUnsignedByte() << 8;
+                sum += buf.readUnsignedByte();
             }
 
-            return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
+            sum = (sum >> 16) + (sum & 0xffff);
+            sum += (sum >> 16);
+            return ~sum & 0xffff;
         }
         finally {
             buf.resetReaderIndex();
