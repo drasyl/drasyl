@@ -407,16 +407,14 @@ public class ReceiveBuffer {
      */
     public void fireRead(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
         assert tcb.receiveBuffer() == this : "this RCV.BUF does not belong to given TCB";
-        if (headBuf != null) {
-            final int readableBytes = headBuf.readableBytes();
-            if (readableBytes > 0) {
-                bytes -= readableBytes;
-                final ByteBuf headBuf1 = headBuf;
-                headBuf = null;
-                tcb.incrementRcvWnd(ctx);
-                LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
-                ctx.fireChannelRead(headBuf1);
-            }
+        final int readableBytes = readableBytes();
+        if (readableBytes > 0) {
+            bytes -= readableBytes;
+            final ByteBuf headBuf1 = headBuf;
+            headBuf = null;
+            tcb.incrementRcvWnd(ctx);
+            LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
+            ctx.fireChannelRead(headBuf1);
         }
     }
 
