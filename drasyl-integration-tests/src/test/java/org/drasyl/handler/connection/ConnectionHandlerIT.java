@@ -106,6 +106,7 @@ class ConnectionHandlerIT {
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
+                .overrideTimeout(ofMillis(10))
                 .build();
         final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
         final Channel peerBServerChannel = new ServerBootstrap()
@@ -160,6 +161,7 @@ class ConnectionHandlerIT {
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
+                .overrideTimeout(ofMillis(10))
                 .build();
         final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
         final Channel peerAChannel = new Bootstrap()
@@ -248,6 +250,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
@@ -272,6 +275,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -330,6 +334,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
@@ -354,6 +359,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
@@ -419,6 +425,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
@@ -445,6 +452,7 @@ class ConnectionHandlerIT {
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
                     .userTimeout(USER_TIMEOUT)
+                    .overrideTimeout(ofMillis(10))
                     .build();
             final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
             final Channel peerAChannel = new Bootstrap()
