@@ -629,8 +629,11 @@ public class TransmissionControlBlock {
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
-        rcvNxt = advanceSeq(rcvNxt, advancement);
-        LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
+        final long newRcvNxt = advanceSeq(rcvNxt, advancement);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{} Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), rcvNxt, newRcvNxt, Segment.sub(newRcvNxt, rcvNxt));
+        }
+        rcvNxt = newRcvNxt;
     }
 
     public void decrementRcvWnd(final long decrement) {
@@ -650,7 +653,9 @@ public class TransmissionControlBlock {
 
         if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
-            LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, Segment.sub(newRcvWind, rcvWnd));
+            }
             rcvWnd = newRcvWind;
             assert rcvWnd >= 0 : "RCV.WND must be non-negative";
         }
@@ -728,13 +733,15 @@ public class TransmissionControlBlock {
      * Returns the number of acked segments.
      *
      * @param ctx
-     * @param sndUna
+     * @param newSndUna
      * @return
      */
-    public long sndUna(final ChannelHandlerContext ctx, final long sndUna) {
-        final long ackedSegments = sub(sndUna, this.sndUna);
-        this.sndUna = sndUna;
-        LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
+    public long sndUna(final ChannelHandlerContext ctx, final long newSndUna) {
+        final long ackedSegments = sub(newSndUna, this.sndUna);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{} Advance SND.UNA from {} to {} (+{}).", ctx.channel(), sndUna, newSndUna, Segment.sub(newSndUna, sndUna));
+        }
+        sndUna = newSndUna;
         return ackedSegments;
     }
 
