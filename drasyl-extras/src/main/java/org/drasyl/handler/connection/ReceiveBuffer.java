@@ -177,7 +177,7 @@ public class ReceiveBuffer {
                             seg::seq,
                             seg::lastSeq,
                             tcb::rcvNxt,
-                            () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                            () -> sub(add(tcb.rcvNxt(), tcb.rcvWnd()), 1),
                             () -> sub(seg.seq(), tcb.rcvNxt()),
                             () -> seq,
                             () -> add(seq, length - 1),
