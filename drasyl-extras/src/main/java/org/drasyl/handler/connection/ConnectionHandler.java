@@ -274,12 +274,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         ctx.fireChannelReadComplete();
     }
 
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-        LOG.error("{} Exception caught: ", ctx.channel(), cause);
-        ctx.fireExceptionCaught(cause);
-    }
-
     /*
      * User Calls
      */
