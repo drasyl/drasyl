@@ -73,6 +73,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ConnectionHandlerIT {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandlerIT.class);
     private static final int MAX_DROP = 3;
+    private static final int PEER_A_PORT = 1234;
+    private static final int PEER_B_PORT = 8080;
     public static final Duration USER_TIMEOUT = ofSeconds(1);
 
     @BeforeEach
@@ -100,6 +102,7 @@ class ConnectionHandlerIT {
         // Peer B
         final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
         final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
+                .unusedPortSupplier(() -> PEER_B_PORT)
                 .activeOpen(false)
                 .rmem(3_000)
                 .issSupplier(() -> 1L)
@@ -108,7 +111,7 @@ class ConnectionHandlerIT {
                 .userTimeout(USER_TIMEOUT)
                 .overrideTimeout(ofMillis(10))
                 .build();
-        final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+        final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
         final Channel peerBServerChannel = new ServerBootstrap()
                 .channel(LocalServerChannel.class)
                 .group(group)
@@ -155,6 +158,7 @@ class ConnectionHandlerIT {
 
         // Peer A
         final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
+                .unusedPortSupplier(() -> PEER_A_PORT)
                 .activeOpen(true)
                 .rmem(3_000)
                 .issSupplier(() -> 1L)
@@ -163,7 +167,7 @@ class ConnectionHandlerIT {
                 .userTimeout(USER_TIMEOUT)
                 .overrideTimeout(ofMillis(10))
                 .build();
-        final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+        final ConnectionHandler peerAHandler = new ConnectionHandler(PEER_B_PORT, peerAConfig);
         final Channel peerAChannel = new Bootstrap()
                 .channel(LocalChannel.class)
                 .group(group)
@@ -245,6 +249,7 @@ class ConnectionHandlerIT {
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_B_PORT)
                     .issSupplier(() -> 1L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
@@ -252,7 +257,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(0, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -270,6 +275,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer A
             final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_A_PORT)
                     .issSupplier(() -> 1L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -277,7 +283,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(PEER_B_PORT, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -329,6 +335,7 @@ class ConnectionHandlerIT {
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_B_PORT)
                     .issSupplier(() -> 300L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -336,7 +343,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(PEER_A_PORT, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -354,6 +361,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer A
             final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_A_PORT)
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
@@ -361,7 +369,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(PEER_B_PORT, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)
@@ -420,6 +428,7 @@ class ConnectionHandlerIT {
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_B_PORT)
                     .issSupplier(() -> 300L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
@@ -427,7 +436,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerBHandler = new ConnectionHandler(peerBConfig);
+            final ConnectionHandler peerBHandler = new ConnectionHandler(PEER_A_PORT, peerBConfig);
             final Channel peerBServerChannel = new ServerBootstrap()
                     .channel(LocalServerChannel.class)
                     .group(group)
@@ -446,6 +455,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer A
             final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
+                    .unusedPortSupplier(() -> PEER_A_PORT)
                     .issSupplier(() -> 100L)
                     .activeOpen(true)
                     .msl(ofMillis(100))
@@ -454,7 +464,7 @@ class ConnectionHandlerIT {
                     .userTimeout(USER_TIMEOUT)
                     .overrideTimeout(ofMillis(10))
                     .build();
-            final ConnectionHandler peerAHandler = new ConnectionHandler(peerAConfig);
+            final ConnectionHandler peerAHandler = new ConnectionHandler(PEER_B_PORT, peerAConfig);
             final Channel peerAChannel = new Bootstrap()
                     .channel(LocalChannel.class)
                     .group(group)

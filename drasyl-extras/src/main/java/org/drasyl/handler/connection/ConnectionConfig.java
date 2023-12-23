@@ -28,23 +28,30 @@ import io.netty.channel.ChannelHandlerContext;
 import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
+import static org.drasyl.util.RandomUtil.randomInt;
 
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
     static final int IP_MTU = 1460;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
+            .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
             .rtnsQSupplier(channel -> new RetransmissionQueue())
             .rcfBufSupplier(ReceiveBuffer::new)
             .tcbSupplier((config, channel) -> new TransmissionControlBlock(
                     config,
+                    0,
+                    0,
                     0,
                     0,
                     0,
@@ -102,6 +109,8 @@ public abstract class ConnectionConfig {
     public static Builder newBuilder() {
         return DEFAULT.toBuilder();
     }
+
+    public abstract IntSupplier unusedPortSupplier();
 
     public abstract LongSupplier issSupplier();
 
@@ -166,6 +175,8 @@ public abstract class ConnectionConfig {
 
     @AutoValue.Builder
     public abstract static class Builder {
+        public abstract Builder unusedPortSupplier(final IntSupplier unusedPortSupplier);
+
         /**
          * Used to choose an initial send sequence number. A random number within [0,4294967296] is
          * chosen by default.

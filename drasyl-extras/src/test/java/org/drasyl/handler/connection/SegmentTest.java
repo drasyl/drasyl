@@ -29,7 +29,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.handler.connection.Segment.ACK;
+import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
+import static org.drasyl.handler.connection.Segment.SYN;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,7 +44,7 @@ class SegmentTest {
         @Test
         void shouldReturnLengthOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(100, 0, ACK, data);
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK, data);
 
             assertEquals(10, seg.len());
 
@@ -51,14 +53,14 @@ class SegmentTest {
 
         @Test
         void shouldCountSyn() {
-            final Segment seg = new Segment(100, Segment.SYN);
+            final Segment seg = new Segment(1234, 5678, 100, SYN);
 
             assertEquals(1, seg.len());
         }
 
         @Test
         void shouldCountFin() {
-            final Segment seg = new Segment(100, Segment.FIN);
+            final Segment seg = new Segment(1234, 5678, 100, FIN);
 
             assertEquals(1, seg.len());
         }
@@ -69,7 +71,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegment() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(100, 0, ACK, data);
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK, data);
 
             assertEquals(109, seg.lastSeq());
 
@@ -79,7 +81,7 @@ class SegmentTest {
         @Test
         void shouldReturnLastSegmentOfTheSegmentDespiteOverflow() {
             final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
-            final Segment seg = new Segment(MAX_SEQ_NO - 9, 0, ACK, data);
+            final Segment seg = new Segment(1234, 5678, MAX_SEQ_NO - 9, 0, ACK, data);
 
             assertEquals(MAX_SEQ_NO, seg.lastSeq());
 
@@ -88,7 +90,7 @@ class SegmentTest {
 
         @Test
         void shouldReturnLastSegmentOfZeroLengthSegment() {
-            final Segment seg = new Segment(100, 0, ACK);
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK);
 
             assertEquals(100, seg.lastSeq());
 
@@ -109,13 +111,13 @@ class SegmentTest {
     class MustBeAcked {
         @Test
         void shouldReturnFalseForSegmentsThatMustNotBeAcknowledged() {
-            final Segment seg = new Segment(100, 0, ACK);
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK);
             assertFalse(seg.mustBeAcked());
         }
 
         @Test
         void shouldReturnTrueForSegmentsThatMustBeAcknowledged() {
-            final Segment seg2 = new Segment(100, 0, ACK, Unpooled.buffer(4).writeInt(1));
+            final Segment seg2 = new Segment(1234, 5678, 100, 0, ACK, Unpooled.buffer(4).writeInt(1));
             assertTrue(seg2.mustBeAcked());
         }
     }
