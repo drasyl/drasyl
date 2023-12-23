@@ -68,6 +68,11 @@ public class OutgoingSegmentQueue {
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
         while ((seg = (Segment) queue.poll()) != null) {
+            if (seg.wnd() != tcb.rcvWnd()) {
+                // ensure SEG.WND is up-to-date (in processing of arrivals, we first queue SEGs to be send, then read from the RCV.BUF, before flushing enqueued SEGs)
+                seg = new Segment(seg.seq(), seg.ack(), seg.ctl(), tcb.rcvWnd(), seg.cks(), seg.options(), seg.content());
+            }
+
             LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
             if (seg.mustBeAcked()) {
