@@ -2058,8 +2058,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // FIXME: mit dem hier wirds langsam. ist SEG.WND evtl. falsch?
                 //seg.wnd() == tcb.lastAdvertisedWindow();
 
-        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
+        // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA.", ctx.channel(), seg);
             ackedBytes = tcb.sndUna(ctx, seg.ack());
