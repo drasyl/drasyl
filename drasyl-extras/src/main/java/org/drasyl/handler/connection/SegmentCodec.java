@@ -76,11 +76,18 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeByte(END_OF_OPTION_LIST.kind());
 
         // content
+        final int readerIndex = seg.content().readerIndex();
         buf.writeBytes(seg.content());
 
         if (checksumEnabled) {
             // calculate checksum
             final int cks = calculateChecksum(buf, 4);
+            if (LOG.isDebugEnabled()) {
+                seg.content().markReaderIndex();
+                seg.content().readerIndex(readerIndex);
+                LOG.debug("{} SEG `{}` has calculated checksum {}.", ctx.channel(), seg, cks);
+                seg.content().resetReaderIndex();
+            }
             buf.setShort(CKS_INDEX, (short) cks);
         }
 
@@ -121,9 +128,13 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
 
             if (checksumEnabled) {
                 // verify checksum
-                if (calculateChecksum(in, readerIndex) != 0) {
+                if (!verifyChecksum(in, readerIndex)) {
                     // wrong checksum, drop segment
-                    LOG.debug("{} Drop SEG `{}` because of wrong checksum.", ctx.channel(), seg);
+                    if (LOG.isDebugEnabled()) {
+                        in.setShort(CKS_INDEX, 0);
+                        final int expectedChecksum = calculateChecksum(in, readerIndex);
+                        LOG.debug("{} Drop SEG `{}` because of wrong checksum. Checksum {} expected.", ctx.channel(), seg, expectedChecksum);
+                    }
                     return;
                 }
             }
@@ -136,7 +147,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         }
     }
 
-    private int calculateChecksum(final ByteBuf buf, final int index) {
+    static int calculateChecksum(final ByteBuf buf, final int index) {
         try {
             buf.markReaderIndex();
 
@@ -145,15 +156,20 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
             while (buf.readableBytes() > 1) {
                 sum += buf.readUnsignedShort();
             }
-            if (buf.readableBytes() > 0) {
-                // add padding
+            if (buf.isReadable()) {
                 sum += buf.readUnsignedByte();
             }
 
-            return (~((sum & 0xffff) + (sum >> 16))) & 0xffff;
+            sum = (sum >> 16) + (sum & 0xffff);
+            sum += (sum >> 16);
+            return ~sum & 0xffff;
         }
         finally {
             buf.resetReaderIndex();
         }
+    }
+
+    static boolean verifyChecksum(final ByteBuf buf, final int index) {
+        return calculateChecksum(buf, index) == 0;
     }
 }

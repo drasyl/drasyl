@@ -40,6 +40,7 @@ import static org.drasyl.handler.connection.SegmentCodec.MAGIC_NUMBER;
 import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
 import static org.drasyl.handler.connection.SegmentOption.MAXIMUM_SEGMENT_SIZE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -50,8 +51,8 @@ class SegmentCodecTest {
     private final ByteBuf encodedSeq = Unpooled.buffer(Integer.BYTES).writeInt((int) seq);
     private final long ack = 987_654_321;
     private final ByteBuf encodedAck = Unpooled.buffer(Integer.BYTES).writeInt((int) ack);
-    private final short cks = 11_174;
-    private final ByteBuf encodedCks = Unpooled.buffer(Short.BYTES).writeShort(cks);
+    private final int cks = 11_174;
+    private final ByteBuf encodedCks = Unpooled.buffer(Short.BYTES).writeShort((short) cks);
     private final byte ctl = ACK;
     private final ByteBuf encodedCtl = Unpooled.buffer(1).writeByte(ctl);
     private final long wnd = 64_000;
@@ -99,6 +100,7 @@ class SegmentCodecTest {
             channel.writeInbound(Unpooled.wrappedBuffer(encodedMagicNumber, encodedSeq, encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
 
             final Segment actual = channel.readInbound();
+            assertNotNull(actual);
             final ByteBuf data = content.retain();
             assertEquals(new Segment(seq, ack, ACK, options, data), actual);
 

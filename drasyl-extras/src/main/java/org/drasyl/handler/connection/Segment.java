@@ -325,7 +325,7 @@ public class Segment extends DefaultByteBufHolder {
             optionsLabel.add(option.toString() + "=" + value);
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
+        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><CKS=" + cks + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override
