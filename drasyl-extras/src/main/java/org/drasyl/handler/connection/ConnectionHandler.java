@@ -2331,6 +2331,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     including recover, then this is a partial ACK. In this case,
                         // RFC 6582:     retransmit the first unacknowledged segment.
                         final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
+                        // FIXME: we observed cases, where retransmission is null. Looks like a bug in our Reno implementation
+                        assert retransmission != null;
                         LOG.trace("{} Congestion Control: Got intervening ACK `{}` (partial ACK). Retransmit `{}`. {} unACKed bytes remaining.", ctx.channel(), seg, retransmission, tcb.flightSize());
                         ctx.writeAndFlush(retransmission);
 
