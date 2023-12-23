@@ -180,7 +180,6 @@ public class ReceiveBuffer {
                     }
                 }
 
-                LOG.trace("Go to next fragment {}.", current.next);
                 current = current.next;
             }
 
