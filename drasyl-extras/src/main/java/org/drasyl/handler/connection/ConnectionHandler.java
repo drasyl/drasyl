@@ -71,8 +71,10 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
+import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * This handler provides reliable and ordered delivery of bytes between hosts. The protocol is
@@ -120,14 +122,18 @@ import static org.drasyl.util.NumberUtil.min;
 })
 public class ConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
+    private int requestedLocalPort;
+    private int remotePort;
     private final ConnectionConfig config;
-    State state;
+    State state; // FIXME: move to tcb?
     TransmissionControlBlock tcb;
     ScheduledFuture<?> userTimer;
     ScheduledFuture<?> retransmissionTimer;
     ScheduledFuture<?> timeWaitTimer;
     ScheduledFuture<?> zeroWindowProber;
     private ChannelPromise establishedPromise;
+    private boolean userCallReceiveAlreadyEnqueued;
+    private boolean userCallCloseAlreadyEnqueued;
     private ChannelPromise closedPromise;
     private boolean readPending;
     private ChannelHandlerContext ctx;
@@ -135,15 +141,21 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     private long segmentizedRemainingBytes;
 
     @SuppressWarnings("java:S107")
-    ConnectionHandler(final ConnectionConfig config,
+    ConnectionHandler(final int requestedLocalPort,
+                      final int remotePort,
+                      final ConnectionConfig config,
                       final State state,
                       final TransmissionControlBlock tcb,
                       final ScheduledFuture<?> userTimer,
                       final ScheduledFuture<?> retransmissionTimer,
                       final ScheduledFuture<?> timeWaitTimer,
                       final ChannelPromise establishedPromise,
+                      final boolean userCallReceiveAlreadyEnqueued,
+                      final boolean userCallCloseAlreadyEnqueued,
                       final ChannelPromise closedPromise,
                       final ChannelHandlerContext ctx) {
+        this.requestedLocalPort = requireInRange(requestedLocalPort, 0, MAX_PORT);
+        this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.config = requireNonNull(config);
         this.state = state;
         this.tcb = tcb;
@@ -153,14 +165,23 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this.establishedPromise = establishedPromise;
         this.closedPromise = closedPromise;
         this.ctx = ctx;
+        this.userCallReceiveAlreadyEnqueued = userCallReceiveAlreadyEnqueued;
+        this.userCallCloseAlreadyEnqueued = userCallCloseAlreadyEnqueued;
     }
 
-    public ConnectionHandler(final ConnectionConfig config) {
-        this(config, null, null, null, null, null, null, null, null);
+    public ConnectionHandler(final int requestedLocalPort,
+                             final int remotePort,
+                             final ConnectionConfig config) {
+        this(requestedLocalPort, remotePort, config, null, null, null, null, null, null, false, false, null, null);
+    }
+
+    public ConnectionHandler(final int remotePort,
+                             final ConnectionConfig config) {
+        this(0, remotePort, config, null, null, null, null, null, null, false, false, null, null);
     }
 
     public ConnectionHandler() {
-        this(ConnectionConfig.DEFAULT);
+        this(0, ConnectionConfig.DEFAULT);
     }
 
     @Override
@@ -306,11 +327,16 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     LOG.trace("{} Handler is configured to perform passive OPEN process. Go to {} state and wait for remote peer to initiate OPEN process.", ctx.channel(), LISTEN);
                     changeState(ctx, LISTEN);
 
+                    tcb.ensureLocalPortIsSelected(requestedLocalPort);
+
                     // RFC 9293: and return.
                     return;
                 }
                 else {
                     LOG.trace("{} Handler is configured to perform active OPEN process. ChannelActive event acts as implicit OPEN call.", ctx.channel());
+
+                    tcb.ensureLocalPortIsSelected(requestedLocalPort);
+                    tcb.remotePort(remotePort);
 
                     // RFC 9293: If active and the remote socket is unspecified, return "error: remote
                     // RFC 9293: socket unspecified";
@@ -503,11 +529,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case SYN_SENT:
                 case SYN_RECEIVED:
                     // RFC 9293: Queue for processing after entering ESTABLISHED state.
-                    establishedPromise.addListener((ChannelFutureListener) future -> {
-                        if (future.isSuccess()) {
-                            userCallReceive(ctx);
-                        }
-                    });
+                    if (!userCallReceiveAlreadyEnqueued) {
+                        userCallReceiveAlreadyEnqueued = true;
+                        establishedPromise.addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
+                                userCallReceive(ctx);
+                            }
+                        });
+                    }
 
                     // RFC 9293: If there is no room to queue this request, respond with "error:
                     // RFC 9293: insufficient resources".
@@ -643,11 +672,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 }
                 else {
                     // RFC 9293: otherwise, queue for processing after entering ESTABLISHED state.
-                    establishedPromise.addListener((ChannelFutureListener) future -> {
-                        if (future.isSuccess()) {
-                            userCallClose(ctx, promise);
-                        }
-                    });
+                    if (!userCallCloseAlreadyEnqueued) {
+                        userCallCloseAlreadyEnqueued = true;
+                        establishedPromise.addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
+                                userCallClose(ctx, promise);
+                            }
+                        });
+                    }
                 }
                 break;
 
@@ -872,10 +904,15 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 break;
 
             case ESTABLISHED:
-                establishedPromise.setSuccess();
-                tcb.writeEnqueuedData(ctx);
-                // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted()));
+                ctx.executor().execute(() -> {
+                    // do not execute any queued operations immediately, ensure that current execution is completed first
+                    establishedPromise.setSuccess();
+
+                    tcb.writeEnqueuedData(ctx);
+
+                    // do not inform user immediately, ensure that current execution is completed first
+                    ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+                });
                 break;
 
             case CLOSE_WAIT:
@@ -958,12 +995,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (!seg.isAck()) {
             // RFC 9293: If the ACK bit is off, sequence number zero is used,
             // RFC 9293: <SEQ=0><ACK=SEG.SEQ+SEG.LEN><CTL=RST,ACK>
-            response = formSegment(ctx, 0, add(seg.seq(), seg.len()), (byte) (RST | ACK));
+            response = formSegment(ctx, seg.dstPort(), seg.srcPort(), 0, add(seg.seq(), seg.len()), (byte) (RST | ACK));
         }
         else {
             // RFC 9293: If the ACK bit is on,
             // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
-            response = formSegment(ctx, seg.ack(), RST);
+            response = formSegment(ctx, seg.dstPort(), seg.srcPort(), seg.ack(), RST);
         }
         LOG.trace("{} As we're already on CLOSED state, this channel is going to be removed soon. Reset remote peer `{}`.", ctx.channel(), response);
         ctx.writeAndFlush(response);
@@ -989,7 +1026,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             // RFC 9293: state. An acceptable reset segment should be formed for any arriving
             // RFC 9293: ACK-bearing segment. The RST should be formatted as follows:
             // RFC 9293: <SEQ=SEG.ACK><CTL=RST>
-            final Segment response = formSegment(ctx, seg.ack(), RST);
+            final Segment response = formSegment(ctx, seg.dstPort(), seg.srcPort(), seg.ack(), RST);
             LOG.trace("{} We are on a state were we have never sent anything that must be ACKnowledged. Send RST `{}`.", ctx.channel(), response);
             ctx.writeAndFlush(response);
 
@@ -1006,6 +1043,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             // (not applicable to us)
 
             LOG.trace("{} Remote peer initiates handshake by sending a SYN `{}` to us.", ctx.channel(), seg);
+
+            tcb.remotePort(seg.srcPort());
 
             if (config.timestamps()) {
                 // RFC 7323: Check for a TSopt option;
@@ -1228,7 +1267,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 LOG.trace("{} Remote peer has ACKed our SYN and sent us its SYN `{}`. Handshake on our side is completed.", ctx.channel(), seg);
 
                 // these are not contained in RFC9293 but without them transmission will not start
-                tcb.sndWnd(seg.wnd());
+                tcb.sndWnd(ctx, seg.wnd());
                 tcb.sndWl1(seg.seq());
                 tcb.sndWl2(seg.ack());
 
@@ -1255,7 +1294,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (timestamps option is automatically added by formSegment)
                 final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                 LOG.trace("{} ACKnowledge the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), response);
-                tcb.outgoingSegmentQueue().place(ctx, response);
+                tcb.outgoingSegmentQueue().add(ctx, response);
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                 // (is automatically done by formSegment)
@@ -1283,7 +1322,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: Set the variables:
                 // RFC 9293: SND.WND <- SEG.WND
-                tcb.sndWnd(seg.wnd());
+                tcb.sndWnd(ctx, seg.wnd());
                 // RFC 9293: SND.WL1 <- SEG.SEQ
                 tcb.sndWl1(seg.seq());
                 // RFC 9293: SND.WL2 <- SEG.ACK
@@ -1320,12 +1359,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (somethingWasAcked) {
             if (tcb.retransmissionQueue().nextSegment() == null) {
+                LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
                 cancelRetransmissionTimer(ctx);
             }
             else {
+                LOG.trace("{} New, but not all outstanding data has been acknowledged. Restart the retransmission timer.", ctx.channel());
                 restartUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
@@ -1409,7 +1450,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293:                                RCV.NXT =< SEG.SEQ+SEG.LEN-1 < RCV.NXT+RCV.WND
                     else {
                         acceptableSeg = (lessThanOrEqualTo(tcb.rcvNxt(), seg.seq()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) ||
-                                (lessThanOrEqualTo(tcb.rcvNxt(), add(seg.seq(), seg.len() - 1)) && greaterThan(add(seg.seq(), seg.len() - 1), add(tcb.rcvNxt(), tcb.rcvWnd())));
+                                (lessThanOrEqualTo(tcb.rcvNxt(), add(seg.seq(), seg.len() - 1L)) && greaterThan(add(seg.seq(), seg.len() - 1L), add(tcb.rcvNxt(), tcb.rcvWnd())));
                     }
                 }
 
@@ -1704,7 +1745,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                         // RFC 9293: and continue processing with the variables below set to:
                         // RFC 9293: SND.WND <- SEG.WND
-                        tcb.sndWnd(seg.wnd());
+                        tcb.sndWnd(ctx, seg.wnd());
                         // RFC 9293: SND.WL1 <- SEG.SEQ
                         tcb.sndWl1(seg.seq());
                         // RFC 9293: SND.WL2 <- SEG.ACK
@@ -2020,7 +2061,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.
         long ackedBytes = 0;
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
-            LOG.trace("{} Got `{}`. Advance SND.UNA from {} to {} (+{}).", ctx.channel(), seg, tcb.sndUna(), seg.ack(), Segment.sub(seg.ack(), tcb.sndUna()));
+            LOG.trace("{} Got `{}`. Advance SND.UNA.", ctx.channel(), seg);
             ackedBytes = tcb.sndUna(ctx, seg.ack());
         }
 
@@ -2379,7 +2420,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (isRfc9293Duplicate) {
             // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
-            LOG.trace("{} Got duplicate ACK `{}`. Ignore.", ctx.channel(), seg);
+            LOG.trace("{} As SEG `{}` does not acknowledge any new data, we can now stop processing this SEG.", ctx.channel(), seg);
             return false;
         }
         tcb.lastAdvertisedWindow(seg.wnd());
@@ -2405,16 +2446,18 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             if (lessThan(tcb.sndWl1(), seg.seq()) || (tcb.sndWl1() == seg.seq() && lessThanOrEqualTo(tcb.sndWl2(), seg.ack()))) {
                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                 // RFC 9293: set SND.WND <- SEG.WND,
-                tcb.sndWnd(seg.wnd());
+                tcb.sndWnd(ctx, seg.wnd());
                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                 tcb.sndWl1(seg.seq());
                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
                 tcb.sndWl2(seg.ack());
 
                 if (tcb.sndWnd() == 0) {
+                    LOG.trace("{} SND.WND is now zero. Create zero-window probing timer.", ctx.channel());
                     startZeroWindowProbing(ctx);
                 }
                 else {
+                    LOG.trace("{} SND.WND is not longer zero. Cancel zero-window probing timer.", ctx.channel());
                     cancelZeroWindowProbing(ctx);
                 }
             }
@@ -2435,12 +2478,15 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     }
 
     Segment formSegment(final ChannelHandlerContext ctx,
+                        final int srcPort,
+                        final int dstPort,
                         final long seq,
                         final long ack,
                         final byte ctl,
                         final ByteBuf data) {
         final EnumMap<SegmentOption, Object> options = new EnumMap<>(SegmentOption.class);
-        final Segment seg = new Segment(seq, ack, ctl, tcb != null ? tcb.rcvWnd() : config.rmem(), options, data);
+        // SEG.WND is set in OutgoingSegmentQueue#flush
+        final Segment seg = new Segment(srcPort, dstPort, seq, ack, ctl, 0, options, data);
 
         if ((ctl & SYN) != 0) {
             // RFC 9293: TCP implementations SHOULD send an MSS Option in every SYN segment
@@ -2501,17 +2547,42 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         return seg;
     }
 
+    Segment formSegment(final ChannelHandlerContext ctx,
+                        final long seq,
+                        final long ack,
+                        final byte ctl,
+                        final ByteBuf data) {
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ack, ctl, data);
+    }
+
+    private Segment formSegment(final ChannelHandlerContext ctx,
+                                final int srcPort,
+                                final int dstPort,
+                                final long seq,
+                                final long ack,
+                                final byte ctl) {
+        return formSegment(ctx, srcPort, dstPort, seq, ack, ctl, Unpooled.EMPTY_BUFFER);
+    }
+
     private Segment formSegment(final ChannelHandlerContext ctx,
                                 final long seq,
                                 final long ack,
                                 final byte ctl) {
-        return formSegment(ctx, seq, ack, ctl, Unpooled.EMPTY_BUFFER);
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ack, ctl);
+    }
+
+    private Segment formSegment(final ChannelHandlerContext ctx,
+                                final int srcPort,
+                                final int dstPort,
+                                final long seq,
+                                final byte ctl) {
+        return formSegment(ctx, srcPort, dstPort, seq, 0, ctl);
     }
 
     private Segment formSegment(final ChannelHandlerContext ctx,
                                 final long seq,
                                 final byte ctl) {
-        return formSegment(ctx, seq, 0, ctl);
+        return formSegment(ctx, tcb.localPort(), tcb.remotePort(), seq, ctl);
     }
 
     long segmentizeAndSendData(final ChannelHandlerContext ctx, long bytes) {
@@ -2739,7 +2810,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     }
 
     private void startZeroWindowProbing(final ChannelHandlerContext ctx) {
-        if (zeroWindowProber == null && tcb.sendBuffer().length() > 0) {
+        if (zeroWindowProber == null && !tcb.sendBuffer().isEmpty()) {
             // RFC 9293: The transmitting host SHOULD send the first zero-window probe when a zero
             // RFC 9293: window has existed for the retransmission timeout period (SHLD-29)
             // RFC 9293: (Section 3.8.1), and SHOULD increase exponentially the interval between
@@ -2749,7 +2820,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             zeroWindowProber = ctx.executor().schedule(() -> {
                 zeroWindowProber = null;
 
-                LOG.trace("{} Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), rto);
+                LOG.trace("{} Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is really still unable to receive data.", ctx.channel(), rto);
                 if (segmentizeAndSendData(ctx, 1) > 0) {
                     tcb.flush(ctx);
                 }

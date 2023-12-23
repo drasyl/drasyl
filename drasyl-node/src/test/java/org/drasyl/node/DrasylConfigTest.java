@@ -194,7 +194,7 @@ class DrasylConfigTest {
     class GetInetAddress {
         @Test
         void shouldThrowExceptionForInvalidValue() {
-            final Config config = ConfigFactory.parseString("foo.bar = baz");
+            final Config config = ConfigFactory.parseString("foo.bar = baz_123.example.com");
 
             assertThrows(DrasylConfigException.class, () -> getInetAddress(config, "foo.bar"));
         }
