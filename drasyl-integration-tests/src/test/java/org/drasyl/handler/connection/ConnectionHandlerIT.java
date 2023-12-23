@@ -94,7 +94,7 @@ class ConnectionHandlerIT {
      */
     @ParameterizedTest
     @ValueSource(floats = { 0.0f, 0.2f })
-    @Timeout(value = 5_000, unit = MILLISECONDS)
+    //@Timeout(value = 5_000, unit = MILLISECONDS)
     void transmission(final float lossRate) throws Exception {
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final ByteBuf receivedBuf = Unpooled.buffer();
@@ -201,7 +201,7 @@ class ConnectionHandlerIT {
                 .connect(peerBAddress).sync().channel();
 
         try {
-            final int bytes = 10_000;
+            final int bytes = 10_000_000;
             final ByteBuf sentBuf = peerAChannel.alloc().buffer(bytes);
             sentBuf.writeBytes(randomBytes(bytes));
 

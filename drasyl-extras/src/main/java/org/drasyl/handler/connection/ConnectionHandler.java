@@ -2037,10 +2037,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                                                final Segment seg) {
         // short overview of RCFs used in this method...
         // RFC 9293: basic TCP
-        //  RFC 7323: TCP Timestamps Option and RTTM Mechanism
+        //  RFC 7323: TCP Timestamps Option and RTTM Mechanism (DISABLED)
+        //   RFC 6298: Computing TCP's Retransmission Timer (DISABLED)
         //  RFC 5681: congestion control algorithms
-        //   RFC 3042: limited transmit
-        //   RFC 6582: NewReno
+        //   RFC 3042: limited transmit (DISABLED)
+        //   RFC 6582: NewReno (DISABLED)
 
         final boolean isRfc9293Duplicate = lessThanOrEqualTo(seg.ack(), tcb.sndUna());
 
