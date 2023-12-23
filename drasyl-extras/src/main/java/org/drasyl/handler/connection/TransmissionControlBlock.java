@@ -418,7 +418,7 @@ public class TransmissionControlBlock {
             }
             sndNxt = newSndNxt;
         }
-        outgoingSegmentQueue.place(ctx, seg, promise);
+        outgoingSegmentQueue.add(ctx, seg, promise);
     }
 
     void send(final ChannelHandlerContext ctx, final Segment seg) {
@@ -665,7 +665,7 @@ public class TransmissionControlBlock {
         final int rcvUser = receiveBuffer.readableBytes();
         final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
 
-        if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
+        if ((rcvBuff() - rcvUser - rcvWnd) >= min(fr * rcvBuff(), effSndMss())) {
             final int newRcvWind = rcvBuff() - rcvUser;
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, Segment.sub(newRcvWind, rcvWnd));
