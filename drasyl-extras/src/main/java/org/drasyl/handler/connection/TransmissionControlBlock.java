@@ -75,6 +75,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
+    public static final int MIN_PORT = 1;
+    public static final int MAX_PORT = 65_535;
     // IPv4/IPv6: 20/40 bytes -> 40 bytes
     // UDP: 8 bytes
     // drasyl: 176 bytes
@@ -96,6 +98,8 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
     private final ConnectionConfig config;
+    private int localPort;
+    private int remotePort;
     // RFC 9293: Send Sequence Variables
     // RFC 9293: SND.UNA = oldest unacknowledged sequence number
     private long sndUna;
@@ -172,6 +176,8 @@ public class TransmissionControlBlock {
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -195,6 +201,8 @@ public class TransmissionControlBlock {
                              final double sRtt,
                              final long rto) {
         this.config = requireNonNull(config);
+        this.localPort = requireInRange(localPort, 0, MAX_PORT);
+        this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndNxt = requireInRange(sndNxt, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sndWnd = requireNonNegative(sndWnd);
@@ -221,6 +229,8 @@ public class TransmissionControlBlock {
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
@@ -233,32 +243,34 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
+        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
     }
 
+    @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
                              final Channel channel,
                              final long sndUna,
                              final long sndNxt,
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+    }
+
+    TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
+                             final Channel channel,
+                             final long irs) {
+        this(config, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
-                             final long sndUna,
-                             final long sndNxt,
-                             final long iss,
                              final long irs) {
-        this(config, channel, sndUna, sndNxt, config.rmem(), iss, irs);
-    }
-
-    TransmissionControlBlock(final ConnectionConfig config,
-                             final Channel channel,
-                             final long irs) {
-        this(config, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, 0, 0, channel, irs);
     }
 
     // RFC 1122, Section 4.2.2.6
@@ -366,7 +378,9 @@ public class TransmissionControlBlock {
     @Override
     public String toString() {
         return "TransmissionControlBlock{" +
-                "SND.UNA=" + sndUna +
+                "L=" + localPort +
+                ", R=" + remotePort +
+                ", SND.UNA=" + sndUna +
                 ", SND.NXT=" + sndNxt +
                 ", SND.WND=" + sndWnd +
                 ", ISS=" + iss +
@@ -843,5 +857,27 @@ public class TransmissionControlBlock {
 
     public long lastAdvertisedWindow() {
         return lastAdvertisedWindow;
+    }
+
+    public int localPort() {
+        return localPort;
+    }
+
+    public void remotePort(final int remotePort) {
+        this.remotePort = requireInRange(remotePort, MIN_PORT, MAX_PORT);
+    }
+
+    public int remotePort() {
+        return remotePort;
+    }
+
+    public void ensureLocalPortIsSelected(final int requestedLocalPort) {
+        if (requestedLocalPort == 0) {
+            // no specific port requested. pick a unused one
+            this.localPort = config.unusedPortSupplier().getAsInt();
+        }
+        else {
+            this.localPort = requireInRange(requestedLocalPort, MIN_PORT, MAX_PORT);
+        }
     }
 }

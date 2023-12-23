@@ -40,7 +40,7 @@ import static org.drasyl.handler.connection.SegmentOption.END_OF_OPTION_LIST;
  */
 public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     private static final Logger LOG = LoggerFactory.getLogger(SegmentCodec.class);
-    public static final int CKS_INDEX = 12;
+    public static final int CKS_INDEX = 16;
     public static final int MAGIC_NUMBER = 1_232_217_832;
     private final boolean checksumEnabled;
 
@@ -58,6 +58,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                           final List<Object> out) throws Exception {
         final ByteBuf buf = ctx.alloc().buffer(Integer.BYTES + SEG_HDR_SIZE + seg.content().readableBytes());
         buf.writeInt(MAGIC_NUMBER);
+        buf.writeShort((short) seg.srcPort());
+        buf.writeShort((short) seg.dstPort());
         buf.writeInt((int) seg.seq());
         buf.writeInt((int) seg.ack());
         buf.writeShort(0); // checksum placeholder
@@ -108,6 +110,8 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
 
             final int readerIndex = in.readerIndex();
 
+            final int srcPort = in.readUnsignedShort();
+            final int dstPort = in.readUnsignedShort();
             final long seq = in.readUnsignedInt();
             final long ack = in.readUnsignedInt();
             final int cks = in.readUnsignedShort();
@@ -124,7 +128,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 options.put(option, value);
             }
 
-            final Segment seg = new Segment(seq, ack, ctl, wnd, cks, options, in);
+            final Segment seg = new Segment(srcPort, dstPort, seq, ack, ctl, wnd, cks, options, in);
 
             if (checksumEnabled) {
                 // verify checksum

@@ -34,7 +34,10 @@ import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
+
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
@@ -65,7 +68,22 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
-        p.addLast(new ConnectionHandler(config));
+        final int localPort;
+        final int remotePort;
+        final ConnectionConfig myConf;
+        if (Integer.signum(Arrays.compareUnsigned(((DrasylAddress) ch.localAddress()).toByteArray(), ((DrasylAddress) ch.remoteAddress0()).toByteArray())) == 1) {
+            // I'm the "client"
+            localPort = 0;
+            remotePort = 1234;
+            myConf = config.toBuilder().activeOpen(true).build();
+        }
+        else {
+            // I'm the "server"
+            localPort = 1234;
+            remotePort = 0;
+            myConf = config.toBuilder().activeOpen(false).build();
+        }
+        p.addLast(new ConnectionHandler(localPort, remotePort, myConf));
         // FIXME: remove when debugging is done
         p.addLast(new ConnectionAnalyzeHandler());
 

@@ -34,6 +34,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -46,6 +48,8 @@ import static org.drasyl.util.RandomUtil.randomLong;
 public class Segment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
     public static final long MAX_SEQ_NO = 4_294_967_295L;
+    // Source Port: 2 bytes
+    // Destination Port: 2 bytes
     // SEQ: 4 bytes
     // ACK: 4 bytes
     // Checksum: 2 bytes
@@ -54,7 +58,7 @@ public class Segment extends DefaultByteBufHolder {
     // Options: 1 bytes
     //   END_OF_OPTION_LIST: 1 byte
     // data: arbitrary number of bytes
-    public static final int SEG_HDR_SIZE = 16;
+    public static final int SEG_HDR_SIZE = 20;
     static final int SEQ_NO_SPACE = 32;
     static final byte ACK = 1 << 4;
     static final byte PSH = 1 << 3;
@@ -62,6 +66,8 @@ public class Segment extends DefaultByteBufHolder {
     static final byte SYN = 1 << 1;
     @SuppressWarnings("PointlessBitwiseExpression")
     static final byte FIN = 1 << 0;
+    private final int srcPort;
+    private final int dstPort;
     private final long seq;
     private final long ack;
     private final byte ctl;
@@ -69,7 +75,10 @@ public class Segment extends DefaultByteBufHolder {
     private final int cks;
     private final Map<SegmentOption, Object> options;
 
-    Segment(final long seq,
+    @SuppressWarnings("java:S107")
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final long ack,
             final byte ctl,
             final long wnd,
@@ -77,6 +86,8 @@ public class Segment extends DefaultByteBufHolder {
             final Map<SegmentOption, Object> options,
             final ByteBuf data) {
         super(data);
+        this.srcPort = requireInRange(srcPort, MIN_PORT, MAX_PORT);
+        this.dstPort = requireInRange(dstPort, MIN_PORT, MAX_PORT);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
@@ -85,60 +96,95 @@ public class Segment extends DefaultByteBufHolder {
         this.options = requireNonNull(options);
     }
 
-    Segment(final long seq,
+    @SuppressWarnings("java:S107")
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final long ack,
             final byte ctl,
             final long wnd,
             final Map<SegmentOption, Object> options,
             final ByteBuf data) {
-        this(seq, ack, ctl, wnd, (short) 0, options, data);
+        this(srcPort, dstPort, seq, ack, ctl, wnd, (short) 0, options, data);
     }
 
-    Segment(final long seq,
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final long ack,
             final byte ctl,
             final Map<SegmentOption, Object> options,
             final ByteBuf data) {
-        this(seq, ack, ctl, 0, options, data);
+        this(srcPort, dstPort, seq, ack, ctl, 0, options, data);
     }
 
-    Segment(final long seq,
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final long ack,
             final byte ctl,
             final long wnd,
             final ByteBuf data) {
-        this(seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), data);
+        this(srcPort, dstPort, seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), data);
     }
 
-    Segment(final long seq,
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final long ack,
             final byte ctl,
             final ByteBuf data) {
-        this(seq, ack, ctl, 0, data);
+        this(srcPort, dstPort, seq, ack, ctl, 0, data);
     }
 
-    Segment(final long seq,
+    Segment(final int srcPort,
+            final int dstPort,
+            final long seq,
             final byte ctl) {
-        this(seq, 0, ctl, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+        this(srcPort, dstPort, seq, 0, ctl, 0, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public Segment(final long seq,
+    public Segment(final int srcPort,
+                   final int dstPort,
+                   final long seq,
                    final byte ctl,
                    final long wnd) {
-        this(seq, 0, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+        this(srcPort, dstPort, seq, 0, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public Segment(final long seq,
+    public Segment(final int srcPort,
+                   final int dstPort,
+                   final long seq,
                    final long ack,
                    final byte ctl,
                    final long wnd) {
-        this(seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
+        this(srcPort, dstPort, seq, ack, ctl, wnd, new EnumMap<>(SegmentOption.class), Unpooled.EMPTY_BUFFER);
     }
 
-    public Segment(final long seq,
+    public Segment(final int srcPort,
+                   final int dstPort,
+                   final long seq,
                    final long ack,
                    final byte ctl) {
-        this(seq, ack, ctl, 0);
+        this(srcPort, dstPort, seq, ack, ctl, 0);
+    }
+
+    /**
+     * Returns the source port of this segment.
+     *
+     * @return the source port of this segment
+     */
+    public int srcPort() {
+        return srcPort;
+    }
+
+    /**
+     * Returns the destination port of this segment.
+     *
+     * @return the destination port of this segment
+     */
+    public int dstPort() {
+        return dstPort;
     }
 
     /**
@@ -292,12 +338,12 @@ public class Segment extends DefaultByteBufHolder {
             return false;
         }
         final Segment segment = (Segment) o;
-        return seq == segment.seq && ack == segment.ack && ctl == segment.ctl;
+        return srcPort == segment.srcPort && dstPort == segment.dstPort && seq == segment.seq && ack == segment.ack && ctl == segment.ctl;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), seq, ack, ctl);
+        return Objects.hash(super.hashCode(), srcPort, dstPort, seq, ack, ctl);
     }
 
     @Override
@@ -325,12 +371,12 @@ public class Segment extends DefaultByteBufHolder {
             optionsLabel.add(option.toString() + "=" + value);
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><CKS=" + cks + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
+        return "<S=" + srcPort + "/D=" + dstPort + "><SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><CKS=" + cks + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override
     public Segment copy() {
-        return new Segment(seq, ack, ctl, wnd, cks, new EnumMap<>(options), content().copy());
+        return new Segment(srcPort, dstPort, seq, ack, ctl, wnd, cks, new EnumMap<>(options), content().copy());
     }
 
     /**
