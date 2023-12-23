@@ -2758,7 +2758,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     }
 
     private void startZeroWindowProbing(final ChannelHandlerContext ctx) {
-        if (zeroWindowProber == null && tcb.sendBuffer().length() > 0) {
+        if (zeroWindowProber == null && !tcb.sendBuffer().isEmpty()) {
             // RFC 9293: The transmitting host SHOULD send the first zero-window probe when a zero
             // RFC 9293: window has existed for the retransmission timeout period (SHLD-29)
             // RFC 9293: (Section 3.8.1), and SHOULD increase exponentially the interval between
