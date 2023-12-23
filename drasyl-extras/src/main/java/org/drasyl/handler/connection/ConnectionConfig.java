@@ -99,10 +99,10 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false)
+            .sack(false) // not implemented yet
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
-            .newReno(true)
+            .newReno(false) // New Reno is buggy
             .limitedTransmit(true)
             .build();
 
