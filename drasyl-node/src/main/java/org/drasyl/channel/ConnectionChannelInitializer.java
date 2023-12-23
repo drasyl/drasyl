@@ -40,6 +40,9 @@ import org.drasyl.util.internal.UnstableApi;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
+import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
  * This {@link ChannelInitializer} create a channel providing reliable and ordered delivery of bytes
@@ -52,14 +55,30 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
+    public static final int DEFAULT_SERVER_PORT = 21_037;
+    private final int listenPort;
+    private final boolean overrideActiveOpen;
     protected final ConnectionConfig config;
 
-    protected ConnectionChannelInitializer(final ConnectionConfig config) {
+    protected ConnectionChannelInitializer(final int listenPort,
+                                           final boolean overrideActiveOpen,
+                                           final ConnectionConfig config) {
+        this.listenPort = requireInRange(listenPort, MIN_PORT, MAX_PORT);
+        this.overrideActiveOpen = overrideActiveOpen;
         this.config = requireNonNull(config);
     }
 
+    protected ConnectionChannelInitializer(final boolean overrideActiveOpen,
+                                           final ConnectionConfig config) {
+        this(DEFAULT_SERVER_PORT, overrideActiveOpen, config);
+    }
+
+    protected ConnectionChannelInitializer(final boolean overrideActiveOpen) {
+        this(overrideActiveOpen, ConnectionConfig.newBuilder().build());
+    }
+
     protected ConnectionChannelInitializer() {
-        this(ConnectionConfig.newBuilder().build());
+        this(true);
     }
 
     @SuppressWarnings("java:S1188")
@@ -68,22 +87,30 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
+
+        final boolean iAmServer = iAmServer(ch);
         final int localPort;
         final int remotePort;
-        final ConnectionConfig myConf;
-        if (Integer.signum(Arrays.compareUnsigned(((DrasylAddress) ch.localAddress()).toByteArray(), ((DrasylAddress) ch.remoteAddress0()).toByteArray())) == 1) {
-            // I'm the "client"
-            localPort = 0;
-            remotePort = 1234;
-            myConf = config.toBuilder().activeOpen(true).build();
+        if (iAmServer) {
+            // I'm the "server"
+            localPort = listenPort;
+            remotePort = 0;
         }
         else {
-            // I'm the "server"
-            localPort = 1234;
-            remotePort = 0;
-            myConf = config.toBuilder().activeOpen(false).build();
+            // I'm the "client"
+            localPort = 0;
+            remotePort = listenPort;
         }
-        p.addLast(new ConnectionHandler(localPort, remotePort, myConf));
+
+        final ConnectionConfig overriddenConfig;
+        if (overrideActiveOpen) {
+            overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
+        }
+        else {
+            overriddenConfig = config;
+        }
+        p.addLast(new ConnectionHandler(localPort, remotePort, overriddenConfig));
+
         // FIXME: remove when debugging is done
         p.addLast(new ConnectionAnalyzeHandler());
 
@@ -117,6 +144,10 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
                 }
             }
         });
+    }
+
+    private static boolean iAmServer(final DrasylChannel ch) {
+        return Integer.signum(Arrays.compareUnsigned(((DrasylAddress) ch.localAddress()).toByteArray(), ((DrasylAddress) ch.remoteAddress0()).toByteArray())) == -1;
     }
 
     @SuppressWarnings("java:S112")
