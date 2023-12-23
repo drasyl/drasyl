@@ -794,9 +794,12 @@ public class TransmissionControlBlock {
         return sendMss;
     }
 
-    public void sndWnd(final long sndWnd) {
-        this.sndWnd = sndWnd;
-        maxSndWnd = max(maxSndWnd, sndWnd);
+    public void sndWnd(final ChannelHandlerContext ctx, final long newSndWnd) {
+        if (LOG.isTraceEnabled() && newSndWnd != sndWnd) {
+            LOG.trace("{} {} SND.WND from {} to {} ({}{}).", ctx.channel(), (newSndWnd > sndWnd ? "Increase" : "Decrease"), sndWnd, newSndWnd, (newSndWnd > sndWnd ? "+" : ""), newSndWnd - sndWnd);
+        }
+        sndWnd = newSndWnd;
+        maxSndWnd = max(maxSndWnd, newSndWnd);
     }
 
     public void sndWl1(final long sndWl1) {

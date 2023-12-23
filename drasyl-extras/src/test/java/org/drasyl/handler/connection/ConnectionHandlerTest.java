@@ -1889,7 +1889,7 @@ class ConnectionHandlerTest {
 
                         // RFC 9293: Set the variables:
                         // RFC 9293: SND.WND <- SEG.WND
-                        verify(tcb).sndWnd(seg.wnd());
+                        verify(tcb).sndWnd(ctx, seg.wnd());
                         // RFC 9293: SND.WL1 <- SEG.SEQ
                         verify(tcb).sndWl1(seg.seq());
                         // RFC 9293: SND.WL2 <- SEG.ACK
@@ -2319,7 +2319,7 @@ class ConnectionHandlerTest {
 
                                 // RFC 9293: and continue processing with the variables below set to:
                                 // RFC 9293: SND.WND <- SEG.WND
-                                verify(tcb, times(2)).sndWnd(seg.wnd());
+                                verify(tcb, times(2)).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: SND.WL1 <- SEG.SEQ
                                 verify(tcb, times(2)).sndWl1(seg.seq());
                                 // RFC 9293: SND.WL2 <- SEG.ACK
@@ -2405,7 +2405,7 @@ class ConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                                 verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
@@ -2466,7 +2466,7 @@ class ConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                                 verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
@@ -2509,7 +2509,7 @@ class ConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                                 verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
@@ -2570,7 +2570,7 @@ class ConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                                 verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
@@ -2631,7 +2631,7 @@ class ConnectionHandlerTest {
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
                                 // RFC 9293: set SND.WND <- SEG.WND,
-                                verify(tcb).sndWnd(seg.wnd());
+                                verify(tcb).sndWnd(ctx, seg.wnd());
                                 // RFC 9293: set SND.WL1 <- SEG.SEQ,
                                 verify(tcb).sndWl1(seg.seq());
                                 // RFC 9293: and set SND.WL2 <- SEG.ACK.
