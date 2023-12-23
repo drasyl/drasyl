@@ -1337,12 +1337,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (somethingWasAcked) {
             if (tcb.retransmissionQueue().nextSegment() == null) {
+                LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
                 cancelRetransmissionTimer(ctx);
             }
             else {
+                LOG.trace("{} New, but not all outstanding data has been acknowledged. Restart the retransmission timer.", ctx.channel());
                 restartUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
