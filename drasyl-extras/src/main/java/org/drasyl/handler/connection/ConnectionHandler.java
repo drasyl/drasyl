@@ -2768,7 +2768,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             zeroWindowProber = ctx.executor().schedule(() -> {
                 zeroWindowProber = null;
 
-                LOG.trace("{} Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is realy still uanble to receive data.", ctx.channel(), rto);
+                LOG.trace("{} Zero-window has existed for {}ms. Send a 1 byte probe to check if receiver is really still unable to receive data.", ctx.channel(), rto);
                 if (segmentizeAndSendData(ctx, 1) > 0) {
                     tcb.flush(ctx);
                 }
