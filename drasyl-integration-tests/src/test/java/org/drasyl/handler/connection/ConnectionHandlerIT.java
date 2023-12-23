@@ -102,7 +102,7 @@ class ConnectionHandlerIT {
         final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
                 .activeOpen(false)
                 .rmem(3_000)
-                .issSupplier(() -> 1_000_000L)
+                .issSupplier(() -> 1L)
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
@@ -157,7 +157,7 @@ class ConnectionHandlerIT {
         final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
                 .activeOpen(true)
                 .rmem(3_000)
-                .issSupplier(() -> 3_000_000L)
+                .issSupplier(() -> 1L)
                 .rto(ofMillis(100))
                 .lBound(ofMillis(100))
                 .userTimeout(USER_TIMEOUT)
@@ -245,7 +245,7 @@ class ConnectionHandlerIT {
             // TCP Peer B
             final LocalAddress peerBAddress = new LocalAddress(StringUtil.simpleClassName(ConnectionHandlerIT.class));
             final ConnectionConfig peerBConfig = ConnectionConfig.newBuilder()
-                    .issSupplier(() -> 300L)
+                    .issSupplier(() -> 1L)
                     .activeOpen(false)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
@@ -270,7 +270,7 @@ class ConnectionHandlerIT {
 
             // TCP Peer A
             final ConnectionConfig peerAConfig = ConnectionConfig.newBuilder()
-                    .issSupplier(() -> 100L)
+                    .issSupplier(() -> 1L)
                     .activeOpen(true)
                     .rto(ofMillis(100))
                     .lBound(ofMillis(100))
