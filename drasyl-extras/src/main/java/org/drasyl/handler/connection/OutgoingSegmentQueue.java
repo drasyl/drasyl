@@ -52,14 +52,14 @@ public class OutgoingSegmentQueue {
         this(new ArrayDeque<>());
     }
 
-    void place(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
-        LOG.trace("{} Place SEG `{}` on the outgoing segment queue.", ctx.channel(), seg);
+    void add(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
+        LOG.trace("{} Add SEG `{}` to the outgoing segment queue.", ctx.channel(), seg);
         queue.add(seg);
         queue.add(promise);
     }
 
-    void place(final ChannelHandlerContext ctx, final Segment seg) {
-        place(ctx, seg, ctx.newPromise());
+    void add(final ChannelHandlerContext ctx, final Segment seg) {
+        add(ctx, seg, ctx.newPromise());
     }
 
     public void flush(final ChannelHandlerContext ctx,

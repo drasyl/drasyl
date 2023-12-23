@@ -1294,7 +1294,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (timestamps option is automatically added by formSegment)
                 final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
                 LOG.trace("{} ACKnowledge the received segment with a `{}` so the remote peer can complete the handshake as well.", ctx.channel(), response);
-                tcb.outgoingSegmentQueue().place(ctx, response);
+                tcb.outgoingSegmentQueue().add(ctx, response);
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
                 // (is automatically done by formSegment)
