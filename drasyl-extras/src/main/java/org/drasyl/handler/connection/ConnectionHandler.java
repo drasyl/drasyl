@@ -1358,7 +1358,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
-            if (tcb.retransmissionQueue().nextSegment() == null) {
+            if (tcb.retransmissionQueue().isEmpty()) {
                 LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
@@ -1366,7 +1366,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 cancelRetransmissionTimer(ctx);
             }
             else {
-                LOG.trace("{} New, but not all outstanding data has been acknowledged. Restart the retransmission timer.", ctx.channel());
+                LOG.trace("{} New, but not all outstanding data ({} segments in queue) has been acknowledged. Restart the retransmission timer.", ctx.channel(), tcb.retransmissionQueue().size());
                 restartUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
@@ -2382,7 +2382,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: in the incoming ACK.
                 final long n = ackedBytes;
                 final long increment = min(n, tcb.smss() - SEG_HDR_SIZE);
-                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
+                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd from {} to {} (+{}).", ctx.channel(), ackedBytes, tcb.cwnd(), tcb.cwnd() + increment, increment);
                 tcb.cwnd(tcb.cwnd() + increment);
             }
             else {
@@ -2416,7 +2416,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: cwnd when the congestion window is larger than SMSS*SMSS. If the above
                 // RFC 5681: formula yields 0, the result SHOULD be rounded up to 1 byte.
                 final long increment = (long) Math.ceil(((double) tcb.smss() * tcb.smss()) / tcb.cwnd());
-                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
+                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd from {} to {} (+{}).", ctx.channel(), ackedBytes, tcb.cwnd(), tcb.cwnd() + increment, increment);
                 tcb.cwnd(tcb.cwnd() + increment);
             }
         }

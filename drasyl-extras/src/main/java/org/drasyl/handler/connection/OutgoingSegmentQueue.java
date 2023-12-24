@@ -90,8 +90,22 @@ public class OutgoingSegmentQueue {
         }
     }
 
+    /**
+     * Returns the number of elements in this deque.
+     *
+     * @return the number of elements in this deque
+     */
     public int size() {
         return queue.size() / 2;
+    }
+
+    /**
+     * Returns {@code true} if this deque contains no elements.
+     *
+     * @return {@code true} if this deque contains no elements
+     */
+    public boolean isEmpty() {
+        return queue.isEmpty();
     }
 
     @Override
