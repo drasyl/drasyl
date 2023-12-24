@@ -2038,7 +2038,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // short overview of RCFs used in this method...
         // RFC 9293: basic TCP
         //  RFC 7323: TCP Timestamps Option and RTTM Mechanism (DISABLED)
-        //   RFC 6298: Computing TCP's Retransmission Timer (DISABLED)
+        //  RFC 6298: Computing TCP's Retransmission Timer
         //  RFC 5681: congestion control algorithms
         //   RFC 3042: limited transmit (DISABLED)
         //   RFC 6582: NewReno (DISABLED)
@@ -2125,6 +2125,17 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                 tcb.rto(ctx, (long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+            }
+        }
+        else {
+            // RFC 62982: Note that after retransmitting, once a new RTT measurement is obtained
+            // RFC 62982: (which can only happen when new data has been sent and acknowledged), the
+            // RFC 62982: computations outlined in Section 2 are performed, including the
+            // RFC 62982: computation of RTO, which may result in "collapsing" RTO back down after
+            // RFC 62982: it has been subject to exponential back off (rule 5.5).
+            if (ackedBytes > 0) {
+                LOG.trace("{} New data has been acked. Reset RTO to {}ms (\"collapsing\" RTO back down).", ctx.channel(), config.rto().toMillis());
+                tcb.rto(ctx, config.rto().toMillis());
             }
         }
 
