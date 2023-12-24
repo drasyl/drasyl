@@ -1849,7 +1849,7 @@ class ConnectionHandlerTest {
                         verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        verify(tcb).rto(21);
+                        verify(tcb).rto(ctx, 21);
 
                         // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                         // RFC 9293: to ESTABLISHED,
@@ -1934,7 +1934,7 @@ class ConnectionHandlerTest {
                         verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        verify(tcb).rto(21);
+                        verify(tcb).rto(ctx, 21);
 
                         // RFC 9293: Otherwise, enter SYN-RECEIVED,
                         assertEquals(SYN_RECEIVED, handler.state);
@@ -2469,7 +2469,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2530,7 +2530,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2634,7 +2634,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2695,7 +2695,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -3245,7 +3245,7 @@ class ConnectionHandlerTest {
                     // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
                     // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
                     // RFC 6298:       to this doubling operation.
-                    verify(tcb).rto(2468L);
+                    verify(tcb).rto(ctx, 2468L);
 
                     // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
                     // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined

@@ -1258,7 +1258,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         // RFC 6298: where K = 4
-                        tcb.rto((long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+                        tcb.rto(ctx, (long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
                     }
                 }
             }
@@ -2124,12 +2124,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                final long oldRto = tcb.rto();
-                tcb.rto((long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
-
-                if (oldRto != tcb.rto()) {
-                    LOG.trace("{} Set RTO from {} to {}.", ctx.channel(), oldRto, tcb.rto());
-                }
+                tcb.rto(ctx, (long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
 
@@ -2695,9 +2690,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
         // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
         // RFC 6298:       to this doubling operation.
-        final long oldRto = tcb.rto();
-        tcb.rto(tcb.rto() * 2);
-        LOG.trace("{} RETRANSMISSION timer timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
+        LOG.trace("{} RETRANSMISSION timer timeout: Double RTO (\"back off the timer\").", ctx.channel());
+        tcb.rto(ctx, tcb.rto() * 2);
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
