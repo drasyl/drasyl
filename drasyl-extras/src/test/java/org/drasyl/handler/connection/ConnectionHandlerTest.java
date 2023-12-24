@@ -3367,7 +3367,7 @@ class ConnectionHandlerTest {
         class CongestionAvoidance {
             @Mock(answer = RETURNS_DEEP_STUBS)
             ChannelHandlerContext ctx;
-            
+
             @Test
             void congestionWindowShouldBeIncreasedByOneMessagePerRtt() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
