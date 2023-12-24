@@ -72,8 +72,12 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         this(DEFAULT_SERVER_PORT, overrideActiveOpen, config);
     }
 
+    protected ConnectionChannelInitializer(final boolean overrideActiveOpen) {
+        this(overrideActiveOpen, ConnectionConfig.newBuilder().build());
+    }
+
     protected ConnectionChannelInitializer() {
-        this(DEFAULT_SERVER_PORT, true, ConnectionConfig.newBuilder().build());
+        this(true);
     }
 
     @SuppressWarnings("java:S1188")
