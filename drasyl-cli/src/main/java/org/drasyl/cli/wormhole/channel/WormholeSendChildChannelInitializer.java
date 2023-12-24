@@ -31,7 +31,6 @@ import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Worm;
 
@@ -63,7 +62,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
                                                final Payload payload,
                                                final int windowSize,
                                                final long windowTimeout) {
-        super(ConnectionConfig.newBuilder().activeOpen(false).build());
+        super();
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

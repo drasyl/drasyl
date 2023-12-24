@@ -29,7 +29,6 @@ import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -59,7 +58,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionChannelIni
                                                   final IdentityPublicKey sender,
                                                   final String password,
                                                   final long ackInterval) {
-        super(ConnectionConfig.newBuilder().activeOpen(true).build());
+        super();
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
