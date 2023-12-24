@@ -2126,6 +2126,17 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 tcb.rto(ctx, (long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
+        else {
+            // RFC 62982: Note that after retransmitting, once a new RTT measurement is obtained
+            // RFC 62982: (which can only happen when new data has been sent and acknowledged), the
+            // RFC 62982: computations outlined in Section 2 are performed, including the
+            // RFC 62982: computation of RTO, which may result in "collapsing" RTO back down after
+            // RFC 62982: it has been subject to exponential back off (rule 5.5).
+            if (ackedBytes > 0) {
+                LOG.trace("{} New data has been acked. Reset RTO to {}ms (\"collapsing\" RTO back down).", ctx.channel(), config.rto().toMillis());
+                tcb.rto(ctx, config.rto().toMillis());
+            }
+        }
 
         // RFC 9293: Any segments on the retransmission queue that are thereby entirely
         // RFC 9293: acknowledged are removed.
