@@ -67,6 +67,11 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         this.config = requireNonNull(config);
     }
 
+    protected ConnectionChannelInitializer(final boolean overrideActiveOpen,
+                                           final ConnectionConfig config) {
+        this(DEFAULT_SERVER_PORT, overrideActiveOpen, config);
+    }
+
     protected ConnectionChannelInitializer() {
         this(DEFAULT_SERVER_PORT, true, ConnectionConfig.newBuilder().build());
     }
