@@ -62,7 +62,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
                                                final Payload payload,
                                                final int windowSize,
                                                final long windowTimeout) {
-        super();
+        super(true, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

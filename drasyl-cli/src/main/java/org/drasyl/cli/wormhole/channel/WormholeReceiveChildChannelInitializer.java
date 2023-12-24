@@ -58,7 +58,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionChannelIni
                                                   final IdentityPublicKey sender,
                                                   final String password,
                                                   final long ackInterval) {
-        super();
+        super(false, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
