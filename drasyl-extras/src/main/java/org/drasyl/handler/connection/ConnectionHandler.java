@@ -2050,13 +2050,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: acknowledgment number is equal to the greatest acknowledgment received on the
         // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
         // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
-        final boolean isRfc5681Duplicate = !tcb.sendBuffer().isEmpty() &&
-                seg.len() == 0 &&
-                !seg.isSyn() &&
-                !seg.isFin() &&
-                seg.ack() == tcb.sndUna(); // &&
-                // FIXME: mit dem hier wirds langsam. ist SEG.WND evtl. falsch?
-                //seg.wnd() == tcb.lastAdvertisedWindow();
+        final boolean isRfc5681Duplicate = !tcb.retransmissionQueue().isEmpty() &&
+                seg.len() == 0 && // SYN and FIN have length >0 by definition
+                seg.ack() == tcb.sndUna() &&
+                seg.wnd() == tcb.lastAdvertisedWindow();
 
         long ackedBytes = 0;
         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then set SND.UNA <- SEG.ACK.

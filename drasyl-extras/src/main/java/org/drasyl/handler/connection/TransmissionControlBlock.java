@@ -345,7 +345,7 @@ public class TransmissionControlBlock {
      * @return the receive window
      */
     public long rcvWnd() {
-        return rcvWnd;
+        return rcvBuff() - rcvUser();
     }
 
     /**
@@ -367,12 +367,12 @@ public class TransmissionControlBlock {
             return false;
         }
         final TransmissionControlBlock that = (TransmissionControlBlock) o;
-        return sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs;
+        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs);
+        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
     }
 
     @Override
@@ -650,35 +650,24 @@ public class TransmissionControlBlock {
         rcvNxt = newRcvNxt;
     }
 
-    public void decrementRcvWnd(final long decrement) {
-        rcvWnd -= decrement;
-        assert rcvWnd >= 0 : "RCV.WND must be non-negative";
-    }
-
-    public void incrementRcvWnd(final ChannelHandlerContext ctx) {
-        // receiver's SWS avoidance algorithms
-        // RFC 9293, Section 3.8.6.2.2
-        // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
-
-        // total receive buffer space is RCV.BUFF
-        // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-        final int rcvUser = receiveBuffer.readableBytes();
-        final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
-
-        if ((rcvBuff() - rcvUser - rcvWnd) >= min(fr * rcvBuff(), effSndMss())) {
-            final int newRcvWind = rcvBuff() - rcvUser;
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, Segment.sub(newRcvWind, rcvWnd));
-            }
-            rcvWnd = newRcvWind;
-            assert rcvWnd >= 0 : "RCV.WND must be non-negative";
+    public void updateRcvWnd(final ChannelHandlerContext ctx) {
+        final long newRcvWnd = rcvBuff() - rcvUser();
+        if (LOG.isTraceEnabled() && newRcvWnd != rcvWnd) {
+            LOG.trace("{} {} RCV.WND from {} to {} ({}{}).", ctx.channel(), (newRcvWnd > rcvWnd ? "Increase" : "Decrease"), rcvWnd, newRcvWnd, (newRcvWnd > rcvWnd ? "+" : ""), newRcvWnd - rcvWnd);
         }
+        rcvWnd = newRcvWnd;
     }
 
+    /**
+     * Total buffer space.
+     */
     int rcvBuff() {
         return rcvBuff;
     }
 
+    /**
+     * Data that has been received and acknowledged but that the user process has not yet consumed.
+     */
     long rcvUser() {
         return receiveBuffer.readableBytes();
     }
