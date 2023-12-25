@@ -1258,7 +1258,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         // RFC 6298: where K = 4
-                        tcb.rto((long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+                        tcb.rto(ctx, (long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
                     }
                 }
             }
@@ -2123,12 +2123,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                final long oldRto = tcb.rto();
-                tcb.rto((long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
-
-                if (oldRto != tcb.rto()) {
-                    LOG.trace("{} Set RTO from {} to {}.", ctx.channel(), oldRto, tcb.rto());
-                }
+                tcb.rto(ctx, (long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
 
@@ -2183,7 +2178,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
                     if (tcb.ssthresh() != newSsthresh) {
                         LOG.trace("{} Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-                        tcb.ssthresh(newSsthresh);
+                        tcb.ssthresh(ctx, newSsthresh);
                     }
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
@@ -2198,7 +2193,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                     if (newCwnd != tcb.cwnd()) {
                         LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                        tcb.cwnd(newCwnd);
+                        tcb.cwnd(ctx, newCwnd);
                     }
                 }
                 else {
@@ -2226,7 +2221,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
                         if (tcb.ssthresh() != newSsthresh) {
                             LOG.trace("{} Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-                            tcb.ssthresh(newSsthresh);
+                            tcb.ssthresh(ctx, newSsthresh);
                         }
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
@@ -2241,7 +2236,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
                         if (newCwnd != tcb.cwnd()) {
                             LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(newCwnd);
+                            tcb.cwnd(ctx, newCwnd);
                         }
                     }
                     else {
@@ -2258,7 +2253,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final long newCwnd = tcb.cwnd() + tcb.smss();
                 if (newCwnd != tcb.cwnd()) {
                     LOG.trace("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                    tcb.cwnd(newCwnd);
+                    tcb.cwnd(ctx, newCwnd);
                 }
 
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
@@ -2284,7 +2279,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     final long newCwnd = tcb.ssthresh();
                     if (newCwnd != tcb.cwnd()) {
                         LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                        tcb.cwnd(newCwnd);
+                        tcb.cwnd(ctx, newCwnd);
                     }
                 }
             }
@@ -2318,7 +2313,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final long newCwnd = tcb.ssthresh();
                         if (newCwnd != tcb.cwnd()) {
                             LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(newCwnd);
+                            tcb.cwnd(ctx, newCwnd);
                         }
 
                         // RFC 6582:     Exit the fast recovery procedure.
@@ -2350,7 +2345,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         }
                         if (tcb.cwnd() != newCwnd) {
                             LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(newCwnd);
+                            tcb.cwnd(ctx, newCwnd);
                         }
 
                         // RFC 6582:     Send a new segment if permitted by the new value of
@@ -2381,8 +2376,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: in the incoming ACK.
                 final long n = ackedBytes;
                 final long increment = min(n, tcb.smss() - SEG_HDR_SIZE);
-                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
-                tcb.cwnd(tcb.cwnd() + increment);
+                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {}.", ctx.channel(), ackedBytes, increment);
+                tcb.cwnd(ctx, tcb.cwnd() + increment);
             }
             else {
                 // RFC 5681: During congestion avoidance, cwnd is incremented by roughly 1
@@ -2415,8 +2410,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: cwnd when the congestion window is larger than SMSS*SMSS. If the above
                 // RFC 5681: formula yields 0, the result SHOULD be rounded up to 1 byte.
                 final long increment = (long) Math.ceil(((double) tcb.smss() * tcb.smss()) / tcb.cwnd());
-                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {} from {} to {}.", ctx.channel(), ackedBytes, increment, tcb.cwnd(), tcb.cwnd() + increment);
-                tcb.cwnd(tcb.cwnd() + increment);
+                LOG.trace("{} Congestion Control: Congestion Avoidance: {} new bytes has ben ACKed. Increase cwnd by {}.", ctx.channel(), ackedBytes, increment);
+                tcb.cwnd(ctx, tcb.cwnd() + increment);
             }
         }
 
@@ -2694,9 +2689,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
         // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
         // RFC 6298:       to this doubling operation.
-        final long oldRto = tcb.rto();
-        tcb.rto(tcb.rto() * 2);
-        LOG.trace("{} RETRANSMISSION timer timeout: Change RTO from {}ms to {}ms.", ctx.channel(), oldRto, tcb.rto());
+        LOG.trace("{} RETRANSMISSION timer timeout: Double RTO (\"back off the timer\").", ctx.channel());
+        tcb.rto(ctx, tcb.rto() * 2);
 
         // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
         // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -2708,11 +2702,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
         // RFC 5681: equation (4):
         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
-        final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
-        if (tcb.ssthresh() != newSsthresh) {
-            LOG.trace("{} Congestion Control: RETRANSMISSION timer timeout: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-            tcb.ssthresh(newSsthresh);
-        }
+        tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
         // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
         // RFC 5681: no more than the loss window, LW, which equals 1 full-sized segment
@@ -2720,11 +2710,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
         // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
         // RFC 5681: point congestion avoidance again takes over.
-        final long fullSizedSegment = tcb.effSndMss();
-        if (tcb.cwnd() != fullSizedSegment) {
-            LOG.trace("{} Congestion Control: RETRANSMISSION timer timeout: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), fullSizedSegment);
-            tcb.cwnd(fullSizedSegment);
-        }
+        tcb.cwnd(ctx, tcb.effSndMss());
 
         if (config.newReno()) {
             // RFC 6582: 4)  Retransmit timeouts:

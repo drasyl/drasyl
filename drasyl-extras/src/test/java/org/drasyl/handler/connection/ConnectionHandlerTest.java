@@ -1849,7 +1849,7 @@ class ConnectionHandlerTest {
                         verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        verify(tcb).rto(21);
+                        verify(tcb).rto(ctx, 21);
 
                         // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                         // RFC 9293: to ESTABLISHED,
@@ -1934,7 +1934,7 @@ class ConnectionHandlerTest {
                         verify(tcb).rttVar(10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                        verify(tcb).rto(21);
+                        verify(tcb).rto(ctx, 21);
 
                         // RFC 9293: Otherwise, enter SYN-RECEIVED,
                         assertEquals(SYN_RECEIVED, handler.state);
@@ -2469,7 +2469,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2530,7 +2530,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2634,7 +2634,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -2695,7 +2695,7 @@ class ConnectionHandlerTest {
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                                 verify(tcb).rttVar(2.4671875d);
                                 verify(tcb).sRtt(20.95703125d);
-                                verify(tcb).rto(31);
+                                verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
                                 // RFC 9293: If (SND.WL1 < SEG.SEQ or (SND.WL1 = SEG.SEQ and SND.WL2 =< SEG.ACK)),
@@ -3245,7 +3245,7 @@ class ConnectionHandlerTest {
                     // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
                     // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
                     // RFC 6298:       to this doubling operation.
-                    verify(tcb).rto(2468L);
+                    verify(tcb).rto(ctx, 2468L);
 
                     // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
                     // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -3258,7 +3258,7 @@ class ConnectionHandlerTest {
                     // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
                     // RFC 5681: equation (4):
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
-                    verify(tcb).ssthresh(32_000);
+                    verify(tcb).ssthresh(ctx, 32_000);
 
                     // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
                     // RFC 5681: no more than the loss window, LW, which equals 1 full-sized segment
@@ -3266,7 +3266,7 @@ class ConnectionHandlerTest {
                     // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
                     // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
                     // RFC 5681: point congestion avoidance again takes over.
-                    verify(tcb).cwnd(1401L);
+                    verify(tcb).cwnd(ctx, 1401L);
                 }
             }
 
@@ -3365,6 +3365,9 @@ class ConnectionHandlerTest {
 
         @Nested
         class CongestionAvoidance {
+            @Mock(answer = RETURNS_DEEP_STUBS)
+            ChannelHandlerContext ctx;
+
             @Test
             void congestionWindowShouldBeIncreasedByOneMessagePerRtt() {
                 final EmbeddedChannel channel = new EmbeddedChannel();
@@ -3381,7 +3384,7 @@ class ConnectionHandlerTest {
                         .build();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
                 // set cwnd to ssthresh to enable congestion avoidance
-                tcb.cwnd(tcb.ssthresh());
+                tcb.cwnd(ctx, tcb.ssthresh());
                 final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 

@@ -713,11 +713,14 @@ public class TransmissionControlBlock {
         sndNxt = add(iss(), 1);
     }
 
-    public void rto(final long rto) {
-        assert rto >= 0;
-        if (rto < config.lBound().toMillis()) {
+    public void rto(final ChannelHandlerContext ctx, long newRto) {
+        assert newRto >= 0;
+        if (newRto < config.lBound().toMillis()) {
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
             // RFC 6298:       SHOULD be rounded up to 1 second.
+            if (LOG.isTraceEnabled() && this.rto != config.lBound().toMillis()) {
+                LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values less than 1 second.", ctx.channel(), rto, config.lBound().toMillis(), newRto);
+            }
             this.rto = config.lBound().toMillis();
 
             // RFC 6298:       Traditionally, TCP implementations use coarse grain clocks to measure
@@ -729,13 +732,19 @@ public class TransmissionControlBlock {
             // RFC 6298:       some future point, research may show that a smaller minimum RTO is
             // RFC 6298:       acceptable or superior.
         }
-        else if (rto > config.uBound().toMillis()) {
+        else if (newRto > config.uBound().toMillis()) {
             // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
             // RFC 6298:       seconds.
+            if (LOG.isTraceEnabled() && this.rto != config.uBound().toMillis()) {
+                LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values more than 60 seconds.", ctx.channel(), rto, config.uBound().toMillis(), newRto);
+            }
             this.rto = config.uBound().toMillis();
         }
         else {
-            this.rto = rto;
+            if (LOG.isTraceEnabled() && this.rto != newRto) {
+                LOG.trace("{} Set RTO from {}ms to {}ms.", ctx.channel(), rto, newRto);
+            }
+            this.rto = newRto;
         }
     }
 
@@ -807,12 +816,18 @@ public class TransmissionControlBlock {
         return rto;
     }
 
-    public void ssthresh(final long ssthresh) {
-        this.ssthresh = ssthresh;
+    public void ssthresh(final ChannelHandlerContext ctx, final long newSsthresh) {
+        if (LOG.isTraceEnabled() && newSsthresh != ssthresh) {
+            LOG.trace("{} {} ssthresh from {} to {} ({}{}).", ctx.channel(), (newSsthresh > ssthresh ? "Increase" : "Decrease"), ssthresh, newSsthresh, (newSsthresh > ssthresh ? "+" : ""), newSsthresh - ssthresh);
+        }
+        this.ssthresh = newSsthresh;
     }
 
-    public void cwnd(final long cwnd) {
-        this.cwnd = cwnd;
+    public void cwnd(final ChannelHandlerContext ctx, final long newCwnd) {
+        if (LOG.isTraceEnabled() && newCwnd != cwnd) {
+            LOG.trace("{} {} cwnd from {} to {} ({}{}).", ctx.channel(), (newCwnd > cwnd ? "Increase" : "Decrease"), cwnd, newCwnd, (newCwnd > cwnd ? "+" : ""), newCwnd - cwnd);
+        }
+        this.cwnd = newCwnd;
     }
 
     public long sendMss() {
