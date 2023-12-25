@@ -1358,7 +1358,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final boolean somethingWasAcked = tcb.retransmissionQueue().removeAcknowledged(ctx, tcb);
 
         if (somethingWasAcked) {
-            if (tcb.retransmissionQueue().nextSegment() == null) {
+            if (tcb.retransmissionQueue().isEmpty()) {
                 LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
@@ -1366,7 +1366,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 cancelRetransmissionTimer(ctx);
             }
             else {
-                LOG.trace("{} New, but not all outstanding data has been acknowledged. Restart the retransmission timer.", ctx.channel());
+                LOG.trace("{} New, but not all outstanding data ({} segments still in queue) has been acknowledged. Restart the retransmission timer.", ctx.channel(), tcb.retransmissionQueue().size());
                 restartUserTimer(ctx);
                 // RFC 6298: (5.3) When an ACK is received that acknowledges new data, restart the
                 // RFC 6298:       retransmission timer so that it will expire after RTO seconds
@@ -2459,7 +2459,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     startZeroWindowProbing(ctx);
                 }
                 else {
-                    LOG.trace("{} SND.WND is not longer zero. Cancel zero-window probing timer.", ctx.channel());
+                    LOG.trace("{} SND.WND is not longer zero. Cancel zero-window probing timer, if present.", ctx.channel());
                     cancelZeroWindowProbing(ctx);
                 }
             }
