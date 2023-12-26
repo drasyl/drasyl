@@ -88,7 +88,7 @@ public class RetransmissionQueue {
 
     @Override
     public String toString() {
-        return "RTNS.Q(SIZE=" + queue.size() + ")";
+        return "RTNS.Q(SIZE=" + size() + ")";
     }
 
     @SuppressWarnings("java:S135")
@@ -131,5 +131,23 @@ public class RetransmissionQueue {
 
     public long firstSegmentSentTime() {
         return firstSegmentSentTime;
+    }
+
+    /**
+     * Returns the number of elements in this deque.
+     *
+     * @return the number of elements in this deque
+     */
+    public int size() {
+        return queue.size();
+    }
+
+    /**
+     * Returns {@code true} if this deque contains no elements.
+     *
+     * @return {@code true} if this deque contains no elements
+     */
+    public boolean isEmpty() {
+        return queue.isEmpty();
     }
 }

@@ -52,14 +52,14 @@ public class OutgoingSegmentQueue {
         this(new ArrayDeque<>());
     }
 
-    void place(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
-        LOG.trace("{} Place SEG `{}` on the outgoing segment queue.", ctx.channel(), seg);
+    void add(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
+        LOG.trace("{} Add SEG `{}` to the outgoing segment queue.", ctx.channel(), seg);
         queue.add(seg);
         queue.add(promise);
     }
 
-    void place(final ChannelHandlerContext ctx, final Segment seg) {
-        place(ctx, seg, ctx.newPromise());
+    void add(final ChannelHandlerContext ctx, final Segment seg) {
+        add(ctx, seg, ctx.newPromise());
     }
 
     public void flush(final ChannelHandlerContext ctx,
@@ -68,6 +68,11 @@ public class OutgoingSegmentQueue {
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
         while ((seg = (Segment) queue.poll()) != null) {
+            if (seg.wnd() != tcb.rcvWnd()) {
+                // ensure SEG.WND is up-to-date (in processing of arrivals, we first queue SEGs to be sent, then read from the RCV.BUF, before flushing enqueued SEGs)
+                seg = new Segment(seg.srcPort(), seg.dstPort(), seg.seq(), seg.ack(), seg.ctl(), tcb.rcvWnd(), seg.cks(), seg.options(), seg.content());
+            }
+
             LOG.trace("{} Write SEG `{}` to network.", ctx.channel(), seg);
 
             if (seg.mustBeAcked()) {
@@ -85,8 +90,22 @@ public class OutgoingSegmentQueue {
         }
     }
 
+    /**
+     * Returns the number of elements in this deque.
+     *
+     * @return the number of elements in this deque
+     */
     public int size() {
         return queue.size() / 2;
+    }
+
+    /**
+     * Returns {@code true} if this deque contains no elements.
+     *
+     * @return {@code true} if this deque contains no elements
+     */
+    public boolean isEmpty() {
+        return queue.isEmpty();
     }
 
     @Override

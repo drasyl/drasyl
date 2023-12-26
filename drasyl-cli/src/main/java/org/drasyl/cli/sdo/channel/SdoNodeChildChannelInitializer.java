@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.VisualPipeline;
 import org.drasyl.cli.sdo.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdo.handler.SdoMessageChildHandler;
 import org.drasyl.cli.sdo.handler.policy.TunPolicyHandler.DrasylToTunHandler;
@@ -51,6 +50,7 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
                                           final PrintStream err,
                                           final Worm<Integer> exitCode,
                                           final IdentityPublicKey controller) {
+        super(false, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

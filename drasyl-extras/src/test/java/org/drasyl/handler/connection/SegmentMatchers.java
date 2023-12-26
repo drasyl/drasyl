@@ -43,6 +43,7 @@ public class SegmentMatchers {
     public static Matcher<Segment> srcPort(final int srcPort) {
         return new HasSrcPort(srcPort);
     }
+
     public static Matcher<Segment> dstPort(final int dstPort) {
         return new HasDstPort(dstPort);
     }

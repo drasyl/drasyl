@@ -34,9 +34,9 @@ import java.util.function.LongSupplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomInt;
 
 @AutoValue
@@ -44,7 +44,7 @@ public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
     static final int IP_MTU = 1500;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
-            .portSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
+            .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)
             .sndBufSupplier(SendBuffer::new)
             .rtnsQSupplier(channel -> new RetransmissionQueue())
@@ -100,7 +100,7 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false)
+            .sack(false) // not implemented yet
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
             .newReno(true)
@@ -111,7 +111,7 @@ public abstract class ConnectionConfig {
         return DEFAULT.toBuilder();
     }
 
-    public abstract IntSupplier portSupplier();
+    public abstract IntSupplier unusedPortSupplier();
 
     public abstract LongSupplier issSupplier();
 
@@ -176,7 +176,7 @@ public abstract class ConnectionConfig {
 
     @AutoValue.Builder
     public abstract static class Builder {
-        public abstract Builder portSupplier(final IntSupplier portSupplier);
+        public abstract Builder unusedPortSupplier(final IntSupplier unusedPortSupplier);
 
         /**
          * Used to choose an initial send sequence number. A random number within [0,4294967296] is

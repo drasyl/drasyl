@@ -45,6 +45,7 @@ public class SdoControllerChildChannelInitializer extends ConnectionChannelIniti
                                                 final PrintStream err,
                                                 final Worm<Integer> exitCode,
                                                 final NetworkConfig networkConfig) {
+        super(false, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

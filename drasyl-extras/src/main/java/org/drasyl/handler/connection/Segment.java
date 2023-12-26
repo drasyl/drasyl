@@ -34,6 +34,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
+import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
 import static org.drasyl.util.Preconditions.requireInRange;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.RandomUtil.randomLong;
@@ -73,6 +75,7 @@ public class Segment extends DefaultByteBufHolder {
     private final int cks;
     private final Map<SegmentOption, Object> options;
 
+    @SuppressWarnings("java:S107")
     Segment(final int srcPort,
             final int dstPort,
             final long seq,
@@ -83,8 +86,8 @@ public class Segment extends DefaultByteBufHolder {
             final Map<SegmentOption, Object> options,
             final ByteBuf data) {
         super(data);
-        this.srcPort = requireInRange(srcPort, TransmissionControlBlock.MIN_PORT, TransmissionControlBlock.MAX_PORT);
-        this.dstPort = requireInRange(dstPort, TransmissionControlBlock.MIN_PORT, TransmissionControlBlock.MAX_PORT);
+        this.srcPort = requireInRange(srcPort, MIN_PORT, MAX_PORT);
+        this.dstPort = requireInRange(dstPort, MIN_PORT, MAX_PORT);
         this.seq = requireInRange(seq, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ack = requireInRange(ack, MIN_SEQ_NO, MAX_SEQ_NO);
         this.ctl = ctl;
@@ -93,6 +96,7 @@ public class Segment extends DefaultByteBufHolder {
         this.options = requireNonNull(options);
     }
 
+    @SuppressWarnings("java:S107")
     Segment(final int srcPort,
             final int dstPort,
             final long seq,
@@ -367,7 +371,7 @@ public class Segment extends DefaultByteBufHolder {
             optionsLabel.add(option.toString() + "=" + value);
         }
 
-        return "<SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
+        return "<S=" + srcPort + "/D=" + dstPort + "><SEQ=" + seq + "><ACK=" + ack + "><CTL=" + String.join(",", controlBitLabels) + "><WIN=" + wnd + "><CKS=" + cks + "><LEN=" + len() + "><OPTS=" + String.join(",", optionsLabel) + ">";
     }
 
     @Override

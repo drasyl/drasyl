@@ -90,8 +90,8 @@ public class TransmissionControlBlock {
     //
     // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
-    // (DRASYL_HDR_SIZE) and our TCP header (31)
-    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE;
+    // (DRASYL_HDR_SIZE) and our TCP header (SEG_HDR_SIZE)
+    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -147,13 +147,13 @@ public class TransmissionControlBlock {
 
     // RFC 6298: Retransmission Timer Computation
     // RFC 6298: RTTVAR = round-trip time variation
-    private double rttVar;
+    private float rttVar;
     // RFC 6298: SRTT = smoothed round-trip time
-    private double sRtt;
+    private float sRtt;
     // RFC 6298: RTO = retransmission timeout
     // RFC 6298: Until a round-trip time (RTT) measurement has been made for a segment sent between
     // RFC 6298: the sender and receiver, the sender SHOULD set RTO <- 1 second
-    private long rto;
+    private int rto;
 
     // RFC 5681: Congestion Control Algorithms
     // RFC 5681: The congestion window (cwnd) is a sender-side limit on the amount of data the
@@ -198,9 +198,9 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk,
-                             final double rttVar,
-                             final double sRtt,
-                             final long rto) {
+                             final float rttVar,
+                             final float sRtt,
+                             final int rto) {
         this.config = requireNonNull(config);
         this.localPort = requireInRange(localPort, 0, MAX_PORT);
         this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
@@ -244,9 +244,10 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
+        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
+    @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
                              final int localPort,
                              final int remotePort,
@@ -260,22 +261,17 @@ public class TransmissionControlBlock {
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
                              final Channel channel,
-                             final long sndUna,
-                             final long sndNxt,
-                             final int sndWnd,
-                             final long iss,
                              final long irs) {
-        this(config, 0, 0, channel, sndUna, sndNxt, sndWnd, iss, irs);
+        this(config, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
-                             final long sndUna,
-                             final long sndNxt,
-                             final long iss,
                              final long irs) {
-        this(config, channel, sndUna, sndNxt, config.rmem(), iss, irs);
+        this(config, 0, 0, channel, irs);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -356,7 +352,7 @@ public class TransmissionControlBlock {
      * @return the receive window
      */
     public long rcvWnd() {
-        return rcvWnd;
+        return rcvBuff() - rcvUser();
     }
 
     /**
@@ -378,12 +374,12 @@ public class TransmissionControlBlock {
             return false;
         }
         final TransmissionControlBlock that = (TransmissionControlBlock) o;
-        return sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs;
+        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sndUna, sndNxt, sndWnd, iss, rcvNxt, rcvWnd, irs);
+        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
     }
 
     @Override
@@ -423,9 +419,13 @@ public class TransmissionControlBlock {
      */
     void send(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
         if (sndNxt == seg.seq() && seg.len() > 0) {
-            sndNxt = add(seg.lastSeq(), 1);
+            final long newSndNxt = add(seg.lastSeq(), 1);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{} Send data [{},{}]. Advance SND.NXT from {} to {} (+{}).", ctx.channel(), seg.seq(), seg.lastSeq(), sndNxt, newSndNxt, Segment.sub(newSndNxt, sndNxt));
+            }
+            sndNxt = newSndNxt;
         }
-        outgoingSegmentQueue.place(ctx, seg, promise);
+        outgoingSegmentQueue.add(ctx, seg, promise);
     }
 
     void send(final ChannelHandlerContext ctx, final Segment seg) {
@@ -465,13 +465,14 @@ public class TransmissionControlBlock {
     /**
      * Writes data to the network that has been queued for transmission.
      */
-    void writeEnqueuedData(final ChannelHandlerContext ctx) {
-        segmentizeData(ctx, false);
+    long writeEnqueuedData(final ChannelHandlerContext ctx) {
+        return segmentizeAndSendData(ctx, false);
     }
 
-    private void segmentizeData(final ChannelHandlerContext ctx,
-                                final boolean overrideTimeoutOccurred) {
+    private long segmentizeAndSendData(final ChannelHandlerContext ctx,
+                                       final boolean overrideTimeoutOccurred) {
         try {
+            long totalSentData = 0;
             long readableBytes = sendBuffer.length();
 
             while (readableBytes > 0) {
@@ -537,21 +538,20 @@ public class TransmissionControlBlock {
                     }
                     else {
                         LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
-                        return;
+                        return totalSentData;
                     }
                 }
 
-                final long usableMss = sendMss() - SEG_HDR_SIZE;
                 final long window = min(sndWnd(), cwnd());
                 final long usableWindow = max(0, window - flightSize());
                 final long remainingBytes;
-                if (readableBytes <= usableMss && readableBytes <= usableWindow) {
+                if (readableBytes <= sendMss() && readableBytes <= usableWindow) {
                     // we have less than a segment to send
                     remainingBytes = readableBytes;
                 }
-                else if (usableMss <= readableBytes && usableMss <= usableWindow) {
+                else if (sendMss() <= readableBytes && sendMss() <= usableWindow) {
                     // we have at least one full segment to send
-                    remainingBytes = usableMss;
+                    remainingBytes = sendMss();
                 }
                 else {
                     // we're path or receiver capped
@@ -571,12 +571,16 @@ public class TransmissionControlBlock {
                     LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
-                    readableBytes -= handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                    final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                    totalSentData += sentData;
+                    readableBytes -= sentData;
                 }
                 else {
-                    return;
+                    return totalSentData;
                 }
             }
+
+            return totalSentData;
         }
         finally {
             outgoingSegmentQueue.flush(ctx, this);
@@ -585,7 +589,7 @@ public class TransmissionControlBlock {
 
     void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
         sendBuffer.push();
-        segmentizeData(ctx, false);
+        segmentizeAndSendData(ctx, false);
     }
 
     ConnectionConfig config() {
@@ -597,7 +601,7 @@ public class TransmissionControlBlock {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
                 LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
-                segmentizeData(ctx, true);
+                segmentizeAndSendData(ctx, true);
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
     }
@@ -650,37 +654,31 @@ public class TransmissionControlBlock {
     }
 
     public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
-        rcvNxt = advanceSeq(rcvNxt, advancement);
-        LOG.trace("{} Advance RCV.NXT to {}.", ctx.channel(), rcvNxt);
-    }
-
-    public void decrementRcvWnd(final long decrement) {
-        rcvWnd -= decrement;
-        assert rcvWnd >= 0 : "RCV.WND must be non-negative";
-    }
-
-    public void incrementRcvWnd(final ChannelHandlerContext ctx) {
-        // receiver's SWS avoidance algorithms
-        // RFC 9293, Section 3.8.6.2.2
-        // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
-
-        // total receive buffer space is RCV.BUFF
-        // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-        final int rcvUser = receiveBuffer.readableBytes();
-        final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
-
-        if (rcvBuff() - rcvUser - rcvWnd >= min(fr * rcvBuff(), effSndMss())) {
-            final int newRcvWind = rcvBuff() - rcvUser;
-            LOG.trace("{} Receiver's SWS avoidance: Advance RCV.WND from {} to {} (+{}).", ctx.channel(), rcvWnd, newRcvWind, newRcvWind - rcvWnd);
-            rcvWnd = newRcvWind;
-            assert rcvWnd >= 0 : "RCV.WND must be non-negative";
+        final long newRcvNxt = advanceSeq(rcvNxt, advancement);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{} Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), rcvNxt, newRcvNxt, Segment.sub(newRcvNxt, rcvNxt));
         }
+        rcvNxt = newRcvNxt;
     }
 
+    public void updateRcvWnd(final ChannelHandlerContext ctx) {
+        final long newRcvWnd = rcvBuff() - rcvUser();
+        if (LOG.isTraceEnabled() && newRcvWnd != rcvWnd) {
+            LOG.trace("{} {} RCV.WND from {} to {} ({}{}).", ctx.channel(), (newRcvWnd > rcvWnd ? "Increase" : "Decrease"), rcvWnd, newRcvWnd, (newRcvWnd > rcvWnd ? "+" : ""), newRcvWnd - rcvWnd);
+        }
+        rcvWnd = newRcvWnd;
+    }
+
+    /**
+     * Total buffer space.
+     */
     int rcvBuff() {
         return rcvBuff;
     }
 
+    /**
+     * Data that has been received and acknowledged but that the user process has not yet consumed.
+     */
     long rcvUser() {
         return receiveBuffer.readableBytes();
     }
@@ -715,12 +713,15 @@ public class TransmissionControlBlock {
         sndNxt = add(iss(), 1);
     }
 
-    public void rto(final long rto) {
-        assert rto >= 0;
-        if (rto < config.lBound().toMillis()) {
+    public void rto(final ChannelHandlerContext ctx, int newRto) {
+        assert newRto >= 0;
+        if (newRto < config.lBound().toMillis()) {
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
             // RFC 6298:       SHOULD be rounded up to 1 second.
-            this.rto = config.lBound().toMillis();
+            if (LOG.isTraceEnabled() && this.rto != config.lBound().toMillis()) {
+                LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values less than 1 second.", ctx.channel(), rto, config.lBound().toMillis(), newRto);
+            }
+            this.rto = (int) config.lBound().toMillis();
 
             // RFC 6298:       Traditionally, TCP implementations use coarse grain clocks to measure
             // RFC 6298:       the RTT and trigger the RTO, which imposes a large minimum value on
@@ -731,13 +732,19 @@ public class TransmissionControlBlock {
             // RFC 6298:       some future point, research may show that a smaller minimum RTO is
             // RFC 6298:       acceptable or superior.
         }
-        else if (rto > config.uBound().toMillis()) {
+        else if (newRto > config.uBound().toMillis()) {
             // RFC 6298: (2.5) A maximum value MAY be placed on RTO provided it is at least 60
             // RFC 6298:       seconds.
-            this.rto = config.uBound().toMillis();
+            if (LOG.isTraceEnabled() && this.rto != config.uBound().toMillis()) {
+                LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values more than 60 seconds.", ctx.channel(), rto, config.uBound().toMillis(), newRto);
+            }
+            this.rto = (int) config.uBound().toMillis();
         }
         else {
-            this.rto = rto;
+            if (LOG.isTraceEnabled() && this.rto != newRto) {
+                LOG.trace("{} Set RTO from {}ms to {}ms.", ctx.channel(), rto, newRto);
+            }
+            this.rto = newRto;
         }
     }
 
@@ -749,41 +756,55 @@ public class TransmissionControlBlock {
      * Returns the number of acked segments.
      *
      * @param ctx
-     * @param sndUna
+     * @param newSndUna
      * @return
      */
-    public long sndUna(final ChannelHandlerContext ctx, final long sndUna) {
-        final long ackedSegments = sub(sndUna, this.sndUna);
-        this.sndUna = sndUna;
-        LOG.trace("{} Advance SND.UNA to {}.", ctx.channel(), sndUna);
+    public long sndUna(final ChannelHandlerContext ctx, final long newSndUna) {
+        final long ackedSegments = sub(newSndUna, this.sndUna);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{} Advance SND.UNA from {} to {} (+{}).", ctx.channel(), sndUna, newSndUna, Segment.sub(newSndUna, sndUna));
+        }
+        sndUna = newSndUna;
         return ackedSegments;
     }
 
-    public void tsRecent(final long tsRecent) {
-        this.tsRecent = tsRecent;
+    public void tsRecent(final ChannelHandlerContext ctx, final long newTsRecent) {
+        if (LOG.isTraceEnabled() && newTsRecent != tsRecent) {
+            LOG.trace("{} RTT measurement: {} TS.Recent from {} to {} ({}{}).", ctx.channel(), (newTsRecent > tsRecent ? "Increase" : "Decrease"), tsRecent, newTsRecent, (newTsRecent > lastAckSent ? "+" : ""), tsRecent - lastAckSent);
+        }
+        this.tsRecent = newTsRecent;
     }
 
     public void turnOnSndTsOk() {
         sndTsOk = true;
     }
 
-    public void sRtt(final double sRtt) {
-        this.sRtt = sRtt;
+    public void sRtt(final ChannelHandlerContext ctx, final float newSRtt) {
+        if (LOG.isTraceEnabled() && newSRtt != sRtt) {
+            LOG.trace("{} RTT measurement: {} SRTT from {}ms to {}ms ({}{}ms).", ctx.channel(), (newSRtt > sRtt ? "Increase" : "Decrease"), sRtt, newSRtt, (newSRtt > sRtt ? "+" : ""), newSRtt - sRtt);
+        }
+        this.sRtt = newSRtt;
     }
 
-    public void rttVar(final double rttVar) {
-        this.rttVar = rttVar;
+    public void rttVar(final ChannelHandlerContext ctx, final float newRttVar) {
+        if (LOG.isTraceEnabled() && newRttVar != rttVar) {
+            LOG.trace("{} RTT measurement: {} RTTVAR from {}ms to {}ms ({}{}ms).", ctx.channel(), (newRttVar > rttVar ? "Increase" : "Decrease"), rttVar, newRttVar, (newRttVar > rttVar ? "+" : ""), newRttVar - rttVar);
+        }
+        this.rttVar = newRttVar;
     }
 
-    public void lastAckSent(final long lastAckSent) {
-        this.lastAckSent = lastAckSent;
+    public void lastAckSent(final ChannelHandlerContext ctx, final long newLastAckSent) {
+        if (LOG.isTraceEnabled() && newLastAckSent != lastAckSent) {
+            LOG.trace("{} RTT measurement: {} Last.ACK.sent from {} to {} ({}{}).", ctx.channel(), (newLastAckSent > lastAckSent ? "Increase" : "Decrease"), lastAckSent, newLastAckSent, (newLastAckSent > lastAckSent ? "+" : ""), newLastAckSent - lastAckSent);
+        }
+        this.lastAckSent = newLastAckSent;
     }
 
-    public double sRtt() {
+    public float sRtt() {
         return sRtt;
     }
 
-    public double rttVar() {
+    public float rttVar() {
         return rttVar;
     }
 
@@ -803,25 +824,34 @@ public class TransmissionControlBlock {
         return lastAckSent;
     }
 
-    public long rto() {
+    public int rto() {
         return rto;
     }
 
-    public void ssthresh(final long ssthresh) {
-//        this.ssthresh = ssthresh;
+    public void ssthresh(final ChannelHandlerContext ctx, final long newSsthresh) {
+        if (LOG.isTraceEnabled() && newSsthresh != ssthresh) {
+            LOG.trace("{} Congestion Control: {} ssthresh from {} to {} ({}{}).", ctx.channel(), (newSsthresh > ssthresh ? "Increase" : "Decrease"), ssthresh, newSsthresh, (newSsthresh > ssthresh ? "+" : ""), newSsthresh - ssthresh);
+        }
+        this.ssthresh = newSsthresh;
     }
 
-    public void cwnd(final long cwnd) {
-//        this.cwnd = cwnd;
+    public void cwnd(final ChannelHandlerContext ctx, final long newCwnd) {
+        if (LOG.isTraceEnabled() && newCwnd != cwnd) {
+            LOG.trace("{} Congestion Control: {} cwnd from {} to {} ({}{}).", ctx.channel(), (newCwnd > cwnd ? "Increase" : "Decrease"), cwnd, newCwnd, (newCwnd > cwnd ? "+" : ""), newCwnd - cwnd);
+        }
+        this.cwnd = newCwnd;
     }
 
     public long sendMss() {
         return sendMss;
     }
 
-    public void sndWnd(final long sndWnd) {
-        this.sndWnd = sndWnd;
-        maxSndWnd = max(maxSndWnd, sndWnd);
+    public void sndWnd(final ChannelHandlerContext ctx, final long newSndWnd) {
+        if (LOG.isTraceEnabled() && newSndWnd != sndWnd) {
+            LOG.trace("{} {} SND.WND from {} to {} ({}{}).", ctx.channel(), (newSndWnd > sndWnd ? "Increase" : "Decrease"), sndWnd, newSndWnd, (newSndWnd > sndWnd ? "+" : ""), newSndWnd - sndWnd);
+        }
+        sndWnd = newSndWnd;
+        maxSndWnd = max(maxSndWnd, newSndWnd);
     }
 
     public void sndWl1(final long sndWl1) {
@@ -848,8 +878,12 @@ public class TransmissionControlBlock {
         this.lastAdvertisedWindow = lastAdvertisedWindow;
     }
 
-    public void duplicateAcks(final int duplicateAcks) {
-        this.duplicateAcks = duplicateAcks;
+    public void incrementDuplicateAcks() {
+        this.duplicateAcks++;
+    }
+
+    public void resetDuplicateAcks() {
+        this.duplicateAcks = 0;
     }
 
     public long lastAdvertisedWindow() {
@@ -872,10 +906,13 @@ public class TransmissionControlBlock {
         return remotePort;
     }
 
-    public void ensureLocalPortIsSelected() {
-        if (localPort == 0) {
-            // TODO: keep track of which ports are already in use
-            localPort = config.portSupplier().getAsInt();
+    public void ensureLocalPortIsSelected(final int requestedLocalPort) {
+        if (requestedLocalPort == 0) {
+            // no specific port requested. pick a unused one
+            this.localPort = config.unusedPortSupplier().getAsInt();
+        }
+        else {
+            this.localPort = requireInRange(requestedLocalPort, MIN_PORT, MAX_PORT);
         }
     }
 }
