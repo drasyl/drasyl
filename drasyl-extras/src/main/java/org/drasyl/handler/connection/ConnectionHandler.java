@@ -2156,17 +2156,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     provided that the receiver's advertised window allows, the total
                     // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
                     // RFC 5681:     and that new data is available for transmission.
-                    final boolean doLimitedTransmit = tcb.sndWnd() >= tcb.smss() &&
-                            (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
-                            !tcb.sendBuffer().isEmpty();
-                    if (doLimitedTransmit) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got first or second duplicate ACK. Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
-                        tcb.writeEnqueuedData(ctx);
-                        // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
-                        // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
-                        // RFC 5681:     MUST NOT send new data unless the incoming duplicate
-                        // RFC 5681:     acknowledgment contains new SACK information.
-                    }
+                    LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got first or second duplicate ACK. Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
+                    tcb.writeEnqueuedData(ctx);
+
+                    // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
+                    // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
+                    // RFC 5681:     MUST NOT send new data unless the incoming duplicate
+                    // RFC 5681:     acknowledgment contains new SACK information.
                 }
 
                 if (config.newReno()) {
@@ -2264,7 +2260,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 if (ackedBytes > 0) {
                     // RFC 5681: the "fast recovery" algorithm governs the transmission of new data
                     // RFC 5681: until a non-duplicate ACK arrives.
-                    LOG.trace("{} Congestion Control: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
+                    LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
 
                     // exit fast recovery procedure
                     tcb.resetDuplicateAcks();
@@ -2272,7 +2268,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
                     // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
-                    LOG.trace("{} Congestion Control: Got non-duplicate ACK. Deflate cwnd to ssthresh.", ctx.channel());
+                    LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Deflate cwnd to ssthresh.", ctx.channel());
                     tcb.cwnd(ctx, tcb.ssthresh());
                 }
             }
@@ -2303,11 +2299,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
                         // RFC 6582:     number of data packets that can be sent in response to a single
                         // RFC 6582:     acknowledgment.
-                        LOG.trace("{} Congestion Control: Got full ACKnowledgment. Set cwnd to ssthresh.", ctx.channel());
+                        LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
                         tcb.cwnd(ctx, tcb.ssthresh());
 
                         // RFC 6582:     Exit the fast recovery procedure.
-                        LOG.trace("{} Congestion Control: Got full ACKnowledgment. Exit Fast Recovery.", ctx.channel(), state);
+                        LOG.trace("{} Congestion Control: Fast Recovery: Got full ACK. Exit Fast Recovery.", ctx.channel(), state);
                         tcb.resetDuplicateAcks();
                     }
                     else {
@@ -2333,10 +2329,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         if (ackedBytes >= tcb.smss()) {
                             newCwnd += tcb.smss();
                         }
-                        if (tcb.cwnd() != newCwnd) {
-                            LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(ctx, newCwnd);
-                        }
+                        LOG.trace("{} Congestion Control: Deflate cwnd by the amount of new data acknowledged.", ctx.channel());
+                        tcb.cwnd(ctx, newCwnd);
 
                         // RFC 6582:     Send a new segment if permitted by the new value of
                         // RFC 6582:     cwnd. This "partial window deflation" attempts to ensure that,
