@@ -2365,7 +2365,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: where N is the number of previously unacknowledged bytes acknowledged
                 // RFC 5681: in the incoming ACK.
                 final long n = ackedBytes;
-                final long increment = min(n, tcb.smss() - SEG_HDR_SIZE);
+                final long increment = min(n, tcb.smss());
                 LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {}.", ctx.channel(), ackedBytes, increment);
                 tcb.cwnd(ctx, tcb.cwnd() + increment);
             }
