@@ -146,13 +146,13 @@ public class TransmissionControlBlock {
 
     // RFC 6298: Retransmission Timer Computation
     // RFC 6298: RTTVAR = round-trip time variation
-    private double rttVar;
+    private float rttVar;
     // RFC 6298: SRTT = smoothed round-trip time
-    private double sRtt;
+    private float sRtt;
     // RFC 6298: RTO = retransmission timeout
     // RFC 6298: Until a round-trip time (RTT) measurement has been made for a segment sent between
     // RFC 6298: the sender and receiver, the sender SHOULD set RTO <- 1 second
-    private long rto;
+    private int rto;
 
     // RFC 5681: Congestion Control Algorithms
     // RFC 5681: The congestion window (cwnd) is a sender-side limit on the amount of data the
@@ -197,9 +197,9 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk,
-                             final double rttVar,
-                             final double sRtt,
-                             final long rto) {
+                             final float rttVar,
+                             final float sRtt,
+                             final int rto) {
         this.config = requireNonNull(config);
         this.localPort = requireInRange(localPort, 0, MAX_PORT);
         this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
@@ -243,7 +243,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, config.rto().toMillis());
+        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
@@ -706,7 +706,7 @@ public class TransmissionControlBlock {
         sndNxt = add(iss(), 1);
     }
 
-    public void rto(final ChannelHandlerContext ctx, long newRto) {
+    public void rto(final ChannelHandlerContext ctx, int newRto) {
         assert newRto >= 0;
         if (newRto < config.lBound().toMillis()) {
             // RFC 6298: (2.4) Whenever RTO is computed, if it is less than 1 second, then the RTO
@@ -714,7 +714,7 @@ public class TransmissionControlBlock {
             if (LOG.isTraceEnabled() && this.rto != config.lBound().toMillis()) {
                 LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values less than 1 second.", ctx.channel(), rto, config.lBound().toMillis(), newRto);
             }
-            this.rto = config.lBound().toMillis();
+            this.rto = (int) config.lBound().toMillis();
 
             // RFC 6298:       Traditionally, TCP implementations use coarse grain clocks to measure
             // RFC 6298:       the RTT and trigger the RTO, which imposes a large minimum value on
@@ -731,7 +731,7 @@ public class TransmissionControlBlock {
             if (LOG.isTraceEnabled() && this.rto != config.uBound().toMillis()) {
                 LOG.trace("{} Set RTO from {}ms to {}ms (Change to {}ms was requested, but we do not allow values more than 60 seconds.", ctx.channel(), rto, config.uBound().toMillis(), newRto);
             }
-            this.rto = config.uBound().toMillis();
+            this.rto = (int) config.uBound().toMillis();
         }
         else {
             if (LOG.isTraceEnabled() && this.rto != newRto) {
@@ -763,7 +763,7 @@ public class TransmissionControlBlock {
 
     public void tsRecent(final ChannelHandlerContext ctx, final long newTsRecent) {
         if (LOG.isTraceEnabled() && newTsRecent != tsRecent) {
-            LOG.trace("{} RTT measurement: {} Last.ACK.sent from {} to {} ({}{}).", ctx.channel(), (newTsRecent > tsRecent ? "Increase" : "Decrease"), tsRecent, newTsRecent, (newTsRecent > lastAckSent ? "+" : ""), tsRecent - lastAckSent);
+            LOG.trace("{} RTT measurement: {} TS.Recent from {} to {} ({}{}).", ctx.channel(), (newTsRecent > tsRecent ? "Increase" : "Decrease"), tsRecent, newTsRecent, (newTsRecent > lastAckSent ? "+" : ""), tsRecent - lastAckSent);
         }
         this.tsRecent = newTsRecent;
     }
@@ -772,16 +772,16 @@ public class TransmissionControlBlock {
         sndTsOk = true;
     }
 
-    public void sRtt(final ChannelHandlerContext ctx, final double newSRtt) {
+    public void sRtt(final ChannelHandlerContext ctx, final float newSRtt) {
         if (LOG.isTraceEnabled() && newSRtt != sRtt) {
-            LOG.trace("{} RTT measurement: {} SRTT from {} to {} ({}{}).", ctx.channel(), (newSRtt > sRtt ? "Increase" : "Decrease"), sRtt, newSRtt, (newSRtt > sRtt ? "+" : ""), newSRtt - sRtt);
+            LOG.trace("{} RTT measurement: {} SRTT from {}ms to {}ms ({}{}ms).", ctx.channel(), (newSRtt > sRtt ? "Increase" : "Decrease"), sRtt, newSRtt, (newSRtt > sRtt ? "+" : ""), newSRtt - sRtt);
         }
         this.sRtt = newSRtt;
     }
 
-    public void rttVar(final ChannelHandlerContext ctx, final double newRttVar) {
+    public void rttVar(final ChannelHandlerContext ctx, final float newRttVar) {
         if (LOG.isTraceEnabled() && newRttVar != rttVar) {
-            LOG.trace("{} RTT measurement: {} RTTVAR from {} to {} ({}{}).", ctx.channel(), (newRttVar > rttVar ? "Increase" : "Decrease"), rttVar, newRttVar, (newRttVar > rttVar ? "+" : ""), newRttVar - rttVar);
+            LOG.trace("{} RTT measurement: {} RTTVAR from {}ms to {}ms ({}{}ms).", ctx.channel(), (newRttVar > rttVar ? "Increase" : "Decrease"), rttVar, newRttVar, (newRttVar > rttVar ? "+" : ""), newRttVar - rttVar);
         }
         this.rttVar = newRttVar;
     }
@@ -793,11 +793,11 @@ public class TransmissionControlBlock {
         this.lastAckSent = newLastAckSent;
     }
 
-    public double sRtt() {
+    public float sRtt() {
         return sRtt;
     }
 
-    public double rttVar() {
+    public float rttVar() {
         return rttVar;
     }
 
@@ -817,7 +817,7 @@ public class TransmissionControlBlock {
         return lastAckSent;
     }
 
-    public long rto() {
+    public int rto() {
         return rto;
     }
 

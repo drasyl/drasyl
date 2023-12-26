@@ -1249,8 +1249,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final long segTsEcr = tsOpt.tsEcr;
 
                         final long r = config.clock().time() - segTsEcr;
-                        final double newRttVar = r / 2.0;
-                        final long newRto = (long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar()));
+                        final float newRttVar = (float) (r / 2.0);
+                        final int newRto = (int) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar()));
                         LOG.trace("{} RTT measurement: Set SRTT to R = {}, RTTVAR to R/2 = {}, and RTO to `SRTT+max(G,K*RTTVAR) = {}+max({},{}*{})`", ctx.channel(), r, newRttVar, newRto, tcb.sRtt(), config.clock().g(), config.k(), tcb.rttVar());
 
                         // RFC 6298:       the host MUST set
@@ -2084,7 +2084,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 7323: retransmission queue was sent.
                     rDash = config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime();
                 }
-                LOG.trace("{} RTT measurement: RTT R' = {}", ctx.channel(), rDash);
+                LOG.trace("{} RTT measurement: Subsequent RTT measurement R' made = {}ms.", ctx.channel(), rDash);
 
                 // RFC 6298:       a host MUST set
                 // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
@@ -2118,14 +2118,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
                 // RFC 7323: and beta' instead:
                 // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
-                tcb.rttVar(ctx, (1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash));
+                tcb.rttVar(ctx, (float) ((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash)));
                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                tcb.sRtt(ctx, (1 - alphaDash) * tcb.sRtt() + alphaDash * rDash);
+                tcb.sRtt(ctx, (float) ((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash));
                 // RFC 7323: (for each sample R')
 
                 // RFC 6298:       After the computation, a host MUST update
                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                tcb.rto(ctx, (long) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+                tcb.rto(ctx, (int) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
         }
         else {
@@ -2136,7 +2136,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             // RFC 62982: it has been subject to exponential back off (rule 5.5).
             if (ackedBytes > 0) {
                 LOG.trace("{} New data has been acked. Reset RTO to {}ms (\"collapsing\" RTO back down).", ctx.channel(), config.rto().toMillis());
-                tcb.rto(ctx, config.rto().toMillis());
+                tcb.rto(ctx, (int) config.rto().toMillis());
             }
         }
 
