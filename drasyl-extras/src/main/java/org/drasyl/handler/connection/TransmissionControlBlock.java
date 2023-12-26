@@ -582,7 +582,7 @@ public class TransmissionControlBlock {
                     LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
-                    long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                    final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
                     totalSentData += sentData;
                     readableBytes -= sentData;
                 }

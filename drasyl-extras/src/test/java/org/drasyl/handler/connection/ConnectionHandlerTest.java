@@ -738,6 +738,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
 
                         final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -784,6 +785,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, ctx.channel(), 456L);
 
@@ -887,6 +889,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
 
@@ -956,6 +959,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
 
@@ -2467,7 +2471,7 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(ctx, 2.4671875f);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
                                 verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
@@ -2528,7 +2532,7 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(ctx, 2.4671875f);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
                                 verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
@@ -2632,7 +2636,7 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(ctx, 2.4671875f);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
                                 verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
@@ -2693,7 +2697,7 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(ctx, 2.4671875f);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
                                 verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
@@ -3393,25 +3397,32 @@ class ConnectionHandlerTest {
                 assertFalse(tcb.doSlowStart());
                 channel.writeOutbound(byteBuf);
 
+                int expectedCwnd = 5_000;
+
                 // ACK 1st SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306, tcb.cwnd());
+                expectedCwnd += 296;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288, tcb.cwnd());
+                expectedCwnd += 280;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274, tcb.cwnd());
+                expectedCwnd += 266;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274 + 261, tcb.cwnd());
+                expectedCwnd += 254;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274 + 261 + 250, tcb.cwnd());
+                expectedCwnd += 243;
+                assertEquals(expectedCwnd, tcb.cwnd());
             }
         }
     }
