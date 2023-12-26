@@ -27,16 +27,13 @@
     <!-- Configure the Console appender -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX"} %highlight(%-5level) --- [%12.12thread] %cyan(%-40.40logger{40}) : %msg%n</pattern>
+            <pattern>%d{"'T'HH:mm:ss,SSSXXX"} %-5level --- [%12.12thread] %-40.40logger{40} : %msg%n</pattern>
         </encoder>
     </appender>
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
     <logger name="io.netty" level="WARN">
-    </logger>
-
-    <logger name="org.drasyl.handler.connection" level="TRACE">
     </logger>
 
     <root level="warn">

@@ -807,14 +807,14 @@ public class TransmissionControlBlock {
 
     public void ssthresh(final ChannelHandlerContext ctx, final long newSsthresh) {
         if (LOG.isTraceEnabled() && newSsthresh != ssthresh) {
-            LOG.trace("{} {} ssthresh from {} to {} ({}{}).", ctx.channel(), (newSsthresh > ssthresh ? "Increase" : "Decrease"), ssthresh, newSsthresh, (newSsthresh > ssthresh ? "+" : ""), newSsthresh - ssthresh);
+            LOG.trace("{} Congestion Control: {} ssthresh from {} to {} ({}{}).", ctx.channel(), (newSsthresh > ssthresh ? "Increase" : "Decrease"), ssthresh, newSsthresh, (newSsthresh > ssthresh ? "+" : ""), newSsthresh - ssthresh);
         }
         this.ssthresh = newSsthresh;
     }
 
     public void cwnd(final ChannelHandlerContext ctx, final long newCwnd) {
         if (LOG.isTraceEnabled() && newCwnd != cwnd) {
-            LOG.trace("{} {} cwnd from {} to {} ({}{}).", ctx.channel(), (newCwnd > cwnd ? "Increase" : "Decrease"), cwnd, newCwnd, (newCwnd > cwnd ? "+" : ""), newCwnd - cwnd);
+            LOG.trace("{} Congestion Control: {} cwnd from {} to {} ({}{}).", ctx.channel(), (newCwnd > cwnd ? "Increase" : "Decrease"), cwnd, newCwnd, (newCwnd > cwnd ? "+" : ""), newCwnd - cwnd);
         }
         this.cwnd = newCwnd;
     }
@@ -855,8 +855,12 @@ public class TransmissionControlBlock {
         this.lastAdvertisedWindow = lastAdvertisedWindow;
     }
 
-    public void duplicateAcks(final int duplicateAcks) {
-        this.duplicateAcks = duplicateAcks;
+    public void incrementDuplicateAcks() {
+        this.duplicateAcks++;
+    }
+
+    public void resetDuplicateAcks() {
+        this.duplicateAcks++;
     }
 
     public long lastAdvertisedWindow() {

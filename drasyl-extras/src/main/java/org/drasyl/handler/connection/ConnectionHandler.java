@@ -2146,7 +2146,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // (this is done by the write promises)
 
         if (isRfc5681Duplicate) {
-            tcb.duplicateAcks(tcb.duplicateAcks() + 1);
+            tcb.incrementDuplicateAcks();
             LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Got duplicate ACK {}#{}. {} unACKed bytes remaining.", ctx.channel(), seg.ack(), tcb.duplicateAcks(), tcb.flightSize());
 
             if (tcb.duplicateAcks() < 3) {
@@ -2160,7 +2160,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                             (tcb.flightSize() + tcb.smss()) <= (tcb.cwnd() + 2L * tcb.smss()) &&
                             !tcb.sendBuffer().isEmpty();
                     if (doLimitedTransmit) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
+                        LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got first or second duplicate ACK. Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
                         tcb.writeEnqueuedData(ctx);
                         // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
                         // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
@@ -2184,26 +2184,21 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
                     // RFC 5681:     transmit MUST NOT be included in this calculation.
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                    final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
-                    if (tcb.ssthresh() != newSsthresh) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-                        tcb.ssthresh(ctx, newSsthresh);
-                    }
+                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS)`.", ctx.channel());
+                    tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                     final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
-                    LOG.trace("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
+                    assert retransmission != null;
+                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Retransmit `{}`.", ctx.channel(), retransmission);
                     ctx.writeAndFlush(retransmission);
 
                     // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
                     // RFC 5681:    "inflates" the congestion window by the number of segments
                     // RFC 5681:    (three) that have left the network and which the receiver has
                     // RFC 5681:    buffered.
-                    final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
-                    if (newCwnd != tcb.cwnd()) {
-                        LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                        tcb.cwnd(ctx, newCwnd);
-                    }
+                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Inflate cwnd to `ssthresh plus 3*SMSS`.", ctx.channel());
+                    tcb.cwnd(ctx, tcb.ssthresh() + 3L * tcb.smss());
                 }
                 else {
                     // NewReno
@@ -2227,26 +2222,21 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
                         // RFC 5681:     transmit MUST NOT be included in this calculation.
                         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                        final long newSsthresh = max(tcb.flightSize() / 2, 2L * tcb.smss());
-                        if (tcb.ssthresh() != newSsthresh) {
-                            LOG.trace("{} Congestion Control: Fast Retransmit: Set ssthresh from {} to {}.", ctx.channel(), tcb.ssthresh(), newSsthresh);
-                            tcb.ssthresh(ctx, newSsthresh);
-                        }
+                        LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS)`.", ctx.channel());
+                        tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                         final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
-                        LOG.trace("{} Congestion Control: Fast Retransmit: Got 3 duplicate ACKs in a row. Retransmit `{}`.", ctx.channel(), retransmission);
+                        assert retransmission != null;
+                        LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Retransmit `{}`.", ctx.channel(), retransmission);
                         ctx.writeAndFlush(retransmission);
 
                         // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
                         // RFC 5681:    "inflates" the congestion window by the number of segments
                         // RFC 5681:    (three) that have left the network and which the receiver has
                         // RFC 5681:    buffered.
-                        final long newCwnd = tcb.ssthresh() + 3L * tcb.smss();
-                        if (newCwnd != tcb.cwnd()) {
-                            LOG.trace("{} Congestion Control: Fast Retransmit: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(ctx, newCwnd);
-                        }
+                        LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Inflate cwnd to `ssthresh plus 3*SMSS`.", ctx.channel());
+                        tcb.cwnd(ctx, tcb.ssthresh() + 3L * tcb.smss());
                     }
                     else {
                         // RFC 6582:     If not, the TCP does not enter fast retransmit and does not
@@ -2259,11 +2249,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
                 // RFC 5681:    congestion window in order to reflect the additional segment that
                 // RFC 5681:    has left the network.
-                final long newCwnd = tcb.cwnd() + tcb.smss();
-                if (newCwnd != tcb.cwnd()) {
-                    LOG.trace("{} Congestion Control: Fast Recovery: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                    tcb.cwnd(ctx, newCwnd);
-                }
+                LOG.trace("{} Congestion Control: Fast Recovery: Got additional duplicate ACK (after the third). Increment cwnd by SMSS.", ctx.channel());
+                tcb.cwnd(ctx, tcb.cwnd() + tcb.smss());
 
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
                 // RFC 5681:     cwnd and the receiver's advertised window allow, a TCP SHOULD
@@ -2280,16 +2267,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     LOG.trace("{} Congestion Control: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
 
                     // exit fast recovery procedure
-                    tcb.duplicateAcks(0);
+                    tcb.resetDuplicateAcks();
 
                     // RFC 5681: 6.  When the next ACK arrives that acknowledges previously
                     // RFC 5681:     unacknowledged data, a TCP MUST set cwnd to ssthresh (the value
                     // RFC 5681:     set in step 2). This is termed "deflating" the window.
-                    final long newCwnd = tcb.ssthresh();
-                    if (newCwnd != tcb.cwnd()) {
-                        LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                        tcb.cwnd(ctx, newCwnd);
-                    }
+                    LOG.trace("{} Congestion Control: Got non-duplicate ACK. Deflate cwnd to ssthresh.", ctx.channel());
+                    tcb.cwnd(ctx, tcb.ssthresh());
                 }
             }
             else {
@@ -2319,15 +2303,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
                         // RFC 6582:     number of data packets that can be sent in response to a single
                         // RFC 6582:     acknowledgment.
-                        final long newCwnd = tcb.ssthresh();
-                        if (newCwnd != tcb.cwnd()) {
-                            LOG.trace("{} Congestion Control: Set cwnd from {} to {}.", ctx.channel(), tcb.cwnd(), newCwnd);
-                            tcb.cwnd(ctx, newCwnd);
-                        }
+                        LOG.trace("{} Congestion Control: Got full ACKnowledgment. Set cwnd to ssthresh.", ctx.channel());
+                        tcb.cwnd(ctx, tcb.ssthresh());
 
                         // RFC 6582:     Exit the fast recovery procedure.
                         LOG.trace("{} Congestion Control: Got full ACKnowledgment. Exit Fast Recovery.", ctx.channel(), state);
-                        tcb.duplicateAcks(0);
+                        tcb.resetDuplicateAcks();
                     }
                     else {
                         // RFC 6582:     Partial acknowledgments:
