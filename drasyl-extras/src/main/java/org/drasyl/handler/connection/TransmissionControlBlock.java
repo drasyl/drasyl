@@ -89,8 +89,8 @@ public class TransmissionControlBlock {
     //
     // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
     // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
-    // (DRASYL_HDR_SIZE) and our TCP header (31)
-    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE;
+    // (DRASYL_HDR_SIZE) and our TCP header (SEG_HDR_SIZE)
+    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -534,17 +534,16 @@ public class TransmissionControlBlock {
                     }
                 }
 
-                final long usableMss = sendMss() - SEG_HDR_SIZE;
                 final long window = min(sndWnd(), cwnd());
                 final long usableWindow = max(0, window - flightSize());
                 final long remainingBytes;
-                if (readableBytes <= usableMss && readableBytes <= usableWindow) {
+                if (readableBytes <= sendMss() && readableBytes <= usableWindow) {
                     // we have less than a segment to send
                     remainingBytes = readableBytes;
                 }
-                else if (usableMss <= readableBytes && usableMss <= usableWindow) {
+                else if (sendMss() <= readableBytes && sendMss() <= usableWindow) {
                     // we have at least one full segment to send
-                    remainingBytes = usableMss;
+                    remainingBytes = sendMss();
                 }
                 else {
                     // we're path or receiver capped
