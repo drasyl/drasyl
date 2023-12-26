@@ -2171,7 +2171,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 6582: 1)  Initialization of TCP protocol control block:
                     // RFC 6582:     When the TCP protocol control block is initialized, recover is
                     // RFC 6582:     set to the initial send sequence number.
-                    tcb.recover(tcb.iss());
+                    tcb.recover(tcb.iss()); // FIXME: nur einmal, oder?
                 }
             }
             else if (tcb.duplicateAcks() == 3) {
@@ -2220,7 +2220,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
                         // RFC 5681:     transmit MUST NOT be included in this calculation.
                         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                        LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS)`.", ctx.channel());
+                        LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS) = max({}/2,2*{})`.", ctx.channel(), tcb.flightSize(), tcb.smss());
                         tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
                         // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
