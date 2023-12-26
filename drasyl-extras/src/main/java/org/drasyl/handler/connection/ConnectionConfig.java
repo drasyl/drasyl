@@ -73,7 +73,7 @@ public abstract class ConnectionConfig {
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
             .userTimeout(ofSeconds(60))
-            .timestamps(true)
+            .timestamps(false)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
             .uBound(ofSeconds(60))
@@ -99,11 +99,11 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false)
+            .sack(false) // not implemented yet
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
-            .newReno(true)
-            .limitedTransmit(true)
+            .newReno(false) // New Reno is buggy?
+            .limitedTransmit(false)
             .build();
 
     public static Builder newBuilder() {
