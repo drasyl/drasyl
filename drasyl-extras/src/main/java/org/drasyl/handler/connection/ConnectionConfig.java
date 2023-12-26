@@ -66,7 +66,7 @@ public abstract class ConnectionConfig {
                     false
             ))
             .activeOpen(true)
-            .rmem(65_535 * 10)
+            .rmem(65_535)
             // FIXME: change back to 2 minutes?
             .msl(ofSeconds(2))
             .noDelay(false)
@@ -165,6 +165,30 @@ public abstract class ConnectionConfig {
     public abstract double fs();
 
     public abstract Builder toBuilder();
+
+    public long initialCwnd() {
+        // RFC 5681: IW, the initial value of cwnd, MUST be set using the following guidelines as an
+        // RFC 5681: upper bound.
+        //
+        // RFC 5681:   If SMSS > 2190 bytes:
+        // RFC 5681:       IW = 2 * SMSS bytes and MUST NOT be more than 2 segments
+        // RFC 5681:   If (SMSS > 1095 bytes) and (SMSS <= 2190 bytes):
+        // RFC 5681:       IW = 3 * SMSS bytes and MUST NOT be more than 3 segments
+        // RFC 5681:   if SMSS <= 1095 bytes:
+        // RFC 5681:       IW = 4 * SMSS bytes and MUST NOT be more than 4 segments
+        return mmsS() * 3L;
+    }
+
+    public long initialSsthresh() {
+        // RFC 5681: The initial value of ssthresh SHOULD be set arbitrarily high (e.g., to the size
+        // RFC 5681: of the largest possible advertised window), but ssthresh MUST be reduced in
+        // RFC 5681: response to congestion. Setting ssthresh as high as possible allows the network
+        // RFC 5681: conditions, rather than some arbitrary host limit, to dictate the sending rate.
+        // RFC 5681: In cases where the end systems have a solid understanding of the network path,
+        // RFC 5681: more carefully setting the initial ssthresh value may have merit (e.g., such
+        // that the end host does not create congestion along the path).
+        return rmem();
+    }
 
     public interface Clock {
         long time();

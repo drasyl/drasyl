@@ -256,7 +256,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
+        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, config.initialCwnd(), config.initialSsthresh(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
