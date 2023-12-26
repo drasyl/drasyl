@@ -859,7 +859,7 @@ public class TransmissionControlBlock {
     }
 
     public void resetDuplicateAcks() {
-        this.duplicateAcks++;
+        this.duplicateAcks = 0;
     }
 
     public long lastAdvertisedWindow() {
