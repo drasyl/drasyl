@@ -761,24 +761,36 @@ public class TransmissionControlBlock {
         return ackedSegments;
     }
 
-    public void tsRecent(final long tsRecent) {
-        this.tsRecent = tsRecent;
+    public void tsRecent(final ChannelHandlerContext ctx, final long newTsRecent) {
+        if (LOG.isTraceEnabled() && newTsRecent != tsRecent) {
+            LOG.trace("{} RTT measurement: {} Last.ACK.sent from {} to {} ({}{}).", ctx.channel(), (newTsRecent > tsRecent ? "Increase" : "Decrease"), tsRecent, newTsRecent, (newTsRecent > lastAckSent ? "+" : ""), tsRecent - lastAckSent);
+        }
+        this.tsRecent = newTsRecent;
     }
 
     public void turnOnSndTsOk() {
         sndTsOk = true;
     }
 
-    public void sRtt(final double sRtt) {
-        this.sRtt = sRtt;
+    public void sRtt(final ChannelHandlerContext ctx, final double newSRtt) {
+        if (LOG.isTraceEnabled() && newSRtt != sRtt) {
+            LOG.trace("{} RTT measurement: {} SRTT from {} to {} ({}{}).", ctx.channel(), (newSRtt > sRtt ? "Increase" : "Decrease"), sRtt, newSRtt, (newSRtt > sRtt ? "+" : ""), newSRtt - sRtt);
+        }
+        this.sRtt = newSRtt;
     }
 
-    public void rttVar(final double rttVar) {
-        this.rttVar = rttVar;
+    public void rttVar(final ChannelHandlerContext ctx, final double newRttVar) {
+        if (LOG.isTraceEnabled() && newRttVar != rttVar) {
+            LOG.trace("{} RTT measurement: {} RTTVAR from {} to {} ({}{}).", ctx.channel(), (newRttVar > rttVar ? "Increase" : "Decrease"), rttVar, newRttVar, (newRttVar > rttVar ? "+" : ""), newRttVar - rttVar);
+        }
+        this.rttVar = newRttVar;
     }
 
-    public void lastAckSent(final long lastAckSent) {
-        this.lastAckSent = lastAckSent;
+    public void lastAckSent(final ChannelHandlerContext ctx, final long newLastAckSent) {
+        if (LOG.isTraceEnabled() && newLastAckSent != lastAckSent) {
+            LOG.trace("{} RTT measurement: {} Last.ACK.sent from {} to {} ({}{}).", ctx.channel(), (newLastAckSent > lastAckSent ? "Increase" : "Decrease"), lastAckSent, newLastAckSent, (newLastAckSent > lastAckSent ? "+" : ""), newLastAckSent - lastAckSent);
+        }
+        this.lastAckSent = newLastAckSent;
     }
 
     public double sRtt() {

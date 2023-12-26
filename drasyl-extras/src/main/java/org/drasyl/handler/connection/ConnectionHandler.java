@@ -1052,10 +1052,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 if (tsOpt != null) {
                     LOG.trace("{} RTT measurement: < {}", ctx.channel(), tsOpt);
                     final long segTsVal = tsOpt.tsVal;
-                    LOG.trace("{} RTT measurement: Set TS.Recent to SEG.TSval ({}) and turn on Snd.TS.OK.", ctx.channel(), segTsVal);
+                    LOG.trace("{} RTT measurement: Set TS.Recent to SEG.TSval and turn on Snd.TS.OK.", ctx.channel(), segTsVal);
 
                     // RFC 7323: if one is found, save SEG.TSval in the variable TS.Recent
-                    tcb.tsRecent(segTsVal);
+                    tcb.tsRecent(ctx, segTsVal);
 
                     // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block
                     tcb.turnOnSndTsOk();
@@ -1091,9 +1091,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: If the Snd.TS.OK bit is on, include a TSopt
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in this segment.
                 // (timestamps option is automatically added by formSegment)
+                LOG.trace("{} RTT measurement: Include TSopt to segment and set Last.ACK.sent to RCV.NXT.", ctx.channel());
 
                 // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                tcb.lastAckSent(tcb.rcvNxt());
+                tcb.lastAckSent(ctx, tcb.rcvNxt());
             }
 
             LOG.trace("{} ACKnowledge the received segment and send our SYN `{}`.", ctx.channel(), response);
@@ -1234,10 +1235,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 if (tsOpt != null) {
                     LOG.trace("{} RTT measurement: < {}", ctx.channel(), tsOpt);
                     final long segTsVal = tsOpt.tsVal;
-                    LOG.trace("{} RTT measurement: Set TS.Recent to SEG.TSval ({}) and turn on Snd.TS.OK.", ctx.channel(), segTsVal);
+                    LOG.trace("{} RTT measurement: Set TS.Recent to SEG.TSval and turn on Snd.TS.OK.", ctx.channel());
 
                     // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                    tcb.tsRecent(segTsVal);
+                    tcb.tsRecent(ctx, segTsVal);
 
                     // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                     tcb.turnOnSndTsOk();
@@ -1248,17 +1249,20 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         final long segTsEcr = tsOpt.tsEcr;
 
                         final long r = config.clock().time() - segTsEcr;
-                        LOG.trace("{} RTT R = {}", ctx.channel(), r);
+                        final double newRttVar = r / 2.0;
+                        final long newRto = (long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar()));
+                        LOG.trace("{} RTT measurement: Set SRTT to R = {}, RTTVAR to R/2 = {}, and RTO to `SRTT+max(G,K*RTTVAR) = {}+max({},{}*{})`", ctx.channel(), r, newRttVar, newRto, tcb.sRtt(), config.clock().g(), config.k(), tcb.rttVar());
+
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        tcb.sRtt(r);
+                        tcb.sRtt(ctx, r);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        tcb.rttVar(r / 2.0);
+                        tcb.rttVar(ctx, newRttVar);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         // RFC 6298: where K = 4
-                        tcb.rto(ctx, (long) (tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
+                        tcb.rto(ctx, newRto);
                     }
                 }
             }
@@ -1418,8 +1422,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         else if (segTsVal >= tcb.tsRecent() && seg.seq() <= tcb.lastAckSent()) {
                             // RFC 7323: If SEG.TSval >= TS.Recent and SEG.SEQ <= Last.ACK.sent,
                             // RFC 7323: then save SEG.TSval in variable TS.Recent.
-                            LOG.trace("{} Set TS.Recent from {} to {}.", ctx.channel(), tcb.tsRecent(), segTsVal);
-                            tcb.tsRecent(segTsVal);
+                            LOG.trace("{} RTT measurement: Save SEG.TSval in TS.Recent.", ctx.channel());
+                            tcb.tsRecent(ctx, segTsVal);
                         }
                     }
                 }
@@ -2080,7 +2084,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 7323: retransmission queue was sent.
                     rDash = config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime();
                 }
-                LOG.trace("{} RTT R' = {}", ctx.channel(), rDash);
+                LOG.trace("{} RTT measurement: RTT R' = {}", ctx.channel(), rDash);
 
                 // RFC 6298:       a host MUST set
                 // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
@@ -2114,9 +2118,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
                 // RFC 7323: and beta' instead:
                 // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
-                tcb.rttVar((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash));
+                tcb.rttVar(ctx, (1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash));
                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                tcb.sRtt((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash);
+                tcb.sRtt(ctx, (1 - alphaDash) * tcb.sRtt() + alphaDash * rDash);
                 // RFC 7323: (for each sample R')
 
                 // RFC 6298:       After the computation, a host MUST update
@@ -2498,7 +2502,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final TimestampsOption tsOpt = new TimestampsOption(config.clock().time(), tcb.tsRecent());
                 options.put(TIMESTAMPS, tsOpt);
                 if ((ctl & ACK) != 0) {
-                    tcb.lastAckSent(ack);
+                    tcb.lastAckSent(ctx, ack);
                 }
                 LOG.trace("{} RTT measurement: > {}", ctx.channel(), tsOpt);
             }

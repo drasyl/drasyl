@@ -1834,7 +1834,7 @@ class ConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).tsRecent(214L);
+                        verify(tcb).tsRecent(ctx, 214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -1843,10 +1843,10 @@ class ConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).sRtt(21);
+                        verify(tcb).sRtt(ctx, 21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).rttVar(10.5);
+                        verify(tcb).rttVar(ctx, 10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(ctx, 21);
@@ -1872,7 +1872,7 @@ class ConnectionHandlerTest {
                         assertThat(response, allOf(seq(124L), ack(815L), ctl(ACK), tsOpt(111, 2)));
 
                         // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                        verify(tcb).lastAckSent(815L);
+                        verify(tcb).lastAckSent(ctx, 815L);
 
                         verify(seg).release();
                     }
@@ -1919,7 +1919,7 @@ class ConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).tsRecent(214L);
+                        verify(tcb).tsRecent(ctx, 214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -1928,10 +1928,10 @@ class ConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).sRtt(21);
+                        verify(tcb).sRtt(ctx, 21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).rttVar(10.5);
+                        verify(tcb).rttVar(ctx, 10.5);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(ctx, 21);
@@ -2010,7 +2010,7 @@ class ConnectionHandlerTest {
                             assertThat(response, allOf(seq(122L), ack(815L), ctl(ACK), tsOpt(414, 99)));
 
                             // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
-                            verify(tcb).lastAckSent(815L);
+                            verify(tcb).lastAckSent(ctx, 815L);
                         }
                     }
                 }
@@ -2467,8 +2467,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671875d);
+                                verify(tcb).sRtt(ctx, 20.95703125d);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2528,8 +2528,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671875d);
+                                verify(tcb).sRtt(ctx, 20.95703125d);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2632,8 +2632,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671875d);
+                                verify(tcb).sRtt(ctx, 20.95703125d);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2693,8 +2693,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671875d);
+                                verify(tcb).sRtt(ctx, 20.95703125d);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
