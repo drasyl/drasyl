@@ -458,13 +458,14 @@ public class TransmissionControlBlock {
     /**
      * Writes data to the network that has been queued for transmission.
      */
-    void writeEnqueuedData(final ChannelHandlerContext ctx) {
-        segmentizeData(ctx, false);
+    long writeEnqueuedData(final ChannelHandlerContext ctx) {
+        return segmentizeAndSendData(ctx, false);
     }
 
-    private void segmentizeData(final ChannelHandlerContext ctx,
-                                final boolean overrideTimeoutOccurred) {
+    private long segmentizeAndSendData(final ChannelHandlerContext ctx,
+                                       final boolean overrideTimeoutOccurred) {
         try {
+            long totalSentData = 0;
             long readableBytes = sendBuffer.length();
 
             while (readableBytes > 0) {
@@ -530,7 +531,7 @@ public class TransmissionControlBlock {
                     }
                     else {
                         LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
-                        return;
+                        return totalSentData;
                     }
                 }
 
@@ -563,12 +564,16 @@ public class TransmissionControlBlock {
                     LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
-                    readableBytes -= handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                    long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                    totalSentData += sentData;
+                    readableBytes -= sentData;
                 }
                 else {
-                    return;
+                    return totalSentData;
                 }
             }
+
+            return totalSentData;
         }
         finally {
             outgoingSegmentQueue.flush(ctx, this);
@@ -577,7 +582,7 @@ public class TransmissionControlBlock {
 
     void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
         sendBuffer.push();
-        segmentizeData(ctx, false);
+        segmentizeAndSendData(ctx, false);
     }
 
     ConnectionConfig config() {
@@ -589,7 +594,7 @@ public class TransmissionControlBlock {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
                 LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
-                segmentizeData(ctx, true);
+                segmentizeAndSendData(ctx, true);
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
     }

@@ -2157,7 +2157,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     FlightSize would remain less than or equal to cwnd plus 2*SMSS,
                     // RFC 5681:     and that new data is available for transmission.
                     LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: Got first or second duplicate ACK. Try to write previously unsent data ({} bytes available).", ctx.channel(), tcb.sendBuffer().length());
-                    tcb.writeEnqueuedData(ctx);
+                    final long writtenData = tcb.writeEnqueuedData(ctx);
+                    LOG.trace("{} Congestion Control: Fast Retransmit/Fast Recovery: Limited Transmit: {} bytes of previously unsent data has been written.", ctx.channel(), writtenData);
+
 
                     // RFC 5681:     Further, the TCP sender MUST NOT change cwnd to reflect these
                     // RFC 5681:     two segments [RFC3042]. Note that a sender using SACK [RFC2018]
@@ -2180,13 +2182,13 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 5681:     When [RFC3042] is in use, additional data sent in limited
                     // RFC 5681:     transmit MUST NOT be included in this calculation.
                     // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS)            (4)
-                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS)`.", ctx.channel());
+                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row: Set ssthresh to `max(FlightSize/2,2*SMSS) = max({}/2,2*{})`.", ctx.channel(), tcb.flightSize(), tcb.smss());
                     tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
                     // RFC 5681: 3. The lost segment starting at SND.UNA MUST be retransmitted
                     final Segment retransmission = nextSegmentOnRetransmissionQueue(ctx, tcb);
                     assert retransmission != null;
-                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Retransmit `{}`.", ctx.channel(), retransmission);
+                    LOG.trace("{} Congestion Control: Fast Retransmit: Got third duplicate ACK in a row. Retransmit lost segment `{}`.", ctx.channel(), retransmission);
                     ctx.writeAndFlush(retransmission);
 
                     // RFC 5681:    and cwnd set to ssthresh plus 3*SMSS. This artificially
@@ -2359,9 +2361,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: where N is the number of previously unacknowledged bytes acknowledged
                 // RFC 5681: in the incoming ACK.
                 final long n = ackedBytes;
-                final long increment = min(n, tcb.smss());
-                LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {}.", ctx.channel(), ackedBytes, increment);
-                tcb.cwnd(ctx, tcb.cwnd() + increment);
+                if (n > 0) {
+                    final long increment = min(n, tcb.smss());
+                    LOG.trace("{} Congestion Control: Slow Start: {} new bytes has ben ACKed. Increase cwnd by {}.", ctx.channel(), ackedBytes, increment);
+                    tcb.cwnd(ctx, tcb.cwnd() + increment);
+                }
             }
             else {
                 // RFC 5681: During congestion avoidance, cwnd is incremented by roughly 1
@@ -2686,6 +2690,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: timer, the value of ssthresh MUST be set to no more than the value given in
         // RFC 5681: equation (4):
         // RFC 5681: ssthresh = max (FlightSize / 2, 2*SMSS) (4)
+        LOG.trace("{} Congestion Control: Segment loss. Set ssthresh to `max(FlightSize/2,2*SMSS) = max({}/2,2*{})`.", ctx.channel(), tcb.flightSize(), tcb.smss());
         tcb.ssthresh(ctx, max(tcb.flightSize() / 2, 2L * tcb.smss()));
 
         // RFC 5681: Furthermore, upon a timeout (as specified in [RFC2988]) cwnd MUST be set to
@@ -2694,6 +2699,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: dropped segment the TCP sender uses the slow start algorithm to increase
         // RFC 5681: the window from 1 full-sized segment to the new value of ssthresh, at which
         // RFC 5681: point congestion avoidance again takes over.
+        LOG.trace("{} Congestion Control: Timeout. Set cmd to no more than the loss window, which equals to 1 full-sized segment", ctx.channel());
         tcb.cwnd(ctx, tcb.effSndMss());
 
         if (config.newReno()) {
