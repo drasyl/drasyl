@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,14 +43,27 @@ public class CsvWriter implements AutoCloseable {
     public void write(final String... values) throws IOException {
         if (columns.length != 0 && columns.length != values.length) {
             throw new IllegalArgumentException("CSV file has " + columns.length + " column(s) but values have " + values.length + " column(s)");
-        };
+        }
         fileWriter.append(String.join(",", values));
         fileWriter.append("\n");
-        fileWriter.flush();
     }
 
     public void write(final Object... values) throws IOException {
         write(Arrays.stream(values).map(Object::toString).toArray(String[]::new));
+    }
+
+    public void flush() throws IOException {
+        fileWriter.flush();
+    }
+
+    public void writeAndFlush(final String... values) throws IOException {
+        write(values);
+        flush();
+    }
+
+    public void writeAndFlush(final Object... values) throws IOException {
+        write(values);
+        flush();
     }
 
     @Override

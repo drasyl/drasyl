@@ -26,9 +26,12 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.util.CsvWriter;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -75,6 +78,16 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 @SuppressWarnings({ "java:S125", "java:S3776", "java:S6541" })
 public class TransmissionControlBlock {
+    public static CsvWriter CSV_WRITER;
+
+    static {
+        try {
+            CSV_WRITER = new CsvWriter(Path.of("./tcb.csv"), "time", "ssthresh", "cwnd");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static final int MIN_PORT = 1;
     public static final int MAX_PORT = 65_535;
     // IPv4/IPv6: 20/40 bytes -> 40 bytes
@@ -398,6 +411,11 @@ public class TransmissionControlBlock {
     }
 
     public void delete() {
+        try {
+            CSV_WRITER.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         cancelOverrideTimer();
         sendBuffer.release();
         receiveBuffer.release();
@@ -825,12 +843,26 @@ public class TransmissionControlBlock {
         if (LOG.isTraceEnabled() && newSsthresh != ssthresh) {
             LOG.trace("{} Congestion Control: {} ssthresh from {} to {} ({}{}).", ctx.channel(), (newSsthresh > ssthresh ? "Increase" : "Decrease"), ssthresh, newSsthresh, (newSsthresh > ssthresh ? "+" : ""), newSsthresh - ssthresh);
         }
+        if (ssthresh != newSsthresh) {
+            try {
+                CSV_WRITER.write(System.currentTimeMillis(), newSsthresh, cwnd());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         this.ssthresh = newSsthresh;
     }
 
     public void cwnd(final ChannelHandlerContext ctx, final long newCwnd) {
         if (LOG.isTraceEnabled() && newCwnd != cwnd) {
             LOG.trace("{} Congestion Control: {} cwnd from {} to {} ({}{}).", ctx.channel(), (newCwnd > cwnd ? "Increase" : "Decrease"), cwnd, newCwnd, (newCwnd > cwnd ? "+" : ""), newCwnd - cwnd);
+        }
+        if (cwnd != newCwnd) {
+            try {
+                CSV_WRITER.write(System.currentTimeMillis(), ssthresh(), newCwnd);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         this.cwnd = newCwnd;
     }
