@@ -252,9 +252,7 @@ public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
                 // together with other data for transmission efficiency. As this implementation is
                 // currently still message-oriented and not byte-oriented, we will send every message directly.
                 final ConnectionHandshakeSegment seg = ConnectionHandshakeSegment.pshAck(sndNxt, rcvNxt, data);
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}[{}] As connection is established, we can pass the message `{}` ({}) as `{}` ({}) to the network.", ctx.channel(), state, data, System.identityHashCode(data), seg, System.identityHashCode(seg));
-                }
+                LOG.trace("{}[{}] As connection is established, we can pass the message `{}` to the network.", ctx.channel(), state, seg);
                 ctx.write(seg, promise);
                 break;
 

@@ -38,7 +38,6 @@ import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
-import static org.drasyl.util.NumberUtil.min;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -135,11 +134,11 @@ public class ReceiveBuffer {
                 // first SEG to be added to RCV.WND?
                 // SEG is located at the left edge of our RCV.WND?
                 if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt()) && greaterThanOrEqualTo(seg.lastSeq(), tcb.rcvNxt())) {
-                    receiveFirstSegmentLocatedAtLeftEdgeOfWindow(ctx, tcb, seg, content);
+                    receiveFirstSegmentLocatedAtLeftEdgeOfWindow(tcb, seg, content);
                 }
                 // SEG is within RCV.WND, but not at the left edge
                 else if (greaterThan(seg.seq(), tcb.rcvNxt()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) {
-                    receiveFirstSegmentLocatedWithingWindow(ctx, tcb, seg, content);
+                    receiveFirstSegmentLocatedWithingWindow(tcb, seg, content);
                 }
                 else {
                     // SEG contains no elements within RCV.WND. Drop!
@@ -151,11 +150,11 @@ public class ReceiveBuffer {
                 if (lessThan(seg.seq(), head.seq())) {
                     // SEG is located at the left edge of our RCV.WND?
                     if (lessThanOrEqualTo(seg.seq(), tcb.rcvNxt()) && greaterThanOrEqualTo(seg.lastSeq(), tcb.rcvNxt())) {
-                        receiveSegmentLocatedAtLeftEdgeOfWindowAndBeforeHead(ctx, tcb, seg, content);
+                        receiveSegmentLocatedAtLeftEdgeOfWindowAndBeforeHead(tcb, seg, content);
                     }
                     // SEG is within RCV.WND, but not at the left edge
                     else if (greaterThan(seg.seq(), tcb.rcvNxt()) && lessThan(seg.seq(), add(tcb.rcvNxt(), tcb.rcvWnd()))) {
-                        receiveSegmentLocatedWithingWindowAndBeforeHead(ctx, tcb, seg, content);
+                        receiveSegmentLocatedWithingWindowAndBeforeHead(tcb, seg, content);
                     }
                     else {
                         // SEG contains no elements within RCV.WND. Drop!
@@ -166,17 +165,17 @@ public class ReceiveBuffer {
 
             // does SEG contain something we can add after the header (or other fragments)
             ReceiveBufferBlock current = head;
-            while (current != null && unallocatedBytes(tcb) > 0) {
+            while (current != null && tcb.rcvWnd() > 0) {
                 // first, check if there is space between current and any next fragment
                 if (current.next == null || lessThan(add(current.seq(), current.len()), current.next.seq())) {
                     // second, does SEQ contain data that can be placed after current AND is SEG before any present next fragment?
                     if (lessThan(current.lastSeq(), seg.lastSeq()) && (current.next == null || lessThan(seg.seq(), current.next.seq()))) {
                         // does SEG overlap with current?
                         if (lessThan(current.lastSeq(), seg.seq())) {
-                            receiveNonOverlappingSegmentLocatedAfterHead(ctx, tcb, seg, current, content);
+                            receiveNonOverlappingSegmentLocatedAfterHead(tcb, seg, current, content);
                         }
                         else {
-                            receiveOverlappingSegmentLocatedAfterHead(ctx, tcb, seg, current, content);
+                            receiveOverlappingSegmentLocatedAfterHead(tcb, seg, current, content);
                         }
                     }
                 }
@@ -209,10 +208,7 @@ public class ReceiveBuffer {
         }
     }
 
-    private void receiveFirstSegmentLocatedAtLeftEdgeOfWindow(final ChannelHandlerContext ctx,
-                                                              final TransmissionControlBlock tcb,
-                                                              final Segment seg,
-                                                              final ByteBuf content) {
+    private void receiveFirstSegmentLocatedAtLeftEdgeOfWindow(TransmissionControlBlock tcb, Segment seg, ByteBuf content) {
         final long index;
         final long seq;
         final long length;
@@ -220,7 +216,7 @@ public class ReceiveBuffer {
         seq = tcb.rcvNxt();
         index = sub(tcb.rcvNxt(), seg.seq());
         // ensure that we do not exceed RCV.WND
-        length = NumberUtil.min(unallocatedBytes(tcb), seg.len()) - index;
+        length = NumberUtil.min(tcb.rcvWnd(), seg.len()) - index;
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         LOG.trace(
                 "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
@@ -235,15 +231,12 @@ public class ReceiveBuffer {
                 () -> block
         );
         head = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
 
-    private void receiveFirstSegmentLocatedWithingWindow(final ChannelHandlerContext ctx,
-                                                         final TransmissionControlBlock tcb,
-                                                         final Segment seg,
-                                                         final ByteBuf content) {
+    private void receiveFirstSegmentLocatedWithingWindow(TransmissionControlBlock tcb, Segment seg, ByteBuf content) {
         final long length;
         final long index;
         final long seq;
@@ -252,7 +245,7 @@ public class ReceiveBuffer {
         index = 0;
         // ensure that we do not exceed RCV.WND
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
-        length = NumberUtil.min((int) (unallocatedBytes(tcb) - offsetRcvNxtToSeq), seg.len());
+        length = NumberUtil.min((int) (tcb.rcvWnd() - offsetRcvNxtToSeq), seg.len());
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         LOG.trace(
                 "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
@@ -268,15 +261,12 @@ public class ReceiveBuffer {
                 () -> block
         );
         head = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
 
-    private void receiveSegmentLocatedAtLeftEdgeOfWindowAndBeforeHead(final ChannelHandlerContext ctx,
-                                                                      final TransmissionControlBlock tcb,
-                                                                      final Segment seg,
-                                                                      final ByteBuf content) {
+    private void receiveSegmentLocatedAtLeftEdgeOfWindowAndBeforeHead(TransmissionControlBlock tcb, Segment seg, ByteBuf content) {
         final long index;
         final long seq;
         final long length;
@@ -285,7 +275,7 @@ public class ReceiveBuffer {
         index = sub(tcb.rcvNxt(), seg.seq());
         // ensure that we do not exceed RCV.WND or read data already contained in head
         final long offsetSegToHead = sub(head.seq(), seg.seq());
-        length = NumberUtil.min(unallocatedBytes(tcb), offsetSegToHead, seg.len()) - index;
+        length = NumberUtil.min(tcb.rcvWnd(), offsetSegToHead, seg.len()) - index;
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
@@ -304,15 +294,12 @@ public class ReceiveBuffer {
                 () -> block
         );
         head = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
 
-    private void receiveSegmentLocatedWithingWindowAndBeforeHead(final ChannelHandlerContext ctx,
-                                                                 final TransmissionControlBlock tcb,
-                                                                 final Segment seg,
-                                                                 final ByteBuf content) {
+    private void receiveSegmentLocatedWithingWindowAndBeforeHead(TransmissionControlBlock tcb, Segment seg, ByteBuf content) {
         final long length;
         final long index;
         final long seq;
@@ -322,7 +309,7 @@ public class ReceiveBuffer {
         // ensure that we do not exceed RCV.WND or read data already contained in head
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
         final long offsetSeqHead = sub(head.seq(), seg.seq());
-        length = NumberUtil.min(unallocatedBytes(tcb) - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
+        length = NumberUtil.min(tcb.rcvWnd() - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
@@ -341,16 +328,15 @@ public class ReceiveBuffer {
                 () -> block
         );
         head = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
 
-    private void receiveNonOverlappingSegmentLocatedAfterHead(final ChannelHandlerContext ctx,
-                                                              final TransmissionControlBlock tcb,
-                                                              final Segment seg,
-                                                              final ReceiveBufferBlock current,
-                                                              final ByteBuf content) {
+    private void receiveNonOverlappingSegmentLocatedAfterHead(TransmissionControlBlock tcb,
+                                                              Segment seg,
+                                                              ReceiveBufferBlock current,
+                                                              ByteBuf content) {
         final long seq;
         final long length;
         final long index;
@@ -358,10 +344,10 @@ public class ReceiveBuffer {
         seq = seg.seq();
         index = sub(seq, seg.seq());
         if (current.next != null) {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
+            length = NumberUtil.min(tcb.rcvWnd(), seg.len(), sub(current.next.seq(), seg.seq())) - index;
         }
         else {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len() - index);
+            length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
         }
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         block.next = current.next;
@@ -383,16 +369,15 @@ public class ReceiveBuffer {
                 () -> block
         );
         current.next = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
 
-    private void receiveOverlappingSegmentLocatedAfterHead(final ChannelHandlerContext ctx,
-                                                           final TransmissionControlBlock tcb,
-                                                           final Segment seg,
-                                                           final ReceiveBufferBlock current,
-                                                           final ByteBuf content) {
+    private void receiveOverlappingSegmentLocatedAfterHead(TransmissionControlBlock tcb,
+                                                           Segment seg,
+                                                           ReceiveBufferBlock current,
+                                                           ByteBuf content) {
         final long seq;
         final long length;
         final long index;
@@ -400,10 +385,10 @@ public class ReceiveBuffer {
         seq = add(current.lastSeq(), 1);
         index = sub(seq, seg.seq());
         if (current.next != null) {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
+            length = NumberUtil.min(tcb.rcvWnd(), seg.len(), sub(current.next.seq(), seg.seq())) - index;
         }
         else {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len() - index);
+            length = NumberUtil.min(tcb.rcvWnd(), seg.len() - index);
         }
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert current.next == null || lessThan(block.seq(), current.next.seq());
@@ -426,7 +411,7 @@ public class ReceiveBuffer {
                 () -> block
         );
         current.next = block;
-        tcb.updateRcvWnd(ctx);
+        tcb.decrementRcvWnd(length);
         size++;
         bytes += length;
     }
@@ -463,21 +448,7 @@ public class ReceiveBuffer {
             bytes -= readableBytes;
             final ByteBuf headBuf1 = headBuf;
             headBuf = null;
-
-            // receiver's SWS avoidance algorithms
-            // RFC 9293, Section 3.8.6.2.2
-            // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
-
-            // total receive buffer space is RCV.BUFF
-            // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-            final long rcvUser = tcb.rcvUser();
-            final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
-
-            if ((tcb.rcvBuff() - rcvUser - tcb.rcvWnd()) >= min(fr * tcb.rcvBuff(), tcb.effSndMss())) {
-                LOG.trace("{} Receiver's SWS avoidance: Update RCV.WND.", ctx.channel());
-                tcb.updateRcvWnd(ctx);
-            }
-
+            tcb.incrementRcvWnd(ctx);
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
             ctx.fireChannelRead(headBuf1);
         }
@@ -501,10 +472,6 @@ public class ReceiveBuffer {
      */
     public boolean isReadable() {
         return headBuf != null && headBuf.isReadable();
-    }
-
-    int unallocatedBytes(final TransmissionControlBlock tcb) {
-        return tcb.rcvBuff() - bytes;
     }
 
     @SuppressWarnings("java:S2160")

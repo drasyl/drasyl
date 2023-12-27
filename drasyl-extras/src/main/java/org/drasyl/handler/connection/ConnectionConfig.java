@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import com.google.auto.value.AutoValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.util.RandomUtil;
 
 import java.time.Duration;
 import java.util.function.BiFunction;
@@ -77,7 +76,7 @@ public abstract class ConnectionConfig {
             .timestamps(true)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
-            .uBound(ofSeconds(2))
+            .uBound(ofSeconds(60))
             .alpha(1d / 8)
             .beta(1d / 4)
             .k(4)
@@ -100,7 +99,7 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false) // not implemented yet
+            .sack(false)
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
             .newReno(true)
