@@ -46,7 +46,7 @@ import static org.drasyl.util.Preconditions.requireInRange;
  * This {@link ChannelInitializer} create a channel providing reliable and ordered delivery of bytes
  * between hosts. Handlers can either be added to the pipeline on channel creation time using
  * {@link #initChannel(DrasylChannel)} or after connection with the remote peer has been established
- * using {@link #handshakeCompleted(DrasylChannel)}.
+ * using {@link #handshakeCompleted(ChannelHandlerContext)}.
  * {@link #handshakeFailed(ChannelHandlerContext, Throwable)} is called, when no connection could be
  * established (e.g., because the other party has not responded within the time limit or has
  * rejected the handshake).
@@ -114,7 +114,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
             public void userEventTriggered(final ChannelHandlerContext ctx,
                                            final Object evt) throws Exception {
                 if (evt instanceof ConnectionHandshakeCompleted) {
-                    handshakeCompleted((DrasylChannel) ctx.channel());
+                    handshakeCompleted(ctx);
                 }
                 else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).initatedByRemotePeer()) {
                     // confirm close request
@@ -143,7 +143,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
     }
 
     @SuppressWarnings("java:S112")
-    protected abstract void handshakeCompleted(final DrasylChannel ch) throws Exception;
+    protected abstract void handshakeCompleted(final ChannelHandlerContext ctx) throws Exception;
 
     protected abstract void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause);
 }
