@@ -738,6 +738,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
 
                         final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -784,6 +785,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, ctx.channel(), 456L);
 
@@ -887,6 +889,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
 
@@ -956,6 +959,7 @@ class ConnectionHandlerTest {
                                 .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                                 .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                                 .clock(clock)
+                                .timestamps(true)
                                 .build();
                         final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
 
@@ -1808,7 +1812,7 @@ class ConnectionHandlerTest {
                         when(seg.ack()).thenReturn(123L);
                         when(tcb.sndNxt()).thenReturn(124L);
                         when(config.clock().time()).thenReturn(111L);
-                        when(tcb.sRtt()).thenReturn(21d);
+                        when(tcb.sRtt()).thenReturn(21f);
                         when(config.clock().g()).thenReturn(0.001);
                         when(config.k()).thenReturn(4);
                         when(tcb.rcvNxt()).thenReturn(815L);
@@ -1834,7 +1838,7 @@ class ConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).tsRecent(214L);
+                        verify(tcb).tsRecent(ctx, 214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -1843,10 +1847,10 @@ class ConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).sRtt(21);
+                        verify(tcb).sRtt(ctx, 21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).rttVar(10.5);
+                        verify(tcb).rttVar(ctx, 10.5f);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(ctx, 21);
@@ -1872,7 +1876,7 @@ class ConnectionHandlerTest {
                         assertThat(response, allOf(seq(124L), ack(815L), ctl(ACK), tsOpt(111, 2)));
 
                         // RFC 7323: Last.ACK.sent is set to RCV.NXT.
-                        verify(tcb).lastAckSent(815L);
+                        verify(tcb).lastAckSent(ctx, 815L);
 
                         verify(seg).release();
                     }
@@ -1891,7 +1895,7 @@ class ConnectionHandlerTest {
                         when(seg.ack()).thenReturn(123L);
                         when(tcb.sndNxt()).thenReturn(124L);
                         when(config.clock().time()).thenReturn(111L);
-                        when(tcb.sRtt()).thenReturn(21d);
+                        when(tcb.sRtt()).thenReturn(21f);
                         when(config.clock().g()).thenReturn(0.001);
                         when(config.k()).thenReturn(4);
                         when(tcb.rcvNxt()).thenReturn(815L);
@@ -1919,7 +1923,7 @@ class ConnectionHandlerTest {
 
                         // RFC 7323: Check for a TSopt option;
                         // RFC 7323: if one is found, save SEG.TSval in variable TS.Recent
-                        verify(tcb).tsRecent(214L);
+                        verify(tcb).tsRecent(ctx, 214L);
 
                         // RFC 7323: and turn on the Snd.TS.OK bit in the connection control block.
                         verify(tcb).turnOnSndTsOk();
@@ -1928,10 +1932,10 @@ class ConnectionHandlerTest {
                         // RFC 7323: RTT estimate.
                         // RFC 6298:       the host MUST set
                         // RFC 6298:       SRTT <- R
-                        verify(tcb).sRtt(21);
+                        verify(tcb).sRtt(ctx, 21);
 
                         // RFC 6298:       RTTVAR <- R/2
-                        verify(tcb).rttVar(10.5);
+                        verify(tcb).rttVar(ctx, 10.5f);
 
                         // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
                         verify(tcb).rto(ctx, 21);
@@ -2010,7 +2014,7 @@ class ConnectionHandlerTest {
                             assertThat(response, allOf(seq(122L), ack(815L), ctl(ACK), tsOpt(414, 99)));
 
                             // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
-                            verify(tcb).lastAckSent(815L);
+                            verify(tcb).lastAckSent(ctx, 815L);
                         }
                     }
                 }
@@ -2441,8 +2445,8 @@ class ConnectionHandlerTest {
                                 when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
-                                when(tcb.sRtt()).thenReturn(21d);
-                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(tcb.sRtt()).thenReturn(21f);
+                                when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ConnectionHandler handler = new ConnectionHandler(0, 0, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -2467,8 +2471,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
+                                verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2502,8 +2506,8 @@ class ConnectionHandlerTest {
                                 when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
-                                when(tcb.sRtt()).thenReturn(21d);
-                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(tcb.sRtt()).thenReturn(21f);
+                                when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ConnectionHandler handler = new ConnectionHandler(0, 0, config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -2528,8 +2532,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
+                                verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2606,8 +2610,8 @@ class ConnectionHandlerTest {
                                 when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
-                                when(tcb.sRtt()).thenReturn(21d);
-                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(tcb.sRtt()).thenReturn(21f);
+                                when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -2632,8 +2636,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
+                                verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -2667,8 +2671,8 @@ class ConnectionHandlerTest {
                                 when(tcb.smss()).thenReturn(1000L);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
-                                when(tcb.sRtt()).thenReturn(21d);
-                                when(tcb.rttVar()).thenReturn(2.4);
+                                when(tcb.sRtt()).thenReturn(21f);
+                                when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
                                 final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
@@ -2693,8 +2697,8 @@ class ConnectionHandlerTest {
                                 // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
                                 // RFC 6298:       After the computation, a host MUST update
                                 // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                                verify(tcb).rttVar(2.4671875d);
-                                verify(tcb).sRtt(20.95703125d);
+                                verify(tcb).rttVar(ctx, 2.4671876f);
+                                verify(tcb).sRtt(ctx, 20.95703125f);
                                 verify(tcb).rto(ctx, 31);
 
                                 // RFC 9293: If SND.UNA =< SEG.ACK =< SND.NXT, the send window should be updated.
@@ -3225,7 +3229,7 @@ class ConnectionHandlerTest {
                 void shouldRetransmitEarliestSegment(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg) {
                     when(tcb.localPort()).thenReturn(PEER_A_PORT);
                     when(tcb.remotePort()).thenReturn(PEER_B_PORT);
-                    when(tcb.rto()).thenReturn(1234L);
+                    when(tcb.rto()).thenReturn(1234);
                     when(tcb.flightSize()).thenReturn(64_000L);
                     when(tcb.smss()).thenReturn(1000L);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
@@ -3245,7 +3249,7 @@ class ConnectionHandlerTest {
                     // RFC 6298: (5.5) The host MUST set RTO <- RTO * 2 ("back off the timer"). The maximum
                     // RFC 6298:       value discussed in (2.5) above may be used to provide an upper bound
                     // RFC 6298:       to this doubling operation.
-                    verify(tcb).rto(ctx, 2468L);
+                    verify(tcb).rto(ctx, 2468);
 
                     // RFC 6298: (5.6) Start the retransmission timer, such that it expires after RTO
                     // RFC 6298:       seconds (for the value of RTO after the doubling operation outlined
@@ -3393,25 +3397,32 @@ class ConnectionHandlerTest {
                 assertFalse(tcb.doSlowStart());
                 channel.writeOutbound(byteBuf);
 
+                int expectedCwnd = 5_000;
+
                 // ACK 1st SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306, tcb.cwnd());
+                expectedCwnd += 296;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288, tcb.cwnd());
+                expectedCwnd += 280;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274, tcb.cwnd());
+                expectedCwnd += 266;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274 + 261, tcb.cwnd());
+                expectedCwnd += 254;
+                assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                assertEquals(5_000 + 306 + 288 + 274 + 261 + 250, tcb.cwnd());
+                expectedCwnd += 243;
+                assertEquals(expectedCwnd, tcb.cwnd());
             }
         }
     }
