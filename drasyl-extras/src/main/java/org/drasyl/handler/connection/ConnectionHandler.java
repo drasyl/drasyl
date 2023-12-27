@@ -27,8 +27,9 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.UnsupportedMessageTypeException;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.connection.SegmentOption.SackOption;
@@ -235,14 +236,39 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (!(msg instanceof ByteBuf)) {
-            // reject all non-ByteBuf messages
-            final UnsupportedMessageTypeException exception = new UnsupportedMessageTypeException(msg, ByteBuf.class);
-            promise.tryFailure(exception);
-            ReferenceCountUtil.safeRelease(msg);
+            ctx.write(msg, promise);
         }
         else {
             // interpret as SEND call
-            userCallSend(ctx, (ByteBuf) msg, promise);
+            final ByteBuf buf = (ByteBuf) msg;
+
+            if (false) {
+                if (buf.readableBytes() >= Integer.BYTES) {
+                    buf.markReaderIndex();
+                    // TunPacketCodec.MAGIC_NUMBER
+                    if (buf.readInt() != 899_812_335) {
+                        buf.resetReaderIndex();
+                        userCallSend(ctx, buf, promise);
+                    }
+                    else {
+                        String string = buf.toString();
+                        LOG.error("Passthrough TUN byte buf `{}`", string);
+                        ctx.write(buf, promise);
+                        promise.addListener(new GenericFutureListener<Future<? super Void>>() {
+                            @Override
+                            public void operationComplete(Future<? super Void> future) throws Exception {
+                                LOG.error("future for `{}`: {} ", string, future.isSuccess(), future.cause());
+                            }
+                        });
+                    }
+                }
+                else {
+                    userCallSend(ctx, buf, promise);
+                }
+            }
+            else {
+                userCallSend(ctx, buf, promise);
+            }
         }
     }
 
@@ -282,7 +308,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             segmentArrives(ctx, (Segment) msg);
         }
         else {
-            ReferenceCountUtil.safeRelease(msg);
+            ctx.fireChannelRead(msg);
         }
     }
 
