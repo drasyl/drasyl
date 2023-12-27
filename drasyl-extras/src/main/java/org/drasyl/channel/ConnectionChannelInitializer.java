@@ -27,7 +27,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import org.drasyl.handler.connection.ConnectionAnalyzeHandler;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.handler.connection.ConnectionException;
@@ -41,7 +40,6 @@ import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
 import static org.drasyl.util.Preconditions.requireInRange;
 
 /**
@@ -56,29 +54,22 @@ import static org.drasyl.util.Preconditions.requireInRange;
 @UnstableApi
 public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final int DEFAULT_SERVER_PORT = 21_037;
-    private final int listenPort;
-    private final boolean overrideActiveOpen;
+    private final Boolean doServer;
+    private final int port;
     protected final ConnectionConfig config;
 
-    protected ConnectionChannelInitializer(final int listenPort,
-                                           final boolean overrideActiveOpen,
+    protected ConnectionChannelInitializer(final Boolean doServer,
+                                           final int port,
                                            final ConnectionConfig config) {
-        this.listenPort = requireInRange(listenPort, MIN_PORT, MAX_PORT);
-        this.overrideActiveOpen = overrideActiveOpen;
+
+        this.doServer = doServer;
+        this.port = requireInRange(port, 0, MAX_PORT);
         this.config = requireNonNull(config);
     }
 
-    protected ConnectionChannelInitializer(final boolean overrideActiveOpen,
-                                           final ConnectionConfig config) {
-        this(DEFAULT_SERVER_PORT, overrideActiveOpen, config);
-    }
-
-    protected ConnectionChannelInitializer(final boolean overrideActiveOpen) {
-        this(overrideActiveOpen, ConnectionConfig.newBuilder().build());
-    }
-
-    protected ConnectionChannelInitializer() {
-        this(true);
+    protected ConnectionChannelInitializer(final Boolean doServer,
+                                           final int port) {
+        this(doServer, port, ConnectionConfig.newBuilder().build());
     }
 
     @SuppressWarnings("java:S1188")
@@ -88,31 +79,32 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
 
         p.addLast(new SegmentCodec());
 
-        final boolean iAmServer = iAmServer(ch);
+        final boolean iAmServer;
+        if (doServer != null) {
+            iAmServer = doServer.booleanValue();
+        }
+        else {
+            iAmServer = iAmServer(ch);
+        }
+
         final int localPort;
         final int remotePort;
         if (iAmServer) {
             // I'm the "server"
-            localPort = listenPort;
+            localPort = port;
             remotePort = 0;
         }
         else {
             // I'm the "client"
             localPort = 0;
-            remotePort = listenPort;
+            remotePort = port;
         }
 
-        final ConnectionConfig overriddenConfig;
-        if (overrideActiveOpen) {
-            overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
-        }
-        else {
-            overriddenConfig = config;
-        }
+        final ConnectionConfig overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
         p.addLast(new ConnectionHandler(localPort, remotePort, overriddenConfig));
 
         // FIXME: remove when debugging is done
-        p.addLast(new ConnectionAnalyzeHandler());
+        //p.addLast(new ConnectionAnalyzeHandler());
 
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
