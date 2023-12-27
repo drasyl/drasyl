@@ -68,7 +68,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
     }
 
     protected ConnectionChannelInitializer(final Boolean doServer,
-                                        final int port) {
+                                           final int port) {
         this(doServer, port, ConnectionConfig.newBuilder().build());
     }
 
