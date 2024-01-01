@@ -73,7 +73,7 @@ jobs:
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
-        uses: ilammy/msvc-dev-cmd@v1.12.1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
         if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
