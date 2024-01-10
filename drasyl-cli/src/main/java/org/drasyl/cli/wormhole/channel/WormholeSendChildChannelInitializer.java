@@ -86,11 +86,11 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
 
         // (de)serializer for WormholeMessages
-        ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
+        ctx.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
         if (payload.getText() != null) {
             p.addLast(new WormholeTextSender(out, password, payload.getText()));
