@@ -67,6 +67,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
+                        p.addLast(new ComputationResultMessageParserPolicyHandler());
                         p.addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), policy));
                     }
                 });

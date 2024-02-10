@@ -22,23 +22,27 @@
 package org.drasyl.cli.sdo.config;
 
 import org.drasyl.handler.peers.Peer;
-import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public class LuaNodeStateTable extends LuaTable {
+    private static final Logger LOG = LoggerFactory.getLogger(LuaNodeStateTable.class);
 
     public LuaNodeStateTable() {
         set("online", LuaValue.FALSE);
         set("policies", tableOf());
         set("peers", tableOf());
+        set("store", tableOf());
     }
 
     public void setOnline() {
@@ -49,7 +53,9 @@ public class LuaNodeStateTable extends LuaTable {
         set("online", LuaValue.FALSE);
     }
 
-    public void setState(final Set<Policy> policies, final Map<DrasylAddress, Peer> peers) {
+    public void setState(final Set<Policy> policies,
+                         final Map<DrasylAddress, Peer> peers,
+                         final Map<String, Object> store) {
         // policies
         final LuaTable policiesTable = tableOf();
         int index = 1;
@@ -60,10 +66,30 @@ public class LuaNodeStateTable extends LuaTable {
 
         // peers
         final LuaTable peersTable = tableOf();
-        for (final Map.Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
+        for (final Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
             peersTable.set(LuaValue.valueOf(entry.getKey().toString()), new LuaPeerTable(entry.getValue()));
         }
         set("peers", peersTable);
+        
+        // store
+        final LuaTable storeTable = tableOf();
+        for (final Entry<String, Object> entry : store.entrySet()) {
+            if (entry.getKey().equals("computation")) {
+                final LuaTable computationTable = tableOf();
+                final List<Map<String, String>> results = (List<Map<String, String>>) entry.getValue();
+                for (final Map<String, String> result : results) {
+                    final LuaTable computationTableEntry = tableOf();
+                    for (final Map.Entry<String, String> resultEntry : result.entrySet()) {
+                        computationTableEntry.set(resultEntry.getKey(), resultEntry.getValue());
+                    }
+
+//                    LOG.error("COMPUTATION PUT {}={}", computationTable.keyCount(), computationTableEntry);
+                    computationTable.insert(computationTable.keyCount(), computationTableEntry);
+                }
+                storeTable.set("computation", computationTable);
+            }
+        }
+        set("store", storeTable);
     }
 
     public boolean isOnline() {

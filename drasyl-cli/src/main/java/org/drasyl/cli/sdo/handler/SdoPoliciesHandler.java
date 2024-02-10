@@ -38,7 +38,9 @@ import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -50,6 +52,7 @@ import static org.drasyl.handler.codec.JacksonCodec.OBJECT_MAPPER;
 public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
     public static final Logger LOG = LoggerFactory.getLogger(SdoPoliciesHandler.class);
     public static final int NODE_HELLO_INTERVAL = 5000;
+    public static final Map<String, Object> STORE = new HashMap<>();
     private final IdentityPublicKey controller;
     private final PeersHandler peersHandler;
     private final SdoNodeHandler nodeHandler;
@@ -74,8 +77,8 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
                     final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
                     if (channel != null) {
                         final PeersList peersList = peersHandler.getPeers().copy();
-                        final NodeHello nodeHello = new NodeHello(policies, peersList);
-                        LOG.error("Send feedback to controller: {}", peersList);
+                        final NodeHello nodeHello = new NodeHello(policies, peersList, STORE);
+                        LOG.error("Send feedback to controller: `{}`", nodeHello);
                         channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                     else {

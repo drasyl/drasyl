@@ -40,6 +40,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -90,7 +91,7 @@ public class SdoNodeHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("Connected to controller. Try to join network.");
                     state = JOINING;
                     controllerChannel.eventLoop().execute(() -> {
-                        controllerChannel.writeAndFlush(new NodeHello(Set.of(), new PeersList(Map.of()))).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        controllerChannel.writeAndFlush(new NodeHello(Set.of(), new PeersList(Map.of()), new HashMap<>())).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     });
                 }
             });
