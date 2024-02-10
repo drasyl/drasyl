@@ -31,6 +31,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.config.LuaNetworkTable;
 import org.drasyl.cli.sdo.config.LuaNodeTable;
 import org.drasyl.cli.sdo.config.NetworkConfig;
+import org.drasyl.cli.sdo.config.Policy;
 import org.drasyl.cli.sdo.event.SdoMessageReceived;
 import org.drasyl.cli.sdo.message.AccessDenied;
 import org.drasyl.cli.sdo.message.ControllerHello;
@@ -42,7 +43,9 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -81,6 +84,42 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
             System.out.println("------------------------------------------------------------------------------------------------");
             System.out.println("Controller listening on address " + ctx.channel().localAddress());
             System.out.println("------------------------------------------------------------------------------------------------");
+
+            ctx.executor().scheduleAtFixedRate(() -> {
+                LOG.error("scheduleAtFixedRate");
+                try {
+                    final LuaNetworkTable network = config.network();
+                    network.networkListener.call(network);
+
+                    // check if nodes need new config
+                    final Map<SocketAddress, DrasylChannel> channels = ((DrasylServerChannel) ctx.channel()).channels;
+                    for (final LuaNodeTable node : network.nodes.values()) {
+                        final DrasylChannel channel = channels.get(node.name());
+                        if (node.state().isOnline()) {
+                            final Set<Policy> policies = node.policies();
+
+                            if (!Objects.equals(network.nodePolicies.put(node.name(), policies.hashCode()), policies.hashCode())) {
+                                LOG.debug("Policies for node `{}` have changed.", node.name());
+                                final ControllerHello controllerHello = new ControllerHello(policies);
+                                LOG.debug("Send {} to {}.", controllerHello, node.name());
+                                channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                            }
+                            else {
+                                LOG.debug("Policies for node `{}` have NOT changed: {}", node.name(), policies);
+                            }
+                        }
+                        else {
+                            network.nodePolicies.remove(node.name());
+                        }
+                    }
+
+                    network.logRelays();
+                }
+                catch (final Exception e) {
+                    e.printStackTrace();
+                    ctx.fireExceptionCaught(e);
+                }
+            }, 1000, 5000, MILLISECONDS);
         }
     }
 
@@ -105,7 +144,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         channel.closeFuture().addListener((ChannelFutureListener) future -> {
                             networkNode.state().setOffline();
                             LOG.info("`{}` left network.", sender);
-                            scheduleNotifyListener(ctx);
+                            //scheduleNotifyListener(ctx);
                         });
 
                         networkNode.state().setOnline();
@@ -118,11 +157,11 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                             }
                         }
                         networkNode.state().setState(((NodeHello) msg).policies(), peers);
-                        scheduleNotifyListener(ctx);
+                        //scheduleNotifyListener(ctx);
 
-                        final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
-                        LOG.debug("Send {} to {}.", controllerHello, sender);
-                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        //final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
+                        //LOG.debug("Send {} to {}.", controllerHello, sender);
+                        //channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                     else {
                         final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
@@ -132,7 +171,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                             }
                         }
                         networkNode.state().setState(((NodeHello) msg).policies(), peers);
-                        scheduleNotifyListener(ctx);
+                        //scheduleNotifyListener(ctx);
                     }
                 }
                 else {

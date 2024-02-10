@@ -27,9 +27,9 @@ import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetMultimap;
+import org.drasyl.util.SetUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.luaj.vm2.Lua;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
@@ -38,14 +38,22 @@ import org.luaj.vm2.lib.ZeroArgFunction;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+
+import static org.drasyl.cli.sdo.config.LuaNetworkTable.RELAYS;
+import static org.drasyl.cli.sdo.config.LuaNetworkTable.CLIENT;
 
 public class LuaNodeTable extends LuaTable {
     private static final Logger LOG = LoggerFactory.getLogger(LuaNodeTable.class);
     private final LuaNetworkTable network;
+    private static final Set<DrasylAddress> chosenPeers = new HashSet<>();
+    private static final Map<DrasylAddress, Set<DrasylAddress>> electedPeers = new HashMap<>();
 
     public LuaNodeTable(final LuaNetworkTable network,
                         final LuaString name,
@@ -144,6 +152,63 @@ public class LuaNodeTable extends LuaTable {
     public Set<Policy> policies() {
         final Set<Policy> policies = new HashSet<>();
 
+        // proactive latency measurements
+        //LOG.error("HEIKO network.proactiveLatencyMeasurementsRatio = {}", network.proactiveLatencyMeasurementsRatio);
+        if (network.proactiveLatencyMeasurementsRatio != null && network.proactiveLatencyMeasurementsRatio.tofloat() > 0 && network.proactiveLatencyMeasurementsInterval.toint() > 0) {
+            final float ratio = network.proactiveLatencyMeasurementsRatio.tofloat();
+            final int interval = network.proactiveLatencyMeasurementsInterval.toint();
+
+            final long currentTimeMillis = System.currentTimeMillis();
+            final long roundedTimeMillis = currentTimeMillis - (currentTimeMillis % interval);
+
+            final List<DrasylAddress> nodeCandidates = new ArrayList<>();
+            if (network.proactiveLatencyMeasurementsCandidates != null) {
+                final LuaValue[] keys = network.proactiveLatencyMeasurementsCandidates.keys();
+                for (final LuaValue key : keys) {
+                    final LuaValue value = network.proactiveLatencyMeasurementsCandidates.get(key);
+                    //System.out.println("value = " + value.tojstring());
+                    final IdentityPublicKey peer = IdentityPublicKey.of(value.tojstring());
+                    nodeCandidates.add(peer);
+                }
+            }
+            else {
+                // get online nodes
+                network.nodes.forEach((address, node) -> {
+                    if (!name().equals(address) && node.state().isOnline()) {
+                        nodeCandidates.add(address);
+                    }
+                });
+            }
+
+            final Set<DrasylAddress> randomSubset;
+            if (!electedPeers.containsKey(name())) {
+                // select ratio %/100 nodes
+                final Random random = new Random(name().hashCode() + roundedTimeMillis);
+                final int n = (int) (nodeCandidates.size() * ratio);
+                //LOG.error("HEIKO ratio = {}; n = {}; nodeCandidates.size() = {}", ratio, n, nodeCandidates.size());
+                randomSubset = new HashSet<>();
+                while (randomSubset.size() < n) {
+                    if (chosenPeers.size() >= nodeCandidates.size()) {
+                        chosenPeers.clear();
+                    }
+                    final List<DrasylAddress> currentCandidates = new ArrayList<>(SetUtil.difference(new HashSet<>(nodeCandidates), chosenPeers));
+
+                    final int randomIndex = random.nextInt(currentCandidates.size());
+                    randomSubset.add(currentCandidates.get(randomIndex));
+                    chosenPeers.add(currentCandidates.get(randomIndex));
+                }
+
+                electedPeers.put(name(), randomSubset);
+            }
+            else {
+                randomSubset = electedPeers.get(name());
+            }
+
+            //LOG.error("node {} elected {}", name(), randomSubset);
+
+            policies.add(new ProactiveLatencyMeasurementsPolicy(randomSubset));
+        }
+
         // default route
         final DrasylAddress defaultRoute = defaultRoute();
         if (defaultRoute != null) {
@@ -162,7 +227,10 @@ public class LuaNodeTable extends LuaTable {
                     routes.putIfAbsent(other.tunAddress(), otherName);
                 }
             }
-//            LOG.error("{} routes = {}", name(), routes);
+//            if (RELAYS.contains(name()) || name().equals(CLIENT)) {
+//                LOG.error("{} links = {}", name(), links);
+//                LOG.error("{} routes = {}", name(), routes);
+//            }
 
             policies.add(new TunPolicy(tunName(), tunSubnet(), tunMtu(), tunAddress(), routes, defaultRoute()));
         }

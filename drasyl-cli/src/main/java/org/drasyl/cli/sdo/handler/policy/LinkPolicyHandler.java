@@ -22,16 +22,13 @@
 package org.drasyl.cli.sdo.handler.policy;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.cli.sdo.config.LinkPolicy;
-import org.drasyl.cli.sdo.handler.NetworkConfigHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,12 +41,13 @@ import static org.drasyl.handler.noop.NoopDiscardHandler.NOOP_MAGIC_NUMBER;
 public class LinkPolicyHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LinkPolicyHandler.class);
     private final LinkPolicy policy;
+    private ScheduledFuture<?> retryTask;
+    private boolean directPathEstablished = false;
+    private boolean keepAlive = true;
 
     public LinkPolicyHandler(final LinkPolicy policy) {
         this.policy = requireNonNull(policy);
     }
-    private ScheduledFuture<?> retryTask;
-    private boolean directPathEstablished = false;
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
@@ -89,17 +87,28 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
 
         if (directPathPresentNow != directPathEstablished) {
             if (directPathPresentNow) {
-                NetworkConfigHandler.LOG.trace("Direct path to `{}` established.", policy.peer());
+                LOG.trace("Direct path to `{}` established.", policy.peer());
                 policy.setCurrentState(policy.desiredState());
             }
             else {
-                NetworkConfigHandler.LOG.trace("Direct path to `{}` lost. Try to establish it again.", policy.peer());
+                LOG.trace("Direct path to `{}` lost. Try to establish it again.", policy.peer());
                 policy.setCurrentState(ABSENT);
             }
             directPathEstablished = directPathPresentNow;
         }
 
-        if (!directPathPresentNow) {
+        if (keepAlive) {
+            LOG.error("Send NOOP message to `{}` trigger direct path establishment/prevent direct path destruction due to inactivity (directPathEstablished = {}).", policy.peer(), directPathEstablished);
+
+            final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NOOP_MAGIC_NUMBER);
+            final OverlayAddressedMessage<ByteBuf> msg = new OverlayAddressedMessage<>(byteBuf, policy.peer(), (DrasylAddress) ctx.channel().localAddress());
+            ctx.writeAndFlush(msg).addListener((ChannelFutureListener) channelFuture -> {
+                if (channelFuture.cause() != null) {
+                    LOG.warn("Error sending NOOP: ", channelFuture.cause());
+                }
+            });
+        }
+        else if (!directPathPresentNow) {
             LOG.error("No direct path to `{}` present. Send NOOP message to trigger direct path establishment.", policy.peer());
 
             final ByteBuf byteBuf = ctx.alloc().buffer(Long.BYTES).writeLong(NOOP_MAGIC_NUMBER);

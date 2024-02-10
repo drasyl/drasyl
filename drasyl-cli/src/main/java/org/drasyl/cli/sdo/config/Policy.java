@@ -37,6 +37,7 @@ import static org.drasyl.cli.sdo.config.Policy.PolicyState.PRESENT;
 @JsonSubTypes({
         @Type(value = DefaultRoutePolicy.class),
         @Type(value = LinkPolicy.class),
+        @Type(value = ProactiveLatencyMeasurementsPolicy.class),
         @Type(value = TunPolicy.class),
 })
 public abstract class Policy {

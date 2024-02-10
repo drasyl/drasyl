@@ -57,7 +57,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int PING_INTERVAL_MILLIS = 5_000;
     public static final int PING_TIMEOUT_MILLIS = 30_000;
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
-    public static final int MAX_PEERS = 100;
+    public static final int MAX_PEERS = 1000;
     protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     protected static final LoopbackHandler LOOPBACK_HANDLER = new LoopbackHandler();
     protected final Identity identity;

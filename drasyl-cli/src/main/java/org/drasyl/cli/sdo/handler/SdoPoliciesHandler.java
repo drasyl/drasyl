@@ -75,7 +75,7 @@ public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
                     if (channel != null) {
                         final PeersList peersList = peersHandler.getPeers().copy();
                         final NodeHello nodeHello = new NodeHello(policies, peersList);
-                        LOG.trace("Send feedback to controller: {}", peersList);
+                        LOG.error("Send feedback to controller: {}", peersList);
                         channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                     else {

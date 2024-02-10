@@ -25,8 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdo.message.ControllerHello;
-import org.drasyl.cli.util.LuaHashCodes;
-import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.CsvWriter;
@@ -36,6 +34,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaClosure;
 import org.luaj.vm2.LuaError;
+import org.luaj.vm2.LuaNumber;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
@@ -45,27 +44,34 @@ import org.luaj.vm2.lib.TwoArgFunction;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 
 @SuppressWarnings("java:S110")
 public class LuaNetworkTable extends LuaTable {
-    private static final Set<DrasylAddress> RELAYS;
+    static final DrasylAddress CLIENT;
+    static final Set<DrasylAddress> RELAYS;
     static {
+        CLIENT = IdentityPublicKey.of("fe8793d5e8f8a2dcdeada2065b9162596f947619723fe101b8db186b49d01b9b");
         RELAYS = Set.of(
             IdentityPublicKey.of("9269fff2b347ab343b6ca09dae8ec49f11b6d26c3116c3dfec907d252dd1ea6d"),
             IdentityPublicKey.of("841d1fafd67fc753a1c7c7e1350a0ef1567367d41131526e295951f54f27c35d"),
             IdentityPublicKey.of("daa21ed33a5092d7f8cd138b8ee5ef4765256efeb3b2ad644e1eebac7223e409"),
-            IdentityPublicKey.of("c3216cf1d99714935a62b3542d5baabe8de9c65d81365610b00cdad28f274de5"),
+            IdentityPublicKey.of("582f79b32211a5068d52a5ca8707ce73690c359b29448a270e09e3571fe1241f"),
             IdentityPublicKey.of("7d54a2ec282c4674dd3c4da66e8529f8a248a542a7b6ed1f6e65927de037815a"),
-            IdentityPublicKey.of("1f30e7f00b5bfa43001448f441bc6d196084732d5e7c2790f49f13fac9d64c53"),
+            IdentityPublicKey.of("512c9c4b91ca6157ddb6af7d2d3e0f414ed40cef67528518cf242ce3ae955286"),
             IdentityPublicKey.of("0eed51a3c3df18a25281f1c69b187b8f1e9c63386f65599fe6d598e463f38f77"),
             IdentityPublicKey.of("7f7519e67bf24261e6e485918dd564a5541ba25ebdff3f1013f36e67401f5070")
         );
@@ -74,11 +80,15 @@ public class LuaNetworkTable extends LuaTable {
     private static final Logger LOG = LoggerFactory.getLogger(LuaNetworkTable.class);
     final LuaTable nodeDefaults = new LuaTable();
     final LuaTable linkDefaults = new LuaTable();
-    final Map<DrasylAddress, LuaNodeTable> nodes = new HashMap<>();
+    public final Map<DrasylAddress, LuaNodeTable> nodes = new HashMap<>();
     final Set<LuaLinkTable> links = new HashSet<>();
     final SetMultimap<DrasylAddress, LuaLinkTable> nodeLinks = new HashSetMultimap<>();
-    private LuaClosure networkListener;
+    public LuaClosure networkListener;
+    LuaNumber proactiveLatencyMeasurementsRatio;
+    LuaNumber proactiveLatencyMeasurementsInterval;
+    LuaTable proactiveLatencyMeasurementsCandidates;
     final CsvWriter writer;
+    public final Map<DrasylAddress, Integer> nodePolicies = new HashMap<>();
 
     {
         try {
@@ -115,6 +125,15 @@ public class LuaNetworkTable extends LuaTable {
                 case "network_listener":
                     this.networkListener = (LuaClosure) params.get(key).checkfunction();
                     break;
+                case "proactive_latency_measurements_ratio":
+                    this.proactiveLatencyMeasurementsRatio = params.get(key).checknumber();
+                    break;
+                case "proactive_latency_measurements_interval":
+                    this.proactiveLatencyMeasurementsInterval = params.get(key).checknumber();
+                    break;
+                case "proactive_latency_measurements_candidates":
+                    this.proactiveLatencyMeasurementsCandidates = params.get(key).checktable();
+                    break;
                 default:
                     throw new LuaError("Param `" + key.checkstring().tojstring() + "` does not exist.");
             }
@@ -146,7 +165,11 @@ public class LuaNetworkTable extends LuaTable {
     @Override
     public String toString() {
         return "LuaNetworkTable{" +
-                "nodes=" + nodes +
+                "networkListener=" + (networkListener != null ? "[SET]" : "[UNSET]") +
+                ", proactiveLatencyMeasurementsRatio=" + proactiveLatencyMeasurementsRatio +
+                ", proactiveLatencyMeasurementsInterval=" + proactiveLatencyMeasurementsInterval +
+                ", proactiveLatencyMeasurementsCandidates=" + proactiveLatencyMeasurementsCandidates +
+                ", nodes=" + nodes +
                 ", links=" + links +
                 '}';
     }
@@ -186,8 +209,10 @@ public class LuaNetworkTable extends LuaTable {
                 for (final LuaNodeTable node : nodes.values()) {
                     final DrasylChannel channel = channels.get(node.name());
                     if (node.state().isOnline()) {
-                        final ControllerHello controllerHello = new ControllerHello(node.policies());
-                        LOG.debug("Send {} to {}.", controllerHello, node.name());
+                        final Set<Policy> policies = node.policies();
+
+                        final ControllerHello controllerHello = new ControllerHello(policies);
+                        LOG.error("Send {} to {}.", controllerHello, node.name());
                         channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                 }
@@ -201,11 +226,12 @@ public class LuaNetworkTable extends LuaTable {
         return false;
     }
 
-    private void logRelays() throws IOException {
+    public void logRelays() throws IOException {
         final Map<DrasylAddress, Integer> relayCounters = new HashMap<>();
         for (final LuaNodeTable node : nodes.values()) {
-            if (node.state().isOnline() && !RELAYS.contains(node.name())) {
-                for (final Map.Entry<InetAddress, DrasylAddress> entry : node.tunRoutes().entrySet()) {
+            if (CLIENT.equals(node.name()) && node.state().isOnline()) {
+                //LOG.error("Node {} has {} tun routes.", node.name(), node.tunRoutes().size());
+                for (final Entry<InetAddress, DrasylAddress> entry : node.tunRoutes().entrySet()) {
                     relayCounters.putIfAbsent(entry.getValue(), 0);
                     relayCounters.put(entry.getValue(), relayCounters.get(entry.getValue()) + 1);
                 }
@@ -298,6 +324,7 @@ public class LuaNetworkTable extends LuaTable {
             }
 
             final LuaLinkTable link = new LuaLinkTable(LuaNetworkTable.this, node1String, node2String, paramsArg);
+            //LOG.error("add_link: link = {}", link);
             final boolean newLink = LuaNetworkTable.this.links.add(link);
             LuaNetworkTable.this.nodeLinks.put(link.node1(), link);
             LuaNetworkTable.this.nodeLinks.put(link.node2(), link);
