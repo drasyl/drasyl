@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.*;
 import org.drasyl.cli.sdo.config.Policy;
 import org.drasyl.handler.peers.PeersList;
 
+import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -32,12 +33,15 @@ import static java.util.Objects.requireNonNull;
 public class NodeHello implements SdoMessage {
     private final Set<Policy> policies;
     private final PeersList peersList;
+    private final Map<String, Object> store;
 
     @JsonCreator
     public NodeHello(@JsonProperty("policies") final Set<Policy> policies,
-                     @JsonProperty("peersList") final PeersList peersList) {
+                     @JsonProperty("peersList") final PeersList peersList,
+                     @JsonProperty("store") final Map<String, Object> store) {
         this.policies = requireNonNull(policies);
         this.peersList = requireNonNull(peersList);
+        this.store = requireNonNull(store);
     }
 
     @JsonGetter("policies")
@@ -50,11 +54,17 @@ public class NodeHello implements SdoMessage {
         return peersList;
     }
 
+    @JsonGetter("store")
+    public Map<String, Object> store() {
+        return store;
+    }
+
     @Override
     public String toString() {
         return "NodeHello{" +
                 "policies='" + policies + '\'' +
                 ", peersList='" + peersList + '\'' +
+                ", store='" + store + '\'' +
                 '}';
     }
 }

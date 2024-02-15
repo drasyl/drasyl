@@ -240,6 +240,8 @@ public class LuaNodeTable extends LuaTable {
             policies.add(new LinkPolicy(link.other(name())));
         }
 
+        //policies.add(new ComputationResultMessageParserPolicy());
+
         return policies;
     }
 

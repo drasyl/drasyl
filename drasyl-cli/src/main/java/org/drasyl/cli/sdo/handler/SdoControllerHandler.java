@@ -156,7 +156,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                                 peers.remove(address);
                             }
                         }
-                        networkNode.state().setState(((NodeHello) msg).policies(), peers);
+                        networkNode.state().setState(((NodeHello) msg).policies(), peers, ((NodeHello) msg).store());
                         //scheduleNotifyListener(ctx);
 
                         //final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
@@ -170,7 +170,7 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                                 peers.remove(address);
                             }
                         }
-                        networkNode.state().setState(((NodeHello) msg).policies(), peers);
+                        networkNode.state().setState(((NodeHello) msg).policies(), peers, ((NodeHello) msg).store());
                         //scheduleNotifyListener(ctx);
                     }
                 }
